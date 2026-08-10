@@ -29,7 +29,7 @@ import math
 import re
 from typing import Any
 
-from .artifacts_antigravity import canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity
+from .artifacts_antigravity import canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity, write_create_only_antigravity
 from .checkpoint_antigravity import (
     CheckpointResumeInspectionAntigravity,
     Exp444CheckpointStoreAntigravity,
@@ -44,7 +44,7 @@ from .contracts_antigravity import (
     ProfileCheckpointContextAntigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
-from .readiness_antigravity import current_clean_head_antigravity
+from .readiness_antigravity import current_clean_head_antigravity, readiness_for_profile_antigravity
 from .profiles_antigravity import EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY, LifecycleProfileAntigravity
 
 
@@ -474,6 +474,20 @@ def _persist_commit_antigravity(
     )
 
 
+def _write_setup_failure_antigravity(
+    attempt: Path,
+    error: BaseException,
+) -> None:
+    """Preserve one create-only failure explanation for an allocated Exp445 attempt."""
+    write_create_only_antigravity(
+        attempt / "setup_failure_antigravity.json",
+        canonical_json_bytes_antigravity({
+            "schema": "exp445.setup_failure.v1", "stage": "setup",
+            "error": {"type": type(error).__name__, "message": str(error) or type(error).__name__},
+        }),
+    )
+
+
 def _state_status_antigravity(checkpoint_path: Path) -> str:
     from .artifacts_antigravity import parse_canonical_json_bytes_antigravity
 
@@ -689,16 +703,48 @@ def _execute_runtime_antigravity(
         if attempt_name is not None:
             raise ValueError("Exp444 new run cannot select an attempt")
         inputs, label_access_count = _load_source_inputs_antigravity()
-        attempt = _attempt_root_antigravity(root)
-        checkpoint_root = attempt / "checkpoint_antigravity"
-        store = Exp444CheckpointStoreAntigravity.create(checkpoint_root, context, process)
-        writer = ProgressWriterAntigravity.create(
-            attempt,
-            total=FROZEN_CONFIG.source_candidate_count,
-            process=process,
-            checkpoint_path=checkpoint_root / "state_antigravity.json",
-            backend="cpu",
-        )
+        attempt: Path | None = None
+        store: Exp444CheckpointStoreAntigravity | None = None
+        writer: ProgressWriterAntigravity | None = None
+        try:
+            attempt = _attempt_root_antigravity(root)
+            checkpoint_root = attempt / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(checkpoint_root, context, process)
+            writer = ProgressWriterAntigravity.create(
+                attempt,
+                total=FROZEN_CONFIG.source_candidate_count,
+                process=process,
+                checkpoint_path=checkpoint_root / "state_antigravity.json",
+                backend="cpu",
+            )
+        except BaseException as setup_error:
+            if profile is EXP445_PROFILE_ANTIGRAVITY and attempt is not None:
+                _write_setup_failure_antigravity(attempt, setup_error)
+                counters: Mapping[str, int] | None = None
+                if store is not None and store.status_antigravity not in {"complete", "error"}:
+                    store.commit_error_antigravity(0, setup_error)
+                    counters = {
+                        "completed": 1, "imported": 0, "recomputed": 1,
+                        "success": 0, "abstention": 0, "error": 1,
+                    }
+                if writer is not None:
+                    writer.close_antigravity("error", str(setup_error) or type(setup_error).__name__)
+                else:
+                    try:
+                        ProgressWriterAntigravity.close_setup_failure_antigravity(
+                            attempt, total=FROZEN_CONFIG.source_candidate_count,
+                            process=process,
+                            checkpoint_path=checkpoint_root / "state_antigravity.json",
+                            error=setup_error, counters=counters,
+                        )
+                    except BaseException:
+                        # The create-only setup failure remains the unambiguous
+                        # terminal authority when a broken filesystem also
+                        # prevents the mutable progress/PID closeout.
+                        pass
+            raise
+        if attempt is None or store is None or writer is None:
+            raise AssertionError("Exp444 new runtime setup is unavailable")
         resumed = False
         finalization_only = False
     elif mode == "resume":
@@ -834,7 +880,19 @@ def _execute_runtime_antigravity(
                     ).hexdigest()
                     if aggregate != predecessor.record_prefix_payload_sha256 or aggregate != fresh.record_prefix_payload_sha256:
                         raise ValueError("Exp445 predecessor aggregate parity mismatch")
-            _persist_commit_antigravity(store, writer, sequence, candidate, result)
+            try:
+                _persist_commit_antigravity(store, writer, sequence, candidate, result)
+            except BaseException as progress_error:
+                if predecessor is None or store.completed_count_antigravity != sequence + 1:
+                    raise
+                writer.reconcile_committed_success_antigravity(
+                    sequence,
+                    record_sha256=store.record_sha256_prefix_antigravity[-1],
+                    abstention=result.lane == "unstable_review",
+                )
+                if sequence == FROZEN_CONFIG.source_candidate_count - 1:
+                    return
+                raise progress_error
 
         def progress(*, stage: str, sequence: int | None, **_state: object) -> None:
             if stage != "active" or sequence is None:
@@ -876,15 +934,27 @@ def _execute_runtime_antigravity(
     except BaseException as error:
         if writer is not None and writer.stage_antigravity not in {"complete", "error", "failed", "interrupted", "interrupted_resumable"}:
             if store.status_antigravity not in {"complete", "error"} and store.completed_count_antigravity < FROZEN_CONFIG.source_candidate_count:
-                store.commit_error_antigravity(store.completed_count_antigravity, error)
+                error_sequence = store.completed_count_antigravity
+                store.commit_error_antigravity(error_sequence, error)
                 if predecessor is not None:
                     # Exp445's parity failure is a durable exact-next error
                     # record, so its parent-owned progress must advance to the
                     # same terminal prefix before it closes failed.
-                    writer.complete_candidate_antigravity(
-                        "error", recomputed=True,
-                        error=str(error) or type(error).__name__,
-                    )
+                    try:
+                        writer.complete_candidate_antigravity(
+                            "error", recomputed=True,
+                            error=str(error) or type(error).__name__,
+                        )
+                    except ValueError:
+                        if inputs is None or error_sequence >= len(inputs):
+                            raise
+                        candidate = inputs[error_sequence]
+                        writer.reconcile_orphan_antigravity(
+                            candidate.dataset, error_sequence,
+                            record_sha256=store.record_sha256_prefix_antigravity[-1],
+                            status="error", error=str(error) or type(error).__name__,
+                            backend="cpu", **_dimensions_antigravity(candidate),
+                        )
             writer.close_antigravity("error", str(error) or type(error).__name__)
         raise
 
@@ -910,6 +980,9 @@ def run_new_for_profile_antigravity(
     """Internal entrypoint for Exp445's fixed new-only profile."""
     if profile is not EXP445_PROFILE_ANTIGRAVITY:
         raise ValueError("runtime lifecycle profile is invalid")
+    # A direct internal caller must receive exactly the same live readiness
+    # checks as the facade before any source/root/checkpoint mutation.
+    readiness_for_profile_antigravity(profile, reviewed_commit)
     return _execute_runtime_antigravity(
         reviewed_commit=reviewed_commit,
         mode="new",

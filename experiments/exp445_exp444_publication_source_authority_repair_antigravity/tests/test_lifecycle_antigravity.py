@@ -73,7 +73,7 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
         scheduler_arguments: dict[str, object] = {}
         with tempfile.TemporaryDirectory(prefix="exp445_lifecycle_antigravity_") as directory:
             root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
-            profile = lifecycle_antigravity.EXP445_PROFILE_ANTIGRAVITY
+            profile = lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY
             patched_profile = self._test_profile_antigravity(profile, root)
             def complete(active, *, commit, progress, **kwargs):
                 scheduler_arguments.update(kwargs)
@@ -82,10 +82,10 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
                     commit(index, item, _result_antigravity(item))
                 return tuple(_result_antigravity(item) for item in active)
             with (
-                mock.patch.object(lifecycle_antigravity, "EXP445_PROFILE_ANTIGRAVITY", patched_profile),
-                mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", patched_profile),
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", patched_profile),
+                mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile),
                 mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile),
-                mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY),
+                mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY),
                 mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99101, "exp445-test")),
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete),
@@ -104,6 +104,108 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
             self.assertFalse((attempt / "publication_antigravity").exists())
             self.assertEqual(len(list((attempt / "checkpoint_antigravity/records_antigravity").glob("*_record_antigravity.json"))), 30)
 
+    def test_live_profile_readiness_runs_before_new_root_mutation_antigravity(self) -> None:
+        """New execution must not bypass its live label-free readiness gate."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+
+        inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs)
+        with tempfile.TemporaryDirectory(prefix="exp445_live_readiness_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
+            profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            readiness_calls: list[tuple[object, str]] = []
+            def readiness(active_profile, commit):
+                readiness_calls.append((active_profile, commit))
+            def root_mutation(path):
+                self.assertEqual(readiness_calls, [(profile, _COMMIT_ANTIGRAVITY)])
+                raise RuntimeError("stop after readiness")
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(runtime, "readiness_for_profile_antigravity", side_effect=readiness),
+                mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY),
+                mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "_attempt_root_antigravity", side_effect=root_mutation),
+                mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "stop after readiness"):
+                    lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+
+    def test_checkpoint_setup_failure_has_terminal_exp445_evidence_antigravity(self) -> None:
+        """A post-root checkpoint failure cannot leave an apparently live Exp445 root."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+
+        inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs)
+        with tempfile.TemporaryDirectory(prefix="exp445_setup_failure_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
+            profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99104, "exp445-test")),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority),
+                mock.patch.object(runtime.Exp444CheckpointStoreAntigravity, "create", side_effect=OSError("checkpoint setup fault")),
+                mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(OSError, "checkpoint setup fault"):
+                    lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            failure = json.loads((attempt / "setup_failure_antigravity.json").read_text())
+            self.assertEqual((failure["stage"], failure["error"]["message"]), ("setup", "checkpoint setup fault"))
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            self.assertEqual((progress["active"], progress["stage"]), (False, "error"))
+
+    def test_nonfinal_progress_fault_reconciles_success_then_writes_exact_next_error_antigravity(self) -> None:
+        """A durable success cannot be followed by a stale progress prefix."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs); original = ProgressWriterAntigravity.complete_candidate_antigravity
+        with tempfile.TemporaryDirectory(prefix="exp445_nonfinal_progress_fault_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            def ordered(active, *, commit, progress, **_kwargs):
+                for index, item in enumerate(active): progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item))
+            def fail_sequence_seven(writer, *args, **kwargs):
+                if writer._current_candidate_index == 7:
+                    raise OSError("progress sequence seven fault")
+                return original(writer, *args, **kwargs)
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99105, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=ordered), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch.object(ProgressWriterAntigravity, "complete_candidate_antigravity", new=fail_sequence_seven), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(OSError, "sequence seven fault"):
+                    lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"; records = attempt / "checkpoint_antigravity/records_antigravity"
+            self.assertEqual([item.name for item in sorted(records.iterdir())], [f"{index:04d}_record_antigravity.json" for index in range(9)])
+            self.assertEqual(json.loads((records / "0008_record_antigravity.json").read_text())["status"], "error")
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            self.assertEqual((progress["stage"], progress["completed"], progress["error"]), ("error", 9, 1))
+
+    def test_final_progress_fault_reconciles_then_completes_antigravity(self) -> None:
+        """The last durable success is reconciled before either terminal authority completes."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs); original = ProgressWriterAntigravity.complete_candidate_antigravity; faulted = [False]
+        with tempfile.TemporaryDirectory(prefix="exp445_final_progress_fault_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            def ordered(active, *, commit, progress, **_kwargs):
+                for index, item in enumerate(active): progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item));
+                return tuple(_result_antigravity(item) for item in active)
+            def fail_final_once(writer, *args, **kwargs):
+                if writer._current_candidate_index == 29 and not faulted[0]: faulted[0] = True; raise OSError("progress final fault")
+                return original(writer, *args, **kwargs)
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99106, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=ordered), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch.object(ProgressWriterAntigravity, "complete_candidate_antigravity", new=fail_final_once), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                outcome = lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+            self.assertEqual((outcome.status, outcome.completed_count), ("complete", 30))
+            progress = json.loads((root / "attempts_antigravity/attempt_0000_antigravity/progress_antigravity.json").read_text())
+            self.assertEqual((progress["stage"], progress["completed"], progress["error"]), ("complete", 30, 0))
+
     def test_nonfinal_wrapper_mismatch_writes_only_exact_next_error_record_antigravity(self) -> None:
         """Writing a successful mismatching result before rejecting it would invalidate failure evidence."""
         from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
@@ -113,12 +215,12 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
         wrong = list(authority.record_sha256_prefix); wrong[7] = "0" * 64
         authority = type(authority)(authority.reviewed_commit, authority.attempt_root, tuple(wrong), authority.record_prefix_payload_sha256)
         with tempfile.TemporaryDirectory(prefix="exp445_nonfinal_antigravity_") as directory:
-            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = lifecycle_antigravity.EXP445_PROFILE_ANTIGRAVITY
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY
             patched_profile = self._test_profile_antigravity(profile, root)
             def complete(active, *, commit, progress, **_kwargs):
                 for index, item in enumerate(active): progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item))
             with (
-                mock.patch.object(lifecycle_antigravity, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99102, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99102, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
             ):
                 with self.assertRaisesRegex(ValueError, "predecessor record parity"):
                     lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
@@ -136,12 +238,12 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
         inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs)
         authority = type(authority)(authority.reviewed_commit, authority.attempt_root, authority.record_sha256_prefix, "0" * 64)
         with tempfile.TemporaryDirectory(prefix="exp445_final_antigravity_") as directory:
-            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = lifecycle_antigravity.EXP445_PROFILE_ANTIGRAVITY
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY
             patched_profile = self._test_profile_antigravity(profile, root)
             def complete(active, *, commit, progress, **_kwargs):
                 for index, item in enumerate(active): progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item))
             with (
-                mock.patch.object(lifecycle_antigravity, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99103, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", patched_profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99103, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
             ):
                 with self.assertRaisesRegex(ValueError, "aggregate parity"):
                     lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)

@@ -432,6 +432,75 @@ class ProgressWriterAntigravity:
         self._append_event_antigravity("candidate_complete", self._stage, {"dataset": dataset, "status": status})
         self._append_text_antigravity(f"후보 완료 dataset={dataset} status={status} 완료={self._counters['completed']}/{self.total}\n")
 
+    def reconcile_committed_success_antigravity(
+        self,
+        sequence: int,
+        *,
+        record_sha256: str,
+        abstention: bool = False,
+    ) -> None:
+        """Advance progress once for an already-durable result after its normal write failed.
+
+        The checkpoint is the durable authority at this boundary.  Re-reading
+        the current progress file makes recovery independent of any partially
+        changed in-memory counters in a failed normal completion call.
+        """
+        self._require_active_antigravity()
+        if type(sequence) is not int or sequence < 0 or sequence >= self.total:
+            raise ValueError("progress committed sequence is invalid")
+        if type(record_sha256) is not str or _SHA256_ANTIGRAVITY.fullmatch(record_sha256) is None:
+            raise ValueError("progress committed record hash is invalid")
+        persisted = _read_canonical_antigravity(self.progress_path)
+        if (
+            persisted.get("active") is not True
+            or persisted.get("completed") != sequence
+            or persisted.get("current_candidate_index") != sequence
+            or persisted.get("pid") != self.process.pid
+            or persisted.get("start_identity") != self.process.start_identity
+        ):
+            raise ValueError("progress committed recovery authority is invalid")
+        self._counters = {name: int(persisted[name]) for name in (
+            "completed", "imported", "recomputed", "success", "abstention", "error",
+        )}
+        self._counters["completed"] += 1
+        self._counters["recomputed"] += 1
+        self._counters["abstention"] += int(abstention)
+        self._counters["success"] += 1
+        dataset = persisted["current_dataset"]
+        self._current_dataset = None
+        self._current_candidate_index = None
+        self._current_view = None
+        self._view_count = None
+        self._excluded_count = None
+        self._stage = "running"
+        self._write_progress_antigravity()
+        self._append_event_antigravity(
+            "committed_success_reconciled", self._stage,
+            {"dataset": dataset, "candidate_index": sequence, "record_sha256": record_sha256},
+        )
+        self._append_text_antigravity(
+            f"커밋 성공 복구 dataset={dataset} index={sequence} sha256={record_sha256} "
+            f"완료={self._counters['completed']}/{self.total}\n"
+        )
+
+    @classmethod
+    def close_setup_failure_antigravity(
+        cls,
+        attempt_path: Path,
+        *,
+        total: int,
+        process: ProcessIdentityAntigravity,
+        checkpoint_path: Path,
+        error: BaseException,
+        counters: Mapping[str, int] | None = None,
+    ) -> None:
+        """Create or deactivate parent-owned progress after a setup failure."""
+        writer = cls(
+            Path(attempt_path), total=total, process=process,
+            checkpoint_path=checkpoint_path, counters=counters,
+        )
+        writer.close_antigravity("error", str(error) or type(error).__name__)
+
     def reconcile_orphan_antigravity(
         self,
         dataset: str,

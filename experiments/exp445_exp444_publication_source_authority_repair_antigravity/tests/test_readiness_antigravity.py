@@ -30,6 +30,14 @@ class Exp445ReadinessAntigravityTests(unittest.TestCase):
         execution_signature = inspect.signature(lifecycle_antigravity.run_new_antigravity)
         self.assertEqual(tuple(execution_signature.parameters), ("reviewed_commit",))
         self.assertFalse(hasattr(lifecycle_antigravity, "run_resume_antigravity"))
+        public_names = {name for name in vars(lifecycle_antigravity) if not name.startswith("_")}
+        self.assertEqual(
+            public_names & {
+                "EXP445_PROFILE_ANTIGRAVITY", "readiness_for_profile_antigravity",
+                "run_new_for_profile_antigravity",
+            },
+            set(),
+        )
 
     def test_profile_aware_readiness_rejects_a_caller_minted_profile_antigravity(self) -> None:
         """Accepting an equal-looking profile would make root and document authority selectable."""
