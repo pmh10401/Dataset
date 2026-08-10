@@ -69,3 +69,52 @@ evidence path, symbol, edge reference, and flow step validated.
 
 The worktree is clean at the second commit.  No official Exp444 root was
 created and no database or TEST-label access occurred.
+
+## Review round 1 — crash recovery and resume authority hardening
+
+Review round 1 preserved the frozen 30-candidate algorithm and changed only
+durability and ownership enforcement:
+
+- atomic JSON writes now use unique same-directory temp files; abandoned
+  legacy or unique temps are removed deterministically and are never parsed,
+  promoted, or treated as authority;
+- checkpoint resume validates the canonical prefix payload hash for running,
+  interrupted, and complete states, plus strict count, timestamp, current-field,
+  error, and terminal-state invariants;
+- progress resume validates every persisted counter, dimension, backend,
+  inactive-current-field rule, PID identity, checkpoint path, checkpoint
+  owner/count/prefix hash, and timing field before replacing any authority;
+- replacement owners must have a numerically distinct PID, not merely a
+  different start token;
+- a writer becomes locally immutable after interruption, terminal error, or
+  close, and mutations are restricted to the local parent PID that constructed
+  the writer.
+
+### Round 1 RED
+
+```text
+python3 -m unittest experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_checkpoint_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_progress_antigravity
+```
+
+Before the fix: `Ran 14 tests ... FAILED (failures=11, errors=2)`.  The failures
+demonstrated fixed-temp crash blockage, unchecked payload hashes and progress
+semantics, same-PID replacement, missing checkpoint identity checks, and old
+writer/parent-owner mutation.
+
+### Round 1 GREEN
+
+The same focused command after implementation: `Ran 15 tests ... OK`.
+
+Full Exp444 regression:
+
+```text
+python3 -m unittest discover -s experiments/exp444_train_only_stability_precision_gate_antigravity/tests -p 'test_*.py'
+```
+
+Result: exit status 0 with all 94 discovered tests passing.  `git diff --check`
+and `py_compile` for both modules and both test files also completed
+successfully.
+
+Round 1 implementation commit:
+
+- `a0619898` — `fix(exp444): harden checkpoint resume authority`
