@@ -24,6 +24,7 @@ from .artifacts_antigravity import (
     canonical_json_bytes_antigravity,
     canonical_jsonl_bytes_antigravity,
     parse_canonical_json_bytes_antigravity,
+    write_create_only_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
 from .contracts_antigravity import (
@@ -35,6 +36,11 @@ from .contracts_antigravity import (
     SourceCandidateAntigravity,
     StabilitySelectionAntigravity,
     validate_prediction_payload_antigravity,
+)
+from .profiles_antigravity import (
+    EXP444_PROFILE_ANTIGRAVITY,
+    EXP445_PROFILE_ANTIGRAVITY,
+    LifecycleProfileAntigravity,
 )
 
 
@@ -74,6 +80,20 @@ _QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY = None  # deterministic test-only rac
 
 _ATTEMPT_FILES_ANTIGRAVITY = ("progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log")
 _CHECKPOINT_FILES_ANTIGRAVITY = ("context_antigravity.json", "state_antigravity.json")
+_EXP445_PUBLICATION_FAILURE_FILE_ANTIGRAVITY = "publication_failure_antigravity.json"
+
+
+def _require_publication_profile_antigravity(profile: object) -> LifecycleProfileAntigravity:
+    """Keep profile choice internal while preserving Exp444's frozen default."""
+    if profile is EXP444_PROFILE_ANTIGRAVITY:
+        return EXP444_PROFILE_ANTIGRAVITY
+    if profile is EXP445_PROFILE_ANTIGRAVITY:
+        return EXP445_PROFILE_ANTIGRAVITY
+    raise ValueError("publication lifecycle profile is invalid")
+
+
+def _publication_schema_antigravity(profile: LifecycleProfileAntigravity, suffix: str) -> str:
+    return f"{profile.schema}.{suffix}.v1" if suffix != "runtime" else f"{profile.schema}.runtime.v2"
 
 
 @dataclass(frozen=True)
@@ -413,7 +433,13 @@ class _ValuesOnlyPublishAuthorityAntigravity:
         _ensure_label_free_antigravity(self.control_rows, "control replay")
 
 
-def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _AttemptSnapshotAntigravity | None = None) -> tuple[CandidateStabilityResultAntigravity, ...]:
+def _complete_checkpoint_results_antigravity(
+    attempt_root: Path,
+    snapshot: _AttemptSnapshotAntigravity | None = None,
+    *,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
+) -> tuple[CandidateStabilityResultAntigravity, ...]:
+    profile = _require_publication_profile_antigravity(profile)
     attempt = Path(attempt_root)
     owns_snapshot = snapshot is None
     snapshot = _capture_attempt_antigravity(attempt) if snapshot is None else snapshot
@@ -421,11 +447,15 @@ def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _Atte
         _assert_attempt_namespace_antigravity(attempt, snapshot)
         context = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/context_antigravity.json"], "checkpoint context")
         try:
-            checked_context = CheckpointContextAntigravity.from_payload(context)
+            if profile is EXP444_PROFILE_ANTIGRAVITY:
+                checked_context = CheckpointContextAntigravity.from_payload(context)
+            else:
+                from .contracts_antigravity import ProfileCheckpointContextAntigravity
+                checked_context = ProfileCheckpointContextAntigravity.from_payload(context)
         except ValueError as error:
-            raise ValueError("Exp444 checkpoint context changed") from error
+            raise ValueError(f"{profile.experiment_id} checkpoint context changed") from error
         if context != checked_context.to_payload():
-            raise ValueError("Exp444 checkpoint context changed")
+            raise ValueError(f"{profile.experiment_id} checkpoint context changed")
         state = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/state_antigravity.json"], "checkpoint state")
         expected_state = {"context_sha256", "status", "completed_units", "total_units", "error_count", "current_unit", "current_view", "payload_sha256", "record_sha256_prefix", "process", "error", "updated_at"}
         if set(state) != expected_state or state["status"] != "complete" or state["completed_units"] != 30 or state["total_units"] != 30 or state["error_count"] != 0 or state["current_unit"] is not None or state["current_view"] is not None or state["error"] is not None:
@@ -561,7 +591,14 @@ def _terminal_authority_surface_antigravity(path: Path, name: str) -> dict[str, 
     return {"byte_size": len(encoded), "sha256": _sha256_antigravity(encoded), "utf8": text}
 
 
-def _runtime_payload_antigravity(attempt: Path, results: Sequence[CandidateStabilityResultAntigravity], snapshot: _AttemptSnapshotAntigravity) -> dict[str, object]:
+def _runtime_payload_antigravity(
+    attempt: Path,
+    results: Sequence[CandidateStabilityResultAntigravity],
+    snapshot: _AttemptSnapshotAntigravity,
+    *,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
+) -> dict[str, object]:
+    profile = _require_publication_profile_antigravity(profile)
     state = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/state_antigravity.json"], "checkpoint state")
     authorities = {
         "context": {"byte_size": len(snapshot.payloads["checkpoint/context_antigravity.json"]), "sha256": _sha256_antigravity(snapshot.payloads["checkpoint/context_antigravity.json"]), "utf8": snapshot.payloads["checkpoint/context_antigravity.json"].decode()},
@@ -575,7 +612,7 @@ def _runtime_payload_antigravity(attempt: Path, results: Sequence[CandidateStabi
         {"sequence": sequence, "byte_size": len(snapshot.payloads[f"records/{name}"]), "sha256": _sha256_antigravity(snapshot.payloads[f"records/{name}"]), "utf8": snapshot.payloads[f"records/{name}"].decode()}
         for sequence, name in enumerate(_RECORD_NAMES_ANTIGRAVITY)
     ]
-    return {"schema": "exp444.runtime.v2", "attempt_name": attempt.name, "backend": "cpu", "workers": 11, "completed": len(results), "record_sha256_prefix": list(state["record_sha256_prefix"]), "authorities": authorities, "records": records, "label_access_count": 0}
+    return {"schema": _publication_schema_antigravity(profile, "runtime"), "attempt_name": attempt.name, "backend": "cpu", "workers": 11, "completed": len(results), "record_sha256_prefix": list(state["record_sha256_prefix"]), "authorities": authorities, "records": records, "label_access_count": 0}
 
 
 def _backend_payload_antigravity() -> dict[str, object]:
@@ -626,8 +663,18 @@ def _parse_control_replays_antigravity(rows: object, source: Sequence[SourceCand
     return tuple(replays)
 
 
-def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntigravity, snapshot: _AttemptSnapshotAntigravity, *, summary_bytes: bytes | None = None, backend_authority: Mapping[str, object] | None = None) -> tuple[dict[str, bytes], StabilitySelectionAntigravity]:
-    results = _complete_checkpoint_results_antigravity(attempt, snapshot)
+def _payloads_antigravity(
+    attempt: Path,
+    authority: _PublishSourceAuthorityAntigravity,
+    snapshot: _AttemptSnapshotAntigravity,
+    *,
+    summary_bytes: bytes | None = None,
+    backend_authority: Mapping[str, object] | None = None,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
+    results: Sequence[CandidateStabilityResultAntigravity] | None = None,
+) -> tuple[dict[str, bytes], StabilitySelectionAntigravity]:
+    profile = _require_publication_profile_antigravity(profile)
+    results = _complete_checkpoint_results_antigravity(attempt, snapshot, profile=profile) if results is None else tuple(results)
     source = tuple(authority.candidates)
     if tuple(item.candidate for item in results) != source:
         raise ValueError("Exp444 checkpoint coordinates differ from frozen source")
@@ -638,10 +685,10 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
     result_rows = _result_rows_antigravity(results)
     stable_rows = _result_rows_antigravity(stable)
     unstable_rows = _result_rows_antigravity(unstable)
-    runtime_payload = _runtime_payload_antigravity(attempt, results, snapshot)
+    runtime_payload = _runtime_payload_antigravity(attempt, results, snapshot, profile=profile)
     # This is deliberately before staging: every terminal binding must reject
     # while the create-only destination is still absent.
-    _inspect_terminal_runtime_antigravity(runtime_payload, selection)
+    _inspect_terminal_runtime_antigravity(runtime_payload, selection, profile=profile)
     payloads: dict[str, bytes] = {
         DATASET_SUMMARY_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(authority.dataset_summaries) if summary_bytes is None else bytes(summary_bytes),
         SOURCE_CANDIDATES_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(item.to_payload() for item in source),
@@ -657,16 +704,22 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
     return payloads, selection
 
 
-def _final_payloads_antigravity(leaf_payloads: Mapping[str, bytes], selection: StabilitySelectionAntigravity) -> dict[str, bytes]:
+def _final_payloads_antigravity(
+    leaf_payloads: Mapping[str, bytes],
+    selection: StabilitySelectionAntigravity,
+    *,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
+) -> dict[str, bytes]:
+    profile = _require_publication_profile_antigravity(profile)
     if set(leaf_payloads) != set(_LEAF_FILES_ANTIGRAVITY):
         raise ValueError("Exp444 publication leaf inventory is invalid")
     leaf_hashes = {name: _sha256_antigravity(leaf_payloads[name]) for name in _LEAF_FILES_ANTIGRAVITY}
     prediction_sha = _sha256_antigravity(leaf_payloads[STABLE_REVIEW_FILE_ANTIGRAVITY] + leaf_payloads[UNSTABLE_REVIEW_FILE_ANTIGRAVITY])
-    manifest = {"schema": "exp444.publication.v1", "experiment_id": "Exp444", "run_identity": FROZEN_CONFIG.run_identity, "source_candidate_count": 30, "dataset_count": 1117, "stable_count": selection.stable_count, "unstable_count": selection.unstable_count, "prediction_sha256": prediction_sha, "label_access_count": 0, "leaf_sha256": leaf_hashes}
+    manifest = {"schema": _publication_schema_antigravity(profile, "publication"), "experiment_id": profile.experiment_id, "run_identity": profile.run_identity, "source_candidate_count": 30, "dataset_count": 1117, "stable_count": selection.stable_count, "unstable_count": selection.unstable_count, "prediction_sha256": prediction_sha, "label_access_count": 0, "leaf_sha256": leaf_hashes}
     manifest_bytes = canonical_json_bytes_antigravity(manifest)
-    status = {"schema": "exp444.status.v1", "status": "descriptive_complete_no_promotion", "review_only": True, "operational_alert_eligible": False, "scientific_winner_selected": False, "source_candidate_count": 30, "stable_count": selection.stable_count, "unstable_count": selection.unstable_count, "label_access_count": 0}
+    status = {"schema": _publication_schema_antigravity(profile, "status"), "status": "descriptive_complete_no_promotion", "review_only": True, "operational_alert_eligible": False, "scientific_winner_selected": False, "source_candidate_count": 30, "stable_count": selection.stable_count, "unstable_count": selection.unstable_count, "label_access_count": 0}
     status_bytes = canonical_json_bytes_antigravity(status)
-    artifact_map = {"schema": "exp444.artifact-sha256.v1", "files": {**leaf_hashes, MANIFEST_FILE_ANTIGRAVITY: _sha256_antigravity(manifest_bytes), STATUS_FILE_ANTIGRAVITY: _sha256_antigravity(status_bytes)}}
+    artifact_map = {"schema": _publication_schema_antigravity(profile, "artifact-sha256"), "files": {**leaf_hashes, MANIFEST_FILE_ANTIGRAVITY: _sha256_antigravity(manifest_bytes), STATUS_FILE_ANTIGRAVITY: _sha256_antigravity(status_bytes)}}
     return {**leaf_payloads, MANIFEST_FILE_ANTIGRAVITY: manifest_bytes, STATUS_FILE_ANTIGRAVITY: status_bytes, ARTIFACT_SHA256_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(artifact_map)}
 
 
@@ -842,10 +895,16 @@ def _parse_selection_antigravity(payloads: Mapping[str, bytes]) -> StabilitySele
     return StabilitySelectionAntigravity(source, stable, unstable)
 
 
-def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selection: StabilitySelectionAntigravity) -> None:
+def _inspect_terminal_runtime_antigravity(
+    runtime: Mapping[str, object],
+    selection: StabilitySelectionAntigravity,
+    *,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
+) -> None:
     """Validate verbatim terminal surfaces without reopening the attempt path."""
+    profile = _require_publication_profile_antigravity(profile)
     required = {"schema", "attempt_name", "backend", "workers", "completed", "record_sha256_prefix", "authorities", "records", "label_access_count"}
-    if set(runtime) != required or runtime["schema"] != "exp444.runtime.v2" or runtime["backend"] != "cpu" or runtime["workers"] != 11 or runtime["completed"] != 30 or runtime["label_access_count"] != 0:
+    if set(runtime) != required or runtime["schema"] != _publication_schema_antigravity(profile, "runtime") or runtime["backend"] != "cpu" or runtime["workers"] != 11 or runtime["completed"] != 30 or runtime["label_access_count"] != 0:
         raise ValueError("Exp444 publication runtime evidence is invalid")
     prefix = runtime["record_sha256_prefix"]
     authorities = runtime["authorities"]
@@ -864,7 +923,13 @@ def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selecti
     progress = parse_canonical_json_bytes_antigravity(raw["progress"])
     pid = parse_canonical_json_bytes_antigravity(raw["pid"])
     try:
-        checked_context = CheckpointContextAntigravity.from_payload(context) if isinstance(context, Mapping) else None
+        if not isinstance(context, Mapping):
+            checked_context = None
+        elif profile is EXP444_PROFILE_ANTIGRAVITY:
+            checked_context = CheckpointContextAntigravity.from_payload(context)
+        else:
+            from .contracts_antigravity import ProfileCheckpointContextAntigravity
+            checked_context = ProfileCheckpointContextAntigravity.from_payload(context)
     except ValueError:
         checked_context = None
     if not all(isinstance(value, Mapping) for value in (context, state, progress, pid)) or checked_context is None or dict(context) != checked_context.to_payload() or state.get("context_sha256") != _sha256_antigravity(raw["context"]) or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None:
@@ -908,8 +973,13 @@ def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selecti
         raise ValueError("Exp444 publication terminal record reconstruction changed")
 
 
-def _inspect_publication_payloads_antigravity(payloads: Mapping[str, bytes]) -> tuple[Mapping[str, object], StabilitySelectionAntigravity]:
+def _inspect_publication_payloads_antigravity(
+    payloads: Mapping[str, bytes],
+    *,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
+) -> tuple[Mapping[str, object], StabilitySelectionAntigravity]:
     """Replay publication bytes already held under one trusted directory descriptor."""
+    profile = _require_publication_profile_antigravity(profile)
     selection = _parse_selection_antigravity(payloads)
     summaries = _read_canonical_jsonl_bytes_antigravity(payloads[DATASET_SUMMARY_FILE_ANTIGRAVITY], "dataset summary")
     if _sha256_antigravity(payloads[DATASET_SUMMARY_FILE_ANTIGRAVITY]) != FROZEN_CONFIG.exp440_summary_sha256 or len(summaries) != 1117 or tuple(row.get("dataset") for row in summaries) != tuple(sorted(row.get("dataset") for row in summaries)) or len({row.get("dataset") for row in summaries}) != 1117:
@@ -936,10 +1006,10 @@ def _inspect_publication_payloads_antigravity(payloads: Mapping[str, bytes]) -> 
     backend = BackendDecisionAntigravity.from_payload(backend_payload)
     if backend.backend != "cpu" or backend.workers != 11:
         raise ValueError("Exp444 publication backend decision is invalid")
-    _inspect_terminal_runtime_antigravity(_read_canonical_json_bytes_antigravity(payloads[RUNTIME_FILE_ANTIGRAVITY], "runtime"), selection)
+    _inspect_terminal_runtime_antigravity(_read_canonical_json_bytes_antigravity(payloads[RUNTIME_FILE_ANTIGRAVITY], "runtime"), selection, profile=profile)
     manifest = _read_canonical_json_bytes_antigravity(payloads[MANIFEST_FILE_ANTIGRAVITY], "manifest")
     status = _read_canonical_json_bytes_antigravity(payloads[STATUS_FILE_ANTIGRAVITY], "status")
-    expected = _final_payloads_antigravity({name: payloads[name] for name in _LEAF_FILES_ANTIGRAVITY}, selection)
+    expected = _final_payloads_antigravity({name: payloads[name] for name in _LEAF_FILES_ANTIGRAVITY}, selection, profile=profile)
     if any(payloads[name] != payload for name, payload in expected.items()):
         raise ValueError("Exp444 publication hash or contract changed")
     if manifest["label_access_count"] != 0 or status.get("label_access_count") != 0:
@@ -955,6 +1025,115 @@ def inspect_publication_antigravity(publication_root: Path) -> FrozenPublication
     with _pinned_publication_payloads_antigravity(root) as payloads:
         manifest, selection = _inspect_publication_payloads_antigravity(payloads)
     return FrozenPublicationAntigravity(root, manifest, selection)
+
+
+def _inspect_exp445_publication_antigravity(publication_root: Path) -> FrozenPublicationAntigravity:
+    """Replay only fixed Exp445 publication leaves; never reopen its live attempt."""
+    root = Path(publication_root)
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError("Exp445 publication inventory is invalid")
+    with _pinned_publication_payloads_antigravity(root) as payloads:
+        manifest, selection = _inspect_publication_payloads_antigravity(
+            payloads, profile=EXP445_PROFILE_ANTIGRAVITY
+        )
+    return FrozenPublicationAntigravity(root, manifest, selection)
+
+
+def _assert_exp445_predecessor_parity_antigravity(
+    snapshot: _AttemptSnapshotAntigravity,
+    predecessor: object,
+) -> None:
+    """Bind the terminal Exp445 prefix to the freshly pinned immutable predecessor."""
+    prefix = getattr(predecessor, "record_sha256_prefix", None)
+    aggregate = getattr(predecessor, "record_prefix_payload_sha256", None)
+    if (
+        type(prefix) is not tuple or len(prefix) != FROZEN_CONFIG.source_candidate_count
+        or any(type(item) is not str or len(item) != 64 for item in prefix)
+        or type(aggregate) is not str or len(aggregate) != 64
+    ):
+        raise ValueError("Exp445 predecessor authority is invalid")
+    state = _read_canonical_json_bytes_antigravity(
+        snapshot.payloads["checkpoint/state_antigravity.json"], "checkpoint state"
+    )
+    current = state.get("record_sha256_prefix")
+    if type(current) is not list or tuple(current) != prefix:
+        raise ValueError("Exp445 ordered predecessor record parity failed")
+    encoded_prefix = canonical_json_bytes_antigravity(current)
+    if state.get("payload_sha256") != aggregate or _sha256_antigravity(encoded_prefix) != aggregate:
+        raise ValueError("Exp445 predecessor aggregate parity failed")
+
+
+def _write_exp445_publication_failure_antigravity(attempt: Path, error: BaseException) -> None:
+    """Leave a single immutable failure explanation; never overwrite a prior cause."""
+    payload = {
+        "schema": "exp445.publication-failure.v1",
+        "stage": "publication",
+        "error": {"type": type(error).__name__, "message": str(error) or type(error).__name__},
+    }
+    try:
+        write_create_only_antigravity(
+            attempt / _EXP445_PUBLICATION_FAILURE_FILE_ANTIGRAVITY,
+            canonical_json_bytes_antigravity(payload),
+        )
+    except FileExistsError:
+        pass
+
+
+def _publish_exp445_prediction_antigravity(
+    profile: LifecycleProfileAntigravity = EXP445_PROFILE_ANTIGRAVITY,
+) -> FrozenPublicationAntigravity:
+    """Create Exp445 publication only after terminal, predecessor, and source gates."""
+    profile = _require_publication_profile_antigravity(profile)
+    if profile is not EXP445_PROFILE_ANTIGRAVITY:
+        raise ValueError("Exp445 publication profile is invalid")
+    attempt = profile.run_root / "attempts_antigravity" / "attempt_0000_antigravity"
+    destination = attempt / PUBLICATION_DIRECTORY_ANTIGRAVITY
+    if destination.exists() or destination.is_symlink():
+        raise ValueError("Exp445 publication already exists; same-root retry is forbidden")
+    snapshot = _capture_attempt_antigravity(attempt)
+    try:
+        # Ordering is intentionally explicit: no source capture or staging may
+        # happen until the new terminal bytes and predecessor parity are known.
+        results = _complete_checkpoint_results_antigravity(
+            attempt, snapshot, profile=profile
+        )
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
+        predecessor = verify_exp444_predecessor_antigravity()
+        _assert_exp445_predecessor_parity_antigravity(snapshot, predecessor)
+        from .provenance_antigravity import verify_exp444_provenance_antigravity
+        provenance = verify_exp444_provenance_antigravity()
+        authority = _publish_source_authority_antigravity(provenance.dataset_summary_bytes)
+        payloads, selection = _payloads_antigravity(
+            attempt,
+            authority,
+            snapshot,
+            summary_bytes=provenance.dataset_summary_bytes,
+            backend_authority=provenance.backend_authority,
+            profile=profile,
+            results=results,
+        )
+        expected = _final_payloads_antigravity(payloads, selection, profile=profile)
+        _assert_attempt_namespace_antigravity(attempt, snapshot)
+        _write_staging_antigravity(destination, expected, parent_fd=snapshot.attempt_fd)
+        _assert_attempt_namespace_antigravity(attempt, snapshot, allow_owned_mutation=True)
+        publication_fd = os.open(
+            destination.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            dir_fd=snapshot.attempt_fd,
+        )
+        try:
+            with _pinned_publication_payloads_antigravity(root_fd=publication_fd) as published:
+                manifest, inspected_selection = _inspect_publication_payloads_antigravity(
+                    published, profile=profile
+                )
+        finally:
+            os.close(publication_fd)
+        _assert_attempt_namespace_antigravity(attempt, snapshot, allow_owned_mutation=True)
+        return FrozenPublicationAntigravity(destination, manifest, inspected_selection)
+    except BaseException as error:
+        _write_exp445_publication_failure_antigravity(attempt, error)
+        raise
+    finally:
+        snapshot.close_antigravity()
 
 
 def publish_prediction_antigravity(attempt_root: Path) -> FrozenPublicationAntigravity:
