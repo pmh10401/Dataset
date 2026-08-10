@@ -65,6 +65,20 @@ def _canonical_mapping_antigravity(raw: bytes, name: str) -> Mapping[str, object
     return payload
 
 
+def validate_backend_authority_payload_antigravity(authority: Mapping[str, object]) -> BackendDecisionAntigravity:
+    """Validate an already embedded Task5 authority without opening its pathname."""
+    required = {"schema", "task5_log_utf8", "task5_log_byte_size", "task5_log_sha256", "decision_line_index", "benchmark_head", "start", "inputs", "decision", "complete"}
+    if set(authority) != required or authority.get("schema") != "exp444.backend-decision-authority.v1" or authority.get("task5_log_sha256") != "74c54a40405dd40e5f3f297b1878aff233b5c2a3c217c06453767b624205e090" or authority.get("task5_log_byte_size") != 12139 or authority.get("decision_line_index") != 3 or authority.get("benchmark_head") != "cf57bcf9ef234ffa626d5216da988fb00c12c29e":
+        raise ValueError("Task5 backend authority identity is invalid")
+    log = authority["task5_log_utf8"]
+    if type(log) is not str or len(log.encode()) != 12139 or sha256(log.encode()).hexdigest() != authority["task5_log_sha256"]:
+        raise ValueError("Task5 backend log bytes changed")
+    decision = Exp444ProvenanceAntigravity(b"", authority).backend_decision
+    if decision.backend != "cpu" or decision.workers != 11 or len(decision.evidence) != 5 or authority.get("inputs", {}).get("label_access_count") != 0 or authority.get("complete", {}).get("label_access_count") != 0:
+        raise ValueError("Task5 backend authority evidence is invalid")
+    return decision
+
+
 @dataclass(frozen=True)
 class Exp444ProvenanceAntigravity:
     dataset_summary_bytes: bytes
@@ -114,16 +128,8 @@ def verify_exp444_provenance_antigravity() -> Exp444ProvenanceAntigravity:
     local = Path(__file__).with_name(FROZEN_CONFIG.backend_decision_authority_identifier)
     authority_raw = _read_pinned_antigravity(local.parent, local.name, FROZEN_CONFIG.backend_decision_authority_sha256)
     authority = _canonical_mapping_antigravity(authority_raw, "Task5 backend authority")
-    required = {"schema", "task5_log_utf8", "task5_log_byte_size", "task5_log_sha256", "decision_line_index", "benchmark_head", "start", "inputs", "decision", "complete"}
-    if set(authority) != required or authority.get("schema") != "exp444.backend-decision-authority.v1" or authority.get("task5_log_sha256") != "74c54a40405dd40e5f3f297b1878aff233b5c2a3c217c06453767b624205e090" or authority.get("task5_log_byte_size") != 12139 or authority.get("decision_line_index") != 3 or authority.get("benchmark_head") != "cf57bcf9ef234ffa626d5216da988fb00c12c29e":
-        raise ValueError("Task5 backend authority identity is invalid")
-    log = authority["task5_log_utf8"]
-    if type(log) is not str or len(log.encode()) != 12139 or sha256(log.encode()).hexdigest() != authority["task5_log_sha256"]:
-        raise ValueError("Task5 backend log bytes changed")
-    decision = Exp444ProvenanceAntigravity(summary, authority).backend_decision
-    if decision.backend != "cpu" or decision.workers != 11 or len(decision.evidence) != 5 or authority.get("inputs", {}).get("label_access_count") != 0 or authority.get("complete", {}).get("label_access_count") != 0:
-        raise ValueError("Task5 backend authority evidence is invalid")
+    validate_backend_authority_payload_antigravity(authority)
     return Exp444ProvenanceAntigravity(summary, authority)
 
 
-__all__ = ["Exp444ProvenanceAntigravity", "verify_exp444_provenance_antigravity"]
+__all__ = ["Exp444ProvenanceAntigravity", "verify_exp444_provenance_antigravity", "validate_backend_authority_payload_antigravity"]

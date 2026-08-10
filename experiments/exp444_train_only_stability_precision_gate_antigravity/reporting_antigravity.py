@@ -585,7 +585,7 @@ def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selecti
     state = parse_canonical_json_bytes_antigravity(raw["state"])
     progress = parse_canonical_json_bytes_antigravity(raw["progress"])
     pid = parse_canonical_json_bytes_antigravity(raw["pid"])
-    if not all(isinstance(value, Mapping) for value in (context, state, progress, pid)) or dict(context) != _checkpoint_context_antigravity().to_payload() or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None:
+    if not all(isinstance(value, Mapping) for value in (context, state, progress, pid)) or dict(context) != _checkpoint_context_antigravity().to_payload() or state.get("context_sha256") != _sha256_antigravity(raw["context"]) or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None:
         raise ValueError("Exp444 publication terminal checkpoint state is invalid")
     if state.get("record_sha256_prefix") != prefix or state.get("payload_sha256") != _sha256_antigravity(canonical_json_bytes_antigravity(prefix)):
         raise ValueError("Exp444 publication terminal checkpoint prefix changed")
@@ -634,7 +634,7 @@ def inspect_publication_antigravity(publication_root: Path) -> FrozenPublication
     with _pinned_publication_payloads_antigravity(root) as payloads:
         selection = _parse_selection_antigravity(payloads)
         summaries = _read_canonical_jsonl_bytes_antigravity(payloads[DATASET_SUMMARY_FILE_ANTIGRAVITY], "dataset summary")
-        if len(summaries) != 1117 or tuple(row.get("dataset") for row in summaries) != tuple(sorted(row.get("dataset") for row in summaries)) or len({row.get("dataset") for row in summaries}) != 1117:
+        if _sha256_antigravity(payloads[DATASET_SUMMARY_FILE_ANTIGRAVITY]) != FROZEN_CONFIG.exp440_summary_sha256 or len(summaries) != 1117 or tuple(row.get("dataset") for row in summaries) != tuple(sorted(row.get("dataset") for row in summaries)) or len({row.get("dataset") for row in summaries}) != 1117:
             raise ValueError("Exp444 publication dataset summaries are invalid")
         _ensure_label_free_antigravity(summaries, "dataset summary")
         _ensure_label_free_antigravity(_read_canonical_jsonl_bytes_antigravity(payloads[VIEW_EVIDENCE_FILE_ANTIGRAVITY], VIEW_EVIDENCE_FILE_ANTIGRAVITY), VIEW_EVIDENCE_FILE_ANTIGRAVITY)
@@ -656,10 +656,10 @@ def inspect_publication_antigravity(publication_root: Path) -> FrozenPublication
             raise ValueError("Exp444 publication source audit is invalid")
         backend_payload = _read_canonical_json_bytes_antigravity(payloads[BACKEND_DECISION_FILE_ANTIGRAVITY], "backend decision")
         if backend_payload.get("schema") == "exp444.backend-decision-wrapper.v1":
-            authority_path = Path(__file__).with_name(FROZEN_CONFIG.backend_decision_authority_identifier)
-            local_authority = _read_canonical_json_antigravity(authority_path, "tracked backend authority")
-            if set(backend_payload) != {"schema", "authority", "decision"} or not isinstance(backend_payload["authority"], Mapping) or backend_payload.get("decision") != backend_payload["authority"].get("decision") or _sha256_antigravity(authority_path.read_bytes()) != FROZEN_CONFIG.backend_decision_authority_sha256 or dict(backend_payload["authority"]) != local_authority:
+            if set(backend_payload) != {"schema", "authority", "decision"} or not isinstance(backend_payload["authority"], Mapping) or backend_payload.get("decision") != backend_payload["authority"].get("decision") or _sha256_antigravity(canonical_json_bytes_antigravity(backend_payload["authority"])) != FROZEN_CONFIG.backend_decision_authority_sha256:
                 raise ValueError("Exp444 publication backend authority changed")
+            from .provenance_antigravity import validate_backend_authority_payload_antigravity
+            validate_backend_authority_payload_antigravity(backend_payload["authority"])
             backend_payload = backend_payload["decision"]
         backend = BackendDecisionAntigravity.from_payload(backend_payload)
         if backend.backend != "cpu" or backend.workers != 11:
