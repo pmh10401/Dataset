@@ -416,6 +416,15 @@ def _parse_control_replays_antigravity(rows: object, source: Sequence[SourceCand
             )
         except ValueError as error:
             raise ValueError("Exp444 original-control replay is invalid") from error
+        candidate_scores = tuple(score.to_payload() for score in replay.replayed_candidate.depth_scores)
+        if tuple(score.to_payload() for score in replay.depth_scores) != candidate_scores or replay.source.coordinate != replay.replayed_candidate.coordinate or replay.source.raw_length != replay.replayed_candidate.raw_length or replay.replayed_depths != replay.source.original_depths or replay.replayed_candidate.depths != replay.source.original_depths or replay.replayed_candidate.agreement_count != len(replay.replayed_depths) or replay.matches_source is not True:
+            raise ValueError("Exp444 original-control replay is contradictory")
+        agreeing = tuple(score for score in replay.depth_scores if score.exceeds)
+        if tuple(score.depth for score in agreeing) != replay.replayed_depths or len(agreeing) < 2:
+            raise ValueError("Exp444 original-control agreeing depths changed")
+        ordered = tuple(sorted(agreeing, key=lambda score: (-score.excess_ratio, score.empirical_rank, score.depth)))
+        if replay.replayed_candidate.second_excess_ratio != ordered[1].excess_ratio or replay.replayed_candidate.second_empirical_rank != ordered[1].empirical_rank:
+            raise ValueError("Exp444 original-control scalar evidence changed")
         replays.append(replay)
     if tuple(item.source for item in replays) != tuple(source) or any(not item.matches_source or item.replayed_candidate.coordinate != item.source.coordinate or item.replayed_depths != item.source.original_depths for item in replays):
         raise ValueError("Exp444 original-control parity failed")
@@ -436,18 +445,7 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
     stable = tuple(item for item in results if item.lane == "stable_review")
     unstable = tuple(item for item in results if item.lane == "unstable_review")
     selection = StabilitySelectionAntigravity(source, stable, unstable)
-    # The production authority is a full replay.  The legacy branch keeps
-    # older isolated fixtures readable; it is never emitted by the source
-    # replay above and therefore cannot weaken a new publication.
-    if all(isinstance(row, Mapping) and "source" in row for row in authority.control_rows):
-        _parse_control_replays_antigravity(list(authority.control_rows), source)
-    else:
-        control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in authority.control_rows if isinstance(row.get("candidate"), Mapping))
-        if control_candidates != source or tuple(row.get("original_rank") for row in authority.control_rows) != tuple(range(1, 31)):
-            raise ValueError("Exp444 original-control parity failed")
-        for row, candidate in zip(authority.control_rows, source, strict=True):
-            if row.get("original_depths") != list(candidate.original_depths):
-                raise ValueError("Exp444 original-control depths changed")
+    _parse_control_replays_antigravity(list(authority.control_rows), source)
     result_rows = _result_rows_antigravity(results)
     stable_rows = _result_rows_antigravity(stable)
     unstable_rows = _result_rows_antigravity(unstable)
@@ -644,13 +642,7 @@ def inspect_publication_antigravity(publication_root: Path) -> FrozenPublication
         control = _read_canonical_json_bytes_antigravity(payloads[CONTROL_REPLAY_FILE_ANTIGRAVITY], "control replay")
         if set(control) != {"schema", "rows"} or control["schema"] != "exp444.control-replay.v1" or not isinstance(control["rows"], list):
             raise ValueError("Exp444 publication control replay is invalid")
-        if all(isinstance(row, Mapping) and "source" in row for row in control["rows"]):
-            _parse_control_replays_antigravity(control["rows"], selection.source)
-        else:
-            control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in control["rows"] if isinstance(row, Mapping) and isinstance(row.get("candidate"), Mapping))
-            expected_control_rows = [{"candidate": candidate.to_payload(), "original_depths": list(candidate.original_depths), "original_rank": candidate.original_rank} for candidate in selection.source]
-            if control_candidates != selection.source or control["rows"] != expected_control_rows:
-                raise ValueError("Exp444 publication original-control replay changed")
+        _parse_control_replays_antigravity(control["rows"], selection.source)
         audit = _read_canonical_json_bytes_antigravity(payloads[SOURCE_AUDIT_FILE_ANTIGRAVITY], "source audit")
         if set(audit) != {"schema", "source_hashes", "source_candidate_count", "dataset_count", "label_access_count"} or audit["schema"] != "exp444.source-audit.v1" or audit["source_candidate_count"] != 30 or audit["dataset_count"] != 1117 or audit["label_access_count"] != 0 or not isinstance(audit["source_hashes"], Mapping) or not audit["source_hashes"]:
             raise ValueError("Exp444 publication source audit is invalid")

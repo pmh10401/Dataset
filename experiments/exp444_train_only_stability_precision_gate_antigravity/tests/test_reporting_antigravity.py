@@ -20,6 +20,10 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.contract
     SourceCandidateAntigravity,
     StabilityViewAntigravity,
 )
+from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.contracts_antigravity import (
+    DepthScoreAntigravity as Exp440DepthScoreAntigravity,
+    ProvisionalCandidateAntigravity,
+)
 
 
 class Exp444ReportingAntigravityTests(unittest.TestCase):
@@ -77,9 +81,18 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
 
     def _published_antigravity(self, directory: str):
         attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
-        authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+        authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
         with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
             return reporting.publish_prediction_antigravity(attempt)
+
+    @staticmethod
+    def _full_controls_antigravity(inputs: tuple[CandidateInputAntigravity, ...]) -> tuple[dict[str, object], ...]:
+        rows = []
+        for item in inputs:
+            scores = (Exp440DepthScoreAntigravity(1, 2.0, 1.0, True, 2.0, 0.5), Exp440DepthScoreAntigravity(2, 2.0, 1.0, True, 2.0, 0.5))
+            candidate = ProvisionalCandidateAntigravity(item.candidate.dataset, item.candidate.instance_index, item.candidate.raw_length, (1, 2), 2, 2.0, 0.5, scores)
+            rows.append({"source": item.candidate.to_payload(), "depth_scores": [score.to_payload() for score in scores], "replayed_depths": [1, 2], "replayed_candidate": candidate.to_payload(), "matches_source": True, "replayed_rank": item.candidate.original_rank})
+        return tuple(rows)
 
     @staticmethod
     def _regenerate_publication_hashes_antigravity(frozen, leaf_name: str, leaf_payload: bytes) -> None:
@@ -96,7 +109,7 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
                 tuple(item.candidate for item in inputs),
                 tuple({"dataset": f"Summary_{index:04d}", "candidate_count": 0} for index in range(1117)),
                 {"database": "a" * 64, "selection": "b" * 64},
-                tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs),
+                self._full_controls_antigravity(inputs),
             )
             with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
                 frozen = reporting.publish_prediction_antigravity(attempt)
@@ -122,7 +135,7 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
                 tuple(item.candidate for item in inputs),
                 tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)),
                 {"database": "a" * 64},
-                tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs),
+                self._full_controls_antigravity(inputs),
             )
             with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
                 frozen = reporting.publish_prediction_antigravity(attempt)
@@ -134,7 +147,7 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
     def test_runtime_leaf_captures_every_terminal_authority_surface_antigravity(self) -> None:
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_runtime_antigravity_") as directory:
             attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
-            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
             with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
                 frozen = reporting.publish_prediction_antigravity(attempt)
             runtime_leaf = __import__("json").loads((frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY).read_text())
@@ -144,7 +157,7 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
         """A second name for a leaf must not become a mutable inspection authority."""
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_hardlink_antigravity_") as directory:
             attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
-            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
             with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
                 frozen = reporting.publish_prediction_antigravity(attempt)
             leaf = frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY
@@ -157,7 +170,7 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
         """A valid publication is inspected from its frozen leaves before any live authority."""
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_reentry_antigravity_") as directory:
             attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
-            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
             with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
                 reporting.publish_prediction_antigravity(attempt)
             with (
@@ -171,7 +184,7 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
         """Replacing a name after all leaf descriptors are pinned must invalidate inspection."""
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_replace_antigravity_") as directory:
             attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
-            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
             with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
                 frozen = reporting.publish_prediction_antigravity(attempt)
             def replace_leaf(_root: Path) -> None:
@@ -210,6 +223,17 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
             frozen = self._published_antigravity(directory)
             payload = __import__("json").loads((frozen.publication_root / reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY).read_text())
             payload["rows"][0]["original_rank"] = 30
+            self._regenerate_publication_hashes_antigravity(frozen, reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY, reporting.canonical_json_bytes_antigravity(payload))
+            with self.assertRaisesRegex(ValueError, "original-control"):
+                reporting.inspect_publication_antigravity(frozen.publication_root)
+
+    def test_inspection_rejects_top_level_control_score_contradiction_antigravity(self) -> None:
+        """Top-level replay evidence cannot disagree with the nested Exp440 candidate."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_control_score_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payload = __import__("json").loads((frozen.publication_root / reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY).read_text())
+            payload["rows"][0]["depth_scores"][0]["score"] = 100.0
+            payload["rows"][0]["depth_scores"][0]["excess_ratio"] = 100.0
             self._regenerate_publication_hashes_antigravity(frozen, reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY, reporting.canonical_json_bytes_antigravity(payload))
             with self.assertRaisesRegex(ValueError, "original-control"):
                 reporting.inspect_publication_antigravity(frozen.publication_root)
