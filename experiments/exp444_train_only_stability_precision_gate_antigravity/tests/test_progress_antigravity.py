@@ -97,7 +97,101 @@ def _committed_success_fixture_antigravity(attempt: Path):
     }
 
 
+def _committed_candidate_fixture_antigravity(attempt: Path, sequence: int):
+    """Build a live exact-next candidate state for sequence zero or one."""
+    from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import (
+        Exp444CheckpointStoreAntigravity,
+        ProcessIdentityAntigravity,
+    )
+    from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import (
+        ProgressWriterAntigravity,
+    )
+
+    process = ProcessIdentityAntigravity(44_602, f"candidate-recovery-{sequence}")
+    context = CheckpointContextAntigravity(
+        FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+        scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
+        30, FROZEN_CONFIG.cpu_workers, FROZEN_CONFIG.inner_threads, "b" * 40,
+    )
+    checkpoint = attempt / "checkpoint_antigravity"
+    store = Exp444CheckpointStoreAntigravity.create(checkpoint, context, process)
+    writer = ProgressWriterAntigravity.create(
+        attempt, total=30, process=process,
+        checkpoint_path=checkpoint / "state_antigravity.json",
+    )
+
+    def result(index: int) -> CandidateStabilityResultAntigravity:
+        candidate = SourceCandidateAntigravity(f"Live_{index}", index, 16, (1, 2), index + 1)
+        scores = (
+            DepthViewScoreAntigravity(1, 2.0, 1.0, True, 2.0, 0.5),
+            DepthViewScoreAntigravity(2, 2.0, 1.0, True, 2.0, 0.5),
+        )
+        view = StabilityViewAntigravity(
+            OmissionMaskAntigravity(0, (0,), hashlib.sha256(f"live-{index}".encode()).hexdigest()),
+            (1, 2, 3, 4), scores, (1, 2), True,
+        )
+        return CandidateStabilityResultAntigravity(candidate, (view,), 1, 1, "stable_review")
+
+    for index in range(sequence):
+        writer.start_candidate_antigravity(f"Live_{index}", index, train_count=4, test_count=1, raw_length=16)
+        store.commit_antigravity(index, result(index))
+        writer.complete_candidate_antigravity()
+    writer.start_candidate_antigravity(f"Live_{sequence}", sequence, train_count=4, test_count=1, raw_length=16)
+    store.commit_antigravity(sequence, result(sequence))
+    return writer, store.committed_prefix_authority_antigravity(sequence), {
+        "train_count": 4, "test_count": 1, "test_rows": 1,
+        "raw_length": 16, "target_length": 16,
+    }
+
+
 class Exp444ProgressAntigravityTests(unittest.TestCase):
+    def test_exp445_committed_recovery_rejects_boolean_current_candidate_index_antigravity(self) -> None:
+        """JSON booleans are never valid exact candidate indices, including 0/1 equality traps."""
+        for sequence, forged in ((0, False), (1, True)):
+            with self.subTest(sequence=sequence), tempfile.TemporaryDirectory(prefix="exp445_boolean_index_antigravity_") as directory:
+                attempt = Path(directory) / "attempt_0000_antigravity"; attempt.mkdir()
+                writer, authority, dimensions = _committed_candidate_fixture_antigravity(attempt, sequence)
+                progress_path = attempt / "progress_antigravity.json"
+                payload = json.loads(progress_path.read_text())
+                payload["current_candidate_index"] = forged
+                progress_path.write_bytes(canonical_json_bytes_antigravity(payload))
+                with self.assertRaisesRegex(ValueError, "recovery authority"):
+                    writer.reconcile_committed_success_antigravity(
+                        authority, dataset=f"Live_{sequence}", dimensions=dimensions,
+                    )
+
+    def test_exp445_preexisting_log_failure_marker_blocks_clean_success_antigravity(self) -> None:
+        """A pre-existing regular file or symlink is not trusted as this run's create-only marker."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        for kind in ("regular", "symlink"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory(prefix="exp445_existing_marker_antigravity_") as directory:
+                attempt = Path(directory) / "attempt_0000_antigravity"; attempt.mkdir()
+                writer = ProgressWriterAntigravity.create(
+                    attempt, total=1, pid=44_604,
+                    _exp445_diagnostic_log_failures_antigravity=True,
+                )
+                marker = attempt / "log_failure_antigravity.json"
+                if kind == "regular":
+                    marker.write_bytes(canonical_json_bytes_antigravity({"forged": True}))
+                    before = marker.read_bytes()
+                else:
+                    target = attempt / "marker_target_antigravity.json"
+                    target.write_text("target\n")
+                    marker.symlink_to(target)
+                    before = target.read_bytes()
+                original_event = ProgressWriterAntigravity._append_event_antigravity
+                def one_start_fault(instance, event, stage, extra=None):
+                    if event == "candidate_start":
+                        raise OSError("preexisting marker append fault")
+                    return original_event(instance, event, stage, extra)
+                with mock.patch.object(ProgressWriterAntigravity, "_append_event_antigravity", new=one_start_fault):
+                    writer.start_candidate_antigravity("Marker", 0, train_count=5, test_count=1, raw_length=16)
+                    writer.complete_candidate_antigravity()
+                    writer.close_antigravity("complete")
+                self.assertTrue(writer.log_failure_blocks_success_antigravity)
+                self.assertEqual((marker.read_bytes() if kind == "regular" else target.read_bytes()), before)
+
     def test_exp445_committed_recovery_rejects_forged_official_history_antigravity(self) -> None:
         """A durable prefix fixes all Exp445 progress counters and candidate dimensions."""
         mutations = (

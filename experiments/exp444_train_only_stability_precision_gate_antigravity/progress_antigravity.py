@@ -357,6 +357,9 @@ class ProgressWriterAntigravity:
             self._terminal_log_failure_antigravity = self._terminal_log_failure_antigravity or terminal
             marker = self.attempt_path / "log_failure_antigravity.json"
             if marker.exists() or marker.is_symlink():
+                # A pre-existing pathname was not created by this append
+                # failure. Never trust or replace it as Exp445 evidence.
+                self._unrecorded_log_failure_antigravity = True
                 return
             try:
                 write_create_only_antigravity(
@@ -581,6 +584,7 @@ class ProgressWriterAntigravity:
         if before:
             if (
                 persisted["stage"] != "candidate" or persisted["current_dataset"] != dataset
+                or type(persisted["current_candidate_index"]) is not int
                 or persisted["current_candidate_index"] != sequence
                 or any(persisted[name] != dimensions[name] for name in dimensions)
                 or any(persisted[name] is not None for name in ("current_view", "view_count", "excluded_count"))
