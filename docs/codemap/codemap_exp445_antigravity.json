@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T22:59:56Z",
-  "generated_from_commit": "3dc3c8c86a45bfb296b0d441129b8dca02086345",
+  "generated_at": "2026-08-10T23:12:45Z",
+  "generated_from_commit": "c8a0ad351d701b11df69fac66bd7c95284e644be",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -5172,7 +5172,7 @@
       "boundary": "Exp445 fixed operator authority",
       "layer": 2,
       "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity",
-      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. The Exp445 new-only facade uses verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before final success. Committed-success recovery receives only an Exp444 checkpoint-store descriptor-pinned immutable prefix and accepts an active progress state only when current_candidate_index is an exact int equal to the sequence (JSON booleans never qualify). For Exp445 only, diagnostic append faults preserve aligned inactive core authority; a terminal append fault, failed marker creation, or any pre-existing marker/symlink at the marker pathname irreversibly blocks a clean returned success without replacing the existing path. Task 6 publication stays byte-identical. Task 7 exposes only four fixed commands: readiness/new validate one exact clean reviewed commit; inspect reads only the fixed Exp445 publication; evaluate double-inspects it before lazy importing the profile-aware evaluator. Inspection keeps SQLite and evaluator modules unloaded; completed evaluation is a source-free and label-free replay.",
+      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. The Exp445 new-only facade uses verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before final success. Committed-success recovery receives only an Exp444 checkpoint-store descriptor-pinned immutable prefix and accepts an active progress state only when current_candidate_index is an exact int equal to the sequence (JSON booleans never qualify). For Exp445 only, diagnostic append faults preserve aligned inactive core authority; a terminal append fault, failed marker creation, or any pre-existing marker/symlink at the marker pathname irreversibly blocks a clean returned success without replacing the existing path. Task 6 publication stays byte-identical. Its lifecycle private patch seam resolves reporting only when publication is actually called, so fixed inspect remains source-free and SQLite-free. Task 7 exposes only four fixed commands: readiness/new validate one exact clean reviewed commit; inspect reads only the fixed Exp445 publication; evaluate double-inspects it before lazy importing the profile-aware evaluator. Inspection keeps SQLite and evaluator modules unloaded; completed evaluation is a source-free and label-free replay.",
       "entrypoints": [
         "verify_exp444_predecessor_antigravity",
         "Exp444PredecessorAuthorityAntigravity",
@@ -5344,6 +5344,10 @@
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "def test_complete_exp445_evaluation_replays_without_labels_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/lifecycle_antigravity.py",
+          "symbol": "def _publish_exp445_prediction_antigravity"
         }
       ]
     }
