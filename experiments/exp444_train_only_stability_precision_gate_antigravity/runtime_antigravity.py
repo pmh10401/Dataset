@@ -719,29 +719,34 @@ def _execute_runtime_antigravity(
             )
         except BaseException as setup_error:
             if profile is EXP445_PROFILE_ANTIGRAVITY and attempt is not None:
-                _write_setup_failure_antigravity(attempt, setup_error)
                 counters: Mapping[str, int] | None = None
-                if store is not None and store.status_antigravity not in {"complete", "error"}:
-                    store.commit_error_antigravity(0, setup_error)
-                    counters = {
-                        "completed": 1, "imported": 0, "recomputed": 1,
-                        "success": 0, "abstention": 0, "error": 1,
-                    }
-                if writer is not None:
-                    writer.close_antigravity("error", str(setup_error) or type(setup_error).__name__)
-                else:
-                    try:
+                try:
+                    _write_setup_failure_antigravity(attempt, setup_error)
+                except BaseException:
+                    pass
+                try:
+                    if store is not None and store.status_antigravity not in {"complete", "error"}:
+                        store.commit_error_antigravity(0, setup_error)
+                        counters = {
+                            "completed": 1, "imported": 0, "recomputed": 1,
+                            "success": 0, "abstention": 0, "error": 1,
+                        }
+                except BaseException:
+                    pass
+                try:
+                    if writer is not None:
+                        writer.close_antigravity("error", str(setup_error) or type(setup_error).__name__)
+                    else:
                         ProgressWriterAntigravity.close_setup_failure_antigravity(
                             attempt, total=FROZEN_CONFIG.source_candidate_count,
                             process=process,
                             checkpoint_path=checkpoint_root / "state_antigravity.json",
                             error=setup_error, counters=counters,
                         )
-                    except BaseException:
-                        # The create-only setup failure remains the unambiguous
-                        # terminal authority when a broken filesystem also
-                        # prevents the mutable progress/PID closeout.
-                        pass
+                except BaseException:
+                    # The original setup exception remains authoritative even
+                    # when an independent evidence channel also fails.
+                    pass
             raise
         if attempt is None or store is None or writer is None:
             raise AssertionError("Exp444 new runtime setup is unavailable")
@@ -888,6 +893,9 @@ def _execute_runtime_antigravity(
                 writer.reconcile_committed_success_antigravity(
                     sequence,
                     record_sha256=store.record_sha256_prefix_antigravity[-1],
+                    checkpoint_root=checkpoint_root,
+                    dataset=candidate.dataset,
+                    dimensions=_dimensions_antigravity(candidate),
                     abstention=result.lane == "unstable_review",
                 )
                 if sequence == FROZEN_CONFIG.source_candidate_count - 1:

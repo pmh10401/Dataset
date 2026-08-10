@@ -437,6 +437,9 @@ class ProgressWriterAntigravity:
         sequence: int,
         *,
         record_sha256: str,
+        checkpoint_root: Path,
+        dataset: str,
+        dimensions: Mapping[str, int],
         abstention: bool = False,
     ) -> None:
         """Advance progress once for an already-durable result after its normal write failed.
@@ -450,23 +453,117 @@ class ProgressWriterAntigravity:
             raise ValueError("progress committed sequence is invalid")
         if type(record_sha256) is not str or _SHA256_ANTIGRAVITY.fullmatch(record_sha256) is None:
             raise ValueError("progress committed record hash is invalid")
-        persisted = _read_canonical_antigravity(self.progress_path)
+        if type(dataset) is not str or not dataset:
+            raise ValueError("progress committed dataset is invalid")
+        if not isinstance(dimensions, Mapping) or set(dimensions) != {
+            "train_count", "test_count", "test_rows", "raw_length", "target_length",
+        }:
+            raise ValueError("progress committed dimensions are invalid")
+        for name, value in dimensions.items():
+            _exact_nonnegative_antigravity(value, name)
+        checkpoint = Path(checkpoint_root)
+        state_path = checkpoint / "state_antigravity.json"
+        record_path = checkpoint / "records_antigravity" / f"{sequence:04d}_record_antigravity.json"
+        if checkpoint.is_symlink() or not checkpoint.is_dir() or record_path.is_symlink() or not record_path.is_file():
+            raise ValueError("progress committed checkpoint authority is invalid")
+        try:
+            record_bytes = record_path.read_bytes()
+            record_payload = json.loads(record_bytes)
+            state = json.loads(state_path.read_text())
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError("progress committed checkpoint authority is invalid") from error
         if (
-            persisted.get("active") is not True
-            or persisted.get("completed") != sequence
-            or persisted.get("current_candidate_index") != sequence
-            or persisted.get("pid") != self.process.pid
-            or persisted.get("start_identity") != self.process.start_identity
+            not isinstance(record_payload, Mapping)
+            or canonical_json_bytes_antigravity(record_payload) != record_bytes
+            or set(record_payload) != {"sequence", "result"}
+            or record_payload["sequence"] != sequence
+            or not isinstance(record_payload["result"], Mapping)
+            or hashlib.sha256(record_bytes).hexdigest() != record_sha256
+            or not isinstance(state, Mapping)
+            or canonical_json_bytes_antigravity(state) != state_path.read_bytes()
+            or state.get("total_units") != self.total
+            or type(state.get("completed_units")) is not int
+            or state["completed_units"] < sequence + 1
+            or state.get("status") not in {"running", "complete"}
+            or not isinstance(state.get("process"), Mapping)
+            or dict(state["process"]) != self.process.to_payload_antigravity()
+            or not isinstance(state.get("record_sha256_prefix"), list)
+            or len(state["record_sha256_prefix"]) < sequence + 1
+            or state["record_sha256_prefix"][sequence] != record_sha256
+        ):
+            raise ValueError("progress committed checkpoint authority is invalid")
+        prefix = state["record_sha256_prefix"]
+        if (
+            any(type(item) is not str or _SHA256_ANTIGRAVITY.fullmatch(item) is None for item in prefix)
+            or state.get("payload_sha256") != hashlib.sha256(canonical_json_bytes_antigravity(prefix)).hexdigest()
+        ):
+            raise ValueError("progress committed checkpoint authority is invalid")
+        persisted = _read_canonical_antigravity(self.progress_path)
+        if set(persisted) != _PROGRESS_KEYS:
+            raise ValueError("progress committed recovery authority is invalid")
+        if (
+            persisted["pid"] != self.process.pid or persisted["start_identity"] != self.process.start_identity
+            or type(persisted["pid"]) is not int or persisted["pid"] < 1
+            or type(persisted["start_identity"]) is not str or not persisted["start_identity"]
+            or type(persisted["active"]) is not bool or persisted["active"] is not True
+            or persisted["backend"] != "cpu" or persisted["total"] != self.total
+            or persisted["checkpoint"] != self.checkpoint_path or persisted["latest_error"] is not None
+            or persisted["stage"] not in {"candidate", "running"}
         ):
             raise ValueError("progress committed recovery authority is invalid")
-        self._counters = {name: int(persisted[name]) for name in (
+        counters = {name: persisted[name] for name in (
             "completed", "imported", "recomputed", "success", "abstention", "error",
         )}
+        if (
+            any(type(value) is not int or value < 0 for value in counters.values())
+            or counters["imported"] + counters["recomputed"] != counters["completed"]
+            or counters["success"] + counters["error"] != counters["completed"]
+            or counters["abstention"] > counters["success"]
+        ):
+            raise ValueError("progress committed recovery authority is invalid")
+        for name in ("throughput", "elapsed_seconds", "eta_seconds"):
+            value = persisted[name]
+            if type(value) not in (int, float) or not math.isfinite(float(value)) or float(value) < 0:
+                raise ValueError("progress committed recovery authority is invalid")
+        if type(persisted["heartbeat"]) is not str or not persisted["heartbeat"]:
+            raise ValueError("progress committed recovery authority is invalid")
+        try:
+            datetime.fromisoformat(persisted["heartbeat"].replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("progress committed recovery authority is invalid") from error
+        before = counters["completed"] == sequence
+        after = counters["completed"] == sequence + 1
+        if not before and not after:
+            raise ValueError("progress committed recovery authority is invalid")
+        if before:
+            if (
+                persisted["stage"] != "candidate" or persisted["current_dataset"] != dataset
+                or persisted["current_candidate_index"] != sequence
+                or any(persisted[name] != dimensions[name] for name in dimensions)
+                or any(persisted[name] is not None for name in ("current_view", "view_count", "excluded_count"))
+            ):
+                raise ValueError("progress committed recovery authority is invalid")
+        else:
+            if (
+                persisted["stage"] != "running"
+                or any(persisted[name] is not None for name in (
+                    "current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count",
+                ))
+            ):
+                raise ValueError("progress committed recovery authority is invalid")
+        self._counters = counters
+        self._current_dataset = persisted["current_dataset"]
+        self._current_candidate_index = persisted["current_candidate_index"]
+        self._current_view = persisted["current_view"]
+        self._view_count = persisted["view_count"]
+        self._excluded_count = persisted["excluded_count"]
+        self._stage = persisted["stage"]
+        if after:
+            return
         self._counters["completed"] += 1
         self._counters["recomputed"] += 1
         self._counters["abstention"] += int(abstention)
         self._counters["success"] += 1
-        dataset = persisted["current_dataset"]
         self._current_dataset = None
         self._current_candidate_index = None
         self._current_view = None

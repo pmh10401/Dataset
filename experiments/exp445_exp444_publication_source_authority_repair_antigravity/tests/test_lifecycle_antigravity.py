@@ -226,6 +226,35 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
             progress = json.loads((root / "attempts_antigravity/attempt_0000_antigravity/progress_antigravity.json").read_text())
             self.assertEqual((progress["stage"], progress["completed"], progress["error"]), ("complete", 30, 0))
 
+    def test_final_event_or_text_fault_after_progress_json_keeps_complete_authority_antigravity(self) -> None:
+        """A post-JSON append fault must not downgrade an already accepted final prefix."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        for kind in ("event", "text"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory(prefix=f"exp445_{kind}_after_json_antigravity_") as directory:
+                inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs)
+                root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+                def ordered(active, *, commit, progress, **_kwargs):
+                    for index, item in enumerate(active): progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item))
+                    return tuple(_result_antigravity(item) for item in active)
+                original_event = ProgressWriterAntigravity._append_event_antigravity; original_text = ProgressWriterAntigravity._append_text_antigravity
+                def event_fault(writer, event, stage, extra=None):
+                    if event == "candidate_complete" and writer._counters["completed"] == 30: raise OSError("final event append fault")
+                    return original_event(writer, event, stage, extra)
+                def text_fault(writer, line):
+                    if line.startswith("후보 완료") and "완료=30/30" in line: raise OSError("final text append fault")
+                    return original_text(writer, line)
+                with (
+                    mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99200, f"exp445-{kind}")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=ordered), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch.object(ProgressWriterAntigravity, "_append_event_antigravity", new=event_fault if kind == "event" else original_event), mock.patch.object(ProgressWriterAntigravity, "_append_text_antigravity", new=text_fault if kind == "text" else original_text), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+                ):
+                    outcome = lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+                self.assertEqual((outcome.status, outcome.completed_count), ("complete", 30))
+                progress = json.loads((root / "attempts_antigravity/attempt_0000_antigravity/progress_antigravity.json").read_text())
+                state = json.loads((root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/state_antigravity.json").read_text())
+                self.assertEqual((progress["stage"], progress["completed"], state["status"], state["completed_units"]), ("complete", 30, "complete", 30))
+
     def test_nonfinal_wrapper_mismatch_writes_only_exact_next_error_record_antigravity(self) -> None:
         """Writing a successful mismatching result before rejecting it would invalidate failure evidence."""
         from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
@@ -274,6 +303,27 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
             self.assertEqual(json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())["status"], "error")
             progress = json.loads((attempt / "progress_antigravity.json").read_text())
             self.assertEqual((progress["stage"], progress["completed"], progress["error"]), ("error", 30, 1))
+
+    def test_fresh_predecessor_tuple_mutation_blocks_record_twenty_nine_antigravity(self) -> None:
+        """A valid initial predecessor cannot authorize a changed fresh final tuple."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+
+        inputs = _inputs_antigravity(); initial = self._authority_antigravity(inputs); changed = list(initial.record_sha256_prefix); changed[3] = "0" * 64
+        fresh = type(initial)(initial.reviewed_commit, initial.attempt_root, tuple(changed), initial.record_prefix_payload_sha256)
+        with tempfile.TemporaryDirectory(prefix="exp445_fresh_tuple_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"; profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            def ordered(active, *, commit, progress, **_kwargs):
+                for index, item in enumerate(active): progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item))
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99201, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=ordered), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", side_effect=(initial, fresh)), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(ValueError, "authority changed"):
+                    lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+            records = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/records_antigravity"
+            final = json.loads((records / "0029_record_antigravity.json").read_text())
+            self.assertEqual((final["status"], final["result"]), ("error", None))
+            self.assertFalse((root / "attempts_antigravity/attempt_0000_antigravity/publication_antigravity").exists())
 
 
 if __name__ == "__main__":
