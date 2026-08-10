@@ -128,6 +128,8 @@ class FrozenEvaluationAntigravityTests(unittest.TestCase):
             connection.commit(); connection.close()
             digest = sha256(database.read_bytes()).hexdigest()
             with evaluation._open_verified_labels_antigravity(database, digest, ("A",)) as labels:
+                self.assertFalse(hasattr(labels, "_connection"))
+                self.assertFalse(hasattr(labels, "__dict__"))
                 self.assertEqual(labels.labels_for_dataset_antigravity("A"), ((0, 0), (1, 1)))
                 self.assertFalse(hasattr(labels, "execute_for_test_antigravity"))
                 with self.assertRaisesRegex(ValueError, "order"):

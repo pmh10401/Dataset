@@ -126,22 +126,8 @@ class _FrozenDependenciesAntigravity:
 
 
 class _SqliteLabelsAntigravity:
-    def __init__(self, connection: object, dataset_order: tuple[str, ...]) -> None:
-        if not dataset_order or any(type(dataset) is not str or not dataset for dataset in dataset_order) or len(set(dataset_order)) != len(dataset_order):
-            raise ValueError("label dataset order is invalid")
-        self._connection, self._dataset_order, self._next = connection, dataset_order, 0
-
-    def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
-        if self._next >= len(self._dataset_order) or dataset != self._dataset_order[self._next]:
-            raise ValueError("label query order is invalid")
-        cursor = self._connection.execute("""SELECT i.instance_index, i.label
-FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id
-WHERE d.name = ? AND i.split = 'TEST' ORDER BY i.instance_index""", (dataset,))
-        self._next += 1
-        return tuple(cursor.fetchall())
-
-    def close_antigravity(self) -> None:
-        self._connection.close()
+    """Zero-state facade: the verified connection remains closure-owned."""
+    __slots__ = ()
 
 
 @contextmanager
@@ -158,8 +144,30 @@ def _open_verified_labels_antigravity(database: Path, expected_sha256: str, data
                 return sqlite3.SQLITE_OK
             return sqlite3.SQLITE_DENY
         connection.set_authorizer(authorizer)
+        if not dataset_order or any(type(dataset) is not str or not dataset for dataset in dataset_order) or len(set(dataset_order)) != len(dataset_order):
+            raise ValueError("label dataset order is invalid")
+        next_index = 0
+        closed = False
+        def query_next(dataset: str) -> tuple[tuple[int, int], ...]:
+            nonlocal next_index
+            if closed or next_index >= len(dataset_order) or dataset != dataset_order[next_index]:
+                raise ValueError("label query order is invalid")
+            cursor = connection.execute("""SELECT i.instance_index, i.label
+FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id
+WHERE d.name = ? AND i.split = 'TEST' ORDER BY i.instance_index""", (dataset,))
+            next_index += 1
+            return tuple(cursor.fetchall())
+        def close_facade() -> None:
+            nonlocal closed
+            closed = True
+        class Facade(_SqliteLabelsAntigravity):
+            __slots__ = ()
+            def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
+                return query_next(dataset)
+            def close_antigravity(self) -> None:
+                close_facade()
         try:
-            yield _SqliteLabelsAntigravity(connection, dataset_order)
+            yield Facade()
         finally:
             connection.set_authorizer(None)
 
@@ -341,10 +349,14 @@ def _result_from_payloads_antigravity(payloads: Mapping[str, bytes], *, producti
         raise ValueError("evaluation summary is invalid")
     metrics = payloads["dataset_metrics_antigravity.jsonl"].splitlines()
     rows = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in metrics]
-    if not all(isinstance(row, Mapping) for row in rows):
+    metric_keys = {"dataset", "baseline", "frozen_source", "stable", "unstable"}
+    if not all(isinstance(row, Mapping) and set(row) == metric_keys and type(row["dataset"]) is str and all(isinstance(value, list) and len(value) == 4 and all(type(item) is int and item >= 0 for item in value) for value in (row["baseline"], row["frozen_source"], row["stable"], row["unstable"])) for row in rows) or tuple(row["dataset"] for row in rows) != tuple(identity.get("dataset_order", ())):
         raise ValueError("evaluation metrics are invalid")
     transitions = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in payloads["candidate_transitions_antigravity.jsonl"].splitlines()]
-    if not all(isinstance(row, Mapping) for row in transitions):
+    transition_keys = {"dataset", "instance_index", "lane", "label", "baseline_predicted", "frozen_source_predicted", "stable_predicted", "unstable_predicted"}
+    source = tuple(tuple(value) for value in identity.get("source_order", ()))
+    expected_transition_order = tuple((dataset, index) for dataset in identity.get("dataset_order", ()) for name, index in sorted(source) if name == dataset)
+    if not all(isinstance(row, Mapping) and set(row) == transition_keys and type(row["dataset"]) is str and type(row["instance_index"]) is int and row["instance_index"] >= 0 and type(row["label"]) is int and row["label"] in (0, 1) and all(type(row[name]) is bool for name in ("baseline_predicted", "frozen_source_predicted", "stable_predicted", "unstable_predicted")) and row["frozen_source_predicted"] is True for row in transitions) or tuple((row["dataset"], row["instance_index"]) for row in transitions) != expected_transition_order:
         raise ValueError("evaluation transitions are invalid")
     _validate_prepublication_antigravity(identity, rows, transitions, attempts=len(rows), completions=len(rows), label_rows=sum(sum(row["baseline"]) for row in rows), production=production)
     reconstructed = _payloads_antigravity(identity, rows, transitions)
