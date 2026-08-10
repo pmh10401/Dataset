@@ -367,6 +367,45 @@ def _json_safe_evidence_antigravity(value: object) -> object:
     return repr(value)
 
 
+def _valid_mlx_versions_antigravity(payload: Mapping[str, object]) -> bool:
+    versions = payload.get("versions")
+    if not isinstance(versions, Mapping):
+        return False
+    mlx_version = versions.get("mlx")
+    mlx_metal_version = versions.get("mlx-metal")
+    invalid_markers = {"unknown", "unavailable"}
+    if any(
+        type(value) is not str
+        or not value.strip()
+        or value.strip().casefold() in invalid_markers
+        for value in (mlx_version, mlx_metal_version)
+    ):
+        return False
+    return payload.get("version") == mlx_version
+
+
+def _unavailable_mlx_provenance_antigravity(
+    versions: Mapping[str, str] | None,
+    device: str | None,
+) -> tuple[str, Mapping[str, str], str]:
+    measured = _runtime_versions_antigravity()
+    if isinstance(versions, Mapping):
+        measured.update(
+            {
+                key: value
+                for key, value in versions.items()
+                if type(key) is str and key and type(value) is str and value
+            }
+        )
+    measured.setdefault("mlx", "unknown")
+    measured.setdefault("mlx-metal", "unknown")
+    mlx_version = measured["mlx"]
+    if not mlx_version or mlx_version.casefold() == "unavailable":
+        mlx_version = "unknown"
+    device_label = device if type(device) is str and device else "unknown"
+    return mlx_version, measured, device_label
+
+
 def _run_passes(value: object, *, cpu_seconds: float, cpu_lanes: object) -> tuple[bool, str]:
     payload = _canonical_gate_payload_antigravity(value, cpu_seconds=cpu_seconds)
     backend = payload.get("backend")
@@ -397,6 +436,8 @@ def _run_passes(value: object, *, cpu_seconds: float, cpu_lanes: object) -> tupl
     device = payload.get("device")
     if type(version) is not str or not version or type(device) is not str or not device:
         reasons.append("device_provenance_missing")
+    if backend == "mlx" and not _valid_mlx_versions_antigravity(payload):
+        reasons.append("mlx_versions_provenance_missing_or_invalid")
     return not reasons, ";".join(reasons)
 
 
@@ -850,9 +891,15 @@ def benchmark_backends_antigravity(
     ]
     accelerated: list[BackendRunAntigravity] = []
 
+    mlx_versions: Mapping[str, str] = _runtime_versions_antigravity(
+        mlx="unknown",
+        **{"mlx-metal": "unknown"},
+    )
+    mlx_version = "unknown"
+    device_label = "unknown"
     try:
         mx, device, device_label, mlx_versions = _load_mlx_antigravity()
-        mlx_version = str(getattr(mx, "__version__", FROZEN_CONFIG.mlx_version))
+        mlx_version = str(getattr(mx, "__version__", "unknown"))
         mlx_run, mlx_payloads = _run_stage_antigravity(
             selected,
             score_distance_mlx_antigravity,
@@ -876,24 +923,29 @@ def benchmark_backends_antigravity(
             }
         )
     except BackendUnavailableAntigravity as error:
+        unavailable_version, unavailable_versions, unavailable_device = _unavailable_mlx_provenance_antigravity(
+            error.versions,
+            error.device,
+        )
         mlx_run = BackendRunAntigravity.unavailable(
             "mlx",
             str(error),
-            version=FROZEN_CONFIG.mlx_version,
-            versions=error.versions,
-            device=error.device,
+            version=unavailable_version,
+            versions=unavailable_versions,
+            device=unavailable_device,
             selection=selection,
         )
     except Exception as error:
+        unavailable_version, unavailable_versions, unavailable_device = _unavailable_mlx_provenance_antigravity(
+            mlx_versions,
+            device_label,
+        )
         mlx_run = BackendRunAntigravity.unavailable(
             "mlx",
             f"mlx_benchmark_failed:{type(error).__name__}:{error}",
-            version=FROZEN_CONFIG.mlx_version,
-            versions=_runtime_versions_antigravity(
-                mlx=FROZEN_CONFIG.mlx_version,
-                **{"mlx-metal": FROZEN_CONFIG.mlx_version},
-            ),
-            device="Apple M2 Max [Device(gpu, 0)]",
+            version=unavailable_version,
+            versions=unavailable_versions,
+            device=unavailable_device,
             selection=selection,
         )
     accelerated.append(mlx_run)
