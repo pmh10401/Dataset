@@ -148,6 +148,18 @@ class Exp444StabilityAntigravityTests(unittest.TestCase):
         restored = StabilityViewAntigravity.from_payload(view.to_payload())
         self.assertEqual(restored, view)
 
+    def test_copy_scores_rejects_nonempty_unsorted_depths_antigravity(self) -> None:
+        with self.assertRaisesRegex(ValueError, "sorted and unique"):
+            stability_module._copy_scores_antigravity(
+                (_depth_antigravity(2, True), _depth_antigravity(1, True))
+            )
+
+    def test_copy_scores_rejects_duplicate_depths_antigravity(self) -> None:
+        with self.assertRaisesRegex(ValueError, "sorted and unique"):
+            stability_module._copy_scores_antigravity(
+                (_depth_antigravity(1, True), _depth_antigravity(1, True))
+            )
+
     def test_empty_score_records_reject_survival_or_agreement_antigravity(self) -> None:
         mask = OmissionMaskAntigravity(13, (0,), "3" * 64)
         with self.assertRaisesRegex(ValueError, "empty view"):
