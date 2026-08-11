@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-12T00:00:00Z",
-  "generated_from_commit": "17f0a7018deeeafa581ea30daea0367f507a4591",
+  "generated_at": "2026-08-12T02:12:09+09:00",
+  "generated_from_commit": "854f91ca87a396ea716ee034493d0ec74c767b06",
   "scope": [
-    "Exp448 governance documents and research control only",
+    "Exp448 governance documents and Task2 controlled-fork implementation plan",
     "No Exp448 source module exists at this governance stage"
   ],
   "nodes": [
@@ -40,7 +40,7 @@
       "entrypoints": ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6"],
       "tests": ["future test_controlled_fork_differential_antigravity.py"],
       "constraints": ["Task 6 is gated by a clean candidate and fresh Sol ship.", "Any official nonzero permanently stops Exp448."],
-      "evidence": [{"path": "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md", "symbol": "### Task 6: One-shot official truth closeout and conditional dashboard"}]
+      "evidence": [{"path": "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md", "symbol": "## Task 6: One-shot official truth closeout and conditional dashboard"}]
     },
     {
       "id": "exp448_preregistration",
@@ -76,7 +76,7 @@
       "entrypoints": ["pending_candidate", "history"],
       "tests": [],
       "constraints": ["Exp448 cannot create a champion, pending candidate, or promotion at governance stage."],
-      "evidence": [{"path": "CHAMPION_LEDGER.json", "symbol": "design_approved_implementation_planned_not_promoted"}]
+      "evidence": [{"path": "CHAMPION_LEDGER.json", "symbol": "implementation_planned_task2_controlled_fork_not_promoted"}]
     }
   ],
   "edges": [
@@ -85,7 +85,7 @@
     {"from": "research_control", "to": "exp448_preregistration", "type": "reads", "evidence": {"path": "RESEARCH_STATE.json", "symbol": "EXP448_PREREGISTRATION_antigravity_KO.md"}},
     {"from": "research_control", "to": "exp448_runbook", "type": "reads", "evidence": {"path": "RESEARCH_STATE.json", "symbol": "EXP448_RUNBOOK_antigravity_KO.md"}},
     {"from": "research_control", "to": "exp448_implementation_report", "type": "reads", "evidence": {"path": "RESEARCH_STATE.json", "symbol": "EXP448_IMPLEMENTATION_REPORT_antigravity.md"}},
-    {"from": "exp448_plan", "to": "exp448_design", "type": "reads", "evidence": {"path": "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md", "symbol": "design SHA"}},
+    {"from": "exp448_plan", "to": "exp448_design", "type": "reads", "evidence": {"path": "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md", "symbol": "Approved design"}},
     {"from": "exp448_preregistration", "to": "exp447_failure_truth", "type": "reads", "evidence": {"path": "docs/EXP448_PREREGISTRATION_antigravity_KO.md", "symbol": "Exp447 failure truth commit"}},
     {"from": "exp448_runbook", "to": "exp447_failure_truth", "type": "reads", "evidence": {"path": "docs/EXP448_RUNBOOK_antigravity_KO.md", "symbol": "Exp447 command"}},
     {"from": "champion_ledger", "to": "research_control", "type": "reads", "evidence": {"path": "CHAMPION_LEDGER.json", "symbol": "Task2_controlled_fork_implementation"}}

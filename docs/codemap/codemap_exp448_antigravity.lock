@@ -1,7 +1,7 @@
 {
-  "current_commit": "17f0a7018deeeafa581ea30daea0367f507a4591",
+  "current_commit": "854f91ca87a396ea716ee034493d0ec74c767b06",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-12T00:00:00Z",
+  "generated_at": "2026-08-12T02:12:09+09:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -33,11 +33,11 @@
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "2c93de45f37862503e75d4a9d29f6d68be70903414c55d138a26654d0eeb395e",
+    "docs": "38969697bace65417d00eb23364f8b0e850e64ab31702d98ed1e80fc6befc8eb",
     "experiments": "0d3906c1591cb899283c2ed654acafce7151eafc5c800453a8c60c5a832817d8",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "root": "3d353bd4941450033f8055152413fa81f45cf824fb1aeacdffe37358814c2710",
+    "root": "b7561b25286baedcb4e176935e32bb5e2676c6641758b32834228e849905077d",
     "scratch": "b3b9311cbacfad6c0250d730958c6a66ac76d2af8ac9a339fb54a39fab90215b",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
