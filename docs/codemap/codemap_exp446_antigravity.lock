@@ -25,8 +25,8 @@
   "generated_at": "2026-08-11T09:00:00Z",
   "module_fingerprints": {
     ".superpowers": {
-      "fingerprint": "a5fcd0d5536e515d0b9c8a3fad86575c493b405b6d04ecf542cd0fbe70798b92",
-      "tracked_files": 45
+      "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
+      "tracked_files": 44
     },
     "docs": {
       "fingerprint": "3087d84d1a88e59925b036fb3dac19ac1f9f9af1cbae776d05a13641bb66e4c1",
