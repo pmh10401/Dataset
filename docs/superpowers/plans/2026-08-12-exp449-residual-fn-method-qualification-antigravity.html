@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp449 Residual FN Method Qualification Implementation Plan</title>
+<style>
+:root{color-scheme:light dark;--bg:#f7f8fa;--panel:#fff;--text:#172033;--muted:#5c667a;--line:#d9deea;--accent:#3157d5;--code:#f0f3f8} @media(prefers-color-scheme:dark){:root{--bg:#111522;--panel:#191f2d;--text:#edf1fa;--muted:#aeb8ca;--line:#343d51;--accent:#8ca7ff;--code:#222a3a}} *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} .layout{display:grid;grid-template-columns:minmax(210px,280px) minmax(0,920px);gap:28px;max-width:1260px;margin:auto;padding:28px} nav{position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px} nav strong{display:block;margin-bottom:10px} nav a{display:block;color:var(--muted);text-decoration:none;padding:3px 0} nav a:hover{color:var(--accent)} nav .h3{padding-left:14px;font-size:.92em} main{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:34px 42px;min-width:0} h1,h2,h3{line-height:1.25;scroll-margin-top:18px} h1{font-size:2rem;margin-top:0} h2{font-size:1.45rem;border-top:1px solid var(--line);padding-top:28px;margin-top:38px} h3{font-size:1.12rem;margin-top:28px} a{color:var(--accent)} table{width:100%;border-collapse:collapse;display:block;overflow:auto} th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;white-space:nowrap} th{background:var(--code)} pre{background:var(--code);padding:16px;border-radius:10px;overflow:auto;border:1px solid var(--line)} code{font-family:"SFMono-Regular",Consolas,monospace;font-size:.9em} :not(pre)>code{background:var(--code);padding:.12em .35em;border-radius:5px} blockquote{margin:18px 0;border-left:4px solid var(--accent);padding:4px 16px;color:var(--muted)} li{margin:.28em 0} input[type=checkbox]{margin-right:.45em} .meta{color:var(--muted);font-size:.88rem;margin-bottom:22px} @media(max-width:850px){.layout{display:block;padding:12px}nav{position:static;margin-bottom:12px}main{padding:24px 20px}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav aria-label="문서 목차"><strong>목차</strong><div id="toc"></div></nav>
+<main><div class="meta">Exp449 · self-contained HTML · 2026-08-12</div><article><h1>Exp449 Residual FN Method Qualification Implementation Plan</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> Build a single-use, TRAIN-only method-qualification experiment that evaluates fixed ROCKET/Hydra representations on the eight Exp448 residual-FN target families and qualifies a candidate only when global FN falls below 1,988 while global FP remains at or below 314.</p>
+<p><strong>Architecture:</strong> Exp449 descriptor-pins the immutable Exp448 result and source database, audits the fixed aeon 1.4.0 method surface, transforms TRAIN/TEST values without labels, applies one shared five-fold LocalGap score head, and freezes every candidate prediction before opening one ordered label session. A source-free replay validates the final publication, while a sanitized aggregate snapshot feeds the existing owner-only dashboard without coupling dashboard availability to scientific execution.</p>
+<p><strong>Tech Stack:</strong> Python 3.14.6; aeon 1.4.0; NumPy 2.3.5; scikit-learn 1.7.2; SQLite read-only descriptor boundary; <code>unittest</code>; canonical JSON/JSONL; owner-only Sites dashboard; git; versioned HTML/JSON/lock code map.</p>
+<h2>Global Constraints</h2>
+<ul>
+<li>The approved design is <code>docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html</code>, SHA256 <code>7008691128b249447127951440bfbdf91e4c0bb3b2a837f5b4956d51168d1f23</code>.</li>
+<li>Experiment identity is <code>Exp449</code>; schema is <code>exp449</code>; kind is <code>residual_fn_method_qualification</code>; run identity is <code>exp449-residual-fn-method-qualification-antigravity-20260812</code>.</li>
+<li>Run root is <code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812</code>; fixed failure audit path is <code>/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json</code>.</li>
+<li>Every newly created filename contains <code>antigravity</code>; do not create <code>__init__.py</code>.</li>
+<li>Every Exp449 design, plan, preregistration, runbook, and implementation report is a self-contained <code>.html</code> document. Do not create Markdown duplicates.</li>
+<li>Exp448 remains byte-immutable. Never rerun or modify its official lifecycle, root, artifacts, truth, or published dashboard payload.</li>
+<li>Baseline is exact Exp448 stable-26: TP 1,930; FP 314; FN 1,988; TN 191,668; F1 <code>0.6264199935</code>.</li>
+<li>A candidate qualifies only when global FN is below 1,988, global FP is at most 314, global F1 is at least <code>0.6264199935</code>, and target-family FN decreases.</li>
+<li>The target families and candidate pairs are exact and ordered as specified in the approved design. Do not add a method, family, seed, alpha, threshold, or hyperparameter after observing TEST results.</li>
+<li>Performance candidates are exactly <code>minirocket_local_gap</code>, <code>multirocket_local_gap</code>, <code>hydra_local_gap</code>, and <code>hydra_multirocket_local_gap</code>. Classifier-only literature methods remain compatibility evidence, not anomaly-score candidates.</li>
+<li>Calibration is exact: seeds <code>(20260721, 20261721)</code>, elementwise median TRAIN-OOF and TEST scores across seeds, empirical upper-tail p-values, alpha <code>0.005</code>, and candidate condition <code>p &lt;= 0.005</code>. No other alpha is a performance candidate.</li>
+<li>Transform settings are exact: MiniROCKET 4,096 requested kernels; MultiROCKET 1,024 requested kernels, 32 maximum dilations, four features per kernel, no normalization; Hydra eight kernels and 64 groups. Hydra+MultiROCKET uses the same Hydra and MultiROCKET settings.</li>
+<li>Prediction is label-free. Freeze all candidate predictions and their inventory before the sole ordered TEST-label session.</li>
+<li>The sole label session queries exactly the 48 frozen target datasets in Exp448 order and consumes exactly 72,300 rows. The remaining 1,069 datasets are represented only by immutable Exp448 aggregate confusion.</li>
+<li>Official commands are single-use and ordered: readiness, predict, evaluate, inspect. Any nonzero command stops Exp449 permanently; do not retry, resume, or override.</li>
+<li>The fixed prediction interpreter is <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>. Do not alter its package set.</li>
+<li>The aeon environment has no MLX or mlx-metal. Record the failed availability gate and retain the official CPU transformers; do not install packages or rewrite them for GPU.</li>
+<li>CPU uses at most seven outer dataset workers and every transformer uses <code>n_jobs=1</code>. Never run duplicate heavy processes.</li>
+<li>Dashboard data is aggregate-only. Never export raw TEST labels, instance indices, internal dataset names/lists, per-instance rows, hashes, local paths, logs, database details, checkpoints, or secrets.</li>
+<li>Dashboard publication failure changes no scientific artifact and authorizes no experiment rerun.</li>
+<li>At every code-changing task start, compare the current tree with the versioned map lock and answer callers, effects, and tests. When the boundary changes, commit <code>codemap_exp449_antigravity.html/json/lock</code> with the same task.</li>
+<li>TDD is mandatory: observe the focused RED, implement the minimum GREEN, rerun focused tests, run specified predecessor regressions, validate the map, then commit.</li>
+<li>A fresh commitment-boundary review is required after every bounded task. A fresh final review must return <code>ship</code> on the exact clean candidate before official commands.</li>
+</ul>
+<hr>
+<h2>File Structure</h2>
+<h3>Governance and map</h3>
+<ul>
+<li><code>docs/EXP449_PREREGISTRATION_antigravity_KO.html</code>: frozen method matrix, thresholds, seeds, label boundary, and no-promotion contract.</li>
+<li><code>docs/EXP449_RUNBOOK_antigravity_KO.html</code>: exact commands, stop rules, dashboard checkpoints, and recovery prohibition.</li>
+<li><code>docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html</code>: append-only implementation and official evidence summary.</li>
+<li><code>docs/codemap/codemap_exp449_antigravity.html</code>: human-viewable versioned map.</li>
+<li><code>docs/codemap/codemap_exp449_antigravity.json</code>: machine-readable nodes, edges, flows, evidence, and unknowns.</li>
+<li><code>docs/codemap/codemap_exp449_antigravity.lock</code>: functional commit, clean-tree state, and deterministic fingerprints.</li>
+<li><code>scratch/build_codemap_exp449_antigravity.py</code>: deterministic map triplet generator/validator.</li>
+</ul>
+<h3>Product package</h3>
+<ul>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py</code>: fixed identity, baseline, target-family matrix, method matrix, seeds, score settings, environment, and document hashes.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py</code>: exact typed immutable authorities and result records.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py</code>: canonical bytes, create-only writes, inventories, and artifact maps.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py</code>: exact aeon implementation/interface/source audit.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py</code>: descriptor-pinned Exp448 publication and metric authority.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py</code>: descriptor-pinned label-free database bundles and one-use label session.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py</code>: four fixed aeon representation adapters.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py</code>: exact shared LocalGap model.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py</code>: deterministic five-fold OOF representation-to-score pipeline.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/mlx_gate_antigravity.py</code>: explicit MLX availability/parity/speed decision record.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py</code>: target-family prediction freezer and manifest.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py</code>: durable progress/PID/event state and sanitized status payload.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/bootstrap_antigravity.py</code>: fixed paired dataset bootstrap.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py</code>: sole label snapshot and counterfactual metrics.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py</code>: source-free semantic replay of the final publication.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py</code>: strict aggregate-only status/result projection.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/readiness_antigravity.py</code>: clean reviewed commit and preflight gate.</li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/cli_antigravity.py</code>: exact four-command lazy CLI.</li>
+<li><code>scratch/run_exp449_residual_fn_method_qualification_antigravity.py</code>: outside-CWD launcher with seven thread environment variables set to <code>1</code> before imports.</li>
+</ul>
+<h3>Tests</h3>
+<ul>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_config_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_contracts_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_artifacts_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_method_audit_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_representations_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_mlx_gate_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py</code></li>
+<li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_cli_antigravity.py</code></li>
+</ul>
+<hr>
+<h3>Task 1: Governance Freeze and Reproducible Exp449 Code Map</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>docs/EXP449_PREREGISTRATION_antigravity_KO.html</code></li>
+<li>Create: <code>docs/EXP449_RUNBOOK_antigravity_KO.html</code></li>
+<li>Create: <code>docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+<li>Create: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Create: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Create: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+<li>Create: <code>scratch/build_codemap_exp449_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py</code></li>
+<li>Modify: <code>EXPERIMENT_CATALOG.json</code></li>
+<li>Modify: <code>RESEARCH_STATE.json</code></li>
+<li>Modify: <code>CHAMPION_LEDGER.json</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: approved design SHA <code>7008691128b249447127951440bfbdf91e4c0bb3b2a837f5b4956d51168d1f23</code>; Exp448 truth at current clean HEAD.</p>
+</li>
+<li><p>Produces: final design/preregistration/runbook SHA bindings; planned Exp449 truth with label access <code>0</code>; deterministic <code>build_codemap_exp449_antigravity.py --source-commit &lt;commit&gt;</code>.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Confirm the clean starting boundary and current map convention</strong></p>
+</li>
+</ul>
+<p>Run:</p>
+<pre><code class="language-bash">git status --short
+git rev-parse HEAD
+python3 -m json.tool docs/codemap/codemap_exp448_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp448_antigravity.lock &gt;/dev/null
+</code></pre>
+<p>Expected: empty status; HEAD descends from <code>e6192f636a0a1e7db9649705621cb8730cd18ae0</code>; Exp448 map and lock parse; lock remains the normal clean-functional-parent/map-child binding.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write the failing governance test</strong></li>
+</ul>
+<pre><code class="language-python">class Exp449GovernanceTest(unittest.TestCase):
+    def test_planned_truth_and_global_constraints_are_exact_antigravity(self):
+        prereg = Path(&quot;docs/EXP449_PREREGISTRATION_antigravity_KO.html&quot;).read_text()
+        self.assertIn(&quot;global_fp_max = 314&quot;, prereg)
+        self.assertIn(&quot;global_fn_must_be_below = 1988&quot;, prereg)
+        self.assertIn(&quot;official_label_sessions = 1&quot;, prereg)
+        state = strict_json_antigravity(Path(&quot;RESEARCH_STATE.json&quot;))
+        self.assertEqual(state[&quot;active_experiment&quot;], &quot;Exp449&quot;)
+        self.assertEqual(state[&quot;exp449&quot;][&quot;label_access_count&quot;], 0)
+        self.assertFalse(state[&quot;exp449&quot;][&quot;official_readiness_started&quot;])
+        self.assertEqual(state[&quot;pending_candidate&quot;], EXPECTED_PENDING_CANDIDATE)
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run the test and observe RED</strong></li>
+</ul>
+<p>Run:</p>
+<pre><code class="language-bash">python3 -m unittest experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_governance_antigravity -v
+</code></pre>
+<p>Expected: FAIL because the Exp449 governance documents and ledger records do not exist.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Write the frozen governance documents and ledger records</strong></li>
+</ul>
+<p>Use these exact preregistered values:</p>
+<pre><code class="language-text">families = Crop, ElectricDevices, FordA, FordB, Yoga, ECG5000, ChlorineConcentration, StarLightCurves
+candidates = minirocket_local_gap, multirocket_local_gap, hydra_local_gap, hydra_multirocket_local_gap
+crossfit_folds = 5
+knn_neighbors = 3
+max_train_reference = 1000
+query_chunk_size = 128
+seeds = 20260721, 20261721
+alpha = 0.005
+seed_aggregation = elementwise_median
+calibration = empirical_upper_pvalue_lte_alpha
+minirocket_requested_kernels = 4096
+multirocket_requested_kernels = 1024
+multirocket_max_dilations_per_kernel = 32
+multirocket_features_per_kernel = 4
+multirocket_normalise = false
+hydra_kernels = 8
+hydra_groups = 64
+global_fn_must_be_below = 1988
+global_fp_max = 314
+global_f1_min = 0.6264199935
+official_label_sessions = 1
+promotion = prohibited
+routing = prohibited
+</code></pre>
+<p>The planned ledger record must use status <code>planned_not_started</code>, null prediction/evaluation/decision hashes, label access <code>0</code>, and must not change champion or pending candidate.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Implement the deterministic map generator</strong></li>
+</ul>
+<p>Expose:</p>
+<pre><code class="language-python">def build_map_antigravity(source_commit: str, generated_at: str) -&gt; tuple[dict[str, object], dict[str, object], str]:
+    &quot;&quot;&quot;Return JSON graph, lock, and self-contained HTML for the same graph.&quot;&quot;&quot;
+
+def validate_map_antigravity(graph: object, lock: object, html: str) -&gt; None:
+    &quot;&quot;&quot;Reject missing evidence, unresolved refs, &gt;20 primary nodes, and fingerprint drift.&quot;&quot;&quot;
+</code></pre>
+<p>The initial map must mark product boundaries as unknown future relations, not existing calls. It must include governance, Exp448 predecessor, future method audit, future score/prediction, future evaluation/replay, future CLI, and dashboard presentation nodes.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Compute final document hashes and regenerate the triplet together</strong></li>
+</ul>
+<p>Run:</p>
+<pre><code class="language-bash">sha256sum docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html docs/EXP449_PREREGISTRATION_antigravity_KO.html docs/EXP449_RUNBOOK_antigravity_KO.html
+python3 scratch/build_codemap_exp449_antigravity.py --source-commit &quot;$(git rev-parse HEAD)&quot;
+</code></pre>
+<p>Write the measured hashes into the preregistration, runbook, report, and ledgers. Do not invent a reviewed implementation commit.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Run governance and map GREEN checks</strong></li>
+</ul>
+<p>Run:</p>
+<pre><code class="language-bash">python3 -m unittest experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_governance_antigravity -v
+python3 scratch/build_codemap_exp449_antigravity.py --validate-only
+python3 -m json.tool EXPERIMENT_CATALOG.json &gt;/dev/null
+python3 -m json.tool RESEARCH_STATE.json &gt;/dev/null
+python3 -m json.tool CHAMPION_LEDGER.json &gt;/dev/null
+git diff --check
+</code></pre>
+<p>Expected: all pass; map HTML embeds the exact JSON graph; no source edge claims product implementation exists.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Commit Task 1</strong></li>
+</ul>
+<pre><code class="language-bash">git add docs/EXP449_PREREGISTRATION_antigravity_KO.html docs/EXP449_RUNBOOK_antigravity_KO.html docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock scratch/build_codemap_exp449_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json
+git commit -m &quot;docs(exp449): freeze residual FN qualification governance&quot;
+</code></pre>
+<hr>
+<h3>Task 2: Candidate Registry, Contracts, Artifacts, and Official Method Audit</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_config_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_contracts_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_artifacts_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_method_audit_antigravity.py</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: Task 1 document hashes and fixed aeon interpreter.</p>
+</li>
+<li><p>Produces: <code>FROZEN_CONFIG_ANTIGRAVITY</code>; <code>CANDIDATE_MATRIX_ANTIGRAVITY</code>; immutable <code>MethodAuditAntigravity</code>; canonical artifact helpers.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Answer map questions before source edits</strong></p>
+</li>
+</ul>
+<p>Run <code>python3 scratch/build_codemap_exp449_antigravity.py --validate-only</code>, then record in the Task 2 report: callers are future prediction/readiness; effects are candidate inventory and environment authority; tests are the four Task 2 modules.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write RED tests for exact registry and types</strong></li>
+</ul>
+<pre><code class="language-python">def test_candidate_matrix_is_exact_antigravity(self):
+    self.assertEqual(
+        CANDIDATE_MATRIX_ANTIGRAVITY,
+        (
+            (&quot;Crop&quot;, (&quot;minirocket_local_gap&quot;, &quot;multirocket_local_gap&quot;)),
+            (&quot;ElectricDevices&quot;, (&quot;multirocket_local_gap&quot;, &quot;hydra_multirocket_local_gap&quot;)),
+            (&quot;FordA&quot;, (&quot;minirocket_local_gap&quot;, &quot;hydra_local_gap&quot;)),
+            (&quot;FordB&quot;, (&quot;multirocket_local_gap&quot;, &quot;hydra_local_gap&quot;)),
+            (&quot;Yoga&quot;, (&quot;multirocket_local_gap&quot;, &quot;hydra_multirocket_local_gap&quot;)),
+            (&quot;ECG5000&quot;, (&quot;multirocket_local_gap&quot;, &quot;hydra_local_gap&quot;)),
+            (&quot;ChlorineConcentration&quot;, (&quot;minirocket_local_gap&quot;, &quot;multirocket_local_gap&quot;)),
+            (&quot;StarLightCurves&quot;, (&quot;multirocket_local_gap&quot;, &quot;hydra_local_gap&quot;)),
+        ),
+    )
+
+def test_bool_is_not_an_integer_metric_antigravity(self):
+    with self.assertRaisesRegex(ValueError, &quot;fn must be an exact integer&quot;):
+        ConfusionAntigravity(tp=1, fp=0, fn=True, tn=3)
+</code></pre>
+<p>Artifact tests must reject duplicate JSON keys, non-canonical bytes, symlinks, an extra inventory leaf, an existing destination, and a bool where an exact integer is required.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+</ul>
+<pre><code class="language-bash">python3 -m unittest \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_config_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_contracts_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_method_audit_antigravity -v
+</code></pre>
+<p>Expected: import errors because the four source modules are absent.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Implement immutable contracts and canonical artifacts</strong></li>
+</ul>
+<p>Define exact frozen/slots dataclasses:</p>
+<pre><code class="language-python">@dataclass(frozen=True, slots=True)
+class MethodCandidateAntigravity:
+    name: str
+    representation: str
+    seeds: tuple[int, ...]
+    alphas: tuple[float, ...]
+
+@dataclass(frozen=True, slots=True)
+class MethodAuditAntigravity:
+    name: str
+    status: Literal[&quot;score_compatible&quot;, &quot;classifier_only&quot;, &quot;unavailable&quot;]
+    module: str
+    symbol: str
+    package_version: str | None
+    source_sha256: str | None
+    methods: tuple[str, ...]
+
+@dataclass(frozen=True, slots=True)
+class ConfusionAntigravity:
+    tp: int
+    fp: int
+    fn: int
+    tn: int
+
+@dataclass(frozen=True, slots=True)
+class DatasetBundleAntigravity:
+    dataset: str
+    train_normal: np.ndarray
+    test_values: np.ndarray
+    target_length: int
+
+@dataclass(frozen=True, slots=True)
+class DatasetBaselineAntigravity:
+    dataset_order: int
+    family: str
+    stable_candidates: frozenset[int]
+    confusion: ConfusionAntigravity
+
+@dataclass(frozen=True, slots=True)
+class CandidateMetricAntigravity:
+    family: str
+    method: str
+    target_confusion: ConfusionAntigravity
+    global_confusion: ConfusionAntigravity
+    target_fn_delta: int
+    global_f1: float
+    qualified: bool
+</code></pre>
+<p>Expose <code>canonical_json_bytes_antigravity</code>, <code>canonical_jsonl_bytes_antigravity</code>, <code>strict_json_bytes_antigravity</code>, <code>write_create_only_antigravity</code>, and <code>artifact_map_bytes_antigravity</code>.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Implement the exact method audit</strong></li>
+</ul>
+<p>Audit these symbols from the fixed interpreter without importing them in readiness or inspect:</p>
+<pre><code class="language-python">AUDIT_SPECS_ANTIGRAVITY = (
+    (&quot;MiniRocket&quot;, &quot;aeon.transformations.collection.convolution_based&quot;, &quot;score_compatible&quot;),
+    (&quot;MultiRocket&quot;, &quot;aeon.transformations.collection.convolution_based&quot;, &quot;score_compatible&quot;),
+    (&quot;HydraTransformer&quot;, &quot;aeon.transformations.collection.convolution_based&quot;, &quot;score_compatible&quot;),
+    (&quot;WEASEL_V2&quot;, &quot;aeon.classification.dictionary_based&quot;, &quot;classifier_only&quot;),
+    (&quot;DrCIFClassifier&quot;, &quot;aeon.classification.interval_based&quot;, &quot;classifier_only&quot;),
+    (&quot;HIVECOTEV2&quot;, &quot;aeon.classification.hybrid&quot;, &quot;classifier_only&quot;),
+    (&quot;InceptionTimeClassifier&quot;, &quot;aeon.classification.deep_learning&quot;, &quot;classifier_only&quot;),
+    (&quot;TSChiefClassifier&quot;, &quot;aeon.classification.hybrid&quot;, &quot;unavailable&quot;),
+)
+</code></pre>
+<p>Require Python 3.14.6, aeon 1.4.0, NumPy 2.3.5, scikit-learn 1.7.2, and SHA256 of each available class source file. Reject a class whose public methods differ from the frozen audit.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Run GREEN twice and update the map</strong></li>
+</ul>
+<p>Run the four-module command from Step 3 twice. Regenerate the map against the clean functional source snapshot and require real method-audit nodes/edges/tests, no stale unknown relation for Task 2, exact HTML/JSON equality, valid references, and matching fingerprints.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Commit Task 2</strong></li>
+</ul>
+<pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_config_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_contracts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_artifacts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_method_audit_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;feat(exp449): freeze method qualification contracts&quot;
+</code></pre>
+<hr>
+<h3>Task 3: Descriptor-Pinned Exp448 and Label-Free Data Authority</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: Exp448 immutable 11-leaf evaluation; Exp446 immutable stable-26 prediction publication; source DB SHA/inode/nlink; Task 2 contracts.</p>
+</li>
+<li><p>Produces: <code>capture_exp448_authority_antigravity() -&gt; Exp448AuthorityAntigravity</code>; <code>load_target_bundle_antigravity(dataset: str) -&gt; DatasetBundleAntigravity</code>; <code>open_test_labels_once_antigravity(...)</code> for Task 6 only.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Map preflight and read-only authority check</strong></p>
+</li>
+</ul>
+<p>Verify current map, Exp448 root inventory, DB SHA/inode/nlink, and absence of the Exp449 root and failure audit. Do not issue label SQL.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write adversarial predecessor RED tests</strong></li>
+</ul>
+<pre><code class="language-python">def test_target_family_authority_is_exact_antigravity(self):
+    authority = capture_exp448_authority_antigravity(root=self.fixture_root)
+    self.assertEqual(authority.population, 1117)
+    self.assertEqual(authority.target_dataset_count, 48)
+    self.assertEqual(authority.target_family_fn, (246, 200, 88, 75, 63, 56, 56, 53))
+    self.assertEqual(authority.baseline_confusion, ConfusionAntigravity(1930, 314, 1988, 191668))
+
+def test_leaf_swap_after_read_is_rejected_antigravity(self):
+    with self.assertRaisesRegex(ValueError, &quot;Exp448 leaf identity changed&quot;):
+        capture_with_swap_antigravity(self.fixture_root, &quot;dataset_metrics_antigravity.jsonl&quot;)
+</code></pre>
+<p>Cover symlink leaf/root, hard-linked leaf, extra/missing leaf, duplicate JSON key, same-size overwrite, directory replacement, false dataset order, wrong family prefix membership, and baseline sum mismatch.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Write label-firewall and DB RED tests</strong></li>
+</ul>
+<pre><code class="language-python">def test_values_bundle_never_selects_label_antigravity(self):
+    connection = RecordingConnectionAntigravity()
+    load_target_bundle_antigravity(&quot;Crop_normal_1&quot;, connection_factory=lambda _: connection)
+    self.assertFalse(any(&quot;label&quot; in sql.lower() for sql in connection.sql))
+
+def test_label_session_requires_frozen_prediction_authority_antigravity(self):
+    with self.assertRaisesRegex(ValueError, &quot;prediction authority is invalid&quot;):
+        open_test_labels_once_antigravity(forged_prediction_authority_antigravity())
+</code></pre>
+<p>Cover database SHA mismatch, inode replacement, nlink &gt;1, path symlink, metadata drift, invalid exact TEXT label type, noncontiguous index, query count drift, and truthful close failure.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Run RED</strong></li>
+</ul>
+<pre><code class="language-bash">python3 -m unittest \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_predecessor_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_sources_antigravity -v
+</code></pre>
+<p>Expected: import errors for absent modules.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Implement one descriptor transaction for Exp448</strong></li>
+</ul>
+<p>Pin the Exp448 root and every required leaf with <code>O_NOFOLLOW</code>, require regular single-link leaves, read bytes from retained descriptors, parse strict canonical JSON/JSONL, recompute the artifact map, validate 1,117 ordered datasets and the eight fixed prefix groups, then revalidate descriptor and namespace identities before return. Independently call Exp448&#39;s source-free <code>capture_exp446_publication_antigravity()</code> twice, require distinct but value-identical authorities, and bind the exact stable-26 candidate coordinates used to construct each <code>DatasetBaselineAntigravity</code>.</p>
+<p>Return only immutable values:</p>
+<pre><code class="language-python">@dataclass(frozen=True, slots=True)
+class Exp448AuthorityAntigravity:
+    root_identity: tuple[int, int, int, int, int, int, int]
+    artifact_map_sha256: str
+    evaluation_sha256: str
+    decision_sha256: str
+    population: int
+    target_dataset_count: int
+    target_dataset_order: tuple[int, ...]
+    target_baseline_rows: tuple[DatasetBaselineAntigravity, ...]
+    baseline_confusion: ConfusionAntigravity
+    target_family_fn: tuple[int, ...]
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Implement label-free values and closure-private labels</strong></li>
+</ul>
+<p>Use read-only SQLite descriptors and exact query allowlists. <code>load_target_bundle_antigravity</code> may read only values/split/index required to construct z-normalized TRAIN-normal and TEST-value matrices. It must not select label. <code>open_test_labels_once_antigravity</code> is closure-private, accepts only the exact frozen prediction authority, validates exact string <code>&#39;0&#39;/&#39;1&#39;</code>, counts one completion per ordered target dataset, and closes before evaluation artifacts are computed.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice, real pre-label capture once, and regress Exp448</strong></li>
+</ul>
+<p>Run the focused pair twice. Then call only <code>capture_exp448_authority_antigravity</code> and label-free target bundle loading against the real source. Assert DB nlink returns to 1 and Exp449 root remains absent. Run Exp448 source/replay focused tests without invoking its CLI.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Update map and commit Task 3</strong></li>
+</ul>
+<p>Regenerate map nodes/edges for predecessor and source authority, validate fingerprints, then commit:</p>
+<pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;feat(exp449): pin residual FN source authority&quot;
+</code></pre>
+<hr>
+<h3>Task 4: Four Fixed Representations, Shared LocalGap Scoring, and MLX Decision</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/mlx_gate_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_representations_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_mlx_gate_antigravity.py</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: <code>DatasetBundleAntigravity</code>, <code>MethodCandidateAntigravity</code>, fixed method audit.</p>
+</li>
+<li><p>Produces: <code>make_representation_antigravity(name, seed) -&gt; RepresentationAntigravity</code>; <code>score_candidate_antigravity(...) -&gt; CandidateScoresAntigravity</code>; <code>assess_mlx_antigravity() -&gt; MlxDecisionAntigravity</code>.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Write representation and scoring RED tests</strong></p>
+</li>
+</ul>
+<pre><code class="language-python">def test_all_four_representations_are_finite_and_repeatable_antigravity(self):
+    for name in EXPECTED_NAMES:
+        first = score_candidate_antigravity(self.train, self.test, candidate(name), seed=20260721)
+        second = score_candidate_antigravity(self.train, self.test, candidate(name), seed=20260721)
+        np.testing.assert_array_equal(first.train_oof, second.train_oof)
+        np.testing.assert_array_equal(first.test_scores, second.test_scores)
+        self.assertTrue(np.isfinite(first.test_scores).all())
+
+def test_hydra_multirocket_concatenation_order_is_exact_antigravity(self):
+    actual = representation.transform(self.rows)
+    expected = np.concatenate((scaled_hydra(self.rows), scaled_multirocket(self.rows)), axis=1)
+    np.testing.assert_array_equal(actual, expected)
+</code></pre>
+<p>Cover wrong seed, feature dimension drift, nonfinite output, bool numeric fields, inconsistent fold dimensions, reference-sampling order, and fewer than five TRAIN rows.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write MLX RED test</strong></li>
+</ul>
+<pre><code class="language-python">def test_missing_mlx_is_a_recorded_cpu_fallback_antigravity(self):
+    decision = assess_mlx_antigravity(package_probe=lambda _: None)
+    self.assertEqual(decision.backend, &quot;cpu&quot;)
+    self.assertEqual(decision.reason, &quot;mlx_and_mlx_metal_absent_in_fixed_environment&quot;)
+    self.assertFalse(decision.parity_run)
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+</ul>
+<p>Run the three Task 4 test modules with the fixed aeon interpreter. Expected: imports fail because modules are absent.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Implement the exact representation adapters</strong></li>
+</ul>
+<p>Expose a small protocol:</p>
+<pre><code class="language-python">class RepresentationAntigravity(Protocol):
+    def fit_transform(self, rows: np.ndarray) -&gt; np.ndarray: ...
+    def transform(self, rows: np.ndarray) -&gt; np.ndarray: ...
+</code></pre>
+<p>Use <code>MiniRocket</code>, <code>MultiRocket</code>, and <code>HydraTransformer</code> from aeon 1.4.0 with <code>n_jobs=1</code> and exact seed. For <code>hydra_multirocket_local_gap</code>, reproduce the official aeon 1.4.0 order: Hydra transform → <code>_SparseScaler</code>; MultiROCKET transform → <code>StandardScaler</code>; concatenate Hydra first, MultiROCKET second. Never instantiate or fit <code>RidgeClassifierCV</code>.</p>
+<p>Use MiniROCKET 4,096 requested kernels; MultiROCKET 1,024 requested kernels, 32 maximum dilations, four features per kernel, and <code>normalise=False</code>; Hydra eight kernels and 64 groups. Do not expose these settings as CLI options.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Implement exact LocalGap and five-fold scoring</strong></li>
+</ul>
+<p>Port the Exp249 semantics into antigravity-named code, retaining <code>KNN_NEIGHBORS=3</code>, <code>MAX_TRAIN_REFERENCE=1000</code>, <code>QUERY_CHUNK_SIZE=128</code>, and deterministic five-fold <code>crossfit_plan</code>. Add a source-semantic regression that compares the Exp449 LocalGap output with <code>experiments.exp249_250_official_mini_multirocket.local_gap.LocalGapModel</code> on the same arrays.</p>
+<p>Return exact immutable score and backend contracts:</p>
+<pre><code class="language-python">@dataclass(frozen=True, slots=True)
+class CandidateScoresAntigravity:
+    train_oof: np.ndarray
+    test_scores: np.ndarray
+    feature_dimension: int
+    seed: int
+
+@dataclass(frozen=True, slots=True)
+class MlxDecisionAntigravity:
+    backend: Literal[&quot;cpu&quot;, &quot;mlx&quot;]
+    reason: str
+    parity_run: bool
+    candidate_indices_identical: bool | None
+    speedup: float | None
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Implement MLX preflight record</strong></li>
+</ul>
+<p>The fixed environment probe must report <code>mlx</code> and <code>mlx-metal</code> absent and select CPU without package installation. Keep the full parity/speed fields in the contract so a future environment could only select MLX after exact candidate-index parity, finite scores, tolerance compliance, and speedup <code>&gt;=1.1</code>.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice and a bounded real smoke</strong></li>
+</ul>
+<p>Run all three focused modules twice. Then run one label-free representative dataset per representation, sequentially, recording time, feature dimension, finite status, candidate SHA, and DB nlink. Do not run the full 48-dataset matrix yet.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Update map and commit Task 4</strong></li>
+</ul>
+<pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/mlx_gate_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_representations_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_mlx_gate_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;feat(exp449): add fixed representation score sources&quot;
+</code></pre>
+<hr>
+<h3>Task 5: Frozen Prediction Lifecycle, Durable Progress, and Sanitized Live Status</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: fixed target authority, four score adapters, canonical artifacts.</p>
+</li>
+<li><p>Produces: <code>predict_antigravity(reviewed_commit: str) -&gt; FrozenPredictionAuthorityAntigravity</code>; <code>snapshot_status_antigravity(...) -&gt; Mapping[str, object&gt;</code>; <code>public_status_antigravity(...) -&gt; Mapping[str, object&gt;</code>.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Write exact inventory and no-label RED tests</strong></p>
+</li>
+</ul>
+<pre><code class="language-python">def test_prediction_inventory_has_sixteen_family_method_pairs_antigravity(self):
+    authority = predict_with_dependencies_antigravity(self.dependencies)
+    self.assertEqual(authority.family_method_pairs, 16)
+    self.assertEqual(authority.dataset_units, 96)
+    self.assertEqual(authority.label_access_count, 0)
+    self.assertEqual(authority.candidate_names, EXPECTED_ORDERED_CANDIDATES)
+
+def test_public_status_rejects_sensitive_fields_antigravity(self):
+    for key in (&quot;dataset&quot;, &quot;instance_index&quot;, &quot;sha256&quot;, &quot;path&quot;, &quot;log&quot;, &quot;database&quot;):
+        with self.subTest(key=key), self.assertRaises(ValueError):
+            public_status_antigravity({**valid_status(), key: &quot;forbidden&quot;})
+</code></pre>
+<p>The 96 units are 48 target datasets × exactly two preregistered candidates per family. Test exact dataset order from Exp448, candidate order from config, and no duplicates.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write failure-ordering RED tests</strong></li>
+</ul>
+<p>Cover worker exception, scorer exception, nonfinite score, cache write failure, progress write failure, event/text failure, PID close failure, candidate SHA mismatch, predecessor drift after candidate 0/47/95, and persistent status-channel failure. Check exact-next error evidence, inactive PID when writable, unchanged completed candidate bytes, no frozen prediction authority, and no label calls.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+</ul>
+<p>Run Task 5&#39;s three modules. Expected: absent-module import errors.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Implement deterministic dataset scheduling and prediction bytes</strong></li>
+</ul>
+<p>Use up to seven outer <code>ProcessPoolExecutor</code> workers, submit units in frozen sequence, and commit results only in sequence order. Each dataset-method result must contain exact TRAIN-only config, target length, train/test counts, the two frozen seed score identities, and <code>contains_test_labels=false</code>.</p>
+<p>For each dataset-method unit, compute both frozen seeds, take the elementwise median of TRAIN-OOF scores and TEST scores, then call <code>empirical_candidates(train_median, test_median, 0.005)</code>. The returned <code>p &lt;= 0.005</code> indices are the sole binary prediction. Do not compute performance candidates at any other alpha or use seed intersections.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Implement durable progress and prediction authority</strong></li>
+</ul>
+<p>Attempt inventory:</p>
+<pre><code class="language-text">context_antigravity.json
+progress_antigravity.json
+progress_antigravity.jsonl
+progress_antigravity.txt
+pid_antigravity.json
+candidates_antigravity/
+prediction_manifest_antigravity.json
+</code></pre>
+<p>Each candidate file is create-only canonical JSON. The final prediction manifest contains exact 96-file inventory, per-file SHA, aggregate SHA, method audit SHA, source identity, MLX decision, and label access <code>0</code>. Freeze it before evaluation.</p>
+<p>Return the exact authority:</p>
+<pre><code class="language-python">@dataclass(frozen=True, slots=True)
+class FrozenPredictionAuthorityAntigravity:
+    reviewed_commit: str
+    family_method_pairs: int
+    dataset_units: int
+    candidate_names: tuple[str, ...]
+    inventory: tuple[str, ...]
+    leaf_sha256: tuple[tuple[str, str], ...]
+    aggregate_sha256: str
+    label_access_count: int
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Implement the sanitized dashboard status projection</strong></li>
+</ul>
+<p>Use exact status fields:</p>
+<pre><code class="language-python">STATUS_FIELDS_ANTIGRAVITY = (
+    &quot;schema&quot;, &quot;experiment_id&quot;, &quot;phase&quot;, &quot;status&quot;, &quot;reviewed_commit&quot;,
+    &quot;target_family_count&quot;, &quot;candidate_pair_count&quot;, &quot;dataset_unit_total&quot;,
+    &quot;dataset_unit_completed&quot;, &quot;method_family&quot;, &quot;backend&quot;, &quot;label_access_started&quot;,
+)
+</code></pre>
+<p>No scientific module imports network or dashboard code. The controller reads this local aggregate snapshot and publishes owner-only status at task start, after each family boundary, on failure, and on completion.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice and a synthetic 96-unit lifecycle</strong></li>
+</ul>
+<p>Use small dependency-injected matrices so all 96 units finish quickly. Assert two runs are byte-identical, progress counts 0→96, status contains exactly 12 fields, and label access stays false.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Update map and commit Task 5</strong></li>
+</ul>
+<pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;feat(exp449): freeze label-free method predictions&quot;
+</code></pre>
+<hr>
+<h3>Task 6: One-Session Counterfactual Evaluation and Source-Free Replay</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/bootstrap_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py</code></li>
+<li>Modify: <code>experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py</code></li>
+<li>Modify: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: immutable Exp448 authority, frozen prediction authority, one closure-private ordered label session.</p>
+</li>
+<li><p>Produces: <code>evaluate_antigravity(reviewed_commit: str) -&gt; FrozenEvaluationAntigravity</code>; <code>inspect_antigravity() -&gt; FrozenEvaluationAntigravity</code>; <code>public_result_antigravity(...) -&gt; Mapping[str, object&gt;</code>.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Write exact boundary RED tests</strong></p>
+</li>
+</ul>
+<pre><code class="language-python">def test_qualification_edges_are_exact_antigravity(self):
+    self.assertTrue(qualifies_antigravity(confusion(1931, 314, 1987, 191668), target_fn_delta=-1))
+    self.assertFalse(qualifies_antigravity(confusion(1931, 315, 1987, 191667), target_fn_delta=-1))
+    self.assertFalse(qualifies_antigravity(confusion(1930, 314, 1988, 191668), target_fn_delta=0))
+
+def test_one_session_evaluates_fixed_inventory_antigravity(self):
+    result = evaluate_with_dependencies_antigravity(self.dependencies)
+    self.assertEqual(result.label_session_count, 1)
+    self.assertEqual(result.candidate_count, 16)
+    self.assertEqual(result.label_query_count, 48)
+    self.assertEqual(result.label_row_count, 72300)
+    self.assertEqual(self.dependencies.open_labels_calls, 1)
+</code></pre>
+<p>Also test exact integer types, 48 target datasets, row counts, duplicate/missing candidate, candidate order, family membership, Exp448 non-target byte preservation, and exact global confusion conservation.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write failure and semantic replay RED tests</strong></li>
+</ul>
+<p>Cover label open/query/close failures, source drift after close/compute/precommit, partial/existing/symlink publication, audit write failure, leaf symlink, directory replacement, duplicate keys, noncanonical JSON, reordered candidate metric rows, bool dataset order, wrong baseline, forged target delta, forged global confusion, recomputed artifact map after semantic tamper, and dashboard forbidden fields.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+</ul>
+<p>Run evaluation, replay, and dashboard export tests. Expected: evaluation/replay import errors and missing result projection.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Implement fixed paired dataset bootstrap</strong></li>
+</ul>
+<p>Use NumPy <code>Generator(PCG64(44920260812))</code>, exactly 20,000 paired draws over the 48 target datasets, <code>int64</code> indices, <code>endpoint=False</code>, and linear 2.5/97.5 percentiles. Record the draw SHA from the final generated bytes in preregistration before official evaluation. Bootstrap reports FN delta, FP delta, and F1 delta but never changes qualification.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Implement one-session counterfactual evaluation</strong></li>
+</ul>
+<p>For each frozen candidate, compute its target confusion from the same label snapshot. Subtract the exact Exp448 target baseline row and add the candidate target row to the fixed global baseline. Require TP+FN and FP+TN conservation and derive F1 from exact confusion. <code>qualifies_antigravity</code> must enforce all four gates without coercion.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Write the exact final publication</strong></li>
+</ul>
+<p>Final <code>publication_antigravity/</code> inventory is exactly:</p>
+<pre><code class="language-text">context_antigravity.json
+compatibility_antigravity.json
+candidate_registry_antigravity.json
+frozen_predictions_antigravity.jsonl
+prediction_manifest_antigravity.json
+evaluation_antigravity.json
+candidate_metrics_antigravity.jsonl
+family_metrics_antigravity.jsonl
+bootstrap_antigravity.json
+decision_antigravity.json
+dashboard_snapshot_antigravity.json
+artifact_sha256_antigravity.json
+</code></pre>
+<p>Build in same-filesystem staging, fsync leaves/directories, rename without replacement, reopen with descriptors, replay all semantics, then return success. On failure write the fixed create-only sibling audit and never publish a valid root.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Implement source-free replay and aggregate dashboard result</strong></li>
+</ul>
+<p>Replay imports no <code>sqlite3</code>, sources, aeon, evaluator, network, or dashboard client. It descriptor-pins all 12 leaves, validates exact inventory and canonical bytes, rebuilds candidate/global confusion, qualification gates, bootstrap draw SHA, and artifact map.</p>
+<p>Both evaluate and replay return the same exact authority:</p>
+<pre><code class="language-python">@dataclass(frozen=True, slots=True)
+class FrozenEvaluationAntigravity:
+    reviewed_commit: str
+    candidate_count: int
+    qualified_count: int
+    label_session_count: int
+    label_query_count: int
+    label_row_count: int
+    candidate_metrics: tuple[CandidateMetricAntigravity, ...]
+    artifact_map_sha256: str
+    decision_sha256: str
+    routing_research_eligible: bool
+</code></pre>
+<p>The final public payload contains only schema, experiment, baseline aggregate, candidate aggregate rows, family labels, qualification booleans, deterministic status, and runtime summaries. Reject every forbidden field recursively.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Run GREEN twice and predecessor regressions</strong></li>
+</ul>
+<p>Run evaluation/replay/dashboard tests twice. Run Task 2–5 focused suites once, Exp448 evaluation/replay/CLI once, and Exp249 scoring tests once. Use synthetic labels only; do not touch the real label session or official Exp449 root.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 9: Update map and commit Task 6</strong></li>
+</ul>
+<pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/bootstrap_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;feat(exp449): evaluate frozen FN counterfactuals&quot;
+</code></pre>
+<hr>
+<h3>Task 7: Closed CLI, Readiness, Full Verification, and Clean Candidate Truth</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/readiness_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/cli_antigravity.py</code></li>
+<li>Create: <code>scratch/run_exp449_residual_fn_method_qualification_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py</code></li>
+<li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_cli_antigravity.py</code></li>
+<li>Modify: <code>docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+<li>Modify: <code>EXPERIMENT_CATALOG.json</code></li>
+<li>Modify: <code>RESEARCH_STATE.json</code></li>
+<li>Modify: <code>CHAMPION_LEDGER.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: all Task 1–6 boundaries.</p>
+</li>
+<li><p>Produces: exact commands <code>readiness --reviewed-commit</code>, <code>predict --reviewed-commit</code>, <code>evaluate --reviewed-commit</code>, and bare <code>inspect</code>; truth status <code>implementation_verified_awaiting_official_readiness</code>.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Write closed-surface RED tests</strong></p>
+</li>
+</ul>
+<pre><code class="language-python">def test_parser_accepts_only_four_commands_antigravity(self):
+    parser = build_parser_antigravity()
+    for argv in ((&quot;readiness&quot;, &quot;--reviewed-commit&quot;, COMMIT), (&quot;predict&quot;, &quot;--reviewed-commit&quot;, COMMIT), (&quot;evaluate&quot;, &quot;--reviewed-commit&quot;, COMMIT), (&quot;inspect&quot;,)):
+        parser.parse_args(argv)
+    for argv in ((&quot;new&quot;,), (&quot;resume&quot;,), (&quot;retry&quot;,), (&quot;inspect&quot;, &quot;--root&quot;, &quot;/tmp/x&quot;), (&quot;readiness&quot;, &quot;--reviewed-c&quot;, COMMIT)):
+        with self.assertRaises(SystemExit):
+            parser.parse_args(argv)
+</code></pre>
+<p>Add fresh subprocess tests showing help/readiness/inspect leave aeon, SQLite label session, evaluator, network, and dashboard modules unloaded; evaluate checks clean HEAD before importing the evaluator; predict checks clean HEAD before importing aeon.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write readiness RED matrix</strong></li>
+</ul>
+<p>Table-drive wrong/dirty commit, wrong Python/package versions, changed docs, stale map, wrong Exp448 bytes, wrong DB SHA/inode/nlink, existing/symlink run root, existing failure audit, changed method source SHA, candidate inventory drift, MLX decision drift, and pending/champion mutation. Every gate must fail before root creation and label access.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+</ul>
+<p>Run readiness and CLI tests. Expected: missing modules/launcher.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Implement readiness and lazy CLI</strong></li>
+</ul>
+<p>Use <code>argparse.ArgumentParser(allow_abbrev=False)</code>. Require lowercase 40-hex commits. Readiness verifies clean HEAD exact equality, document hashes, map fingerprints, Exp448/DB/method authorities, CPU fallback, root/failure-audit absence, and label access <code>0</code>. CLI imports only the selected command boundary.</p>
+<p>Launcher must set <code>OMP_NUM_THREADS</code>, <code>OPENBLAS_NUM_THREADS</code>, <code>MKL_NUM_THREADS</code>, <code>VECLIB_MAXIMUM_THREADS</code>, <code>NUMEXPR_NUM_THREADS</code>, <code>BLIS_NUM_THREADS</code>, and <code>AEON_NUM_THREADS</code> to <code>1</code> before importing the CLI, and must work from <code>/tmp</code>.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Run focused GREEN twice</strong></li>
+</ul>
+<p>Run readiness and CLI tests twice, including outside-CWD subprocess and import firewalls.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Run full verification sequentially with retained logs</strong></li>
+</ul>
+<p>Use each experiment&#39;s frozen interpreter and one process at a time:</p>
+<pre><code class="language-bash">EXP449_PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+PREDECESSOR_PY=/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python
+&quot;$EXP449_PY&quot; -m unittest discover -s experiments/exp449_residual_fn_method_qualification_antigravity/tests -p &#39;test_*_antigravity.py&#39;
+&quot;$EXP449_PY&quot; -m unittest discover -s experiments/exp449_residual_fn_method_qualification_antigravity/tests -p &#39;test_*_antigravity.py&#39;
+&quot;$EXP449_PY&quot; -m unittest discover -s experiments/exp249_250_official_mini_multirocket/tests -p &#39;test_*.py&#39;
+&quot;$PREDECESSOR_PY&quot; -m unittest discover -s experiments/exp444_train_only_stability_precision_gate_antigravity/tests -p &#39;test_*.py&#39;
+&quot;$PREDECESSOR_PY&quot; -m unittest discover -s experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests -p &#39;test_*.py&#39;
+&quot;$PREDECESSOR_PY&quot; -m unittest discover -s experiments/exp446_exp445_publication_materialization_repair_antigravity/tests -p &#39;test_*.py&#39;
+&quot;$PREDECESSOR_PY&quot; -m unittest discover -s experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests -p &#39;test_*.py&#39;
+&quot;$PREDECESSOR_PY&quot; -m unittest discover -s experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests -p &#39;test_*.py&#39;
+</code></pre>
+<p>Retain exact stdout/stderr and exit sentinels under the ignored SDD task directory. Do not infer success from a detached process; keep the session ID and wait for the exact exit code.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Verify frozen external state and dashboard source boundary</strong></li>
+</ul>
+<p>Confirm DB SHA/inode/nlink, Exp448 root SHA/inventory, Exp449 root/failure audit absence, label access <code>0</code>, clean separate Sites project, owner-only access, and unchanged Exp448 public payload. Validate a synthetic <code>exp449.public-method-qualification.v1</code> snapshot but do not publish official results.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Record clean-candidate truth and regenerate map</strong></li>
+</ul>
+<p>Set Exp449 status to <code>implementation_verified_awaiting_official_readiness</code>, record the exact candidate commit and test counts, retain null official hashes and label access <code>0</code>, and leave champion/pending unchanged. Regenerate map with real CLI/readiness routes and no unknown implementation relations.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 9: Commit Task 7 and obtain fresh final review</strong></li>
+</ul>
+<pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/readiness_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/cli_antigravity.py scratch/run_exp449_residual_fn_method_qualification_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_cli_antigravity.py docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;feat(exp449): close method qualification candidate&quot;
+</code></pre>
+<p>Request a fresh final review on the exact clean commit. Proceed only if the verdict is <code>ship</code> with zero Critical and Important findings.</p>
+<hr>
+<h3>Task 8: Single-Use Official Lifecycle, Truth Closeout, and Owner-Only Dashboard</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <code>docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+<li>Modify: <code>EXPERIMENT_CATALOG.json</code></li>
+<li>Modify: <code>RESEARCH_STATE.json</code></li>
+<li>Modify: <code>CHAMPION_LEDGER.json</code></li>
+<li>Modify on failure only: <code>FAILURE_LEDGER.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.html</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.json</code></li>
+<li>Modify: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
+<li>Publish through existing owner-only Sites project: sanitized status/result snapshot only; no scientific source files.</li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li><p>Consumes: clean <code>ship</code> candidate, fixed CLI, absent root/audit, owner-only dashboard project.</p>
+</li>
+<li><p>Produces: immutable Exp449 publication or immutable failure audit; exact truth/map closeout; owner-only aggregate dashboard snapshot.</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Reconfirm authorization and external preflight</strong></p>
+</li>
+</ul>
+<p>Verify exact reviewed commit, clean tree, fresh <code>ship</code> verdict, DB SHA/inode/nlink, Exp448 identity, Exp449 root/failure-audit absence, method source SHAs, fixed environment, label access <code>0</code>, and owner-only site access. Stop before any command if one check fails.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Publish the preregistered readiness status snapshot</strong></li>
+</ul>
+<p>Use <code>data-analytics:build-dashboard</code> and the Sites artifact specification. Publish only the exact 12-field status payload with phase <code>readiness</code>, label access false, target-family count 8, candidate-pair count 16, dataset-unit total 96, and source freshness timestamp. Confirm owner-only access. Dashboard failure stops presentation work but does not consume a scientific command.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Run official readiness exactly once</strong></li>
+</ul>
+<pre><code class="language-bash">PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+&quot;$PY&quot; scratch/run_exp449_residual_fn_method_qualification_antigravity.py readiness --reviewed-commit &quot;$REVIEWED_COMMIT&quot;
+</code></pre>
+<p>Capture exact output and exit. If nonzero, record immutable failure truth, publish aggregate failure status, skip Steps 4–8, and never retry.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Run official prediction exactly once</strong></li>
+</ul>
+<pre><code class="language-bash">&quot;$PY&quot; scratch/run_exp449_residual_fn_method_qualification_antigravity.py predict --reviewed-commit &quot;$REVIEWED_COMMIT&quot;
+</code></pre>
+<p>Publish sanitized progress at each completed family boundary from the local status snapshot. Never publish dataset names or candidate indices. If nonzero, preserve the attempt/failure audit, publish aggregate failure status, skip evaluate/inspect, and never retry.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Independently verify prediction freeze before labels</strong></li>
+</ul>
+<p>Descriptor-pin all 96 candidate leaves and the prediction manifest; recompute aggregate SHA; verify label access <code>0</code>, exact candidate/family inventory, deterministic seed outputs, CPU fallback record, DB identity, and Exp448 identity. A mismatch permanently stops Exp449 before evaluation.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Run official evaluation exactly once</strong></li>
+</ul>
+<pre><code class="language-bash">&quot;$PY&quot; scratch/run_exp449_residual_fn_method_qualification_antigravity.py evaluate --reviewed-commit &quot;$REVIEWED_COMMIT&quot;
+</code></pre>
+<p>Capture exact output and exit. If nonzero, preserve the unique failure audit, publish aggregate failure status, skip inspect, and never retry.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Run source-free inspect exactly once after success</strong></li>
+</ul>
+<pre><code class="language-bash">&quot;$PY&quot; scratch/run_exp449_residual_fn_method_qualification_antigravity.py inspect
+</code></pre>
+<p>Require exact equality with evaluate output and no SQLite/source/aeon/evaluator/network imports. Any inspect failure records truth and stops dashboard result publication; it does not authorize evaluation retry.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 8: Independently recompute final authority</strong></li>
+</ul>
+<p>Read the 12 final leaves through retained descriptors, recompute artifact-map SHA, candidate/global confusion, FN/FP/F1 gates, target FN deltas, qualification decisions, bootstrap draw SHA, method audit, prediction inventory, and public snapshot allowlist. Confirm DB nlink 1 and Exp448 bytes unchanged.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 9: Commit official truth and synchronized map</strong></li>
+</ul>
+<p>On success record status <code>official_method_qualification_complete_awaiting_routing_discussion</code>, exact command counts/exits, one label session, artifact hashes, candidate qualification table, and <code>routing_research_eligible</code>. Keep champion/pending/promotion unchanged. On failure record the exact stopped phase/error/audit identity and null success hashes. Regenerate the code map against the same truth commit and commit the triplet with the truth files.</p>
+<pre><code class="language-bash">git add docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json FAILURE_LEDGER.json docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
+git commit -m &quot;docs(exp449): close official method qualification truth&quot;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 10: Publish and validate the owner-only result snapshot</strong></li>
+</ul>
+<p>Only after successful truth closeout, publish <code>exp449.public-method-qualification.v1</code> to the existing owner-only research observatory. The default view must show baseline FN/FP/F1, number of qualified candidates, family-method qualification table, global FN/FP deltas, runtime/backend, and routing eligibility. Reconcile every displayed number with the immutable publication, verify custom owner-only access, record the Sites version and snapshot timestamp, and state that it is a published snapshot rather than a live database connection.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 11: Obtain final read-only truth review and stop</strong></li>
+</ul>
+<p>Review exact truth commit, immutable root/audit, DB and Exp448 identities, code map, dashboard payload/access, and champion/pending invariants. Do not run commands, query labels, or modify artifacts during review. Stop for user discussion. Start Exp450 design only when at least one candidate qualified and the user explicitly approves routing research.</p>
+<hr>
+<h2>Self-Review Checklist</h2>
+<ul>
+<li>Every approved design section maps to at least one task: governance (Task 1), compatibility (Task 2), source authority (Task 3), score/MLX (Task 4), freeze/dashboard status (Task 5), one-session evaluation/replay (Task 6), closed candidate (Task 7), official truth/dashboard (Task 8).</li>
+<li>Exact type names and signatures are consistent across tasks: <code>Exp448AuthorityAntigravity</code>, <code>MethodCandidateAntigravity</code>, <code>MethodAuditAntigravity</code>, <code>FrozenPredictionAuthorityAntigravity</code>, <code>FrozenEvaluationAntigravity</code>, and <code>ConfusionAntigravity</code>.</li>
+<li>The plan contains no hyperparameter or candidate choice made after TEST results.</li>
+<li>All eight target families receive exactly two score-compatible candidates; classifier-only methods remain audit evidence.</li>
+<li>FP 314/315 and FN 1,987/1,988 boundaries have explicit tests.</li>
+<li>The fixed environment&#39;s absent MLX packages produce a truthful CPU fallback without installation.</li>
+<li>Dashboard status and results are aggregate-only, owner-only, source-backed snapshots and cannot alter scientific execution.</li>
+<li>Every new filename contains <code>antigravity</code>; no <code>__init__.py</code> is created.</li>
+<li>Every code-changing task includes the synchronized Exp449 HTML/JSON/lock triplet in the same commit.</li>
+<li>Official label access is exactly one session after all 96 candidate units freeze; any failure forbids retry.</li>
+</ul>
+</article></main>
+</div>
+<script>
+const toc=document.getElementById('toc');document.querySelectorAll('article h2,article h3').forEach((h,i)=>{if(!h.id)h.id='section-'+(i+1);const a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;a.className=h.tagName.toLowerCase();toc.appendChild(a)});
+</script>
+</body>
+</html>
