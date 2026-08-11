@@ -1,7 +1,7 @@
 {
-  "current_commit": "c9f7bdb99bcb327a5e539221e35d8b572401491b",
+  "current_commit": "90d910f00936f9b24bb9d1a875ee2868e9cfcecc",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-11T14:59:13Z",
+  "generated_at": "2026-08-11T15:00:00Z",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -69,7 +69,5 @@
       "tracked_files": 81
     }
   },
-  "changed_modules_since_prior_lock": [
-    "experiments"
-  ]
+  "changed_modules_since_prior_lock": []
 }
