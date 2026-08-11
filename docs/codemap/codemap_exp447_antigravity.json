@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T11:41:42Z",
-  "generated_from_commit": "f0d20900c04c6db41e13ef3ee592f6533d1ce45d",
+  "generated_at": "2026-08-11T13:15:00Z",
+  "generated_from_commit": "76263e38069e10297ad60b89a531c5dfdeeed6da",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -100,7 +100,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its original new wrapper failed only after valid publication while serializing a nested MappingProxyType. The authorized source-free, label-free, mutation-free inspection pair both exited 0 with byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0. One earlier unintended pre-mock focused-test inspect remains separately disclosed; evaluation, champion, and promotion remain disabled pending discussion. Exp447 is design-approved and implementation-planned only: it has no mapped inbound product caller, affects governance/operator gates, has no direct tests, and has no Exp447 source edge before implementation. Its future dashboard is a separate private aggregate-only presentation boundary, never a scientific or promotion gate.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its original new wrapper failed only after valid publication while serializing a nested MappingProxyType. The authorized source-free, label-free, mutation-free inspection pair both exited 0 with byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0. One earlier unintended pre-mock focused-test inspect remains separately disclosed; evaluation, champion, and promotion remain disabled pending discussion. Exp447 now has a bounded Task 2 evaluation-primitives module that affects governance/operator gates but still has no TEST-label route, evaluator, CLI, or promotion authority. Its future dashboard is a separate private aggregate-only presentation boundary, never a scientific or promotion gate.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -159,7 +159,7 @@
         "Exp445 publication capture failure after fixed-root allocation creates only immutable publication_failure_antigravity.json and no canonical publication. If a caller-side frozen-leaf replay/audit rejects after atomic rename, the retained attempt descriptor quarantines the canonical destination before failure evidence is written; it is never returned as clean publication.",
         "Exp445 is immutable failed-publication evidence, not a failed scientific result: 30/30, error 0, label access 0, CPU/11 inner-1, aggregate af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034, absent publication/evaluation, and failure text Exp444 original-control replay is invalid.",
         "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; the authorized immutable publication inspection pair is complete, while evaluation/champion/promotion remain disabled pending discussion.",
-        "Exp447 is design-approved and implementation-planned only. Its post-freeze evaluator may open TEST labels only after future reviewed implementation gates; until then no Exp447 source edge, test-label access, champion change, promotion, scientific winner, or operational alert eligibility exists. The separate private dashboard may consume only immutable aggregate-only post-closeout export and its failure cannot change scientific artifacts or permit evaluation retry.",
+        "Exp447 Task 2 now supplies only frozen configuration, immutable value contracts, canonical create-only bytes, and deterministic shared-draw bootstrap. It has no source authority, TEST-label route, evaluator, CLI, official-root mutation, champion change, promotion, scientific winner, or operational alert eligibility. The separate private dashboard may consume only immutable aggregate-only post-closeout export and its failure cannot change scientific artifacts or permit evaluation retry.",
         "Exp447 Task 2—frozen configuration, contracts, artifacts, and bootstrap—is the exact next implementation step. No official evaluation, TEST-label access, official-root mutation, champion/promotion change, or dashboard-site action is authorized at this state boundary."
       ],
       "evidence": [
@@ -1233,35 +1233,59 @@
       ]
     },
     {
-      "id": "exp426_contracts",
-      "label": "Exp426 contracts",
-      "type": "data",
-      "boundary": "Exp426 verified baseline",
-      "layer": 2,
-      "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
-      "role": "Defines immutable provenance, dataset records, counts, progress and worker evidence for the verified baseline.",
+      "id": "exp447_evaluation_primitives",
+      "label": "Exp447 evaluation primitives",
+      "type": "pipeline",
+      "boundary": "Exp447 post-freeze evaluation",
+      "layer": 1,
+      "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity",
+      "role": "Freezes Exp447 identity and non-promotion governance, deeply immutable Exp446 publication/confusion/metric/bootstrap values, canonical create-only JSON bytes, and deterministic PCG64 shared draws. This boundary deliberately has no SQLite, network, dashboard, Exp446 mutation, official-root write, evaluator, or CLI import.",
       "entrypoints": [
-        "Exp426Provenance",
-        "Exp426DatasetRecord",
-        "Exp426Counts",
-        "Exp426Progress",
-        "WorkerEvidence"
+        "FROZEN_CONFIG_ANTIGRAVITY",
+        "PublicationIdentityAntigravity",
+        "ConfusionAntigravity",
+        "MetricSummaryAntigravity",
+        "BootstrapComparisonAntigravity",
+        "canonical_json_bytes_antigravity",
+        "write_create_only_antigravity",
+        "project_f1_antigravity",
+        "paired_bootstrap_antigravity"
       ],
       "tests": [
-        "experiments/exp426_verified_baseline/tests/test_contracts_antigravity.py"
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_artifacts_antigravity.py",
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_bootstrap_antigravity.py"
       ],
       "constraints": [
-        "Exactly 12 workers in provenance",
-        "Imported and verified-abstention records remain distinct"
+        "Evaluation-only: no new score, training, MLX/MPS benchmark, database/TEST-label access, network, dashboard, Exp446 mutation, or official root allocation.",
+        "Exact 1,117 datasets, 195,900 label rows, 30 = 26 + 4 lanes, fixed baseline confusion, PCG64 seed 44720260811, 20,000 int64 endpoint-false shared draws, and linear percentile method.",
+        "All persisted values are canonical/create-only; pre-label payloads reject recursive label-like keys and publication identity lane partitions must conserve immutable coordinates."
       ],
       "evidence": [
         {
-          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
-          "symbol": "Exp426Provenance"
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/config_antigravity.py",
+          "symbol": "class Exp447FrozenConfigAntigravity"
         },
         {
-          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
-          "symbol": "Exp426DatasetRecord"
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/contracts_antigravity.py",
+          "symbol": "class PublicationIdentityAntigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/contracts_antigravity.py",
+          "symbol": "class ConfusionAntigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/artifacts_antigravity.py",
+          "symbol": "def write_create_only_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/bootstrap_antigravity.py",
+          "symbol": "def paired_bootstrap_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_bootstrap_antigravity.py",
+          "symbol": "class BootstrapAntigravityTests"
         }
       ]
     },
@@ -5730,28 +5754,6 @@
       ]
     },
     {
-      "from": "exp426_intake_parallel",
-      "to": "exp426_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/parallel_antigravity.py",
-          "symbol": "WorkerEvidence"
-        }
-      ]
-    },
-    {
-      "from": "exp426_checkpoint",
-      "to": "exp426_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
-          "symbol": "Exp426DatasetRecord"
-        }
-      ]
-    },
-    {
       "from": "exp426_runtime",
       "to": "exp426_intake_parallel",
       "type": "calls",
@@ -5789,17 +5791,6 @@
         {
           "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
           "symbol": "open_database_snapshot"
-        }
-      ]
-    },
-    {
-      "from": "exp426_runtime",
-      "to": "exp426_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-          "symbol": "Exp426Counts"
         }
       ]
     },
@@ -6478,10 +6469,10 @@
   "unknown_relationships": [
     {
       "from": "research_control",
-      "to": "exp447_implementation",
-      "relationship": "Exp447 product source edge",
-      "status": "absent_before_implementation",
-      "reason": "Only design, plan, and governance documents exist. No Exp447 source module or runtime edge is evidence-backed."
+      "to": "exp447_evaluation_primitives",
+      "relationship": "Exp447 source authority, label session, evaluator, and CLI callers",
+      "status": "unknown",
+      "reason": "Task 2 implements only local value primitives. The future source/readiness/evaluator/CLI boundaries are not implemented, so no source-evidenced runtime relationship exists yet."
     }
   ],
   "unknowns": {
