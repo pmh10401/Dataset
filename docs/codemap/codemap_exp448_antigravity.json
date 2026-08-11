@@ -1,9 +1,8 @@
 {
-  "generated_at": "2026-08-12T03:35:00+09:00",
-  "generated_from_commit": "cbab2b99995ddbd65b1fe11085b5dd0e62317da6",
+  "generated_at": "2026-08-12T04:25:00+09:00",
+  "generated_from_commit": "eefcea1c4ce06009f4d465ad3136a4c67fcb2514",
   "scope": [
-    "Exp448 governance documents and implemented Task2 controlled-fork foundations",
-    "Exp448 descriptor-pinned Exp446/Exp404 predecessor authority with fresh Exp404 attestation, immutable Exp447 failure audit, metadata-only readiness, and exact TEXT label converter"
+    "Exp448 governance, controlled-fork foundations, predecessor/TEXT source boundary, and Task4 evaluation/replay semantic replay boundary"
   ],
   "nodes": [
     {
@@ -194,7 +193,7 @@
         "tests/test_readiness_antigravity.py"
       ],
       "constraints": [
-        "Task2 foundations remain free of evaluator, SQLite, network, dashboard, or CLI.",
+        "Foundations are consumed by the evaluator/replay boundary; they remain free of network, dashboard, or CLI runtime modules.",
         "Only identity keys differ; scientific constants and bootstrap draw contract stay paired with Exp447.",
         "No TEXT runtime/evaluator claim exists at this stage."
       ],
@@ -240,7 +239,7 @@
         "Exp447 package and launcher are byte-guarded; a supplied Exp404 authority must equal a fresh distinct descriptor-pinned capture before DB access.",
         "Readiness uses only instances.instance_index INTEGER and instances.label TEXT metadata; it never creates a label session or Exp448 root.",
         "The converter accepts exact str '0'/'1' with exact int index and immediately returns integer labels.",
-        "Evaluator, replay, CLI, launcher, dashboard, MLX, workers, and training remain unimplemented."
+        "Only the closure-private label session converts exact TEXT labels to integers; evaluator input and artifacts never retain raw TEXT."
       ],
       "evidence": [
         {
@@ -258,6 +257,38 @@
         {
           "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/readiness_antigravity.py",
           "symbol": "verify_instances_schema_metadata_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "exp448_evaluation_replay_boundary",
+      "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity",
+      "role": "Task4 single-use evaluation publication and descriptor-pinned source-free semantic replay over converted integer labels.",
+      "entrypoints": [
+        "_evaluate_with_dependencies_antigravity",
+        "evaluate_antigravity",
+        "inspect_replay_with_dependencies_antigravity",
+        "inspect_evaluation_antigravity"
+      ],
+      "tests": [
+        "tests/test_evaluation_antigravity.py",
+        "tests/test_replay_antigravity.py",
+        "tests/test_controlled_fork_differential_antigravity.py (Task4 AST/runtime differential)"
+      ],
+      "constraints": [
+        "Exactly four methods and eleven leaves remain in frozen order.",
+        "Evaluator receives integer labels only, closes and rechecks sources, and writes create-only artifacts/failure audits.",
+        "Replay imports no SQLite, label session, network, or evaluator and rejects descriptor/semantic rehash tampering.",
+        "Evaluation remains descriptive_complete_no_promotion; no CLI/official execution is implemented."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/evaluation_antigravity.py",
+          "symbol": "_evaluate_with_dependencies_antigravity"
+        },
+        {
+          "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/replay_antigravity.py",
+          "symbol": "inspect_replay_with_dependencies_antigravity"
         }
       ]
     }
@@ -361,6 +392,33 @@
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
         "symbol": "verify_exp447_failure_authority_antigravity"
       }
+    },
+    {
+      "from": "exp448_evaluation_replay_boundary",
+      "to": "exp448_foundations",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/evaluation_antigravity.py",
+        "symbol": "from .bootstrap_antigravity"
+      }
+    },
+    {
+      "from": "exp448_evaluation_replay_boundary",
+      "to": "exp448_prelabel_source_boundary",
+      "type": "receives_converted_labels",
+      "evidence": {
+        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/evaluation_antigravity.py",
+        "symbol": "open_test_labels_antigravity"
+      }
+    },
+    {
+      "from": "exp448_prelabel_source_boundary",
+      "to": "exp448_evaluation_replay_boundary",
+      "type": "supplies",
+      "evidence": {
+        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
+        "symbol": "convert_test_label_row_antigravity"
+      }
     }
   ],
   "flows": [
@@ -406,6 +464,17 @@
         "research_control"
       ],
       "outcome": "Exp448 now authenticates predecessor authority, re-attests supplied Exp404 authority before DB capability, and performs metadata-only readiness; the future evaluator alone may construct the one-use TEXT label session."
+    },
+    {
+      "trigger": "Task4 evaluation/replay boundary",
+      "steps": [
+        "exp448_plan",
+        "exp448_prelabel_source_boundary",
+        "exp448_evaluation_replay_boundary",
+        "exp448_foundations",
+        "exp447_failure_truth"
+      ],
+      "outcome": "Synthetic tests prove exact TEXT-to-int input parity with Exp447; future evaluation is create-only and replay is label/SQLite/network-free."
     }
   ],
   "unknown_relationships": [],
