@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T04:54:43Z",
-  "generated_from_commit": "e9cd307fd414071e90bc5357aa8bf1bb4796acbd",
+  "generated_at": "2026-08-11T05:07:29Z",
+  "generated_from_commit": "94257cdd",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1009,7 +1009,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 exposes exactly readiness, new, and source-free frozen-leaf inspection through a fixed CLI and outside-CWD launcher. Its publisher retains one marker-inclusive Task5 terminal descriptor chain, rechecks canonical root/attempt namespace before source work and immediately before staging, then commits staging by no-replace rename relative to that retained attempt descriptor and audits frozen leaves before returning a canonical path.",
+      "role": "Exp446 retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through the shared retained-bytes validator, and commits only through its retained attempt descriptor. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1038,7 +1038,7 @@
         "Terminal-finalization-failure evidence, an absent or forged terminal marker, predecessor drift, label access, staging failure, or post-rename replay failure reject publication; a post-rename rejection quarantines the canonical directory and preserves create-only failure evidence.",
         "The marker-inclusive terminal capture records all terminal bytes and leaf identities; both a pre-staging descriptor replay and post-rename leaf identity recheck reject changes while preserving create-only failure evidence.",
         "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect with abbreviation disabled; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module. The launcher has no hidden command and delegates every argv to this CLI after pinning seven thread variables.",
-        "Marker-inclusive terminal capture uses only retained root/attempt/checkpoint/records no-follow descriptors; canonical root, attempts, and attempt entries must resolve to those same identities before source work, before staging, and after frozen-leaf audit. A namespace replacement records failure in the retained attempt and cannot publish into its replacement."
+        "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. Cleanup quarantines only the exact descriptor-created publication identity and never a swapped replacement."
       ],
       "evidence": [
         {
@@ -1172,6 +1172,18 @@
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
           "symbol": "def test_pre_rename_namespace_replacement_quarantines_retained_destination_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "def validate_exp446_terminal_authority_bytes_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_checkpoint_directory_replacement_after_capture_preserves_failure_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_cleanup_never_quarantines_swapped_publication_name_antigravity"
         }
       ]
     },
