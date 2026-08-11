@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T09:00:00Z",
-  "generated_from_commit": "151e29074f002e469ada225549eb6647ed71f5b2",
+  "generated_at": "2026-08-11T03:20:48Z",
+  "generated_from_commit": "4bf36efa8edd9322a1ab0156853a70a51f9b6582",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1009,7 +1009,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 exposes only fixed readiness, new, publication, and inspection facades. Its new-only CPU/11 replay verifies independent Exp444 and failed-Exp445 wrapper SHA authority before each checkpoint success, gates the 30-prefix aggregate and fresh predecessor before terminal parity, and publication re-verifies that authority.",
+      "role": "Exp446 exposes only fixed readiness, new, publication, and inspection facades. Its new-only CPU/11 replay verifies independent Exp444 and failed-Exp445 wrapper SHA authority before each checkpoint success, gates the 30-prefix aggregate and fresh predecessor before terminal parity, and publication descriptor-authenticates canonical marker, checkpoint, all 30 records, aggregate, complete inactive progress/PID, logs, profile documents, and both fresh predecessor aggregates.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1026,7 +1026,7 @@
         "Exp446 has no caller routing override: new uses CPU/11, inner thread 1, a fixed root, and attempt_0000_antigravity.",
         "Fresh Exp444 and Exp445 predecessor authorities are required before allocation; every canonical wrapper SHA is compared at its index before success checkpoint persistence.",
         "Aggregate mismatch or a changed final predecessor creates the exact-next error record and inactive progress/PID evidence; a root cannot be retried.",
-        "Publication requires create-only terminal parity evidence and a fresh Exp444 plus Exp445 predecessor verification."
+        "Publication requires a create-only canonical terminal parity marker bound to the exact complete checkpoint/context/30-record aggregate, inactive progress/PID, required logs, profile document hashes, and fresh Exp444 plus Exp445 predecessor authorities."
       ],
       "evidence": [
         {
@@ -1036,6 +1036,10 @@
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
           "symbol": "def _require_terminal_parity_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
+          "symbol": "def _require_complete_terminal_evidence_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
