@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T04:35:00+09:00",
-  "generated_from_commit": "68896792f55d59b544bbaf12197115c0484a4264",
+  "generated_at": "2026-08-12T04:50:00+09:00",
+  "generated_from_commit": "93cf44cdccc9a22ea0730ca4f1ac5d7ca5fc36a9",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary"
   ],
@@ -129,7 +129,7 @@
       "evidence": [
         {
           "path": "docs/EXP448_RUNBOOK_antigravity_KO.md",
-          "symbol": "implementation_not_started_no_official_authorization"
+          "symbol": "implementation_verified_awaiting_official_readiness"
         }
       ]
     },
@@ -294,7 +294,7 @@
     },
     {
       "id": "exp448_closed_cli_boundary",
-      "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py; scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py",
+      "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
       "role": "Task5 closed public dispatcher and outside-CWD launcher with exact reviewed-commit, import-firewall, and numerical-thread-pin boundaries.",
       "entrypoints": [
         "build_parser_antigravity",
@@ -417,7 +417,7 @@
     {
       "from": "exp448_prelabel_source_boundary",
       "to": "exp447_failure_truth",
-      "type": "verifies",
+      "type": "calls",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
         "symbol": "verify_exp447_failure_authority_antigravity"
@@ -435,7 +435,7 @@
     {
       "from": "exp448_evaluation_replay_boundary",
       "to": "exp448_prelabel_source_boundary",
-      "type": "receives_converted_labels",
+      "type": "calls",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/evaluation_antigravity.py",
         "symbol": "open_test_labels_antigravity"
@@ -444,7 +444,7 @@
     {
       "from": "exp448_prelabel_source_boundary",
       "to": "exp448_evaluation_replay_boundary",
-      "type": "supplies",
+      "type": "calls",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
         "symbol": "convert_test_label_row_antigravity"
@@ -453,7 +453,7 @@
     {
       "from": "research_control",
       "to": "exp448_closed_cli_boundary",
-      "type": "governs",
+      "type": "reads",
       "evidence": {
         "path": "RESEARCH_STATE.json",
         "symbol": "fresh_sol_high_read_only_ship_review_current_clean_head"
@@ -462,7 +462,7 @@
     {
       "from": "exp448_closed_cli_boundary",
       "to": "exp448_prelabel_source_boundary",
-      "type": "lazy_imports_readiness",
+      "type": "imports",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
         "symbol": "_load_readiness_antigravity"
@@ -471,7 +471,7 @@
     {
       "from": "exp448_closed_cli_boundary",
       "to": "exp448_evaluation_replay_boundary",
-      "type": "clean_head_then_lazy_imports",
+      "type": "imports",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
         "symbol": "_load_clean_review_antigravity"
@@ -480,7 +480,7 @@
     {
       "from": "exp448_closed_cli_boundary",
       "to": "exp448_evaluation_replay_boundary",
-      "type": "source_free_inspect",
+      "type": "calls",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
         "symbol": "_load_inspect_antigravity"
