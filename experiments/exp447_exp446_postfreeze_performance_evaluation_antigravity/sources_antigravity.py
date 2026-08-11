@@ -42,6 +42,15 @@ class HardPredictionsAntigravity:
     coordinates: frozenset[tuple[str, int]]
 
 
+@dataclass(frozen=True, slots=True)
+class _PinnedLeafAntigravity:
+    """An open no-follow leaf descriptor retained through final validation."""
+
+    name: str
+    descriptor: int
+    identity: tuple[int, int, int, int, int, int, int]
+
+
 def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
     return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
@@ -81,7 +90,7 @@ def _exact_names_antigravity(directory_fd: int, expected: Sequence[str]) -> None
         raise ValueError("frozen source inventory is not exact")
 
 
-def _read_leaf_antigravity(directory_fd: int, name: str) -> tuple[bytes, str, tuple[int, int, int, int, int, int, int]]:
+def _pin_leaf_antigravity(directory_fd: int, name: str) -> _PinnedLeafAntigravity:
     try:
         before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
         descriptor = os.open(name, _LEAF_FLAGS_ANTIGRAVITY, dir_fd=directory_fd)
@@ -92,23 +101,47 @@ def _read_leaf_antigravity(directory_fd: int, name: str) -> tuple[bytes, str, tu
         expected = _identity_antigravity(before)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or _identity_antigravity(opened) != expected:
             raise ValueError(f"frozen source leaf is not one regular inode: {name}")
-        chunks: list[bytes] = []
-        digest = hashlib.sha256()
-        while block := os.read(descriptor, 1 << 20):
-            chunks.append(block)
-            digest.update(block)
-        current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
-        after = os.fstat(descriptor)
-        if any(
-            not stat.S_ISREG(item.st_mode) or item.st_nlink != 1 or _identity_antigravity(item) != expected
-            for item in (current, after)
-        ):
-            raise ValueError(f"frozen source leaf changed during read: {name}")
-        return b"".join(chunks), digest.hexdigest(), expected
+        return _PinnedLeafAntigravity(name, descriptor, expected)
     except OSError as error:
-        raise ValueError(f"frozen source leaf read failed: {name}") from error
-    finally:
+        raise ValueError(f"frozen source leaf pin failed: {name}") from error
+    except BaseException:
         os.close(descriptor)
+        raise
+
+
+def _read_pinned_leaf_antigravity(pinned: _PinnedLeafAntigravity) -> bytes:
+    try:
+        os.lseek(pinned.descriptor, 0, os.SEEK_SET)
+        chunks: list[bytes] = []
+        while block := os.read(pinned.descriptor, 1 << 20):
+            chunks.append(block)
+        return b"".join(chunks)
+    except OSError as error:
+        raise ValueError(f"frozen source leaf read failed: {pinned.name}") from error
+
+
+def _assert_pinned_leaf_antigravity(directory_fd: int, pinned: _PinnedLeafAntigravity) -> None:
+    try:
+        current = os.stat(pinned.name, dir_fd=directory_fd, follow_symlinks=False)
+        opened = os.fstat(pinned.descriptor)
+    except OSError as error:
+        raise ValueError(f"frozen source leaf disappeared: {pinned.name}") from error
+    if any(
+        not stat.S_ISREG(item.st_mode) or item.st_nlink != 1 or _identity_antigravity(item) != pinned.identity
+        for item in (current, opened)
+    ):
+        raise ValueError(f"frozen source leaf changed during verification: {pinned.name}")
+
+
+def _read_leaf_antigravity(directory_fd: int, name: str) -> tuple[bytes, str, tuple[int, int, int, int, int, int, int]]:
+    """Read one leaf for isolated helper checks; captures retain their pin instead."""
+    pinned = _pin_leaf_antigravity(directory_fd, name)
+    try:
+        payload = _read_pinned_leaf_antigravity(pinned)
+        _assert_pinned_leaf_antigravity(directory_fd, pinned)
+        return payload, hashlib.sha256(payload).hexdigest(), pinned.identity
+    finally:
+        os.close(pinned.descriptor)
 
 
 def _strict_json_antigravity(payload: bytes, name: str) -> Mapping[str, object]:
@@ -211,23 +244,23 @@ def _validate_exp446_semantics_antigravity(leaves: Mapping[str, bytes], digests:
     )
 
 
-def _verify_database_antigravity() -> tuple[int, tuple[int, int, int, int, int, int, int]]:
+def _verify_database_path_antigravity(path: Path, expected_sha256: str, expected_inode: int) -> tuple[int, tuple[int, int, int, int, int, int, int]]:
     try:
-        before = os.stat(_DATABASE_ANTIGRAVITY, follow_symlinks=False)
-        descriptor = os.open(_DATABASE_ANTIGRAVITY, _LEAF_FLAGS_ANTIGRAVITY)
+        before = os.stat(path, follow_symlinks=False)
+        descriptor = os.open(path, _LEAF_FLAGS_ANTIGRAVITY)
     except OSError as error:
         raise ValueError("source database is unavailable") from error
     try:
         opened = os.fstat(descriptor)
         expected = _identity_antigravity(before)
-        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_ino != _DATABASE_INODE_ANTIGRAVITY or _identity_antigravity(opened) != expected:
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_ino != expected_inode or _identity_antigravity(opened) != expected:
             raise ValueError("source database inode/link contract is invalid")
         digest = hashlib.sha256()
         os.lseek(descriptor, 0, os.SEEK_SET)
         while block := os.read(descriptor, 1 << 20):
             digest.update(block)
-        current = os.stat(_DATABASE_ANTIGRAVITY, follow_symlinks=False)
-        if digest.hexdigest() != _DATABASE_SHA256_ANTIGRAVITY or any(_identity_antigravity(item) != expected for item in (opened, current)) or current.st_nlink != 1:
+        current = os.stat(path, follow_symlinks=False)
+        if digest.hexdigest() != expected_sha256 or any(_identity_antigravity(item) != expected for item in (opened, current)) or current.st_nlink != 1:
             raise ValueError("source database changed during digest verification")
         os.lseek(descriptor, 0, os.SEEK_SET)
         return descriptor, expected
@@ -236,9 +269,14 @@ def _verify_database_antigravity() -> tuple[int, tuple[int, int, int, int, int, 
         raise
 
 
+def _verify_database_antigravity() -> tuple[int, tuple[int, int, int, int, int, int, int]]:
+    return _verify_database_path_antigravity(_DATABASE_ANTIGRAVITY, _DATABASE_SHA256_ANTIGRAVITY, _DATABASE_INODE_ANTIGRAVITY)
+
+
 def capture_exp446_publication_antigravity() -> PublicationIdentityAntigravity:
     """Capture every Exp446 publication byte under descriptor pins, without labels."""
     root_fd = attempts_fd = attempt_fd = publication_fd = -1
+    pinned_leaves: list[_PinnedLeafAntigravity] = []
     try:
         root_fd, root_identity = _open_directory_antigravity(None, _EXP446_ROOT_ANTIGRAVITY)
         attempts_fd, attempts_identity = _open_directory_antigravity(root_fd, _EXP446_PARTS_ANTIGRAVITY[0])
@@ -248,9 +286,13 @@ def capture_exp446_publication_antigravity() -> PublicationIdentityAntigravity:
         leaves: dict[str, bytes] = {}
         digests: dict[str, str] = {}
         for name in _LEAVES_ANTIGRAVITY:
-            payload, digest, _ = _read_leaf_antigravity(publication_fd, name)
-            leaves[name], digests[name] = payload, digest
+            pinned = _pin_leaf_antigravity(publication_fd, name)
+            pinned_leaves.append(pinned)
+            payload = _read_pinned_leaf_antigravity(pinned)
+            leaves[name], digests[name] = payload, hashlib.sha256(payload).hexdigest()
         result = _validate_exp446_semantics_antigravity(leaves, digests, publication_identity)
+        for pinned in pinned_leaves:
+            _assert_pinned_leaf_antigravity(publication_fd, pinned)
         _exact_names_antigravity(publication_fd, _LEAVES_ANTIGRAVITY)
         _assert_directory_antigravity(attempt_fd, _EXP446_PARTS_ANTIGRAVITY[2], publication_fd, publication_identity)
         _assert_directory_antigravity(attempts_fd, _EXP446_PARTS_ANTIGRAVITY[1], attempt_fd, attempt_identity)
@@ -258,6 +300,8 @@ def capture_exp446_publication_antigravity() -> PublicationIdentityAntigravity:
         _assert_directory_antigravity(None, _EXP446_ROOT_ANTIGRAVITY, root_fd, root_identity)
         return result
     finally:
+        for pinned in pinned_leaves:
+            os.close(pinned.descriptor)
         for descriptor in (publication_fd, attempt_fd, attempts_fd, root_fd):
             if descriptor >= 0:
                 os.close(descriptor)
@@ -267,10 +311,13 @@ def capture_hard_predictions_antigravity(identity: PublicationIdentityAntigravit
     """Capture Exp404 Hard only after a verified Exp446 identity is supplied."""
     if not isinstance(identity, PublicationIdentityAntigravity):
         raise ValueError("verified Exp446 identity is required")
-    parent_fd = file_fd = -1
+    parent_fd = -1
+    pinned: _PinnedLeafAntigravity | None = None
     try:
         parent_fd, parent_identity = _open_directory_antigravity(None, _EXP404_HARD_ANTIGRAVITY.parent)
-        payload, digest, file_identity = _read_leaf_antigravity(parent_fd, _EXP404_HARD_ANTIGRAVITY.name)
+        pinned = _pin_leaf_antigravity(parent_fd, _EXP404_HARD_ANTIGRAVITY.name)
+        payload = _read_pinned_leaf_antigravity(pinned)
+        digest = hashlib.sha256(payload).hexdigest()
         if digest != FROZEN_CONFIG_ANTIGRAVITY.exp404_hard_prediction_sha256:
             raise ValueError("Exp404 Hard digest differs from frozen authority")
         rows = _strict_jsonl_antigravity(payload, "Exp404 Hard")
@@ -285,17 +332,24 @@ def capture_hard_predictions_antigravity(identity: PublicationIdentityAntigravit
             coordinates.add(coordinate)
         if len(coordinates) != 2218:
             raise ValueError("Exp404 Hard coordinate population differs")
+        _assert_pinned_leaf_antigravity(parent_fd, pinned)
         _assert_directory_antigravity(None, _EXP404_HARD_ANTIGRAVITY.parent, parent_fd, parent_identity)
         return HardPredictionsAntigravity(digest, frozenset(coordinates))
     finally:
+        if pinned is not None:
+            os.close(pinned.descriptor)
         if parent_fd >= 0:
             os.close(parent_fd)
 
 
 def open_test_labels_antigravity(identity: PublicationIdentityAntigravity, independently_confirmed: PublicationIdentityAntigravity | None):
     """Open the one-use TEST-label session only after byte/root-identical captures."""
-    if not isinstance(identity, PublicationIdentityAntigravity) or independently_confirmed is None or identity != independently_confirmed:
+    if not isinstance(identity, PublicationIdentityAntigravity) or not isinstance(independently_confirmed, PublicationIdentityAntigravity) or identity != independently_confirmed:
         raise ValueError("two byte/root-identical Exp446 captures are required before labels")
+    fresh_first = capture_exp446_publication_antigravity()
+    fresh_second = capture_exp446_publication_antigravity()
+    if fresh_first is fresh_second or any(capture != identity for capture in (fresh_first, fresh_second)):
+        raise ValueError("fresh Exp446 source captures do not attest the outer authority")
     descriptor, expected = _verify_database_antigravity()
     try:
         import sqlite3
@@ -336,10 +390,15 @@ def open_test_labels_antigravity(identity: PublicationIdentityAntigravity, indep
             closed = True
             try:
                 connection.close()
-                current = os.stat(_DATABASE_ANTIGRAVITY, follow_symlinks=False)
                 opened = os.fstat(descriptor)
-                if current.st_nlink != 1 or any(_identity_antigravity(item) != expected for item in (current, opened)):
+                if _identity_antigravity(opened) != expected or opened.st_nlink != 1:
                     raise ValueError("source database changed during TEST-label session")
+                rechecked_descriptor, rechecked = _verify_database_antigravity()
+                try:
+                    if rechecked != expected:
+                        raise ValueError("source database changed during TEST-label session")
+                finally:
+                    os.close(rechecked_descriptor)
             finally:
                 os.close(descriptor)
     return LabelSessionAntigravity()

@@ -4,6 +4,8 @@ from __future__ import annotations
 import ast
 import inspect
 import os
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -52,6 +54,91 @@ class ReadinessAntigravityTests(unittest.TestCase):
             result = readiness.readiness_antigravity("a" * 40)
         verify.assert_called_once_with()
         self.assertEqual(result["label_access_count"], 0)
+        with self.assertRaises(OSError):
+            os.fstat(descriptor)
+
+    def test_readiness_requires_exact_frozen_python_and_numpy_versions_antigravity(self) -> None:
+        # Break caught: a compatible-but-not-frozen runtime silently changes
+        # deterministic bootstrap semantics.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import readiness_antigravity as readiness
+
+        with patch.object(readiness, "_runtime_versions_antigravity", return_value=((3, 14, 5), "2.4.6")):
+            with self.assertRaises(ValueError):
+                readiness._require_frozen_runtime_antigravity()
+        with patch.object(readiness, "_runtime_versions_antigravity", return_value=((3, 14, 6), "2.4.5")):
+            with self.assertRaises(ValueError):
+                readiness._require_frozen_runtime_antigravity()
+
+    def test_readiness_rechecks_clean_head_and_absent_root_after_sources_antigravity(self) -> None:
+        # Break caught: a lengthy immutable source scan finishes after the
+        # reviewed checkout becomes dirty or its official root appears.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import readiness_antigravity as readiness
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.sources_antigravity import (
+            HardPredictionsAntigravity,
+            capture_exp446_publication_antigravity,
+        )
+
+        identity = capture_exp446_publication_antigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        with (
+            patch.object(readiness, "_require_clean_reviewed_head_antigravity", side_effect=(None, ValueError("dirty after scan"))) as clean,
+            patch.object(readiness, "_require_document_hashes_antigravity"),
+            patch.object(readiness, "_require_absent_run_root_antigravity") as absent,
+            patch.object(readiness, "_require_frozen_runtime_antigravity"),
+            patch.object(readiness, "_verify_database_antigravity", return_value=(descriptor, (1, 2, 3, 1, 4, 5, 6))),
+            patch.object(readiness, "capture_exp446_publication_antigravity", return_value=identity),
+            patch.object(readiness, "capture_hard_predictions_antigravity", return_value=HardPredictionsAntigravity("a" * 64, frozenset())),
+            self.assertRaisesRegex(ValueError, "dirty after scan"),
+        ):
+            readiness.readiness_antigravity("a" * 40)
+        self.assertEqual(clean.call_count, 2)
+        self.assertEqual(absent.call_count, 1)
+        with self.assertRaises(OSError):
+            os.fstat(descriptor)
+
+    def test_clean_head_rejects_valid_wrong_commit_and_dirty_tree_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import readiness_antigravity as readiness
+
+        reviewed = "a" * 40
+        with patch.object(readiness, "_git_antigravity", return_value="b" * 40):
+            with self.assertRaisesRegex(ValueError, "does not equal"):
+                readiness._require_clean_reviewed_head_antigravity(reviewed)
+        with patch.object(readiness, "_git_antigravity", side_effect=(reviewed, " M changed_antigravity.py")):
+            with self.assertRaisesRegex(ValueError, "clean"):
+                readiness._require_clean_reviewed_head_antigravity(reviewed)
+
+    def test_document_gate_rejects_tampered_design_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import readiness_antigravity as readiness
+
+        with tempfile.TemporaryDirectory(prefix="exp447_docs_antigravity_") as temporary:
+            tampered = Path(temporary) / "design_antigravity.md"
+            tampered.write_text("changed\n", encoding="utf-8")
+            with patch.object(readiness, "_DESIGN_ANTIGRAVITY", tampered):
+                with self.assertRaisesRegex(ValueError, "digest changed"):
+                    readiness._require_document_hashes_antigravity()
+
+    def test_readiness_rejects_root_appearing_after_source_capture_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import readiness_antigravity as readiness
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.sources_antigravity import (
+            HardPredictionsAntigravity,
+            capture_exp446_publication_antigravity,
+        )
+
+        identity = capture_exp446_publication_antigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        with (
+            patch.object(readiness, "_require_clean_reviewed_head_antigravity") as clean,
+            patch.object(readiness, "_require_document_hashes_antigravity"),
+            patch.object(readiness, "_require_absent_run_root_antigravity", side_effect=(None, ValueError("root appeared"))) as absent,
+            patch.object(readiness, "_require_frozen_runtime_antigravity"),
+            patch.object(readiness, "_verify_database_antigravity", return_value=(descriptor, (1, 2, 3, 1, 4, 5, 6))),
+            patch.object(readiness, "capture_exp446_publication_antigravity", return_value=identity),
+            patch.object(readiness, "capture_hard_predictions_antigravity", return_value=HardPredictionsAntigravity("a" * 64, frozenset())),
+            self.assertRaisesRegex(ValueError, "root appeared"),
+        ):
+            readiness.readiness_antigravity("a" * 40)
+        self.assertEqual(clean.call_count, 2)
+        self.assertEqual(absent.call_count, 2)
         with self.assertRaises(OSError):
             os.fstat(descriptor)
 

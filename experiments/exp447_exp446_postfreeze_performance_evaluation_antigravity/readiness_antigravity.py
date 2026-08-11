@@ -18,6 +18,8 @@ _DESIGN_ANTIGRAVITY = _REPOSITORY_ANTIGRAVITY / "docs/superpowers/specs/2026-08-
 _PREREGISTRATION_ANTIGRAVITY = _REPOSITORY_ANTIGRAVITY / "docs/EXP447_PREREGISTRATION_antigravity_KO.md"
 _EXPECTED_DESIGN_SHA256_ANTIGRAVITY = "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868"
 _EXPECTED_PREREGISTRATION_SHA256_ANTIGRAVITY = "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd"
+_FROZEN_PYTHON_ANTIGRAVITY = (3, 14, 6)
+_FROZEN_NUMPY_ANTIGRAVITY = "2.4.6"
 
 
 def _git_antigravity(*arguments: str) -> str:
@@ -57,17 +59,30 @@ def _require_absent_run_root_antigravity() -> None:
     raise ValueError("Exp447 root already exists or is unsafe")
 
 
+def _runtime_versions_antigravity() -> tuple[tuple[int, int, int], str]:
+    import numpy
+
+    return tuple(sys.version_info[:3]), numpy.__version__
+
+
+def _require_frozen_runtime_antigravity() -> None:
+    python_version, numpy_version = _runtime_versions_antigravity()
+    if python_version != _FROZEN_PYTHON_ANTIGRAVITY or numpy_version != _FROZEN_NUMPY_ANTIGRAVITY:
+        raise ValueError("Exp447 requires exactly Python 3.14.6 and NumPy 2.4.6")
+
+
 def readiness_antigravity(reviewed_commit: str) -> dict[str, object]:
     """Validate source authority and operator state without opening TEST labels."""
     _require_clean_reviewed_head_antigravity(reviewed_commit)
     _require_document_hashes_antigravity()
     _require_absent_run_root_antigravity()
+    _require_frozen_runtime_antigravity()
     database_descriptor, _database_identity = _verify_database_antigravity()
     os.close(database_descriptor)
     identity = capture_exp446_publication_antigravity()
     hard = capture_hard_predictions_antigravity(identity)
-    if sys.version_info[:2] < (3, 14):
-        raise ValueError("Exp447 requires the frozen Python 3.14 environment")
+    _require_clean_reviewed_head_antigravity(reviewed_commit)
+    _require_absent_run_root_antigravity()
     return {
         "experiment_id": FROZEN_CONFIG_ANTIGRAVITY.experiment_id,
         "reviewed_commit": reviewed_commit,

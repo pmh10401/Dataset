@@ -5,8 +5,12 @@ import ast
 import inspect
 import os
 from pathlib import Path
+import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from dataclasses import replace
+from unittest.mock import patch
 
 
 class SourcesAntigravityTests(unittest.TestCase):
@@ -46,6 +50,112 @@ class SourcesAntigravityTests(unittest.TestCase):
         first = capture_exp446_publication_antigravity()
         with self.assertRaises(ValueError):
             open_test_labels_antigravity(first, independently_confirmed=None)
+
+    def test_label_session_requires_two_fresh_internal_captures_antigravity(self) -> None:
+        # Break caught: an evaluator could pass two equal public value objects
+        # while the source changed after its outer inspection.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        authority = sources.capture_exp446_publication_antigravity()
+        changed = replace(authority, root_inode=authority.root_inode + 1)
+        with (
+            patch.object(sources, "capture_exp446_publication_antigravity", side_effect=(authority, changed)) as capture,
+            patch.object(sources, "_verify_database_antigravity") as verify,
+            self.assertRaises(ValueError),
+        ):
+            sources.open_test_labels_antigravity(authority, replace(authority))
+        self.assertEqual(capture.call_count, 2)
+        verify.assert_not_called()
+
+    def test_pinned_leaf_rejects_post_read_namespace_replacement_antigravity(self) -> None:
+        # Break caught: an attacker replaces a same-name leaf after its bytes
+        # were read but before the immutable authority returns.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        with tempfile.TemporaryDirectory(prefix="exp447_leaf_swap_antigravity_") as temporary:
+            root = Path(temporary)
+            target = root / "target_antigravity.json"
+            target.write_bytes(b"first\n")
+            directory_fd = os.open(root, sources._DIRECTORY_FLAGS_ANTIGRAVITY)
+            try:
+                pinned = sources._pin_leaf_antigravity(directory_fd, target.name)
+                try:
+                    self.assertEqual(sources._read_pinned_leaf_antigravity(pinned), b"first\n")
+                    replacement = root / "replacement_antigravity.json"
+                    replacement.write_bytes(b"second\n")
+                    os.replace(replacement, target)
+                    with self.assertRaises(ValueError):
+                        sources._assert_pinned_leaf_antigravity(directory_fd, pinned)
+                finally:
+                    os.close(pinned.descriptor)
+            finally:
+                os.close(directory_fd)
+
+    def test_database_verifier_rejects_digest_inode_and_hardlink_antigravity(self) -> None:
+        # Break caught: a name-stable or linked database reaches the label
+        # session without an exact byte/inode/single-link verification.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        with tempfile.TemporaryDirectory(prefix="exp447_db_gate_antigravity_") as temporary:
+            database = Path(temporary) / "database_antigravity.db"
+            database.write_bytes(b"immutable fixture\n")
+            digest = __import__("hashlib").sha256(database.read_bytes()).hexdigest()
+            inode = database.stat().st_ino
+            descriptor, _identity = sources._verify_database_path_antigravity(database, digest, inode)
+            os.close(descriptor)
+            with self.assertRaises(ValueError):
+                sources._verify_database_path_antigravity(database, "0" * 64, inode)
+            with self.assertRaises(ValueError):
+                sources._verify_database_path_antigravity(database, digest, inode + 1)
+            alias = Path(temporary) / "alias_antigravity.db"
+            os.link(database, alias)
+            try:
+                with self.assertRaises(ValueError):
+                    sources._verify_database_path_antigravity(database, digest, inode)
+            finally:
+                alias.unlink()
+
+    def test_label_session_close_rehashes_database_after_connection_close_antigravity(self) -> None:
+        # Break caught: a database changed during an already-open label session
+        # is checked only by inode metadata, not its exact bytes.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        authority = sources.capture_exp446_publication_antigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        expected = sources._identity_antigravity(os.fstat(descriptor))
+
+        class ConnectionAntigravity:
+            def set_authorizer(self, _authorizer: object) -> None:
+                pass
+
+            def close(self) -> None:
+                pass
+
+        sqlite = SimpleNamespace(
+            SQLITE_SELECT=1, SQLITE_READ=2, SQLITE_OK=0, SQLITE_DENY=1,
+            connect=lambda *_args, **_kwargs: ConnectionAntigravity(),
+        )
+        with (
+            patch.object(sources, "capture_exp446_publication_antigravity", side_effect=(replace(authority), replace(authority))),
+            patch.object(sources, "_verify_database_antigravity", side_effect=((descriptor, expected), ValueError("digest changed"))) as verify,
+            patch.dict(sys.modules, {"sqlite3": sqlite}),
+        ):
+            session = sources.open_test_labels_antigravity(authority, replace(authority))
+            with self.assertRaisesRegex(ValueError, "digest changed"):
+                session.close_antigravity()
+        self.assertEqual(verify.call_count, 2)
+        with self.assertRaises(OSError):
+            os.fstat(descriptor)
+
+    def test_exp404_capture_rejects_tampered_bytes_before_schema_antigravity(self) -> None:
+        # Break caught: Exp404's filename and later row validation are trusted
+        # while its frozen byte digest no longer matches.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        authority = sources.capture_exp446_publication_antigravity()
+        with patch.object(sources, "_read_pinned_leaf_antigravity", return_value=b"{}\n"):
+            with self.assertRaisesRegex(ValueError, "digest differs"):
+                sources.capture_hard_predictions_antigravity(authority)
 
     def test_source_module_has_no_eager_sqlite_import_antigravity(self) -> None:
         from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity
