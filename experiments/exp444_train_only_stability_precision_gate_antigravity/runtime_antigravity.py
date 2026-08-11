@@ -92,13 +92,25 @@ def _assert_exp446_topology_antigravity(workers: int) -> None:
         raise ValueError("Exp446 production worker contract is not eleven")
 
 
-def _terminal_parity_payload_antigravity(predecessors: tuple[object, ...]) -> dict[str, object]:
+def _terminal_parity_payload_antigravity(predecessors: tuple[object, ...], attempt: Path) -> dict[str, object]:
     if len(predecessors) != 2:
         raise ValueError("Exp446 terminal predecessor authority is invalid")
+    names = (
+        "checkpoint_antigravity/context_antigravity.json", "checkpoint_antigravity/state_antigravity.json",
+        "progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log",
+        *(f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json" for index in range(30)),
+    )
+    binding: dict[str, str] = {}
+    for name in names:
+        leaf = attempt / name
+        if leaf.is_symlink() or not leaf.is_file():
+            raise ValueError("Exp446 terminal evidence is invalid")
+        binding[name] = hashlib.sha256(leaf.read_bytes()).hexdigest()
     return {
         "schema": "exp446.terminal-parity.v1",
         "record_prefix_payload_sha256": getattr(predecessors[0], "record_prefix_payload_sha256"),
         "authorities": [getattr(item, "record_prefix_payload_sha256") for item in predecessors],
+        "terminal_sha256": binding,
     }
 
 
@@ -985,7 +997,7 @@ def _execute_runtime_antigravity(
             # after progress, PID, and terminal log closeout have succeeded.
             writer.close_antigravity("complete")
             store.write_terminal_parity_antigravity(
-                _terminal_parity_payload_antigravity(predecessors)
+                _terminal_parity_payload_antigravity(predecessors, attempt)
             )
         else:
             writer.close_antigravity("complete")

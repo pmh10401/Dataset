@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 
 from experiments.exp444_train_only_stability_precision_gate_antigravity.profiles_antigravity import EXP446_PROFILE_ANTIGRAVITY as _EXP446_PROFILE_ANTIGRAVITY
 
@@ -26,12 +27,20 @@ def _require_terminal_parity_antigravity() -> None:
     except (OSError, ValueError, json.JSONDecodeError) as error:
         raise ValueError("Exp446 publication requires terminal parity") from error
     authorities = payload.get("authorities")
+    terminal = payload.get("terminal_sha256")
     if (
         payload.get("schema") != "exp446.terminal-parity.v1"
         or not isinstance(authorities, list) or len(authorities) != 2
         or payload.get("record_prefix_payload_sha256") != authorities[0]
+        or not isinstance(terminal, dict) or len(terminal) != 36
     ):
         raise ValueError("Exp446 publication requires terminal parity")
+    for name, expected in terminal.items():
+        if type(name) is not str or type(expected) is not str:
+            raise ValueError("Exp446 publication requires terminal parity")
+        leaf = attempt / name
+        if leaf.is_symlink() or not leaf.is_file() or hashlib.sha256(leaf.read_bytes()).hexdigest() != expected:
+            raise ValueError("Exp446 publication requires terminal parity")
     from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
     from .predecessor_antigravity import verify_exp445_predecessor_antigravity
     fresh = (verify_exp444_predecessor_antigravity(), verify_exp445_predecessor_antigravity())

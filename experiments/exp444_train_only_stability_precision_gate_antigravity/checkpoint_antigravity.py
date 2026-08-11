@@ -728,16 +728,19 @@ class Exp444CheckpointStoreAntigravity:
         if self.context.experiment_id != "Exp446" or self._status != "complete" or len(self._prefix) != self.context.total_units:
             raise ValueError("Exp446 terminal parity requires the complete checkpoint")
         if not isinstance(payload, Mapping) or set(payload) != {
-            "schema", "record_prefix_payload_sha256", "authorities",
+            "schema", "record_prefix_payload_sha256", "authorities", "terminal_sha256",
         }:
             raise ValueError("Exp446 terminal parity payload is invalid")
         if payload["schema"] != "exp446.terminal-parity.v1":
             raise ValueError("Exp446 terminal parity payload is invalid")
         authorities = payload["authorities"]
+        terminal = payload["terminal_sha256"]
         if (
             not isinstance(authorities, list) or len(authorities) != 2
             or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in authorities)
             or payload["record_prefix_payload_sha256"] != authorities[0]
+            or not isinstance(terminal, Mapping) or len(terminal) != 36
+            or any(type(name) is not str or type(value) is not str or _SHA256.fullmatch(value) is None for name, value in terminal.items())
         ):
             raise ValueError("Exp446 terminal parity payload is invalid")
         write_create_only_antigravity(
