@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-12T02:10:53+09:00",
+  "updated_at": "2026-08-12T04:45:38+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -1077,7 +1077,7 @@
     {
       "id": "Exp448",
       "kind": "exp447_text_label_boundary_repair",
-      "status": "implementation_verified_awaiting_official_readiness",
+      "status": "official_evaluation_inspected_complete_awaiting_discussion_dashboard",
       "documents": [
         "docs/superpowers/specs/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity-design.md",
         "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md",
@@ -1088,8 +1088,8 @@
       "reviewed_design_sha256": "ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4",
       "reviewed_plan_sha256": "b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934",
       "preregistration_sha256": "af2b8b10ff25ea4e6e54a4af4757bc5e0432c8d76d17c69612fd10f3933c612f",
-      "runbook_sha256": "474d413327e8d33414f3d9a9a47af6ef560c24f133bc343ffed243503f5c51ca",
-      "implementation_report_sha256": "950c0c07e6252d9b710bfeb36a1dc870df442fa6299dd049f91b57671bf53802",
+      "runbook_sha256": "820b8ccf030a41a5db990ca875f75f2a3cab2d5c76dbfbb61664e0eecb0e9066",
+      "implementation_report_sha256": "4db6a366dea01244685603bbace206ca94198c136d74345b0f1a13078f36e1bd",
       "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
       "artifact_schema": "exp448",
       "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
@@ -1101,18 +1101,38 @@
       "stable_candidate_count": 26,
       "unstable_candidate_count": 4,
       "prediction_sha256": null,
-      "evaluation_sha256": null,
+      "artifact_sha256": "ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05",
+      "evaluation_sha256": "a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c",
+      "decision_sha256": "54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5",
       "champion_sha256": null,
       "promotion_sha256": null,
       "prediction_phase_started": false,
-      "test_labels_opened": false,
-      "official_label_access_count": 0,
-      "official_readiness": false,
-      "official_evaluate": false,
-      "official_inspect": false,
-      "run_root_exists": false,
+      "test_labels_opened": true,
+      "official_label_access_count": 1117,
+      "official_readiness": true,
+      "official_evaluate": true,
+      "official_inspect": true,
+      "run_root_exists": true,
+      "reviewed_commit": "2f5229ccd471bba907562b3131d293b46b0b3afc",
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "readiness_label_access_count": 0,
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "label_session_opened": true,
+        "label_sessions": 1,
+        "query_attempts": 1117,
+        "query_completions": 1117,
+        "label_rows": 195900,
+        "label_session_closed": true,
+        "failure_audit_created": false,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "inspect_source_free": true
+      },
       "scientific_success_criterion": null,
-      "evaluation_status": "not_started_no_official_authorization",
+      "evaluation_status": "descriptive_complete_no_promotion",
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
@@ -1121,15 +1141,15 @@
       "automatic_champion_promotion": false,
       "promotion_allowed": false,
       "dashboard_presentation": {
-        "status": "post_success_only_no_current_export",
+        "status": "awaiting_discussion_no_current_export",
         "public_payload_schema": "exp448.public-evaluation.v1",
         "scientific_or_promotion_gate": false,
         "dashboard_failure_changes_scientific_artifacts": false,
         "dashboard_failure_allows_evaluation_retry": false
       },
-      "next_action": "fresh_sol_high_read_only_ship_review_current_clean_head",
-      "exact_next_command": "fresh_sol_high_read_only_ship_review_current_clean_head",
-      "notes": "Controlled-fork implementation is verified awaiting official readiness. Exp447 remains immutable; Exp448 evaluation/champion/promotion/result hashes are null, label access is zero, official commands are false, and no dashboard action has occurred."
+      "next_action": "await_discussion_then_separately_governed_aggregate_only_dashboard_consideration",
+      "exact_next_command": "none_exp448_closed_no_retry_or_rerun",
+      "notes": "Official readiness, evaluate, and bare inspect each ran exactly once with exit 0 at reviewed commit 2f5229ccd471bba907562b3131d293b46b0b3afc. Immutable result is descriptive_complete_no_promotion: no champion, pending candidate, winner, promotion, alert, or dashboard change."
     }
   ]
 }
