@@ -811,6 +811,12 @@ class ProgressWriterAntigravity:
             raise ValueError("Exp446 terminal parity evidence is absent")
         self.close_antigravity("complete")
 
+    def recover_exp446_inactive_pid_antigravity(self) -> None:
+        """One bounded PID-only recovery after Exp446 progress close failed first."""
+        if os.getpid() != self._local_owner_pid:
+            raise ValueError("progress mutation requires the parent owner process")
+        self._write_pid_antigravity(False)
+
     @classmethod
     def open_interrupted(
         cls,

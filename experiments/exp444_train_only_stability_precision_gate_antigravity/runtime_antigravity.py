@@ -44,7 +44,7 @@ from .contracts_antigravity import (
     CheckpointContextAntigravity,
     ProfileCheckpointContextAntigravity,
 )
-from .progress_antigravity import ProgressWriterAntigravity
+from .progress_antigravity import ProgressWriterAntigravity, TerminalCloseFailureAntigravity
 from .readiness_antigravity import current_clean_head_antigravity, readiness_for_profile_antigravity
 from .profiles_antigravity import EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY, EXP446_PROFILE_ANTIGRAVITY, LifecycleProfileAntigravity
 
@@ -110,6 +110,8 @@ def _record_exp446_terminal_finalization_failure_antigravity(
     store: Exp444CheckpointStoreAntigravity,
     error: BaseException,
     channel: str,
+    *,
+    pid_recovery_error: BaseException | None = None,
 ) -> None:
     """Create the non-eligibility fact after an already-complete Exp446 checkpoint fails to close."""
     if profile is not EXP446_PROFILE_ANTIGRAVITY or store.status_antigravity != "complete":
@@ -139,6 +141,16 @@ def _record_exp446_terminal_finalization_failure_antigravity(
             ).hexdigest(),
             "terminal_sha256": None,
         }
+    if pid_recovery_error is None:
+        pid_recovery: Mapping[str, object] = {"status": "inactive"}
+    else:
+        pid_recovery = {
+            "status": "unresolved",
+            "error": {
+                "type": type(pid_recovery_error).__name__,
+                "message": str(pid_recovery_error) or type(pid_recovery_error).__name__,
+            },
+        }
     write_create_only_antigravity(
         attempt / "terminal_finalization_failure_antigravity.json",
         canonical_json_bytes_antigravity({
@@ -148,6 +160,7 @@ def _record_exp446_terminal_finalization_failure_antigravity(
                 "type": type(error).__name__,
                 "message": str(error) or type(error).__name__,
             },
+            "pid_recovery": pid_recovery,
             "terminal_authority": terminal_authority,
         }),
     )
@@ -1062,13 +1075,23 @@ def _execute_runtime_antigravity(
             and store is not None and store.status_antigravity == "complete"
             and terminal_channel_antigravity is not None
         ):
+            failed_channel = getattr(error, "channel_antigravity", terminal_channel_antigravity)
+            terminal_error = error.cause_antigravity if isinstance(error, TerminalCloseFailureAntigravity) else error
+            pid_recovery_error: BaseException | None = terminal_error if failed_channel == "pid" else None
+            if failed_channel == "progress" and writer is not None:
+                try:
+                    writer.recover_exp446_inactive_pid_antigravity()
+                except BaseException as recovery_error:
+                    pid_recovery_error = recovery_error
             try:
-                failed_channel = getattr(error, "channel_antigravity", terminal_channel_antigravity)
                 _record_exp446_terminal_finalization_failure_antigravity(
-                    attempt, profile, store, error, failed_channel,
+                    attempt, profile, store, terminal_error, failed_channel,
+                    pid_recovery_error=pid_recovery_error,
                 )
             except BaseException:
                 pass
+            if isinstance(error, TerminalCloseFailureAntigravity):
+                raise terminal_error from error
         if writer is not None and writer.stage_antigravity not in {"complete", "error", "failed", "interrupted", "interrupted_resumable"}:
             if store.status_antigravity not in {"complete", "error"} and store.completed_count_antigravity < FROZEN_CONFIG.source_candidate_count:
                 error_sequence = store.completed_count_antigravity
