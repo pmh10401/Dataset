@@ -382,13 +382,25 @@ def ordered_parallel_map_antigravity(
                 # This path is only reachable with an unusual fixture
                 # executor that completes and removes futures eagerly.
                 continue
+    except KeyboardInterrupt:
+        for future in pending:
+            try:
+                future.cancel()
+            except BaseException:
+                pass
+        # SIGINT is an interactive cancellation boundary: retain the frozen
+        # runtime's immediate return contract rather than blocking its caller.
+        executor.shutdown(wait=False, cancel_futures=True)  # type: ignore[union-attr]
+        raise
     except BaseException:
         for future in pending:
             try:
                 future.cancel()
             except BaseException:
                 pass
-        executor.shutdown(wait=False, cancel_futures=True)  # type: ignore[union-attr]
+        # Worker/scorer failures must reap the actual spawned children before
+        # the durable parent failure record is surfaced.
+        executor.shutdown(wait=True, cancel_futures=True)  # type: ignore[union-attr]
         raise
     executor.shutdown(wait=True)  # type: ignore[union-attr]
     if commit_index != len(frozen) or pending or buffered:

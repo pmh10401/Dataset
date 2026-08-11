@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import ExitStack
 from pathlib import Path
 import shutil
@@ -23,6 +25,30 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.contract
 
 
 _COMMIT_ANTIGRAVITY = "a" * 40
+_CAPTURED_POOLS_ANTIGRAVITY: list["_CapturingProcessPoolExecutorAntigravity"] = []
+
+
+class _CapturingProcessPoolExecutorAntigravity(ProcessPoolExecutor):
+    """Real executor that retains child handles across its parent's shutdown call."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.child_handles_antigravity = []
+        _CAPTURED_POOLS_ANTIGRAVITY.append(self)
+
+    def shutdown(self, *args, **kwargs) -> None:
+        if self._processes is not None:
+            self.child_handles_antigravity.extend(self._processes.values())
+        return super().shutdown(*args, **kwargs)
+
+
+def _checkpoint_tree_bytes_antigravity(root: Path) -> dict[str, bytes]:
+    """Raw complete checkpoint authority, independent of JSON interpretation."""
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
 
 
 def _inputs_antigravity() -> tuple[CandidateInputAntigravity, ...]:
@@ -51,6 +77,7 @@ def _child_value_error_antigravity(item: CandidateInputAntigravity) -> Candidate
     """Picklable spawned-worker fixture: errors must cross a real Future."""
     if item.candidate.instance_index == 0:
         raise ValueError("scorer child fixture fault")
+    time.sleep(0.5)
     return _result_antigravity(item)
 
 
@@ -58,6 +85,7 @@ def _child_transport_crash_antigravity(item: CandidateInputAntigravity) -> Candi
     """Picklable spawned-worker fixture: one child exits before serializing a result."""
     if item.candidate.instance_index == 0:
         os._exit(47)
+    time.sleep(0.5)
     return _result_antigravity(item)
 
 
@@ -92,6 +120,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
         ordered_failure: BaseException | None = None,
         failure_seam: str | None = None,
         real_scheduler_seam: str | None = None,
+        capture_pool: bool = False, checkpoint_capture: list[dict[str, bytes]] | None = None,
         write_fault: str | None = None, reviewed_commit: str = _COMMIT_ANTIGRAVITY,
         commit_error: BaseException | None = None, reuse_root: Path | None = None,
     ) -> tuple[Path, object]:
@@ -126,6 +155,10 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 target.mkdir()
                 root.symlink_to(target, target_is_directory=True)
             calls = 0
+            checkpoint_root = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity"
+            def capture_checkpoint_before_fault() -> None:
+                if checkpoint_capture is not None:
+                    checkpoint_capture.append(_checkpoint_tree_bytes_antigravity(checkpoint_root))
             def verify_exp445():
                 nonlocal calls
                 calls += 1
@@ -183,15 +216,20 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                     patch_list.append(mock.patch.object(runtime, "_score_candidate_worker_antigravity", scorer))
                 for patch in patch_list:
                     patches.enter_context(patch)
+                if capture_pool:
+                    patches.enter_context(mock.patch.object(runtime, "ProcessPoolExecutor", _CapturingProcessPoolExecutorAntigravity))
                 if close_fault:
                     from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
                     patches.enter_context(mock.patch.object(ProgressWriterAntigravity, "close_antigravity", side_effect=OSError("terminal close fault")))
                 if write_fault is not None:
                     from experiments.exp444_train_only_stability_precision_gate_antigravity import checkpoint_antigravity, progress_antigravity
                     if write_fault == "marker":
+                        def marker_fault(*args, **kwargs):
+                            capture_checkpoint_before_fault()
+                            raise OSError("marker write fault")
                         patches.enter_context(mock.patch.object(
                             checkpoint_antigravity.Exp444CheckpointStoreAntigravity,
-                            "write_terminal_parity_antigravity", side_effect=OSError("marker write fault"),
+                            "write_terminal_parity_antigravity", side_effect=marker_fault,
                         ))
                     else:
                         persistent = write_fault.startswith("persistent_")
@@ -203,6 +241,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                                 nonlocal fired
                                 if (persistent or not fired) and path.name == "progress_antigravity.json" and payload.get("stage") == "complete":
                                     fired = True
+                                    capture_checkpoint_before_fault()
                                     raise OSError("progress write fault")
                                 return original(path, payload)
                             patches.enter_context(mock.patch.object(
@@ -214,6 +253,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                                 nonlocal fired
                                 if (persistent or not fired) and active is False:
                                     fired = True
+                                    capture_checkpoint_before_fault()
                                     raise OSError("pid write fault")
                                 return original(writer, active)
                             patches.enter_context(mock.patch.object(
@@ -225,6 +265,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                                 nonlocal fired
                                 if (persistent or not fired) and event == "terminal":
                                     fired = True
+                                    capture_checkpoint_before_fault()
                                     raise OSError("event write fault")
                                 return original(writer, event, stage, extra)
                             patches.enter_context(mock.patch.object(
@@ -236,6 +277,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                                 nonlocal fired
                                 if (persistent or not fired) and line.startswith("종료 "):
                                     fired = True
+                                    capture_checkpoint_before_fault()
                                     raise OSError("text write fault")
                                 return original(writer, line)
                             patches.enter_context(mock.patch.object(
@@ -377,6 +419,24 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 self.assertIsInstance(outcome.__cause__, BrokenProcessPool if seam == "worker_transport" else ValueError)
                 if seam == "scorer":
                     self.assertEqual(str(outcome.__cause__), "scorer child fixture fault")
+                self.assertFalse((root / "attempts_antigravity/attempt_0000_antigravity/terminal_parity_antigravity.json").exists())
+
+    def test_real_process_pool_failure_reaps_all_child_handles_antigravity(self) -> None:
+        """Returning before executor cleanup would leave real delayed children alive."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+
+        for seam in ("worker_transport", "scorer"):
+            with self.subTest(seam=seam):
+                _CAPTURED_POOLS_ANTIGRAVITY.clear()
+                root, outcome = self._run_antigravity(real_scheduler_seam=seam, capture_pool=True)
+                self.assertIsInstance(outcome, runtime.WorkerFailureAntigravity)
+                self.assertEqual(len(_CAPTURED_POOLS_ANTIGRAVITY), 1)
+                handles = _CAPTURED_POOLS_ANTIGRAVITY[0].child_handles_antigravity
+                self.assertGreater(len(handles), 0)
+                for process in handles:
+                    self.assertIsNotNone(process.pid)
+                    self.assertFalse(process.is_alive())
+                    self.assertIsNotNone(process.exitcode)
                 self.assertFalse((root / "attempts_antigravity/attempt_0000_antigravity/terminal_parity_antigravity.json").exists())
 
     def test_terminal_marker_rejects_forged_or_noncanonical_terminal_evidence_antigravity(self) -> None:
@@ -624,6 +684,18 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 retry_root, retry = self._run_antigravity(reuse_root=root)
                 self.assertIsInstance(retry, ValueError)
                 self.assertEqual(retry_root, root)
+
+    def test_terminal_finalization_failure_never_mutates_complete_checkpoint_tree_antigravity(self) -> None:
+        """A closeout or marker error must not alter any already-complete checkpoint bytes."""
+        for fault in ("persistent_progress", "persistent_pid", "persistent_event", "persistent_text", "marker"):
+            with self.subTest(fault=fault):
+                captures: list[dict[str, bytes]] = []
+                root, outcome = self._run_antigravity(write_fault=fault, checkpoint_capture=captures)
+                self.assertIsInstance(outcome, OSError)
+                checkpoint_root = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity"
+                self.assertEqual(len(captures), 1)
+                self.assertEqual(captures[0], _checkpoint_tree_bytes_antigravity(checkpoint_root))
+                self.assertEqual(len(captures[0]), 32)
 
     def test_valid_terminal_marker_requires_inactive_complete_progress_and_pid_antigravity(self) -> None:
         """A valid eligibility marker is paired with inactive, complete terminal ownership evidence."""
