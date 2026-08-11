@@ -290,6 +290,10 @@ class EvaluationAntigravityTests(unittest.TestCase):
             path = root / "dataset_metrics_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
             rows[0]["dataset_order"] = True; rewrite(root, path.name, rows, jsonl=True)
 
+        def bool_second_row_index(root: Path) -> None:
+            path = root / "dataset_metrics_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            rows[1]["dataset_order"] = True; rewrite(root, path.name, rows, jsonl=True)
+
         def swapped_dataset_rows(root: Path) -> None:
             path = root / "dataset_metrics_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
             rows[0], rows[1] = rows[1], rows[0]; rewrite(root, path.name, rows, jsonl=True)
@@ -308,7 +312,12 @@ class EvaluationAntigravityTests(unittest.TestCase):
                         row[method]["f1"] = 0; rewrite(root, path.name, rows, jsonl=True); return
             self.fail("fixture did not provide an exact zero F1 row")
 
-        for name, mutate in (("bool_row_index", bool_row_index), ("swapped_dataset_rows", swapped_dataset_rows), ("bool_evaluation_count", bool_evaluation_count), ("extra_decision_key", extra_decision_key), ("integer_zero_f1", integer_zero_f1)):
+        def bool_diagnostic_increment(root: Path) -> None:
+            path = root / "rescued_datasets_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            row = next(item for item in rows if item["tp_increase"] == 1)
+            row["tp_increase"] = True; rewrite(root, path.name, rows, jsonl=True)
+
+        for name, mutate in (("bool_row_index", bool_row_index), ("bool_second_row_index", bool_second_row_index), ("swapped_dataset_rows", swapped_dataset_rows), ("bool_evaluation_count", bool_evaluation_count), ("extra_decision_key", extra_decision_key), ("integer_zero_f1", integer_zero_f1), ("bool_diagnostic_increment", bool_diagnostic_increment)):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
                 _evaluate_with_dependencies_antigravity("a" * 40, dependencies); mutate(root); rehash(root)

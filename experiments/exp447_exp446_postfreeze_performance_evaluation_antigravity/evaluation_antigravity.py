@@ -503,7 +503,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         if not isinstance(item, dict) or set(item) != {"comparison_name", "tp", "fp", "fn", "tn", "precision", "recall", "f1", "false_positive_rate", "macro_f1"}:
             raise ValueError("confusion payload schema differs")
         counts = ConfusionAntigravity(item["tp"], item["fp"], item["fn"], item["tn"])
-        if any(item[name] != value for name, value in (("precision", counts.precision), ("recall", counts.recall), ("f1", counts.f1), ("false_positive_rate", counts.false_positive_rate))):
+        if any(type(item[name]) is not float or item[name] != value for name, value in (("precision", counts.precision), ("recall", counts.recall), ("f1", counts.f1), ("false_positive_rate", counts.false_positive_rate))) or type(item["macro_f1"]) is not float:
             raise ValueError("confusion-derived metric is inconsistent")
         summaries[item["comparison_name"]] = MetricSummaryAntigravity(item["comparison_name"], counts, item["macro_f1"])
     if summaries["hard_baseline"].confusion != ConfusionAntigravity(*FROZEN_CONFIG_ANTIGRAVITY.baseline_confusion):
@@ -526,7 +526,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         raise ValueError("dataset metric population differs")
     reconstructed: dict[str, list[DatasetConfusionRowAntigravity]] = {method: [] for method in _METHODS_ANTIGRAVITY}
     for index, (dataset, row) in enumerate(zip(identity.dataset_order, metric_rows, strict=True)):
-        if not isinstance(row, dict) or row.get("dataset") != dataset or row.get("dataset_order") != index or set(row) != {"dataset", "dataset_order", *_METHODS_ANTIGRAVITY}:
+        if not isinstance(row, dict) or type(row.get("dataset")) is not str or row["dataset"] != dataset or type(row.get("dataset_order")) is not int or row["dataset_order"] != index or set(row) != {"dataset", "dataset_order", *_METHODS_ANTIGRAVITY}:
             raise ValueError("dataset metric identity or order differs")
         for method in _METHODS_ANTIGRAVITY:
             payload = row[method]
@@ -602,7 +602,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
             expected_diagnostics["regressed"].append({"dataset": dataset, "f1_delta": delta})
             if hard_row.confusion.f1 >= 0.8:
                 expected_diagnostics["strong_regression"].append({"dataset": dataset, "f1_delta": delta})
-    if any(list(diagnostics[name]) != expected_diagnostics[name] for name in diagnostics):
+    if any(not _exact_json_value_antigravity(list(diagnostics[name]), expected_diagnostics[name]) for name in diagnostics):
         raise ValueError("diagnostic leaves differ from reconstructed metrics")
     bootstrap_payload = _json_bytes_antigravity(leaves["bootstrap_antigravity.json"], "bootstrap_antigravity.json")
     expected_comparisons = ("hard_plus_source_30_minus_hard_baseline", "hard_plus_stable_26_minus_hard_baseline", "hard_plus_stable_26_minus_hard_plus_source_30")
