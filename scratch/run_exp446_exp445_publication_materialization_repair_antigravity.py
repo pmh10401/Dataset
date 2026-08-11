@@ -1,5 +1,4 @@
 """Outside-CWD-safe fixed Exp446 lifecycle launcher."""
-import json
 import os
 import sys
 from pathlib import Path
@@ -20,7 +19,4 @@ from experiments.exp446_exp445_publication_materialization_repair_antigravity.cl
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["thread-probe-antigravity"]:
-        print(json.dumps({name: os.environ[name] for name in _THREAD_ENV_NAMES_ANTIGRAVITY}, sort_keys=True, separators=(",", ":")))
-        raise SystemExit(0)
     raise SystemExit(main_antigravity(tuple(sys.argv[1:])))

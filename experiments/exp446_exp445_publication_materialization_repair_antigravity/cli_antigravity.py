@@ -14,10 +14,10 @@ _REVIEWED_COMMIT_ANTIGRAVITY = re.compile(r"[0-9a-f]{40}$")
 
 def build_parser_antigravity() -> argparse.ArgumentParser:
     """Expose exactly readiness, new, and frozen-leaf inspect."""
-    parser = argparse.ArgumentParser(prog="exp446-antigravity")
+    parser = argparse.ArgumentParser(prog="exp446-antigravity", allow_abbrev=False)
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("readiness", "new"):
-        command = commands.add_parser(name)
+        command = commands.add_parser(name, allow_abbrev=False)
         command.add_argument("--reviewed-commit", required=True)
     commands.add_parser("inspect")
     return parser

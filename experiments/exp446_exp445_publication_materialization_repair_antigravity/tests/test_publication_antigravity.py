@@ -3,12 +3,92 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
 
 class Exp446PublicationAntigravityTests(unittest.TestCase):
+    def _real_terminal_root_antigravity(self) -> tuple[Path, object, object, object]:
+        """Materialize only Task5's tiny 30-record terminal fixture, never an official root."""
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity.tests import test_lifecycle_antigravity as lifecycle_tests
+
+        case = lifecycle_tests.Exp446LifecycleAntigravityTests("test_all_thirty_wrappers_require_exp444_and_exp445_parity_before_success_checkpoint_antigravity")
+        root, outcome = case._run_antigravity()
+        self.addCleanup(case.doCleanups)
+        self.assertEqual(getattr(outcome, "status", None), "complete")
+        attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+        marker = json.loads((attempt / "terminal_parity_antigravity.json").read_text())
+        state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
+        first = SimpleNamespace(record_sha256_prefix=tuple(state["record_sha256_prefix"]), record_prefix_payload_sha256=marker["authorities"][0])
+        second = SimpleNamespace(record_sha256_prefix=tuple(state["record_sha256_prefix"]), record_prefix_payload_sha256=marker["authorities"][1])
+        return root, attempt, first, second
+
+    def test_facade_publishes_marker_inclusive_terminal_fixture_antigravity(self) -> None:
+        """Facade-to-reporter publication must accept a real Task5 marker without generic capture."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import provenance_antigravity
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import predecessor_antigravity as exp444_predecessor
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import predecessor_antigravity as exp445_predecessor
+
+        root, attempt, exp444, exp445 = self._real_terminal_root_antigravity()
+        base = lifecycle_antigravity._EXP446_PROFILE_ANTIGRAVITY
+        profile = object.__new__(type(base))
+        for name in ("experiment_id", "schema", "run_identity", "reviewed_design_path", "preregistration_path", "predecessor_required"):
+            object.__setattr__(profile, name, getattr(base, name))
+        object.__setattr__(profile, "run_root", root)
+        expected = {name: f"{index}".encode() for index, name in enumerate(reporting._PUBLICATION_FILES_ANTIGRAVITY)}
+        with (
+            mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
+            mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
+            mock.patch.object(exp444_predecessor, "verify_exp444_predecessor_antigravity", return_value=exp444),
+            mock.patch.object(exp445_predecessor, "verify_exp445_predecessor_antigravity", return_value=exp445),
+            mock.patch.object(provenance_antigravity, "verify_exp444_provenance_antigravity", return_value=SimpleNamespace(dataset_summary_bytes=b"", backend_authority={})),
+            mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=object()),
+            mock.patch.object(reporting, "_payloads_antigravity", return_value=({}, object())),
+            mock.patch.object(reporting, "_final_payloads_antigravity", return_value=expected),
+            mock.patch.object(reporting, "_inspect_publication_payloads_antigravity", return_value=({}, object())),
+            mock.patch.object(reporting, "FrozenPublicationAntigravity", return_value=mock.sentinel.publication),
+        ):
+            self.assertIs(lifecycle_antigravity.publish_prediction_antigravity(), mock.sentinel.publication)
+        self.assertTrue((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).is_dir())
+
+    def test_marker_removal_or_replacement_between_terminal_and_publication_capture_preserves_failure_antigravity(self) -> None:
+        """A facade-to-reporter marker bridge cannot survive removal or same-path replacement."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+
+        for action in ("remove", "replace"):
+            with self.subTest(action=action):
+                root, attempt, _exp444, _exp445 = self._real_terminal_root_antigravity()
+                base = lifecycle_antigravity._EXP446_PROFILE_ANTIGRAVITY
+                profile = object.__new__(type(base))
+                for name in ("experiment_id", "schema", "run_identity", "reviewed_design_path", "preregistration_path", "predecessor_required"):
+                    object.__setattr__(profile, name, getattr(base, name))
+                object.__setattr__(profile, "run_root", root)
+                marker = attempt / "terminal_parity_antigravity.json"
+                def mutate(_attempt: Path) -> None:
+                    if action == "remove":
+                        marker.unlink()
+                    else:
+                        marker.write_bytes(b"{}\n")
+                with (
+                    mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
+                    mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
+                    mock.patch.object(reporting, "_EXP446_TERMINAL_CAPTURE_HOOK_ANTIGRAVITY", mutate),
+                ):
+                    with self.assertRaisesRegex(ValueError, "terminal|marker|inventory"):
+                        lifecycle_antigravity.publish_prediction_antigravity()
+                self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+                failure = json.loads((attempt / reporting._EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).read_text())
+                self.assertEqual((failure["schema"], failure["stage"]), ("exp446.publication-failure.v1", "publication"))
+    def test_exp446_has_marker_inclusive_publication_capture_antigravity(self) -> None:
+        """Generic marker-free capture cannot bridge Task5 terminal authority into publication."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+
+        self.assertTrue(callable(reporting._capture_exp446_publication_authority_antigravity))
     def test_exp446_reporting_entrypoints_are_private_profile_bound_antigravity(self) -> None:
         """The repaired publisher must not reuse the public Exp444 wrapper."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
@@ -19,6 +99,7 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
     def test_finalization_failure_rejects_before_publisher_import_antigravity(self) -> None:
         """A terminal closeout failure is immutable ineligibility, not publishable evidence."""
         from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
 
         with tempfile.TemporaryDirectory(prefix="exp446_finalization_failure_antigravity_") as directory:
             root = Path(directory) / "exp446_exp445_publication_materialization_repair_antigravity_20260811"
@@ -28,6 +109,7 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
             profile = SimpleNamespace(run_root=root)
             with (
                 mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
                 mock.patch.object(lifecycle_antigravity, "_require_terminal_parity_antigravity", side_effect=ValueError("Exp446 terminal finalization failure evidence is present")) as require,
             ):
                 with self.assertRaisesRegex(ValueError, "finalization failure"):
@@ -57,6 +139,8 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
             exp445 = object()
             with (
                 mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(reporting, "_capture_exp446_publication_authority_antigravity", return_value=object()),
+                mock.patch.object(reporting, "_capture_exp446_publication_snapshot_antigravity", return_value=snapshot),
                 mock.patch.object(reporting, "_capture_attempt_antigravity", return_value=snapshot),
                 mock.patch.object(reporting, "_complete_checkpoint_results_antigravity", side_effect=lambda *_args, **_kwargs: order.append("terminal") or ()),
                 mock.patch.object(exp444_predecessor, "verify_exp444_predecessor_antigravity", side_effect=lambda: order.append("exp444") or exp444),
@@ -95,6 +179,10 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
             expected = {name: f"{index}".encode() for index, name in enumerate(reporting._PUBLICATION_FILES_ANTIGRAVITY)}
             with (
                 mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(reporting, "_capture_exp446_publication_authority_antigravity", return_value=object()),
+                mock.patch.object(reporting, "_capture_exp446_publication_snapshot_antigravity", side_effect=lambda *_args: reporting._capture_attempt_antigravity(attempt)),
+                mock.patch.object(reporting, "_assert_exp446_terminal_authority_unchanged_antigravity"),
+                mock.patch.object(reporting, "_assert_exp446_publication_snapshot_antigravity"),
                 mock.patch.object(reporting, "_complete_checkpoint_results_antigravity", return_value=()),
                 mock.patch.object(exp444_predecessor, "verify_exp444_predecessor_antigravity", return_value=predecessor),
                 mock.patch.object(exp445_predecessor, "verify_exp445_predecessor_antigravity", return_value=predecessor),

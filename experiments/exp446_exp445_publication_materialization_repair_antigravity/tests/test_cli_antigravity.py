@@ -16,7 +16,7 @@ class Exp446CliAntigravityTests(unittest.TestCase):
         self.assertEqual(parser.parse_args(("readiness", "--reviewed-commit", "a" * 40)).command, "readiness")
         self.assertEqual(parser.parse_args(("new", "--reviewed-commit", "b" * 40)).command, "new")
         self.assertEqual(parser.parse_args(("inspect",)).command, "inspect")
-        for argv in (("resume",), ("retry",), ("evaluate",), ("inspect", "--root", "/tmp"), ("new", "--backend", "cpu"), ("inspect", "extra")):
+        for argv in (("resume",), ("retry",), ("evaluate",), ("inspect", "--root", "/tmp"), ("new", "--backend", "cpu"), ("new", "--reviewed-c", "a" * 40), ("inspect", "extra")):
             with self.subTest(argv=argv), self.assertRaises(SystemExit):
                 parser.parse_args(argv)
 
@@ -34,3 +34,21 @@ assert not bad, bad
 """
         completed = subprocess.run((sys.executable, "-c", program), cwd=repository, text=True, capture_output=True, check=False)
         self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
+
+    def test_launcher_sets_threads_without_hidden_operator_command_antigravity(self) -> None:
+        """The launcher must pin threads at import time while every argv stays a CLI argv."""
+        launcher = Path(__file__).resolve().parents[3] / "scratch" / "run_exp446_exp445_publication_materialization_repair_antigravity.py"
+        program = f"""
+import importlib.util
+import json
+import os
+import sys
+sys.argv = ['launcher', 'inspect']
+spec = importlib.util.spec_from_file_location('exp446_launcher_antigravity', {str(launcher)!r})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(json.dumps({{name: os.environ[name] for name in module._THREAD_ENV_NAMES_ANTIGRAVITY}}, sort_keys=True))
+"""
+        completed = subprocess.run((sys.executable, "-c", program), cwd=launcher.parent.parent, text=True, capture_output=True, check=False)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(set(__import__("json").loads(completed.stdout).values()), {"1"})

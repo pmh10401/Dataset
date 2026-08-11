@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T04:29:46Z",
-  "generated_from_commit": "cd483d1277bf90beb3846975a0b7e85655622773",
+  "generated_at": "2026-08-11T04:41:17Z",
+  "generated_from_commit": "b8851edebf6b2429cdc4b0470c68657cf00e23e0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1009,7 +1009,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 exposes exactly readiness, new, and source-free frozen-leaf inspection through a fixed CLI and outside-CWD launcher. New-only CPU/11 replay verifies independent Exp444 and failed-Exp445 wrapper SHA authority before each checkpoint success, gates the 30-prefix aggregate and fresh predecessor before terminal parity, and the private publisher orders terminal capture, fresh dual predecessor parity, descriptor-pinned provenance and values-only control materialization, create-only staging, atomic rename, and frozen-leaf replay audit.",
+      "role": "Exp446 exposes exactly readiness, new, and source-free frozen-leaf inspection through a fixed CLI and outside-CWD launcher. Its publisher owns the earliest marker-inclusive Task5 terminal capture and a second descriptor transaction before staging, so a facade-to-reporter marker removal or replacement cannot bridge publication. It then verifies fresh dual predecessor parity, descriptor-pinned provenance and values-only control materialization, create-only staging, atomic rename, and frozen-leaf replay audit.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1036,7 +1036,8 @@
         "Every persistent terminal-channel and marker fault preserves byte-identical context, state, and all thirty complete checkpoint record leaves captured immediately before the injected failure.",
         "Publication requires a create-only canonical terminal parity marker bound to the exact complete checkpoint/context/30-record aggregate, inactive progress/PID, required logs, profile document hashes, and fresh Exp444 plus Exp445 predecessor authorities.",
         "Terminal-finalization-failure evidence, an absent or forged terminal marker, predecessor drift, label access, staging failure, or post-rename replay failure reject publication; a post-rename rejection quarantines the canonical directory and preserves create-only failure evidence.",
-        "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module."
+        "The marker-inclusive terminal capture records all terminal bytes and leaf identities; both a pre-staging descriptor replay and post-rename leaf identity recheck reject changes while preserving create-only failure evidence.",
+        "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect with abbreviation disabled; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module. The launcher has no hidden command and delegates every argv to this CLI after pinning seven thread variables."
       ],
       "evidence": [
         {
@@ -1125,6 +1126,14 @@
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _capture_exp446_publication_authority_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _assert_exp446_terminal_authority_unchanged_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
           "symbol": "def _inspect_exp446_publication_antigravity"
         },
         {
@@ -1142,6 +1151,14 @@
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
           "symbol": "def test_exp446_postrename_audit_quarantines_canonical_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_facade_publishes_marker_inclusive_terminal_fixture_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_marker_removal_or_replacement_between_terminal_and_publication_capture_preserves_failure_antigravity"
         },
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_cli_antigravity.py",
