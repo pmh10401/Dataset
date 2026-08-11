@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-12T02:35:43+09:00",
+  "generated_at": "2026-08-12T02:43:11+09:00",
   "generated_from_commit": "582f0d03bc2e63a8bf745fac1b8975a2af849cd6",
   "scope": [
-    "Exp448 governance documents and Task2 controlled-fork implementation plan",
-    "No Exp448 source module exists at this governance stage"
+    "Exp448 governance documents and implemented Task2 controlled-fork foundations",
+    "Exp448 config, contracts, artifact, and bootstrap source modules with focused differential tests"
   ],
   "nodes": [
     {
@@ -343,6 +343,6 @@
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "No Exp448 product-source module exists at this governance stage, so no source edge is asserted."
+    "Task3 source authority, readiness, evaluator, replay, CLI, and official lifecycle relationships remain unimplemented and are intentionally not asserted."
   ]
 }
