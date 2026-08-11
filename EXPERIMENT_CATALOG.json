@@ -969,7 +969,7 @@
     {
       "id": "Exp447",
       "kind": "exp446_postfreeze_performance_evaluation",
-      "status": "design_approved_implementation_planned",
+      "status": "implementation_verified_awaiting_official_readiness",
       "documents": [
         "docs/superpowers/specs/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity-design.md",
         "docs/superpowers/plans/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity.md",
@@ -979,6 +979,19 @@
       ],
       "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
       "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
+      "preregistration_sha256": "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd",
+      "runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
+      "implementation_verification": {
+        "functional_commit": "8f5dbec4e87e093a255d1f065de930b85b141e0c",
+        "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
+        "fresh_sol_high_review": {"verdict": "ship", "critical_findings": 0, "important_findings": 0},
+        "full_regression": {"exp447_tests": 66, "exp447_runs": 2, "exp447_seconds": [75.485, 76.28], "exp447_exit_codes": [0, 0], "exp444_tests": 206, "exp445_tests": 39, "exp446_tests": 50, "predecessor_exit_codes": [0, 0, 0]},
+        "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+        "database_inode": 1048138,
+        "database_nlink": 1,
+        "official_root_absent_non_symlink": true,
+        "official_label_access_count": 0
+      },
       "run_identity": "exp447-exp446-postfreeze-performance-evaluation-antigravity-20260811",
       "artifact_schema": "exp447",
       "artifact_root": "/Users/mac/Documents/Dataset/exp447_exp446_postfreeze_performance_evaluation_antigravity_20260811",
@@ -1018,8 +1031,10 @@
         "dashboard_failure_allows_evaluation_retry": false
       },
       "implementation_report": "docs/EXP447_IMPLEMENTATION_REPORT_antigravity.md",
-      "exact_next_command": "reviewed_implementation_then_fresh_sol_high_review_before_official_readiness",
-      "notes": "Exp447 is planned evaluation-only governance for immutable Exp446 predictions. No source or official attempt exists, TEST labels remain unopened, and evaluation/champion/promotion hashes are null. A coherent future evaluation is descriptive_complete_no_promotion only; it cannot select a winner, modify the champion, promote an alert, or reselect candidates."
+      "next_action": "future_exp447_official_readiness_only",
+      "exact_next_command": "/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT",
+      "pause_reason": "Implementation is verified and Sol-shipped, but no official readiness/evaluation/inspect attempt has run. REVIEWED_COMMIT remains an operator-supplied clean 40-hex placeholder.",
+      "notes": "Exp447 implementation is verified awaiting future official readiness for immutable Exp446 predictions. TEST labels remain unopened and evaluation/champion/promotion hashes remain null. A coherent future evaluation is descriptive_complete_no_promotion only; it cannot select a winner, modify the champion, promote an alert, or reselect candidates."
     }
   ]
 }

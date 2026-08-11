@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-11T00:00:00Z",
+  "updated_at": "2026-08-11T15:53:52Z",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -245,10 +245,15 @@
     },
     {
       "experiment": "Exp447",
-      "status": "design_approved_implementation_planned",
-      "reason": "Exp447 is an evaluation-only, design-approved plan for immutable Exp446 predictions. No source, official attempt, evaluation, or TEST-label access exists. Any future coherent evaluation is descriptive_complete_no_promotion: it cannot update the champion or pending candidate, select a scientific winner, promote an operational alert, or reselect candidates within Exp447.",
+      "status": "implementation_verified_awaiting_official_readiness",
+      "reason": "Exp447 implementation for immutable Exp446 post-freeze evaluation is verified and fresh-Sol-shipped, but no official readiness/evaluation/inspect attempt or TEST-label access has run. Any future coherent evaluation is descriptive_complete_no_promotion: it cannot update the champion or pending candidate, select a scientific winner, promote an operational alert, or reselect candidates within Exp447.",
       "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
       "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
+      "preregistration_sha256": "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd",
+      "runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
+      "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
+      "fresh_sol_high_review": {"verdict": "ship", "critical_findings": 0, "important_findings": 0},
+      "verification_tests": {"exp447": [66, 66], "predecessors": {"Exp444": 206, "Exp445": 39, "Exp446": 50}},
       "run_identity": "exp447-exp446-postfreeze-performance-evaluation-antigravity-20260811",
       "artifact_root": "/Users/mac/Documents/Dataset/exp447_exp446_postfreeze_performance_evaluation_antigravity_20260811",
       "prediction_sha256": null,
@@ -266,6 +271,9 @@
       "test_informed_reselection_allowed": false,
       "automatic_champion_promotion": false,
       "promotion_allowed": false,
+      "official_root_absent_non_symlink": true,
+      "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+      "database_nlink": 1,
       "dashboard_presentation": "deferred_private_aggregate_only_post_evaluation_not_scientific_or_promotion_gate_dashboard_failure_cannot_change_artifacts_or_allow_reevaluation"
     }
   ]
