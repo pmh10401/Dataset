@@ -42,8 +42,9 @@ promotion, operational alert 또는 dashboard export는 만들지 않았다. 다
   diagnostic leaves, and bootstrap comparisons agree with the recorded evaluate/inspect truth.
 - Aggregate results: baseline confusion `[1915, 303, 2003, 191679]`; source-30
   `[1930, 318, 1988, 191664]`; stable-26 `[1930, 314, 1988, 191668]`; unstable-4
-  `[1915, 307, 2003, 191675]`. There are `30` transitions: `15` rescued, `11` added false alarms,
-  `0` regressed, and `0` strong regressions.
+  `[1915, 307, 2003, 191675]`. Source-30 has `30` transitions: `15` rescued and `15` added false
+  alarms (`11` stable plus `4` unstable). The primary stable-26 diagnostic leaves are `15` rescued,
+  `11` false alarms, `0` regressed, and `0` strong regressions.
 - Primary stable-26 micro/macro F1 is `0.6264199935086011` / `0.6214265552464396`.
   Stable-minus-baseline micro delta is `0.0022348566115998336` (95% CI
   `[0.0004830992298546444, 0.004215589161616776]`) and macro delta is
