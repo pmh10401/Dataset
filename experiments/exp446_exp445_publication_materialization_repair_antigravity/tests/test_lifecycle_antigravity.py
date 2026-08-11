@@ -26,6 +26,24 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.contract
 
 _COMMIT_ANTIGRAVITY = "a" * 40
 _CAPTURED_POOLS_ANTIGRAVITY: list["_CapturingProcessPoolExecutorAntigravity"] = []
+_FROZEN_TERMINAL_SPECS_ANTIGRAVITY = (
+    ("InsectEPGSmallTrain_normal_1", 76, 601), ("InsectEPGRegularTrain_normal_3", 41, 601),
+    ("InsectEPGSmallTrain_normal_3", 36, 601), ("EOGVerticalSignal_normal_8", 48, 1250),
+    ("PowerCons_normal_1", 144, 144), ("Rock_normal_4", 15, 2844),
+    ("EOGHorizontalSignal_normal_12", 47, 1250), ("NonInvasiveFetalECGThorax1_normal_8", 72, 750),
+    ("Adiac_normal_19", 20, 176), ("EOGVerticalSignal_normal_11", 48, 1250),
+    ("AllGestureWiimoteZ_normal_5", 5, 49), ("Rock_normal_1", 20, 2844),
+    ("Ham_normal_1", 82, 431), ("MedicalImages_normal_2", 52, 99),
+    ("InlineSkate_normal_6", 78, 1882), ("InsectWingbeatSound_normal_6", 160, 256),
+    ("FiftyWords_normal_19", 10, 270), ("Lightning7_normal_1", 13, 319),
+    ("ArrowHead_normal_1", 52, 251), ("ShapesAll_normal_48", 16, 512),
+    ("FiftyWords_normal_12", 17, 270), ("DodgerLoopDay_normal_4", 15, 288),
+    ("CricketY_normal_11", 52, 300), ("InlineSkate_normal_7", 49, 1882),
+    ("CricketY_normal_9", 52, 300), ("OSULeaf_normal_3", 60, 427),
+    ("ShapesAll_normal_36", 16, 512), ("OSULeaf_normal_2", 67, 427),
+    ("DodgerLoopDay_normal_1", 18, 288), ("CricketY_normal_3", 52, 300),
+)
+_FROZEN_ABSTAINED_INDICES_ANTIGRAVITY = frozenset({8, 10, 14, 24})
 
 
 class _CapturingProcessPoolExecutorAntigravity(ProcessPoolExecutor):
@@ -52,25 +70,32 @@ def _checkpoint_tree_bytes_antigravity(root: Path) -> dict[str, bytes]:
 
 
 def _inputs_antigravity() -> tuple[CandidateInputAntigravity, ...]:
+    """All terminal test paths use the frozen authority's per-record contract."""
+    return _frozen_terminal_inputs_antigravity()
+
+
+def _frozen_terminal_inputs_antigravity() -> tuple[CandidateInputAntigravity, ...]:
+    """Real terminal identities/dimensions without any Dataset or label access."""
     return tuple(
         CandidateInputAntigravity(
-            SourceCandidateAntigravity(f"Fixture_{index:02d}", index, 8, (1, 2), index + 1),
-            (0, 1, 2, 3), np.arange(32, dtype="<f4").reshape(4, 8), np.arange(8, dtype="<f4"),
+            SourceCandidateAntigravity(dataset, index, raw_length, (1, 2), index + 1),
+            tuple(range(train_count)), np.zeros((train_count, raw_length), dtype="<f4"), np.zeros(raw_length, dtype="<f4"),
         )
-        for index in range(30)
+        for index, (dataset, train_count, raw_length) in enumerate(_FROZEN_TERMINAL_SPECS_ANTIGRAVITY)
     )
 
 
 def _result_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityResultAntigravity:
+    abstained = item.candidate.instance_index in _FROZEN_ABSTAINED_INDICES_ANTIGRAVITY
     scores = (
-        DepthViewScoreAntigravity(1, 2.0, 1.0, True, 2.0, 0.5),
-        DepthViewScoreAntigravity(2, 2.0, 1.0, True, 2.0, 0.5),
+        DepthViewScoreAntigravity(1, 0.0 if abstained else 2.0, 1.0, not abstained, 0.0 if abstained else 2.0, 0.5),
+        DepthViewScoreAntigravity(2, 0.0 if abstained else 2.0, 1.0, not abstained, 0.0 if abstained else 2.0, 0.5),
     )
     view = StabilityViewAntigravity(
         OmissionMaskAntigravity(0, (0,), hashlib.sha256(b"fixture-mask").hexdigest()),
-        (1, 2, 3), scores, (1, 2), True,
+        (1, 2, 3), scores, () if abstained else (1, 2), not abstained,
     )
-    return CandidateStabilityResultAntigravity(item.candidate, (view,), 1, 1, "stable_review")
+    return CandidateStabilityResultAntigravity(item.candidate, (view,), 0 if abstained else 1, 1, "unstable_review" if abstained else "stable_review")
 
 
 def _child_value_error_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityResultAntigravity:
@@ -627,6 +652,14 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
         with mock.patch.object(checkpoint_antigravity, "_read_pinned_regular_leaf_antigravity", new=replace_after_read):
             with self.assertRaisesRegex(ValueError, "terminal parity"):
                 self._require_terminal_parity_antigravity(root)
+
+    def test_terminal_authority_accepts_frozen_four_abstention_dimensions_antigravity(self) -> None:
+        """Terminal validation must derive each frozen wrapper's status and dimensions."""
+        root, outcome = self._run_antigravity()
+        self.assertEqual(outcome.status, "complete")
+        progress = json.loads((root / "attempts_antigravity/attempt_0000_antigravity/progress_antigravity.json").read_text())
+        self.assertEqual((progress["completed"], progress["success"], progress["abstention"], progress["error"]), (30, 30, 4, 0))
+        self._require_terminal_parity_antigravity(root)
 
     def test_write_fault_matrix_never_exposes_terminal_marker_antigravity(self) -> None:
         """Each terminal-evidence channel must fail closed without a publication capability."""
