@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-12T04:56:58+0900",
-  "generated_from_commit": "551fcc64e6c79cd104ec3d47d595c2f1d9b1b6d4",
+  "generated_at": "2026-08-12T05:18:00+0900",
+  "generated_from_commit": "dbac3f2d273134a4f2ae38853a7d6a2100a88ec3",
   "scope": [
-    "Exp448 governance, controlled TEXT boundary, completed one-shot evaluation/inspect truth, and separately governed dashboard discussion boundary"
+    "Exp448 governance, controlled TEXT boundary, completed one-shot evaluation/inspect truth, and owner-only aggregate dashboard snapshot boundary"
   ],
   "nodes": [
     {
@@ -129,7 +129,7 @@
       "evidence": [
         {
           "path": "docs/EXP448_RUNBOOK_antigravity_KO.md",
-          "symbol": "official_evaluation_inspected_complete_awaiting_discussion_dashboard"
+          "symbol": "official_evaluation_inspected_complete_dashboard_published_owner_only"
         }
       ]
     },
@@ -138,13 +138,13 @@
       "path": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md",
       "role": "Official immutable truth-closeout evidence and descriptive non-promotion report.",
       "entrypoints": [
-        "implementation_status = official_evaluation_inspected_complete_awaiting_discussion_dashboard",
+        "implementation_status = official_evaluation_inspected_complete_dashboard_published_owner_only",
         "Official truth closeout"
       ],
       "tests": [],
       "constraints": [
         "Root contains 11 immutable leaves; artifact/evaluation/decision hashes are recorded.",
-        "One label session completed 1117 queries / 195900 labels; no champion, promotion, alert, or dashboard export exists."
+        "One label session completed 1117 queries / 195900 labels; the later owner-only aggregate snapshot changed no champion, promotion, alert, retry right, or scientific artifact."
       ],
       "evidence": [
         {
@@ -168,7 +168,7 @@
       "evidence": [
         {
           "path": "CHAMPION_LEDGER.json",
-          "symbol": "official_evaluation_inspected_complete_awaiting_discussion_dashboard_not_promoted"
+          "symbol": "official_evaluation_inspected_complete_dashboard_published_owner_only_not_promoted"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "type": "reads",
       "evidence": {
         "path": "CHAMPION_LEDGER.json",
-        "symbol": "await_discussion_then_separately_governed_aggregate_only_dashboard_consideration"
+        "symbol": "await_result_discussion_no_scientific_rerun"
       }
     },
     {
@@ -488,13 +488,13 @@
       "outcome": "Readiness, evaluate, and bare inspect each ran exactly once with exit 0; the immutable root has 11 leaves and no rerun is permitted."
     },
     {
-      "trigger": "Future separately governed dashboard discussion",
+      "trigger": "Owner-only aggregate dashboard publication",
       "steps": [
         "exp448_preregistration",
         "exp448_runbook",
         "research_control"
       ],
-      "outcome": "Only sanitized aggregate exp448.public-evaluation.v1 may be considered after discussion; no site/dashboard change exists and failure cannot alter science or permit retry."
+      "outcome": "Sanitized aggregate exp448.public-evaluation.v1 is published as an owner-only snapshot; it exposes no private rows and cannot alter science or permit retry."
     },
     {
       "trigger": "Task2–Task3 controlled-fork boundary",
@@ -527,11 +527,11 @@
         "exp448_evaluation_replay_boundary",
         "research_control"
       ],
-      "outcome": "The closed CLI/launcher executed the one authorized lifecycle; readiness/evaluate/inspect are now closed and dashboard remains a separate future discussion."
+      "outcome": "The closed CLI/launcher executed the one authorized lifecycle; readiness/evaluate/inspect remain closed and the later dashboard snapshot is presentation-only."
     }
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Dashboard implementation/consumer remains intentionally unimplemented; no raw labels, indices, datasets, per-dataset rows, or private paths are mapped into any product surface."
+    "The owner-only dashboard implementation lives in a separate clean Sites repository; this research map records only its sanitized aggregate presentation boundary, never raw labels, indices, datasets, per-dataset rows, hashes, logs, or private paths."
   ]
 }
