@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T04:20:00+09:00",
-  "generated_from_commit": "a0ac8297fb341fe5308ccf8c556f69621cfa1d8e",
+  "generated_at": "2026-08-12T04:35:00+09:00",
+  "generated_from_commit": "68896792f55d59b544bbaf12197115c0484a4264",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary"
   ],
@@ -55,7 +55,7 @@
       ],
       "tests": [],
       "constraints": [
-        "Only approved A--E controlled-fork deltas are allowed.",
+        "Only approved A--E deltas are allowed; readiness/evaluate receive exact lowercase 40-hex reviewed commits and inspect is bare.",
         "Exact TEXT conversion is the sole scientific-boundary change."
       ],
       "evidence": [
