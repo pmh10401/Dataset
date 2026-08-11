@@ -153,7 +153,7 @@
         "No Exp445 publication exists after the terminal failure, so no inspect or evaluation route is authorized for the immutable root.",
         "Exp445 publication capture failure after fixed-root allocation creates only immutable publication_failure_antigravity.json and no canonical publication. If a caller-side frozen-leaf replay/audit rejects after atomic rename, the retained attempt descriptor quarantines the canonical destination before failure evidence is written; it is never returned as clean publication.",
         "Exp445 is immutable failed-publication evidence, not a failed scientific result: 30/30, error 0, label access 0, CPU/11 inner-1, aggregate af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034, absent publication/evaluation, and failure text Exp444 original-control replay is invalid.",
-        "Exp446 has exactly readiness, new, and inspect planned commands; product callers, effects, tests, imports, and runtime flows remain unknown until implementation exists."
+        "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; official execution remains unperformed."
       ],
       "evidence": [
         {
@@ -6347,31 +6347,20 @@
       ]
     },
     {
-      "from": "exp445_predecessor_authority",
-      "to": "exp444_stability_contracts",
-      "type": "tests",
-      "evidence": [
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_publication_source_authority_antigravity.py",
-          "symbol": "def test_real_frozen_handoff_materializes_control_rows_at_exp445_payload_boundary_antigravity"
-        }
-      ]
-    },
-    {
-      "from": "exp445_predecessor_authority",
-      "to": "exp446_governance",
-      "type": "authenticates",
-      "evidence": [
-        {
-          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/predecessor_antigravity.py",
-          "symbol": "def verify_exp445_predecessor_antigravity"
-        }
-      ]
-    },
-    {
       "from": "exp446_governance",
-      "to": "exp444_stability_contracts",
-      "type": "replays with parity gates",
+      "to": "exp445_predecessor_authority",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
+          "symbol": "def _require_terminal_parity_antigravity"
+        }
+      ]
+    },
+    {
+      "from": "exp444_stability_contracts",
+      "to": "exp446_governance",
+      "type": "calls",
       "evidence": [
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
@@ -6392,19 +6381,6 @@
         "sqlite_store"
       ],
       "outcome": "Eleven spawn workers receive only copied immutable TRAIN/TEST values and contracts, compute views out of order within a bounded window, and return results to the parent. The parent exposes the truthful next-commit candidate without inventing worker-internal view progress, extends only the exact rank prefix, writes all progress evidence itself, rejects live old owners through real PID probes, performs full read-only context/state/prefix/record/orphan validation before and at ownership mutation boundaries, returns from SIGINT without waiting for unrelated active workers, validates every complete terminal evidence surface before read-only re-entry, and preserves the same canonical 30-result SHA256 as the sequential reference with zero TEST-label access. Exact-next durable result/error orphans are described by an immutable read-only inspection and bound to their record SHA. Checkpoint and progress are reconciled to the same accepted count before scheduling; a result continues at the following candidate and an error writes truthful terminal evidence without invoking the scheduler. Task 10 pins the five-command operator boundary: no scientific/path override is parsable, inspect stays offline/read-only, and evaluate first replays publication before importing the label-capable evaluator, which retains independent double inspection before TEST labels. Readiness is emitted as detached stdout JSON rather than a run-root readiness artifact."
-    },
-    {
-      "id": "exp438_postfreeze_evaluation_flow",
-      "label": "Exp438 lazy post-freeze TEST-label evaluation",
-      "trigger": "Invoke the fixed evaluate command only after both Exp438 and Exp437 have independently frozen and replayed their publications.",
-      "steps": [
-        "exp438_frequency_runtime",
-        "exp438_publication_evaluation",
-        "exp436_contract_boundary",
-        "exp417_inputs",
-        "sqlite_store"
-      ],
-      "outcome": "The lazy evaluator verifies Exp438 publication/output/checkpoint, Exp437 publication, Exp404/Exp291 Hard equality, population, database, provenance, and hashes before one descriptor-bound TEST instance_index,label read; it then publishes separate channel confusion, dataset, bootstrap, correlation/overlap, and decision evidence without choosing a winner or mutating frozen bytes."
     },
     {
       "id": "exp443_source_freeze_flow",
@@ -6438,12 +6414,12 @@
         "exp444_stability_contracts",
         "sqlite_store"
       ],
-      "outcome": "Publication and evaluation are absent. The Exp445 root accepts no retry, resume, publication, inspect, or evaluation; Exp446 is the separate preregistered engineering-only repair path."
+      "outcome": "Publication and evaluation are absent. The Exp445 root accepts no retry, resume, publication, inspect, or evaluation; Exp446 is the implemented, verification-complete engineering-only repair path awaiting official readiness."
     },
     {
       "id": "exp446_exp445_predecessor_verification_flow",
-      "label": "Exp446 closed readiness and immutable Exp445 verification",
-      "trigger": "Task 3 profile readiness accepts only the Exp446 singleton and must prove immutable Exp445 failed-publication authority before any Exp446 root allocation.",
+      "label": "Exp446 implemented closed lifecycle and immutable Exp445 verification",
+      "trigger": "The implemented readiness, new, and inspect commands accept only the exact Exp446 singleton and prove immutable Exp445 failed-publication authority before allocation or terminal capture.",
       "steps": [
         "research_control",
         "exp446_governance",
@@ -6451,7 +6427,7 @@
         "exp445_predecessor_authority",
         "sqlite_store"
       ],
-      "outcome": "Readiness requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, Task 4 descriptor-pinned Exp445 verifier success, and an absent non-symlink Exp446 root. Runtime accepts only the same singleton with new, the fixed root, and attempt_0000_antigravity, rejecting caller executor factories before live gates; no root is allocated by this contract task."
+      "outcome": "Readiness requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, descriptor-pinned Exp445 verifier success, and an absent non-symlink Exp446 root. Runtime accepts only the same singleton with new, the fixed root, and attempt_0000_antigravity, rejecting caller executor factories before live gates; readiness does not allocate, new is fixed-root and single-use, and official execution remains unperformed."
     }
   ],
   "unknown_relationships": [],
@@ -6485,9 +6461,9 @@
       },
       {
         "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
-        "relationship": "Later Exp446 lifecycle and publication callers",
+        "relationship": "External product consumers and post-review operator invocation",
         "status": "unknown",
-        "reason": "Task 3 establishes only shared profile/readiness/runtime/reporting contracts; the closed lifecycle wrapper remains pending."
+        "reason": "The closed Exp446 lifecycle is implemented and mapped, but no external product caller or official lifecycle execution is authorized or evidenced before fresh Sol review."
       }
     ]
   }
