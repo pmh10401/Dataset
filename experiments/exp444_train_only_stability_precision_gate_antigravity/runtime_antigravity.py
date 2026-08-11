@@ -104,6 +104,55 @@ def _terminal_parity_payload_antigravity(predecessors: tuple[object, ...], attem
     return authority.marker_payload_antigravity(predecessors)
 
 
+def _record_exp446_terminal_finalization_failure_antigravity(
+    attempt: Path,
+    profile: LifecycleProfileAntigravity,
+    store: Exp444CheckpointStoreAntigravity,
+    error: BaseException,
+    channel: str,
+) -> None:
+    """Create the non-eligibility fact after an already-complete Exp446 checkpoint fails to close."""
+    if profile is not EXP446_PROFILE_ANTIGRAVITY or store.status_antigravity != "complete":
+        return
+    if type(channel) is not str or not channel:
+        raise ValueError("Exp446 terminal finalization channel is invalid")
+    try:
+        authority = capture_exp446_terminal_authority_antigravity(
+            attempt,
+            reviewed_design_path=profile.reviewed_design_path,
+            preregistration_path=profile.preregistration_path,
+        )
+        terminal_authority: Mapping[str, object] = {
+            "record_prefix_payload_sha256": authority.record_prefix_payload_sha256,
+            "terminal_sha256": {
+                name: hashlib.sha256(payload).hexdigest()
+                for name, payload in authority.leaf_bytes.items()
+            },
+        }
+    except BaseException:
+        # A failed progress/PID/event/text channel cannot yield a complete
+        # terminal capture.  The completed checkpoint prefix remains the
+        # immutable authority and records the unresolved channel explicitly.
+        terminal_authority = {
+            "record_prefix_payload_sha256": hashlib.sha256(
+                canonical_json_bytes_antigravity(list(store.record_sha256_prefix_antigravity))
+            ).hexdigest(),
+            "terminal_sha256": None,
+        }
+    write_create_only_antigravity(
+        attempt / "terminal_finalization_failure_antigravity.json",
+        canonical_json_bytes_antigravity({
+            "schema": "exp446.terminal-finalization-failure.v1",
+            "channel": channel,
+            "error": {
+                "type": type(error).__name__,
+                "message": str(error) or type(error).__name__,
+            },
+            "terminal_authority": terminal_authority,
+        }),
+    )
+
+
 def _error_view_index_antigravity(error: BaseException) -> int | None:
     value = getattr(error, "view_index", None)
     if type(value) is int and value >= 0:
@@ -860,6 +909,7 @@ def _execute_runtime_antigravity(
     else:
         raise ValueError("Exp444 runtime mode is invalid")
 
+    terminal_channel_antigravity: str | None = None
     try:
         if inputs is None:
             raise AssertionError("Exp444 materialized source inputs are unavailable")
@@ -985,10 +1035,13 @@ def _execute_runtime_antigravity(
         if profile is EXP446_PROFILE_ANTIGRAVITY:
             # The marker is publication eligibility, so it can be visible only
             # after progress, PID, and terminal log closeout have succeeded.
+            terminal_channel_antigravity = "terminal_close"
             writer.close_antigravity("complete")
+            terminal_channel_antigravity = "marker"
             store.write_terminal_parity_antigravity(
                 _terminal_parity_payload_antigravity(predecessors, attempt)
             )
+            terminal_channel_antigravity = None
         else:
             writer.close_antigravity("complete")
         if profile is EXP445_PROFILE_ANTIGRAVITY and writer.log_failure_blocks_success_antigravity:
@@ -1004,6 +1057,18 @@ def _execute_runtime_antigravity(
             writer.close_antigravity("interrupted", str(interruption) or "KeyboardInterrupt")
         raise
     except BaseException as error:
+        if (
+            profile is EXP446_PROFILE_ANTIGRAVITY and attempt is not None
+            and store is not None and store.status_antigravity == "complete"
+            and terminal_channel_antigravity is not None
+        ):
+            try:
+                failed_channel = getattr(error, "channel_antigravity", terminal_channel_antigravity)
+                _record_exp446_terminal_finalization_failure_antigravity(
+                    attempt, profile, store, error, failed_channel,
+                )
+            except BaseException:
+                pass
         if writer is not None and writer.stage_antigravity not in {"complete", "error", "failed", "interrupted", "interrupted_resumable"}:
             if store.status_antigravity not in {"complete", "error"} and store.completed_count_antigravity < FROZEN_CONFIG.source_candidate_count:
                 error_sequence = store.completed_count_antigravity

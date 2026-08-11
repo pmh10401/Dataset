@@ -38,6 +38,15 @@ _PID_KEYS = frozenset({"pid", "start_identity", "active", "heartbeat"})
 _SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
 
 
+class TerminalCloseFailureAntigravity(OSError):
+    """A terminal writer channel failed before its closeout became durable."""
+
+    def __init__(self, channel: str, cause: BaseException) -> None:
+        self.channel_antigravity = channel
+        self.cause_antigravity = cause
+        super().__init__(str(cause) or type(cause).__name__)
+
+
 def _utc_now_antigravity() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
@@ -765,20 +774,27 @@ class ProgressWriterAntigravity:
         # First persist a complete terminal proposal.  Keep the instance live
         # until every required Exp446 closeout write succeeds: callers use that
         # fact to reconcile a failed finalization rather than issuing success.
-        _write_atomic_json_antigravity(self.progress_path, self._progress_payload_antigravity(
-            active=False, stage=status, current_dataset=None,
-            current_candidate_index=None, current_view=None, view_count=None,
-            excluded_count=None, latest_error=proposed_error,
-        ))
-        self._write_pid_antigravity(False)
-        self._append_or_record_log_failure_antigravity(
-            lambda: self._append_event_antigravity("terminal", status, {"latest_error": proposed_error}),
-            terminal=True, marker_stage=status,
+        operations = (
+            ("progress", lambda: _write_atomic_json_antigravity(self.progress_path, self._progress_payload_antigravity(
+                active=False, stage=status, current_dataset=None,
+                current_candidate_index=None, current_view=None, view_count=None,
+                excluded_count=None, latest_error=proposed_error,
+            ))),
+            ("pid", lambda: self._write_pid_antigravity(False)),
+            ("event", lambda: self._append_or_record_log_failure_antigravity(
+                lambda: self._append_event_antigravity("terminal", status, {"latest_error": proposed_error}),
+                terminal=True, marker_stage=status,
+            )),
+            ("text", lambda: self._append_or_record_log_failure_antigravity(
+                lambda: self._append_text_antigravity(f"종료 stage={status} 오류={proposed_error or '-'} 완료={self._counters['completed']}/{self.total}\n"),
+                terminal=True, marker_stage=status,
+            )),
         )
-        self._append_or_record_log_failure_antigravity(
-            lambda: self._append_text_antigravity(f"종료 stage={status} 오류={proposed_error or '-'} 완료={self._counters['completed']}/{self.total}\n"),
-            terminal=True, marker_stage=status,
-        )
+        for channel, operation in operations:
+            try:
+                operation()
+            except BaseException as error:
+                raise TerminalCloseFailureAntigravity(channel, error) from error
         self._latest_error = proposed_error
         self._active = False
         self._stage = status
@@ -986,4 +1002,4 @@ class ProgressWriterAntigravity:
         return self._terminal_log_failure_antigravity or self._unrecorded_log_failure_antigravity
 
 
-__all__ = ["ProgressWriterAntigravity"]
+__all__ = ["ProgressWriterAntigravity", "TerminalCloseFailureAntigravity"]
