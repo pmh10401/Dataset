@@ -78,6 +78,62 @@ class SourcesAntigravityTests(unittest.TestCase):
             sources.open_test_labels_antigravity(object(), object(), object())
         database.assert_not_called()
 
+    def test_forged_hard_authority_is_rejected_before_database_antigravity(self) -> None:
+        """A caller cannot mint a same-shape Exp404 object to reach the DB."""
+        from experiments.exp448_exp447_text_label_boundary_repair_antigravity import sources_antigravity as sources
+
+        class SyntheticIdentityAntigravity:
+            def __eq__(self, other: object) -> bool:
+                return isinstance(other, SyntheticIdentityAntigravity)
+
+        coordinates = frozenset(("synthetic", index) for index in range(2218))
+        supplied = sources.HardPredictionsAntigravity(
+            sources.FROZEN_CONFIG_ANTIGRAVITY.exp404_hard_prediction_sha256, coordinates,
+        )
+        fresh = sources.HardPredictionsAntigravity(
+            sources.FROZEN_CONFIG_ANTIGRAVITY.exp404_hard_prediction_sha256,
+            frozenset(("captured", index) for index in range(2218)),
+        )
+        with (
+            patch.object(sources, "PublicationIdentityAntigravity", SyntheticIdentityAntigravity),
+            patch.object(sources, "_assert_exp447_byte_guard_antigravity"),
+            patch.object(sources, "verify_exp447_failure_authority_antigravity"),
+            patch.object(sources, "require_absent_exp447_root_antigravity"),
+            patch.object(sources, "capture_exp446_publication_antigravity", side_effect=(SyntheticIdentityAntigravity(), SyntheticIdentityAntigravity())),
+            patch.object(sources, "capture_hard_predictions_antigravity", return_value=fresh) as capture,
+            patch.object(sources, "_verify_database_antigravity", side_effect=AssertionError("database bomb")) as database,
+            self.assertRaises(ValueError),
+        ):
+            sources.open_test_labels_antigravity(SyntheticIdentityAntigravity(), SyntheticIdentityAntigravity(), supplied)
+        capture.assert_called_once()
+        database.assert_not_called()
+
+    def test_fresh_matching_hard_authority_reaches_database_gate_antigravity(self) -> None:
+        """A supplied valid capture must still be independently re-captured."""
+        from experiments.exp448_exp447_text_label_boundary_repair_antigravity import sources_antigravity as sources
+
+        class SyntheticIdentityAntigravity:
+            def __eq__(self, other: object) -> bool:
+                return isinstance(other, SyntheticIdentityAntigravity)
+
+        hard = sources.HardPredictionsAntigravity(
+            sources.FROZEN_CONFIG_ANTIGRAVITY.exp404_hard_prediction_sha256,
+            frozenset(("synthetic", index) for index in range(2218)),
+        )
+        fresh = sources.HardPredictionsAntigravity(hard.sha256, frozenset(hard.coordinates))
+        with (
+            patch.object(sources, "PublicationIdentityAntigravity", SyntheticIdentityAntigravity),
+            patch.object(sources, "_assert_exp447_byte_guard_antigravity"),
+            patch.object(sources, "verify_exp447_failure_authority_antigravity"),
+            patch.object(sources, "require_absent_exp447_root_antigravity"),
+            patch.object(sources, "capture_exp446_publication_antigravity", side_effect=(SyntheticIdentityAntigravity(), SyntheticIdentityAntigravity())),
+            patch.object(sources, "capture_hard_predictions_antigravity", return_value=fresh) as capture,
+            patch.object(sources, "_verify_database_antigravity", side_effect=AssertionError("database bomb")),
+            self.assertRaisesRegex(AssertionError, "database bomb"),
+        ):
+            sources.open_test_labels_antigravity(SyntheticIdentityAntigravity(), SyntheticIdentityAntigravity(), hard)
+        capture.assert_called_once()
+
     def test_sources_have_no_eager_sqlite_or_runtime_import_antigravity(self) -> None:
         import ast
         import inspect

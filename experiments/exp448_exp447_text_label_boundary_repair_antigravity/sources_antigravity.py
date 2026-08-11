@@ -205,6 +205,9 @@ def open_test_labels_antigravity(identity: PublicationIdentityAntigravity, indep
     fresh_second = capture_exp446_publication_antigravity()
     if fresh_first is fresh_second or any(capture is identity or capture is independently_confirmed or capture != identity for capture in (fresh_first, fresh_second)):
         raise ValueError("fresh Exp446 source captures do not attest the outer authority")
+    fresh_hard = capture_hard_predictions_antigravity(fresh_first)
+    if hard is fresh_hard or hard != fresh_hard:
+        raise ValueError("fresh Exp404 Hard capture does not attest the supplied authority")
     descriptor, expected = _verify_database_antigravity()
     connection = None
     try:

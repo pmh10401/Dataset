@@ -106,6 +106,9 @@ class ControlledForkDifferentialAntigravityTests(unittest.TestCase):
         ).replace(
             "    if fresh_first is fresh_second or any(capture is identity or capture is independently_confirmed or capture != identity for capture in (fresh_first, fresh_second)):",
             "    if fresh_first is fresh_second or any(capture != identity for capture in (fresh_first, fresh_second)):",
+        ).replace(
+            "    fresh_hard = capture_hard_predictions_antigravity(fresh_first)\n    if hard is fresh_hard or hard != fresh_hard:\n        raise ValueError(\"fresh Exp404 Hard capture does not attest the supplied authority\")\n",
+            "",
         )
         def strip_boundary_nodes(source: str) -> str:
             tree = ast.parse(source)
@@ -121,6 +124,37 @@ class ControlledForkDifferentialAntigravityTests(unittest.TestCase):
             return ast.dump(tree, include_attributes=False)
         self.assertEqual(strip_boundary_nodes(predecessor), strip_boundary_nodes(normalized))
         self.assertNotEqual(strip_boundary_nodes(predecessor), strip_boundary_nodes(normalized.replace("ORDER BY i.instance_index", "ORDER BY i.label")))
+
+    def test_task3_readiness_ast_allows_only_identity_predecessor_root_and_metadata_delta_antigravity(self) -> None:
+        """Readiness retains Exp447 semantics outside the approved Task3 boundary."""
+        predecessor = (_EXP447_ANTIGRAVITY / "readiness_antigravity.py").read_text()
+        successor = (_EXP448_ANTIGRAVITY / "readiness_antigravity.py").read_text()
+        normalized = successor.replace(
+            "    verify_exp447_failure_authority_antigravity()\n    require_absent_exp447_root_antigravity()\n", "",
+        ).replace(
+            "    descriptor, _identity = _verify_database_antigravity()\n    try:\n        verify_instances_schema_metadata_antigravity(descriptor)\n    finally:\n        os.close(descriptor)",
+            "    database_descriptor, _database_identity = _verify_database_antigravity()\n    os.close(database_descriptor)",
+        )
+        def strip_allowed(source: str) -> str:
+            tree = ast.parse(source)
+            identity_assignments = {"_DESIGN_ANTIGRAVITY", "_PREREGISTRATION_ANTIGRAVITY", "_EXPECTED_DESIGN_SHA256_ANTIGRAVITY", "_EXPECTED_PREREGISTRATION_SHA256_ANTIGRAVITY", "__all__"}
+            tree.body = [node for node in tree.body if getattr(node, "name", None) != "verify_instances_schema_metadata_antigravity" and not (isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id in identity_assignments for target in node.targets))]
+            for node in tree.body:
+                if isinstance(node, ast.ImportFrom) and node.module == "sources_antigravity":
+                    node.names = [name for name in node.names if name.name not in {"require_absent_exp447_root_antigravity", "verify_exp447_failure_authority_antigravity"}]
+            class NormalizeIdentityAntigravity(ast.NodeTransformer):
+                def visit_Constant(self, node: ast.Constant) -> ast.AST:
+                    if type(node.value) is str:
+                        node.value = node.value.replace("Exp447", "ExpExperiment").replace("Exp448", "ExpExperiment")
+                    return node
+            if tree.body and isinstance(tree.body[0], ast.Expr) and isinstance(tree.body[0].value, ast.Constant):
+                tree.body.pop(0)
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant):
+                    node.body.pop(0)
+            return ast.dump(NormalizeIdentityAntigravity().visit(tree), include_attributes=False)
+        self.assertEqual(strip_allowed(predecessor), strip_allowed(normalized))
+        self.assertNotEqual(strip_allowed(predecessor), strip_allowed(normalized.replace("numpy.__version__", "'mutation'", 1)))
 
 
 if __name__ == "__main__":
