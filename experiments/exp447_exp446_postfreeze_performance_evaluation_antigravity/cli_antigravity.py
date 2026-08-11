@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import fields, is_dataclass
 import json
 import math
+from pathlib import Path
 import re
 import sys
 
@@ -53,11 +54,27 @@ def _load_evaluate_antigravity():
 
 
 def _load_inspect_antigravity():
-    # ``inspect_evaluation_antigravity`` has no SQLite import and follows the
-    # evaluator's label-free immutable replay route only.
-    from .evaluation_antigravity import inspect_evaluation_antigravity
+    # The replay implementation itself is source- and label-authority-free.
+    # The command path supplies its immutable identity separately only after
+    # this lazy loader has completed.
+    from .replay_antigravity import inspect_replay_with_dependencies_antigravity
 
-    return inspect_evaluation_antigravity
+    return inspect_replay_with_dependencies_antigravity
+
+
+def _inspect_dependencies_antigravity():
+    """Build the tiny identity-only adapter after the pure replay is selected."""
+    from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+    from .sources_antigravity import capture_exp446_publication_antigravity
+
+    class _InspectDependenciesAntigravity:
+        root = Path(FROZEN_CONFIG_ANTIGRAVITY.run_root)
+
+        @staticmethod
+        def capture_after():
+            return capture_exp446_publication_antigravity()
+
+    return _InspectDependenciesAntigravity()
 
 
 def _json_safe_antigravity(value: object) -> object:
@@ -96,7 +113,7 @@ def main_antigravity(argv: Sequence[str] | None = None) -> int:
         _print_result_antigravity(_load_evaluate_antigravity()(arguments.reviewed_commit))
         return 0
     if arguments.command == "inspect":
-        _print_result_antigravity(_load_inspect_antigravity()())
+        _print_result_antigravity(_load_inspect_antigravity()(_inspect_dependencies_antigravity()))
         return 0
     raise ValueError("unknown closed Exp447 command")
 

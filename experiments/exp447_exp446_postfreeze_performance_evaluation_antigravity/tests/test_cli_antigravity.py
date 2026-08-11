@@ -56,7 +56,7 @@ class CliAntigravityTests(unittest.TestCase):
             self.assertEqual(cli.main_antigravity(["readiness", "--reviewed-commit", "a" * 40]), 0)
         readiness.assert_called_once_with()
 
-        with patch.object(cli, "_load_inspect_antigravity", return_value=lambda: {"kind": "inspect"}) as inspect, patch.object(cli, "_load_readiness_antigravity", side_effect=AssertionError("readiness loaded")), patch.object(cli, "_load_evaluate_antigravity", side_effect=AssertionError("evaluation loaded")), patch.object(cli, "_print_result_antigravity"):
+        with patch.object(cli, "_load_inspect_antigravity", return_value=lambda dependencies: {"kind": "inspect"}) as inspect, patch.object(cli, "_inspect_dependencies_antigravity", return_value=object()), patch.object(cli, "_load_readiness_antigravity", side_effect=AssertionError("readiness loaded")), patch.object(cli, "_load_evaluate_antigravity", side_effect=AssertionError("evaluation loaded")), patch.object(cli, "_print_result_antigravity"):
             self.assertEqual(cli.main_antigravity(["inspect"]), 0)
         inspect.assert_called_once_with()
         self.assertNotIn("sqlite3", sys.modules)
@@ -111,6 +111,26 @@ class CliAntigravityTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(completed.stdout.strip(), '{"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "VECLIB_MAXIMUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "BLIS_NUM_THREADS": "1", "NUMBA_NUM_THREADS": "1"}')
+
+    def test_real_inspect_loader_subprocess_keeps_label_authority_unloaded_antigravity(self) -> None:
+        # This must be an unshared interpreter. An earlier test may have loaded
+        # evaluator/source modules, masking an eager import in the CLI loader.
+        probe = (
+            "import sys; "
+            "from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.cli_antigravity "
+            "import _load_inspect_antigravity; "
+            "loaded = _load_inspect_antigravity(); "
+            "assert callable(loaded); "
+            "forbidden = ('sqlite3', "
+            "'experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.sources_antigravity', "
+            "'experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity'); "
+            "assert not any(name in sys.modules for name in forbidden), sorted(name for name in forbidden if name in sys.modules)"
+        )
+        completed = subprocess.run(
+            [sys.executable, "-c", probe], cwd=Path(__file__).resolve().parents[3],
+            check=False, capture_output=True, text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
 
 
 if __name__ == "__main__":
