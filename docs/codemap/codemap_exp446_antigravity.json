@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T02:41:33Z",
-  "generated_from_commit": "2e2a7ea7e6271f684e5e86424026d4eaae6f3029",
+  "generated_at": "2026-08-11T09:00:00Z",
+  "generated_from_commit": "151e29074f002e469ada225549eb6647ed71f5b2",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1008,60 +1008,54 @@
       "type": "interface",
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
-      "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
-      "role": "Exp446 governance is bound to the reviewed singleton, profile-aware checkpoint context, readiness gates, fixed new-only runtime routing, and internal reporting dispatch. It consumes the Task 4 descriptor-pinned Exp445 failed-publication verifier before any Exp446 root allocation.",
+      "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
+      "role": "Exp446 exposes only fixed readiness, new, publication, and inspection facades. Its new-only CPU/11 replay verifies independent Exp444 and failed-Exp445 wrapper SHA authority before each checkpoint success, gates the 30-prefix aggregate and fresh predecessor before terminal parity, and publication re-verifies that authority.",
       "entrypoints": [
-        "LifecycleProfileAntigravity",
-        "readiness_for_profile_antigravity",
-        "run_new_for_profile_antigravity",
-        "_require_publication_profile_antigravity"
+        "run_readiness_antigravity",
+        "run_new_antigravity",
+        "publish_prediction_antigravity",
+        "inspect_prediction_antigravity",
+        "run_new_for_profile_antigravity"
       ],
       "tests": [
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py",
         "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_profile_contracts_antigravity.py"
       ],
       "constraints": [
-        "Exactly Exp444, Exp445, and Exp446 reviewed singleton identities are accepted; caller-minted equal profiles and altered identities are rejected by identity.",
-        "Exp446 checkpoint context binds schema, reviewed-design and preregistration hashes, CPU/11/inner-1, and label access 0 without changing legacy Exp444 or Exp445 context bytes.",
-        "Exp446 readiness validates clean reviewed HEAD, document/environment/scientific authority, source DB/link authority, immutable Task 4 Exp445 predecessor authority, and absent non-symlink root before allocation.",
-        "Exp446 runtime is fixed to new, its fixed root, and attempt_0000_antigravity; no caller root, attempt, executor factory, backend, or worker routing is accepted."
+        "Exp446 has no caller routing override: new uses CPU/11, inner thread 1, a fixed root, and attempt_0000_antigravity.",
+        "Fresh Exp444 and Exp445 predecessor authorities are required before allocation; every canonical wrapper SHA is compared at its index before success checkpoint persistence.",
+        "Aggregate mismatch or a changed final predecessor creates the exact-next error record and inactive progress/PID evidence; a root cannot be retried.",
+        "Publication requires create-only terminal parity evidence and a fresh Exp444 plus Exp445 predecessor verification."
       ],
       "evidence": [
         {
-          "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
-          "symbol": "Exp445 failure authority"
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
+          "symbol": "def run_new_antigravity"
         },
         {
-          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/predecessor_antigravity.py",
-          "symbol": "def verify_exp445_predecessor_antigravity"
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
+          "symbol": "def _require_terminal_parity_antigravity"
         },
         {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/profiles_antigravity.py",
-          "symbol": "EXP446_PROFILE_ANTIGRAVITY = LifecycleProfileAntigravity("
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
-          "symbol": "class ProfileCheckpointContextAntigravity:"
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
-          "symbol": "def from_exp446_payload_antigravity("
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/readiness_antigravity.py",
-          "symbol": "def readiness_for_profile_antigravity"
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def _predecessor_authorities_for_profile_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
           "symbol": "def run_new_for_profile_antigravity"
         },
         {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
-          "symbol": "def _require_publication_profile_antigravity"
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "def write_terminal_parity_antigravity"
         },
         {
-          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_profile_contracts_antigravity.py",
-          "symbol": "class Exp446ProfileContractsAntigravityTests"
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
+          "symbol": "def close_exp446_terminal_parity_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_lifecycle_antigravity.py",
+          "symbol": "class Exp446LifecycleAntigravityTests"
         }
       ]
     },
@@ -6236,17 +6230,24 @@
       ]
     },
     {
-      "from": "exp444_stability_contracts",
+      "from": "exp445_predecessor_authority",
       "to": "exp446_governance",
-      "type": "imports",
+      "type": "authenticates",
       "evidence": [
         {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/readiness_antigravity.py",
-          "symbol": "from experiments.exp446_exp445_publication_materialization_repair_antigravity.predecessor_antigravity import verify_exp445_predecessor_antigravity"
-        },
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/predecessor_antigravity.py",
+          "symbol": "def verify_exp445_predecessor_antigravity"
+        }
+      ]
+    },
+    {
+      "from": "exp446_governance",
+      "to": "exp444_stability_contracts",
+      "type": "replays with parity gates",
+      "evidence": [
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
-          "symbol": "def _verify_exp446_predecessor_antigravity"
+          "symbol": "def _predecessor_authorities_for_profile_antigravity"
         }
       ]
     }
