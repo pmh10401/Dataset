@@ -1,0 +1,51 @@
+{
+  "current_commit": "fff11272a8fcb41b4f0305079fd5d4e20951f691",
+  "working_tree_dirty": false,
+  "generated_at": "2026-08-12T00:00:00+09:00",
+  "scanned_scope": [
+    "tracked root files including AGENTS.md",
+    ".superpowers",
+    "docs",
+    "experiments",
+    "operational",
+    "reports",
+    "scratch",
+    "scripts",
+    "vercel-dashboard"
+  ],
+  "excluded_directories": [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".venv",
+    ".worktrees",
+    "__pycache__",
+    "build",
+    "cache",
+    "dist",
+    "docs/codemap",
+    "node_modules",
+    "outputs",
+    "results",
+    "vendor",
+    "venv"
+  ],
+  "fingerprint_algorithm": "sha256-v1: sort tracked repo-relative paths by module; append UTF-8 path, NUL, decimal byte length, NUL, current bytes, NUL; docs/codemap is excluded to prevent self-reference.",
+  "module_fingerprints": {
+    "root": "6d9cdca932f8e63da67b313541ab4d797e4dccffeb29c0aba9bf9455b770c113",
+    ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
+    "docs": "073095a69085dee7d479bcfd0fa4a959292c0e0921533ce9969b3a8018ed943f",
+    "experiments": "eb18992fc54a6ed33a8fa2ff1053a9ce86b96376a564b1925d54c1c857dfe280",
+    "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
+    "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
+    "scratch": "b097e4cd481f499270836fb1e95bc1f970a77e962919e58cdcea3ab0a2346cca",
+    "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
+    "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
+  },
+  "changed_modules_since_prior_lock": [
+    "docs",
+    "experiments",
+    "root",
+    "scratch"
+  ]
+}

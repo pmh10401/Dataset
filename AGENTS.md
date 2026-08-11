@@ -58,6 +58,10 @@ explicitly opts into the separate Luna task lane for that specific request.
 
 All newly created files across all tasks and experiments must include `antigravity` in their file name (e.g., `antigravity_<name>.<ext>`, `<name>_antigravity.<ext>`).
 
+## Human-readable document policy
+
+Every newly created human-readable document is self-contained .html and has no Markdown duplicate; JSON, lock, and code files are unaffected; Historical documents are not mass-converted.
+
 ## Code Map Synchronization
 
 At the start of every code-changing task, resolve the current experiment version
