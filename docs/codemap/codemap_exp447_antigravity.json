@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T12:33:16Z",
-  "generated_from_commit": "0acde68d6183e6dc9c6209bd2c5d8a6e9323a2d0",
+  "generated_at": "2026-08-11T12:49:29Z",
+  "generated_from_commit": "e4aa86ca7523c510b15b5c22959acf19267b0569",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1239,7 +1239,7 @@
       "boundary": "Exp447 post-freeze evaluation",
       "layer": 1,
       "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity",
-      "role": "Freezes Exp447 value contracts and descriptor-pins the immutable Exp446 publication, Exp404 Hard bytes, and database identity. Readiness is mutation-free and cannot import SQLite or the TEST-label session; the separate closure-private label session requires two equal publication captures and is not invoked by readiness.",
+      "role": "Freezes Exp447 value contracts and descriptor-pins immutable Exp446 publication and Exp404 Hard bytes through final no-follow leaf/namespace revalidation. Readiness is mutation-free, rechecks clean HEAD and root absence after source capture, requires exactly Python 3.14.6 and NumPy 2.4.6, and cannot import SQLite or the TEST-label session. The closure-private session requires outer two equal captures plus two fresh distinct internal captures and exact DB SHA/inode/single-link revalidation after close; readiness never invokes it.",
       "entrypoints": [
         "FROZEN_CONFIG_ANTIGRAVITY",
         "PublicationIdentityAntigravity",
@@ -1265,7 +1265,7 @@
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
-        "Evaluation-only: no new score, training, MLX/MPS benchmark, network, dashboard, Exp446 mutation, or official root allocation. Readiness performs no TEST-label query and does not create the Exp447 root.",
+        "Evaluation-only: no new score, training, MLX/MPS benchmark, network, dashboard, Exp446 mutation, or official root allocation. Readiness performs no TEST-label query, does not create the Exp447 root, and repeat-checks clean reviewed HEAD plus root absence after lengthy source reads.",
         "Exact 1,117 datasets, 195,900 label rows, ordered 30 = 26 + 4 lanes, fixed baseline confusion, PCG64 seed 44720260811, exact 20,000-by-1,117 int64 endpoint-false draw SHA, and linear percentile method.",
         "All persisted values are canonical/create-only; pre-label payloads reject recursive normalized label/class/target/anomaly/outlier/test-y-like keys. Source rank order and each lane-relative order are preserved while the disjoint 26/4 lane sets conservatively cover the 30 source coordinates."
       ],
@@ -1304,11 +1304,19 @@
         },
         {
           "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/sources_antigravity.py",
+          "symbol": "def _assert_pinned_leaf_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/sources_antigravity.py",
           "symbol": "def open_test_labels_antigravity"
         },
         {
           "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/readiness_antigravity.py",
           "symbol": "def readiness_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/readiness_antigravity.py",
+          "symbol": "def _require_frozen_runtime_antigravity"
         },
         {
           "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_sources_antigravity.py",
