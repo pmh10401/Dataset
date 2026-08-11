@@ -51,13 +51,16 @@ The corrected regression boundary passed once:
 
 - Exp444: `206` tests, `327.683` seconds, exit `0` (unchanged product/shared code; first boundary evidence reused).
 - Exp445: `39` tests, `1.317` seconds, exit `0`.
-- Exp446: `47` tests, `10.132` seconds, exit `0`.
+- Exp446: `48` tests, `10.625` seconds, exit `0`.
 
 Read-only checks confirmed source DB inode `1048138` with `nlink=1`, a valid immutable Exp445
 predecessor, and the immutable completed Exp446 root. The official runtime used PID `74950` and
 completed/success/abstention/error `30/30/4/0` in `471.76320550008677` seconds. The CLI repair
 replaces only the post-publication dataclass deep-copy route with field-wise recursive serialization;
 focused `new` and source-free `inspect` seams pass without touching official artifacts.
+Before that mock was installed, one focused CLI test unintentionally performed an official inspect.
+It was source-free, label-free, mutation-free captured-output evidence; it is not counted as either
+pending authorized inspection, and no additional official inspect was run.
 
 ## Remaining gate
 

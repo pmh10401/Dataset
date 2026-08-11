@@ -24,6 +24,9 @@ TEST-label 접근은 미수행이다.
   manifest SHA256 is `bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11`.
 - labels remain `0`, promotion remains false, DB nlink is `1`, and the official Exp446 root is
   immutable. Inspection is pending fresh Sol review; it is not a retry path.
+- A pre-mock focused CLI test unintentionally performed one official inspect. It was source-free,
+  label-free, mutation-free captured-output evidence, is not counted as either pending authorized
+  inspection, and does not authorize an additional inspect.
 
 ## 구현 검증 증거 (공식 실행 아님)
 
@@ -32,8 +35,8 @@ TEST-label 접근은 미수행이다.
   `af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034`였다. 이 검증은
   과학 score를 재계산하지 않았고 label access는 `0`이다.
 - CPU는 Apple M2 Max, logical CPU `12`, worker `11`, inner numerical thread `1`이다.
-- 회귀 boundary는 Exp444 `206` tests, Exp445 `39` tests, Exp446 `47` tests 모두 exit `0`이다.
-  Exp445의 immutable predecessor와 source DB single-link (`nlink=1`) 및 absent Exp446 root를
+- 회귀 boundary는 Exp444 `206` tests, Exp445 `39` tests, Exp446 `48` tests 모두 exit `0`이다.
+  Exp445의 immutable predecessor와 source DB single-link (`nlink=1`) 및 immutable completed Exp446 root를
   read-only로 확인했다.
 - 초기 bounded harness는 frozen wrapper의 `{sequence,result}` schema preflight에서
   fail-closed했고 보존했다. 수정된 harness는 그 frozen schema를 검증하는 scheduler/serialization

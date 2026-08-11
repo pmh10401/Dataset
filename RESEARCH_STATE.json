@@ -130,6 +130,8 @@
     "champion_sha256": null,
     "promotion_sha256": null,
     "prediction_started": true,
+    "prediction_phase_completed": true,
+    "publication_completed": true,
     "test_labels_opened": false,
     "pre_freeze_label_access_count": 0,
     "official_readiness": true,
@@ -194,12 +196,22 @@
       "abstention": 4,
       "error": 0,
       "label_access_count": 0,
+      "publication_completed": true,
       "terminal_aggregate_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
       "wrapper_failure": "post_publication_mappingproxy_serialization_typeerror",
-      "inspection_status": "pending_no_official_inspect_rerun"
+      "inspection_status": "pending_no_additional_official_inspect_before_fresh_sol_review",
+      "unintended_read_only_inspect": {
+        "occurred_during": "pre_mock_focused_cli_test",
+        "source_free": true,
+        "label_free": true,
+        "mutation_free": true,
+        "captured_output_evidence": true,
+        "counts_as_pending_authorized_two_inspections": false,
+        "additional_official_inspect_run": false
+      }
     },
     "exact_next_command": "await_fresh_sol_high_read_only_review_before_source_free_inspection",
-    "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion. The original CLI wrapper failed only after return while dataclasses.asdict deep-copied a nested MappingProxyType; the immutable attempt is not retried or mutated, and source-free inspection remains pending fresh Sol review."
+    "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion. The original CLI wrapper failed only after return while dataclasses.asdict deep-copied a nested MappingProxyType. One unintended pre-mock focused-test official inspect was source-free, label-free, mutation-free captured-output evidence; it is not counted as the pending authorized two inspections, and no additional official inspect is run before fresh Sol review. The immutable attempt is not retried or mutated."
   },
   "exp443_missing_train_policy_comparison": {
     "experiment": "Exp443",
@@ -949,8 +961,8 @@
   "exact_next_command_if_interrupted": "fresh_sol_high_read_only_review_current_clean_head_before_exp446_inspection",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
-  "prediction_phase_started": false,
-  "prediction_phase_completed": false,
+  "prediction_phase_started": true,
+  "prediction_phase_completed": true,
   "test_labels_opened": false,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "not_started",

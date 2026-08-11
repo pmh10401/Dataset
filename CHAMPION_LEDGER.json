@@ -32,7 +32,7 @@
   },
   "pending_candidate": {
     "experiment": null,
-    "status": "none_exp446_preregistered_implementation_pending_not_pending_champion",
+    "status": "none_exp446_completed_non_promoted_not_pending_champion",
     "prediction_sha256": null,
     "evaluation": null
   },
@@ -219,13 +219,14 @@
     },
     {
       "experiment": "Exp446",
-      "status": "preregistered_implementation_pending_not_promoted",
-      "reason": "Exp446는 Exp445 immutable failed-publication predecessor의 recursive JSON materialization boundary만 복구하도록 preregistered 되었다. prediction/publication/evaluation/promotion은 없고 TEST label 접근은 0이며, champion, pending candidate, scientific winner 또는 operational alert를 만들지 않는다.",
+      "status": "official_completed_publication_non_promoted_inspection_pending",
+      "reason": "Exp446의 공식 CPU/11 runtime과 create-only publication은 완료됐고 prediction/publication hash가 존재한다. 원래 CLI wrapper는 publication 반환 뒤 nested MappingProxyType serialization에서만 실패했다. pre-mock focused test의 unintended official inspect는 source-free, label-free, mutation-free captured-output evidence이며 pending authorized two inspections으로 세지지 않는다. 추가 inspect는 실행하지 않는다. evaluation, champion, pending candidate, scientific winner, operational alert 및 promotion은 만들지 않는다.",
       "reviewed_design_sha256": "3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281",
       "run_identity": "exp446-exp445-publication-materialization-repair-antigravity-20260811",
       "artifact_root": "/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811",
-      "prediction_sha256": null,
-      "publication_sha256": null,
+      "prediction_sha256": "602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100",
+      "publication_sha256": "d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d",
+      "publication_manifest_sha256": "bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11",
       "evaluation": null,
       "champion_sha256": null,
       "promotion_sha256": null,
@@ -237,7 +238,8 @@
       "review_only": true,
       "operational_alert_eligible": false,
       "same_experiment_reselection_allowed": false,
-      "test_informed_reselection_allowed": false
+      "test_informed_reselection_allowed": false,
+      "promotion_allowed": false
     }
   ]
 }
