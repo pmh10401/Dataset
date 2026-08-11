@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T07:32:50Z",
-  "generated_from_commit": "682ed286c345cc10a665ccc860202ba1ef43a306",
+  "generated_at": "2026-08-11T07:44:09Z",
+  "generated_from_commit": "53030b598e6d8fdc4a5cdc3fdbebcc9d1ca9f9b7",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -86,7 +86,7 @@
     "Exp445 exact typed checkpoint-state and raw-context binding, immutable lane-prefix counter recovery, and irreversible no-marker diagnostic failure gating",
     "Exp445 exact active candidate-index type boundary and pre-existing diagnostic-marker/symlink clean-success block",
     "Exp445 historical four-command implementation surface retained in source, but its completed failed-publication root is immutable and no command may retry, resume, publish, or evaluate it.",
-    "Exp446 implemented engineering-only recursive JSON materialization at the Exp445 publication encoding boundary, with verified frozen-record scheduler/serialization parity and no official readiness, new, inspect, publication, evaluation, label access, or promotion.",
+    "Exp446 official CPU/11 runtime and create-only publication completed 30/30 with four abstentions and zero labels; the original wrapper failed only after publication on MappingProxyType serialization. One unintended pre-mock focused-test official inspect was source-free, label-free, mutation-free captured-output evidence, not a pending authorized inspection; no additional inspect is run before fresh Sol review.",
     "Exp446 terminal authority correction: frozen per-record dataset/train/raw dimensions and four lane-derived abstentions are validated without changing scientific computation or official lifecycle authority.",
     "Exp446 terminal identity repair: each immutable Exp445 wrapper binds sequence separately from candidate instance_index and original_rank; four abstentions are sequence/original-rank positions, never instance indices.",
     "Exp446 official CPU/11 runtime and create-only publication completed 30/30 with four abstentions and zero labels; the original wrapper failed only after publication on MappingProxyType serialization, while source-free inspection remains pending fresh Sol review."
@@ -99,7 +99,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its original wrapper failed only after return while serializing a nested MappingProxyType, and fresh Sol review is required before source-free inspection.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its original wrapper failed only after return while serializing a nested MappingProxyType. One unintended pre-mock focused-test official inspect was source-free, label-free, mutation-free captured-output evidence, is not an authorized pending inspection, and no additional inspect is run before fresh Sol review.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -156,7 +156,7 @@
         "No Exp445 publication exists after the terminal failure, so no inspect or evaluation route is authorized for the immutable root.",
         "Exp445 publication capture failure after fixed-root allocation creates only immutable publication_failure_antigravity.json and no canonical publication. If a caller-side frozen-leaf replay/audit rejects after atomic rename, the retained attempt descriptor quarantines the canonical destination before failure evidence is written; it is never returned as clean publication.",
         "Exp445 is immutable failed-publication evidence, not a failed scientific result: 30/30, error 0, label access 0, CPU/11 inner-1, aggregate af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034, absent publication/evaluation, and failure text Exp444 original-control replay is invalid.",
-        "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; official execution remains unperformed."
+        "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; official runtime and publication are complete and immutable, while evaluation/champion/promotion remain disabled."
       ],
       "evidence": [
         {
@@ -1043,7 +1043,7 @@
         "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect with abbreviation disabled; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module. The launcher has no hidden command and delegates every argv to this CLI after pinning seven thread variables.",
         "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. The pre-rename staging identity survives parent-fsync, destination-open, and frozen-byte failures; cleanup quarantines only that exact descriptor-created publication object and never a swapped replacement.",
         "Terminal authority checks exact frozen dataset, instance index, original rank, train, and raw dimensions; log candidate index is sequence; status is lane-derived; exactly four sequence/original-rank abstentions are required; progress/event/text rows must agree.",
-        "Official Exp446 runtime/publication are immutable and complete; no retry or root mutation is permitted. The original wrapper-only MappingProxyType serialization failure is repaired by field-wise dataclass traversal, and source-free inspection remains pending fresh Sol review."
+        "Official Exp446 runtime/publication are immutable and complete; no retry or root mutation is permitted. The original wrapper-only MappingProxyType serialization failure is repaired by field-wise dataclass traversal. One unintended pre-mock focused-test source-free, label-free, mutation-free captured-output inspect is not an authorized pending inspection; no additional inspect is run before fresh Sol review."
       ],
       "evidence": [
         {
@@ -6427,7 +6427,7 @@
         "exp444_stability_contracts",
         "sqlite_store"
       ],
-      "outcome": "Publication and evaluation are absent. The Exp445 root accepts no retry, resume, publication, inspect, or evaluation; Exp446 is the implemented, verification-complete engineering-only repair path awaiting official readiness."
+      "outcome": "Publication and evaluation are absent. The Exp445 root accepts no retry, resume, publication, inspect, or evaluation; Exp446 completed its engineering-only CPU/11 runtime and immutable create-only publication without promotion. Its captured unintended source-free/label-free/mutation-free inspect is not an authorized pending inspection."
     },
     {
       "id": "exp446_exp445_predecessor_verification_flow",
@@ -6440,7 +6440,7 @@
         "exp445_predecessor_authority",
         "sqlite_store"
       ],
-      "outcome": "Readiness requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, descriptor-pinned Exp445 verifier success, and an absent non-symlink Exp446 root. Runtime accepts only the same singleton with new, the fixed root, and attempt_0000_antigravity, rejecting caller executor factories before live gates; readiness does not allocate, new is fixed-root and single-use, and official execution remains unperformed."
+      "outcome": "The closed code path requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, and descriptor-pinned Exp445 verifier success before allocation or terminal capture. Historical readiness required an absent non-symlink Exp446 root; the official runtime/publication now completed and the root is immutable. No retry, root mutation, evaluation, champion, promotion, or additional inspect is authorized before fresh Sol review."
     }
   ],
   "unknown_relationships": [],
@@ -6476,7 +6476,7 @@
         "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
         "relationship": "External product consumers and post-review operator invocation",
         "status": "unknown",
-        "reason": "The closed Exp446 lifecycle is implemented and mapped, but no external product caller or official lifecycle execution is authorized or evidenced before fresh Sol review."
+        "reason": "The closed Exp446 lifecycle is implemented and mapped, but external product consumers and any future post-review operator invocation are not statically evidenced. The completed immutable official runtime/publication has no authorized retry, evaluation, champion, promotion, or additional inspect before fresh Sol review."
       }
     ]
   }
