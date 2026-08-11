@@ -286,19 +286,31 @@ hyperparameter sweep은 하지 않는다.</p>
 <p>모든 seed, transform 설정, OOF fold, neighbor 수, score 방향, threshold rule은 결과를
 보기 전에 preregistration에 기록한다. 공식 third-party transformer의 기본값을 바꾸는
 경우 그 이유와 exact delta를 별도 후보 이름으로 표시한다.</p>
-<h2>8. MLX와 병렬 실행 정책</h2>
-<p>각 새 score source는 full run 전에 CPU-versus-MLX를 평가한다. MLX는 다음 조건을 모두
-만족할 때만 사용한다.</p>
+<h2>8. 가속과 병렬 실행 정책</h2>
+<p>각 새 score source는 full run 전에 tensor eligibility와 CPU-versus-MLX/PyTorch-MPS를
+명시적으로 평가한다. 현재의 공식 aeon transform은 비교 가능성을 위해 CPU-only로 유지한다.
+따라서 공식 transformer 뒤의 dense distance matrix, batched projection, 또는 tensor feature fusion처럼
+동결 algorithm/feature/score/threshold/routing을 바꾸지 않는 분리된 단계만 tensor eligible일 수 있다.
+공식 CPU transformer를 GPU용으로 다시 작성하지 않는다.</p>
+<p>고정 aeon 환경의 사전 probe는 <code>mlx</code> 및 <code>mlx-metal</code>이 absent이고,
+<code>torch 2.13.0</code>의 <code>mps_built=True</code>, <code>mps_available=True</code>임을 기록했다.
+이 PyTorch/MPS 사실은 가정이 아니라 official run마다 package/version/device availability를 다시 probe하여
+provenance에 기록해야 한다. MLX 또는 MPS는 다음 조건을 모두 만족할 때만 canonical backend가 될 수 있다.</p>
 <ol>
 <li>동결 algorithm/feature/score/threshold/routing 의미가 변하지 않는다.</li>
-<li>같은 input과 seed를 사용한다.</li>
+<li>동일 input과 seed의 deterministic CPU-versus-backend smoke를 사용한다.</li>
 <li>모든 출력이 finite이고 모든 사전등록 alpha에서 candidate index가 동일하다.</li>
 <li>score 차이가 사전등록 tolerance 안이다.</li>
-<li>transfer와 synchronization을 포함해 정확한 단계가 CPU보다 최소 1.1배 빠르다.</li>
+<li>transfer, device synchronization, warm-up, 및 compile overhead를 포함한 exact-stage benchmark가 CPU보다 최소 1.1배 빠르다.</li>
 </ol>
-<p>하나라도 실패하면 CPU를 유지한다. 공식 CPU transformer를 GPU용으로 다시 작성하지
-않는다. CPU는 dataset worker 최대 7개를 사용하고, MLX/MPS-heavy process는 동시에 하나만
-실행한다. manifest는 MLX/mlx-metal version, device, timing, parity와 fallback 이유를 담는다.</p>
+<p>tensor ineligible, package/device unavailable, parity/numerical tolerance 실패, 또는 benchmark 미달 중
+하나라도 있으면 canonical CPU fallback을 유지한다. acceleration은 이 benchmark 기록 없이는 canonical이 될 수 없다.
+Exp449 official CPU outer dataset workers는 현재 preflight의 12 logical CPUs에서 하나를 뺀 정확히
+<code>11</code>이다. official run provenance는 detected logical CPU <code>12</code>와 selected worker count
+<code>11</code>을 모두 기록한다. 별도로 launcher는 import 전에 일곱 thread environment variables를 모두
+<code>1</code>로 설정한다. MLX/MPS-heavy process는 동시에 하나만 실행한다. manifest는 tensor eligibility,
+MLX/mlx-metal/PyTorch version, device availability, transfer/compile-inclusive timing, parity, numerical tolerance,
+backend decision, 및 fallback 이유를 담는다.</p>
 <h2>9. 불변성과 실패 처리</h2>
 <ul>
 <li>Exp448 official artifacts와 dashboard payload를 수정하지 않는다.</li>
@@ -318,7 +330,7 @@ retry/resume하지 않는다.</li>
 <li>candidate registry와 method/source/version/environment identity</li>
 <li>target-family membership SHA</li>
 <li>TRAIN-only transform and LocalGap configuration</li>
-<li>CPU/MLX parity and benchmark decision</li>
+<li>CPU/MLX/PyTorch-MPS tensor-eligibility, parity, and benchmark decision</li>
 <li>per-candidate frozen prediction SHA</li>
 <li>exact candidate inventory and aggregate manifest SHA</li>
 </ul>
@@ -341,7 +353,7 @@ retry/resume하지 않는다.</li>
 <li>experiment id, phase, status, reviewed commit</li>
 <li>target family 수, audited/compatible/running/completed/rejected candidate 수</li>
 <li>현재 method family와 집계 progress/ETA</li>
-<li>CPU 또는 MLX 결정과 fallback 사유 범주</li>
+<li>CPU, MLX, 또는 PyTorch-MPS 결정과 fallback 사유 범주</li>
 <li>label access가 아직 0인지, evaluation이 시작됐는지</li>
 </ul>
 <p>완료 화면 <code>exp449.public-method-qualification.v1</code>에는 다음 aggregate만 표시한다.</p>

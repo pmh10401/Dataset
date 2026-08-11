@@ -20,11 +20,11 @@
 <p><strong>Tech Stack:</strong> Python 3.14.6; aeon 1.4.0; NumPy 2.3.5; scikit-learn 1.7.2; SQLite read-only descriptor boundary; <code>unittest</code>; canonical JSON/JSONL; owner-only Sites dashboard; git; versioned HTML/JSON/lock code map.</p>
 <h2>Global Constraints</h2>
 <ul>
-<li>The approved design is <code>docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html</code>, SHA256 <code>7008691128b249447127951440bfbdf91e4c0bb3b2a837f5b4956d51168d1f23</code>.</li>
+<li>The approved design is <code>docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html</code>, SHA256 <code>72fcfe799cedd8f3dfea730cb3d5d4fd38ac90c190849c3c4482565fd2936ae3</code>.</li>
 <li>Experiment identity is <code>Exp449</code>; schema is <code>exp449</code>; kind is <code>residual_fn_method_qualification</code>; run identity is <code>exp449-residual-fn-method-qualification-antigravity-20260812</code>.</li>
 <li>Run root is <code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812</code>; fixed failure audit path is <code>/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json</code>.</li>
 <li>Every newly created filename contains <code>antigravity</code>; do not create <code>__init__.py</code>.</li>
-<li>Every Exp449 design, plan, preregistration, runbook, and implementation report is a self-contained <code>.html</code> document. Do not create Markdown duplicates.</li>
+<li>Task 1 owns the <code>AGENTS.md</code> policy change under TDD: Every newly created human-readable document is a self-contained <code>.html</code> and has no Markdown duplicate; JSON, lock, and code files are unaffected, and historical documents are not mass-converted.</li>
 <li>Exp448 remains byte-immutable. Never rerun or modify its official lifecycle, root, artifacts, truth, or published dashboard payload.</li>
 <li>Baseline is exact Exp448 stable-26: TP 1,930; FP 314; FN 1,988; TN 191,668; F1 <code>0.6264199935</code>.</li>
 <li>A candidate qualifies only when global FN is below 1,988, global FP is at most 314, global F1 is at least <code>0.6264199935</code>, and target-family FN decreases.</li>
@@ -36,8 +36,9 @@
 <li>The sole label session queries exactly the 48 frozen target datasets in Exp448 order and consumes exactly 72,300 rows. The remaining 1,069 datasets are represented only by immutable Exp448 aggregate confusion.</li>
 <li>Official commands are single-use and ordered: readiness, predict, evaluate, inspect. Any nonzero command stops Exp449 permanently; do not retry, resume, or override.</li>
 <li>The fixed prediction interpreter is <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>. Do not alter its package set.</li>
-<li>The aeon environment has no MLX or mlx-metal. Record the failed availability gate and retain the official CPU transformers; do not install packages or rewrite them for GPU.</li>
-<li>CPU uses at most seven outer dataset workers and every transformer uses <code>n_jobs=1</code>. Never run duplicate heavy processes.</li>
+<li>Assess tensor eligibility for every score stage before the full run. The fixed aeon environment probe records <code>mlx</code> and <code>mlx-metal</code> absent; it records <code>torch 2.13.0</code>, <code>mps_built=True</code>, and <code>mps_available=True</code>. Probe and record PyTorch, MLX, MPS, package versions, and device availability at official readiness rather than assuming them. Retain official CPU transformers; do not install packages or rewrite them for GPU.</li>
+<li>Only a stage that preserves the frozen algorithm, feature, score, threshold, and routing rule is tensor eligible. MLX or PyTorch/MPS can become canonical only after a same-input/seed deterministic smoke with finite outputs, identical candidate indices at every preregistered alpha, numerical score differences within the preregistered tolerance, and an exact-stage benchmark at least 1.1x CPU including transfer, synchronization, warm-up, and compile overhead. Otherwise record the canonical CPU fallback reason.</li>
+<li>Exp449 official CPU outer dataset workers are exactly <code>11</code>, from the current preflight of 12 logical CPUs minus one. Official run provenance records detected logical CPUs <code>12</code> and selected worker count <code>11</code>; every transformer uses <code>n_jobs=1</code>. The launcher separately sets its seven thread environment variables to <code>1</code> before imports. Run one MLX/MPS-heavy process at a time and never run duplicate heavy processes.</li>
 <li>Dashboard data is aggregate-only. Never export raw TEST labels, instance indices, internal dataset names/lists, per-instance rows, hashes, local paths, logs, database details, checkpoints, or secrets.</li>
 <li>Dashboard publication failure changes no scientific artifact and authorizes no experiment rerun.</li>
 <li>At every code-changing task start, compare the current tree with the versioned map lock and answer callers, effects, and tests. When the boundary changes, commit <code>codemap_exp449_antigravity.html/json/lock</code> with the same task.</li>
@@ -110,13 +111,14 @@
 <li>Create: <code>docs/codemap/codemap_exp449_antigravity.lock</code></li>
 <li>Create: <code>scratch/build_codemap_exp449_antigravity.py</code></li>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py</code></li>
+<li>Modify: <code>AGENTS.md</code></li>
 <li>Modify: <code>EXPERIMENT_CATALOG.json</code></li>
 <li>Modify: <code>RESEARCH_STATE.json</code></li>
 <li>Modify: <code>CHAMPION_LEDGER.json</code></li>
 </ul>
 <p><strong>Interfaces:</strong></p>
 <ul>
-<li><p>Consumes: approved design SHA <code>7008691128b249447127951440bfbdf91e4c0bb3b2a837f5b4956d51168d1f23</code>; Exp448 truth at current clean HEAD.</p>
+<li><p>Consumes: approved design SHA <code>72fcfe799cedd8f3dfea730cb3d5d4fd38ac90c190849c3c4482565fd2936ae3</code>; Exp448 truth at current clean HEAD.</p>
 </li>
 <li><p>Produces: final design/preregistration/runbook SHA bindings; planned Exp449 truth with label access <code>0</code>; deterministic <code>build_codemap_exp449_antigravity.py --source-commit &lt;commit&gt;</code>.</p>
 </li>
@@ -144,6 +146,14 @@ python3 -m json.tool docs/codemap/codemap_exp448_antigravity.lock &gt;/dev/null
         self.assertEqual(state[&quot;exp449&quot;][&quot;label_access_count&quot;], 0)
         self.assertFalse(state[&quot;exp449&quot;][&quot;official_readiness_started&quot;])
         self.assertEqual(state[&quot;pending_candidate&quot;], EXPECTED_PENDING_CANDIDATE)
+
+    def test_global_human_readable_document_policy_is_exact_antigravity(self):
+        agents = Path(&quot;AGENTS.md&quot;).read_text()
+        self.assertIn(&quot;Every newly created human-readable document&quot;, agents)
+        self.assertIn(&quot;self-contained .html&quot;, agents)
+        self.assertIn(&quot;no Markdown duplicate&quot;, agents)
+        self.assertIn(&quot;JSON, lock, and code files are unaffected&quot;, agents)
+        self.assertIn(&quot;Historical documents are not mass-converted&quot;, agents)
 </code></pre>
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 3: Run the test and observe RED</strong></li>
@@ -151,9 +161,9 @@ python3 -m json.tool docs/codemap/codemap_exp448_antigravity.lock &gt;/dev/null
 <p>Run:</p>
 <pre><code class="language-bash">python3 -m unittest experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_governance_antigravity -v
 </code></pre>
-<p>Expected: FAIL because the Exp449 governance documents and ledger records do not exist.</p>
+<p>Expected: FAIL because the Exp449 governance documents, ledger records, and the new global <code>AGENTS.md</code> policy do not exist.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 4: Write the frozen governance documents and ledger records</strong></li>
+<li><input disabled="" type="checkbox"> <strong>Step 4: Write the frozen governance documents, global document policy, and ledger records</strong></li>
 </ul>
 <p>Use these exact preregistered values:</p>
 <pre><code class="language-text">families = Crop, ElectricDevices, FordA, FordB, Yoga, ECG5000, ChlorineConcentration, StarLightCurves
@@ -180,7 +190,7 @@ official_label_sessions = 1
 promotion = prohibited
 routing = prohibited
 </code></pre>
-<p>The planned ledger record must use status <code>planned_not_started</code>, null prediction/evaluation/decision hashes, label access <code>0</code>, and must not change champion or pending candidate.</p>
+<p>After observing RED, modify <code>AGENTS.md</code> to state exactly: Every newly created human-readable document is self-contained <code>.html</code> and has no Markdown duplicate; JSON, lock, and code files are unaffected; Historical documents are not mass-converted. The planned ledger record must use status <code>planned_not_started</code>, null prediction/evaluation/decision hashes, label access <code>0</code>, and must not change champion or pending candidate.</p>
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 5: Implement the deterministic map generator</strong></li>
 </ul>
@@ -211,11 +221,11 @@ python3 -m json.tool RESEARCH_STATE.json &gt;/dev/null
 python3 -m json.tool CHAMPION_LEDGER.json &gt;/dev/null
 git diff --check
 </code></pre>
-<p>Expected: all pass; map HTML embeds the exact JSON graph; no source edge claims product implementation exists.</p>
+<p>Expected: all pass; the GREEN governance assertion proves the exact <code>AGENTS.md</code> human-readable-document policy; map HTML embeds the exact JSON graph; no source edge claims product implementation exists.</p>
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 8: Commit Task 1</strong></li>
 </ul>
-<pre><code class="language-bash">git add docs/EXP449_PREREGISTRATION_antigravity_KO.html docs/EXP449_RUNBOOK_antigravity_KO.html docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock scratch/build_codemap_exp449_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json
+<pre><code class="language-bash">git add AGENTS.md docs/EXP449_PREREGISTRATION_antigravity_KO.html docs/EXP449_RUNBOOK_antigravity_KO.html docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock scratch/build_codemap_exp449_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json
 git commit -m &quot;docs(exp449): freeze residual FN qualification governance&quot;
 </code></pre>
 <hr>
@@ -448,7 +458,7 @@ class Exp448AuthorityAntigravity:
 git commit -m &quot;feat(exp449): pin residual FN source authority&quot;
 </code></pre>
 <hr>
-<h3>Task 4: Four Fixed Representations, Shared LocalGap Scoring, and MLX Decision</h3>
+<h3>Task 4: Four Fixed Representations, Shared LocalGap Scoring, and Acceleration Decision</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py</code></li>
@@ -466,7 +476,7 @@ git commit -m &quot;feat(exp449): pin residual FN source authority&quot;
 <ul>
 <li><p>Consumes: <code>DatasetBundleAntigravity</code>, <code>MethodCandidateAntigravity</code>, fixed method audit.</p>
 </li>
-<li><p>Produces: <code>make_representation_antigravity(name, seed) -&gt; RepresentationAntigravity</code>; <code>score_candidate_antigravity(...) -&gt; CandidateScoresAntigravity</code>; <code>assess_mlx_antigravity() -&gt; MlxDecisionAntigravity</code>.</p>
+<li><p>Produces: <code>make_representation_antigravity(name, seed) -&gt; RepresentationAntigravity</code>; <code>score_candidate_antigravity(...) -&gt; CandidateScoresAntigravity</code>; <code>assess_mlx_antigravity() -&gt; MlxDecisionAntigravity</code>, which records tensor eligibility and CPU/MLX/PyTorch-MPS availability, parity, timing, and canonical fallback.</p>
 </li>
 <li><p><input disabled="" type="checkbox"> <strong>Step 1: Write representation and scoring RED tests</strong></p>
 </li>
@@ -486,7 +496,7 @@ def test_hydra_multirocket_concatenation_order_is_exact_antigravity(self):
 </code></pre>
 <p>Cover wrong seed, feature dimension drift, nonfinite output, bool numeric fields, inconsistent fold dimensions, reference-sampling order, and fewer than five TRAIN rows.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 2: Write MLX RED test</strong></li>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Write acceleration-governance RED tests</strong></li>
 </ul>
 <pre><code class="language-python">def test_missing_mlx_is_a_recorded_cpu_fallback_antigravity(self):
     decision = assess_mlx_antigravity(package_probe=lambda _: None)
@@ -494,6 +504,7 @@ def test_hydra_multirocket_concatenation_order_is_exact_antigravity(self):
     self.assertEqual(decision.reason, &quot;mlx_and_mlx_metal_absent_in_fixed_environment&quot;)
     self.assertFalse(decision.parity_run)
 </code></pre>
+<p>Add a separate dependency-injected test that records the PyTorch version and MPS built/available probe without treating availability as acceleration approval. Test tensor-ineligible stages, transfer/synchronization/warm-up/compile-inclusive benchmark failure, nonfinite outputs, candidate-index mismatch at any preregistered alpha, and numerical-tolerance failure as CPU fallbacks.</p>
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
 </ul>
@@ -522,16 +533,25 @@ class CandidateScoresAntigravity:
 
 @dataclass(frozen=True, slots=True)
 class MlxDecisionAntigravity:
-    backend: Literal[&quot;cpu&quot;, &quot;mlx&quot;]
+    backend: Literal[&quot;cpu&quot;, &quot;mlx&quot;, &quot;mps&quot;]
     reason: str
+    tensor_eligible: bool
+    mlx_version: str | None
+    mlx_metal_version: str | None
+    torch_version: str | None
+    mps_built: bool | None
+    mps_available: bool | None
+    device: str | None
     parity_run: bool
     candidate_indices_identical: bool | None
+    numerical_tolerance_met: bool | None
+    benchmark_includes_transfer_sync_warmup_compile: bool
     speedup: float | None
 </code></pre>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 6: Implement MLX preflight record</strong></li>
+<li><input disabled="" type="checkbox"> <strong>Step 6: Implement CPU/MLX/PyTorch-MPS preflight record</strong></li>
 </ul>
-<p>The fixed environment probe must report <code>mlx</code> and <code>mlx-metal</code> absent and select CPU without package installation. Keep the full parity/speed fields in the contract so a future environment could only select MLX after exact candidate-index parity, finite scores, tolerance compliance, and speedup <code>&gt;=1.1</code>.</p>
+<p>The fixed environment probe must report <code>mlx</code> and <code>mlx-metal</code> absent, and must separately record the observed <code>torch 2.13.0</code>, <code>mps_built=True</code>, and <code>mps_available=True</code>; select CPU without package installation unless a tensor-eligible stage passes the complete gate. Record package/version/device availability, transfer/synchronization/warm-up/compile-inclusive timing, and fallback reason. Keep the full parity/speed fields in the contract so a future environment could select MLX or MPS only after exact candidate-index parity at every preregistered alpha, finite scores, tolerance compliance, and speedup <code>&gt;=1.1</code>.</p>
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice and a bounded real smoke</strong></li>
 </ul>
@@ -589,7 +609,7 @@ def test_public_status_rejects_sensitive_fields_antigravity(self):
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 4: Implement deterministic dataset scheduling and prediction bytes</strong></li>
 </ul>
-<p>Use up to seven outer <code>ProcessPoolExecutor</code> workers, submit units in frozen sequence, and commit results only in sequence order. Each dataset-method result must contain exact TRAIN-only config, target length, train/test counts, the two frozen seed score identities, and <code>contains_test_labels=false</code>.</p>
+<p>Use exactly <code>11</code> outer <code>ProcessPoolExecutor</code> workers from the current preflight of 12 logical CPUs minus one, submit units in frozen sequence, and commit results only in sequence order. Record detected logical CPUs <code>12</code> and selected worker count <code>11</code> in official run provenance. Each dataset-method result must contain exact TRAIN-only config, target length, train/test counts, the two frozen seed score identities, and <code>contains_test_labels=false</code>.</p>
 <p>For each dataset-method unit, compute both frozen seeds, take the elementwise median of TRAIN-OOF scores and TEST scores, then call <code>empirical_candidates(train_median, test_median, 0.005)</code>. The returned <code>p &lt;= 0.005</code> indices are the sole binary prediction. Do not compute performance candidates at any other alpha or use seed intersections.</p>
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Step 5: Implement durable progress and prediction authority</strong></li>
@@ -901,12 +921,13 @@ git commit -m &quot;docs(exp449): close official method qualification truth&quot
 <hr>
 <h2>Self-Review Checklist</h2>
 <ul>
-<li>Every approved design section maps to at least one task: governance (Task 1), compatibility (Task 2), source authority (Task 3), score/MLX (Task 4), freeze/dashboard status (Task 5), one-session evaluation/replay (Task 6), closed candidate (Task 7), official truth/dashboard (Task 8).</li>
+<li>Every approved design section maps to at least one task: governance (Task 1), compatibility (Task 2), source authority (Task 3), score/acceleration (Task 4), freeze/dashboard status (Task 5), one-session evaluation/replay (Task 6), closed candidate (Task 7), official truth/dashboard (Task 8).</li>
 <li>Exact type names and signatures are consistent across tasks: <code>Exp448AuthorityAntigravity</code>, <code>MethodCandidateAntigravity</code>, <code>MethodAuditAntigravity</code>, <code>FrozenPredictionAuthorityAntigravity</code>, <code>FrozenEvaluationAntigravity</code>, and <code>ConfusionAntigravity</code>.</li>
 <li>The plan contains no hyperparameter or candidate choice made after TEST results.</li>
 <li>All eight target families receive exactly two score-compatible candidates; classifier-only methods remain audit evidence.</li>
 <li>FP 314/315 and FN 1,987/1,988 boundaries have explicit tests.</li>
-<li>The fixed environment&#39;s absent MLX packages produce a truthful CPU fallback without installation.</li>
+<li>The fixed environment&#39;s absent MLX packages and separately probed PyTorch/MPS availability produce a truthful CPU fallback unless a tensor-eligible stage passes the complete deterministic parity and transfer/compile-inclusive speed gate without installation.</li>
+<li>Task 1 changes <code>AGENTS.md</code> only after its focused governance assertion is observed RED, then verified GREEN; every new human-readable document is self-contained HTML with no Markdown duplicate, while JSON/lock/code remain unaffected and historical documents are not mass-converted.</li>
 <li>Dashboard status and results are aggregate-only, owner-only, source-backed snapshots and cannot alter scientific execution.</li>
 <li>Every new filename contains <code>antigravity</code>; no <code>__init__.py</code> is created.</li>
 <li>Every code-changing task includes the synchronized Exp449 HTML/JSON/lock triplet in the same commit.</li>
