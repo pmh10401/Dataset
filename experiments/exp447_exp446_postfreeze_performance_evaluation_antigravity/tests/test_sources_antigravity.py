@@ -168,6 +168,19 @@ class SourcesAntigravityTests(unittest.TestCase):
         ]
         self.assertEqual(eager, [])
 
+    def test_publication_identity_module_has_no_label_authority_import_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import publication_identity_antigravity
+
+        tree = ast.parse(inspect.getsource(publication_identity_antigravity))
+        imported = {
+            alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names
+        } | {
+            node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.module
+        }
+        self.assertNotIn("sqlite3", imported)
+        self.assertNotIn("sources_antigravity", imported)
+        self.assertNotIn("open_test_labels_antigravity", inspect.getsource(publication_identity_antigravity))
+
     def test_descriptor_helpers_reject_extra_or_symlinked_leaf_antigravity(self) -> None:
         # Break caught: a source inspector accepts a namespace addition or a
         # symlink that can be replaced after the initial path check.

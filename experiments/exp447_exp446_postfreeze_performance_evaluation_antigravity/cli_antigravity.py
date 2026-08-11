@@ -65,7 +65,7 @@ def _load_inspect_antigravity():
 def _inspect_dependencies_antigravity():
     """Build the tiny identity-only adapter after the pure replay is selected."""
     from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
-    from .sources_antigravity import capture_exp446_publication_antigravity
+    from .publication_identity_antigravity import capture_exp446_publication_antigravity
 
     class _InspectDependenciesAntigravity:
         root = Path(FROZEN_CONFIG_ANTIGRAVITY.run_root)

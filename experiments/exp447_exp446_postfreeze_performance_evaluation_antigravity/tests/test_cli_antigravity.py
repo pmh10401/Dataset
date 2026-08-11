@@ -132,6 +132,28 @@ class CliAntigravityTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
 
+    def test_real_inspect_dispatch_subprocess_keeps_label_authority_unloaded_antigravity(self) -> None:
+        # The actual inspect branch constructs its dependency adapter after the
+        # replay loader. The absent official root safely stops replay before it
+        # can read a publication; this still exposes forbidden eager imports.
+        probe = (
+            "import sys\n"
+            "from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.cli_antigravity import main_antigravity\n"
+            "try:\n main_antigravity(['inspect'])\n"
+            "except ValueError:\n pass\n"
+            "else:\n raise AssertionError('temporary inspect must not succeed')\n"
+            "forbidden = ('sqlite3', "
+            "'experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.sources_antigravity', "
+            "'experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity'); "
+            "assert not any(name in sys.modules for name in forbidden), sorted(name for name in forbidden if name in sys.modules); "
+            "assert 'experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.publication_identity_antigravity' in sys.modules"
+        )
+        completed = subprocess.run(
+            [sys.executable, "-c", probe], cwd=Path(__file__).resolve().parents[3],
+            check=False, capture_output=True, text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
