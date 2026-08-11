@@ -1,7 +1,7 @@
 {
-  "current_commit": "27dbd1d09ae374d1b6eabcbf6b44955ee3456009",
+  "current_commit": "8f5dbec4e87e093a255d1f065de930b85b141e0c",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-11T15:26:40Z",
+  "generated_at": "2026-08-11T15:46:16Z",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -32,42 +32,15 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    "root": {
-      "fingerprint": "5fae99592ff37875cf6541f195b50e257c9e90a381f441e59ad05337c292efcf",
-      "tracked_files": 210
-    },
-    ".superpowers": {
-      "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-      "tracked_files": 44
-    },
-    "docs": {
-      "fingerprint": "b4b5ab500b2981d28d5bfe04a0a175f756574119ecc38ea4cf7b61d7c76d42d1",
-      "tracked_files": 388
-    },
-    "experiments": {
-      "fingerprint": "0e665e88e2961d14574c3c3e666c724d43d126807e42d5e479644245a1f1fa2f",
-      "tracked_files": 1331
-    },
-    "operational": {
-      "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
-      "tracked_files": 3
-    },
-    "reports": {
-      "fingerprint": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-      "tracked_files": 4
-    },
-    "scratch": {
-      "fingerprint": "b3b9311cbacfad6c0250d730958c6a66ac76d2af8ac9a339fb54a39fab90215b",
-      "tracked_files": 153
-    },
-    "scripts": {
-      "fingerprint": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
-      "tracked_files": 3
-    },
-    "vercel-dashboard": {
-      "fingerprint": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d",
-      "tracked_files": 81
-    }
+    "root": "5fae99592ff37875cf6541f195b50e257c9e90a381f441e59ad05337c292efcf",
+    ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
+    "docs": "b4b5ab500b2981d28d5bfe04a0a175f756574119ecc38ea4cf7b61d7c76d42d1",
+    "experiments": "0d3906c1591cb899283c2ed654acafce7151eafc5c800453a8c60c5a832817d8",
+    "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
+    "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
+    "scratch": "b3b9311cbacfad6c0250d730958c6a66ac76d2af8ac9a339fb54a39fab90215b",
+    "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
+    "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_prior_lock": [
     "experiments"
