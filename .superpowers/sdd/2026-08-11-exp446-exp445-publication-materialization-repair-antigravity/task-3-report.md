@@ -81,7 +81,7 @@ both calls.
 
 ## Commit and concerns
 
-Commit: pending at report creation.
+Implementation commit: `22f1957cb7eed90535ff16540a219f7692f982f5`
 
 Concern: the official readiness command is intentionally not green-run here:
 its contract requires a clean reviewed HEAD, while this implementation task has
