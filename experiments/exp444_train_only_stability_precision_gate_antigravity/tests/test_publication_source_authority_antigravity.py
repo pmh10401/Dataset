@@ -1,7 +1,10 @@
 """Real-boundary regression coverage for Exp445 publication authority repair."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 import inspect
+from pathlib import Path
+import tempfile
 import unittest
 from unittest import mock
 
@@ -95,6 +98,83 @@ class Exp445PublicationSourceAuthorityAntigravityTests(unittest.TestCase):
             artifacts.parse_canonical_json_bytes_antigravity(artifacts.canonical_json_bytes_antigravity(payload)),
             payload,
         )
+
+    @staticmethod
+    def _materialized_control_rows_antigravity(value: object) -> object:
+        """Independently derive JSON containers for the frozen handoff assertion."""
+        if isinstance(value, Mapping):
+            return {key: Exp445PublicationSourceAuthorityAntigravityTests._materialized_control_rows_antigravity(item) for key, item in value.items()}
+        if isinstance(value, tuple):
+            return [Exp445PublicationSourceAuthorityAntigravityTests._materialized_control_rows_antigravity(item) for item in value]
+        return value
+
+    @staticmethod
+    def _frozen_exp445_terminal_fixture_antigravity(root: Path) -> Path:
+        """Copy only immutable terminal leaves, never the Exp445 failure marker."""
+        source = reporting.EXP445_PROFILE_ANTIGRAVITY.run_root / "attempts_antigravity" / "attempt_0000_antigravity"
+        attempt = root / "attempt_0000_antigravity"
+        checkpoint = attempt / "checkpoint_antigravity"
+        records = checkpoint / "records_antigravity"
+        records.mkdir(parents=True)
+        for name in reporting._ATTEMPT_FILES_ANTIGRAVITY:
+            (attempt / name).write_bytes((source / name).read_bytes())
+        for name in reporting._CHECKPOINT_FILES_ANTIGRAVITY:
+            (checkpoint / name).write_bytes((source / "checkpoint_antigravity" / name).read_bytes())
+        for name in reporting._RECORD_NAMES_ANTIGRAVITY:
+            (records / name).write_bytes((source / "checkpoint_antigravity" / "records_antigravity" / name).read_bytes())
+        return attempt
+
+    def test_real_frozen_handoff_materializes_control_rows_at_exp445_payload_boundary_antigravity(self) -> None:
+        """Leaving nested frozen tuples at this boundary rejects a valid original-control replay."""
+        values = reporting._capture_values_only_publish_authority_antigravity()
+        summaries = reporting._parse_dataset_summaries_antigravity(self.summary_bytes)
+        authority = reporting._compose_publish_source_authority_antigravity(summaries, values)
+        self.assertIsInstance(authority.control_rows[0]["depth_scores"], tuple)
+        self.assertIsInstance(authority.control_rows[0]["replayed_depths"], tuple)
+        with tempfile.TemporaryDirectory(prefix="exp445_frozen_terminal_fixture_antigravity_") as directory:
+            terminal_attempt = self._frozen_exp445_terminal_fixture_antigravity(Path(directory))
+            snapshot = reporting._capture_attempt_antigravity(terminal_attempt)
+            try:
+                frozen_results = reporting._complete_checkpoint_results_antigravity(
+                    terminal_attempt, snapshot, profile=reporting.EXP445_PROFILE_ANTIGRAVITY,
+                )
+                self.assertEqual(len(frozen_results), 30)
+                payloads, selection = reporting._payloads_antigravity(
+                    terminal_attempt,
+                    authority,
+                    snapshot,
+                    profile=reporting.EXP445_PROFILE_ANTIGRAVITY,
+                    results=frozen_results,
+                )
+            finally:
+                snapshot.close_antigravity()
+        control = artifacts.parse_canonical_json_bytes_antigravity(
+            payloads[reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY]
+        )
+        expected_rows = self._materialized_control_rows_antigravity(authority.control_rows)
+        self.assertIsInstance(expected_rows, list)
+        expected_bytes = artifacts.canonical_json_bytes_antigravity(
+            {"schema": "exp444.control-replay.v1", "rows": expected_rows}
+        )
+        self.assertEqual(payloads[reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY], expected_bytes)
+        self.assertEqual(control["rows"], expected_rows)
+        self.assertEqual((len(control["rows"]), len(selection.source)), (30, 30))
+        self.assertIsInstance(control["rows"][0]["depth_scores"], list)
+        self.assertIsInstance(control["rows"][0]["replayed_depths"], list)
+        for expected, actual in zip(expected_rows, control["rows"], strict=True):
+            self.assertEqual(
+                (actual["source"]["dataset"], actual["source"]["instance_index"]),
+                (expected["source"]["dataset"], expected["source"]["instance_index"]),
+            )
+            self.assertEqual(actual["replayed_rank"], expected["replayed_rank"])
+            self.assertEqual(actual["replayed_depths"], expected["replayed_depths"])
+            self.assertEqual(actual["depth_scores"], expected["depth_scores"])
+            self.assertEqual(actual["replayed_candidate"]["second_empirical_rank"], expected["replayed_candidate"]["second_empirical_rank"])
+            self.assertEqual(actual["replayed_candidate"]["second_excess_ratio"], expected["replayed_candidate"]["second_excess_ratio"])
+        with self.assertRaises(TypeError):
+            authority.control_rows[0]["depth_scores"][0]["depth"] = 99
+        with self.assertRaises(TypeError):
+            authority.control_rows[0]["replayed_depths"][0] = 99
 
     def test_summary_parser_rejects_noncanonical_malformed_order_count_and_label_rows_antigravity(self) -> None:
         """A parser accepting any malformed or label-bearing summary would lose Exp440 authority."""

@@ -681,7 +681,8 @@ def _payloads_antigravity(
     stable = tuple(item for item in results if item.lane == "stable_review")
     unstable = tuple(item for item in results if item.lane == "unstable_review")
     selection = StabilitySelectionAntigravity(source, stable, unstable)
-    _parse_control_replays_antigravity(list(authority.control_rows), source)
+    control_rows = _json_payload_value_antigravity(authority.control_rows)
+    _parse_control_replays_antigravity(control_rows, source)
     result_rows = _result_rows_antigravity(results)
     stable_rows = _result_rows_antigravity(stable)
     unstable_rows = _result_rows_antigravity(unstable)
@@ -696,7 +697,7 @@ def _payloads_antigravity(
         VIEW_EVIDENCE_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(_view_rows_antigravity(results)),
         STABLE_REVIEW_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(stable_rows),
         UNSTABLE_REVIEW_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(unstable_rows),
-        CONTROL_REPLAY_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity({"schema": "exp444.control-replay.v1", "rows": _json_payload_value_antigravity(authority.control_rows)}),
+        CONTROL_REPLAY_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity({"schema": "exp444.control-replay.v1", "rows": control_rows}),
         SOURCE_AUDIT_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_source_audit_payload_antigravity(authority)),
         BACKEND_DECISION_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_backend_payload_antigravity()) if backend_authority is None else canonical_json_bytes_antigravity({"schema": "exp444.backend-decision-wrapper.v1", "authority": dict(backend_authority), "decision": dict(backend_authority["decision"])}),
         RUNTIME_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(runtime_payload),
