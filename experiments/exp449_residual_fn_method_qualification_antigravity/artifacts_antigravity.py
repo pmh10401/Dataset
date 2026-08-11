@@ -48,33 +48,37 @@ def strict_json_bytes_antigravity(payload: bytes) -> object:
     return value
 
 
-def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int]:
-    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns)
+def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
-def _require_regular_single_link_antigravity(path: Path) -> os.stat_result:
-    info = os.lstat(path)
-    if stat.S_ISLNK(info.st_mode):
-        raise ValueError(f"symlink is forbidden: {path}")
-    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-        raise ValueError(f"artifact leaf must be a single-link regular file: {path}")
-    return info
-
-
-def _require_safe_relative_antigravity(root: Path, relative: str) -> Path:
+def _relative_parts_antigravity(relative: str) -> tuple[str, ...]:
     candidate = Path(relative)
     if type(relative) is not str or candidate.is_absolute() or not candidate.parts or any(part in ("", ".", "..") for part in candidate.parts):
         raise ValueError("artifact inventory path is not a safe relative path")
-    current = root
-    root_info = os.lstat(current)
-    if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode):
-        raise ValueError("artifact root must be a non-symlink directory")
-    for part in candidate.parts[:-1]:
-        current = current / part
-        info = os.lstat(current)
-        if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
-            raise ValueError(f"artifact directory is unsafe: {current}")
-    return root / candidate
+    return candidate.parts
+
+
+def _directory_flags_antigravity() -> int:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    return flags
+
+
+def _after_inventory_antigravity() -> None:
+    """Deliberate test seam between descriptor inventory and descriptor reads."""
+
+
+def _read_descriptor_antigravity(fd: int) -> bytes:
+    chunks: list[bytes] = []
+    while True:
+        chunk = os.read(fd, 1024 * 1024)
+        if not chunk:
+            return b"".join(chunks)
+        chunks.append(chunk)
 
 
 def write_create_only_antigravity(destination: Path, payload: bytes) -> None:
@@ -127,55 +131,101 @@ def write_create_only_antigravity(destination: Path, payload: bytes) -> None:
 
 
 def artifact_map_bytes_antigravity(root: Path, inventory: tuple[str, ...]) -> bytes:
-    """Return a canonical path-to-SHA256 map only for an exact safe inventory."""
+    """Hash only an exact inventory rooted at one retained no-follow descriptor."""
     if not isinstance(root, Path) or type(inventory) is not tuple:
         raise ValueError("root and inventory require Path and exact tuple")
     if len(set(inventory)) != len(inventory):
         raise ValueError("duplicate artifact inventory key")
-    expected = set(inventory)
-    files: set[str] = set()
-    root_info = os.lstat(root)
-    if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode):
+    expected_parts = {relative: _relative_parts_antigravity(relative) for relative in inventory}
+    root_path_info = os.stat(root, follow_symlinks=False)
+    if stat.S_ISLNK(root_path_info.st_mode) or not stat.S_ISDIR(root_path_info.st_mode):
         raise ValueError("artifact root must be a non-symlink directory")
-    for current, directories, names in os.walk(root, followlinks=False):
-        current_path = Path(current)
-        for directory in directories:
-            info = os.lstat(current_path / directory)
-            if stat.S_ISLNK(info.st_mode):
-                raise ValueError("symlink is forbidden in artifact root")
-        for name in names:
-            path = current_path / name
-            _require_regular_single_link_antigravity(path)
-            files.add(path.relative_to(root).as_posix())
-    extra = sorted(files - expected)
-    missing = sorted(expected - files)
-    if extra:
-        raise ValueError(f"unexpected artifact leaf: {extra[0]}")
-    if missing:
-        raise ValueError(f"missing artifact leaf: {missing[0]}")
-    digests: dict[str, str] = {}
-    for relative in sorted(inventory):
-        path = _require_safe_relative_antigravity(root, relative)
-        before = _require_regular_single_link_antigravity(path)
-        read_flags = os.O_RDONLY
-        if hasattr(os, "O_NOFOLLOW"):
-            read_flags |= os.O_NOFOLLOW
-        fd = os.open(path, read_flags)
-        try:
-            after_fd = os.fstat(fd)
-            if not stat.S_ISREG(after_fd.st_mode) or after_fd.st_nlink != 1:
-                raise ValueError("artifact leaf changed to an unsafe type during read")
-            chunks: list[bytes] = []
-            while True:
-                chunk = os.read(fd, 1024 * 1024)
-                if not chunk:
-                    break
-                chunks.append(chunk)
-            payload = b"".join(chunks)
-        finally:
-            os.close(fd)
-        after_path = _require_regular_single_link_antigravity(path)
-        if _identity_antigravity(before) != _identity_antigravity(after_fd) or _identity_antigravity(before) != _identity_antigravity(after_path):
-            raise ValueError("artifact leaf changed during read")
-        digests[relative] = hashlib.sha256(payload).hexdigest()
-    return canonical_json_bytes_antigravity(digests)
+    root_fd = os.open(root, _directory_flags_antigravity())
+    try:
+        root_info = os.fstat(root_fd)
+        if _identity_antigravity(root_path_info) != _identity_antigravity(root_info):
+            raise ValueError("root namespace changed during open")
+        directory_identities: dict[tuple[str, ...], tuple[int, int, int, int, int, int, int]] = {(): _identity_antigravity(root_info)}
+        leaf_identities: dict[str, tuple[int, int, int, int, int, int, int]] = {}
+
+        def inventory_directory_antigravity(directory_fd: int, prefix: tuple[str, ...]) -> None:
+            for name in sorted(os.listdir(directory_fd)):
+                info = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+                relative_parts = prefix + (name,)
+                relative = "/".join(relative_parts)
+                if stat.S_ISLNK(info.st_mode):
+                    raise ValueError(f"symlink is forbidden in artifact root: {relative}")
+                if stat.S_ISDIR(info.st_mode):
+                    child_fd = os.open(name, _directory_flags_antigravity(), dir_fd=directory_fd)
+                    try:
+                        child_info = os.fstat(child_fd)
+                        if _identity_antigravity(info) != _identity_antigravity(child_info):
+                            raise ValueError("artifact namespace changed during inventory")
+                        directory_identities[relative_parts] = _identity_antigravity(child_info)
+                        inventory_directory_antigravity(child_fd, relative_parts)
+                    finally:
+                        os.close(child_fd)
+                elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
+                    leaf_identities[relative] = _identity_antigravity(info)
+                else:
+                    raise ValueError(f"artifact leaf must be a single-link regular file: {relative}")
+
+        inventory_directory_antigravity(root_fd, ())
+        expected = set(expected_parts)
+        extra = sorted(set(leaf_identities) - expected)
+        missing = sorted(expected - set(leaf_identities))
+        if extra:
+            raise ValueError(f"unexpected artifact leaf: {extra[0]}")
+        if missing:
+            raise ValueError(f"missing artifact leaf: {missing[0]}")
+        _after_inventory_antigravity()
+        root_after_hook = os.fstat(root_fd)
+        root_namespace = os.stat(root, follow_symlinks=False)
+        if _identity_antigravity(root_namespace) != _identity_antigravity(root_after_hook):
+            raise ValueError("root namespace changed after inventory")
+        if _identity_antigravity(root_after_hook) != directory_identities[()]:
+            raise ValueError("artifact namespace changed after inventory")
+        digests: dict[str, str] = {}
+        for relative in sorted(inventory):
+            parts = expected_parts[relative]
+            parent_fd = os.dup(root_fd)
+            try:
+                prefix: tuple[str, ...] = ()
+                for part in parts[:-1]:
+                    prefix += (part,)
+                    namespace_info = os.stat(part, dir_fd=parent_fd, follow_symlinks=False)
+                    if _identity_antigravity(namespace_info) != directory_identities[prefix]:
+                        raise ValueError("artifact namespace changed during read")
+                    child_fd = os.open(part, _directory_flags_antigravity(), dir_fd=parent_fd)
+                    child_info = os.fstat(child_fd)
+                    if _identity_antigravity(child_info) != directory_identities[prefix]:
+                        os.close(child_fd)
+                        raise ValueError("artifact namespace changed during read")
+                    os.close(parent_fd)
+                    parent_fd = child_fd
+                leaf_name = parts[-1]
+                before = os.stat(leaf_name, dir_fd=parent_fd, follow_symlinks=False)
+                if _identity_antigravity(before) != leaf_identities[relative]:
+                    raise ValueError("artifact namespace changed during read")
+                read_flags = os.O_RDONLY | (os.O_NOFOLLOW if hasattr(os, "O_NOFOLLOW") else 0)
+                leaf_fd = os.open(leaf_name, read_flags, dir_fd=parent_fd)
+                try:
+                    opened = os.fstat(leaf_fd)
+                    if _identity_antigravity(opened) != leaf_identities[relative] or not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+                        raise ValueError("artifact namespace changed during read")
+                    payload = _read_descriptor_antigravity(leaf_fd)
+                    if _identity_antigravity(os.fstat(leaf_fd)) != leaf_identities[relative]:
+                        raise ValueError("artifact leaf changed during read")
+                finally:
+                    os.close(leaf_fd)
+                after = os.stat(leaf_name, dir_fd=parent_fd, follow_symlinks=False)
+                if _identity_antigravity(after) != leaf_identities[relative]:
+                    raise ValueError("artifact namespace changed during read")
+                digests[relative] = hashlib.sha256(payload).hexdigest()
+            finally:
+                os.close(parent_fd)
+        if _identity_antigravity(os.fstat(root_fd)) != directory_identities[()] or _identity_antigravity(os.stat(root, follow_symlinks=False)) != directory_identities[()]:
+            raise ValueError("root namespace changed during read")
+        return canonical_json_bytes_antigravity(digests)
+    finally:
+        os.close(root_fd)

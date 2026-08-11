@@ -31,8 +31,41 @@ class ContractsAntigravityTest(unittest.TestCase):
         test = np.array([[2.0]], dtype=np.float64)
         bundle = DatasetBundleAntigravity("d", train, test, 1)
         self.assertFalse(bundle.train_normal.flags.writeable)
+        self.assertEqual(bundle.train_normal.dtype, train.dtype)
+        self.assertEqual(bundle.train_normal.shape, train.shape)
+        train[0, 0] = 99.0
+        self.assertEqual(bundle.train_normal[0, 0], 1.0)
+        with self.assertRaises(ValueError):
+            bundle.train_normal.setflags(write=True)
+        with self.assertRaises(ValueError):
+            bundle.test_values.setflags(write=True)
         with self.assertRaisesRegex(ValueError, "target_length must be an exact integer"):
             DatasetBundleAntigravity("d", train, test, True)
+
+    def test_all_public_string_fields_reject_subclasses_antigravity(self):
+        class StringSubclassAntigravity(str):
+            pass
+
+        text = StringSubclassAntigravity("text")
+        confusion = ConfusionAntigravity(1, 0, 0, 1)
+        cases = (
+            ("candidate name", lambda: MethodCandidateAntigravity(text, "r", (1,), (0.005,))),
+            ("candidate representation", lambda: MethodCandidateAntigravity("m", text, (1,), (0.005,))),
+            ("audit name", lambda: MethodAuditAntigravity(text, "unavailable", "m", "s", None, None, ())),
+            ("audit status", lambda: MethodAuditAntigravity("n", StringSubclassAntigravity("unavailable"), "m", "s", None, None, ())),
+            ("audit module", lambda: MethodAuditAntigravity("n", "unavailable", text, "s", None, None, ())),
+            ("audit symbol", lambda: MethodAuditAntigravity("n", "unavailable", "m", text, None, None, ())),
+            ("audit package", lambda: MethodAuditAntigravity("n", "unavailable", "m", "s", text, None, ())),
+            ("audit source", lambda: MethodAuditAntigravity("n", "score_compatible", "m", "s", None, StringSubclassAntigravity("a" * 64), ("fit",))),
+            ("audit method", lambda: MethodAuditAntigravity("n", "score_compatible", "m", "s", None, "a" * 64, (text,))),
+            ("bundle dataset", lambda: DatasetBundleAntigravity(text, np.array([[1.0]]), np.array([[2.0]]), 1)),
+            ("baseline family", lambda: DatasetBaselineAntigravity(0, text, frozenset({1}), confusion)),
+            ("metric family", lambda: CandidateMetricAntigravity(text, "m", confusion, confusion, 0, 1.0, True)),
+            ("metric method", lambda: CandidateMetricAntigravity("F", text, confusion, confusion, 0, 1.0, True)),
+        )
+        for label, construct in cases:
+            with self.subTest(label=label), self.assertRaises(ValueError):
+                construct()
 
     def test_baseline_and_audit_exact_types_antigravity(self):
         confusion = ConfusionAntigravity(1, 0, 0, 1)

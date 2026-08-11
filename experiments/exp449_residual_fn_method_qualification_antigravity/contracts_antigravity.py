@@ -67,7 +67,7 @@ class MethodAuditAntigravity:
 
     def __post_init__(self) -> None:
         _exact_str_antigravity(self.name, "name")
-        if self.status not in ("score_compatible", "classifier_only", "unavailable"):
+        if type(self.status) is not str or self.status not in ("score_compatible", "classifier_only", "unavailable"):
             raise ValueError("status is invalid")
         _exact_str_antigravity(self.module, "module")
         _exact_str_antigravity(self.symbol, "symbol")
@@ -113,8 +113,9 @@ class DatasetBundleAntigravity:
                 raise ValueError(f"{field} must be an exact two-dimensional numeric ndarray")
             if not np.isfinite(value).all():
                 raise ValueError(f"{field} must be finite")
-            protected = value.copy()
-            protected.setflags(write=False)
+            # A copied ndarray can later re-enable WRITEABLE.  A bytes-backed
+            # array cannot: bytes is immutable and does not alias caller data.
+            protected = np.frombuffer(value.tobytes(order="C"), dtype=value.dtype).reshape(value.shape)
             object.__setattr__(self, field, protected)
 
 

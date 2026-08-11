@@ -2,7 +2,9 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity as artifacts_module
 from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import (
     artifact_map_bytes_antigravity,
     canonical_json_bytes_antigravity,
@@ -44,6 +46,39 @@ class ArtifactsAntigravityTest(unittest.TestCase):
             (root / "extra_antigravity.json").write_bytes(b"b")
             with self.assertRaisesRegex(ValueError, "unexpected artifact leaf"):
                 artifact_map_bytes_antigravity(root, ("a_antigravity.json",))
+
+    def test_artifact_map_rejects_root_replacement_after_inventory_antigravity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            root = parent / "root_antigravity"
+            root.mkdir()
+            (root / "a_antigravity.json").write_bytes(b"a")
+
+            def replace_root() -> None:
+                root.rename(parent / "moved_antigravity")
+                root.mkdir()
+                (root / "a_antigravity.json").write_bytes(b"replacement")
+
+            with patch.object(artifacts_module, "_after_inventory_antigravity", replace_root, create=True):
+                with self.assertRaisesRegex(ValueError, "root namespace changed"):
+                    artifact_map_bytes_antigravity(root, ("a_antigravity.json",))
+
+    def test_artifact_map_rejects_symlink_swap_after_inventory_antigravity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "root_antigravity"
+            root.mkdir()
+            leaf = root / "a_antigravity.json"
+            leaf.write_bytes(b"a")
+            outside = Path(temporary) / "outside_antigravity.json"
+            outside.write_bytes(b"outside")
+
+            def swap_leaf() -> None:
+                leaf.unlink()
+                leaf.symlink_to(outside)
+
+            with patch.object(artifacts_module, "_after_inventory_antigravity", swap_leaf, create=True):
+                with self.assertRaisesRegex(ValueError, "artifact namespace changed"):
+                    artifact_map_bytes_antigravity(root, ("a_antigravity.json",))
 
 
 if __name__ == "__main__":
