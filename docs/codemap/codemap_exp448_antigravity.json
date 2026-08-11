@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T04:25:00+09:00",
+  "generated_at": "2026-08-12T04:35:00+09:00",
   "generated_from_commit": "eefcea1c4ce06009f4d465ad3136a4c67fcb2514",
   "scope": [
     "Exp448 governance, controlled-fork foundations, predecessor/TEXT source boundary, and Task4 evaluation/replay semantic replay boundary"
@@ -195,7 +195,7 @@
       "constraints": [
         "Foundations are consumed by the evaluator/replay boundary; they remain free of network, dashboard, or CLI runtime modules.",
         "Only identity keys differ; scientific constants and bootstrap draw contract stay paired with Exp447.",
-        "No TEXT runtime/evaluator claim exists at this stage."
+        "Task4 runtime differential now proves converted integer evaluator parity; foundations retain frozen scientific constants and bootstrap semantics."
       ],
       "evidence": [
         {
@@ -463,7 +463,7 @@
         "exp448_prelabel_source_boundary",
         "research_control"
       ],
-      "outcome": "Exp448 now authenticates predecessor authority, re-attests supplied Exp404 authority before DB capability, and performs metadata-only readiness; the future evaluator alone may construct the one-use TEXT label session."
+      "outcome": "Exp448 authenticates predecessor authority, re-attests supplied Exp404 authority before DB capability, performs metadata-only readiness, and supplies the one-use converted-integer label session to Task4 evaluation."
     },
     {
       "trigger": "Task4 evaluation/replay boundary",
@@ -479,6 +479,6 @@
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Evaluator, replay, CLI, launcher, official lifecycle, and dashboard relationships remain unimplemented and are intentionally not asserted."
+    "Only CLI, launcher, official lifecycle, and dashboard relationships remain unimplemented and intentionally unasserted."
   ]
 }
