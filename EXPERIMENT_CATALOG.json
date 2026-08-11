@@ -855,7 +855,7 @@
     {
       "id": "Exp446",
       "kind": "exp445_publication_materialization_repair",
-      "status": "preregistered_implementation_pending",
+      "status": "implementation_verified_awaiting_official_readiness",
       "documents": [
         "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
         "docs/superpowers/plans/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity.md",
@@ -896,9 +896,36 @@
       "operational_alert_eligible": false,
       "same_experiment_reselection_allowed": false,
       "test_informed_reselection_allowed": false,
+      "promotion_allowed": false,
       "implementation_report": "docs/EXP446_IMPLEMENTATION_REPORT_antigravity.md",
-      "exact_next_command": "implement_exp446_tdd_publication_materialization_boundary",
-      "notes": "Exp446는 Exp445의 immutable failed-publication predecessor를 보존하며 recursive JSON materialization at the encoding boundary만 허용한다. prediction/publication/evaluation/promotion/champion hash는 null이고, readiness/new/inspect product implementation 전에는 TEST label 접근과 official lifecycle 실행이 없다."
+      "implementation_verification": {
+        "bounded_scheduler_serialization_parity": {
+          "candidate_count": 30,
+          "scientific_score_recomputed": false,
+          "cpu_model": "Apple M2 Max",
+          "logical_cpu_count": 12,
+          "workers": 11,
+          "inner_numerical_threads": 1,
+          "label_access_count": 0,
+          "record_prefix_payload_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
+          "serialized_result_sha256": "729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857",
+          "per_record_wrapper_bytes_equal": true,
+          "per_record_wrapper_sha256_equal": true
+        },
+        "full_regression": {
+          "exp444_tests": 206,
+          "exp444_exit_code": 0,
+          "exp445_tests": 39,
+          "exp445_exit_code": 0,
+          "exp446_tests": 47,
+          "exp446_exit_code": 0
+        },
+        "exp445_predecessor_verified": true,
+        "source_database_nlink": 1,
+        "exp446_root_absent": true
+      },
+      "exact_next_command": "await_fresh_sol_high_final_review_before_official_readiness",
+      "notes": "Exp446 implementation is verified against immutable Exp445 wrappers and regression boundaries. The initial bounded harness schema-preflight failure is preserved; the corrected run only revalidated frozen-record scheduler/serialization parity and did not recompute scientific scores. official readiness/new/inspect, prediction, publication, evaluation, promotion, and TEST-label access remain unperformed."
     }
   ]
 }

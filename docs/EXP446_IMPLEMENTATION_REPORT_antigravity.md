@@ -1,102 +1,59 @@
-# Exp446 Task 1 implementation report
+# Exp446 implementation verification report
 
-## Scope and status
+## Status and authority
 
-Task 1 freezes the Exp446 engineering-only publication-materialization repair before product
-code. `Exp446` is `preregistered_implementation_pending`; no official lifecycle command, Dataset
-root, TEST label, product module, or test was accessed or changed.
+Exp446 is `implementation_verified_awaiting_official_readiness`. This is an
+engineering-only verification of the approved recursive JSON materialization repair; it
+does not authorize official readiness, `new`, `inspect`, publication, evaluation, TEST-label
+access, promotion, or a scientific claim. All official prediction/publication/evaluation/champion/
+promotion hashes remain `null`, label access is `0`, and promotion is `false`.
 
-Exp445 is the immutable completed calculation / failed-publication predecessor, not a failed
-scientific result: `30/30`, error `0`, labels `0`, CPU/11 with inner thread `1`, aggregate
-`af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034`, absent publication and
-evaluation, five terminal SHA256 values, and exact failure text
-`Exp444 original-control replay is invalid`. Its root permits no retry, resume, publication,
-inspect, or evaluation.
+The approved design SHA256 is
+`3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281`; the preregistration
+SHA256 is `440d4e735a2cdd4447c35a44a3431fce09788c7181c8bd35c6e3f2a5262d5838`.
+Exp445 remains the immutable failed-publication predecessor. It was authenticated read-only
+with its 30 record wrappers and aggregate
+`af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034`.
 
-## Files
+## Bounded deterministic parity
 
-- `docs/EXP446_PREREGISTRATION_antigravity_KO.md`
-- `docs/EXP446_RUNBOOK_antigravity_KO.md`
-- `docs/EXP446_IMPLEMENTATION_REPORT_antigravity.md`
-- `EXPERIMENT_CATALOG.json`, `RESEARCH_STATE.json`, `FAILURE_LEDGER.json`, `CHAMPION_LEDGER.json`
-- `docs/codemap/codemap_exp446_antigravity.{html,json,lock}`
+The first bounded harness attempt failed closed while checking the actual frozen wrapper schema:
+the records are `{sequence,result}`, not `{result}`. That captured failure is retained in the
+Task 7 evidence. The corrected bounded run did not recompute scores. It strict-deserialized the
+same 30 immutable record wrappers and sent their result values through the production
+`sequential_reference_antigravity` and `ordered_parallel_map_antigravity` paths.
 
-The prior `codemap_exp445_antigravity.lock` records
-`0529afb3c4e6b245604c6fbb508b3e6b4fb4de78`; Task 1 created a separate Exp446 triplet rather
-than modifying the Exp445 triplet. The latest map regeneration is based on the prior Task 1
-commit `a4959d4a7aaa657c91d96b65732999775a76c249`.
+- CPU: Apple M2 Max; logical CPUs: `12`; workers: `11`; inner threads: `1`.
+- label access: `0`; scientific score recomputation: `false`.
+- sequential: `0.012196` seconds; 11-worker: `0.302225` seconds.
+- all 30 canonical wrapper bytes and SHA256 values matched Exp445 exactly.
+- record-prefix aggregate: `af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034`.
+- serialized result SHA256: `729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857` on both paths.
 
-## Initial map topology and unknowns
+## Regression and root-cause repair
 
-The Exp446 map has 20 nodes, 58 edges, and 5 flows. It retains the Exp445 structural baseline,
-replaces the obsolete Exp425 checkpoint node with `exp446_governance`, and has no Exp446 product
-edge or flow. Product callers, downstream effects, test coverage, imports, and runtime routing
-remain explicitly unknown until product code exists.
+The first combined discovery boundary found two stale test seams, not product regressions:
 
-The historical Exp445 flow now records its terminal failed-publication state rather than an
-obsolete readiness/new/evaluate next action.
+- Exp445's readiness matrix required the live official root to be absent even though the approved
+  immutable failed-publication predecessor now exists. The test now snapshots and preserves that
+  external root's identity while retaining its test-local absent-root checks.
+- Exp446's lifecycle seam patched only its facade singleton. After the Task 6
+  authorization-first change, reporting correctly rejected that copied profile before terminal
+  capture. The test now patches the reporting singleton to the same isolated profile, then proves
+  terminal-parity rejection without allocating its test root.
 
-## Validation
+Both original failures were the RED evidence; the focused tests passed after test-only fixes.
+The corrected regression boundary passed once:
 
-JSON and diff checks:
+- Exp444: `206` tests, `327.683` seconds, exit `0` (unchanged product/shared code; first boundary evidence reused).
+- Exp445: `39` tests, `1.317` seconds, exit `0`.
+- Exp446: `47` tests, `10.132` seconds, exit `0`.
 
-```bash
-python3 -m json.tool EXPERIMENT_CATALOG.json >/dev/null
-python3 -m json.tool RESEARCH_STATE.json >/dev/null
-python3 -m json.tool FAILURE_LEDGER.json >/dev/null
-python3 -m json.tool CHAMPION_LEDGER.json >/dev/null
-python3 -m json.tool docs/codemap/codemap_exp446_antigravity.json >/dev/null
-python3 -m json.tool docs/codemap/codemap_exp446_antigravity.lock >/dev/null
-git diff --check
-```
+Read-only checks also confirmed source DB inode `1048138` with `nlink=1`, a valid immutable
+Exp445 predecessor, and an absent Exp446 root. Full command, log hashes, test timing, and commit
+references are retained in the ignored Task 7 report.
 
-Exact reproducible code-map validator:
+## Remaining gate
 
-```bash
-python3 - <<'PY'
-import base64, hashlib, json, re, subprocess
-from pathlib import Path
-
-root = Path('.')
-map_bytes = (root / 'docs/codemap/codemap_exp446_antigravity.json').read_bytes()
-map_data = json.loads(map_bytes)
-html = (root / 'docs/codemap/codemap_exp446_antigravity.html').read_text()
-encoded = re.search(r'const encoded="([^"]*)";', html).group(1)
-assert base64.b64decode(encoded) == map_bytes
-node_ids = {node['id'] for node in map_data['nodes']}
-assert len(node_ids) == len(map_data['nodes']) == 20
-for edge in map_data['edges']:
-    assert edge['from'] in node_ids and edge['to'] in node_ids
-for flow in map_data['flows']:
-    for step in flow['steps']:
-        assert step in node_ids
-evidence = [item for container in [*map_data['nodes'], *map_data['edges']] for item in container.get('evidence', [])]
-for item in evidence:
-    source = root / item['path']
-    assert source.is_file() and item['symbol'] in source.read_text()
-lock = json.loads((root / 'docs/codemap/codemap_exp446_antigravity.lock').read_text())
-modules = {}
-for name in filter(None, subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')):
-    if name.startswith('docs/codemap/') or any(name == excluded or name.startswith(excluded + '/') for excluded in lock['excluded_directories']):
-        continue
-    modules.setdefault(name.split('/', 1)[0] if '/' in name else 'root', []).append(name)
-actual = {}
-for module, names in sorted(modules.items()):
-    digest = hashlib.sha256()
-    for name in sorted(names):
-        payload = (root / name).read_bytes()
-        digest.update(name.encode()); digest.update(b'\0'); digest.update(str(len(payload)).encode()); digest.update(b'\0'); digest.update(payload); digest.update(b'\0')
-    actual[module] = {'fingerprint': digest.hexdigest(), 'tracked_files': len(names)}
-assert actual == lock['module_fingerprints']
-print(f'map validation passed: evidence={len(evidence)} nodes={len(node_ids)} edges={len(map_data["edges"])} flows={len(map_data["flows"])} fingerprints={len(actual)}')
-PY
-```
-
-Recorded result after fix round 1: all six JSON parsers exit 0, `git diff --check` is clean, and
-the validator passes HTML byte parity, evidence paths/symbols, edge/flow references, and module
-fingerprints. The validator output is recorded in the Task 1 handoff report.
-
-## Remaining concerns
-
-The map intentionally does not assert future Exp446 product wiring. Product implementation must
-resolve these unknowns and regenerate the complete Exp446 triplet in its own bounded change.
+Only a fresh Sol High read-only final review of the clean implementation candidate may permit
+official readiness. This report does not claim that final review or a `ship` verdict.

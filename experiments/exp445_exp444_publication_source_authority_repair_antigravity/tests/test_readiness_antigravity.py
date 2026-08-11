@@ -22,14 +22,15 @@ class Exp445ReadinessAntigravityTests(unittest.TestCase):
         object.__setattr__(profile, "run_root", root)
         return profile
 
-    def test_profile_readiness_boundary_matrix_preserves_absent_root_antigravity(self) -> None:
-        """Every live Exp445 readiness gate rejects before this test-local root is allocated."""
+    def test_profile_readiness_boundary_matrix_preserves_official_root_state_antigravity(self) -> None:
+        """Every gate leaves both the test-local and immutable official roots untouched."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity import readiness_antigravity as readiness
 
         commit = "a" * 40
         with tempfile.TemporaryDirectory(prefix="exp445_readiness_matrix_antigravity_") as directory:
             official_root = readiness.EXP445_PROFILE_ANTIGRAVITY.run_root
-            self.assertFalse(official_root.exists() or official_root.is_symlink())
+            official_present = official_root.exists() or official_root.is_symlink()
+            official_identity = official_root.lstat() if official_present else None
             root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
             profile = self._profile_antigravity(root)
             good_environment = SimpleNamespace(inner_threads=1, outer_workers=11)
@@ -135,7 +136,12 @@ class Exp445ReadinessAntigravityTests(unittest.TestCase):
                         self.assertEqual(root.resolve(), target_before)
                     root.unlink() if root.is_symlink() else root.rmdir()
                 self.assertFalse(root.exists(), name)
-            self.assertFalse(official_root.exists() or official_root.is_symlink())
+            self.assertEqual(official_root.exists() or official_root.is_symlink(), official_present)
+            if official_identity is not None:
+                self.assertEqual(
+                    (official_root.lstat().st_dev, official_root.lstat().st_ino),
+                    (official_identity.st_dev, official_identity.st_ino),
+                )
     def test_exp445_readiness_evidence_keeps_its_own_document_authority_antigravity(self) -> None:
         """Substituting Exp444 document hashes would hide an Exp445 governance drift."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity import ReadinessEvidenceAntigravity

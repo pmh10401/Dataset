@@ -114,7 +114,7 @@
   },
   "exp446_exp445_publication_materialization_repair": {
     "experiment": "Exp446",
-    "status": "preregistered_implementation_pending",
+    "status": "implementation_verified_awaiting_official_readiness",
     "reviewed_design_sha256": "3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281",
     "run_identity": "exp446-exp445-publication-materialization-repair-antigravity-20260811",
     "artifact_schema": "exp446",
@@ -140,7 +140,7 @@
     "inner_numerical_threads": 1,
     "backend_reselection": "not_applicable_frozen_exp445_replay_only",
     "commands": ["readiness", "new", "inspect"],
-    "implementation_relationships": "unknown_until_product_code_exists",
+    "implementation_relationships": "closed_lifecycle_implemented_no_external_product_consumers",
     "scientific_success_criterion": null,
     "evaluation_status": "not_started_no_evaluation_command",
     "scientific_winner_selected": false,
@@ -148,8 +148,43 @@
     "operational_alert_eligible": false,
     "same_experiment_reselection_allowed": false,
     "test_informed_reselection_allowed": false,
+    "promotion_allowed": false,
     "implementation_report": "docs/EXP446_IMPLEMENTATION_REPORT_antigravity.md",
-    "exact_next_command": "implement_exp446_tdd_publication_materialization_boundary"
+    "implementation_verification": {
+      "bounded_scheduler_serialization_parity": {
+        "mode": "frozen_record_scheduler_serialization_only",
+        "scientific_score_recomputed": false,
+        "candidate_count": 30,
+        "cpu_model": "Apple M2 Max",
+        "logical_cpu_count": 12,
+        "workers": 11,
+        "inner_numerical_threads": 1,
+        "label_access_count": 0,
+        "sequential_seconds": 0.012196,
+        "parallel_seconds": 0.302225,
+        "record_prefix_payload_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
+        "serialized_result_sha256": "729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857",
+        "per_record_wrapper_bytes_equal": true,
+        "per_record_wrapper_sha256_equal": true
+      },
+      "full_regression": {
+        "exp444_tests": 206,
+        "exp444_seconds": 327.683,
+        "exp444_exit_code": 0,
+        "exp445_tests": 39,
+        "exp445_seconds": 1.317,
+        "exp445_exit_code": 0,
+        "exp446_tests": 47,
+        "exp446_seconds": 10.132,
+        "exp446_exit_code": 0
+      },
+      "exp445_predecessor_verified": true,
+      "source_database_inode": 1048138,
+      "source_database_nlink": 1,
+      "exp446_root_absent": true,
+      "first_bounded_harness_attempt": "failed_schema_preflight_preserved_then_corrected_without_science_recompute"
+    },
+    "exact_next_command": "await_fresh_sol_high_final_review_before_official_readiness"
   },
   "exp443_missing_train_policy_comparison": {
     "experiment": "Exp443",

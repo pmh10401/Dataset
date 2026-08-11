@@ -8,9 +8,24 @@ ATTEMPT=$RUN_ROOT/attempts_antigravity/attempt_0000_antigravity
 PREDECESSOR=/Users/mac/Documents/Dataset/exp445_exp444_publication_source_authority_repair_antigravity_20260810/attempts_antigravity/attempt_0000_antigravity
 ```
 
-Exp446는 아직 `preregistered_implementation_pending`이다. 이 문서는 공식 lifecycle
-실행 권한이 아니다. product implementation, focused/inherited/full regression, clean-head
-review와 별도 final review가 모두 완료되기 전에는 아래 명령을 실행하지 않는다.
+Exp446는 `implementation_verified_awaiting_official_readiness`이다. 이 문서는 여전히 공식
+lifecycle 실행 권한이 아니다. 구현 검증은 완료됐지만 fresh Sol High final review가 `ship`을
+내리기 전에는 아래 명령을 실행하지 않는다. official readiness/new/inspect, prediction,
+publication, evaluation, promotion 및 TEST-label 접근은 모두 미수행이다.
+
+## 구현 검증 증거 (공식 실행 아님)
+
+- 불변 Exp445 30개 record wrapper를 strict 재구성해 실제 순차/11-worker scheduler와
+  serialization 경로에만 통과시킨 bounded parity에서 각 wrapper byte/SHA가 같고 aggregate는
+  `af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034`였다. 이 검증은
+  과학 score를 재계산하지 않았고 label access는 `0`이다.
+- CPU는 Apple M2 Max, logical CPU `12`, worker `11`, inner numerical thread `1`이다.
+- 회귀 boundary는 Exp444 `206` tests, Exp445 `39` tests, Exp446 `47` tests 모두 exit `0`이다.
+  Exp445의 immutable predecessor와 source DB single-link (`nlink=1`) 및 absent Exp446 root를
+  read-only로 확인했다.
+- 초기 bounded harness는 frozen wrapper의 `{sequence,result}` schema preflight에서
+  fail-closed했고 보존했다. 수정된 harness는 그 frozen schema를 검증하는 scheduler/serialization
+  replay만 수행했으며 production algorithm이나 scoring rule을 변경하지 않았다.
 
 ## 정확히 세 명령
 

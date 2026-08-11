@@ -372,14 +372,19 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
     def test_publication_is_rejected_before_terminal_parity_antigravity(self) -> None:
         """A publication route that imports its writer first could bypass terminal parity."""
         from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity
         with tempfile.TemporaryDirectory(prefix="exp446_publication_gate_antigravity_") as temporary:
             profile = self._patched_profile_antigravity(
                 lifecycle_antigravity._EXP446_PROFILE_ANTIGRAVITY,
                 Path(temporary) / "exp446_exp445_publication_materialization_repair_antigravity_20260811",
             )
-            with mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile):
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(reporting_antigravity, "EXP446_PROFILE_ANTIGRAVITY", profile),
+            ):
                 with self.assertRaisesRegex(ValueError, "terminal parity"):
                     lifecycle_antigravity.publish_prediction_antigravity()
+            self.assertFalse(profile.run_root.exists() or profile.run_root.is_symlink())
 
     def test_terminal_close_fault_never_leaves_publication_marker_antigravity(self) -> None:
         """Creating eligibility before terminal close would expose a half-closed attempt."""
