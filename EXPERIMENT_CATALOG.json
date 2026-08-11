@@ -1089,7 +1089,7 @@
       "reviewed_plan_sha256": "b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934",
       "preregistration_sha256": "af2b8b10ff25ea4e6e54a4af4757bc5e0432c8d76d17c69612fd10f3933c612f",
       "runbook_sha256": "474d413327e8d33414f3d9a9a47af6ef560c24f133bc343ffed243503f5c51ca",
-      "implementation_report_sha256": "28228e14c3b02037b573547fe58a94c28b34f885e2d5e4755f5d72a1f6fb48cf",
+      "implementation_report_sha256": "950c0c07e6252d9b710bfeb36a1dc870df442fa6299dd049f91b57671bf53802",
       "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
       "artifact_schema": "exp448",
       "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
