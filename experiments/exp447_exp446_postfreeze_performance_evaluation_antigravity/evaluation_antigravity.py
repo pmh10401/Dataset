@@ -6,7 +6,6 @@ label capability arrives through the closure-private authority in
 """
 from __future__ import annotations
 
-from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
@@ -45,6 +44,7 @@ _METHODS_ANTIGRAVITY = (
     "hard_baseline", "hard_plus_source_30", "hard_plus_stable_26", "hard_plus_unstable_4",
 )
 _PRIMARY_METHOD_ANTIGRAVITY = "hard_plus_stable_26"
+_DIAGNOSTIC_NAMES_ANTIGRAVITY = ("rescued", "false_alarm", "regressed", "strong_regression")
 
 
 def _exact_commit_antigravity(value: object) -> str:
@@ -110,6 +110,10 @@ class FrozenEvaluationAntigravity:
             raise ValueError("metric summary is invalid")
         if self.evaluation_status != "descriptive_complete_no_promotion":
             raise ValueError("Exp447 may not select or promote a winner")
+        if tuple(self.diagnostic_counts) != _DIAGNOSTIC_NAMES_ANTIGRAVITY or any(
+            type(value) is not int or value < 0 for value in self.diagnostic_counts.values()
+        ):
+            raise ValueError("diagnostic counts differ from the frozen contract")
         object.__setattr__(self, "metrics", MappingProxyType(dict(self.metrics)))
         object.__setattr__(self, "transition_counts", MappingProxyType(dict(self.transition_counts)))
         object.__setattr__(self, "diagnostic_counts", MappingProxyType(dict(self.diagnostic_counts)))
@@ -258,7 +262,11 @@ def _write_audit_antigravity(root: Path, phase: str, identity: PublicationIdenti
         "destination_state": destination_state, "error_type": type(error).__name__, "error": str(error),
         "close_error_type": None if close_error is None else type(close_error).__name__,
         "close_error": None if close_error is None else str(close_error),
-        "exp446_prediction_sha256": None if identity is None else identity.prediction_sha256,
+        "exp446_identity": None if identity is None else {
+            "root_device": identity.root_device, "root_inode": identity.root_inode,
+            "manifest_sha256": identity.manifest_sha256, "artifact_map_sha256": identity.artifact_map_sha256,
+            "prediction_sha256": identity.prediction_sha256, "leaf_sha256": dict(identity.leaf_sha256),
+        },
     }
     write_create_only_antigravity(parent / f"evaluation_audit_{uuid4().hex}_antigravity.json", canonical_json_bytes_antigravity(payload))
 
@@ -291,7 +299,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         unstable_by_dataset = _coordinates_by_dataset_antigravity(identity.unstable_coordinates, identity.dataset_order)
         rows_by_method: dict[str, list[DatasetConfusionRowAntigravity]] = {method: [] for method in _METHODS_ANTIGRAVITY}
         transitions: list[dict[str, object]] = []
-        diagnostics: dict[str, list[dict[str, object]]] = defaultdict(list)
+        diagnostics: dict[str, list[dict[str, object]]] = {name: [] for name in _DIAGNOSTIC_NAMES_ANTIGRAVITY}
         for dataset_order, dataset in enumerate(identity.dataset_order):
             phase = "label_snapshot"
             attempts += 1
@@ -535,13 +543,17 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
     transition_rows = _parse_jsonl_bytes_antigravity(leaves["candidate_transitions_antigravity.jsonl"], "candidate_transitions_antigravity.jsonl")
     source_set = set(identity.source_coordinates)
     stable_set, unstable_set = set(identity.stable_coordinates), set(identity.unstable_coordinates)
-    replayed_transitions: set[tuple[str, int]] = set()
+    replayed_transitions: list[tuple[str, int]] = []
     transition_outcomes: dict[str, dict[str, int]] = {lane: {"rescued": 0, "added_false_alarm": 0} for lane in ("source", "stable", "unstable")}
+    dataset_lane_outcomes: dict[str, dict[str, dict[str, int]]] = {
+        dataset: {lane: {"rescued": 0, "added_false_alarm": 0} for lane in ("source", "stable", "unstable")}
+        for dataset in identity.dataset_order
+    }
     for row in transition_rows:
         if not isinstance(row, dict) or set(row) != {"dataset", "dataset_order", "candidate_index", "lane", "already_hard", "transition"}:
             raise ValueError("candidate transition schema differs")
         coordinate = (row["dataset"], row["candidate_index"])
-        if type(row["dataset_order"]) is not int or row["dataset_order"] < 0 or row["dataset_order"] >= len(identity.dataset_order) or identity.dataset_order[row["dataset_order"]] != row["dataset"] or coordinate not in source_set or coordinate in replayed_transitions:
+        if type(row["dataset"]) is not str or type(row["candidate_index"]) is not int or type(row["dataset_order"]) is not int or row["dataset_order"] < 0 or row["dataset_order"] >= len(identity.dataset_order) or identity.dataset_order[row["dataset_order"]] != row["dataset"] or coordinate not in source_set or coordinate in replayed_transitions:
             raise ValueError("candidate transition identity differs")
         expected_lane = "stable" if coordinate in stable_set else "unstable" if coordinate in unstable_set else None
         if row["lane"] != expected_lane or type(row["already_hard"]) is not bool or row["transition"] not in {"hard_overlap", "rescued", "added_false_alarm"}:
@@ -555,21 +567,31 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
             # the frozen 30-coordinate population.
             transition_outcomes["source"][row["transition"]] += 1
             transition_outcomes[expected_lane][row["transition"]] += 1
-        replayed_transitions.add(coordinate)
-    if replayed_transitions != source_set or len(stable_set) + len(unstable_set) != len(source_set):
+            dataset_lane_outcomes[row["dataset"]]["source"][row["transition"]] += 1
+            dataset_lane_outcomes[row["dataset"]][expected_lane][row["transition"]] += 1
+        replayed_transitions.append(coordinate)
+    canonical_coordinates = tuple(sorted(identity.source_coordinates, key=lambda coordinate: (identity.dataset_order.index(coordinate[0]), coordinate[1])))
+    if tuple(replayed_transitions) != canonical_coordinates or set(replayed_transitions) != source_set or len(stable_set) + len(unstable_set) != len(source_set):
         raise ValueError("candidate lane conservation differs")
     for lane, method in (("source", "hard_plus_source_30"), ("stable", "hard_plus_stable_26"), ("unstable", "hard_plus_unstable_4")):
         delta_tp = summaries[method].confusion.tp - summaries["hard_baseline"].confusion.tp
         delta_fp = summaries[method].confusion.fp - summaries["hard_baseline"].confusion.fp
         if (delta_tp, delta_fp) != (transition_outcomes[lane]["rescued"], transition_outcomes[lane]["added_false_alarm"]):
             raise ValueError("candidate transitions do not reconstruct method confusion deltas")
+    for index, dataset in enumerate(identity.dataset_order):
+        for lane, method in (("source", "hard_plus_source_30"), ("stable", "hard_plus_stable_26"), ("unstable", "hard_plus_unstable_4")):
+            delta_tp = reconstructed[method][index].confusion.tp - reconstructed["hard_baseline"][index].confusion.tp
+            delta_fp = reconstructed[method][index].confusion.fp - reconstructed["hard_baseline"][index].confusion.fp
+            outcomes = dataset_lane_outcomes[dataset][lane]
+            if (delta_tp, delta_fp) != (outcomes["rescued"], outcomes["added_false_alarm"]):
+                raise ValueError("candidate transitions do not reconstruct per-dataset method deltas")
     diagnostics: dict[str, tuple[object, ...]] = {
         "rescued": _parse_jsonl_bytes_antigravity(leaves["rescued_datasets_antigravity.jsonl"], "rescued_datasets_antigravity.jsonl"),
         "false_alarm": _parse_jsonl_bytes_antigravity(leaves["false_alarm_datasets_antigravity.jsonl"], "false_alarm_datasets_antigravity.jsonl"),
         "regressed": _parse_jsonl_bytes_antigravity(leaves["regressed_datasets_antigravity.jsonl"], "regressed_datasets_antigravity.jsonl"),
         "strong_regression": _parse_jsonl_bytes_antigravity(leaves["strong_regressions_antigravity.jsonl"], "strong_regressions_antigravity.jsonl"),
     }
-    expected_diagnostics: dict[str, list[dict[str, object]]] = defaultdict(list)
+    expected_diagnostics: dict[str, list[dict[str, object]]] = {name: [] for name in _DIAGNOSTIC_NAMES_ANTIGRAVITY}
     for dataset, hard_row, stable_row in zip(identity.dataset_order, reconstructed["hard_baseline"], reconstructed[_PRIMARY_METHOD_ANTIGRAVITY], strict=True):
         if stable_row.confusion.tp > hard_row.confusion.tp:
             expected_diagnostics["rescued"].append({"dataset": dataset, "tp_increase": stable_row.confusion.tp - hard_row.confusion.tp})

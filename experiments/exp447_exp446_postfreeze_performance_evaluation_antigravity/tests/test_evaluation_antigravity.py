@@ -354,6 +354,75 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 with patch.object(module.os, "stat", side_effect=race), self.assertRaises(ValueError):
                     module._pinned_evaluation_leaves_antigravity(root)
 
+    def test_transition_replay_rejects_reordered_typed_and_cross_dataset_tampers_antigravity(self) -> None:
+        """Rehashed transition rows remain a canonical, per-dataset evidence sequence."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity, _inspect_root_with_dependencies_antigravity
+
+        def rehash(root: Path) -> None:
+            artifact = {path.name: sha256(path.read_bytes()).hexdigest() for path in root.iterdir() if path.name != "artifact_sha256_antigravity.json"}
+            (root / "artifact_sha256_antigravity.json").write_text(json.dumps(artifact, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+
+        def rows(root: Path) -> list[dict[str, object]]:
+            return [json.loads(line) for line in (root / "candidate_transitions_antigravity.jsonl").read_text(encoding="utf-8").splitlines()]
+
+        def write(root: Path, value: list[dict[str, object]]) -> None:
+            (root / "candidate_transitions_antigravity.jsonl").write_text("".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in value), encoding="utf-8")
+
+        def reordered(root: Path) -> None:
+            value = rows(root); value[0], value[1] = value[1], value[0]; write(root, value)
+
+        def bool_index(root: Path) -> None:
+            value = rows(root); value[0]["candidate_index"] = False; write(root, value)
+
+        def wrong_index(root: Path) -> None:
+            value = rows(root); value[0]["candidate_index"] = 1; write(root, value)
+
+        def cross_dataset_outcomes(root: Path) -> None:
+            value = rows(root)
+            rescued = next(row for row in value if row["transition"] == "rescued")
+            false_alarm = next(row for row in value if row["transition"] == "added_false_alarm" and row["dataset"] != rescued["dataset"])
+            rescued["transition"], false_alarm["transition"] = false_alarm["transition"], rescued["transition"]
+            write(root, value)
+
+        for name, mutate in (("reordered", reordered), ("bool_index", bool_index), ("wrong_index", wrong_index), ("cross_dataset_outcomes", cross_dataset_outcomes)):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies); mutate(root); rehash(root)
+                with self.assertRaises(ValueError): _inspect_root_with_dependencies_antigravity(dependencies)
+
+    def test_audit_binds_full_frozen_exp446_identity_antigravity(self) -> None:
+        """A post-label failure audit identifies the exact immutable predecessor."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root, query_error=OSError("query identity"))
+            with self.assertRaisesRegex(OSError, "query identity"):
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            audit = json.loads(next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text(encoding="utf-8"))
+            self.assertEqual(set(audit), {
+                "schema", "phase", "query_attempts", "query_completions", "label_rows", "label_session_closed",
+                "destination_state", "error_type", "error", "close_error_type", "close_error", "exp446_identity",
+            })
+            self.assertEqual(audit["exp446_identity"], {
+                "root_device": dependencies.identity.root_device, "root_inode": dependencies.identity.root_inode,
+                "manifest_sha256": dependencies.identity.manifest_sha256,
+                "artifact_map_sha256": dependencies.identity.artifact_map_sha256,
+                "prediction_sha256": dependencies.identity.prediction_sha256,
+                "leaf_sha256": dict(dependencies.identity.leaf_sha256),
+            })
+
+    def test_evaluate_and_source_free_inspect_have_fixed_zero_diagnostics_antigravity(self) -> None:
+        """All four diagnostic counts survive immutable replay, including zeros."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity, _inspect_root_with_dependencies_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+            evaluated = _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            inspected = _inspect_root_with_dependencies_antigravity(dependencies)
+            expected = {"rescued", "false_alarm", "regressed", "strong_regression"}
+            self.assertEqual(set(evaluated.diagnostic_counts), expected)
+            self.assertEqual(set(inspected.diagnostic_counts), expected)
+            self.assertTrue(all(type(value) is int and value >= 0 for value in evaluated.diagnostic_counts.values()))
+            self.assertEqual(evaluated, inspected)
+
 
 if __name__ == "__main__":
     unittest.main()
