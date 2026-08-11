@@ -75,6 +75,10 @@ def _require_terminal_parity_antigravity() -> None:
 
 
 def publish_prediction_antigravity():
+    attempt = _EXP446_PROFILE_ANTIGRAVITY.run_root / "attempts_antigravity" / "attempt_0000_antigravity"
+    finalization_failure = attempt / "terminal_finalization_failure_antigravity.json"
+    if finalization_failure.exists() or finalization_failure.is_symlink():
+        raise ValueError("Exp446 terminal finalization failure evidence is present")
     _require_terminal_parity_antigravity()
     from experiments.exp444_train_only_stability_precision_gate_antigravity.reporting_antigravity import _publish_exp446_prediction_antigravity
     return _publish_exp446_prediction_antigravity(_EXP446_PROFILE_ANTIGRAVITY)

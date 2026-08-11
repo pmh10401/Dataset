@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T04:17:48Z",
-  "generated_from_commit": "6f0818da423887d4cc73dcd23df244286d5f900d",
+  "generated_at": "2026-08-11T04:29:46Z",
+  "generated_from_commit": "cd483d1277bf90beb3846975a0b7e85655622773",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1009,18 +1009,22 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 exposes only fixed readiness, new, publication, and inspection facades. Its new-only CPU/11 replay verifies independent Exp444 and failed-Exp445 wrapper SHA authority before each checkpoint success, gates the 30-prefix aggregate and fresh predecessor before terminal parity, and publication descriptor-authenticates canonical marker, checkpoint, all 30 records, aggregate, complete inactive progress/PID, exact-LF logs, profile documents, and both fresh predecessor aggregates.",
+      "role": "Exp446 exposes exactly readiness, new, and source-free frozen-leaf inspection through a fixed CLI and outside-CWD launcher. New-only CPU/11 replay verifies independent Exp444 and failed-Exp445 wrapper SHA authority before each checkpoint success, gates the 30-prefix aggregate and fresh predecessor before terminal parity, and the private publisher orders terminal capture, fresh dual predecessor parity, descriptor-pinned provenance and values-only control materialization, create-only staging, atomic rename, and frozen-leaf replay audit.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
         "publish_prediction_antigravity",
         "inspect_prediction_antigravity",
+        "build_parser_antigravity",
+        "main_antigravity",
         "run_new_for_profile_antigravity"
       ],
       "tests": [
         "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py",
-        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_profile_contracts_antigravity.py"
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_profile_contracts_antigravity.py",
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
         "Exp446 has no caller routing override: new uses CPU/11, inner thread 1, a fixed root, and attempt_0000_antigravity.",
@@ -1030,7 +1034,9 @@
         "A terminal close failure records its underlying channel error; progress-first failure performs exactly one low-level PID-only inactive recovery, while a failed PID channel remains explicitly unresolved and never retries progress closeout.",
         "A worker or scorer failure cancels pending work and waits to reap every spawned ProcessPool child before durable error closeout; SIGINT retains its separately bounded immediate cancellation path.",
         "Every persistent terminal-channel and marker fault preserves byte-identical context, state, and all thirty complete checkpoint record leaves captured immediately before the injected failure.",
-        "Publication requires a create-only canonical terminal parity marker bound to the exact complete checkpoint/context/30-record aggregate, inactive progress/PID, required logs, profile document hashes, and fresh Exp444 plus Exp445 predecessor authorities."
+        "Publication requires a create-only canonical terminal parity marker bound to the exact complete checkpoint/context/30-record aggregate, inactive progress/PID, required logs, profile document hashes, and fresh Exp444 plus Exp445 predecessor authorities.",
+        "Terminal-finalization-failure evidence, an absent or forged terminal marker, predecessor drift, label access, staging failure, or post-rename replay failure reject publication; a post-rename rejection quarantines the canonical directory and preserves create-only failure evidence.",
+        "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module."
       ],
       "evidence": [
         {
@@ -1112,6 +1118,34 @@
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_lifecycle_antigravity.py",
           "symbol": "def test_terminal_finalization_failure_never_mutates_complete_checkpoint_tree_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _publish_exp446_prediction_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _inspect_exp446_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/cli_antigravity.py",
+          "symbol": "def build_parser_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/cli_antigravity.py",
+          "symbol": "def main_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "class Exp446PublicationAntigravityTests"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_exp446_postrename_audit_quarantines_canonical_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "class Exp446CliAntigravityTests"
         }
       ]
     },

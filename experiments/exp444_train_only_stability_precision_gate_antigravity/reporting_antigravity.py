@@ -82,6 +82,7 @@ _QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY = None  # deterministic test-only rac
 _ATTEMPT_FILES_ANTIGRAVITY = ("progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log")
 _CHECKPOINT_FILES_ANTIGRAVITY = ("context_antigravity.json", "state_antigravity.json")
 _EXP445_PUBLICATION_FAILURE_FILE_ANTIGRAVITY = "publication_failure_antigravity.json"
+_EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY = "publication_failure_antigravity.json"
 
 
 def _require_publication_profile_antigravity(profile: object) -> LifecycleProfileAntigravity:
@@ -1043,6 +1044,18 @@ def _inspect_exp445_publication_antigravity(publication_root: Path) -> FrozenPub
     return FrozenPublicationAntigravity(root, manifest, selection)
 
 
+def _inspect_exp446_publication_antigravity(publication_root: Path) -> FrozenPublicationAntigravity:
+    """Replay only Exp446's frozen leaves; never reopen a terminal attempt or source."""
+    root = Path(publication_root)
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError("Exp446 publication inventory is invalid")
+    with _pinned_publication_payloads_antigravity(root) as payloads:
+        manifest, selection = _inspect_publication_payloads_antigravity(
+            payloads, profile=EXP446_PROFILE_ANTIGRAVITY
+        )
+    return FrozenPublicationAntigravity(root, manifest, selection)
+
+
 def _assert_exp445_predecessor_parity_antigravity(
     snapshot: _AttemptSnapshotAntigravity,
     predecessor: object,
@@ -1083,6 +1096,22 @@ def _write_exp445_publication_failure_antigravity(attempt: Path, error: BaseExce
         pass
 
 
+def _write_exp446_publication_failure_antigravity(attempt: Path, error: BaseException) -> None:
+    """Retain one immutable Exp446 publication failure without retrying a write."""
+    payload = {
+        "schema": "exp446.publication-failure.v1",
+        "stage": "publication",
+        "error": {"type": type(error).__name__, "message": str(error) or type(error).__name__},
+    }
+    try:
+        write_create_only_antigravity(
+            attempt / _EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY,
+            canonical_json_bytes_antigravity(payload),
+        )
+    except FileExistsError:
+        pass
+
+
 def _quarantine_exp445_caller_rejection_antigravity(
     snapshot: _AttemptSnapshotAntigravity | None,
     destination: Path,
@@ -1106,6 +1135,15 @@ def _quarantine_exp445_caller_rejection_antigravity(
     evidence = _quarantine_rejected_destination_antigravity(snapshot.attempt_fd, destination.name)
     if evidence.name is None or not evidence.parent_fsynced:
         _add_quarantine_note_antigravity(error, destination, evidence, (current.st_dev, current.st_ino), None)
+
+
+def _quarantine_exp446_caller_rejection_antigravity(
+    snapshot: _AttemptSnapshotAntigravity | None,
+    destination: Path,
+    error: BaseException,
+) -> None:
+    """Quarantine a failed Exp446 post-rename audit without deleting frozen bytes."""
+    _quarantine_exp445_caller_rejection_antigravity(snapshot, destination, error)
 
 
 def _publish_exp445_prediction_antigravity(
@@ -1162,6 +1200,69 @@ def _publish_exp445_prediction_antigravity(
     except BaseException as error:
         _quarantine_exp445_caller_rejection_antigravity(snapshot, destination, error)
         _write_exp445_publication_failure_antigravity(attempt, error)
+        raise
+    finally:
+        if snapshot is not None:
+            snapshot.close_antigravity()
+
+
+def _publish_exp446_prediction_antigravity(
+    profile: LifecycleProfileAntigravity = EXP446_PROFILE_ANTIGRAVITY,
+) -> FrozenPublicationAntigravity:
+    """Freeze Exp446 only after fresh dual predecessor and source authority checks."""
+    profile = _require_publication_profile_antigravity(profile)
+    if profile is not EXP446_PROFILE_ANTIGRAVITY:
+        raise ValueError("Exp446 publication profile is invalid")
+    attempt = profile.run_root / "attempts_antigravity" / "attempt_0000_antigravity"
+    destination = attempt / PUBLICATION_DIRECTORY_ANTIGRAVITY
+    if destination.exists() or destination.is_symlink():
+        raise ValueError("Exp446 publication already exists; same-root retry is forbidden")
+    finalization_failure = attempt / "terminal_finalization_failure_antigravity.json"
+    if finalization_failure.exists() or finalization_failure.is_symlink():
+        raise ValueError("Exp446 terminal finalization failure evidence is present")
+    snapshot: _AttemptSnapshotAntigravity | None = None
+    try:
+        # Terminal bytes are captured before opening either predecessor or source.
+        snapshot = _capture_attempt_antigravity(attempt)
+        results = _complete_checkpoint_results_antigravity(attempt, snapshot, profile=profile)
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity.predecessor_antigravity import verify_exp445_predecessor_antigravity
+        exp444 = verify_exp444_predecessor_antigravity()
+        exp445 = verify_exp445_predecessor_antigravity()
+        _assert_exp445_predecessor_parity_antigravity(snapshot, exp444)
+        _assert_exp445_predecessor_parity_antigravity(snapshot, exp445)
+        from .provenance_antigravity import verify_exp444_provenance_antigravity
+        provenance = verify_exp444_provenance_antigravity()
+        authority = _publish_source_authority_antigravity(provenance.dataset_summary_bytes)
+        payloads, selection = _payloads_antigravity(
+            attempt,
+            authority,
+            snapshot,
+            summary_bytes=provenance.dataset_summary_bytes,
+            backend_authority=provenance.backend_authority,
+            profile=profile,
+            results=results,
+        )
+        expected = _final_payloads_antigravity(payloads, selection, profile=profile)
+        _assert_attempt_namespace_antigravity(attempt, snapshot)
+        _write_staging_antigravity(destination, expected, parent_fd=snapshot.attempt_fd)
+        _assert_attempt_namespace_antigravity(attempt, snapshot, allow_owned_mutation=True)
+        publication_fd = os.open(
+            destination.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            dir_fd=snapshot.attempt_fd,
+        )
+        try:
+            with _pinned_publication_payloads_antigravity(root_fd=publication_fd) as published:
+                manifest, inspected_selection = _inspect_publication_payloads_antigravity(
+                    published, profile=profile
+                )
+        finally:
+            os.close(publication_fd)
+        _assert_attempt_namespace_antigravity(attempt, snapshot, allow_owned_mutation=True)
+        return FrozenPublicationAntigravity(destination, manifest, inspected_selection)
+    except BaseException as error:
+        _quarantine_exp446_caller_rejection_antigravity(snapshot, destination, error)
+        _write_exp446_publication_failure_antigravity(attempt, error)
         raise
     finally:
         if snapshot is not None:
