@@ -150,6 +150,14 @@ def _exact_json_value_antigravity(actual: object, expected: object) -> bool:
     return actual == expected
 
 
+def _integrity_identity_antigravity(snapshot: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    """Return mutation-relevant descriptor identity without read-observable atime."""
+    return (
+        snapshot.st_dev, snapshot.st_ino, snapshot.st_mode, snapshot.st_nlink,
+        snapshot.st_size, snapshot.st_mtime_ns, snapshot.st_ctime_ns,
+    )
+
+
 def _pinned_evaluation_leaves_antigravity(root: Path) -> dict[str, bytes]:
     """Read exact regular leaves through one no-follow directory descriptor."""
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
@@ -157,6 +165,7 @@ def _pinned_evaluation_leaves_antigravity(root: Path) -> dict[str, bytes]:
     descriptor = os.open(root, flags)
     try:
         before = os.fstat(descriptor)
+        before_identity = _integrity_identity_antigravity(before)
         if set(os.listdir(descriptor)) != set(_LEAVES_ANTIGRAVITY):
             raise ValueError("Exp447 artifact inventory is not exact")
         leaves: dict[str, bytes] = {}
@@ -164,19 +173,20 @@ def _pinned_evaluation_leaves_antigravity(root: Path) -> dict[str, bytes]:
             leaf = os.open(name, leaf_flags, dir_fd=descriptor)
             try:
                 opened = os.fstat(leaf)
+                opened_identity = _integrity_identity_antigravity(opened)
                 if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
                     raise ValueError("evaluation artifact leaf is not a single-link regular file")
                 chunks: list[bytes] = []
                 while block := os.read(leaf, 1 << 20):
                     chunks.append(block)
-                if os.fstat(leaf) != opened:
+                if _integrity_identity_antigravity(os.fstat(leaf)) != opened_identity:
                     raise ValueError("evaluation artifact leaf changed while pinned")
                 leaves[name] = b"".join(chunks)
             finally:
                 os.close(leaf)
         after = os.fstat(descriptor)
         namespace = os.stat(root, follow_symlinks=False)
-        if after != before or (namespace.st_dev, namespace.st_ino) != (before.st_dev, before.st_ino):
+        if _integrity_identity_antigravity(after) != before_identity or (namespace.st_dev, namespace.st_ino) != (before.st_dev, before.st_ino):
             raise ValueError("evaluation artifact root changed while pinned")
         return leaves
     finally:

@@ -3,11 +3,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import os
+import stat
 import tempfile
 import unittest
 import json
 from unittest.mock import patch
 from pathlib import Path
+from types import SimpleNamespace
 
 from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.contracts_antigravity import PublicationIdentityAntigravity
@@ -362,6 +365,61 @@ class EvaluationAntigravityTests(unittest.TestCase):
                     return original_stat(path, *args, **kwargs)
 
                 with patch.object(module.os, "stat", side_effect=race), self.assertRaises(ValueError):
+                    module._pinned_evaluation_leaves_antigravity(root)
+
+    def test_descriptor_reader_ignores_atime_only_snapshot_change_antigravity(self) -> None:
+        """A descriptor's own read may advance access time without a mutation."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as evaluator
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import replay_antigravity as module
+        with tempfile.TemporaryDirectory(prefix="exp447_atime_snapshot_antigravity_") as directory:
+            root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+            evaluator._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            original_fstat = module.os.fstat
+            calls: dict[int, int] = {}
+
+            def atime_only(fd: int) -> object:
+                snapshot = original_fstat(fd)
+                if stat.S_ISREG(snapshot.st_mode):
+                    calls[fd] = calls.get(fd, 0) + 1
+                    if calls[fd] == 2:
+                        return SimpleNamespace(
+                            st_dev=snapshot.st_dev, st_ino=snapshot.st_ino,
+                            st_mode=snapshot.st_mode, st_nlink=snapshot.st_nlink,
+                            st_size=snapshot.st_size, st_atime_ns=snapshot.st_atime_ns + 2_000_000_000,
+                            st_mtime_ns=snapshot.st_mtime_ns, st_ctime_ns=snapshot.st_ctime_ns,
+                        )
+                return snapshot
+
+            with patch.object(module.os, "fstat", side_effect=atime_only):
+                leaves = module._pinned_evaluation_leaves_antigravity(root)
+            self.assertEqual(set(leaves), set(module._LEAVES_ANTIGRAVITY))
+
+    def test_descriptor_reader_rejects_mtime_or_ctime_snapshot_change_antigravity(self) -> None:
+        """Modification and metadata-change times remain part of leaf integrity."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as evaluator
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import replay_antigravity as module
+        for field, index in (("mtime", 8), ("ctime", 9)):
+            with self.subTest(field=field), tempfile.TemporaryDirectory(prefix=f"exp447_{field}_snapshot_antigravity_") as directory:
+                root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+                evaluator._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                original_fstat = module.os.fstat
+                calls: dict[int, int] = {}
+
+                def changed_metadata(fd: int) -> object:
+                    snapshot = original_fstat(fd)
+                    if stat.S_ISREG(snapshot.st_mode):
+                        calls[fd] = calls.get(fd, 0) + 1
+                        if calls[fd] == 2:
+                            return SimpleNamespace(
+                                st_dev=snapshot.st_dev, st_ino=snapshot.st_ino,
+                                st_mode=snapshot.st_mode, st_nlink=snapshot.st_nlink,
+                                st_size=snapshot.st_size, st_atime_ns=snapshot.st_atime_ns,
+                                st_mtime_ns=snapshot.st_mtime_ns + (2_000_000_000 if index == 8 else 0),
+                                st_ctime_ns=snapshot.st_ctime_ns + (2_000_000_000 if index == 9 else 0),
+                            )
+                    return snapshot
+
+                with patch.object(module.os, "fstat", side_effect=changed_metadata), self.assertRaisesRegex(ValueError, "changed while pinned"):
                     module._pinned_evaluation_leaves_antigravity(root)
 
     def test_transition_replay_rejects_reordered_typed_and_cross_dataset_tampers_antigravity(self) -> None:
