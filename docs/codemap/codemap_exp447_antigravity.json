@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T16:26:52Z",
-  "generated_from_commit": "af4d6fcbf3d585d0e3be269fff9b38562ec0ae31",
+  "generated_at": "2026-08-11T16:34:54Z",
+  "generated_from_commit": "5c4fa856ece9ed91d605dc81838eae96a7405a49",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -100,7 +100,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its authorized source-free, label-free, mutation-free inspection pair was byte-identical. Exp447 readiness passed once, then its one allowed evaluation failed before a valid label row; its sibling audit is immutable, the run root remains absent, inspect/retry are prohibited forever, and no evaluation, champion, promotion, or dashboard artifact exists.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its authorized source-free, label-free, mutation-free inspection pair was byte-identical. Exp447 readiness passed once, then its one allowed evaluation failed before a valid label row; its sibling audit is immutable, the run root remains absent, inspect/retry are prohibited forever, and no evaluation, champion, promotion, or dashboard artifact exists; Exp447 dashboard export is permanently closed.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -6645,7 +6645,7 @@
       "to": "private_dashboard_presentation",
       "relationship": "No Exp447 dashboard export after immutable evaluation failure",
       "status": "unknown",
-      "reason": "The evaluator imports no dashboard/network code, and Exp447 produced no immutable evaluation artifact. A dashboard cannot receive a payload; any future work requires separately governed Exp448 design."
+      "reason": "Exp447 cannot emit a dashboard payload because its only evaluation failed before an immutable result artifact. Only separately governed Exp448 evidence may ever be considered."
     }
   ],
   "unknowns": {
