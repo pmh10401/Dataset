@@ -4,6 +4,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 import json
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -84,6 +85,73 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
                 self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
                 failure = json.loads((attempt / reporting._EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).read_text())
                 self.assertEqual((failure["schema"], failure["stage"]), ("exp446.publication-failure.v1", "publication"))
+
+    def test_capture_namespace_replacement_preserves_retained_failure_antigravity(self) -> None:
+        """An identical replacement cannot bridge descriptor capture into source work."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+
+        root, attempt, _exp444, _exp445 = self._real_terminal_root_antigravity()
+        base = lifecycle_antigravity._EXP446_PROFILE_ANTIGRAVITY
+        profile = object.__new__(type(base))
+        for name in ("experiment_id", "schema", "run_identity", "reviewed_design_path", "preregistration_path", "predecessor_required"):
+            object.__setattr__(profile, name, getattr(base, name))
+        object.__setattr__(profile, "run_root", root)
+        retained = attempt.with_name("retained_attempt_antigravity")
+
+        def replace(_snapshot: object) -> None:
+            attempt.rename(retained)
+            shutil.copytree(retained, attempt)
+
+        with (
+            mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
+            mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
+            mock.patch.object(reporting, "_EXP446_PUBLICATION_CAPTURE_HOOK_ANTIGRAVITY", replace),
+        ):
+            with self.assertRaisesRegex(ValueError, "canonical-path drift|namespace"):
+                lifecycle_antigravity.publish_prediction_antigravity()
+        self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+        self.assertFalse((retained / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+        self.assertTrue((retained / reporting._EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).is_file())
+
+    def test_pre_rename_namespace_replacement_quarantines_retained_destination_antigravity(self) -> None:
+        """A replacement between staging and rename cannot claim the canonical publication."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import provenance_antigravity
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import predecessor_antigravity as exp444_predecessor
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import predecessor_antigravity as exp445_predecessor
+
+        root, attempt, exp444, exp445 = self._real_terminal_root_antigravity()
+        base = lifecycle_antigravity._EXP446_PROFILE_ANTIGRAVITY
+        profile = object.__new__(type(base))
+        for name in ("experiment_id", "schema", "run_identity", "reviewed_design_path", "preregistration_path", "predecessor_required"):
+            object.__setattr__(profile, name, getattr(base, name))
+        object.__setattr__(profile, "run_root", root)
+        retained = attempt.with_name("retained_before_rename_antigravity")
+        expected = {name: f"{index}".encode() for index, name in enumerate(reporting._PUBLICATION_FILES_ANTIGRAVITY)}
+
+        def replace(_snapshot: object) -> None:
+            attempt.rename(retained)
+            shutil.copytree(retained, attempt)
+
+        with (
+            mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
+            mock.patch.object(reporting, "EXP446_PROFILE_ANTIGRAVITY", profile),
+            mock.patch.object(exp444_predecessor, "verify_exp444_predecessor_antigravity", return_value=exp444),
+            mock.patch.object(exp445_predecessor, "verify_exp445_predecessor_antigravity", return_value=exp445),
+            mock.patch.object(provenance_antigravity, "verify_exp444_provenance_antigravity", return_value=SimpleNamespace(dataset_summary_bytes=b"", backend_authority={})),
+            mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=object()),
+            mock.patch.object(reporting, "_payloads_antigravity", return_value=({}, object())),
+            mock.patch.object(reporting, "_final_payloads_antigravity", return_value=expected),
+            mock.patch.object(reporting, "_EXP446_STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY", replace),
+        ):
+            with self.assertRaisesRegex(ValueError, "canonical-path drift|namespace"):
+                lifecycle_antigravity.publish_prediction_antigravity()
+        self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+        self.assertFalse((retained / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+        self.assertTrue((retained / reporting._EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).is_file())
+        self.assertTrue(any("quarantine_antigravity" in item.name for item in retained.iterdir()))
     def test_exp446_has_marker_inclusive_publication_capture_antigravity(self) -> None:
         """Generic marker-free capture cannot bridge Task5 terminal authority into publication."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
@@ -142,6 +210,7 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
                 mock.patch.object(reporting, "_capture_exp446_publication_authority_antigravity", return_value=object()),
                 mock.patch.object(reporting, "_capture_exp446_publication_snapshot_antigravity", return_value=snapshot),
                 mock.patch.object(reporting, "_capture_attempt_antigravity", return_value=snapshot),
+                mock.patch.object(reporting, "_assert_exp446_publication_snapshot_antigravity"),
                 mock.patch.object(reporting, "_complete_checkpoint_results_antigravity", side_effect=lambda *_args, **_kwargs: order.append("terminal") or ()),
                 mock.patch.object(exp444_predecessor, "verify_exp444_predecessor_antigravity", side_effect=lambda: order.append("exp444") or exp444),
                 mock.patch.object(exp445_predecessor, "verify_exp445_predecessor_antigravity", side_effect=lambda: order.append("exp445") or exp445),
