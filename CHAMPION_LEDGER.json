@@ -288,7 +288,7 @@
       "reason": "Governance-only registration for residual FN method qualification. No prediction, evaluation, decision, TEST-label access, champion selection, pending-candidate change, promotion, routing, or operational alert has occurred.",
       "reviewed_design_sha256": "72fcfe799cedd8f3dfea730cb3d5d4fd38ac90c190849c3c4482565fd2936ae3",
       "preregistration_sha256": "c30ece9886524a523ee7cfdc5c89f2462e5704c048c71c7264bd146fe27f767c",
-      "runbook_sha256": "11da1c416868b68e2eb2725f4653155d1bffff39fb7a1962bc2fcf444de496ca",
+      "runbook_sha256": "106ca7b633ff11763aa4d70c5b17f8c71074790efc46f8b357ef10144f9492d7",
       "run_identity": "exp449-residual-fn-method-qualification-antigravity-20260812",
       "prediction_sha256": null,
       "evaluation": null,

@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-12T00:00:00+09:00",
-  "generated_from_commit": "fff11272a8fcb41b4f0305079fd5d4e20951f691",
+  "generated_from_commit": "e7328146fb8d752a20beabff5bc88d99662fb129",
   "scope": [
     "Exp449 Task-1 governance, planned ledgers, immutable Exp448 predecessor, and future product boundaries"
   ],
@@ -77,11 +77,13 @@
       "id": "exp449_runbook",
       "path": "docs/EXP449_RUNBOOK_antigravity_KO.html",
       "role": "Single-use future command order, seven thread variables, stop rules, and dashboard firewall.",
-      "tests": [],
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
+      ],
       "evidence": [
         {
           "path": "docs/EXP449_RUNBOOK_antigravity_KO.html",
-          "symbol": "TBB_NUM_THREADS=1"
+          "symbol": "AEON_NUM_THREADS=1"
         }
       ]
     },

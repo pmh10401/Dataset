@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -42,6 +43,21 @@ class Exp449GovernanceTest(unittest.TestCase):
         self.assertIn("no Markdown duplicate", agents)
         self.assertIn("JSON, lock, and code files are unaffected", agents)
         self.assertIn("Historical documents are not mass-converted", agents)
+
+    def test_launcher_thread_inventory_requires_aeon_and_rejects_tbb_antigravity(self):
+        runbook = Path("docs/EXP449_RUNBOOK_antigravity_KO.html").read_text(encoding="utf-8")
+        expected = {
+            "OMP_NUM_THREADS=1",
+            "OPENBLAS_NUM_THREADS=1",
+            "MKL_NUM_THREADS=1",
+            "VECLIB_MAXIMUM_THREADS=1",
+            "NUMEXPR_NUM_THREADS=1",
+            "BLIS_NUM_THREADS=1",
+            "AEON_NUM_THREADS=1",
+        }
+        observed = set(re.findall(r"[A-Z][A-Z0-9_]*=1", runbook))
+        self.assertEqual(observed, expected)
+        self.assertNotIn("TBB_NUM_THREADS=1", runbook)
 
 
 if __name__ == "__main__":
