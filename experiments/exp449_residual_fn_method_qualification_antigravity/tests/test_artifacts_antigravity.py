@@ -80,6 +80,25 @@ class ArtifactsAntigravityTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "artifact namespace changed"):
                     artifact_map_bytes_antigravity(root, ("a_antigravity.json",))
 
+    def test_artifact_map_rejects_depth_two_directory_rebind_during_read_antigravity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            root = parent / "root_antigravity"
+            nested = root / "first_antigravity" / "second_antigravity"
+            nested.mkdir(parents=True)
+            leaf = nested / "a_antigravity.json"
+            leaf.write_bytes(b"pinned")
+
+            def rebind_nested(relative: str) -> None:
+                self.assertEqual(relative, "first_antigravity/second_antigravity/a_antigravity.json")
+                nested.rename(parent / "detached_antigravity")
+                nested.mkdir()
+                (nested / "a_antigravity.json").write_bytes(b"replacement")
+
+            with patch.object(artifacts_module, "_before_leaf_read_antigravity", rebind_nested, create=True):
+                with self.assertRaisesRegex(ValueError, "artifact namespace changed"):
+                    artifact_map_bytes_antigravity(root, ("first_antigravity/second_antigravity/a_antigravity.json",))
+
 
 if __name__ == "__main__":
     unittest.main()
