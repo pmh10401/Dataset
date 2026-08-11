@@ -1,5 +1,10 @@
 # Exp448 Exp447 TEXT label 경계 수리 실행 안내서
 
+```text
+approved_design_sha256 = 42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76
+approved_plan_sha256 = 7f9f646f55eb13791d94f094013b0149b247c127e63f94625e7a261a606db0c5
+```
+
 ## 현재 상태
 
 `implementation_not_started_no_official_authorization`이다. 이 문서는 미래의 closed

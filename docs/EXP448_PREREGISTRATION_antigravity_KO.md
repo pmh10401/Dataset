@@ -1,5 +1,10 @@
 # Exp448 Exp447 TEXT label 경계 수리 사전등록
 
+```text
+approved_design_sha256 = 42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76
+approved_plan_sha256 = 7f9f646f55eb13791d94f094013b0149b247c127e63f94625e7a261a606db0c5
+```
+
 ## 목적
 
 Exp448은 Exp447의 사후 evaluation이 exact TEXT TEST label을 int로 잘못 검사해 실패한

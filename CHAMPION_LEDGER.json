@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-12T09:00:00+09:00",
+  "updated_at": "2026-08-12T02:10:53+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -284,10 +284,10 @@
     },
     {
       "experiment": "Exp448",
-      "status": "design_approved_implementation_planned_not_promoted",
+      "status": "implementation_planned_task2_controlled_fork_not_promoted",
       "reason": "Exp448은 Exp447의 immutable TEXT-label boundary failure를 보존하고 converter 경계만 수리하도록 사전등록된 engineering-only controlled fork다. 아직 prediction, official lifecycle, TEST label access, evaluation, champion/pending candidate, scientific winner, operational alert, promotion 또는 dashboard action은 없다.",
       "reviewed_design_sha256": "42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76",
-      "reviewed_plan_sha256": "163835deffbd1c9ee4fbbf047afe7f32411ba5fd21ec98a2d0da025ddca585fd",
+      "reviewed_plan_sha256": "7f9f646f55eb13791d94f094013b0149b247c127e63f94625e7a261a606db0c5",
       "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
       "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
       "prediction_sha256": null,
