@@ -178,8 +178,10 @@ class PublicationIdentityAntigravity:
             FROZEN_CONFIG_ANTIGRAVITY.unstable_count,
         ):
             raise ValueError("source/lane populations differ from the frozen contract")
-        if source != stable + unstable or set(stable) & set(unstable):
+        if set(source) != set(stable) | set(unstable) or set(stable) & set(unstable):
             raise ValueError("source/stable/unstable lanes do not conserve coordinates")
+        if tuple(item for item in source if item in set(stable)) != stable or tuple(item for item in source if item in set(unstable)) != unstable:
+            raise ValueError("source/stable/unstable lane order is not preserved")
         if any(dataset not in set(datasets) for dataset, _ in source):
             raise ValueError("source coordinate dataset is absent from dataset order")
         _exact_nonnegative_int_antigravity(self.label_access_count, "label_access_count")

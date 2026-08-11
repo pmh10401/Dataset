@@ -110,7 +110,30 @@ class ContractAntigravityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             PublicationIdentityAntigravity(1, 2, {"leaf": digest}, digest, digest, digest, datasets[:-1], source, source[:26], source[26:], 0)
         with self.assertRaises(ValueError):
-            PublicationIdentityAntigravity(1, 2, {"leaf": digest}, digest, digest, digest, datasets, source, source[1:27], (source[0], *source[27:]), 0)
+            PublicationIdentityAntigravity(
+                1, 2, {"leaf": digest}, digest, digest, digest, datasets, source,
+                (source[1], source[0], *source[2:26]), source[26:], 0,
+            )
+
+    def test_publication_identity_preserves_real_interleaved_lane_order_antigravity(self) -> None:
+        # Break caught: the genuine Exp446 source rank order is rewritten into
+        # stable-then-unstable order even though the lane sets conserve it.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.contracts_antigravity import (
+            PublicationIdentityAntigravity,
+        )
+
+        digest = "c" * 64
+        datasets = tuple(f"dataset-{index:04d}" for index in range(1117))
+        source = tuple((datasets[index], index) for index in range(30))
+        stable_ranks = (0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29)
+        unstable_ranks = (8, 10, 14, 24)
+        identity = PublicationIdentityAntigravity(
+            1, 2, {"leaf": digest}, digest, digest, digest, datasets, source,
+            tuple(source[index] for index in stable_ranks),
+            tuple(source[index] for index in unstable_ranks), 0,
+        )
+        self.assertEqual(identity.source_coordinates, source)
+        self.assertEqual(identity.stable_coordinates, tuple(source[index] for index in stable_ranks))
 
     def test_dataset_rows_reject_duplicate_names_antigravity(self) -> None:
         # Break caught: bootstrap could pair two rows from one dataset.
