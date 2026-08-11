@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-08-12T04:34:34+0900",
-  "generated_from_commit": "53cf30e65c9b589ac4b3cc5a8f2b5cd36c96bce1",
+  "generated_at": "2026-08-12T04:45:38+0900",
+  "generated_from_commit": "7c96788d2e7b1626d4f7ddf7e3d427b118969e0e",
   "scope": [
-    "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary"
+    "Exp448 governance, controlled TEXT boundary, completed one-shot evaluation/inspect truth, and separately governed dashboard discussion boundary"
   ],
   "nodes": [
     {
       "id": "research_control",
       "path": "RESEARCH_STATE.json",
-      "role": "Active experiment state and immutable lineage control.",
+      "role": "Active Exp448 completed-evaluation state and immutable lineage control.",
       "entrypoints": [
         "active_experiment",
         "exp448_exp447_text_label_boundary_repair"
       ],
       "tests": [],
       "constraints": [
-        "Exp448 implementation is verified; official label access remains 0 and official lifecycle is still unauthorized.",
-        "Exp447 remains immutable."
+        "Official lifecycle completed exactly once at reviewed commit 2f5229ccd471bba907562b3131d293b46b0b3afc; labels were opened only in evaluation.",
+        "Result remains descriptive_complete_no_promotion; Exp447 remains immutable."
       ],
       "evidence": [
         {
@@ -115,41 +115,41 @@
     {
       "id": "exp448_runbook",
       "path": "docs/EXP448_RUNBOOK_antigravity_KO.md",
-      "role": "Operator gate and exact future closed lifecycle order.",
+      "role": "Recorded completed closed lifecycle and no-rerun operator boundary.",
       "entrypoints": [
-        "선행 gate",
-        "허용될 수 있는 명령",
-        "readiness/evaluate reviewed commit and bare inspect"
+        "현재 상태",
+        "완료된 선행 gate",
+        "실행된 closed command surface"
       ],
       "tests": [],
       "constraints": [
-        "No command is authorized before fresh Sol High ship.",
-        "readiness/evaluate require exact reviewed commit; inspect is bare and source-free."
+        "readiness/evaluate/bare inspect each completed once with exit 0; same root/experiment may not run again.",
+        "Dashboard is separately governed, aggregate-only, and cannot alter science or permit retry."
       ],
       "evidence": [
         {
           "path": "docs/EXP448_RUNBOOK_antigravity_KO.md",
-          "symbol": "implementation_verified_awaiting_official_readiness"
+          "symbol": "official_evaluation_inspected_complete_awaiting_discussion_dashboard"
         }
       ]
     },
     {
       "id": "exp448_implementation_report",
       "path": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md",
-      "role": "Verified implementation evidence and fresh-Sol-gated official-readiness status.",
+      "role": "Official immutable truth-closeout evidence and descriptive non-promotion report.",
       "entrypoints": [
-        "implementation_status = implementation_verified_awaiting_official_readiness",
-        "Task5 closed command evidence"
+        "implementation_status = official_evaluation_inspected_complete_awaiting_discussion_dashboard",
+        "Official truth closeout"
       ],
       "tests": [],
       "constraints": [
-        "Full engineering verification does not authorize official lifecycle, DB/TEST-label access, or dashboard work.",
-        "Fresh Sol High ship remains the only next gate."
+        "Root contains 11 immutable leaves; artifact/evaluation/decision hashes are recorded.",
+        "One label session completed 1117 queries / 195900 labels; no champion, promotion, alert, or dashboard export exists."
       ],
       "evidence": [
         {
           "path": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "implementation_status = implementation_verified_awaiting_official_readiness"
+          "symbol": "evaluation_sha256 = a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c"
         }
       ]
     },
@@ -163,12 +163,12 @@
       ],
       "tests": [],
       "constraints": [
-        "Exp448 cannot create a champion, pending candidate, or promotion before official truth closeout."
+        "Exp448 completed descriptive evaluation without changing champion or pending_candidate and without promotion."
       ],
       "evidence": [
         {
           "path": "CHAMPION_LEDGER.json",
-          "symbol": "implementation_verified_awaiting_official_readiness_not_promoted"
+          "symbol": "official_evaluation_inspected_complete_awaiting_discussion_dashboard_not_promoted"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "type": "reads",
       "evidence": {
         "path": "CHAMPION_LEDGER.json",
-        "symbol": "fresh_sol_high_read_only_ship_review_current_clean_head"
+        "symbol": "await_discussion_then_separately_governed_aggregate_only_dashboard_consideration"
       }
     },
     {
@@ -472,26 +472,29 @@
         "research_control",
         "champion_ledger"
       ],
-      "outcome": "A planned, non-promoted controlled fork with zero label access."
+      "outcome": "Completed controlled fork with immutable evidence, descriptive_complete_no_promotion, and no champion/pending-candidate change."
     },
     {
-      "trigger": "Future official authorization",
+      "trigger": "Completed official truth closeout",
       "steps": [
         "exp448_runbook",
         "exp448_preregistration",
         "exp447_failure_truth",
-        "research_control"
+        "exp448_prelabel_source_boundary",
+        "exp448_evaluation_replay_boundary",
+        "research_control",
+        "champion_ledger"
       ],
-      "outcome": "One-shot readiness, evaluate, and inspect are possible only after all future gates; any nonzero permanently stops Exp448."
+      "outcome": "Readiness, evaluate, and bare inspect each ran exactly once with exit 0; the immutable root has 11 leaves and no rerun is permitted."
     },
     {
-      "trigger": "Future dashboard request",
+      "trigger": "Future separately governed dashboard discussion",
       "steps": [
         "exp448_preregistration",
         "exp448_runbook",
         "research_control"
       ],
-      "outcome": "Only a successful immutable truth closeout may produce sanitized aggregate presentation data; dashboard failure cannot alter science."
+      "outcome": "Only sanitized aggregate exp448.public-evaluation.v1 may be considered after discussion; no site/dashboard change exists and failure cannot alter science or permit retry."
     },
     {
       "trigger": "Task2–Task3 controlled-fork boundary",
@@ -513,7 +516,7 @@
         "exp448_foundations",
         "exp447_failure_truth"
       ],
-      "outcome": "Synthetic tests prove exact TEXT-to-int input parity with Exp447; future evaluation is create-only and replay is label/SQLite/network-free."
+      "outcome": "The completed evaluation used one closure-private TEXT-to-int session, 1117 ordered queries, and 195900 labels; stored source-free inspect evidence matches immutable artifacts."
     },
     {
       "trigger": "Task5 closed CLI and launcher",
@@ -524,11 +527,11 @@
         "exp448_evaluation_replay_boundary",
         "research_control"
       ],
-      "outcome": "Readiness imports only readiness; evaluate checks clean reviewed HEAD before lazy evaluator import; inspect stays source-free; no official command is authorized before fresh Sol ship."
+      "outcome": "The closed CLI/launcher executed the one authorized lifecycle; readiness/evaluate/inspect are now closed and dashboard remains a separate future discussion."
     }
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Only official lifecycle execution and dashboard relationships remain unimplemented and intentionally unasserted."
+    "Dashboard implementation/consumer remains intentionally unimplemented; no raw labels, indices, datasets, per-dataset rows, or private paths are mapped into any product surface."
   ]
 }
