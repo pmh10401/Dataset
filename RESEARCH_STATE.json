@@ -973,8 +973,8 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "AWAIT_DISCUSSION_NO_AUTOMATIC_EVALUATION_OR_PROMOTION",
-  "exact_next_command_if_interrupted": "await_discussion_no_automatic_evaluation_or_promotion",
+  "next_action": "IMPLEMENT_EXP447_TASK_2_FROZEN_CONFIGURATION_CONTRACTS_ARTIFACTS_AND_BOOTSTRAP",
+  "exact_next_command_if_interrupted": "implement_exp447_task_2_frozen_configuration_contracts_artifacts_and_bootstrap",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": true,
@@ -982,7 +982,7 @@
   "test_labels_opened": false,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "not_started",
-  "pause_reason": "Exp446 official CPU/11 runtime and create-only publication completed with zero labels, 30/30 success, four abstentions, and no promotion. The authorized source-free inspection pair both exited 0 with byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0; the earlier unintended test inspect is separately disclosed. The original new wrapper failed only after valid publication during nested MappingProxyType serialization; its immutable root is neither retried nor mutated. Evaluation, champion, and promotion remain prohibited pending discussion. Exp445 remains immutable failed-publication predecessor evidence.",
+  "pause_reason": "Exp447 Task 1 governance and versioned code map are complete. The exact next step is Task 2: implement frozen configuration, contracts, artifacts, and bootstrap. Exp447 has no official evaluation, TEST-label access, official root mutation, champion/promotion change, or dashboard-site action at this boundary; the separate dashboard repository remains untouched.",
   "exp440_implementation": {
     "implementation_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
     "status": "official_completed_evaluated_not_promoted",

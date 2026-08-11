@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T11:34:04Z",
-  "generated_from_commit": "baff8f3a808226f56b103651a8382eaf5a8f8924",
+  "generated_at": "2026-08-11T11:41:42Z",
+  "generated_from_commit": "f0d20900c04c6db41e13ef3ee592f6533d1ce45d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -159,7 +159,8 @@
         "Exp445 publication capture failure after fixed-root allocation creates only immutable publication_failure_antigravity.json and no canonical publication. If a caller-side frozen-leaf replay/audit rejects after atomic rename, the retained attempt descriptor quarantines the canonical destination before failure evidence is written; it is never returned as clean publication.",
         "Exp445 is immutable failed-publication evidence, not a failed scientific result: 30/30, error 0, label access 0, CPU/11 inner-1, aggregate af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034, absent publication/evaluation, and failure text Exp444 original-control replay is invalid.",
         "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; the authorized immutable publication inspection pair is complete, while evaluation/champion/promotion remain disabled pending discussion.",
-        "Exp447 is design-approved and implementation-planned only. Its post-freeze evaluator may open TEST labels only after future reviewed implementation gates; until then no Exp447 source edge, test-label access, champion change, promotion, scientific winner, or operational alert eligibility exists. The separate private dashboard may consume only immutable aggregate-only post-closeout export and its failure cannot change scientific artifacts or permit evaluation retry."
+        "Exp447 is design-approved and implementation-planned only. Its post-freeze evaluator may open TEST labels only after future reviewed implementation gates; until then no Exp447 source edge, test-label access, champion change, promotion, scientific winner, or operational alert eligibility exists. The separate private dashboard may consume only immutable aggregate-only post-closeout export and its failure cannot change scientific artifacts or permit evaluation retry.",
+        "Exp447 Task 2—frozen configuration, contracts, artifacts, and bootstrap—is the exact next implementation step. No official evaluation, TEST-label access, official-root mutation, champion/promotion change, or dashboard-site action is authorized at this state boundary."
       ],
       "evidence": [
         {
@@ -757,6 +758,14 @@
         {
           "path": "docs/EXP447_IMPLEMENTATION_REPORT_antigravity.md",
           "symbol": "implementation_status=not_started"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"next_action\": \"IMPLEMENT_EXP447_TASK_2_FROZEN_CONFIGURATION_CONTRACTS_ARTIFACTS_AND_BOOTSTRAP\""
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity/task-1-report-antigravity.md",
+          "symbol": "## Review-fix RED and verification"
         }
       ]
     },
