@@ -13,6 +13,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import stat
 from types import MappingProxyType
 from uuid import uuid4
 
@@ -235,15 +236,28 @@ def _write_publication_antigravity(root: Path, payloads: Mapping[str, bytes]) ->
         raise
 
 
-def _write_audit_antigravity(root: Path, phase: str, identity: PublicationIdentityAntigravity | None, *, queries: int, rows: int, closed: bool, destination_state: str, error: BaseException) -> None:
+def _destination_state_antigravity(root: Path) -> str:
+    if root.is_symlink():
+        return "quarantined"
+    if not root.exists():
+        return "absent"
+    if not root.is_dir():
+        return "quarantined"
+    names = {path.name for path in root.iterdir()}
+    return "complete" if names == set(_LEAVES_ANTIGRAVITY) else "partial"
+
+
+def _write_audit_antigravity(root: Path, phase: str, identity: PublicationIdentityAntigravity | None, *, attempts: int, completions: int, rows: int, closed: bool, close_error: BaseException | None, destination_state: str, error: BaseException) -> None:
     # Audit is a distinct sibling, not a mutation or completion of any destination.
     parent = root.parent
     if not parent.is_dir():
         return
     payload = {
-        "schema": "exp447_evaluation_audit", "phase": phase, "query_attempts": queries,
-        "query_completions": queries, "label_rows": rows, "label_session_closed": closed,
+        "schema": "exp447_evaluation_audit", "phase": phase, "query_attempts": attempts,
+        "query_completions": completions, "label_rows": rows, "label_session_closed": closed,
         "destination_state": destination_state, "error_type": type(error).__name__, "error": str(error),
+        "close_error_type": None if close_error is None else type(close_error).__name__,
+        "close_error": None if close_error is None else str(close_error),
         "exp446_prediction_sha256": None if identity is None else identity.prediction_sha256,
     }
     write_create_only_antigravity(parent / f"evaluation_audit_{uuid4().hex}_antigravity.json", canonical_json_bytes_antigravity(payload))
@@ -256,9 +270,10 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
     identity: PublicationIdentityAntigravity | None = None
     labels_opened = False
     labels_closed = False
-    queries = rows_read = 0
+    attempts = queries = rows_read = 0
     phase = "pre_label"
     session = None
+    close_failure: BaseException | None = None
     try:
         if root.exists() or root.is_symlink():
             raise ValueError("Exp447 evaluation root already exists and is immutable")
@@ -279,6 +294,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         diagnostics: dict[str, list[dict[str, object]]] = defaultdict(list)
         for dataset_order, dataset in enumerate(identity.dataset_order):
             phase = "label_snapshot"
+            attempts += 1
             labels = _validate_labels_antigravity(dataset, session.labels_for_dataset_antigravity(dataset))
             queries += 1
             rows_read += len(labels)
@@ -339,10 +355,15 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         _write_publication_antigravity(root, payloads)
         return result
     except BaseException as error:
-        if labels_opened:
-            destination_state = "absent" if not root.exists() else "partial_or_complete"
+        if session is not None and not labels_closed:
             try:
-                _write_audit_antigravity(root, phase, identity, queries=queries, rows=rows_read, closed=labels_closed, destination_state=destination_state, error=error)
+                session.close_antigravity()
+                labels_closed = True
+            except BaseException as close_error:
+                close_failure = close_error
+        if labels_opened:
+            try:
+                _write_audit_antigravity(root, phase, identity, attempts=attempts, completions=queries, rows=rows_read, closed=labels_closed, close_error=close_failure, destination_state=_destination_state_antigravity(root), error=error)
             except BaseException:
                 # The original failure must remain the caller-visible truth when audit storage itself fails.
                 pass
@@ -367,6 +388,53 @@ def _read_json_antigravity(path: Path) -> object:
         raise ValueError(f"invalid immutable evaluation leaf: {path.name}") from error
 
 
+def _json_bytes_antigravity(payload: bytes, name: str) -> object:
+    try:
+        return json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid immutable evaluation leaf: {name}") from error
+
+
+def _parse_jsonl_bytes_antigravity(payload: bytes, name: str) -> tuple[object, ...]:
+    try:
+        return tuple(json.loads(line) for line in payload.decode("utf-8").splitlines())
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid immutable JSONL leaf: {name}") from error
+
+
+def _pinned_evaluation_leaves_antigravity(root: Path) -> dict[str, bytes]:
+    """Read exact regular leaves through one no-follow directory descriptor."""
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+    leaf_flags = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+    descriptor = os.open(root, flags)
+    try:
+        before = os.fstat(descriptor)
+        if set(os.listdir(descriptor)) != set(_LEAVES_ANTIGRAVITY):
+            raise ValueError("Exp447 artifact inventory is not exact")
+        leaves: dict[str, bytes] = {}
+        for name in _LEAVES_ANTIGRAVITY:
+            leaf = os.open(name, leaf_flags, dir_fd=descriptor)
+            try:
+                opened = os.fstat(leaf)
+                if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+                    raise ValueError("evaluation artifact leaf is not a single-link regular file")
+                chunks: list[bytes] = []
+                while block := os.read(leaf, 1 << 20):
+                    chunks.append(block)
+                if os.fstat(leaf) != opened:
+                    raise ValueError("evaluation artifact leaf changed while pinned")
+                leaves[name] = b"".join(chunks)
+            finally:
+                os.close(leaf)
+        after = os.fstat(descriptor)
+        namespace = os.stat(root, follow_symlinks=False)
+        if after != before or (namespace.st_dev, namespace.st_ino) != (before.st_dev, before.st_ino):
+            raise ValueError("evaluation artifact root changed while pinned")
+        return leaves
+    finally:
+        os.close(descriptor)
+
+
 def _read_jsonl_antigravity(path: Path) -> tuple[object, ...]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -378,18 +446,19 @@ def _read_jsonl_antigravity(path: Path) -> tuple[object, ...]:
 def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenEvaluationAntigravity:
     """Label-free semantic replay of a completed Exp447 root."""
     root = Path(getattr(dependencies, "root"))
-    if not root.is_dir() or root.is_symlink() or {path.name for path in root.iterdir()} != set(_LEAVES_ANTIGRAVITY):
+    if not root.is_dir() or root.is_symlink():
         raise ValueError("Exp447 artifact inventory is not exact")
-    hashes = _read_json_antigravity(root / "artifact_sha256_antigravity.json")
+    leaves = _pinned_evaluation_leaves_antigravity(root)
+    hashes = _json_bytes_antigravity(leaves["artifact_sha256_antigravity.json"], "artifact_sha256_antigravity.json")
     if not isinstance(hashes, dict) or set(hashes) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("artifact map is invalid or self-including")
     for name in _LEAVES_ANTIGRAVITY[:-1]:
-        if type(hashes[name]) is not str or sha256((root / name).read_bytes()).hexdigest() != hashes[name]:
+        if type(hashes[name]) is not str or sha256(leaves[name]).hexdigest() != hashes[name]:
             raise ValueError("artifact leaf digest differs")
     identity = dependencies.capture_after()
-    evaluation = _read_json_antigravity(root / "evaluation_antigravity.json")
-    confusion = _read_json_antigravity(root / "confusion_antigravity.json")
-    decision = _read_json_antigravity(root / "decision_antigravity.json")
+    evaluation = _json_bytes_antigravity(leaves["evaluation_antigravity.json"], "evaluation_antigravity.json")
+    confusion = _json_bytes_antigravity(leaves["confusion_antigravity.json"], "confusion_antigravity.json")
+    decision = _json_bytes_antigravity(leaves["decision_antigravity.json"], "decision_antigravity.json")
     if not isinstance(evaluation, dict) or not isinstance(confusion, dict) or not isinstance(decision, dict):
         raise ValueError("evaluation JSON object is invalid")
     if evaluation.get("schema") != "exp447" or evaluation.get("exp446_prediction_sha256") != identity.prediction_sha256 or evaluation.get("evaluation_status") != "descriptive_complete_no_promotion":
@@ -414,7 +483,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
     historical_counts = {"tp": 1930, "fp": 318, "fn": 1988, "tn": 191664}
     if decision.get("historical_source_30_confusion") != historical_counts or decision.get("historical_exp442_evaluation_sha256") != FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_sha256 or decision.get("historical_exp442_artifact_map_sha256") != FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_artifact_map_sha256:
         raise ValueError("historical source-30 authority differs")
-    metric_rows = _read_jsonl_antigravity(root / "dataset_metrics_antigravity.jsonl")
+    metric_rows = _parse_jsonl_bytes_antigravity(leaves["dataset_metrics_antigravity.jsonl"], "dataset_metrics_antigravity.jsonl")
     if len(metric_rows) != FROZEN_CONFIG_ANTIGRAVITY.dataset_count:
         raise ValueError("dataset metric population differs")
     reconstructed: dict[str, list[DatasetConfusionRowAntigravity]] = {method: [] for method in _METHODS_ANTIGRAVITY}
@@ -433,7 +502,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         replayed = _metric_summary_antigravity(method, reconstructed[method])
         if replayed != summaries[method]:
             raise ValueError("aggregate confusion or macro F1 differs from dataset rows")
-    transition_rows = _read_jsonl_antigravity(root / "candidate_transitions_antigravity.jsonl")
+    transition_rows = _parse_jsonl_bytes_antigravity(leaves["candidate_transitions_antigravity.jsonl"], "candidate_transitions_antigravity.jsonl")
     source_set = set(identity.source_coordinates)
     stable_set, unstable_set = set(identity.stable_coordinates), set(identity.unstable_coordinates)
     replayed_transitions: set[tuple[str, int]] = set()
@@ -450,10 +519,10 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
     if replayed_transitions != source_set or len(stable_set) + len(unstable_set) != len(source_set):
         raise ValueError("candidate lane conservation differs")
     diagnostics: dict[str, tuple[object, ...]] = {
-        "rescued": _read_jsonl_antigravity(root / "rescued_datasets_antigravity.jsonl"),
-        "false_alarm": _read_jsonl_antigravity(root / "false_alarm_datasets_antigravity.jsonl"),
-        "regressed": _read_jsonl_antigravity(root / "regressed_datasets_antigravity.jsonl"),
-        "strong_regression": _read_jsonl_antigravity(root / "strong_regressions_antigravity.jsonl"),
+        "rescued": _parse_jsonl_bytes_antigravity(leaves["rescued_datasets_antigravity.jsonl"], "rescued_datasets_antigravity.jsonl"),
+        "false_alarm": _parse_jsonl_bytes_antigravity(leaves["false_alarm_datasets_antigravity.jsonl"], "false_alarm_datasets_antigravity.jsonl"),
+        "regressed": _parse_jsonl_bytes_antigravity(leaves["regressed_datasets_antigravity.jsonl"], "regressed_datasets_antigravity.jsonl"),
+        "strong_regression": _parse_jsonl_bytes_antigravity(leaves["strong_regressions_antigravity.jsonl"], "strong_regressions_antigravity.jsonl"),
     }
     expected_diagnostics: dict[str, list[dict[str, object]]] = defaultdict(list)
     for dataset, hard_row, stable_row in zip(identity.dataset_order, reconstructed["hard_baseline"], reconstructed[_PRIMARY_METHOD_ANTIGRAVITY], strict=True):
@@ -468,10 +537,20 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
                 expected_diagnostics["strong_regression"].append({"dataset": dataset, "f1_delta": delta})
     if any(list(diagnostics[name]) != expected_diagnostics[name] for name in diagnostics):
         raise ValueError("diagnostic leaves differ from reconstructed metrics")
-    bootstrap_payload = _read_json_antigravity(root / "bootstrap_antigravity.json")
+    bootstrap_payload = _json_bytes_antigravity(leaves["bootstrap_antigravity.json"], "bootstrap_antigravity.json")
     expected_comparisons = ("hard_plus_source_30_minus_hard_baseline", "hard_plus_stable_26_minus_hard_baseline", "hard_plus_stable_26_minus_hard_plus_source_30")
     if not isinstance(bootstrap_payload, dict) or not isinstance(bootstrap_payload.get("comparisons"), list) or tuple(item.get("comparator_name") for item in bootstrap_payload["comparisons"] if isinstance(item, dict)) != expected_comparisons:
         raise ValueError("bootstrap comparison contract differs")
+    draws = bootstrap_draws_antigravity(FROZEN_CONFIG_ANTIGRAVITY.dataset_count)
+    expected_bootstrap = (
+        paired_bootstrap_antigravity(reconstructed["hard_baseline"], reconstructed["hard_plus_source_30"], expected_comparisons[0], draws=draws).to_payload_antigravity(),
+        paired_bootstrap_antigravity(reconstructed["hard_baseline"], reconstructed["hard_plus_stable_26"], expected_comparisons[1], draws=draws).to_payload_antigravity(),
+        paired_bootstrap_antigravity(reconstructed["hard_plus_source_30"], reconstructed["hard_plus_stable_26"], expected_comparisons[2], draws=draws).to_payload_antigravity(),
+    )
+    if tuple(bootstrap_payload["comparisons"]) != expected_bootstrap:
+        raise ValueError("bootstrap deltas, intervals, or shared-draw SHA differ from reconstructed metrics")
+    if _pinned_evaluation_leaves_antigravity(root) != leaves:
+        raise ValueError("evaluation artifact namespace changed during semantic replay")
     return FrozenEvaluationAntigravity(evaluation["reviewed_commit"], identity, evaluation["dataset_count"], evaluation["label_rows"], summaries, {"source": 30, "stable": 26, "unstable": 4}, {name: len(rows) for name, rows in diagnostics.items()}, tuple(bootstrap_payload["comparisons"]))
 
 
