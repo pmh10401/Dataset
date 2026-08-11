@@ -478,7 +478,13 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         raise ValueError("replayed Hard baseline differs")
     if summaries["hard_plus_source_30"].confusion != ConfusionAntigravity(*FROZEN_CONFIG_ANTIGRAVITY.exp442_source_30_confusion):
         raise ValueError("replayed source-30 historical confusion differs")
-    if decision.get("evaluation_status") != "descriptive_complete_no_promotion" or decision.get("scientific_winner_selected") is not False or decision.get("historical_source_30_confusion_agreement") is not True:
+    expected_governance = {
+        "evaluation_status": "descriptive_complete_no_promotion", "scientific_success_criterion": None,
+        "scientific_winner_selected": False, "review_only": True, "operational_alert_eligible": False,
+        "same_experiment_reselection_allowed": False, "test_informed_reselection_allowed": False,
+        "automatic_champion_promotion": False, "historical_source_30_confusion_agreement": True,
+    }
+    if any(decision.get(key) != value for key, value in expected_governance.items()):
         raise ValueError("decision semantic contract differs")
     historical_counts = {"tp": 1930, "fp": 318, "fn": 1988, "tn": 191664}
     if decision.get("historical_source_30_confusion") != historical_counts or decision.get("historical_exp442_evaluation_sha256") != FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_sha256 or decision.get("historical_exp442_artifact_map_sha256") != FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_artifact_map_sha256:
@@ -506,6 +512,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
     source_set = set(identity.source_coordinates)
     stable_set, unstable_set = set(identity.stable_coordinates), set(identity.unstable_coordinates)
     replayed_transitions: set[tuple[str, int]] = set()
+    transition_outcomes: dict[str, dict[str, int]] = {lane: {"rescued": 0, "added_false_alarm": 0} for lane in ("source", "stable", "unstable")}
     for row in transition_rows:
         if not isinstance(row, dict) or set(row) != {"dataset", "dataset_order", "candidate_index", "lane", "already_hard", "transition"}:
             raise ValueError("candidate transition schema differs")
@@ -515,9 +522,18 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         expected_lane = "stable" if coordinate in stable_set else "unstable" if coordinate in unstable_set else None
         if row["lane"] != expected_lane or type(row["already_hard"]) is not bool or row["transition"] not in {"hard_overlap", "rescued", "added_false_alarm"}:
             raise ValueError("candidate transition lane or state differs")
+        if row["already_hard"] != (row["transition"] == "hard_overlap"):
+            raise ValueError("candidate transition overlap state differs")
+        if row["transition"] in transition_outcomes[expected_lane]:
+            transition_outcomes[expected_lane][row["transition"]] += 1
         replayed_transitions.add(coordinate)
     if replayed_transitions != source_set or len(stable_set) + len(unstable_set) != len(source_set):
         raise ValueError("candidate lane conservation differs")
+    for lane, method in (("source", "hard_plus_source_30"), ("stable", "hard_plus_stable_26"), ("unstable", "hard_plus_unstable_4")):
+        delta_tp = summaries[method].confusion.tp - summaries["hard_baseline"].confusion.tp
+        delta_fp = summaries[method].confusion.fp - summaries["hard_baseline"].confusion.fp
+        if (delta_tp, delta_fp) != (transition_outcomes[lane]["rescued"], transition_outcomes[lane]["added_false_alarm"]):
+            raise ValueError("candidate transitions do not reconstruct method confusion deltas")
     diagnostics: dict[str, tuple[object, ...]] = {
         "rescued": _parse_jsonl_bytes_antigravity(leaves["rescued_datasets_antigravity.jsonl"], "rescued_datasets_antigravity.jsonl"),
         "false_alarm": _parse_jsonl_bytes_antigravity(leaves["false_alarm_datasets_antigravity.jsonl"], "false_alarm_datasets_antigravity.jsonl"),

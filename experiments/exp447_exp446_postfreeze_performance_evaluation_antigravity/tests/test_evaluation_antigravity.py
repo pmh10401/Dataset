@@ -6,6 +6,7 @@ from hashlib import sha256
 import tempfile
 import unittest
 import json
+from unittest.mock import patch
 from pathlib import Path
 
 from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
@@ -183,6 +184,46 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 self.assertTrue(audit["label_session_closed"])
                 self.assertEqual(audit["destination_state"], "absent")
 
+    def test_create_only_and_audit_failure_matrix_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as module
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "evaluation_root_antigravity"
+            dependencies = _DependenciesAntigravity(root)
+            original = module.write_create_only_antigravity
+            calls = 0
+            def fail_mid_write(path: Path, payload: bytes) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 3:
+                    raise OSError("partial write")
+                original(path, payload)
+            with patch.object(module, "write_create_only_antigravity", side_effect=fail_mid_write), self.assertRaisesRegex(OSError, "partial write"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertTrue(root.is_dir())
+            self.assertNotEqual({path.name for path in root.iterdir()}, set(module._LEAVES_ANTIGRAVITY))
+            with self.assertRaises(ValueError):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "evaluation_root_antigravity"
+            dependencies = _DependenciesAntigravity(root, query_error=OSError("query original"))
+            with patch.object(module, "_write_audit_antigravity", side_effect=OSError("audit broken")), self.assertRaisesRegex(OSError, "query original"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertFalse(root.exists())
+
+    def test_existing_and_symlink_destination_are_rejected_before_labels_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as module
+        for kind in ("partial", "symlink"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"
+                if kind == "partial":
+                    root.mkdir(); (root / "partial_antigravity.json").write_text("{}\n", encoding="utf-8")
+                else:
+                    target = Path(directory) / "target_antigravity"; target.mkdir(); root.symlink_to(target, target_is_directory=True)
+                dependencies = _DependenciesAntigravity(root)
+                with self.assertRaises(ValueError):
+                    module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                self.assertNotIn("open_labels", dependencies.events)
+
     def test_inspect_rejects_semantic_leaf_tamper_even_when_artifact_hash_is_recomputed_antigravity(self) -> None:
         from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _inspect_root_with_dependencies_antigravity
         with tempfile.TemporaryDirectory() as directory:
@@ -210,6 +251,22 @@ class EvaluationAntigravityTests(unittest.TestCase):
             (root / "artifact_sha256_antigravity.json").write_text(json.dumps(artifact, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 _inspect_root_with_dependencies_antigravity(dependencies)
+
+    def test_semantic_decision_bootstrap_transition_tampers_survive_rehash_but_fail_replay_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity, _inspect_root_with_dependencies_antigravity
+        def mutate_decision(root: Path) -> None:
+            path = root / "decision_antigravity.json"; payload = json.loads(path.read_text(encoding="utf-8")); payload["operational_alert_eligible"] = True; path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+        def mutate_bootstrap(root: Path) -> None:
+            path = root / "bootstrap_antigravity.json"; payload = json.loads(path.read_text(encoding="utf-8")); payload["comparisons"][0]["micro_delta"] += 0.25; path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+        def mutate_transition(root: Path) -> None:
+            path = root / "candidate_transitions_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]; rows[0]["transition"] = "added_false_alarm"; path.write_text("".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in rows), encoding="utf-8")
+        for name, mutate in (("decision", mutate_decision), ("bootstrap", mutate_bootstrap), ("transition", mutate_transition)):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies); mutate(root)
+                artifact = {path.name: sha256(path.read_bytes()).hexdigest() for path in root.iterdir() if path.name != "artifact_sha256_antigravity.json"}
+                (root / "artifact_sha256_antigravity.json").write_text(json.dumps(artifact, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+                with self.assertRaises(ValueError): _inspect_root_with_dependencies_antigravity(dependencies)
 
 
 if __name__ == "__main__":
