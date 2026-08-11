@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T16:00:44Z",
-  "generated_from_commit": "4ec9ee4e2204965eeabb28bff7a8a488f441c261",
+  "generated_at": "2026-08-11T16:26:52Z",
+  "generated_from_commit": "af4d6fcbf3d585d0e3be269fff9b38562ec0ae31",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -90,7 +90,7 @@
     "Exp446 terminal authority correction: frozen per-record dataset/train/raw dimensions and four lane-derived abstentions are validated without changing scientific computation or official lifecycle authority.",
     "Exp446 terminal identity repair: each immutable Exp445 wrapper binds sequence separately from candidate instance_index and original_rank; four abstentions are sequence/original-rank positions, never instance indices.",
     "Exp447 approved governance: local deterministic post-freeze evaluation of immutable Exp446 predictions, with a separate private aggregate-only dashboard presentation boundary after immutable truth closeout; no Exp447 product source edge exists before implementation.",
-    "Exp447 closed CLI and outside-CWD single-thread launcher"
+    "Exp447 official lifecycle truth: readiness passed once, evaluate failed once with TEST label row is invalid, sibling audit preserved, root absent, no retry or inspect, and Exp448 design/preregistration is next"
   ],
   "nodes": [
     {
@@ -100,7 +100,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its authorized source-free, label-free, mutation-free inspection pair was byte-identical. Exp447 implementation is verified and fresh-Sol-shipped but awaits a future operator readiness command with REVIEWED_COMMIT; no Exp447 official root, label session, evaluation, champion, promotion, or dashboard action exists.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its authorized source-free, label-free, mutation-free inspection pair was byte-identical. Exp447 readiness passed once, then its one allowed evaluation failed before a valid label row; its sibling audit is immutable, the run root remains absent, inspect/retry are prohibited forever, and no evaluation, champion, promotion, or dashboard artifact exists.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -109,7 +109,7 @@
         "pause_reason",
         "last_verified_commit",
         "exp447_exp446_postfreeze_performance_evaluation",
-        "implementation_status=implementation_verified_awaiting_official_readiness"
+        "implementation_status=official_readiness_passed_evaluation_failed_immutable_no_retry"
       ],
       "tests": [],
       "constraints": [
@@ -149,7 +149,7 @@
         "Exp445 is immutable failed-publication evidence, not a failed scientific result: 30/30, error 0, label access 0, CPU/11 inner-1, aggregate af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034, absent publication/evaluation, and failure text Exp444 original-control replay is invalid.",
         "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; the authorized immutable publication inspection pair is complete, while evaluation/champion/promotion remain disabled pending discussion.",
         "Exp447 implementation is verified with a fresh Sol High ship verdict and zero Critical/Important findings. Its two 66-test discovery runs and the retained Exp444/445/446 predecessor regression evidence are implementation proof only; they do not create official readiness, evaluation, a root, a label session, a champion, or promotion.",
-        "The only future Exp447 operator action is readiness with the literal REVIEWED_COMMIT placeholder. The official root remains absent and non-symlink; evaluation/champion/promotion hashes remain null, labels remain unopened, and any later evaluation is descriptive review-only with no same-experiment reselection."
+        "Exp447 has immutable operational failure truth: readiness exit 0 once; evaluate exit 1 once with ValueError: TEST label row is invalid; label session opened then closed; attempts/completions/rows are 1/0/0; sibling audit SHA 9f8f7d3d9b92670988ca1d0bb689711d12ef1536777881f18991143a090a2b97 is preserved; root stays absent/non-symlink; inspect and retry are forbidden; evaluation/champion/promotion hashes remain null; Exp448 design/preregistration is the only next action."
       ],
       "evidence": [
         {
@@ -746,11 +746,11 @@
         },
         {
           "path": "docs/EXP447_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "implementation_status=implementation_verified_awaiting_official_readiness"
+          "symbol": "implementation_status=official_readiness_passed_evaluation_failed_immutable_no_retry"
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"next_action\": \"future_exp447_official_readiness_only\""
+          "symbol": "\"next_action\": \"design_and_preregister_Exp448_immutable_failure_analysis\""
         },
         {
           "path": ".superpowers/sdd/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity/task-1-report-antigravity.md",
@@ -758,7 +758,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_verified_awaiting_official_readiness\""
+          "symbol": "\"status\": \"official_readiness_passed_evaluation_failed_immutable_no_retry\""
         }
       ]
     },
@@ -1232,7 +1232,7 @@
       "boundary": "Exp447 post-freeze evaluation",
       "layer": 1,
       "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity",
-      "role": "Groups the source-free descriptor-pinned Exp446 publication identity capture, label-capable source authority, single-use evaluator, source-free immutable replay, and closed CLI. Publication identity owns the sole Exp446 capture logic and imports no SQLite, evaluator, sources, or TEST-label session. CLI inspect imports only publication identity plus replay; it cannot load label-capable authority. No official evaluation is run by this code-map update.",
+      "role": "Groups the source-free descriptor-pinned Exp446 publication identity capture, label-capable source authority, single-use evaluator, source-free immutable replay, and closed CLI. Publication identity owns the sole Exp446 capture logic and imports no SQLite, evaluator, sources, or TEST-label session. The one official evaluation invocation ended at label validation with the preserved sibling audit; no Exp447 replay or lifecycle command may run again.",
       "entrypoints": [
         "FROZEN_CONFIG_ANTIGRAVITY",
         "PublicationIdentityAntigravity",
@@ -1274,7 +1274,7 @@
         "The sole TEST-label session opens only after Exp446 capture, Exp404 Hard capture/derivation, a second byte/root-identical Exp446 capture, and equality comparison; it must close before post-close source validation, metric/bootstrap computation, and eleven-leaf create-only publication.",
         "Exact population is 1,117 datasets and 195,900 contiguous binary label rows. Source lane algebra is 30 = 26 stable + 4 unstable. Hard baseline is [1915,303,2003,191679]; source30 must reproduce frozen Exp442 [1930,318,1988,191664] solely as historical agreement, never prediction selection.",
         "Inspect is source-free and label-free: it rechecks Exp446 identity, exact inventory/hash map, per-dataset metric reconstruction, transition lane conservation, diagnostics, fixed confusion, historical agreement, and bootstrap comparison names. Post-label failures create a unique sibling audit and neither retry nor overwrite partial/complete evidence.",
-        "CLI is closed to exactly readiness/evaluate/inspect with allow_abbrev=False. readiness/evaluate require a lowercase full 40-hex reviewed commit; new/resume/retry and root/hash/source/lane/threshold/budget overrides do not exist.",
+        "Historical lifecycle truth: readiness ran once and passed; evaluate ran once, opened and closed the label session, then failed with ValueError: TEST label row is invalid before a valid label row or evaluation leaf existed. The sibling audit is immutable, root is absent, inspect/retry are prohibited, and no dashboard payload exists.",
         "Help, readiness and inspect remain lazy. evaluate checks clean reviewed HEAD before evaluator import; inspect follows the label-free replay API and does not open TEST labels.",
         "The scratch launcher resolves repository root from __file__, works outside the repository CWD, and overwrites OMP_NUM_THREADS, OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, VECLIB_MAXIMUM_THREADS, NUMEXPR_NUM_THREADS, BLIS_NUM_THREADS, and NUMBA_NUM_THREADS to 1 before package import.",
         "Replay imports no evaluation_antigravity, sources_antigravity, sqlite3, or TEST-label session authority. Its dependency accepts only root plus capture_after; evaluator compatibility and CLI create that identity adapter outside the replay module.",
@@ -6618,34 +6618,34 @@
     },
     {
       "id": "exp447_postfreeze_evaluation_flow",
-      "label": "Exp447 single-use post-freeze evaluation and label-free replay",
-      "trigger": "Invoke the future closed Exp447 evaluate route only after readiness establishes a clean reviewed commit and an absent root; this map records the implemented evaluator boundary, not authorization for an official run.",
+      "label": "Exp447 immutable post-freeze evaluation failure boundary",
+      "trigger": "Historical one-time lifecycle: readiness established the clean reviewed commit and absent root; the sole evaluate invocation entered the label boundary and then failed before a valid label row.",
       "steps": [
         "research_control",
         "exp447_evaluation_primitives",
         "exp446_governance"
       ],
-      "outcome": "The evaluator captures Exp446, captures/derives Exp404 Hard, independently recaptures and compares Exp446, then opens one ordered TEST-label session. After it closes, it computes four fixed comparisons, exact historical source30 agreement, diagnostics and shared-draw bootstrap, rechecks Exp446 three times, writes eleven create-only leaves, and later inspect replays them without labels. It remains descriptive and review-only."
+      "outcome": "The implemented evaluator captured the immutable sources and opened one ordered TEST-label session, but the first query attempt failed with TEST label row is invalid. The session closed, the sibling audit preserved attempts/completions/rows 1/0/0 and source identity, the root remained absent, and no eleven-leaf artifact, metrics, bootstrap, or inspect result exists. Retry, inspect, promotion, and dashboard export are prohibited; Exp448 needs a separate design and preregistration."
     },
     {
       "id": "exp447_closed_cli_flow",
-      "label": "Exp447 closed command boundary",
-      "trigger": "An operator runs the outside-CWD launcher with exactly readiness, evaluate, or inspect.",
+      "label": "Exp447 closed command boundary after immutable failure",
+      "trigger": "The historical outside-CWD launcher ran readiness once and evaluate once at the reviewed commit; all Exp447 lifecycle commands are now permanently closed.",
       "steps": [
         "research_control",
         "exp447_evaluation_primitives",
         "exp446_governance"
       ],
-      "outcome": "The CLI dispatches lazily: readiness remains no-label; evaluate rechecks the clean reviewed commit before the single-use evaluator can load; inspect imports only the source-free replay and publication-identity modules, then builds an immutable identity adapter for semantic replay. It leaves source authority, evaluator, SQLite, and TEST-label capability unloaded. The launcher pins numerical library threads to one. This flow neither authorizes nor performs an official evaluation."
+      "outcome": "The implemented CLI still documents the lazy no-label readiness and source-free inspect boundaries, but the only official evaluation failed at label validation. No Exp447 command may be invoked again; the preserved sibling audit, absent root, and null evaluation/champion/promotion hashes are the authoritative truth."
     }
   ],
   "unknown_relationships": [
     {
       "from": "exp447_evaluation_primitives",
       "to": "private_dashboard_presentation",
-      "relationship": "Sanitized aggregate export after immutable evaluation plus inspect",
+      "relationship": "No Exp447 dashboard export after immutable evaluation failure",
       "status": "unknown",
-      "reason": "The evaluator imports no dashboard/network code and the separate dashboard/exporter is deliberately deferred until truth closeout; no source-evidenced dependency exists in this repository boundary."
+      "reason": "The evaluator imports no dashboard/network code, and Exp447 produced no immutable evaluation artifact. A dashboard cannot receive a payload; any future work requires separately governed Exp448 design."
     }
   ],
   "unknowns": {
