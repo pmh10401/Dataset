@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from contextlib import ExitStack
 from pathlib import Path
 import shutil
 import tempfile
@@ -72,6 +73,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
     def _run_antigravity(
         self, *, changed_index: int | None = None, changed_aggregate: bool = False,
         changed_after_readiness: bool = False, labels: int = 0, workers: int = 11,
+        close_fault: bool = False,
     ) -> tuple[Path, object]:
         """Exercise the real checkpoint/progress path with a 30-record CPU fixture."""
         from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
@@ -113,7 +115,8 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                     progress(stage="active", sequence=index)
                     commit(index, item, _result_antigravity(item))
                 return tuple(_result_antigravity(item) for item in active)
-            with (
+            with ExitStack() as patches:
+                for patch in (
                 mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile),
                 mock.patch.object(runtime, "EXP446_PROFILE_ANTIGRAVITY", profile),
                 mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP446_PROFILE_ANTIGRAVITY", profile),
@@ -126,7 +129,11 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=exp444),
                 mock.patch.object(runtime, "_verify_exp446_predecessor_antigravity", side_effect=verify_exp445),
                 mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
-            ):
+                ):
+                    patches.enter_context(patch)
+                if close_fault:
+                    from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+                    patches.enter_context(mock.patch.object(ProgressWriterAntigravity, "close_antigravity", side_effect=OSError("terminal close fault")))
                 try:
                     outcome = lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
                 except BaseException as error:
@@ -181,6 +188,12 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
             with mock.patch.object(lifecycle_antigravity, "_EXP446_PROFILE_ANTIGRAVITY", profile):
                 with self.assertRaisesRegex(ValueError, "terminal parity"):
                     lifecycle_antigravity.publish_prediction_antigravity()
+
+    def test_terminal_close_fault_never_leaves_publication_marker_antigravity(self) -> None:
+        """Creating eligibility before terminal close would expose a half-closed attempt."""
+        root, outcome = self._run_antigravity(close_fault=True)
+        self.assertIsInstance(outcome, OSError)
+        self.assertFalse((root / "attempts_antigravity/attempt_0000_antigravity/terminal_parity_antigravity.json").exists())
 
 
 if __name__ == "__main__":

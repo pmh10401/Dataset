@@ -981,11 +981,11 @@ def _execute_runtime_antigravity(
         if writer is None:
             raise ValueError("Exp444 active progress writer is unavailable")
         if profile is EXP446_PROFILE_ANTIGRAVITY:
+            # The marker is publication eligibility, so it can be visible only
+            # after progress, PID, and terminal log closeout have succeeded.
+            writer.close_antigravity("complete")
             store.write_terminal_parity_antigravity(
                 _terminal_parity_payload_antigravity(predecessors)
-            )
-            writer.close_exp446_terminal_parity_antigravity(
-                attempt / "terminal_parity_antigravity.json"
             )
         else:
             writer.close_antigravity("complete")
