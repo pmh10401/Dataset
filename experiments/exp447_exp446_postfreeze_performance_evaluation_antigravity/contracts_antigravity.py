@@ -222,6 +222,9 @@ def normalize_dataset_confusion_rows_antigravity(rows: object) -> tuple[DatasetC
         raise ValueError("dataset rows are invalid")
     normalized: list[DatasetConfusionRowAntigravity] = []
     for row in rows:
+        if isinstance(row, DatasetConfusionRowAntigravity):
+            normalized.append(row)
+            continue
         if not isinstance(row, Mapping) or set(row) != {"dataset", *_CONFUSION_KEYS_ANTIGRAVITY}:
             raise ValueError("dataset row keys are invalid")
         normalized.append(DatasetConfusionRowAntigravity(

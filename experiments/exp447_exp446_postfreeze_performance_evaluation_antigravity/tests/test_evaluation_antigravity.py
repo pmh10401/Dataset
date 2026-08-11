@@ -60,7 +60,7 @@ class _SessionAntigravity:
 
 
 class _DependenciesAntigravity:
-    def __init__(self, root: Path, *, second_identity: PublicationIdentityAntigravity | None = None, close_error: Exception | None = None, query_error: Exception | None = None) -> None:
+    def __init__(self, root: Path, *, second_identity: PublicationIdentityAntigravity | None = None, after_identities: list[PublicationIdentityAntigravity] | None = None, close_error: Exception | None = None, query_error: Exception | None = None) -> None:
         self.events: list[str] = []
         self.root = root
         self.identity = _identity_antigravity()
@@ -72,6 +72,7 @@ class _DependenciesAntigravity:
         self.hard = _HardAntigravity("e" * 64, frozenset(flat[:1915] + negative[:303]))
         self.close_error = close_error
         self.query_error = query_error
+        self.after_identities = list(after_identities or [])
 
     def capture_exp446(self) -> PublicationIdentityAntigravity:
         self.events.append("capture_exp446")
@@ -99,7 +100,7 @@ class _DependenciesAntigravity:
 
     def capture_after(self) -> PublicationIdentityAntigravity:
         self.events.append("capture_exp446_post")
-        return self.identity
+        return self.after_identities.pop(0) if self.after_identities else self.identity
 
     def assert_identity(self, identity: PublicationIdentityAntigravity) -> None:
         if identity != self.identity:
@@ -107,7 +108,8 @@ class _DependenciesAntigravity:
 
     def bootstrap(self, baseline: object, comparator: object, name: str, *, draws: object = None) -> dict[str, object]:
         self.events.append(f"bootstrap:{name}")
-        return {"comparator_name": name, "micro_delta": 0.0, "macro_delta": 0.0, "micro_interval": [0.0, 0.0], "macro_interval": [0.0, 0.0]}
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.bootstrap_antigravity import paired_bootstrap_antigravity
+        return paired_bootstrap_antigravity(baseline, comparator, name, draws=draws).to_payload_antigravity()
 
 
 class EvaluationAntigravityTests(unittest.TestCase):
@@ -166,6 +168,21 @@ class EvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual(audit["query_completions"], 0)
             self.assertTrue(audit["label_session_closed"])
 
+    def test_post_label_inspection_failure_matrix_preserves_audit_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        for phase, position in (("post_close", 0), ("post_compute", 1), ("pre_commit", 2)):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"
+                drift = _identity_antigravity(); object.__setattr__(drift, "root_inode", 9)
+                after = [_identity_antigravity(), _identity_antigravity(), _identity_antigravity()]
+                after[position] = drift
+                dependencies = _DependenciesAntigravity(root, after_identities=after)
+                with self.assertRaisesRegex(ValueError, "drift"):
+                    _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                audit = json.loads(next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text(encoding="utf-8"))
+                self.assertTrue(audit["label_session_closed"])
+                self.assertEqual(audit["destination_state"], "absent")
+
     def test_inspect_rejects_semantic_leaf_tamper_even_when_artifact_hash_is_recomputed_antigravity(self) -> None:
         from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _inspect_root_with_dependencies_antigravity
         with tempfile.TemporaryDirectory() as directory:
@@ -175,6 +192,22 @@ class EvaluationAntigravityTests(unittest.TestCase):
             digest = sha256((root / "evaluation_antigravity.json").read_bytes()).hexdigest()
             (root / "artifact_sha256_antigravity.json").write_text('{"evaluation_antigravity.json":"' + digest + '"}\n', encoding="utf-8")
             dependencies = _DependenciesAntigravity(root)
+            with self.assertRaises(ValueError):
+                _inspect_root_with_dependencies_antigravity(dependencies)
+
+    def test_inspect_rejects_real_confusion_tamper_after_artifact_map_rehash_antigravity(self) -> None:
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity, _inspect_root_with_dependencies_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "evaluation_root_antigravity"
+            dependencies = _DependenciesAntigravity(root)
+            _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            _inspect_root_with_dependencies_antigravity(dependencies)
+            confusion_path = root / "confusion_antigravity.json"
+            confusion = json.loads(confusion_path.read_text(encoding="utf-8"))
+            confusion["methods"][1]["tp"] += 1
+            confusion_path.write_text(json.dumps(confusion, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+            artifact = {path.name: sha256(path.read_bytes()).hexdigest() for path in root.iterdir() if path.name != "artifact_sha256_antigravity.json"}
+            (root / "artifact_sha256_antigravity.json").write_text(json.dumps(artifact, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 _inspect_root_with_dependencies_antigravity(dependencies)
 
