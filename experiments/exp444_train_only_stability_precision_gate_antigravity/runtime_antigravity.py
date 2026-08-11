@@ -685,6 +685,17 @@ def _execute_runtime_antigravity(
     executor_factory: Callable[..., object] | None,
     profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
 ) -> RuntimeOutcomeAntigravity:
+    if (
+        profile is not EXP444_PROFILE_ANTIGRAVITY
+        and profile is not EXP445_PROFILE_ANTIGRAVITY
+        and profile is not EXP446_PROFILE_ANTIGRAVITY
+    ):
+        raise ValueError("runtime lifecycle profile is invalid")
+    fixed_profile = profile is EXP445_PROFILE_ANTIGRAVITY or profile is EXP446_PROFILE_ANTIGRAVITY
+    if fixed_profile and (
+        mode != "new" or run_root is not None or attempt_name is not None or executor_factory is not None
+    ):
+        raise ValueError(f"{profile.experiment_id} supports fixed new execution only")
     _validate_reviewed_commit_antigravity(reviewed_commit)
     FROZEN_CONFIG.validate()
     # The official checkpoint must never be created or rebound without the
@@ -693,15 +704,6 @@ def _execute_runtime_antigravity(
     if mode == "new":
         from .provenance_antigravity import verify_exp444_provenance_antigravity
         verify_exp444_provenance_antigravity()
-    if (
-        profile is not EXP444_PROFILE_ANTIGRAVITY
-        and profile is not EXP445_PROFILE_ANTIGRAVITY
-        and profile is not EXP446_PROFILE_ANTIGRAVITY
-    ):
-        raise ValueError("runtime lifecycle profile is invalid")
-    fixed_profile = profile is EXP445_PROFILE_ANTIGRAVITY or profile is EXP446_PROFILE_ANTIGRAVITY
-    if fixed_profile and (mode != "new" or run_root is not None or attempt_name is not None):
-        raise ValueError(f"{profile.experiment_id} supports fixed new execution only")
     root = Path(profile.run_root if fixed_profile else (FROZEN_CONFIG.run_root if run_root is None else run_root))
     context = _context_for_profile_antigravity(profile, reviewed_commit)
     predecessor = (

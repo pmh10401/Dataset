@@ -691,6 +691,18 @@ class ProfileCheckpointContextAntigravity:
     def from_payload(cls, payload: Mapping[str, object]) -> "ProfileCheckpointContextAntigravity":
         return cls(**_exact_payload(payload, set(cls.__dataclass_fields__)))
 
+    @classmethod
+    def from_exp446_payload_antigravity(
+        cls, payload: Mapping[str, object],
+    ) -> "ProfileCheckpointContextAntigravity":
+        """Accept only the closed Exp446 context at its profile-specific boundary."""
+        context = cls.from_payload(payload)
+        if (context.experiment_id, context.schema, context.run_identity) != (
+            "Exp446", "exp446", "exp446-exp445-publication-materialization-repair-antigravity-20260811",
+        ):
+            raise ValueError("Exp446 checkpoint context is invalid")
+        return context
+
     def validate_antigravity(self) -> bool:
         self.__post_init__()
         return True

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+import subprocess
 import unittest
+from unittest import mock
 
 
 _COMMIT_ANTIGRAVITY = "a" * 40
@@ -73,31 +75,68 @@ class Exp446ProfileContractsAntigravityTests(unittest.TestCase):
         payload["label_access_count"] = 0
         with self.assertRaises(ValueError):
             ProfileCheckpointContextAntigravity.from_payload(payload)
-        exp445_payload = context.to_payload()
-        exp445_payload["experiment_id"] = "Exp445"
-        exp445_payload["schema"] = "exp445"
-        with self.assertRaises(ValueError):
-            ProfileCheckpointContextAntigravity.from_payload(exp445_payload)
+        exp445_context = ProfileCheckpointContextAntigravity(
+            "Exp445", "exp445", "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
+            context.scientific_config_sha256, context.environment_lock_sha256,
+            30, 11, 1, _COMMIT_ANTIGRAVITY,
+            "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+            "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
+        )
+        validator = getattr(
+            ProfileCheckpointContextAntigravity,
+            "from_exp446_payload_antigravity",
+            None,
+        )
+        self.assertTrue(callable(validator))
+        with self.assertRaisesRegex(ValueError, "^Exp446 checkpoint context is invalid$"):
+            validator(exp445_context.to_payload())
+        self.assertEqual(validator(context.to_payload()), context)
 
-    def test_exp446_runtime_rejects_nonfixed_mode_root_and_attempt_before_mutation_antigravity(self) -> None:
-        """Routing overrides cannot select resume or a caller-owned filesystem target."""
+    def test_exp446_runtime_rejects_every_override_before_live_gates_antigravity(self) -> None:
+        """Fixed-profile routing must run before predecessor, source, or root work."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
 
         profile = self._profile_antigravity()
-        for mode, root, attempt in (
-            ("resume", None, None),
-            ("new", Path("/tmp/exp446_override_antigravity"), None),
-            ("new", None, "attempt_0001_antigravity"),
+        reviewed_commit = subprocess.check_output(
+            ("git", "rev-parse", "HEAD"), text=True,
+        ).strip()
+        expected = "Exp446 supports fixed new execution only"
+        for mode, root, attempt, executor in (
+            ("resume", None, None, None),
+            ("new", Path("/tmp/exp446_override_antigravity"), None, None),
+            ("new", None, "attempt_0001_antigravity", None),
+            ("new", None, None, object()),
         ):
-            with self.subTest(mode=mode, root=root, attempt=attempt), self.assertRaises(ValueError):
-                runtime._execute_runtime_antigravity(
-                    reviewed_commit=_COMMIT_ANTIGRAVITY,
-                    mode=mode,
-                    attempt_name=attempt,
-                    run_root=root,
-                    executor_factory=None,
-                    profile=profile,
-                )
+            with self.subTest(mode=mode, root=root, attempt=attempt, executor=executor is not None):
+                guards = {
+                    "review": mock.Mock(side_effect=AssertionError("review gate reached")),
+                    "predecessor": mock.Mock(side_effect=AssertionError("predecessor reached")),
+                    "source": mock.Mock(side_effect=AssertionError("source reached")),
+                    "root": mock.Mock(side_effect=AssertionError("root reached")),
+                }
+                with (
+                    mock.patch.object(runtime, "_validate_reviewed_commit_antigravity", guards["review"]),
+                    mock.patch.object(runtime, "_verify_exp446_predecessor_antigravity", guards["predecessor"]),
+                    mock.patch.object(runtime, "_load_source_inputs_antigravity", guards["source"]),
+                    mock.patch.object(runtime, "_attempt_root_antigravity", guards["root"]),
+                ):
+                    try:
+                        runtime._execute_runtime_antigravity(
+                            reviewed_commit=reviewed_commit,
+                            mode=mode,
+                            attempt_name=attempt,
+                            run_root=root,
+                            executor_factory=executor,
+                            profile=profile,
+                        )
+                    except ValueError as error:
+                        actual = str(error)
+                    except AssertionError as error:
+                        actual = str(error)
+                self.assertEqual(actual, expected)
+                self.assertEqual({name: guard.call_count for name, guard in guards.items()}, {
+                    "review": 0, "predecessor": 0, "source": 0, "root": 0,
+                })
 
 
 if __name__ == "__main__":

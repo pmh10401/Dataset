@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T02:29:24Z",
-  "generated_from_commit": "a295bd63c2233bc1a0de56db0d25b73be339879f",
+  "generated_at": "2026-08-11T02:41:33Z",
+  "generated_from_commit": "2e2a7ea7e6271f684e5e86424026d4eaae6f3029",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1024,7 +1024,7 @@
         "Exactly Exp444, Exp445, and Exp446 reviewed singleton identities are accepted; caller-minted equal profiles and altered identities are rejected by identity.",
         "Exp446 checkpoint context binds schema, reviewed-design and preregistration hashes, CPU/11/inner-1, and label access 0 without changing legacy Exp444 or Exp445 context bytes.",
         "Exp446 readiness validates clean reviewed HEAD, document/environment/scientific authority, source DB/link authority, immutable Task 4 Exp445 predecessor authority, and absent non-symlink root before allocation.",
-        "Exp446 runtime is fixed to new, its fixed root, and attempt_0000_antigravity; no caller root, attempt, backend, or worker routing is accepted."
+        "Exp446 runtime is fixed to new, its fixed root, and attempt_0000_antigravity; no caller root, attempt, executor factory, backend, or worker routing is accepted."
       ],
       "evidence": [
         {
@@ -1042,6 +1042,10 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
           "symbol": "class ProfileCheckpointContextAntigravity:"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "def from_exp446_payload_antigravity("
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/readiness_antigravity.py",
@@ -6318,7 +6322,7 @@
         "exp445_predecessor_authority",
         "sqlite_store"
       ],
-      "outcome": "Readiness requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, Task 4 descriptor-pinned Exp445 verifier success, and an absent non-symlink Exp446 root. Runtime accepts only the same singleton with new, the fixed root, and attempt_0000_antigravity; no root is allocated by this contract task."
+      "outcome": "Readiness requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, Task 4 descriptor-pinned Exp445 verifier success, and an absent non-symlink Exp446 root. Runtime accepts only the same singleton with new, the fixed root, and attempt_0000_antigravity, rejecting caller executor factories before live gates; no root is allocated by this contract task."
     }
   ],
   "unknown_relationships": [],
