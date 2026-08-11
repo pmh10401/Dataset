@@ -42,18 +42,10 @@ Exp446 root, CLI, publication, manifest, prediction 및 artifacts는 read-only�
 evaluation도 descriptive-only이며 champion, promotion, scientific winner, operational alert,
 same-experiment reselection을 허용하지 않는다.
 
-## Private dashboard handoff (future-only)
+## 닫힌 dashboard 경계
 
-Immutable evaluation과 label-free inspect의 independent truth closeout 뒤에만, clean separate
-site repository가 private owner-only observatory에 aggregate-only payload를 제시할 수 있다.
-evaluator는 network/dashboard code를 import하지 않고, exporter는
-`exp447.public-evaluation.v1`의 four aggregate comparisons, aggregate diagnostic counts, three
-paired-bootstrap delta/CI rows 및 decision만 제공한다. Raw TEST label, index, dataset name/list,
-local path, hash, log, checkpoint, DB name, secret 및 per-dataset row는 제공하지 않는다.
-
-Live status는 scientific evaluator와 별도이며 exact 12-field `PublicExperimentStatus`
-allowlist만 사용한다: `experiment_id`, `display_name`, `status`, `stage`, `completed`, `total`,
-`success`, `errors`, `backend`, `throughput`, `eta_seconds`, `updated_at`; Exp447 `total=1117`이다.
-Dashboard failure는 scientific artifact를 바꾸거나 evaluate retry/reevaluation을 허용하지 않는다.
-Exp447에는 dashboard로 제시할 immutable evaluation artifact 자체가 없다. 다음 연구 작업은
-Exp448의 새 설계와 사전등록뿐이며 Exp447 command는 다시 실행하지 않는다.
+Exp447은 `exp447.public-evaluation.v1` 또는 다른 dashboard payload를 절대 만들 수 없다.
+유일한 evaluate가 valid TEST label row와 immutable result artifact 이전에 실패했고 inspect도
+영구 금지이기 때문이다. 사이트 repository·dashboard·exporter는 이 실패를 다시 해석하거나
+표시할 권한이 없다. dashboard에 도달할 수 있는 것은 별도 Exp448의 새 설계·사전등록·독립
+immutable truth closeout을 통과한 근거뿐이며, Exp447의 partial failure를 재사용할 수 없다.

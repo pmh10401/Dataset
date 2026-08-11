@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-11T15:53:52Z",
+  "updated_at": "2026-08-12T01:32:42+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -250,9 +250,9 @@
       "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
       "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
       "preregistration_sha256": "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd",
-      "runbook_sha256": "42b95c09ce126132b694dbbb0585ccef53e0ba95e306c8bef4543b0a6beec94d",
+      "runbook_sha256": "55242be0502a3469549596bfbb4dc620c700c74788d3a62ba2d2def59c2193cb",
       "pre_attempt_runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
-      "implementation_report_sha256": "b98835a319e39d3b295e80be31188ddc6aae6cb99bbcb9edd417188344fd6904",
+      "implementation_report_sha256": "155139a3d8f1f842613ac794bf75a5add8f0f90cbffa057a3b8cc9a961976896",
       "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
       "fresh_sol_high_review": {"verdict": "ship", "critical_findings": 0, "important_findings": 0},
       "verification_tests": {"exp447": [66, 66], "predecessors": {"Exp444": 206, "Exp445": 39, "Exp446": 50}},
@@ -279,7 +279,7 @@
       "database_nlink": 1,
       "official_lifecycle": {"readiness_invocations": 1, "readiness_exit_code": 0, "evaluate_invocations": 1, "evaluate_exit_code": 1, "inspect_invocations": 0, "label_boundary_entered": true, "label_session_opened": true, "query_attempts": 1, "query_completions": 0, "label_rows": 0, "label_session_closed": true, "error_type": "ValueError", "error": "TEST label row is invalid", "audit_path": "/Users/mac/Documents/Dataset/evaluation_audit_89aff47cdd7c43cd919a34f81982bc8b_antigravity.json", "audit_sha256": "9f8f7d3d9b92670988ca1d0bb689711d12ef1536777881f18991143a090a2b97", "audit_inode": 19812443, "audit_nlink": 1, "destination_state": "absent", "retry_or_inspect_permitted": false},
       "post_freeze_forensic_storage_aggregate": {"date": "2026-08-12", "test_label_storage_type": "SQLite TEXT exact values", "label_0_count": 221284, "label_1_count": 4516, "instance_index_storage_type": "integer", "dataset_names_or_positions_used": false},
-      "dashboard_presentation": "not_eligible_no_immutable_evaluation_artifact_dashboard_cannot_change_artifacts_or_allow_reevaluation",
+      "dashboard_presentation": "permanently_closed_no_exp447_export_only_separately_governed_Exp448_evidence_may_reach_dashboard",
       "next_action": "design_and_preregister_Exp448_immutable_failure_analysis"
     }
   ]

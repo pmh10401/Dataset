@@ -1017,9 +1017,9 @@
     "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
     "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
     "preregistration_sha256": "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd",
-    "runbook_sha256": "42b95c09ce126132b694dbbb0585ccef53e0ba95e306c8bef4543b0a6beec94d",
+    "runbook_sha256": "55242be0502a3469549596bfbb4dc620c700c74788d3a62ba2d2def59c2193cb",
     "pre_attempt_runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
-    "implementation_report_sha256": "b98835a319e39d3b295e80be31188ddc6aae6cb99bbcb9edd417188344fd6904",
+    "implementation_report_sha256": "155139a3d8f1f842613ac794bf75a5add8f0f90cbffa057a3b8cc9a961976896",
     "implementation_verification": {
       "functional_commit": "8f5dbec4e87e093a255d1f065de930b85b141e0c",
       "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
@@ -1097,11 +1097,10 @@
     "automatic_champion_promotion": false,
     "promotion_allowed": false,
     "dashboard_presentation": {
-      "status": "not_eligible_no_immutable_evaluation_artifact",
-      "site_url": "https://timeseries-research-observatory.pmh10401.chatgpt.site",
-      "payload_schema": "exp447.public-evaluation.v1",
-      "public_status_allowlist": ["experiment_id", "display_name", "status", "stage", "completed", "total", "success", "errors", "backend", "throughput", "eta_seconds", "updated_at"],
-      "total": 1117,
+      "status": "permanently_closed_no_exp447_dashboard_export",
+      "exp447_public_payload_permitted": false,
+      "exp447_public_payload_schema": null,
+      "future_dashboard_authority": "separately_governed_Exp448_only",
       "scientific_or_promotion_gate": false,
       "dashboard_failure_changes_scientific_artifacts": false,
       "dashboard_failure_allows_evaluation_retry": false
