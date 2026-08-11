@@ -4,7 +4,7 @@
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp444-train-only-stability-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "100a346af25fcde9c56d19f796c98c46407d3d60",
+  "last_verified_commit": "eb16af0f83dc898f550d40087113d2d98946257e",
   "active_experiment": "Exp446",
   "active_phase": "implementation_verified_awaiting_official_readiness",
   "status": "implementation_verified_awaiting_official_readiness",
@@ -175,7 +175,7 @@
       "exp445_seconds": 1.353,
         "exp445_exit_code": 0,
       "exp446_tests": 48,
-      "exp446_seconds": 10.101,
+      "exp446_seconds": 10.625,
         "exp446_exit_code": 0
       },
       "exp445_predecessor_verified": true,
