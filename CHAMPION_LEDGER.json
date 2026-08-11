@@ -245,12 +245,14 @@
     },
     {
       "experiment": "Exp447",
-      "status": "implementation_verified_awaiting_official_readiness",
-      "reason": "Exp447 implementation for immutable Exp446 post-freeze evaluation is verified and fresh-Sol-shipped, but no official readiness/evaluation/inspect attempt or TEST-label access has run. Any future coherent evaluation is descriptive_complete_no_promotion: it cannot update the champion or pending candidate, select a scientific winner, promote an operational alert, or reselect candidates within Exp447.",
+      "status": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "reason": "Exp447 readiness passed once, but its one allowed evaluate invocation failed at the TEST-label boundary with ValueError: TEST label row is invalid. The root remains absent, inspect ran zero times, and Exp447 is permanently ineligible for retry, inspection, champion/pending-candidate change, scientific winner selection, alert promotion, dashboard payload, or same-experiment reselection.",
       "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
       "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
       "preregistration_sha256": "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd",
-      "runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
+      "runbook_sha256": "42b95c09ce126132b694dbbb0585ccef53e0ba95e306c8bef4543b0a6beec94d",
+      "pre_attempt_runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
+      "implementation_report_sha256": "b98835a319e39d3b295e80be31188ddc6aae6cb99bbcb9edd417188344fd6904",
       "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
       "fresh_sol_high_review": {"verdict": "ship", "critical_findings": 0, "important_findings": 0},
       "verification_tests": {"exp447": [66, 66], "predecessors": {"Exp444": 206, "Exp445": 39, "Exp446": 50}},
@@ -258,12 +260,13 @@
       "artifact_root": "/Users/mac/Documents/Dataset/exp447_exp446_postfreeze_performance_evaluation_antigravity_20260811",
       "prediction_sha256": null,
       "evaluation": null,
+      "evaluation_sha256": null,
       "champion_sha256": null,
       "promotion_sha256": null,
-      "test_labels_opened": false,
+      "test_labels_opened": true,
       "label_access_count": 0,
       "scientific_success_criterion": null,
-      "evaluation_status": "not_started",
+      "evaluation_status": "failed_immutable_no_retry_no_result_artifact",
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
@@ -274,7 +277,10 @@
       "official_root_absent_non_symlink": true,
       "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
       "database_nlink": 1,
-      "dashboard_presentation": "deferred_private_aggregate_only_post_evaluation_not_scientific_or_promotion_gate_dashboard_failure_cannot_change_artifacts_or_allow_reevaluation"
+      "official_lifecycle": {"readiness_invocations": 1, "readiness_exit_code": 0, "evaluate_invocations": 1, "evaluate_exit_code": 1, "inspect_invocations": 0, "label_boundary_entered": true, "label_session_opened": true, "query_attempts": 1, "query_completions": 0, "label_rows": 0, "label_session_closed": true, "error_type": "ValueError", "error": "TEST label row is invalid", "audit_path": "/Users/mac/Documents/Dataset/evaluation_audit_89aff47cdd7c43cd919a34f81982bc8b_antigravity.json", "audit_sha256": "9f8f7d3d9b92670988ca1d0bb689711d12ef1536777881f18991143a090a2b97", "audit_inode": 19812443, "audit_nlink": 1, "destination_state": "absent", "retry_or_inspect_permitted": false},
+      "post_freeze_forensic_storage_aggregate": {"date": "2026-08-12", "test_label_storage_type": "SQLite TEXT exact values", "label_0_count": 221284, "label_1_count": 4516, "instance_index_storage_type": "integer", "dataset_names_or_positions_used": false},
+      "dashboard_presentation": "not_eligible_no_immutable_evaluation_artifact_dashboard_cannot_change_artifacts_or_allow_reevaluation",
+      "next_action": "design_and_preregister_Exp448_immutable_failure_analysis"
     }
   ]
 }

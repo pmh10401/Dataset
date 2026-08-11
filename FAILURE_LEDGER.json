@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-11T00:00:00Z",
+  "updated_at": "2026-08-12T01:10:46+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -291,6 +291,42 @@
         "immutable": true
       },
       "lesson": "Exp445 completed the frozen scientific replay without runtime errors or label access, but publication rejected recursively frozen nested tuple control rows. Preserve this as immutable engineering publication failure evidence, not a failed scientific result; Exp446 may change only recursive JSON materialization at the encoding boundary and must re-prove all 30 wrapper SHA values and the aggregate."
+    },
+    {
+      "experiment": "Exp447",
+      "category": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "evidence": "/Users/mac/Documents/Dataset/evaluation_audit_89aff47cdd7c43cd919a34f81982bc8b_antigravity.json",
+      "facts": {
+        "reviewed_commit": "33e7dc9c18c179a64bc0020b0bb939c5e4caa394",
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "inspect_invocations": 0,
+        "label_boundary_entered": true,
+        "label_session_opened": true,
+        "query_attempts": 1,
+        "query_completions": 0,
+        "label_rows": 0,
+        "label_session_closed": true,
+        "label_session_state": "closed",
+        "error_type": "ValueError",
+        "error": "TEST label row is invalid",
+        "audit_sha256": "9f8f7d3d9b92670988ca1d0bb689711d12ef1536777881f18991143a090a2b97",
+        "audit_inode": 19812443,
+        "audit_nlink": 1,
+        "audit_schema": "exp447_evaluation_audit",
+        "audit_phase": "label_snapshot",
+        "destination_state": "absent",
+        "run_root_exists": false,
+        "inspect_permitted": false,
+        "retry_permitted": false,
+        "evaluation_sha256": null,
+        "champion_sha256": null,
+        "promotion_sha256": null,
+        "post_freeze_forensic_storage_aggregate": {"date": "2026-08-12", "purpose": "failure_analysis_only_not_prediction_or_readiness", "test_label_storage_type": "SQLite TEXT exact values", "label_0_count": 221284, "label_1_count": 4516, "instance_index_storage_type": "integer", "dataset_names_or_positions_used": false}
+      },
+      "lesson": "The one allowed Exp447 evaluation stopped before a valid TEST-label row or result artifact. Preserve the sibling audit and absent root as immutable engineering failure evidence; never retry Exp447 or use partial label access for metrics, selection, promotion, or dashboard output. A new Exp448 design and preregistration is required before any further failure analysis or evaluation work."
     }
   ]
 }

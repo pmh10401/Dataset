@@ -2,29 +2,41 @@
 
 ## 현재 상태
 
-Exp447은 `design_approved_implementation_planned`다. reviewed implementation과 fresh
-Sol High `ship` 검토가 없으므로 아래 명령은 고정된 미래 operator surface일 뿐 지금은
-unavailable이다. 이 문서는 TEST label 접근, DB 열기, Exp446 root 변경 또는 evaluation
-실행을 허가하지 않는다.
+Exp447은 `official_readiness_passed_evaluation_failed_immutable_no_retry`다. fresh Sol High
+`ship` 검토 뒤 readiness는 정확히 한 번 성공했지만 evaluate는 정확히 한 번
+`ValueError: TEST label row is invalid`로 실패했다. Exp447 root는 생성되지 않았고 sibling
+failure audit만 남았다. 이 문서는 TEST label 접근, DB 열기, Exp446 root 변경 또는 Exp447
+명령 재실행을 허가하지 않는다.
 
-## 고정된 미래 명령
+## 실행된 명령과 영구 중단
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py evaluate --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py inspect
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py readiness --reviewed-commit 33e7dc9c18c179a64bc0020b0bb939c5e4caa394  # executed once, exit 0
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py evaluate --reviewed-commit 33e7dc9c18c179a64bc0020b0bb939c5e4caa394   # executed once, exit 1; no retry
 ```
 
-`REVIEWED_COMMIT`은 clean current HEAD와 정확히 같은 operator-supplied 40-hex commit이다.
-`new`, `resume`, `retry`, 임의 root/hash/source/lane/threshold/budget override는 없다.
+`inspect`는 실행하지 않았으며, 실패 뒤 실행할 수 없다. `new`, `resume`, `retry`, 임의
+root/hash/source/lane/threshold/budget override는 처음부터 없었고, 이제 모든 Exp447 lifecycle
+명령은 영구 금지다.
 
-## 미래 실행 순서와 불변 경계
+## 실패 경계와 보존 증거
 
-허가된 구현 이후의 유일한 순서는 `readiness -> evaluate -> inspect`다. `readiness`는
-Exp447 root absence, clean reviewed HEAD, immutable Exp446/Exp404 bytes, database SHA/inode/nlink,
-두 번의 동일한 Exp446 inspection 및 frozen population을 검증한다. `evaluate`만 ordered
-1,117-query/195,900-row TEST-label snapshot을 lazy read-only로 열 수 있으며 single-use다.
-`inspect`는 frozen result bytes만 읽고 SQLite, evaluator label route 및 worker를 열지 않는다.
+Readiness는 Exp447 root absence, clean reviewed HEAD, immutable Exp446/Exp404 bytes, database
+SHA/inode/nlink, 두 번의 동일한 Exp446 inspection 및 frozen population을 통과했다. 이어진
+단 한 번의 evaluate는 label snapshot에서 실패했다. audit은 label session이 열리고 닫혔으며
+`query_attempts=1`, `query_completions=0`, `label_rows=0`임을 기록한다. 결과 root는 여전히
+absent/non-symlink이므로 evaluation artifact와 source-free inspect 대상은 없다.
+
+실패 audit 경로는 다음이며 SHA-256은
+`9f8f7d3d9b92670988ca1d0bb689711d12ef1536777881f18991143a090a2b97`이다.
+
+```text
+/Users/mac/Documents/Dataset/evaluation_audit_89aff47cdd7c43cd919a34f81982bc8b_antigravity.json
+```
+
+2026-08-12의 한 번의 사후 forensic aggregate SQL 확인은 raw DB label storage가 exact TEXT
+`'0'=221284`, `'1'=4516`이고 `instance_index`가 integer임을 기록했다. 이는 prediction,
+readiness 또는 Exp447 재시도 근거가 아니며 dataset 이름·위치·개별 label은 사용하지 않았다.
 
 Exp446 root, CLI, publication, manifest, prediction 및 artifacts는 read-only다. coherent
 evaluation도 descriptive-only이며 champion, promotion, scientific winner, operational alert,
@@ -43,3 +55,5 @@ Live status는 scientific evaluator와 별도이며 exact 12-field `PublicExperi
 allowlist만 사용한다: `experiment_id`, `display_name`, `status`, `stage`, `completed`, `total`,
 `success`, `errors`, `backend`, `throughput`, `eta_seconds`, `updated_at`; Exp447 `total=1117`이다.
 Dashboard failure는 scientific artifact를 바꾸거나 evaluate retry/reevaluation을 허용하지 않는다.
+Exp447에는 dashboard로 제시할 immutable evaluation artifact 자체가 없다. 다음 연구 작업은
+Exp448의 새 설계와 사전등록뿐이며 Exp447 command는 다시 실행하지 않는다.
