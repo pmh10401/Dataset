@@ -446,8 +446,9 @@ _EXP446_TERMINAL_LEAVES_ANTIGRAVITY = (
     *(f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json" for index in range(30)),
 )
 _EXP446_TERMINAL_EXPECTATIONS_ANTIGRAVITY = (
-    ("InsectEPGSmallTrain_normal_1",76,601),("InsectEPGRegularTrain_normal_3",41,601),("InsectEPGSmallTrain_normal_3",36,601),("EOGVerticalSignal_normal_8",48,1250),("PowerCons_normal_1",144,144),("Rock_normal_4",15,2844),("EOGHorizontalSignal_normal_12",47,1250),("NonInvasiveFetalECGThorax1_normal_8",72,750),("Adiac_normal_19",20,176),("EOGVerticalSignal_normal_11",48,1250),("AllGestureWiimoteZ_normal_5",5,49),("Rock_normal_1",20,2844),("Ham_normal_1",82,431),("MedicalImages_normal_2",52,99),("InlineSkate_normal_6",78,1882),("InsectWingbeatSound_normal_6",160,256),("FiftyWords_normal_19",10,270),("Lightning7_normal_1",13,319),("ArrowHead_normal_1",52,251),("ShapesAll_normal_48",16,512),("FiftyWords_normal_12",17,270),("DodgerLoopDay_normal_4",15,288),("CricketY_normal_11",52,300),("InlineSkate_normal_7",49,1882),("CricketY_normal_9",52,300),("OSULeaf_normal_3",60,427),("ShapesAll_normal_36",16,512),("OSULeaf_normal_2",67,427),("DodgerLoopDay_normal_1",18,288),("CricketY_normal_3",52,300),
+    ("InsectEPGSmallTrain_normal_1",49,1,76,601),("InsectEPGRegularTrain_normal_3",49,2,41,601),("InsectEPGSmallTrain_normal_3",49,3,36,601),("EOGVerticalSignal_normal_8",4,4,48,1250),("PowerCons_normal_1",147,5,144,144),("Rock_normal_4",0,6,15,2844),("EOGHorizontalSignal_normal_12",49,7,47,1250),("NonInvasiveFetalECGThorax1_normal_8",49,8,72,750),("Adiac_normal_19",2,9,20,176),("EOGVerticalSignal_normal_11",49,10,48,1250),("AllGestureWiimoteZ_normal_5",6,11,5,49),("Rock_normal_1",49,12,20,2844),("Ham_normal_1",5,13,82,431),("MedicalImages_normal_2",11,14,52,99),("InlineSkate_normal_6",19,15,78,1882),("InsectWingbeatSound_normal_6",198,16,160,256),("FiftyWords_normal_19",49,17,10,270),("Lightning7_normal_1",2,18,13,319),("ArrowHead_normal_1",9,19,52,251),("ShapesAll_normal_48",2,20,16,512),("FiftyWords_normal_12",1,21,17,270),("DodgerLoopDay_normal_4",49,22,15,288),("CricketY_normal_11",49,23,52,300),("InlineSkate_normal_7",49,24,49,1882),("CricketY_normal_9",6,25,52,300),("OSULeaf_normal_3",7,26,60,427),("ShapesAll_normal_36",49,27,16,512),("OSULeaf_normal_2",0,28,67,427),("DodgerLoopDay_normal_1",49,29,18,288),("CricketY_normal_3",5,30,52,300),
 )
+_EXP446_TERMINAL_ABSTAINED_SEQUENCES_ANTIGRAVITY = frozenset({8, 10, 14, 24})
 
 
 @dataclass(frozen=True)
@@ -547,10 +548,12 @@ def validate_exp446_terminal_authority_bytes_antigravity(
         raise ValueError("Exp446 terminal authority record dimensions are invalid")
     expected_rows = []
     for index, (result, expected) in enumerate(zip(results, expectations)):
-        dataset, train_count, raw_length = expected
-        if (result.candidate.dataset, result.candidate.instance_index, result.candidate.raw_length) != (dataset, index, raw_length):
+        dataset, instance_index, original_rank, train_count, raw_length = expected
+        if (result.candidate.dataset, result.candidate.instance_index, result.candidate.original_rank, result.candidate.raw_length) != (dataset, instance_index, original_rank, raw_length):
             raise ValueError("Exp446 terminal authority record dimensions are invalid")
         status = "abstained" if result.lane == "unstable_review" else "success"
+        if (status == "abstained") != (result.candidate.original_rank - 1 in _EXP446_TERMINAL_ABSTAINED_SEQUENCES_ANTIGRAVITY):
+            raise ValueError("Exp446 terminal authority record status is invalid")
         expected_rows.append((train_count, 1, raw_length, status))
     if sum(status == "abstained" for _train_count, _test_count, _raw_length, status in expected_rows) != 4:
         raise ValueError("Exp446 terminal authority record status is invalid")

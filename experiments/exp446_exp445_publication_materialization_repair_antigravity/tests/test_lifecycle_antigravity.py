@@ -27,23 +27,23 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.contract
 _COMMIT_ANTIGRAVITY = "a" * 40
 _CAPTURED_POOLS_ANTIGRAVITY: list["_CapturingProcessPoolExecutorAntigravity"] = []
 _FROZEN_TERMINAL_SPECS_ANTIGRAVITY = (
-    ("InsectEPGSmallTrain_normal_1", 76, 601), ("InsectEPGRegularTrain_normal_3", 41, 601),
-    ("InsectEPGSmallTrain_normal_3", 36, 601), ("EOGVerticalSignal_normal_8", 48, 1250),
-    ("PowerCons_normal_1", 144, 144), ("Rock_normal_4", 15, 2844),
-    ("EOGHorizontalSignal_normal_12", 47, 1250), ("NonInvasiveFetalECGThorax1_normal_8", 72, 750),
-    ("Adiac_normal_19", 20, 176), ("EOGVerticalSignal_normal_11", 48, 1250),
-    ("AllGestureWiimoteZ_normal_5", 5, 49), ("Rock_normal_1", 20, 2844),
-    ("Ham_normal_1", 82, 431), ("MedicalImages_normal_2", 52, 99),
-    ("InlineSkate_normal_6", 78, 1882), ("InsectWingbeatSound_normal_6", 160, 256),
-    ("FiftyWords_normal_19", 10, 270), ("Lightning7_normal_1", 13, 319),
-    ("ArrowHead_normal_1", 52, 251), ("ShapesAll_normal_48", 16, 512),
-    ("FiftyWords_normal_12", 17, 270), ("DodgerLoopDay_normal_4", 15, 288),
-    ("CricketY_normal_11", 52, 300), ("InlineSkate_normal_7", 49, 1882),
-    ("CricketY_normal_9", 52, 300), ("OSULeaf_normal_3", 60, 427),
-    ("ShapesAll_normal_36", 16, 512), ("OSULeaf_normal_2", 67, 427),
-    ("DodgerLoopDay_normal_1", 18, 288), ("CricketY_normal_3", 52, 300),
+    ("InsectEPGSmallTrain_normal_1", 49, 1, 76, 601), ("InsectEPGRegularTrain_normal_3", 49, 2, 41, 601),
+    ("InsectEPGSmallTrain_normal_3", 49, 3, 36, 601), ("EOGVerticalSignal_normal_8", 4, 4, 48, 1250),
+    ("PowerCons_normal_1", 147, 5, 144, 144), ("Rock_normal_4", 0, 6, 15, 2844),
+    ("EOGHorizontalSignal_normal_12", 49, 7, 47, 1250), ("NonInvasiveFetalECGThorax1_normal_8", 49, 8, 72, 750),
+    ("Adiac_normal_19", 2, 9, 20, 176), ("EOGVerticalSignal_normal_11", 49, 10, 48, 1250),
+    ("AllGestureWiimoteZ_normal_5", 6, 11, 5, 49), ("Rock_normal_1", 49, 12, 20, 2844),
+    ("Ham_normal_1", 5, 13, 82, 431), ("MedicalImages_normal_2", 11, 14, 52, 99),
+    ("InlineSkate_normal_6", 19, 15, 78, 1882), ("InsectWingbeatSound_normal_6", 198, 16, 160, 256),
+    ("FiftyWords_normal_19", 49, 17, 10, 270), ("Lightning7_normal_1", 2, 18, 13, 319),
+    ("ArrowHead_normal_1", 9, 19, 52, 251), ("ShapesAll_normal_48", 2, 20, 16, 512),
+    ("FiftyWords_normal_12", 1, 21, 17, 270), ("DodgerLoopDay_normal_4", 49, 22, 15, 288),
+    ("CricketY_normal_11", 49, 23, 52, 300), ("InlineSkate_normal_7", 49, 24, 49, 1882),
+    ("CricketY_normal_9", 6, 25, 52, 300), ("OSULeaf_normal_3", 7, 26, 60, 427),
+    ("ShapesAll_normal_36", 49, 27, 16, 512), ("OSULeaf_normal_2", 0, 28, 67, 427),
+    ("DodgerLoopDay_normal_1", 49, 29, 18, 288), ("CricketY_normal_3", 5, 30, 52, 300),
 )
-_FROZEN_ABSTAINED_INDICES_ANTIGRAVITY = frozenset({8, 10, 14, 24})
+_FROZEN_ABSTAINED_SEQUENCES_ANTIGRAVITY = frozenset({8, 10, 14, 24})
 
 
 class _CapturingProcessPoolExecutorAntigravity(ProcessPoolExecutor):
@@ -78,15 +78,15 @@ def _frozen_terminal_inputs_antigravity() -> tuple[CandidateInputAntigravity, ..
     """Real terminal identities/dimensions without any Dataset or label access."""
     return tuple(
         CandidateInputAntigravity(
-            SourceCandidateAntigravity(dataset, index, raw_length, (1, 2), index + 1),
+            SourceCandidateAntigravity(dataset, instance_index, raw_length, (1, 2), original_rank),
             tuple(range(train_count)), np.zeros((train_count, raw_length), dtype="<f4"), np.zeros(raw_length, dtype="<f4"),
         )
-        for index, (dataset, train_count, raw_length) in enumerate(_FROZEN_TERMINAL_SPECS_ANTIGRAVITY)
+        for dataset, instance_index, original_rank, train_count, raw_length in _FROZEN_TERMINAL_SPECS_ANTIGRAVITY
     )
 
 
 def _result_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityResultAntigravity:
-    abstained = item.candidate.instance_index in _FROZEN_ABSTAINED_INDICES_ANTIGRAVITY
+    abstained = item.candidate.original_rank - 1 in _FROZEN_ABSTAINED_SEQUENCES_ANTIGRAVITY
     scores = (
         DepthViewScoreAntigravity(1, 0.0 if abstained else 2.0, 1.0, not abstained, 0.0 if abstained else 2.0, 0.5),
         DepthViewScoreAntigravity(2, 0.0 if abstained else 2.0, 1.0, not abstained, 0.0 if abstained else 2.0, 0.5),
@@ -100,7 +100,7 @@ def _result_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityRe
 
 def _child_value_error_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityResultAntigravity:
     """Picklable spawned-worker fixture: errors must cross a real Future."""
-    if item.candidate.instance_index == 0:
+    if item.candidate.original_rank == 1:
         raise ValueError("scorer child fixture fault")
     time.sleep(0.5)
     return _result_antigravity(item)
@@ -108,7 +108,7 @@ def _child_value_error_antigravity(item: CandidateInputAntigravity) -> Candidate
 
 def _child_transport_crash_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityResultAntigravity:
     """Picklable spawned-worker fixture: one child exits before serializing a result."""
-    if item.candidate.instance_index == 0:
+    if item.candidate.original_rank == 1:
         os._exit(47)
     time.sleep(0.5)
     return _result_antigravity(item)
