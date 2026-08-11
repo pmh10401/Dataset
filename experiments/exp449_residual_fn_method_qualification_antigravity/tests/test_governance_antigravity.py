@@ -1,6 +1,7 @@
 import json
 import re
 import unittest
+from html.parser import HTMLParser
 from pathlib import Path
 
 
@@ -24,7 +25,76 @@ def strict_json_antigravity(path: Path):
     return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_antigravity)
 
 
+class PlanCheckboxParserAntigravity(HTMLParser):
+    """Collect task-heading and step checkbox states from the implementation plan."""
+
+    def __init__(self):
+        super().__init__()
+        self._heading_depth = 0
+        self._heading_parts = []
+        self._heading_checkboxes = []
+        self._current_task = None
+        self.tasks = {}
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag == "h3":
+            self._heading_depth += 1
+            self._heading_parts = []
+            self._heading_checkboxes = []
+            return
+        if tag != "input" or attributes.get("type") != "checkbox":
+            return
+        checkbox = {"disabled": "disabled" in attributes, "checked": "checked" in attributes}
+        if self._heading_depth:
+            self._heading_checkboxes.append(checkbox)
+        elif self._current_task is not None:
+            self.tasks[self._current_task]["steps"].append(checkbox)
+
+    def handle_data(self, data):
+        if self._heading_depth:
+            self._heading_parts.append(data)
+
+    def handle_endtag(self, tag):
+        if tag != "h3" or not self._heading_depth:
+            return
+        self._heading_depth -= 1
+        match = re.fullmatch(r"\s*Task ([1-8]):.*", "".join(self._heading_parts), flags=re.DOTALL)
+        if match:
+            task_number = int(match.group(1))
+            self.tasks[task_number] = {"heading": self._heading_checkboxes, "steps": []}
+            self._current_task = task_number
+
+
+def parse_plan_checkboxes_antigravity(path: Path):
+    parser = PlanCheckboxParserAntigravity()
+    parser.feed(path.read_text(encoding="utf-8"))
+    parser.close()
+    return parser.tasks
+
+
 class Exp449GovernanceTest(unittest.TestCase):
+    def test_html_plan_records_only_verified_task_and_step_progress_antigravity(self):
+        tasks = parse_plan_checkboxes_antigravity(
+            Path("docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html")
+        )
+        self.assertEqual(set(tasks), set(range(1, 9)))
+        for task_number, state in tasks.items():
+            self.assertEqual(len(state["heading"]), 1, f"Task {task_number} requires one task-level checkbox")
+            self.assertTrue(state["heading"][0]["disabled"])
+            self.assertEqual(state["heading"][0]["checked"], task_number in {1, 2})
+        self.assertEqual(len(tasks[1]["steps"]), 8)
+        self.assertEqual(len(tasks[2]["steps"]), 7)
+        self.assertTrue(all(box["disabled"] and box["checked"] for box in tasks[1]["steps"] + tasks[2]["steps"]))
+        self.assertEqual(sum(box["checked"] for state in tasks.values() for box in state["steps"]), 15)
+        self.assertTrue(
+            all(
+                not box["checked"]
+                for task_number in range(3, 9)
+                for box in tasks[task_number]["steps"]
+            )
+        )
+
     def test_planned_truth_and_global_constraints_are_exact_antigravity(self):
         prereg = Path("docs/EXP449_PREREGISTRATION_antigravity_KO.html").read_text(encoding="utf-8")
         self.assertIn("global_fp_max = 314", prereg)

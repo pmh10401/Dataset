@@ -62,6 +62,10 @@ All newly created files across all tasks and experiments must include `antigravi
 
 Every newly created human-readable document is self-contained .html and has no Markdown duplicate; JSON, lock, and code files are unaffected; Historical documents are not mass-converted.
 
+In HTML implementation plans, mark a task or step checkbox checked immediately
+after its required implementation and review/verification boundary is complete;
+never pre-check pending work.
+
 ## Code Map Synchronization
 
 At the start of every code-changing task, resolve the current experiment version

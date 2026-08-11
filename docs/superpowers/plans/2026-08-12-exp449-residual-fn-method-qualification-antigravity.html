@@ -100,7 +100,7 @@
 <li><code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_cli_antigravity.py</code></li>
 </ul>
 <hr>
-<h3>Task 1: Governance Freeze and Reproducible Exp449 Code Map</h3>
+<h3><input disabled="" type="checkbox" checked=""> Task 1: Governance Freeze and Reproducible Exp449 Code Map</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>docs/EXP449_PREREGISTRATION_antigravity_KO.html</code></li>
@@ -122,7 +122,7 @@
 </li>
 <li><p>Produces: final design/preregistration/runbook SHA bindings; planned Exp449 truth with label access <code>0</code>; deterministic <code>build_codemap_exp449_antigravity.py --source-commit &lt;commit&gt;</code>.</p>
 </li>
-<li><p><input disabled="" type="checkbox"> <strong>Step 1: Confirm the clean starting boundary and current map convention</strong></p>
+<li><p><input disabled="" type="checkbox" checked=""> <strong>Step 1: Confirm the clean starting boundary and current map convention</strong></p>
 </li>
 </ul>
 <p>Run:</p>
@@ -133,7 +133,7 @@ python3 -m json.tool docs/codemap/codemap_exp448_antigravity.lock &gt;/dev/null
 </code></pre>
 <p>Expected: empty status; HEAD descends from <code>e6192f636a0a1e7db9649705621cb8730cd18ae0</code>; Exp448 map and lock parse; lock remains the normal clean-functional-parent/map-child binding.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 2: Write the failing governance test</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 2: Write the failing governance test</strong></li>
 </ul>
 <pre><code class="language-python">class Exp449GovernanceTest(unittest.TestCase):
     def test_planned_truth_and_global_constraints_are_exact_antigravity(self):
@@ -156,14 +156,14 @@ python3 -m json.tool docs/codemap/codemap_exp448_antigravity.lock &gt;/dev/null
         self.assertIn(&quot;Historical documents are not mass-converted&quot;, agents)
 </code></pre>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 3: Run the test and observe RED</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 3: Run the test and observe RED</strong></li>
 </ul>
 <p>Run:</p>
 <pre><code class="language-bash">python3 -m unittest experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_governance_antigravity -v
 </code></pre>
 <p>Expected: FAIL because the Exp449 governance documents, ledger records, and the new global <code>AGENTS.md</code> policy do not exist.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 4: Write the frozen governance documents, global document policy, and ledger records</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 4: Write the frozen governance documents, global document policy, and ledger records</strong></li>
 </ul>
 <p>Use these exact preregistered values:</p>
 <pre><code class="language-text">families = Crop, ElectricDevices, FordA, FordB, Yoga, ECG5000, ChlorineConcentration, StarLightCurves
@@ -192,7 +192,7 @@ routing = prohibited
 </code></pre>
 <p>After observing RED, modify <code>AGENTS.md</code> to state exactly: Every newly created human-readable document is self-contained <code>.html</code> and has no Markdown duplicate; JSON, lock, and code files are unaffected; Historical documents are not mass-converted. The planned ledger record must use status <code>planned_not_started</code>, null prediction/evaluation/decision hashes, label access <code>0</code>, and must not change champion or pending candidate.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 5: Implement the deterministic map generator</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 5: Implement the deterministic map generator</strong></li>
 </ul>
 <p>Expose:</p>
 <pre><code class="language-python">def build_map_antigravity(source_commit: str, generated_at: str) -&gt; tuple[dict[str, object], dict[str, object], str]:
@@ -203,7 +203,7 @@ def validate_map_antigravity(graph: object, lock: object, html: str) -&gt; None:
 </code></pre>
 <p>The initial map must mark product boundaries as unknown future relations, not existing calls. It must include governance, Exp448 predecessor, future method audit, future score/prediction, future evaluation/replay, future CLI, and dashboard presentation nodes.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 6: Compute final document hashes and regenerate the triplet together</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 6: Compute final document hashes and regenerate the triplet together</strong></li>
 </ul>
 <p>Run:</p>
 <pre><code class="language-bash">sha256sum docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html docs/EXP449_PREREGISTRATION_antigravity_KO.html docs/EXP449_RUNBOOK_antigravity_KO.html
@@ -211,7 +211,7 @@ python3 scratch/build_codemap_exp449_antigravity.py --source-commit &quot;$(git 
 </code></pre>
 <p>Write the measured hashes into the preregistration, runbook, report, and ledgers. Do not invent a reviewed implementation commit.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 7: Run governance and map GREEN checks</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 7: Run governance and map GREEN checks</strong></li>
 </ul>
 <p>Run:</p>
 <pre><code class="language-bash">python3 -m unittest experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_governance_antigravity -v
@@ -223,13 +223,13 @@ git diff --check
 </code></pre>
 <p>Expected: all pass; the GREEN governance assertion proves the exact <code>AGENTS.md</code> human-readable-document policy; map HTML embeds the exact JSON graph; no source edge claims product implementation exists.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 8: Commit Task 1</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 8: Commit Task 1</strong></li>
 </ul>
 <pre><code class="language-bash">git add AGENTS.md docs/EXP449_PREREGISTRATION_antigravity_KO.html docs/EXP449_RUNBOOK_antigravity_KO.html docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock scratch/build_codemap_exp449_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json
 git commit -m &quot;docs(exp449): freeze residual FN qualification governance&quot;
 </code></pre>
 <hr>
-<h3>Task 2: Candidate Registry, Contracts, Artifacts, and Official Method Audit</h3>
+<h3><input disabled="" type="checkbox" checked=""> Task 2: Candidate Registry, Contracts, Artifacts, and Official Method Audit</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py</code></li>
@@ -250,12 +250,12 @@ git commit -m &quot;docs(exp449): freeze residual FN qualification governance&qu
 </li>
 <li><p>Produces: <code>FROZEN_CONFIG_ANTIGRAVITY</code>; <code>CANDIDATE_MATRIX_ANTIGRAVITY</code>; immutable <code>MethodAuditAntigravity</code>; canonical artifact helpers.</p>
 </li>
-<li><p><input disabled="" type="checkbox"> <strong>Step 1: Answer map questions before source edits</strong></p>
+<li><p><input disabled="" type="checkbox" checked=""> <strong>Step 1: Answer map questions before source edits</strong></p>
 </li>
 </ul>
 <p>Run <code>python3 scratch/build_codemap_exp449_antigravity.py --validate-only</code>, then record in the Task 2 report: callers are future prediction/readiness; effects are candidate inventory and environment authority; tests are the four Task 2 modules.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 2: Write RED tests for exact registry and types</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 2: Write RED tests for exact registry and types</strong></li>
 </ul>
 <pre><code class="language-python">def test_candidate_matrix_is_exact_antigravity(self):
     self.assertEqual(
@@ -278,7 +278,7 @@ def test_bool_is_not_an_integer_metric_antigravity(self):
 </code></pre>
 <p>Artifact tests must reject duplicate JSON keys, non-canonical bytes, symlinks, an extra inventory leaf, an existing destination, and a bool where an exact integer is required.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 3: Run RED</strong></li>
 </ul>
 <pre><code class="language-bash">python3 -m unittest \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_config_antigravity \
@@ -288,7 +288,7 @@ def test_bool_is_not_an_integer_metric_antigravity(self):
 </code></pre>
 <p>Expected: import errors because the four source modules are absent.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 4: Implement immutable contracts and canonical artifacts</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 4: Implement immutable contracts and canonical artifacts</strong></li>
 </ul>
 <p>Define exact frozen/slots dataclasses:</p>
 <pre><code class="language-python">@dataclass(frozen=True, slots=True)
@@ -341,7 +341,7 @@ class CandidateMetricAntigravity:
 </code></pre>
 <p>Expose <code>canonical_json_bytes_antigravity</code>, <code>canonical_jsonl_bytes_antigravity</code>, <code>strict_json_bytes_antigravity</code>, <code>write_create_only_antigravity</code>, and <code>artifact_map_bytes_antigravity</code>.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 5: Implement the exact method audit</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 5: Implement the exact method audit</strong></li>
 </ul>
 <p>Audit these symbols from the fixed interpreter without importing them in readiness or inspect:</p>
 <pre><code class="language-python">AUDIT_SPECS_ANTIGRAVITY = (
@@ -357,17 +357,17 @@ class CandidateMetricAntigravity:
 </code></pre>
 <p>Require Python 3.14.6, aeon 1.4.0, NumPy 2.3.5, scikit-learn 1.7.2, and SHA256 of each available class source file. Reject a class whose public methods differ from the frozen audit.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 6: Run GREEN twice and update the map</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 6: Run GREEN twice and update the map</strong></li>
 </ul>
 <p>Run the four-module command from Step 3 twice. Regenerate the map against the clean functional source snapshot and require real method-audit nodes/edges/tests, no stale unknown relation for Task 2, exact HTML/JSON equality, valid references, and matching fingerprints.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 7: Commit Task 2</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 7: Commit Task 2</strong></li>
 </ul>
 <pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_config_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_contracts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_artifacts_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_method_audit_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
 git commit -m &quot;feat(exp449): freeze method qualification contracts&quot;
 </code></pre>
 <hr>
-<h3>Task 3: Descriptor-Pinned Exp448 and Label-Free Data Authority</h3>
+<h3><input disabled="" type="checkbox"> Task 3: Descriptor-Pinned Exp448 and Label-Free Data Authority</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py</code></li>
@@ -458,7 +458,7 @@ class Exp448AuthorityAntigravity:
 git commit -m &quot;feat(exp449): pin residual FN source authority&quot;
 </code></pre>
 <hr>
-<h3>Task 4: Four Fixed Representations, Shared LocalGap Scoring, and Acceleration Decision</h3>
+<h3><input disabled="" type="checkbox"> Task 4: Four Fixed Representations, Shared LocalGap Scoring, and Acceleration Decision</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py</code></li>
@@ -563,7 +563,7 @@ class MlxDecisionAntigravity:
 git commit -m &quot;feat(exp449): add fixed representation score sources&quot;
 </code></pre>
 <hr>
-<h3>Task 5: Frozen Prediction Lifecycle, Durable Progress, and Sanitized Live Status</h3>
+<h3><input disabled="" type="checkbox"> Task 5: Frozen Prediction Lifecycle, Durable Progress, and Sanitized Live Status</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py</code></li>
@@ -658,7 +658,7 @@ class FrozenPredictionAuthorityAntigravity:
 git commit -m &quot;feat(exp449): freeze label-free method predictions&quot;
 </code></pre>
 <hr>
-<h3>Task 6: One-Session Counterfactual Evaluation and Source-Free Replay</h3>
+<h3><input disabled="" type="checkbox"> Task 6: One-Session Counterfactual Evaluation and Source-Free Replay</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/bootstrap_antigravity.py</code></li>
@@ -759,7 +759,7 @@ class FrozenEvaluationAntigravity:
 git commit -m &quot;feat(exp449): evaluate frozen FN counterfactuals&quot;
 </code></pre>
 <hr>
-<h3>Task 7: Closed CLI, Readiness, Full Verification, and Clean Candidate Truth</h3>
+<h3><input disabled="" type="checkbox"> Task 7: Closed CLI, Readiness, Full Verification, and Clean Candidate Truth</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/readiness_antigravity.py</code></li>
@@ -842,7 +842,7 @@ git commit -m &quot;feat(exp449): close method qualification candidate&quot;
 </code></pre>
 <p>Request a fresh final review on the exact clean commit. Proceed only if the verdict is <code>ship</code> with zero Critical and Important findings.</p>
 <hr>
-<h3>Task 8: Single-Use Official Lifecycle, Truth Closeout, and Owner-Only Dashboard</h3>
+<h3><input disabled="" type="checkbox"> Task 8: Single-Use Official Lifecycle, Truth Closeout, and Owner-Only Dashboard</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Modify: <code>docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html</code></li>
