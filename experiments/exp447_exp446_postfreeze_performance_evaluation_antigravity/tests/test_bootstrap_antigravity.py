@@ -42,6 +42,19 @@ class BootstrapAntigravityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             paired_bootstrap_antigravity(baseline[:-1], baseline[:-1], "hard_plus_source_30")
 
+    def test_bootstrap_rejects_forged_in_range_draws_antigravity(self) -> None:
+        # Break caught: an in-range matrix from a different RNG or all-zero
+        # sample can claim the frozen PCG64 draw hash.
+        import numpy as np
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.bootstrap_antigravity import (
+            paired_bootstrap_antigravity,
+        )
+
+        baseline = self._rows_antigravity()
+        forged = np.zeros((20000, 1117), dtype=np.int64)
+        with self.assertRaises(ValueError):
+            paired_bootstrap_antigravity(baseline, baseline, "hard_plus_stable_26", draws=forged)
+
 
 if __name__ == "__main__":
     unittest.main()

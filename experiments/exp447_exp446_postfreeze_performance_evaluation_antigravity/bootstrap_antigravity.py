@@ -39,6 +39,8 @@ def bootstrap_draws_antigravity(population: int) -> np.ndarray:
         size=(FROZEN_CONFIG_ANTIGRAVITY.bootstrap_samples, population),
         dtype=np.int64, endpoint=False,
     )
+    if sha256(draws.tobytes(order="C")).hexdigest() != FROZEN_CONFIG_ANTIGRAVITY.bootstrap_draw_sha256:
+        raise ValueError("canonical bootstrap draw bytes differ from frozen authority")
     draws.setflags(write=False)
     return draws
 
@@ -49,6 +51,8 @@ def _validated_draws_antigravity(draws: object, population: int) -> np.ndarray:
         raise ValueError("bootstrap draws have the wrong shape or dtype")
     if not np.all((value >= 0) & (value < population)):
         raise ValueError("bootstrap draws contain an invalid index")
+    if sha256(value.tobytes(order="C")).hexdigest() != FROZEN_CONFIG_ANTIGRAVITY.bootstrap_draw_sha256:
+        raise ValueError("bootstrap draws do not match frozen PCG64 authority")
     return value
 
 

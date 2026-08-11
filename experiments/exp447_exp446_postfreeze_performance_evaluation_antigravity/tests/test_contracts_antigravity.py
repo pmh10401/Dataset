@@ -52,6 +52,8 @@ class ContractAntigravityTests(unittest.TestCase):
 
         digest = "a" * 64
         leaves = {"prediction_antigravity.json": digest}
+        datasets = tuple(f"dataset-{index:04d}" for index in range(1117))
+        source = tuple((datasets[index], index) for index in range(30))
         identity = PublicationIdentityAntigravity(
             root_device=1,
             root_inode=2,
@@ -59,23 +61,23 @@ class ContractAntigravityTests(unittest.TestCase):
             manifest_sha256=digest,
             prediction_sha256=digest,
             artifact_map_sha256=digest,
-            dataset_order=("A", "B"),
-            source_coordinates=(("A", 1), ("B", 2), ("B", 3)),
-            stable_coordinates=(("A", 1), ("B", 2)),
-            unstable_coordinates=(("B", 3),),
+            dataset_order=datasets,
+            source_coordinates=source,
+            stable_coordinates=source[:26],
+            unstable_coordinates=source[26:],
             label_access_count=0,
         )
         leaves["forged"] = digest
         self.assertIsInstance(identity.leaf_sha256, MappingProxyType)
         self.assertEqual(tuple(identity.leaf_sha256), ("prediction_antigravity.json",))
-        self.assertEqual(identity.source_count, 3)
+        self.assertEqual(identity.source_count, 30)
         self.assertEqual(identity.stable_count + identity.unstable_count, identity.source_count)
         with self.assertRaises(TypeError):
             identity.leaf_sha256["forged"] = digest  # type: ignore[index]
         with self.assertRaises(ValueError):
             PublicationIdentityAntigravity(
-                1, 2, {"leaf": digest}, digest, digest, digest, ("A",),
-                (("A", 1),), (("A", 1),), (("A", 1),), 0,
+                1, 2, {"leaf": digest}, digest, digest, digest, datasets,
+                source, source[:26], source[25:29], 0,
             )
 
     def test_prelabel_payload_recursively_rejects_label_like_keys_antigravity(self) -> None:
@@ -86,8 +88,29 @@ class ContractAntigravityTests(unittest.TestCase):
 
         frozen = freeze_prelabel_payload_antigravity({"source": {"candidate_count": 30}, "lanes": ["stable_review"]})
         self.assertIsInstance(frozen, MappingProxyType)
+        for payload in (
+            {"source": {"test_label": 1}},
+            {"source": {"class-id": 1}},
+            {"source": {"outlier_score": 1}},
+            {"source": {"nested": {"TEST_y": 1}}},
+        ):
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                freeze_prelabel_payload_antigravity(payload)
+
+    def test_publication_identity_rejects_wrong_population_or_lane_order_antigravity(self) -> None:
+        # Break caught: an inspected publication has right set membership but a
+        # wrong population or a lane order that cannot bind frozen source order.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.contracts_antigravity import (
+            PublicationIdentityAntigravity,
+        )
+
+        digest = "b" * 64
+        datasets = tuple(f"dataset-{index:04d}" for index in range(1117))
+        source = tuple((datasets[index], index) for index in range(30))
         with self.assertRaises(ValueError):
-            freeze_prelabel_payload_antigravity({"source": {"test_label": 1}})
+            PublicationIdentityAntigravity(1, 2, {"leaf": digest}, digest, digest, digest, datasets[:-1], source, source[:26], source[26:], 0)
+        with self.assertRaises(ValueError):
+            PublicationIdentityAntigravity(1, 2, {"leaf": digest}, digest, digest, digest, datasets, source, source[1:27], (source[0], *source[27:]), 0)
 
     def test_dataset_rows_reject_duplicate_names_antigravity(self) -> None:
         # Break caught: bootstrap could pair two rows from one dataset.

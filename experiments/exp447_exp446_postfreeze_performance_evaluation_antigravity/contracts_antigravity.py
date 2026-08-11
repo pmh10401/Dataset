@@ -7,6 +7,7 @@ import math
 import re
 from types import MappingProxyType
 
+from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 
 _SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
 _CONFUSION_KEYS_ANTIGRAVITY = ("tp", "fp", "fn", "tn")
@@ -14,6 +15,7 @@ _FORBIDDEN_PRELABEL_TERMS_ANTIGRAVITY = frozenset({
     "label", "labels", "ground_truth", "truth", "target", "anomaly", "anomalies",
     "actual", "evaluation", "metric", "metrics", "confusion", "precision", "recall",
     "f1", "fpr", "false_positive", "false_negative", "tp", "fp", "fn", "tn",
+    "class", "outlier", "test_y", "test_target", "test_class",
 })
 
 
@@ -66,7 +68,7 @@ def freeze_prelabel_payload_antigravity(value: object) -> object:
         copied: dict[str, object] = {}
         for key, item in value.items():
             name = _nonempty_name_antigravity(key, "pre-label key")
-            lowered = name.casefold().replace("-", "_")
+            lowered = re.sub(r"[^a-z0-9]+", "_", name.casefold()).strip("_")
             if any(term in lowered for term in _FORBIDDEN_PRELABEL_TERMS_ANTIGRAVITY):
                 raise ValueError(f"pre-label payload contains forbidden key: {name}")
             copied[name] = freeze_prelabel_payload_antigravity(item)
@@ -165,12 +167,18 @@ class PublicationIdentityAntigravity:
         if isinstance(self.dataset_order, (str, bytes)) or not isinstance(self.dataset_order, Sequence):
             raise ValueError("dataset_order is invalid")
         datasets = tuple(_nonempty_name_antigravity(item, "dataset") for item in self.dataset_order)
-        if not datasets or len(datasets) != len(set(datasets)):
-            raise ValueError("dataset_order must be non-empty and unique")
+        if len(datasets) != FROZEN_CONFIG_ANTIGRAVITY.dataset_count or len(datasets) != len(set(datasets)):
+            raise ValueError("dataset_order must have the frozen unique population")
         source = _coordinates_antigravity(self.source_coordinates, "source_coordinates")
         stable = _coordinates_antigravity(self.stable_coordinates, "stable_coordinates")
         unstable = _coordinates_antigravity(self.unstable_coordinates, "unstable_coordinates")
-        if set(source) != set(stable) | set(unstable) or set(stable) & set(unstable):
+        if (len(source), len(stable), len(unstable)) != (
+            FROZEN_CONFIG_ANTIGRAVITY.source_count,
+            FROZEN_CONFIG_ANTIGRAVITY.stable_count,
+            FROZEN_CONFIG_ANTIGRAVITY.unstable_count,
+        ):
+            raise ValueError("source/lane populations differ from the frozen contract")
+        if source != stable + unstable or set(stable) & set(unstable):
             raise ValueError("source/stable/unstable lanes do not conserve coordinates")
         if any(dataset not in set(datasets) for dataset, _ in source):
             raise ValueError("source coordinate dataset is absent from dataset order")

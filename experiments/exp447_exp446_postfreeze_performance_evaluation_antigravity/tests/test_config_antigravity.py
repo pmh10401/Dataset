@@ -36,6 +36,24 @@ class ConfigAntigravityTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             FROZEN_CONFIG_ANTIGRAVITY.dataset_count = 1  # type: ignore[misc]
 
+    def test_constructor_rejects_every_scientific_or_governance_override_antigravity(self) -> None:
+        # Break caught: a caller creates a second configuration with a different
+        # root, source hash, count, bootstrap, or truthy integer governance flag.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.config_antigravity import (
+            Exp447FrozenConfigAntigravity,
+        )
+
+        for overrides in (
+            {"run_root": "/tmp/exp447_antigravity"},
+            {"exp446_prediction_sha256": "0" * 64},
+            {"dataset_count": 1116},
+            {"bootstrap_seed": 1},
+            {"review_only": 1},
+            {"promotion_allowed": 0},
+        ):
+            with self.subTest(overrides=overrides), self.assertRaises(ValueError):
+                Exp447FrozenConfigAntigravity(**overrides)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -39,7 +39,10 @@ def write_create_only_antigravity(path: Path, payload: bytes) -> None:
     try:
         offset = 0
         while offset < len(payload):
-            offset += os.write(descriptor, payload[offset:])
+            written = os.write(descriptor, payload[offset:])
+            if type(written) is not int or written <= 0:
+                raise OSError("create-only artifact write made no progress")
+            offset += written
         os.fsync(descriptor)
     finally:
         os.close(descriptor)

@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 class ArtifactAntigravityTests(unittest.TestCase):
@@ -30,6 +31,29 @@ class ArtifactAntigravityTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 write_create_only_antigravity(path, b"second\n")
             self.assertEqual(path.read_bytes(), b"first\n")
+
+    def test_create_only_rejects_symlink_and_zero_progress_write_antigravity(self) -> None:
+        # Break caught: a partial output loops forever or follows/replaces an
+        # existing symbolic link instead of preserving create-only evidence.
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.artifacts_antigravity import (
+            write_create_only_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            destination = root / "destination_antigravity.json"
+            link = root / "link_antigravity.json"
+            destination.write_bytes(b"preserve\n")
+            link.symlink_to(destination)
+            with self.assertRaises(FileExistsError):
+                write_create_only_antigravity(link, b"forbidden\n")
+            self.assertEqual(destination.read_bytes(), b"preserve\n")
+            partial = root / "partial_antigravity.json"
+            with patch("os.write", return_value=0), self.assertRaises(OSError):
+                write_create_only_antigravity(partial, b"partial\n")
+            self.assertTrue(partial.exists())
+            with self.assertRaises(FileExistsError):
+                write_create_only_antigravity(partial, b"retry\n")
 
 
 if __name__ == "__main__":
