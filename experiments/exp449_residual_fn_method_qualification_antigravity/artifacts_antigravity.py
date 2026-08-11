@@ -93,10 +93,20 @@ def write_create_only_antigravity(destination: Path, payload: bytes) -> None:
         if stat.S_ISLNK(prior.st_mode):
             raise ValueError("destination is a symlink")
         raise FileExistsError("destination already exists")
+    parent_flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        parent_flags |= os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        parent_flags |= os.O_NOFOLLOW
+    parent_fd = os.open(parent, parent_flags)
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
-    fd = os.open(destination, flags, 0o600)
+    try:
+        fd = os.open(destination.name, flags, 0o600, dir_fd=parent_fd)
+    except BaseException:
+        os.close(parent_fd)
+        raise
     try:
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
@@ -108,11 +118,12 @@ def write_create_only_antigravity(destination: Path, payload: bytes) -> None:
                 raise OSError("short artifact write")
             view = view[written:]
         os.fsync(fd)
-        namespace_info = os.lstat(destination)
+        namespace_info = os.stat(destination.name, dir_fd=parent_fd, follow_symlinks=False)
         if _identity_antigravity(namespace_info) != _identity_antigravity(os.fstat(fd)):
             raise ValueError("destination namespace changed during write")
     finally:
         os.close(fd)
+        os.close(parent_fd)
 
 
 def artifact_map_bytes_antigravity(root: Path, inventory: tuple[str, ...]) -> bytes:
@@ -146,9 +157,23 @@ def artifact_map_bytes_antigravity(root: Path, inventory: tuple[str, ...]) -> by
     for relative in sorted(inventory):
         path = _require_safe_relative_antigravity(root, relative)
         before = _require_regular_single_link_antigravity(path)
-        with path.open("rb") as handle:
-            payload = handle.read()
-            after_fd = os.fstat(handle.fileno())
+        read_flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            read_flags |= os.O_NOFOLLOW
+        fd = os.open(path, read_flags)
+        try:
+            after_fd = os.fstat(fd)
+            if not stat.S_ISREG(after_fd.st_mode) or after_fd.st_nlink != 1:
+                raise ValueError("artifact leaf changed to an unsafe type during read")
+            chunks: list[bytes] = []
+            while True:
+                chunk = os.read(fd, 1024 * 1024)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            payload = b"".join(chunks)
+        finally:
+            os.close(fd)
         after_path = _require_regular_single_link_antigravity(path)
         if _identity_antigravity(before) != _identity_antigravity(after_fd) or _identity_antigravity(before) != _identity_antigravity(after_path):
             raise ValueError("artifact leaf changed during read")
