@@ -7,7 +7,7 @@ approved_plan_sha256 = b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d
 
 ## 현재 상태
 
-`official_evaluation_inspected_complete_awaiting_discussion_dashboard`다. fresh Sol High `ship`
+`official_evaluation_inspected_complete_dashboard_published_owner_only`다. fresh Sol High `ship`
 gate 뒤 reviewed commit `2f5229ccd471bba907562b3131d293b46b0b3afc`에서 readiness, evaluate,
 bare inspect가 각각 정확히 한 번 exit 0으로 성공했다. Exp448 lifecycle은 끝났고 같은
 experiment/root에서 어떤 명령도 다시 실행하지 않는다. 결과는
@@ -36,7 +36,7 @@ readiness와 evaluate만 exact lowercase 40-hex reviewed commit을 받고 inspec
 ## 실행 후
 
 Independent immutable-root verification과 truth/map closeout이 완료됐다. 성공했어도 결과는
-descriptive-only/non-promoted다. private dashboard는 clean owner-only site repository와
-sanitized aggregate `exp448.public-evaluation.v1` payload가 모두 있을 때만 별도로 논의할 수
-있으며, 아직 dashboard 변경은 없다. Dashboard failure는 scientific artifact나 retry 권한을 바꾸지
-않는다.
+descriptive-only/non-promoted다. sanitized aggregate `exp448.public-evaluation.v1` snapshot은
+`2026-08-12T05:15:11+09:00`에 기존 owner-only 연구 관측소 Sites version `6`으로 게시됐다.
+접근은 한 명의 owner와 group 0개로 유지되며 snapshot은 live source connection이 아니다.
+Dashboard 상태는 scientific artifact, champion/pending candidate, promotion 또는 retry 권한을 바꾸지 않는다.

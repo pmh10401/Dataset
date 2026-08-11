@@ -6,7 +6,7 @@ approved_plan_sha256 = b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d
 ```
 
 ```text
-implementation_status = official_evaluation_inspected_complete_awaiting_discussion_dashboard
+implementation_status = official_evaluation_inspected_complete_dashboard_published_owner_only
 official_readiness = true
 official_evaluate = true
 official_inspect = true
@@ -24,8 +24,21 @@ boundary failure를 보존하고 converter 경계만 수리했다. reviewed comm
 `2f5229ccd471bba907562b3131d293b46b0b3afc`에서 official closed lifecycle은 정확히
 readiness 1회 (exit 0), evaluate 1회 (exit 0), bare inspect 1회 (exit 0)로 종료됐다.
 결과는 `descriptive_complete_no_promotion`이며 champion, pending candidate, winner,
-promotion, operational alert 또는 dashboard export는 만들지 않았다. 다음 상태는 discussion과
-별도로 governed된 aggregate-only dashboard 검토를 기다리는 것이다.
+promotion 또는 operational alert는 만들지 않았다. 별도로 governed된 aggregate-only dashboard는
+기존 owner-only 연구 관측소에 검증된 snapshot으로 게시됐으며 과학 결과나 재평가 권한을 바꾸지 않는다.
+
+## Owner-only dashboard publication
+
+- Snapshot schema is `exp448.public-evaluation.v1`; it was published at
+  `2026-08-12T05:15:11+09:00` to the existing owner-only research observatory.
+- The published surface contains only the exact 12-field completed status, four aggregate
+  confusion/precision/recall/F1/FPR rows, aggregate transition counts `15/15/0/0`, and three
+  paired-bootstrap delta/interval rows.
+- Raw TEST labels, indices, dataset names or lists, per-dataset rows, hashes, local paths, logs,
+  database/checkpoint details, credentials, winner, promotion, and retry controls are absent.
+- The site source commit is `500ccbe12b07475e51e8cdcbfa8619d9fbdefddb`, Sites version is `6`,
+  and access remains custom owner-only with one allowed account and no groups. The displayed data is
+  a published snapshot, not a live source connection.
 
 ## Official truth closeout
 
@@ -86,4 +99,5 @@ promotion, operational alert 또는 dashboard export는 만들지 않았다. 다
   Exp448 root is now the immutable regular directory recorded above.
 - Before the closed official lifecycle, no real TEST label value was queried, no official command was
   invoked, no dashboard/network module was imported by the no-label command paths, and no root/result/
-  audit was created. Exp447 audit truth and champion `pending_candidate` remained unchanged.
+  audit was created. Exp447 audit truth and champion `pending_candidate` remained unchanged. The later
+  dashboard publication used only the already-closed sanitized aggregate snapshot.

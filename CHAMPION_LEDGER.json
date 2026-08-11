@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-12T04:45:38+09:00",
+  "updated_at": "2026-08-12T05:15:11+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -284,8 +284,8 @@
     },
     {
       "experiment": "Exp448",
-      "status": "official_evaluation_inspected_complete_awaiting_discussion_dashboard_not_promoted",
-      "reason": "Exp448은 Exp447의 immutable TEXT-label boundary failure를 보존하고 converter 경계만 수리한 사전등록 engineering-only controlled fork다. reviewed commit 2f5229ccd471bba907562b3131d293b46b0b3afc에서 readiness, evaluate, bare inspect가 각각 정확히 한 번 exit 0으로 완료됐다. 결과는 descriptive_complete_no_promotion이며 champion/pending candidate, scientific winner, operational alert, promotion 또는 dashboard action은 없다.",
+      "status": "official_evaluation_inspected_complete_dashboard_published_owner_only_not_promoted",
+      "reason": "Exp448은 Exp447의 immutable TEXT-label boundary failure를 보존하고 converter 경계만 수리한 사전등록 engineering-only controlled fork다. reviewed commit 2f5229ccd471bba907562b3131d293b46b0b3afc에서 readiness, evaluate, bare inspect가 각각 정확히 한 번 exit 0으로 완료됐다. 결과는 descriptive_complete_no_promotion이다. Sanitized aggregate-only snapshot은 기존 owner-only dashboard에 게시됐지만 champion/pending candidate, scientific winner, operational alert, promotion, retry 또는 scientific artifact는 바뀌지 않았다.",
       "reviewed_design_sha256": "ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4",
       "reviewed_plan_sha256": "b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934",
       "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
@@ -317,7 +317,16 @@
       "automatic_champion_promotion": false,
       "promotion_allowed": false,
       "official_lifecycle": {"readiness_invocations": 1, "readiness_exit_code": 0, "readiness_label_access_count": 0, "evaluate_invocations": 1, "evaluate_exit_code": 0, "label_session_opened": true, "label_sessions": 1, "query_attempts": 1117, "query_completions": 1117, "label_rows": 195900, "label_session_closed": true, "failure_audit_created": false, "inspect_invocations": 1, "inspect_exit_code": 0, "inspect_source_free": true},
-      "next_action": "await_discussion_then_separately_governed_aggregate_only_dashboard_consideration"
+      "dashboard_presentation": {
+        "status": "published_owner_only_snapshot",
+        "public_payload_schema": "exp448.public-evaluation.v1",
+        "published_at": "2026-08-12T05:15:11+09:00",
+        "site_url": "https://timeseries-research-observatory.pmh10401.chatgpt.site",
+        "site_version": 6,
+        "snapshot_not_live_connection": true,
+        "scientific_or_promotion_gate": false
+      },
+      "next_action": "await_result_discussion_no_scientific_rerun"
     }
   ]
 }
