@@ -41,7 +41,7 @@ No Exp447 command may be rerun.
 The functional commit passed the Exp447 suite twice: `66/66` in 75.485 seconds (real 75.56)
 and `66/66` in 76.280 seconds (real 76.36), each with exit 0. The Exp447-only repair preserved
 the previously recorded predecessor regressions: Exp444 `206/206`, Exp445 `39/39`, and Exp446
-`50/50`, all exit 0. No TEST labels were opened (`official_label_access_count=0`), the source
+`50/50`, all exit 0. No valid TEST-label rows were returned (`official_label_access_count=0`), the source
 database SHA256 remained `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`
 with inode `1048138` and link count `1`, and the official Exp447 root is absent and not a symlink.
 
