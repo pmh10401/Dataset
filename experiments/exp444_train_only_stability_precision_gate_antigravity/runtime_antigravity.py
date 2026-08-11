@@ -74,6 +74,34 @@ def _verify_exp446_predecessor_antigravity():
     return verify_exp445_predecessor_antigravity()
 
 
+def _predecessor_authorities_for_profile_antigravity(
+    profile: LifecycleProfileAntigravity,
+) -> tuple[object, ...]:
+    """Return exactly the immutable wrapper authorities a fixed replay needs."""
+    if profile is EXP445_PROFILE_ANTIGRAVITY:
+        return (_verify_exp445_predecessor_antigravity(),)
+    if profile is EXP446_PROFILE_ANTIGRAVITY:
+        # Exp445 is the direct failed-publication predecessor; Exp444 remains
+        # an independent authority rather than an inferred transitive claim.
+        return (_verify_exp445_predecessor_antigravity(), _verify_exp446_predecessor_antigravity())
+    return ()
+
+
+def _assert_exp446_topology_antigravity(workers: int) -> None:
+    if type(workers) is not int or workers != 11:
+        raise ValueError("Exp446 production worker contract is not eleven")
+
+
+def _terminal_parity_payload_antigravity(predecessors: tuple[object, ...]) -> dict[str, object]:
+    if len(predecessors) != 2:
+        raise ValueError("Exp446 terminal predecessor authority is invalid")
+    return {
+        "schema": "exp446.terminal-parity.v1",
+        "record_prefix_payload_sha256": getattr(predecessors[0], "record_prefix_payload_sha256"),
+        "authorities": [getattr(item, "record_prefix_payload_sha256") for item in predecessors],
+    }
+
+
 def _error_view_index_antigravity(error: BaseException) -> int | None:
     value = getattr(error, "view_index", None)
     if type(value) is int and value >= 0:
@@ -484,12 +512,14 @@ def _persist_commit_antigravity(
 def _write_setup_failure_antigravity(
     attempt: Path,
     error: BaseException,
+    *,
+    profile: LifecycleProfileAntigravity = EXP445_PROFILE_ANTIGRAVITY,
 ) -> None:
-    """Preserve one create-only failure explanation for an allocated Exp445 attempt."""
+    """Preserve one create-only failure explanation for an allocated fixed attempt."""
     write_create_only_antigravity(
         attempt / "setup_failure_antigravity.json",
         canonical_json_bytes_antigravity({
-            "schema": "exp445.setup_failure.v1", "stage": "setup",
+            "schema": f"{profile.schema}.setup_failure.v1", "stage": "setup",
             "error": {"type": type(error).__name__, "message": str(error) or type(error).__name__},
         }),
     )
@@ -706,11 +736,7 @@ def _execute_runtime_antigravity(
         verify_exp444_provenance_antigravity()
     root = Path(profile.run_root if fixed_profile else (FROZEN_CONFIG.run_root if run_root is None else run_root))
     context = _context_for_profile_antigravity(profile, reviewed_commit)
-    predecessor = (
-        _verify_exp445_predecessor_antigravity() if profile is EXP445_PROFILE_ANTIGRAVITY
-        else _verify_exp446_predecessor_antigravity() if profile is EXP446_PROFILE_ANTIGRAVITY
-        else None
-    )
+    predecessors = _predecessor_authorities_for_profile_antigravity(profile)
     process = current_process_identity_antigravity()
     # The source session is a values-only capability.  It must be fully
     # materialized and closed before *any* new-root or interrupted-owner
@@ -721,6 +747,10 @@ def _execute_runtime_antigravity(
         if attempt_name is not None:
             raise ValueError("Exp444 new run cannot select an attempt")
         inputs, label_access_count = _load_source_inputs_antigravity()
+        if profile is EXP446_PROFILE_ANTIGRAVITY:
+            _assert_exp446_topology_antigravity(production_worker_count_antigravity())
+            if label_access_count != 0:
+                raise ValueError("Exp446 source materialization accessed labels")
         attempt: Path | None = None
         store: Exp444CheckpointStoreAntigravity | None = None
         writer: ProgressWriterAntigravity | None = None
@@ -739,10 +769,10 @@ def _execute_runtime_antigravity(
                 ),
             )
         except BaseException as setup_error:
-            if profile is EXP445_PROFILE_ANTIGRAVITY and attempt is not None:
+            if (profile is EXP445_PROFILE_ANTIGRAVITY or profile is EXP446_PROFILE_ANTIGRAVITY) and attempt is not None:
                 counters: Mapping[str, int] | None = None
                 try:
-                    _write_setup_failure_antigravity(attempt, setup_error)
+                    _write_setup_failure_antigravity(attempt, setup_error, profile=profile)
                 except BaseException:
                     pass
                 try:
@@ -890,26 +920,29 @@ def _execute_runtime_antigravity(
         def commit(sequence: int, candidate: CandidateInputAntigravity, result: CandidateStabilityResultAntigravity) -> None:
             if writer is None:
                 raise ValueError("Exp444 active progress writer is unavailable")
-            if predecessor is not None:
+            if predecessors:
                 record_sha = hashlib.sha256(
                     canonical_json_bytes_antigravity({"sequence": sequence, "result": result.to_payload()})
                 ).hexdigest()
-                if record_sha != predecessor.record_sha256_prefix[sequence]:
-                    raise ValueError("Exp445 predecessor record parity mismatch")
+                if any(record_sha != authority.record_sha256_prefix[sequence] for authority in predecessors):
+                    prefix = "Exp446" if profile is EXP446_PROFILE_ANTIGRAVITY else "Exp445"
+                    raise ValueError(f"{prefix} predecessor record parity mismatch")
                 if sequence == 29:
-                    fresh = _verify_exp445_predecessor_antigravity()
-                    if fresh.record_sha256_prefix != predecessor.record_sha256_prefix:
-                        raise ValueError("Exp445 predecessor authority changed before final record")
+                    fresh = _predecessor_authorities_for_profile_antigravity(profile)
+                    if tuple(authority.record_sha256_prefix for authority in fresh) != tuple(authority.record_sha256_prefix for authority in predecessors):
+                        prefix = "Exp446" if profile is EXP446_PROFILE_ANTIGRAVITY else "Exp445"
+                        raise ValueError(f"{prefix} predecessor authority changed before final record")
                     candidate_prefix = tuple(store.record_sha256_prefix_antigravity) + (record_sha,)
                     aggregate = hashlib.sha256(
                         canonical_json_bytes_antigravity(list(candidate_prefix))
                     ).hexdigest()
-                    if aggregate != predecessor.record_prefix_payload_sha256 or aggregate != fresh.record_prefix_payload_sha256:
-                        raise ValueError("Exp445 predecessor aggregate parity mismatch")
+                    if any(aggregate != authority.record_prefix_payload_sha256 for authority in (*predecessors, *fresh)):
+                        prefix = "Exp446" if profile is EXP446_PROFILE_ANTIGRAVITY else "Exp445"
+                        raise ValueError(f"{prefix} predecessor aggregate parity mismatch")
             try:
                 _persist_commit_antigravity(store, writer, sequence, candidate, result)
             except BaseException as progress_error:
-                if predecessor is None or store.completed_count_antigravity != sequence + 1:
+                if not predecessors or store.completed_count_antigravity != sequence + 1:
                     raise
                 writer.reconcile_committed_success_antigravity(
                     store.committed_prefix_authority_antigravity(sequence),
@@ -947,7 +980,15 @@ def _execute_runtime_antigravity(
         )
         if writer is None:
             raise ValueError("Exp444 active progress writer is unavailable")
-        writer.close_antigravity("complete")
+        if profile is EXP446_PROFILE_ANTIGRAVITY:
+            store.write_terminal_parity_antigravity(
+                _terminal_parity_payload_antigravity(predecessors)
+            )
+            writer.close_exp446_terminal_parity_antigravity(
+                attempt / "terminal_parity_antigravity.json"
+            )
+        else:
+            writer.close_antigravity("complete")
         if profile is EXP445_PROFILE_ANTIGRAVITY and writer.log_failure_blocks_success_antigravity:
             raise RuntimeError("Exp445 diagnostic log failure blocks clean success")
         return _outcome_antigravity(
@@ -965,8 +1006,8 @@ def _execute_runtime_antigravity(
             if store.status_antigravity not in {"complete", "error"} and store.completed_count_antigravity < FROZEN_CONFIG.source_candidate_count:
                 error_sequence = store.completed_count_antigravity
                 store.commit_error_antigravity(error_sequence, error)
-                if predecessor is not None:
-                    # Exp445's parity failure is a durable exact-next error
+                if predecessors:
+                    # Fixed-profile parity failures are durable exact-next errors
                     # record, so its parent-owned progress must advance to the
                     # same terminal prefix before it closes failed.
                     try:

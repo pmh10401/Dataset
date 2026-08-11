@@ -721,6 +721,30 @@ class Exp444CheckpointStoreAntigravity:
         self._status = "error"
         self._write_state_antigravity(error=error_payload)
 
+    def write_terminal_parity_antigravity(self, payload: Mapping[str, object]) -> None:
+        """Create Exp446-only publication eligibility after its terminal SHA gates."""
+        if os.getpid() != self._local_owner_pid:
+            raise ValueError("checkpoint mutation requires the parent owner process")
+        if self.context.experiment_id != "Exp446" or self._status != "complete" or len(self._prefix) != self.context.total_units:
+            raise ValueError("Exp446 terminal parity requires the complete checkpoint")
+        if not isinstance(payload, Mapping) or set(payload) != {
+            "schema", "record_prefix_payload_sha256", "authorities",
+        }:
+            raise ValueError("Exp446 terminal parity payload is invalid")
+        if payload["schema"] != "exp446.terminal-parity.v1":
+            raise ValueError("Exp446 terminal parity payload is invalid")
+        authorities = payload["authorities"]
+        if (
+            not isinstance(authorities, list) or len(authorities) != 2
+            or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in authorities)
+            or payload["record_prefix_payload_sha256"] != authorities[0]
+        ):
+            raise ValueError("Exp446 terminal parity payload is invalid")
+        write_create_only_antigravity(
+            self.root.parent / "terminal_parity_antigravity.json",
+            canonical_json_bytes_antigravity(dict(payload)),
+        )
+
     def mark_interrupted_antigravity(self) -> None:
         self._require_writable_antigravity()
         self._status = "interrupted"

@@ -754,6 +754,13 @@ class ProgressWriterAntigravity:
         self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity("terminal", status, {"latest_error": self._latest_error}), terminal=True)
         self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(f"종료 stage={status} 오류={self._latest_error or '-'} 완료={self._counters['completed']}/{self.total}\n"), terminal=True)
 
+    def close_exp446_terminal_parity_antigravity(self, evidence_path: Path) -> None:
+        """Close Exp446 only after its create-only parity evidence is durable."""
+        path = Path(evidence_path)
+        if path.name != "terminal_parity_antigravity.json" or path.is_symlink() or not path.is_file():
+            raise ValueError("Exp446 terminal parity evidence is absent")
+        self.close_antigravity("complete")
+
     @classmethod
     def open_interrupted(
         cls,
