@@ -928,7 +928,7 @@
       "official_execution": {
         "execution_commit": "c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb",
         "cli_repair_commit": "2da7ab234f138589ac72b8b6179f4051f701bf04",
-        "truth_closeout_commit": "827d7dedc00c678ca4309c928341fb6ee2946d53",
+        "inspection_tool_commit": "827d7dedc00c678ca4309c928341fb6ee2946d53",
         "pid": 74950,
         "elapsed_seconds": 471.76320550008677,
         "completed": 30,
@@ -964,7 +964,7 @@
         }
       },
       "exact_next_command": "await_discussion_no_automatic_evaluation_or_promotion",
-      "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion at execution commit c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb. The post-publication CLI repair is 2da7ab234f138589ac72b8b6179f4051f701bf04; current truth/tool commit is 827d7dedc00c678ca4309c928341fb6ee2946d53. The original new wrapper failure occurred only after valid publication while dataclasses.asdict deep-copied a nested MappingProxyType. The authorized two source-free, label-free, mutation-free official inspections both exited 0 and produced byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0. One earlier unintended pre-mock focused-test inspect remains separately disclosed and does not replace the authorized pair. Evaluation, champion, and promotion remain null or false; the immutable attempt is not retried or mutated."
+      "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion at execution commit c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb. The post-publication CLI repair is 2da7ab234f138589ac72b8b6179f4051f701bf04; the reviewed inspection tool commit is 827d7dedc00c678ca4309c928341fb6ee2946d53. The original new wrapper failure occurred only after valid publication while dataclasses.asdict deep-copied a nested MappingProxyType. The authorized two source-free, label-free, mutation-free official inspections both exited 0 and produced byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0. One earlier unintended pre-mock focused-test inspect remains separately disclosed and does not replace the authorized pair. Evaluation, champion, and promotion remain null or false; the immutable attempt is not retried or mutated."
     }
   ]
 }

@@ -31,7 +31,7 @@ TEST-label 접근은 미수행이다.
   inspection, and does not authorize an additional inspect.
 - The actual authorized pair is complete and remains distinct from that earlier unintended test
   inspection. Execution commit is `c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb`, CLI repair commit
-  is `2da7ab234f138589ac72b8b6179f4051f701bf04`, and the truth/tool starting commit is
+  is `2da7ab234f138589ac72b8b6179f4051f701bf04`, and the reviewed inspection tool commit is
   `827d7dedc00c678ca4309c928341fb6ee2946d53`.
 
 ## 구현 검증 증거 (공식 실행 아님)

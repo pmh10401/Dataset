@@ -70,7 +70,7 @@ byte-identical output with SHA256
 They confirm the immutable publication's `1117` datasets, `30` candidates, `26` stable and `4`
 unstable review rows, and label access `0`. The execution commit is
 `c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb`; the post-publication CLI serialization repair is
-`2da7ab234f138589ac72b8b6179f4051f701bf04`; this truth/tool closeout starts from
+`2da7ab234f138589ac72b8b6179f4051f701bf04`; the reviewed inspection tool commit is
 `827d7dedc00c678ca4309c928341fb6ee2946d53`. The original `new` wrapper error remains disclosed:
 it occurred only after valid publication while serializing a nested `MappingProxyType`.
 
