@@ -8,9 +8,6 @@
   "active_experiment": "Exp447",
   "active_phase": "implementation_verified_awaiting_official_readiness",
   "status": "implementation_verified_awaiting_official_readiness",
-  "next_action": "future_exp447_official_readiness_only",
-  "exact_next_command": "/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT",
-  "pause_reason": "Implementation is verified and Sol-shipped, but no official readiness/evaluation/inspect attempt has run. REVIEWED_COMMIT remains an operator-supplied clean 40-hex placeholder.",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity-design.md",
@@ -976,8 +973,9 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "IMPLEMENT_EXP447_TASK_2_FROZEN_CONFIGURATION_CONTRACTS_ARTIFACTS_AND_BOOTSTRAP",
-  "exact_next_command_if_interrupted": "implement_exp447_task_2_frozen_configuration_contracts_artifacts_and_bootstrap",
+  "next_action": "future_exp447_official_readiness_only",
+  "exact_next_command": "/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT",
+  "exact_next_command_if_interrupted": "/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": true,
@@ -985,7 +983,7 @@
   "test_labels_opened": false,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "not_started",
-  "pause_reason": "Exp447 Task 1 governance and versioned code map are complete. The exact next step is Task 2: implement frozen configuration, contracts, artifacts, and bootstrap. Exp447 has no official evaluation, TEST-label access, official root mutation, champion/promotion change, or dashboard-site action at this boundary; the separate dashboard repository remains untouched.",
+  "pause_reason": "Implementation is verified and Sol-shipped, but no official readiness/evaluation/inspect attempt has run. REVIEWED_COMMIT remains an operator-supplied clean 40-hex placeholder.",
   "exp440_implementation": {
     "implementation_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
     "status": "official_completed_evaluated_not_promoted",
