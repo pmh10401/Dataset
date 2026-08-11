@@ -17,7 +17,7 @@ Exp448 package는 `experiments/exp448_exp447_text_label_boundary_repair_antigrav
 ## 모든 task의 고정 경계
 
 - Approved design은 `docs/superpowers/specs/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity-design.md`, SHA
-  `42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76`다.
+  `ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4`다.
 - Exp447 truth commit `7e85d5c7948f8592db80f958d746f31138c67bfb`, official attempt commit
   `33e7dc9c18c179a64bc0020b0bb939c5e4caa394`, sibling audit, and absent root are immutable
   predecessor gates. Exp447 readiness/evaluate/inspect는 영구 금지다.

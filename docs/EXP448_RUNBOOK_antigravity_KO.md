@@ -2,13 +2,13 @@
 
 ```text
 approved_design_sha256 = ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4
-approved_plan_sha256 = 269da62d0dc8de86ab3c81799fd541c6aa7d3e7aa2968d3d2a9c3c09f07a96a6
+approved_plan_sha256 = b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934
 ```
 
 ## 현재 상태
 
-`implementation_not_started_no_official_authorization`이다. 이 문서는 미래의 closed
-lifecycle을 고정할 뿐, 지금 TEST label, DB, Exp446 publication, Exp447 lifecycle 또는
+`implementation_verified_awaiting_official_readiness`이며 fresh Sol High `ship` verdict를
+기다린다. 그 verdict 전에는 TEST label, DB, Exp446 publication, Exp447 lifecycle 또는
 dashboard를 열도록 허가하지 않는다.
 
 ## 선행 gate

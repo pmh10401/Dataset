@@ -287,7 +287,7 @@
       "status": "implementation_verified_awaiting_official_readiness_not_promoted",
       "reason": "Exp448은 Exp447의 immutable TEXT-label boundary failure를 보존하고 converter 경계만 수리하도록 사전등록된 engineering-only controlled fork다. 구현 검증은 끝났지만 prediction, official lifecycle, TEST label access, evaluation, champion/pending candidate, scientific winner, operational alert, promotion 또는 dashboard action은 없다.",
       "reviewed_design_sha256": "ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4",
-      "reviewed_plan_sha256": "269da62d0dc8de86ab3c81799fd541c6aa7d3e7aa2968d3d2a9c3c09f07a96a6",
+      "reviewed_plan_sha256": "b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934",
       "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
       "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
       "prediction_sha256": null,
