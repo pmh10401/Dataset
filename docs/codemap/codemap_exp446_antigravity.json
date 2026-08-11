@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T06:10:43Z",
-  "generated_from_commit": "3a1950b156929b2d2fc2b0960084ed6209d3c1f7",
+  "generated_at": "2026-08-11T06:48:29Z",
+  "generated_from_commit": "100a346af25fcde9c56d19f796c98c46407d3d60",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -86,7 +86,8 @@
     "Exp445 exact typed checkpoint-state and raw-context binding, immutable lane-prefix counter recovery, and irreversible no-marker diagnostic failure gating",
     "Exp445 exact active candidate-index type boundary and pre-existing diagnostic-marker/symlink clean-success block",
     "Exp445 historical four-command implementation surface retained in source, but its completed failed-publication root is immutable and no command may retry, resume, publish, or evaluate it.",
-    "Exp446 implemented engineering-only recursive JSON materialization at the Exp445 publication encoding boundary, with verified frozen-record scheduler/serialization parity and no official readiness, new, inspect, publication, evaluation, label access, or promotion."
+    "Exp446 implemented engineering-only recursive JSON materialization at the Exp445 publication encoding boundary, with verified frozen-record scheduler/serialization parity and no official readiness, new, inspect, publication, evaluation, label access, or promotion.",
+    "Exp446 terminal authority correction: frozen per-record dataset/train/raw dimensions and four lane-derived abstentions are validated without changing scientific computation or official lifecycle authority."
   ],
   "nodes": [
     {
@@ -1009,7 +1010,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 authorizes only its exact profile before any caller-controlled path dereference, retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine.",
+      "role": "Exp446 authorizes only its exact profile before any caller-controlled path dereference, retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine. Terminal authority validation binds each frozen wrapper to its immutable dataset/index/train/raw dimensions, derives success or abstention from its parsed lane, requires four abstentions, and checks the matching terminal progress/events/text rows.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1038,7 +1039,8 @@
         "Terminal-finalization-failure evidence, an absent or forged terminal marker, predecessor drift, label access, staging failure, or post-rename replay failure reject publication; a post-rename rejection quarantines the canonical directory and preserves create-only failure evidence.",
         "The marker-inclusive terminal capture records all terminal bytes and leaf identities; both a pre-staging descriptor replay and post-rename leaf identity recheck reject changes while preserving create-only failure evidence.",
         "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect with abbreviation disabled; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module. The launcher has no hidden command and delegates every argv to this CLI after pinning seven thread variables.",
-        "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. The pre-rename staging identity survives parent-fsync, destination-open, and frozen-byte failures; cleanup quarantines only that exact descriptor-created publication object and never a swapped replacement."
+        "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. The pre-rename staging identity survives parent-fsync, destination-open, and frozen-byte failures; cleanup quarantines only that exact descriptor-created publication object and never a swapped replacement.",
+        "Terminal authority checks per-record frozen dataset/index/train/raw dimensions; status is derived from each parsed review lane, exactly four abstentions are required, and progress/event/text rows must agree."
       ],
       "evidence": [
         {
@@ -1184,6 +1186,10 @@
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_publication_antigravity.py",
           "symbol": "def test_cleanup_never_quarantines_swapped_publication_name_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_lifecycle_antigravity.py",
+          "symbol": "def test_terminal_authority_accepts_frozen_four_abstention_dimensions_antigravity"
         }
       ]
     },
