@@ -201,6 +201,9 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             self.assertTrue(root.is_dir())
             self.assertNotEqual({path.name for path in root.iterdir()}, set(module._LEAVES_ANTIGRAVITY))
+            audit = json.loads(next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text(encoding="utf-8"))
+            self.assertEqual(audit["destination_state"], "partial")
+            self.assertTrue(audit["label_session_closed"])
             with self.assertRaises(ValueError):
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
         with tempfile.TemporaryDirectory() as directory:
@@ -267,6 +270,89 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 artifact = {path.name: sha256(path.read_bytes()).hexdigest() for path in root.iterdir() if path.name != "artifact_sha256_antigravity.json"}
                 (root / "artifact_sha256_antigravity.json").write_text(json.dumps(artifact, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
                 with self.assertRaises(ValueError): _inspect_root_with_dependencies_antigravity(dependencies)
+
+    def test_inspect_rejects_exact_schema_type_index_and_order_tampers_antigravity(self) -> None:
+        """A rehashed leaf cannot change a value's type, row index, or row order."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity, _inspect_root_with_dependencies_antigravity
+
+        def rewrite(root: Path, name: str, payload: object, *, jsonl: bool = False) -> None:
+            path = root / name
+            if jsonl:
+                path.write_text("".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in payload), encoding="utf-8")
+            else:
+                path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+
+        def rehash(root: Path) -> None:
+            artifact = {path.name: sha256(path.read_bytes()).hexdigest() for path in root.iterdir() if path.name != "artifact_sha256_antigravity.json"}
+            rewrite(root, "artifact_sha256_antigravity.json", artifact)
+
+        def bool_row_index(root: Path) -> None:
+            path = root / "dataset_metrics_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            rows[0]["dataset_order"] = True; rewrite(root, path.name, rows, jsonl=True)
+
+        def swapped_dataset_rows(root: Path) -> None:
+            path = root / "dataset_metrics_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            rows[0], rows[1] = rows[1], rows[0]; rewrite(root, path.name, rows, jsonl=True)
+
+        def bool_evaluation_count(root: Path) -> None:
+            path = root / "evaluation_antigravity.json"; payload = json.loads(path.read_text(encoding="utf-8")); payload["label_rows"] = True; rewrite(root, path.name, payload)
+
+        def extra_decision_key(root: Path) -> None:
+            path = root / "decision_antigravity.json"; payload = json.loads(path.read_text(encoding="utf-8")); payload["unexpected"] = None; rewrite(root, path.name, payload)
+
+        def integer_zero_f1(root: Path) -> None:
+            path = root / "dataset_metrics_antigravity.jsonl"; rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            for row in rows:
+                for method in ("hard_baseline", "hard_plus_source_30", "hard_plus_stable_26", "hard_plus_unstable_4"):
+                    if row[method]["f1"] == 0.0:
+                        row[method]["f1"] = 0; rewrite(root, path.name, rows, jsonl=True); return
+            self.fail("fixture did not provide an exact zero F1 row")
+
+        for name, mutate in (("bool_row_index", bool_row_index), ("swapped_dataset_rows", swapped_dataset_rows), ("bool_evaluation_count", bool_evaluation_count), ("extra_decision_key", extra_decision_key), ("integer_zero_f1", integer_zero_f1)):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies); mutate(root); rehash(root)
+                with self.assertRaises(ValueError): _inspect_root_with_dependencies_antigravity(dependencies)
+
+    def test_label_type_index_and_population_failures_are_audited_antigravity(self) -> None:
+        """The one label session rejects malformed TEST rows before publication."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        for name, mutate in (
+            ("bool_index", lambda labels, first: labels.__setitem__(first, ((True, 1),) + labels[first][1:])),
+            ("noncontiguous_index", lambda labels, first: labels.__setitem__(first, ((1, 1),) + labels[first][1:])),
+            ("wrong_population", lambda labels, first: labels.__setitem__(first, labels[first][:-1])),
+        ):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+                first = dependencies.identity.dataset_order[0]; mutate(dependencies.labels, first)
+                with self.assertRaises(ValueError): _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                audit = json.loads(next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text(encoding="utf-8"))
+                self.assertTrue(audit["label_session_closed"])
+                self.assertFalse(root.exists())
+
+    def test_descriptor_reader_rejects_namespace_replacement_and_symlink_races_antigravity(self) -> None:
+        """The final root identity check binds descriptor reads to their namespace."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as module
+        for mode in ("replacement", "symlink"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                original_stat = module.os.stat
+                replacement_done = False
+
+                def race(path: object, *args: object, **kwargs: object):
+                    nonlocal replacement_done
+                    if Path(path) == root and not replacement_done:
+                        replacement_done = True
+                        old = Path(directory) / "old_evaluation_root_antigravity"; root.rename(old)
+                        if mode == "replacement":
+                            root.mkdir()
+                        else:
+                            root.symlink_to(old, target_is_directory=True)
+                    return original_stat(path, *args, **kwargs)
+
+                with patch.object(module.os, "stat", side_effect=race), self.assertRaises(ValueError):
+                    module._pinned_evaluation_leaves_antigravity(root)
 
 
 if __name__ == "__main__":

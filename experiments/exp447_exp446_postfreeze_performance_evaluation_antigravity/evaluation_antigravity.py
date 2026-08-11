@@ -402,6 +402,21 @@ def _parse_jsonl_bytes_antigravity(payload: bytes, name: str) -> tuple[object, .
         raise ValueError(f"invalid immutable JSONL leaf: {name}") from error
 
 
+def _exact_json_value_antigravity(actual: object, expected: object) -> bool:
+    """Compare parsed canonical JSON without Python's ``True == 1`` coercion."""
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(
+            _exact_json_value_antigravity(actual[key], value) for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _exact_json_value_antigravity(item, value) for item, value in zip(actual, expected, strict=True)
+        )
+    return actual == expected
+
+
 def _pinned_evaluation_leaves_antigravity(root: Path) -> dict[str, bytes]:
     """Read exact regular leaves through one no-follow directory descriptor."""
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
@@ -461,7 +476,16 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
     decision = _json_bytes_antigravity(leaves["decision_antigravity.json"], "decision_antigravity.json")
     if not isinstance(evaluation, dict) or not isinstance(confusion, dict) or not isinstance(decision, dict):
         raise ValueError("evaluation JSON object is invalid")
-    if evaluation.get("schema") != "exp447" or evaluation.get("exp446_prediction_sha256") != identity.prediction_sha256 or evaluation.get("evaluation_status") != "descriptive_complete_no_promotion":
+    expected_evaluation = {
+        "schema": "exp447", "experiment_id": "Exp447", "run_identity": FROZEN_CONFIG_ANTIGRAVITY.run_identity,
+        "reviewed_commit": evaluation.get("reviewed_commit"), "dataset_count": FROZEN_CONFIG_ANTIGRAVITY.dataset_count,
+        "label_rows": FROZEN_CONFIG_ANTIGRAVITY.label_rows,
+        "evaluation_status": "descriptive_complete_no_promotion", "review_only": True,
+        "operational_alert_eligible": False, "scientific_winner_selected": False,
+        "same_experiment_reselection_allowed": False, "test_informed_reselection_allowed": False,
+        "automatic_champion_promotion": False, "exp446_prediction_sha256": identity.prediction_sha256,
+    }
+    if type(expected_evaluation["reviewed_commit"]) is not str or not _exact_json_value_antigravity(evaluation, expected_evaluation):
         raise ValueError("evaluation identity or non-promotion contract differs")
     methods = confusion.get("methods")
     if not isinstance(methods, list) or tuple(item.get("comparison_name") for item in methods if isinstance(item, dict)) != _METHODS_ANTIGRAVITY:
@@ -483,12 +507,12 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         "scientific_winner_selected": False, "review_only": True, "operational_alert_eligible": False,
         "same_experiment_reselection_allowed": False, "test_informed_reselection_allowed": False,
         "automatic_champion_promotion": False, "historical_source_30_confusion_agreement": True,
+        "historical_source_30_confusion": {"tp": 1930, "fp": 318, "fn": 1988, "tn": 191664},
+        "historical_exp442_evaluation_sha256": FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_sha256,
+        "historical_exp442_artifact_map_sha256": FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_artifact_map_sha256,
     }
-    if any(decision.get(key) != value for key, value in expected_governance.items()):
+    if not _exact_json_value_antigravity(decision, expected_governance):
         raise ValueError("decision semantic contract differs")
-    historical_counts = {"tp": 1930, "fp": 318, "fn": 1988, "tn": 191664}
-    if decision.get("historical_source_30_confusion") != historical_counts or decision.get("historical_exp442_evaluation_sha256") != FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_sha256 or decision.get("historical_exp442_artifact_map_sha256") != FROZEN_CONFIG_ANTIGRAVITY.exp442_evaluation_artifact_map_sha256:
-        raise ValueError("historical source-30 authority differs")
     metric_rows = _parse_jsonl_bytes_antigravity(leaves["dataset_metrics_antigravity.jsonl"], "dataset_metrics_antigravity.jsonl")
     if len(metric_rows) != FROZEN_CONFIG_ANTIGRAVITY.dataset_count:
         raise ValueError("dataset metric population differs")
@@ -501,7 +525,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
             if not isinstance(payload, dict) or set(payload) != {"tp", "fp", "fn", "tn", "f1"}:
                 raise ValueError("dataset confusion row schema differs")
             counts = ConfusionAntigravity(payload["tp"], payload["fp"], payload["fn"], payload["tn"])
-            if payload["f1"] != counts.f1:
+            if type(payload["f1"]) is not float or payload["f1"] != counts.f1:
                 raise ValueError("dataset F1 differs from its confusion")
             reconstructed[method].append(DatasetConfusionRowAntigravity(dataset, counts))
     for method in _METHODS_ANTIGRAVITY:
@@ -525,6 +549,11 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         if row["already_hard"] != (row["transition"] == "hard_overlap"):
             raise ValueError("candidate transition overlap state differs")
         if row["transition"] in transition_outcomes[expected_lane]:
+            # ``source`` is the disjoint union of stable and unstable.  Keep
+            # its aggregate separately from the two comparator lanes: adding
+            # source to stable and unstable would incorrectly double count
+            # the frozen 30-coordinate population.
+            transition_outcomes["source"][row["transition"]] += 1
             transition_outcomes[expected_lane][row["transition"]] += 1
         replayed_transitions.add(coordinate)
     if replayed_transitions != source_set or len(stable_set) + len(unstable_set) != len(source_set):
@@ -563,7 +592,7 @@ def _inspect_root_with_dependencies_antigravity(dependencies: object) -> FrozenE
         paired_bootstrap_antigravity(reconstructed["hard_baseline"], reconstructed["hard_plus_stable_26"], expected_comparisons[1], draws=draws).to_payload_antigravity(),
         paired_bootstrap_antigravity(reconstructed["hard_plus_source_30"], reconstructed["hard_plus_stable_26"], expected_comparisons[2], draws=draws).to_payload_antigravity(),
     )
-    if tuple(bootstrap_payload["comparisons"]) != expected_bootstrap:
+    if not _exact_json_value_antigravity(bootstrap_payload["comparisons"], list(expected_bootstrap)):
         raise ValueError("bootstrap deltas, intervals, or shared-draw SHA differ from reconstructed metrics")
     if _pinned_evaluation_leaves_antigravity(root) != leaves:
         raise ValueError("evaluation artifact namespace changed during semantic replay")
