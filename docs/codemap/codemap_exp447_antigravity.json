@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T14:50:20Z",
-  "generated_from_commit": "3151a7b501567bf73b97e2c0aeff9432666b5233",
+  "generated_at": "2026-08-11T14:59:13Z",
+  "generated_from_commit": "c9f7bdb99bcb327a5e539221e35d8b572401491b",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1234,12 +1234,12 @@
     },
     {
       "id": "exp447_evaluation_primitives",
-      "label": "Exp447 closed evaluation and replay boundary",
+      "label": "Exp447 closed evaluation, replay, and publication identity boundary",
       "type": "pipeline",
       "boundary": "Exp447 post-freeze evaluation",
       "layer": 1,
       "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity",
-      "role": "Groups Exp447 immutable source/readiness authority, single-use evaluator, source-free immutable replay, and closed CLI. Replay owns one semantic inspection implementation and imports no evaluator, source authority, SQLite, or TEST-label session. CLI inspect first lazily loads replay alone, then supplies only an immutable identity adapter for completed-artifact revalidation. No official evaluation is run by this code-map update.",
+      "role": "Groups the source-free descriptor-pinned Exp446 publication identity capture, label-capable source authority, single-use evaluator, source-free immutable replay, and closed CLI. Publication identity owns the sole Exp446 capture logic and imports no SQLite, evaluator, sources, or TEST-label session. CLI inspect imports only publication identity plus replay; it cannot load label-capable authority. No official evaluation is run by this code-map update.",
       "entrypoints": [
         "FROZEN_CONFIG_ANTIGRAVITY",
         "PublicationIdentityAntigravity",
@@ -1262,7 +1262,8 @@
         "main_antigravity",
         "run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py",
         "inspect_replay_with_dependencies_antigravity",
-        "replay_antigravity.py"
+        "replay_antigravity.py",
+        "publication_identity_antigravity.py"
       ],
       "tests": [
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_config_antigravity.py",
@@ -1283,7 +1284,8 @@
         "CLI is closed to exactly readiness/evaluate/inspect with allow_abbrev=False. readiness/evaluate require a lowercase full 40-hex reviewed commit; new/resume/retry and root/hash/source/lane/threshold/budget overrides do not exist.",
         "Help, readiness and inspect remain lazy. evaluate checks clean reviewed HEAD before evaluator import; inspect follows the label-free replay API and does not open TEST labels.",
         "The scratch launcher resolves repository root from __file__, works outside the repository CWD, and overwrites OMP_NUM_THREADS, OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, VECLIB_MAXIMUM_THREADS, NUMEXPR_NUM_THREADS, BLIS_NUM_THREADS, and NUMBA_NUM_THREADS to 1 before package import.",
-        "Replay imports no evaluation_antigravity, sources_antigravity, sqlite3, or TEST-label session authority. Its dependency accepts only root plus capture_after; evaluator compatibility and CLI create that identity adapter outside the replay module."
+        "Replay imports no evaluation_antigravity, sources_antigravity, sqlite3, or TEST-label session authority. Its dependency accepts only root plus capture_after; evaluator compatibility and CLI create that identity adapter outside the replay module.",
+        "Publication identity owns one descriptor-pinned Exp446 capture implementation and imports no SQLite, evaluator, sources_antigravity, or TEST-label session. sources reuses it for evaluation; CLI inspect builds its identity adapter from it, so real dispatch leaves label-capable modules unloaded."
       ],
       "evidence": [
         {
@@ -1389,6 +1391,26 @@
         {
           "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_replay_antigravity.py",
           "symbol": "class ReplayAntigravityTests"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/publication_identity_antigravity.py",
+          "symbol": "def capture_exp446_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/publication_identity_antigravity.py",
+          "symbol": "def _validate_exp446_semantics_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/cli_antigravity.py",
+          "symbol": "def _inspect_dependencies_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_real_inspect_dispatch_subprocess_keeps_label_authority_unloaded_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_publication_identity_module_has_no_label_authority_import_antigravity"
         }
       ]
     },
@@ -6621,7 +6643,7 @@
         "exp447_evaluation_primitives",
         "exp446_governance"
       ],
-      "outcome": "The CLI dispatches lazily: readiness remains no-label; evaluate rechecks the clean reviewed commit before the single-use evaluator can load; inspect loader imports only the source-free replay module, then supplies an immutable identity adapter for semantic replay. The launcher pins numerical library threads to one. This flow neither authorizes nor performs an official evaluation."
+      "outcome": "The CLI dispatches lazily: readiness remains no-label; evaluate rechecks the clean reviewed commit before the single-use evaluator can load; inspect imports only the source-free replay and publication-identity modules, then builds an immutable identity adapter for semantic replay. It leaves source authority, evaluator, SQLite, and TEST-label capability unloaded. The launcher pins numerical library threads to one. This flow neither authorizes nor performs an official evaluation."
     }
   ],
   "unknown_relationships": [
