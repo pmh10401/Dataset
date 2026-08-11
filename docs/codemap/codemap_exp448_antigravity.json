@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-12T02:52:03+09:00",
-  "generated_from_commit": "582f0d03bc2e63a8bf745fac1b8975a2af849cd6",
+  "generated_at": "2026-08-12T03:20:00+09:00",
+  "generated_from_commit": "9500234ecc06a0a187ef62fcdd83b6ec13a01a07",
   "scope": [
     "Exp448 governance documents and implemented Task2 controlled-fork foundations",
-    "Exp448 config, contracts, artifact, and bootstrap source modules with focused differential tests"
+    "Exp448 descriptor-pinned Exp446/Exp404 predecessor authority, immutable Exp447 failure audit, metadata-only readiness, and exact TEXT label converter"
   ],
   "nodes": [
     {
@@ -188,10 +188,13 @@
         "tests/test_contracts_antigravity.py",
         "tests/test_artifacts_antigravity.py",
         "tests/test_bootstrap_antigravity.py",
-        "tests/test_controlled_fork_differential_antigravity.py"
+        "tests/test_controlled_fork_differential_antigravity.py",
+        "tests/test_publication_identity_antigravity.py",
+        "tests/test_sources_antigravity.py",
+        "tests/test_readiness_antigravity.py"
       ],
       "constraints": [
-        "Task2 does not import evaluator, SQLite, network, dashboard, or CLI.",
+        "Task2 foundations remain free of evaluator, SQLite, network, dashboard, or CLI.",
         "Only identity keys differ; scientific constants and bootstrap draw contract stay paired with Exp447.",
         "No TEXT runtime/evaluator claim exists at this stage."
       ],
@@ -211,6 +214,48 @@
         {
           "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/bootstrap_antigravity.py",
           "symbol": "paired_bootstrap_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "exp448_prelabel_source_boundary",
+      "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity",
+      "role": "Descriptor-pinned Exp446/Exp404 authority, immutable Exp447 failure audit/root gate, metadata-only readiness, and the sole exact TEXT converter.",
+      "entrypoints": [
+        "capture_exp446_publication_antigravity",
+        "verify_exp447_failure_authority_antigravity",
+        "verify_instances_schema_metadata_antigravity",
+        "convert_test_label_row_antigravity"
+      ],
+      "tests": [
+        "tests/test_publication_identity_antigravity.py",
+        "tests/test_sources_antigravity.py",
+        "tests/test_readiness_antigravity.py",
+        "tests/test_controlled_fork_differential_antigravity.py"
+      ],
+      "constraints": [
+        "Exp447 package and launcher are byte-guarded against 7e85d5c.",
+        "Audit is no-follow descriptor-pinned and Exp447 root must be absent.",
+        "Readiness uses only instances.instance_index INTEGER and instances.label TEXT metadata; it never creates a label session or Exp448 root.",
+        "The converter accepts exact str '0'/'1' with exact int index and immediately returns integer labels.",
+        "Evaluator, replay, CLI, launcher, dashboard, MLX, workers, and training remain unimplemented."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/publication_identity_antigravity.py",
+          "symbol": "capture_exp446_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
+          "symbol": "verify_exp447_failure_authority_antigravity"
+        },
+        {
+          "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
+          "symbol": "convert_test_label_row_antigravity"
+        },
+        {
+          "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/readiness_antigravity.py",
+          "symbol": "verify_instances_schema_metadata_antigravity"
         }
       ]
     }
@@ -296,6 +341,24 @@
         "path": "CHAMPION_LEDGER.json",
         "symbol": "Task2_controlled_fork_implementation"
       }
+    },
+    {
+      "from": "exp448_prelabel_source_boundary",
+      "to": "exp448_foundations",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
+        "symbol": "from .config_antigravity"
+      }
+    },
+    {
+      "from": "exp448_prelabel_source_boundary",
+      "to": "exp447_failure_truth",
+      "type": "verifies",
+      "evidence": {
+        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
+        "symbol": "verify_exp447_failure_authority_antigravity"
+      }
     }
   ],
   "flows": [
@@ -332,18 +395,19 @@
       "outcome": "Only a successful immutable truth closeout may produce sanitized aggregate presentation data; dashboard failure cannot alter science."
     },
     {
-      "trigger": "Task2 controlled-fork foundations",
+      "trigger": "Task2–Task3 controlled-fork boundary",
       "steps": [
         "exp448_plan",
         "exp448_design",
         "exp448_foundations",
+        "exp448_prelabel_source_boundary",
         "research_control"
       ],
-      "outcome": "Exp448 has frozen evaluation foundations only; TEXT source authority and evaluator remain unimplemented."
+      "outcome": "Exp448 now authenticates predecessor authority and metadata-only readiness; the future evaluator alone may construct the one-use TEXT label session."
     }
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Task3 source authority, readiness, evaluator, replay, CLI, and official lifecycle relationships remain unimplemented and are intentionally not asserted."
+    "Evaluator, replay, CLI, launcher, official lifecycle, and dashboard relationships remain unimplemented and are intentionally not asserted."
   ]
 }
