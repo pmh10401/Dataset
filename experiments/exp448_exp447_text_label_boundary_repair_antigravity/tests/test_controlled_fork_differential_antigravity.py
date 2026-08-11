@@ -156,6 +156,42 @@ class ControlledForkDifferentialAntigravityTests(unittest.TestCase):
         self.assertEqual(strip_allowed(predecessor), strip_allowed(normalized))
         self.assertNotEqual(strip_allowed(predecessor), strip_allowed(normalized.replace("numpy.__version__", "'mutation'", 1)))
 
+    def test_task4_evaluation_and_replay_ast_allow_only_identity_audit_and_text_boundary_deltas_antigravity(self) -> None:
+        """A metric or lifecycle mutation must not hide behind the Exp448 conversion boundary."""
+        from experiments.exp448_exp447_text_label_boundary_repair_antigravity.config_antigravity import normalized_pair_equal_antigravity
+
+        evaluation_447 = (_EXP447_ANTIGRAVITY / "evaluation_antigravity.py").read_text()
+        evaluation_448 = (_EXP448_ANTIGRAVITY / "evaluation_antigravity.py").read_text()
+        normalized_evaluation_448 = evaluation_448.replace(
+            "def open_labels(first: PublicationIdentityAntigravity, second: PublicationIdentityAntigravity, hard: object):\n        return open_test_labels_antigravity(first, second, hard)",
+            "def open_labels(first: PublicationIdentityAntigravity, second: PublicationIdentityAntigravity):\n        return open_test_labels_antigravity(first, second)",
+        ).replace(
+            "dependencies.open_labels(identity, second, hard)",
+            "dependencies.open_labels(identity, second)",
+        )
+        self.assertTrue(normalized_pair_equal_antigravity(evaluation_447, normalized_evaluation_448))
+        self.assertFalse(normalized_pair_equal_antigravity(
+            evaluation_447,
+            normalized_evaluation_448.replace("FROZEN_CONFIG_ANTIGRAVITY.label_rows", "195901", 1),
+        ))
+        replay_447 = (_EXP447_ANTIGRAVITY / "replay_antigravity.py").read_text()
+        replay_448 = (_EXP448_ANTIGRAVITY / "replay_antigravity.py").read_text()
+        self.assertTrue(normalized_pair_equal_antigravity(replay_447, replay_448))
+
+    def test_task4_import_firewall_keeps_replay_sqlite_label_and_network_free_antigravity(self) -> None:
+        forbidden = {"sqlite3", "requests", "urllib", "dashboard", "sources_antigravity", "evaluation_antigravity"}
+        for name in ("evaluation", "replay"):
+            source = (_EXP448_ANTIGRAVITY / f"{name}_antigravity.py").read_text()
+            imports = {
+                imported
+                for node in ast.walk(ast.parse(source))
+                if isinstance(node, (ast.Import, ast.ImportFrom))
+                for imported in ([alias.name for alias in node.names] if isinstance(node, ast.Import) else [node.module or ""])
+            }
+            with self.subTest(name=name):
+                disallowed = forbidden - ({"sources_antigravity"} if name == "evaluation" else set())
+                self.assertFalse(any(item == blocked or item.startswith(f"{blocked}.") for item in imports for blocked in disallowed))
+
 
 if __name__ == "__main__":
     unittest.main()
