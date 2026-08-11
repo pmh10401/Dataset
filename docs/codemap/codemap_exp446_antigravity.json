@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T05:30:01Z",
-  "generated_from_commit": "2c305844",
+  "generated_at": "2026-08-11T06:10:43Z",
+  "generated_from_commit": "3a1950b156929b2d2fc2b0960084ed6209d3c1f7",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -86,7 +86,7 @@
     "Exp445 exact typed checkpoint-state and raw-context binding, immutable lane-prefix counter recovery, and irreversible no-marker diagnostic failure gating",
     "Exp445 exact active candidate-index type boundary and pre-existing diagnostic-marker/symlink clean-success block",
     "Exp445 historical four-command implementation surface retained in source, but its completed failed-publication root is immutable and no command may retry, resume, publish, or evaluate it.",
-    "Exp446 preregistered engineering-only recursive JSON materialization at the Exp445 publication encoding boundary; no product wiring is asserted before implementation."
+    "Exp446 implemented engineering-only recursive JSON materialization at the Exp445 publication encoding boundary, with verified frozen-record scheduler/serialization parity and no official readiness, new, inspect, publication, evaluation, label access, or promotion."
   ],
   "nodes": [
     {
@@ -96,7 +96,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 is preregistered_implementation_pending: it may repair only recursive JSON materialization at the publication encoding boundary, has no product implementation yet, and does not authorize official execution.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 is implementation_verified_awaiting_official_readiness: the recursive JSON materialization repair and frozen-record scheduler/serialization parity are verified, while official readiness/new/inspect, publication, evaluation, TEST-label access, and promotion remain unperformed.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -730,7 +730,7 @@
         },
         {
           "path": "docs/EXP446_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "# Exp446 Task 1 implementation report"
+          "symbol": "# Exp446 implementation verification report"
         }
       ]
     },
@@ -5446,7 +5446,7 @@
         },
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_readiness_antigravity.py",
-          "symbol": "def test_profile_readiness_boundary_matrix_preserves_absent_root_antigravity"
+          "symbol": "def test_profile_readiness_boundary_matrix_preserves_official_root_state_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",

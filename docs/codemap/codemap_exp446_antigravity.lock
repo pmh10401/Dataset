@@ -1,9 +1,10 @@
 {
   "changed_modules_since_prior_lock": [
     "docs",
-    "experiments"
+    "experiments",
+    "root"
   ],
-  "current_commit": "80a2f7bb",
+  "current_commit": "3a1950b1",
   "excluded_directories": [
     ".git",
     ".worktrees",
@@ -22,18 +23,18 @@
     "results"
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
-  "generated_at": "2026-08-11T05:30:01Z",
+  "generated_at": "2026-08-11T06:10:43Z",
   "module_fingerprints": {
     ".superpowers": {
       "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
       "tracked_files": 44
     },
     "docs": {
-      "fingerprint": "3087d84d1a88e59925b036fb3dac19ac1f9f9af1cbae776d05a13641bb66e4c1",
+      "fingerprint": "4df6d6f19996e4e6eefc3aea59b09ad88206f36bd994c2c20c21f451c2d26ab2",
       "tracked_files": 383
     },
     "experiments": {
-      "fingerprint": "3f9fea29f23c53a39c1b001963a539a6a6cf7afbde18df68c9c1228e26ecf950",
+      "fingerprint": "68a43ae352823007ccc245c4790d323b551dead53ce562d12ac20bfe770d7ad3",
       "tracked_files": 1312
     },
     "operational": {
@@ -45,7 +46,7 @@
       "tracked_files": 4
     },
     "root": {
-      "fingerprint": "d80802fe13d2929b2647948df0879b619e7cad064e58cabbfe89298beab44fb9",
+      "fingerprint": "f41ede8cabafc3b9519f645f4e2aab6af129c361e860588a48d82d7aeda39dd6",
       "tracked_files": 210
     },
     "scratch": {
@@ -72,5 +73,5 @@
     "scripts",
     "vercel-dashboard"
   ],
-  "working_tree_dirty": true
+  "working_tree_dirty": false
 }
