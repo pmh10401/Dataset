@@ -124,6 +124,38 @@ UCR classification 결과는 후보 표현을 찾는 외부 근거이지 Exp449 
 재사용한다. Hydra, WEASEL, DrCIF, InceptionTime, HC2, TS-CHIEF는 정확한 공식 source,
 version, license, environment, transform/decision interface가 확인된 뒤에만 활성화한다.
 
+읽기 전용 사전 감사에서 기존 격리 환경
+`/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314`은 Python
+3.14.6, aeon 1.4.0, NumPy 2.3.5, scikit-learn 1.7.2를 제공했다. 그 환경에서
+`MiniRocket`, `MultiRocket`, `HydraTransformer`는 `fit/transform`을 제공한다.
+`WEASEL_V2`, `DrCIFClassifier`, `HIVECOTEV2`, `InceptionTimeClassifier`는 classifier
+API만 제공하고 label-free transform은 제공하지 않으며 `TSChiefClassifier`는 없다.
+package를 추가하거나 private classifier state를 표현이라고 재해석하지 않는다.
+
+따라서 Exp449의 성능 후보는 정확히 네 representation으로 제한한다.
+
+- `minirocket_local_gap`
+- `multirocket_local_gap`
+- `hydra_local_gap`
+- `hydra_multirocket_local_gap`: aeon 1.4.0의 공식 Hydra sparse scaling과 MultiROCKET
+  standard scaling 후 feature concatenation까지만 재현하고 classifier ridge head 대신
+  공통 LocalGap head를 사용한다.
+
+classifier-only 문헌 후보는 compatibility audit 표에는 남지만 performance candidate가
+아니다. 각 데이터셋 군을 빠짐없이 평가하기 위해 다음 두 후보를 label access 전에
+고정한다. 이것은 결과를 보고 선택하는 fallback이 아니다.
+
+| 데이터셋 군 | 후보 1 | 후보 2 |
+|---|---|---|
+| Crop | `minirocket_local_gap` | `multirocket_local_gap` |
+| ElectricDevices | `multirocket_local_gap` | `hydra_multirocket_local_gap` |
+| FordA | `minirocket_local_gap` | `hydra_local_gap` |
+| FordB | `multirocket_local_gap` | `hydra_local_gap` |
+| Yoga | `multirocket_local_gap` | `hydra_multirocket_local_gap` |
+| ECG5000 | `multirocket_local_gap` | `hydra_local_gap` |
+| ChlorineConcentration | `minirocket_local_gap` | `multirocket_local_gap` |
+| StarLightCurves | `multirocket_local_gap` | `hydra_local_gap` |
+
 ### 6.2 단계 B: 공통 TRAIN-only anomaly head
 
 score-compatible representation에는 같은 LocalGap/kNN one-class head를 적용한다.
@@ -150,9 +182,10 @@ candidate를 다시 만들지 않는다. prediction 단계 실패 후보는 평�
 
 ## 7. 후보 행렬과 계산 예산
 
-전체 기법 × 전체 데이터셋의 무제한 교차곱은 사용하지 않는다. 먼저 위 문헌 행렬의
-우선/보조 후보만 audit하고, score-compatible 후보만 실행한다. 각 target-family에 최대
-두 개 representation을 두며 동일 representation의 hyperparameter sweep은 하지 않는다.
+전체 기법 × 전체 데이터셋의 무제한 교차곱은 사용하지 않는다. 위 문헌 행렬 전체를
+compatibility audit하되, 성능 실행은 6.1에서 고정한 score-compatible 후보 행렬만 따른다.
+각 target-family에는 정확히 두 개 representation을 두며 동일 representation의
+hyperparameter sweep은 하지 않는다.
 
 모든 seed, transform 설정, OOF fold, neighbor 수, score 방향, threshold rule은 결과를
 보기 전에 preregistration에 기록한다. 공식 third-party transformer의 기본값을 바꾸는
