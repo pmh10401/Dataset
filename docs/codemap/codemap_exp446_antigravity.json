@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T00:00:00Z",
-  "generated_from_commit": "9234b668f9f530e7f5cd39210eae635fa7ead904",
+  "generated_at": "2026-08-11T02:04:17Z",
+  "generated_from_commit": "b7a8ca324a0fbed1dd5e2a73a6c52ea2ef821ced",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -5399,6 +5399,40 @@
           "symbol": "def _publish_exp445_prediction_antigravity"
         }
       ]
+    },
+    {
+      "id": "exp446_exp445_predecessor_authority",
+      "label": "Exp446 immutable Exp445 predecessor verifier",
+      "type": "service",
+      "boundary": "Read-only descriptor-pinned failed-publication authority",
+      "layer": 2,
+      "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/predecessor_antigravity.py",
+      "role": "Authenticates the one Exp445 30/30 CPU/11 failed-publication attempt through no-follow descriptors, exact inventory, seven terminal bytes, ordered wrapper SHA values, semantic complete/inactive state, exact failure marker, absent publication/evaluation namespace, and single-link source DB. It returns only deeply immutable values and hashes.",
+      "entrypoints": [
+        "verify_exp445_predecessor_antigravity"
+      ],
+      "tests": [
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py"
+      ],
+      "constraints": [
+        "No write, rename, unlink, retry, resume, publish, evaluate, or label access.",
+        "Authority contains no Path or open descriptor.",
+        "A real call fails closed while source DB nlink is not one."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/predecessor_antigravity.py",
+          "symbol": "def verify_exp445_predecessor_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/profile_antigravity.py",
+          "symbol": "EXP445_RECORD_SHA256_PREFIX_ANTIGRAVITY"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py",
+          "symbol": "class Exp445PredecessorAuthorityAntigravityTests"
+        }
+      ]
     }
   ],
   "edges": [
@@ -6210,6 +6244,50 @@
           "symbol": "def test_real_frozen_handoff_materializes_control_rows_at_exp445_payload_boundary_antigravity"
         }
       ]
+    },
+    {
+      "from": "exp446_governance",
+      "to": "exp446_exp445_predecessor_authority",
+      "type": "governs",
+      "evidence": [
+        {
+          "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "Exp445 failure authority"
+        }
+      ]
+    },
+    {
+      "from": "exp446_exp445_predecessor_authority",
+      "to": "exp445_predecessor_authority",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/predecessor_antigravity.py",
+          "symbol": "def verify_exp445_predecessor_antigravity"
+        }
+      ]
+    },
+    {
+      "from": "exp446_exp445_predecessor_authority",
+      "to": "sqlite_store",
+      "type": "reads metadata only",
+      "evidence": [
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/profile_antigravity.py",
+          "symbol": "SOURCE_DATABASE_PATH_ANTIGRAVITY"
+        }
+      ]
+    },
+    {
+      "from": "exp446_exp445_predecessor_authority",
+      "to": "exp446_governance",
+      "type": "tests",
+      "evidence": [
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py",
+          "symbol": "def test_returns_values_only_deeply_immutable_authority_without_mutation_antigravity"
+        }
+      ]
     }
   ],
   "flows": [
@@ -6271,14 +6349,27 @@
         "sqlite_store"
       ],
       "outcome": "Publication and evaluation are absent. The Exp445 root accepts no retry, resume, publication, inspect, or evaluation; Exp446 is the separate preregistered engineering-only repair path."
+    },
+    {
+      "id": "exp446_exp445_predecessor_verification_flow",
+      "label": "Exp446 descriptor-pinned Exp445 failure verification",
+      "trigger": "Task 3 readiness must prove the immutable Exp445 failed-publication predecessor before any Exp446 root allocation.",
+      "steps": [
+        "research_control",
+        "exp446_governance",
+        "exp446_exp445_predecessor_authority",
+        "exp445_predecessor_authority",
+        "sqlite_store"
+      ],
+      "outcome": "The verifier reads only through no-follow descriptors, rejects namespace or identity drift and returns the 30 ordered record wrapper SHA values plus aggregate without a path or descriptor. It fails closed if the source database nlink is not one."
     }
   ],
   "unknown_relationships": [
     {
-      "from": "exp446_governance",
-      "relationship": "callers, downstream product effects, test coverage, imports, and runtime routing",
-      "status": "unknown",
-      "reason": "Task 1 freezes governance before product code exists; no product edge is evidenced."
+      "from": "exp446_exp445_predecessor_authority",
+      "relationship": "production readiness and lifecycle callers",
+      "status": "pending",
+      "reason": "Task 4 supplies the verifier; Task 3 will add its first production readiness consumer."
     }
   ],
   "unknowns": {
@@ -6313,7 +6404,7 @@
         "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
         "relationship": "Exp446 product callers and affected modules",
         "status": "unknown",
-        "reason": "The initial Exp446 map records governance only; implementation is pending."
+        "reason": "Task 4 now maps the descriptor-pinned predecessor verifier; later lifecycle callers remain pending."
       }
     ]
   }
