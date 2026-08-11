@@ -1,4 +1,4 @@
-"""Closed Exp444/Exp445 lifecycle identities with no caller-supplied routing."""
+"""Closed Exp444/Exp445/Exp446 lifecycle identities with no caller-supplied routing."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,7 +10,7 @@ _REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[2]
 
 @dataclass(frozen=True)
 class LifecycleProfileAntigravity:
-    """One of the two reviewed lifecycle identities, never a mutable selector."""
+    """One reviewed lifecycle identity, never a mutable selector."""
 
     experiment_id: str
     schema: str
@@ -39,6 +39,15 @@ class LifecycleProfileAntigravity:
             _REPOSITORY_ROOT_ANTIGRAVITY / "docs/EXP445_PREREGISTRATION_antigravity_KO.md",
             True,
         )
+        exp446 = (
+            "Exp446",
+            "exp446",
+            "exp446-exp445-publication-materialization-repair-antigravity-20260811",
+            Path("/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811"),
+            _REPOSITORY_ROOT_ANTIGRAVITY / "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
+            _REPOSITORY_ROOT_ANTIGRAVITY / "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
+            True,
+        )
         actual = (
             self.experiment_id,
             self.schema,
@@ -48,8 +57,8 @@ class LifecycleProfileAntigravity:
             self.preregistration_path,
             self.predecessor_required,
         )
-        if actual not in (exp444, exp445):
-            raise ValueError("lifecycle profile is not one of the two reviewed identities")
+        if actual not in (exp444, exp445, exp446):
+            raise ValueError("lifecycle profile is not one of the three reviewed identities")
 
 
 EXP444_PROFILE_ANTIGRAVITY = LifecycleProfileAntigravity(
@@ -72,6 +81,16 @@ EXP445_PROFILE_ANTIGRAVITY = LifecycleProfileAntigravity(
     predecessor_required=True,
 )
 
+EXP446_PROFILE_ANTIGRAVITY = LifecycleProfileAntigravity(
+    experiment_id="Exp446",
+    schema="exp446",
+    run_identity="exp446-exp445-publication-materialization-repair-antigravity-20260811",
+    run_root=Path("/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811"),
+    reviewed_design_path=_REPOSITORY_ROOT_ANTIGRAVITY / "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
+    preregistration_path=_REPOSITORY_ROOT_ANTIGRAVITY / "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
+    predecessor_required=True,
+)
+
 
 def _require_exp444_profile_antigravity(profile: object) -> LifecycleProfileAntigravity:
     """Reject equal-looking caller-minted values; Exp444 may use its singleton only."""
@@ -87,8 +106,16 @@ def _require_exp445_profile_antigravity(profile: object) -> LifecycleProfileAnti
     return EXP445_PROFILE_ANTIGRAVITY
 
 
+def _require_exp446_profile_antigravity(profile: object) -> LifecycleProfileAntigravity:
+    """Reserve Exp446's singleton for its later closed lifecycle wrapper."""
+    if profile is not EXP446_PROFILE_ANTIGRAVITY:
+        raise ValueError("Exp446 lifecycle profile is invalid")
+    return EXP446_PROFILE_ANTIGRAVITY
+
+
 __all__ = [
     "LifecycleProfileAntigravity",
     "EXP444_PROFILE_ANTIGRAVITY",
     "EXP445_PROFILE_ANTIGRAVITY",
+    "EXP446_PROFILE_ANTIGRAVITY",
 ]

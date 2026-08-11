@@ -40,6 +40,7 @@ from .contracts_antigravity import (
 from .profiles_antigravity import (
     EXP444_PROFILE_ANTIGRAVITY,
     EXP445_PROFILE_ANTIGRAVITY,
+    EXP446_PROFILE_ANTIGRAVITY,
     LifecycleProfileAntigravity,
 )
 
@@ -89,6 +90,8 @@ def _require_publication_profile_antigravity(profile: object) -> LifecycleProfil
         return EXP444_PROFILE_ANTIGRAVITY
     if profile is EXP445_PROFILE_ANTIGRAVITY:
         return EXP445_PROFILE_ANTIGRAVITY
+    if profile is EXP446_PROFILE_ANTIGRAVITY:
+        return EXP446_PROFILE_ANTIGRAVITY
     raise ValueError("publication lifecycle profile is invalid")
 
 

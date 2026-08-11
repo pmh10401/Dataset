@@ -1,4 +1,4 @@
-"""Contract tests for the closed Exp444/Exp445 lifecycle identities."""
+"""Contract tests for the closed Exp444/Exp445/Exp446 lifecycle identities."""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -19,6 +19,7 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.contract
 from experiments.exp444_train_only_stability_precision_gate_antigravity.profiles_antigravity import (
     EXP444_PROFILE_ANTIGRAVITY,
     EXP445_PROFILE_ANTIGRAVITY,
+    EXP446_PROFILE_ANTIGRAVITY,
     LifecycleProfileAntigravity,
 )
 
@@ -29,8 +30,8 @@ _REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[3]
 class LifecycleProfilesAntigravityTests(unittest.TestCase):
     """A changed identity, root, or schema must not mint a lifecycle profile."""
 
-    def test_only_two_fixed_profiles_separate_identity_and_root_antigravity(self) -> None:
-        profiles = (EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY)
+    def test_only_three_fixed_profiles_separate_identity_and_root_antigravity(self) -> None:
+        profiles = (EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY, EXP446_PROFILE_ANTIGRAVITY)
         exported = tuple(
             value for name, value in vars(__import__(
                 "experiments.exp444_train_only_stability_precision_gate_antigravity.profiles_antigravity",
@@ -78,6 +79,26 @@ class LifecycleProfilesAntigravityTests(unittest.TestCase):
         )
         self.assertTrue(EXP445_PROFILE_ANTIGRAVITY.predecessor_required)
         self.assertNotEqual(EXP444_PROFILE_ANTIGRAVITY.run_root, EXP445_PROFILE_ANTIGRAVITY.run_root)
+        self.assertEqual(EXP446_PROFILE_ANTIGRAVITY.experiment_id, "Exp446")
+        self.assertEqual(EXP446_PROFILE_ANTIGRAVITY.schema, "exp446")
+        self.assertEqual(
+            EXP446_PROFILE_ANTIGRAVITY.run_identity,
+            "exp446-exp445-publication-materialization-repair-antigravity-20260811",
+        )
+        self.assertEqual(
+            EXP446_PROFILE_ANTIGRAVITY.run_root,
+            Path("/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811"),
+        )
+        self.assertEqual(
+            EXP446_PROFILE_ANTIGRAVITY.reviewed_design_path,
+            _REPOSITORY_ROOT_ANTIGRAVITY / "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
+        )
+        self.assertEqual(
+            EXP446_PROFILE_ANTIGRAVITY.preregistration_path,
+            _REPOSITORY_ROOT_ANTIGRAVITY / "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
+        )
+        self.assertTrue(EXP446_PROFILE_ANTIGRAVITY.predecessor_required)
+        self.assertNotIn(EXP446_PROFILE_ANTIGRAVITY.run_root, {EXP444_PROFILE_ANTIGRAVITY.run_root, EXP445_PROFILE_ANTIGRAVITY.run_root})
 
     def test_profile_rejects_arbitrary_identity_root_and_schema_antigravity(self) -> None:
         for changes in (

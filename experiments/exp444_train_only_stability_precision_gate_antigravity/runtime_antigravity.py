@@ -45,7 +45,7 @@ from .contracts_antigravity import (
 )
 from .progress_antigravity import ProgressWriterAntigravity
 from .readiness_antigravity import current_clean_head_antigravity, readiness_for_profile_antigravity
-from .profiles_antigravity import EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY, LifecycleProfileAntigravity
+from .profiles_antigravity import EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY, EXP446_PROFILE_ANTIGRAVITY, LifecycleProfileAntigravity
 
 
 _ATTEMPT_NAME_ANTIGRAVITY = re.compile(r"attempt_[0-9]{4}_antigravity$")
@@ -65,6 +65,13 @@ def _verify_exp445_predecessor_antigravity():
     from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
 
     return verify_exp444_predecessor_antigravity()
+
+
+def _verify_exp446_predecessor_antigravity():
+    """Authenticate Exp445's immutable failed-publication authority for Exp446."""
+    from experiments.exp446_exp445_publication_materialization_repair_antigravity.predecessor_antigravity import verify_exp445_predecessor_antigravity
+
+    return verify_exp445_predecessor_antigravity()
 
 
 def _error_view_index_antigravity(error: BaseException) -> int | None:
@@ -384,7 +391,7 @@ def _context_for_profile_antigravity(
 ) -> CheckpointContextAntigravity | ProfileCheckpointContextAntigravity:
     if profile is EXP444_PROFILE_ANTIGRAVITY:
         return _context_antigravity(reviewed_commit)
-    if profile is not EXP445_PROFILE_ANTIGRAVITY:
+    if profile is not EXP445_PROFILE_ANTIGRAVITY and profile is not EXP446_PROFILE_ANTIGRAVITY:
         raise ValueError("runtime lifecycle profile is invalid")
     from .readiness_antigravity import _profile_document_sha256_antigravity
 
@@ -686,13 +693,22 @@ def _execute_runtime_antigravity(
     if mode == "new":
         from .provenance_antigravity import verify_exp444_provenance_antigravity
         verify_exp444_provenance_antigravity()
-    if profile not in (EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY):
+    if (
+        profile is not EXP444_PROFILE_ANTIGRAVITY
+        and profile is not EXP445_PROFILE_ANTIGRAVITY
+        and profile is not EXP446_PROFILE_ANTIGRAVITY
+    ):
         raise ValueError("runtime lifecycle profile is invalid")
-    if profile is EXP445_PROFILE_ANTIGRAVITY and (mode != "new" or run_root is not None or attempt_name is not None):
-        raise ValueError("Exp445 supports fixed new execution only")
-    root = Path(profile.run_root if profile is EXP445_PROFILE_ANTIGRAVITY else (FROZEN_CONFIG.run_root if run_root is None else run_root))
+    fixed_profile = profile is EXP445_PROFILE_ANTIGRAVITY or profile is EXP446_PROFILE_ANTIGRAVITY
+    if fixed_profile and (mode != "new" or run_root is not None or attempt_name is not None):
+        raise ValueError(f"{profile.experiment_id} supports fixed new execution only")
+    root = Path(profile.run_root if fixed_profile else (FROZEN_CONFIG.run_root if run_root is None else run_root))
     context = _context_for_profile_antigravity(profile, reviewed_commit)
-    predecessor = _verify_exp445_predecessor_antigravity() if profile is EXP445_PROFILE_ANTIGRAVITY else None
+    predecessor = (
+        _verify_exp445_predecessor_antigravity() if profile is EXP445_PROFILE_ANTIGRAVITY
+        else _verify_exp446_predecessor_antigravity() if profile is EXP446_PROFILE_ANTIGRAVITY
+        else None
+    )
     process = current_process_identity_antigravity()
     # The source session is a values-only capability.  It must be fully
     # materialized and closed before *any* new-root or interrupted-owner
@@ -988,8 +1004,8 @@ def run_new_antigravity(
 def run_new_for_profile_antigravity(
     profile: LifecycleProfileAntigravity, reviewed_commit: str,
 ) -> RuntimeOutcomeAntigravity:
-    """Internal entrypoint for Exp445's fixed new-only profile."""
-    if profile is not EXP445_PROFILE_ANTIGRAVITY:
+    """Internal entrypoint for a fixed Exp445/Exp446 new-only profile."""
+    if profile is not EXP445_PROFILE_ANTIGRAVITY and profile is not EXP446_PROFILE_ANTIGRAVITY:
         raise ValueError("runtime lifecycle profile is invalid")
     # A direct internal caller must receive exactly the same live readiness
     # checks as the facade before any source/root/checkpoint mutation.

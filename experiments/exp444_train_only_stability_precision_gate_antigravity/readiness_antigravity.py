@@ -20,6 +20,7 @@ from .stability_antigravity import replay_original_candidates_antigravity
 from .profiles_antigravity import (
     EXP444_PROFILE_ANTIGRAVITY,
     EXP445_PROFILE_ANTIGRAVITY,
+    EXP446_PROFILE_ANTIGRAVITY,
     LifecycleProfileAntigravity,
 )
 
@@ -61,6 +62,10 @@ class ReadinessEvidenceAntigravity:
                 "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
                 "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
             ),
+            "Exp446": (
+                "3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281",
+                "440d4e735a2cdd4447c35a44a3431fce09788c7181c8bd35c6e3f2a5262d5838",
+            ),
         }
         if self.profile_experiment_id not in documents or (
             self.reviewed_design_sha256, self.preregistration_sha256
@@ -91,16 +96,18 @@ def _require_closed_profile_antigravity(profile: object) -> LifecycleProfileAnti
         return EXP444_PROFILE_ANTIGRAVITY
     if profile is EXP445_PROFILE_ANTIGRAVITY:
         return EXP445_PROFILE_ANTIGRAVITY
+    if profile is EXP446_PROFILE_ANTIGRAVITY:
+        return EXP446_PROFILE_ANTIGRAVITY
     raise ValueError("lifecycle profile is invalid")
 
 
 def _profile_document_sha256_antigravity(profile: LifecycleProfileAntigravity) -> dict[str, str]:
     profile = _require_closed_profile_antigravity(profile)
-    expected = (
-        ("1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8", "347ba8f0e37d2f185b98ed65acdc936fd2238cea5e97ed0fecd34cabcc1974db")
-        if profile is EXP444_PROFILE_ANTIGRAVITY else
-        ("099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d", "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a")
-    )
+    expected = {
+        EXP444_PROFILE_ANTIGRAVITY: ("1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8", "347ba8f0e37d2f185b98ed65acdc936fd2238cea5e97ed0fecd34cabcc1974db"),
+        EXP445_PROFILE_ANTIGRAVITY: ("099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d", "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a"),
+        EXP446_PROFILE_ANTIGRAVITY: ("3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281", "440d4e735a2cdd4447c35a44a3431fce09788c7181c8bd35c6e3f2a5262d5838"),
+    }[profile]
     output: dict[str, str] = {}
     for key, path, expected_sha in zip(("reviewed_design_sha256", "preregistration_sha256"), (profile.reviewed_design_path, profile.preregistration_path), expected, strict=True):
         if path.is_symlink() or not path.is_file() or sha256(path.read_bytes()).hexdigest() != expected_sha:
@@ -124,8 +131,12 @@ def readiness_for_profile_antigravity(profile: LifecycleProfileAntigravity, revi
     if provenance.backend_decision.backend != "cpu" or provenance.backend_decision.workers != 11:
         raise ValueError("profile readiness backend decision changed")
     if profile.predecessor_required:
-        from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
-        verify_exp444_predecessor_antigravity()
+        if profile is EXP445_PROFILE_ANTIGRAVITY:
+            from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
+            verify_exp444_predecessor_antigravity()
+        else:
+            from experiments.exp446_exp445_publication_materialization_repair_antigravity.predecessor_antigravity import verify_exp445_predecessor_antigravity
+            verify_exp445_predecessor_antigravity()
     inputs, source_hashes, labels = _materialize_values_antigravity()
     controls = replay_original_candidates_antigravity(inputs)  # type: ignore[arg-type]
     if len(controls) != 30 or any(not item.matches_source for item in controls):
@@ -231,7 +242,7 @@ def validate_readiness_payload_antigravity(payload: Mapping[str, object]) -> dic
         "reviewed_design_sha256", "preregistration_sha256", "worker_parity_authority_sha256",
     }:
         raise ValueError("Exp444 readiness payload schema is invalid")
-    if payload["schema"] not in {"exp444.readiness.v1", "exp445.readiness.v1"}:
+    if payload["schema"] not in {"exp444.readiness.v1", "exp445.readiness.v1", "exp446.readiness.v1"}:
         raise ValueError("Exp444 readiness payload schema is invalid")
     hashes = payload["source_hashes"]
     if not isinstance(hashes, Mapping) or not hashes or any(type(name) is not str or type(value) is not str or len(value) != 64 or any(char not in _HEX_ANTIGRAVITY for char in value) for name, value in hashes.items()):
@@ -241,7 +252,7 @@ def validate_readiness_payload_antigravity(payload: Mapping[str, object]) -> dic
         payload["label_access_count"], payload["backend"], payload["workers"],
         payload["environment_lock_sha256"], payload["scientific_config_sha256"],
         payload["reviewed_design_sha256"], payload["preregistration_sha256"], payload["worker_parity_authority_sha256"],
-        "Exp445" if payload["schema"] == "exp445.readiness.v1" else "Exp444",
+        {"exp444.readiness.v1": "Exp444", "exp445.readiness.v1": "Exp445", "exp446.readiness.v1": "Exp446"}[payload["schema"]],
     )
     if evidence.environment_lock_sha256 != FROZEN_CONFIG.environment_lock_sha256 or evidence.scientific_config_sha256 != scientific_config_sha256_antigravity():
         raise ValueError("Exp444 readiness frozen identity changed")

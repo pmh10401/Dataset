@@ -647,7 +647,7 @@ class CheckpointContextAntigravity:
 
 @dataclass(frozen=True)
 class ProfileCheckpointContextAntigravity:
-    """Exp445-only identity context; legacy Exp444 context bytes stay unchanged."""
+    """Exp445/Exp446 identity context; legacy Exp444 context bytes stay unchanged."""
 
     experiment_id: str
     schema: str
@@ -662,9 +662,18 @@ class ProfileCheckpointContextAntigravity:
     preregistration_sha256: str
 
     def __post_init__(self) -> None:
-        if (self.experiment_id, self.schema, self.run_identity) != (
-            "Exp445", "exp445", "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
-        ):
+        identities = {
+            ("Exp445", "exp445", "exp445-exp444-publication-source-authority-repair-antigravity-20260810"): (
+                "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+                "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
+            ),
+            ("Exp446", "exp446", "exp446-exp445-publication-materialization-repair-antigravity-20260811"): (
+                "3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281",
+                "440d4e735a2cdd4447c35a44a3431fce09788c7181c8bd35c6e3f2a5262d5838",
+            ),
+        }
+        expected_documents = identities.get((self.experiment_id, self.schema, self.run_identity))
+        if expected_documents is None:
             raise ValueError("checkpoint profile identity is invalid")
         if self.scientific_config_sha256 != scientific_config_sha256_antigravity() or self.environment_lock_sha256 != FROZEN_CONFIG.environment_lock_sha256:
             raise ValueError("checkpoint profile inherited hashes are invalid")
@@ -672,10 +681,7 @@ class ProfileCheckpointContextAntigravity:
             raise ValueError("checkpoint profile topology is invalid")
         if type(self.reviewed_commit) is not str or len(self.reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in self.reviewed_commit):
             raise ValueError("checkpoint profile reviewed commit is invalid")
-        if (self.reviewed_design_sha256, self.preregistration_sha256) != (
-            "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
-            "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
-        ):
+        if (self.reviewed_design_sha256, self.preregistration_sha256) != expected_documents:
             raise ValueError("checkpoint profile document authority is invalid")
 
     def to_payload(self) -> dict[str, object]:

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T02:15:57Z",
-  "generated_from_commit": "a0dd3965826067fab49137741a033a6fbad5e925",
+  "generated_at": "2026-08-11T02:29:24Z",
+  "generated_from_commit": "a295bd63c2233bc1a0de56db0d25b73be339879f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1004,20 +1004,27 @@
     },
     {
       "id": "exp446_governance",
-      "label": "Exp446 frozen governance",
+      "label": "Exp446 closed lifecycle profile contract",
       "type": "interface",
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
-      "role": "Exp446 governance now includes the Task 4 descriptor-pinned, values-only Exp445 failed-publication verifier. It has no lifecycle caller until Task 3 readiness consumes it.",
-      "entrypoints": [],
+      "role": "Exp446 governance is bound to the reviewed singleton, profile-aware checkpoint context, readiness gates, fixed new-only runtime routing, and internal reporting dispatch. It consumes the Task 4 descriptor-pinned Exp445 failed-publication verifier before any Exp446 root allocation.",
+      "entrypoints": [
+        "LifecycleProfileAntigravity",
+        "readiness_for_profile_antigravity",
+        "run_new_for_profile_antigravity",
+        "_require_publication_profile_antigravity"
+      ],
       "tests": [
-        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py"
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py",
+        "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_profile_contracts_antigravity.py"
       ],
       "constraints": [
-        "Task 4 verifier is read-only, descriptor-pinned, label-free, and values-only.",
-        "It pins every leaf and the source database for the full transaction, revalidates identity and exact namespaces before return, and fails closed on source DB nlink drift.",
-        "No lifecycle caller exists until Task 3 readiness wiring."
+        "Exactly Exp444, Exp445, and Exp446 reviewed singleton identities are accepted; caller-minted equal profiles and altered identities are rejected by identity.",
+        "Exp446 checkpoint context binds schema, reviewed-design and preregistration hashes, CPU/11/inner-1, and label access 0 without changing legacy Exp444 or Exp445 context bytes.",
+        "Exp446 readiness validates clean reviewed HEAD, document/environment/scientific authority, source DB/link authority, immutable Task 4 Exp445 predecessor authority, and absent non-symlink root before allocation.",
+        "Exp446 runtime is fixed to new, its fixed root, and attempt_0000_antigravity; no caller root, attempt, backend, or worker routing is accepted."
       ],
       "evidence": [
         {
@@ -1029,8 +1036,28 @@
           "symbol": "def verify_exp445_predecessor_antigravity"
         },
         {
-          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_predecessor_antigravity.py",
-          "symbol": "class Exp445PredecessorAuthorityAntigravityTests"
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/profiles_antigravity.py",
+          "symbol": "EXP446_PROFILE_ANTIGRAVITY = LifecycleProfileAntigravity("
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "class ProfileCheckpointContextAntigravity:"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/readiness_antigravity.py",
+          "symbol": "def readiness_for_profile_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def run_new_for_profile_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _require_publication_profile_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_profile_contracts_antigravity.py",
+          "symbol": "class Exp446ProfileContractsAntigravityTests"
         }
       ]
     },
@@ -6203,6 +6230,21 @@
           "symbol": "def test_real_frozen_handoff_materializes_control_rows_at_exp445_payload_boundary_antigravity"
         }
       ]
+    },
+    {
+      "from": "exp444_stability_contracts",
+      "to": "exp446_governance",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/readiness_antigravity.py",
+          "symbol": "from experiments.exp446_exp445_publication_materialization_repair_antigravity.predecessor_antigravity import verify_exp445_predecessor_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def _verify_exp446_predecessor_antigravity"
+        }
+      ]
     }
   ],
   "flows": [
@@ -6267,25 +6309,19 @@
     },
     {
       "id": "exp446_exp445_predecessor_verification_flow",
-      "label": "Exp446 descriptor-pinned Exp445 failure verification",
-      "trigger": "Task 3 readiness must prove the immutable Exp445 failed-publication predecessor before any Exp446 root allocation.",
+      "label": "Exp446 closed readiness and immutable Exp445 verification",
+      "trigger": "Task 3 profile readiness accepts only the Exp446 singleton and must prove immutable Exp445 failed-publication authority before any Exp446 root allocation.",
       "steps": [
         "research_control",
         "exp446_governance",
+        "exp444_stability_contracts",
         "exp445_predecessor_authority",
         "sqlite_store"
       ],
-      "outcome": "The Task 4 verifier reads only through no-follow descriptors, retains and revalidates every leaf and source-DB identity through the complete transaction, rejects namespace or identity drift, and returns only the 30 ordered wrapper SHA values plus aggregate. It has no lifecycle caller until Task 3."
+      "outcome": "Readiness requires clean reviewed HEAD, frozen Exp446 design/preregistration and inherited environment/scientific CPU/11 authority, label-free source verification, Task 4 descriptor-pinned Exp445 verifier success, and an absent non-symlink Exp446 root. Runtime accepts only the same singleton with new, the fixed root, and attempt_0000_antigravity; no root is allocated by this contract task."
     }
   ],
-  "unknown_relationships": [
-    {
-      "from": "exp446_governance",
-      "relationship": "production readiness and lifecycle callers",
-      "status": "pending",
-      "reason": "Task 4 provides the verifier, but Task 3 will add the first production readiness consumer."
-    }
-  ],
+  "unknown_relationships": [],
   "unknowns": {
     "root_policy_files": [
       {
@@ -6316,9 +6352,9 @@
       },
       {
         "path": "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
-        "relationship": "Exp446 product callers and affected modules",
+        "relationship": "Later Exp446 lifecycle and publication callers",
         "status": "unknown",
-        "reason": "Task 4 maps the verifier under Exp446 governance; lifecycle callers remain pending."
+        "reason": "Task 3 establishes only shared profile/readiness/runtime/reporting contracts; the closed lifecycle wrapper remains pending."
       }
     ]
   }
