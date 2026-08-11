@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-12T00:00:00+09:00",
-  "generated_from_commit": "8700e25ca525e7c11ffc0a86bda06c80cc8c1109",
+  "generated_at": "2026-08-11T23:54:15+00:00",
+  "generated_from_commit": "09e1e9ba3174e24f5dd49b18477755cf854145a2",
   "scope": [
-    "Exp449 Task-2 candidate registry, immutable contracts, canonical artifacts, fixed method audit, and future product boundaries"
+    "Exp449 Task-2 candidate registry, immutable contracts, canonical artifacts, fixed method audit, verified HTML-plan progress policy, and future product boundaries"
   ],
   "nodes": [
     {
@@ -96,6 +96,48 @@
         {
           "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
           "symbol": "Task 1 governance-only report"
+        }
+      ]
+    },
+    {
+      "id": "project_execution_policy",
+      "path": "AGENTS.md",
+      "role": "Durable global rule: checked HTML-plan controls represent only completed implementation and review/verification boundaries.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "AGENTS.md",
+          "symbol": "In HTML implementation plans"
+        }
+      ]
+    },
+    {
+      "id": "html_implementation_plan",
+      "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
+      "role": "Self-contained Exp449 implementation plan whose visible disabled task and step controls record verified progress only.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
+          "symbol": "Task 1: Governance Freeze and Reproducible Exp449 Code Map"
+        }
+      ]
+    },
+    {
+      "id": "governance_regression",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
+      "role": "Structural stdlib HTML-parser regression for Exp449 plan task/step completion state and global governance constraints.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
+          "symbol": "class PlanCheckboxParserAntigravity"
         }
       ]
     },
@@ -259,6 +301,33 @@
       }
     },
     {
+      "from": "project_execution_policy",
+      "to": "html_implementation_plan",
+      "type": "governs",
+      "evidence": {
+        "path": "AGENTS.md",
+        "symbol": "In HTML implementation plans"
+      }
+    },
+    {
+      "from": "governance_regression",
+      "to": "project_execution_policy",
+      "type": "reads",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
+        "symbol": "Path(\"AGENTS.md\")"
+      }
+    },
+    {
+      "from": "governance_regression",
+      "to": "html_implementation_plan",
+      "type": "reads",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
+        "symbol": "test_html_plan_records_only_verified_task_and_step_progress_antigravity"
+      }
+    },
+    {
       "from": "exp449_preregistration",
       "to": "exp448_predecessor",
       "type": "reads",
@@ -343,6 +412,15 @@
         "champion_ledger"
       ],
       "outcome": "Planned Exp449 truth only: no official command, label access, promotion, or routing."
+    },
+    {
+      "trigger": "Verified HTML-plan progress",
+      "steps": [
+        "project_execution_policy",
+        "html_implementation_plan",
+        "governance_regression"
+      ],
+      "outcome": "Only Task 1 and Task 2, plus their verified steps, render checked; pending work remains unchecked."
     },
     {
       "trigger": "Task-2 contract freeze",
