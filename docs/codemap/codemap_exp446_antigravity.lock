@@ -1,9 +1,10 @@
 {
   "changed_modules_since_prior_lock": [
+    "docs",
     "experiments",
     "root"
   ],
-  "current_commit": "626e847e",
+  "current_commit": "682ed286",
   "excluded_directories": [
     ".git",
     ".worktrees",
@@ -22,18 +23,18 @@
     "results"
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
-  "generated_at": "2026-08-11T06:56:32Z",
+  "generated_at": "2026-08-11T07:32:50Z",
   "module_fingerprints": {
     ".superpowers": {
       "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
       "tracked_files": 44
     },
     "docs": {
-      "fingerprint": "4df6d6f19996e4e6eefc3aea59b09ad88206f36bd994c2c20c21f451c2d26ab2",
+      "fingerprint": "76d3433a2b8a3fe0344d4329ac05fc1ff6d1a6420f672873ded472742baa6efb",
       "tracked_files": 383
     },
     "experiments": {
-      "fingerprint": "d62e836d7b40e1e7af45c33c6547f6511048cbbe74da96cfe36734be73796b0c",
+      "fingerprint": "45d1bbbd0a94c997a796f738a3d19324779b6896dbbeca880b83cfef2cfc4fdd",
       "tracked_files": 1312
     },
     "operational": {
@@ -45,7 +46,7 @@
       "tracked_files": 4
     },
     "root": {
-      "fingerprint": "b4f8645c515f582f26b5ceafa13f09c1c2a127eac47afc2ebe65ecec9518f05c",
+      "fingerprint": "f1513b6d164c6c3f07246a812528087ab435235d7bc3f7fcd1298c5f5672fb99",
       "tracked_files": 210
     },
     "scratch": {

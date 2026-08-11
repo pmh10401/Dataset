@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T06:56:32Z",
-  "generated_from_commit": "626e847e4e9717a5b35fea9054ff7640f2038da5",
+  "generated_at": "2026-08-11T07:32:50Z",
+  "generated_from_commit": "682ed286c345cc10a665ccc860202ba1ef43a306",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -88,7 +88,8 @@
     "Exp445 historical four-command implementation surface retained in source, but its completed failed-publication root is immutable and no command may retry, resume, publish, or evaluate it.",
     "Exp446 implemented engineering-only recursive JSON materialization at the Exp445 publication encoding boundary, with verified frozen-record scheduler/serialization parity and no official readiness, new, inspect, publication, evaluation, label access, or promotion.",
     "Exp446 terminal authority correction: frozen per-record dataset/train/raw dimensions and four lane-derived abstentions are validated without changing scientific computation or official lifecycle authority.",
-    "Exp446 terminal identity repair: each immutable Exp445 wrapper binds sequence separately from candidate instance_index and original_rank; four abstentions are sequence/original-rank positions, never instance indices."
+    "Exp446 terminal identity repair: each immutable Exp445 wrapper binds sequence separately from candidate instance_index and original_rank; four abstentions are sequence/original-rank positions, never instance indices.",
+    "Exp446 official CPU/11 runtime and create-only publication completed 30/30 with four abstentions and zero labels; the original wrapper failed only after publication on MappingProxyType serialization, while source-free inspection remains pending fresh Sol review."
   ],
   "nodes": [
     {
@@ -98,7 +99,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 is implementation_verified_awaiting_official_readiness: the recursive JSON materialization repair and frozen-record scheduler/serialization parity are verified, while official readiness/new/inspect, publication, evaluation, TEST-label access, and promotion remain unperformed.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its original wrapper failed only after return while serializing a nested MappingProxyType, and fresh Sol review is required before source-free inspection.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -1011,7 +1012,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 authorizes only its exact profile before any caller-controlled path dereference, retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine. Terminal authority validation binds each frozen wrapper to immutable dataset, instance index, original rank, train, and raw dimensions; it keeps log candidate index as sequence, derives status from its parsed lane, requires four sequence/original-rank abstentions, and checks matching terminal progress/events/text rows.",
+      "role": "Exp446 authorizes only its exact profile before any caller-controlled path dereference, retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine. Terminal authority validation binds each frozen wrapper to immutable dataset, instance index, original rank, train, and raw dimensions; it keeps log candidate index as sequence, derives status from its parsed lane, requires four sequence/original-rank abstentions, and checks matching terminal progress/events/text rows. Its CLI serializes dataclass fields individually through the existing recursive JSON-safe converter, avoiding asdict deep-copy of frozen MappingProxyType values while preserving deterministic mapping/list/scalar output.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1041,7 +1042,8 @@
         "The marker-inclusive terminal capture records all terminal bytes and leaf identities; both a pre-staging descriptor replay and post-rename leaf identity recheck reject changes while preserving create-only failure evidence.",
         "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect with abbreviation disabled; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module. The launcher has no hidden command and delegates every argv to this CLI after pinning seven thread variables.",
         "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. The pre-rename staging identity survives parent-fsync, destination-open, and frozen-byte failures; cleanup quarantines only that exact descriptor-created publication object and never a swapped replacement.",
-        "Terminal authority checks exact frozen dataset, instance index, original rank, train, and raw dimensions; log candidate index is sequence; status is lane-derived; exactly four sequence/original-rank abstentions are required; progress/event/text rows must agree."
+        "Terminal authority checks exact frozen dataset, instance index, original rank, train, and raw dimensions; log candidate index is sequence; status is lane-derived; exactly four sequence/original-rank abstentions are required; progress/event/text rows must agree.",
+        "Official Exp446 runtime/publication are immutable and complete; no retry or root mutation is permitted. The original wrapper-only MappingProxyType serialization failure is repaired by field-wise dataclass traversal, and source-free inspection remains pending fresh Sol review."
       ],
       "evidence": [
         {
@@ -1191,6 +1193,10 @@
         {
           "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_lifecycle_antigravity.py",
           "symbol": "def test_terminal_authority_accepts_frozen_four_abstention_dimensions_antigravity"
+        },
+        {
+          "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_new_result_serializes_nested_mappingproxy_dataclass_antigravity"
         }
       ]
     },
