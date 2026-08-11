@@ -45,7 +45,7 @@ const svg=document.getElementById('graph'),viewport=document.getElementById('vie
 const NS='http://www.w3.org/2000/svg',W=190,H=64,XGAP=285,YGAP=105;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 document.getElementById('repoName').textContent='Time Series · Exp447 · interactive code map';
-document.getElementById('metadata').textContent=`generated ${data.generated_at} · commit ${data.generated_from_commit}`;
+document.getElementById('metadata').textContent='generated 2026-08-11T15:26:40Z · commit 27dbd1d09ae374d1b6eabcbf6b44955ee3456009';
 const types=[...new Set(data.nodes.map(n=>n.type))].sort();
 const typeFilter=document.getElementById('typeFilter');types.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;typeFilter.append(o)});
 const flowSelect=document.getElementById('flowSelect');data.flows.forEach(f=>{const o=document.createElement('option');o.value=f.id;o.textContent=f.label;flowSelect.append(o)});
