@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-11T05:24:00Z",
+  "generated_at": "2026-08-11T05:30:01Z",
   "generated_from_commit": "2c305844",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
@@ -1009,7 +1009,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine.",
+      "role": "Exp446 authorizes only its exact profile before any caller-controlled path dereference, retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1027,7 +1027,7 @@
         "experiments/exp446_exp445_publication_materialization_repair_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
-        "Exp446 has no caller routing override: new uses CPU/11, inner thread 1, a fixed root, and attempt_0000_antigravity.",
+        "Exp446 has no caller routing override: new uses CPU/11, inner thread 1, a fixed root, and attempt_0000_antigravity. Publication rejects every caller-minted or equal-looking profile before reading run_root, opening a descriptor, or writing failure evidence.",
         "Fresh Exp444 and Exp445 predecessor authorities are required before allocation; every canonical wrapper SHA is compared at its index before success checkpoint persistence.",
         "Aggregate mismatch or a changed final predecessor creates the exact-next error record and inactive progress/PID evidence; a root cannot be retried.",
         "Terminal checkpoint counters and event PID/completed/total/candidate indices use exact JSON scalar types; every event dataset/index/completion transition is bound to its parsed record result and logs require terminal LF without CR.",

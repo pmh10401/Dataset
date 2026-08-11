@@ -1575,6 +1575,9 @@ def _publish_exp446_prediction_antigravity(
     profile: LifecycleProfileAntigravity = EXP446_PROFILE_ANTIGRAVITY,
 ) -> FrozenPublicationAntigravity:
     """Freeze Exp446 only after fresh dual predecessor and source authority checks."""
+    profile = _require_publication_profile_antigravity(profile)
+    if profile is not EXP446_PROFILE_ANTIGRAVITY:
+        raise ValueError("Exp446 publication profile is invalid")
     attempt = profile.run_root / "attempts_antigravity" / "attempt_0000_antigravity"
     destination = attempt / PUBLICATION_DIRECTORY_ANTIGRAVITY
     if destination.exists() or destination.is_symlink():
@@ -1592,9 +1595,6 @@ def _publish_exp446_prediction_antigravity(
                 raise
             raise ValueError("Exp446 publication requires terminal parity") from error
         snapshot = _capture_exp446_publication_snapshot_antigravity(attempt, terminal_authority)
-        profile = _require_publication_profile_antigravity(profile)
-        if profile is not EXP446_PROFILE_ANTIGRAVITY:
-            raise ValueError("Exp446 publication profile is invalid")
         if _EXP446_TERMINAL_CAPTURE_HOOK_ANTIGRAVITY is not None:
             _EXP446_TERMINAL_CAPTURE_HOOK_ANTIGRAVITY(attempt)
         if _EXP446_PUBLICATION_CAPTURE_HOOK_ANTIGRAVITY is not None:

@@ -243,6 +243,34 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
         self.assertTrue(callable(reporting._publish_exp446_prediction_antigravity))
         self.assertTrue(callable(reporting._inspect_exp446_publication_antigravity))
 
+    def test_caller_minted_profile_is_rejected_before_run_root_or_failure_writer_antigravity(self) -> None:
+        """Authorization must precede every caller-controlled profile path access."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+
+        class CallerMintedProfileAntigravity:
+            def __init__(self, run_root: Path) -> None:
+                self._run_root = run_root
+                self.run_root_reads = 0
+
+            @property
+            def run_root(self) -> Path:
+                self.run_root_reads += 1
+                return self._run_root
+
+        with tempfile.TemporaryDirectory(prefix="exp446_profile_authorization_antigravity_") as directory:
+            arbitrary_root = Path(directory) / "compatible_arbitrary_root_antigravity"
+            arbitrary_root.mkdir()
+            before = sorted(path.relative_to(directory) for path in Path(directory).rglob("*"))
+            profile = CallerMintedProfileAntigravity(arbitrary_root)
+            with (
+                mock.patch.object(reporting, "_capture_exp446_publication_authority_antigravity", side_effect=AssertionError("capture called")),
+                mock.patch.object(reporting, "_write_exp446_publication_failure_antigravity", side_effect=AssertionError("failure writer called")),
+            ):
+                with self.assertRaisesRegex(ValueError, "^publication lifecycle profile is invalid$"):
+                    reporting._publish_exp446_prediction_antigravity(profile)  # type: ignore[arg-type]
+            self.assertEqual(profile.run_root_reads, 0)
+            self.assertEqual(sorted(path.relative_to(directory) for path in Path(directory).rglob("*")), before)
+
     def test_finalization_failure_rejects_before_publisher_import_antigravity(self) -> None:
         """A terminal closeout failure is immutable ineligibility, not publishable evidence."""
         from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
