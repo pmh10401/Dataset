@@ -33,17 +33,18 @@
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "f1c9c2b3777afb2bf5e72099db7113b6ad2c1dcd6dff45ef16e734b90bb40cb8",
-    "experiments": "a2a247cddb58b7ff39ced956fc5983d60803f25878c1e970271058e4301728f9",
+    "docs": "3c4ada51b15f66a09029aaa2078a16d38a14eaef179c04e63be3d7f009783fae",
+    "experiments": "428ad9eac7b578e405f73a1c55841ebb86375de687e69f496c64d347861bed70",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "root": "26d7edd3f75a3bd73c707950f993cdfbf068568bb1fe566b7d5aea958e0072e1",
+    "root": "4c00bd3bc99063b3df9c9f61313e350d817557ec1ce485d368fd25406b1f3a00",
     "scratch": "8ec642fd0c0e35cfb78d43c982ab31ddfa298673e8432d107aa64623b04b7307",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_prior_lock": [
     "docs",
+    "experiments",
     "root"
   ]
 }
