@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T15:46:16Z",
-  "generated_from_commit": "8f5dbec4e87e093a255d1f065de930b85b141e0c",
+  "generated_at": "2026-08-11T15:57:54Z",
+  "generated_from_commit": "60bb4fe5d130de278e496ddfb37b9f2d82066981",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -100,27 +100,16 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its original new wrapper failed only after valid publication while serializing a nested MappingProxyType. The authorized source-free, label-free, mutation-free inspection pair both exited 0 with byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0. One earlier unintended pre-mock focused-test inspect remains separately disclosed; evaluation, champion, and promotion remain disabled pending discussion. Exp447 now has a bounded Task 2 evaluation-primitives module that affects governance/operator gates but still has no TEST-label route, evaluator, CLI, or promotion authority. Its future dashboard is a separate private aggregate-only presentation boundary, never a scientific or promotion gate.",
+      "role": "The control ledgers preserve verified references and immutable review-only evidence. Exp445 is the completed 30/30 CPU/11 label-free failed-publication predecessor: its root is immutable, publication/evaluation are absent, and retry/resume/publication/evaluation are prohibited. Exp446 completed official CPU/11 runtime and immutable create-only publication with zero labels and no promotion; its authorized source-free, label-free, mutation-free inspection pair was byte-identical. Exp447 implementation is verified and fresh-Sol-shipped but awaits a future operator readiness command with REVIEWED_COMMIT; no Exp447 official root, label session, evaluation, champion, promotion, or dashboard action exists.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
         "next_action",
-        "exp441_reproduction",
-        "exp442_implementation",
+        "exact_next_command",
+        "pause_reason",
         "last_verified_commit",
-        "review_fix_commit",
-        "reviewed_design_sha256",
-        "reviewed_preregistration_sha256",
-        "retrospective_gates_all_passed",
-        "paused_awaiting_direction",
-        "Exp443_design_frozen",
-        "Exp443_implementation_plan_frozen",
-        "Exp443_environment_contracts",
-        "Exp444_plan_awaiting_execution_choice",
-        "Exp444_governance_frozen_no_source_edge",
-        "Exp445_governance_frozen_operator_contract",
-        "Exp446_governance_frozen_publication_materialization_only",
-        "Exp447_design_approved_implementation_planned"
+        "exp447_exp446_postfreeze_performance_evaluation",
+        "implementation_status=implementation_verified_awaiting_official_readiness"
       ],
       "tests": [],
       "constraints": [
@@ -159,8 +148,8 @@
         "Exp445 publication capture failure after fixed-root allocation creates only immutable publication_failure_antigravity.json and no canonical publication. If a caller-side frozen-leaf replay/audit rejects after atomic rename, the retained attempt descriptor quarantines the canonical destination before failure evidence is written; it is never returned as clean publication.",
         "Exp445 is immutable failed-publication evidence, not a failed scientific result: 30/30, error 0, label access 0, CPU/11 inner-1, aggregate af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034, absent publication/evaluation, and failure text Exp444 original-control replay is invalid.",
         "Exp446 implements exactly readiness, new, and inspect; it has no external product callers. Its closed lifecycle, Exp445 predecessor verification, CPU/11 runtime delegation, private publication helper, and source-free inspect boundaries are mapped; the authorized immutable publication inspection pair is complete, while evaluation/champion/promotion remain disabled pending discussion.",
-        "Exp447 Task 2 now supplies only frozen configuration, immutable value contracts, canonical create-only bytes, and deterministic shared-draw bootstrap. It has no source authority, TEST-label route, evaluator, CLI, official-root mutation, champion change, promotion, scientific winner, or operational alert eligibility. The separate private dashboard may consume only immutable aggregate-only post-closeout export and its failure cannot change scientific artifacts or permit evaluation retry.",
-        "Exp447 Task 2—frozen configuration, contracts, artifacts, and bootstrap—is the exact next implementation step. No official evaluation, TEST-label access, official-root mutation, champion/promotion change, or dashboard-site action is authorized at this state boundary."
+        "Exp447 implementation is verified with a fresh Sol High ship verdict and zero Critical/Important findings. Its two 66-test discovery runs and the retained Exp444/445/446 predecessor regression evidence are implementation proof only; they do not create official readiness, evaluation, a root, a label session, a champion, or promotion.",
+        "The only future Exp447 operator action is readiness with the literal REVIEWED_COMMIT placeholder. The official root remains absent and non-symlink; evaluation/champion/promotion hashes remain null, labels remain unopened, and any later evaluation is descriptive review-only with no same-experiment reselection."
       ],
       "evidence": [
         {
@@ -757,7 +746,7 @@
         },
         {
           "path": "docs/EXP447_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "implementation_status=not_started"
+          "symbol": "implementation_status=implementation_verified_awaiting_official_readiness"
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -766,6 +755,10 @@
         {
           "path": ".superpowers/sdd/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity/task-1-report-antigravity.md",
           "symbol": "## Review-fix RED and verification"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_verified_awaiting_official_readiness\""
         }
       ]
     },
