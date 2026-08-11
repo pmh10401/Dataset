@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, is_dataclass
+from dataclasses import fields, is_dataclass
 import json
 from pathlib import Path
 import re
@@ -70,7 +70,7 @@ def _json_safe_antigravity(value: object) -> object:
     if callable(payload):
         return _json_safe_antigravity(payload())
     if is_dataclass(value):
-        return _json_safe_antigravity(asdict(value))
+        return {field.name: _json_safe_antigravity(getattr(value, field.name)) for field in fields(value)}
     raise TypeError(f"CLI output is unsupported: {type(value).__name__}")
 
 
