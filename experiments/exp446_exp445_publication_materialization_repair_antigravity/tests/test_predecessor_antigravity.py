@@ -86,7 +86,12 @@ class Exp445PredecessorAuthorityAntigravityTests(unittest.TestCase):
             self.assertEqual(first, second)
             self.assertEqual(len(first.record_sha256_prefix), 30)
             self.assertEqual(first.record_prefix_payload_sha256, predecessor.EXP445_RECORD_PREFIX_PAYLOAD_SHA256_ANTIGRAVITY)
-            self.assertFalse(any(isinstance(value, (Path, int)) for value in first.__dict__.values()))
+            self.assertFalse(hasattr(first, "__dict__"))
+            self.assertFalse(any(isinstance(value, (Path, int)) for value in (
+                first.reviewed_commit, first.record_sha256_prefix, first.record_prefix_payload_sha256, first.terminal_sha256,
+            )))
+            with self.assertRaises(AttributeError):
+                first.__dict__["reviewed_commit"] = "changed"  # type: ignore[attr-defined]
             with self.assertRaises((AttributeError, TypeError)):
                 first.terminal_sha256["x"] = "x"  # type: ignore[index]
             with self.assertRaises((AttributeError, TypeError)):
@@ -130,6 +135,54 @@ class Exp445PredecessorAuthorityAntigravityTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     predecessor.verify_exp445_predecessor_antigravity()
             self.assertTrue(changed)
+
+    def test_rejects_cross_leaf_same_size_overwrite_after_record_zero_is_read_antigravity(self) -> None:
+        with _fixture_authority_antigravity() as (root, _, predecessor):
+            records = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/records_antigravity"
+            first, second = records / "0000_record_antigravity.json", records / "0001_record_antigravity.json"
+            original = first.read_bytes()
+            writer = os.open(first, os.O_WRONLY)
+            original_read = predecessor.os.read
+            changed = False
+
+            def overwrite_first_while_second_is_read(fd: int, size: int) -> bytes:
+                nonlocal changed
+                payload = original_read(fd, size)
+                if not changed and os.fstat(fd).st_ino == second.stat().st_ino:
+                    os.lseek(writer, 0, os.SEEK_SET)
+                    os.write(writer, b"X" + original[1:])
+                    os.fsync(writer)
+                    changed = True
+                return payload
+
+            try:
+                with mock.patch.object(predecessor.os, "read", side_effect=overwrite_first_while_second_is_read):
+                    with self.assertRaises(ValueError):
+                        predecessor.verify_exp445_predecessor_antigravity()
+            finally:
+                os.close(writer)
+            self.assertTrue(changed)
+
+    def test_rejects_source_database_replacement_during_verification_antigravity(self) -> None:
+        with _fixture_authority_antigravity() as (root, database, predecessor):
+            replacement = database.with_name("replacement_database_antigravity.db")
+            replacement.write_bytes(b"replacement database remains single-linked")
+            record = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"
+            original_read = predecessor.os.read
+            replaced = False
+
+            def replace_database_after_first_record_read(fd: int, size: int) -> bytes:
+                nonlocal replaced
+                payload = original_read(fd, size)
+                if not replaced and os.fstat(fd).st_ino == record.stat().st_ino:
+                    os.replace(replacement, database)
+                    replaced = True
+                return payload
+
+            with mock.patch.object(predecessor.os, "read", side_effect=replace_database_after_first_record_read):
+                with self.assertRaises(ValueError):
+                    predecessor.verify_exp445_predecessor_antigravity()
+            self.assertTrue(replaced)
 
         with _fixture_authority_antigravity() as (root, _, predecessor):
             record = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"

@@ -35,7 +35,7 @@ _ATTEMPT_NAMES_ANTIGRAVITY = (
 _CHECKPOINT_NAMES_ANTIGRAVITY = ("context_antigravity.json", "records_antigravity", "state_antigravity.json")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Exp445PredecessorAuthorityAntigravity:
     """Values-only authority; it exposes neither paths nor live file descriptors."""
 
@@ -43,6 +43,13 @@ class Exp445PredecessorAuthorityAntigravity:
     record_sha256_prefix: tuple[str, ...]
     record_prefix_payload_sha256: str
     terminal_sha256: Mapping[str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class _PinnedLeafAntigravity:
+    name: str
+    descriptor: int
+    identity: tuple[int, int, int, int, int, int, int]
 
 
 def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
@@ -84,7 +91,7 @@ def _assert_exact_names_antigravity(directory_fd: int, expected: tuple[str, ...]
         raise ValueError("Exp445 predecessor inventory is not exact")
 
 
-def _read_leaf_antigravity(directory_fd: int, name: str, expected_sha256: str) -> bytes:
+def _pin_leaf_antigravity(directory_fd: int, name: str) -> _PinnedLeafAntigravity:
     try:
         before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
         descriptor = os.open(name, _LEAF_FLAGS_ANTIGRAVITY, dir_fd=directory_fd)
@@ -94,19 +101,30 @@ def _read_leaf_antigravity(directory_fd: int, name: str, expected_sha256: str) -
         opened = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or _identity_antigravity(before) != _identity_antigravity(opened):
             raise ValueError("Exp445 predecessor leaf is not a single regular file")
-        payload = b"".join(iter(lambda: os.read(descriptor, 1 << 20), b""))
-        after = os.fstat(descriptor)
-        current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
-        if any(
-            not stat.S_ISREG(item.st_mode) or item.st_nlink != 1 or _identity_antigravity(item) != _identity_antigravity(opened)
-            for item in (after, current)
-        ):
-            raise ValueError("Exp445 predecessor leaf changed during verification")
-        if hashlib.sha256(payload).hexdigest() != expected_sha256:
-            raise ValueError("Exp445 predecessor leaf SHA256 changed")
-        return payload
-    finally:
+        return _PinnedLeafAntigravity(name, descriptor, _identity_antigravity(opened))
+    except BaseException:
         os.close(descriptor)
+        raise
+
+
+def _read_pinned_leaf_antigravity(pinned: _PinnedLeafAntigravity, expected_sha256: str) -> bytes:
+    payload = b"".join(iter(lambda: os.read(pinned.descriptor, 1 << 20), b""))
+    if hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise ValueError("Exp445 predecessor leaf SHA256 changed")
+    return payload
+
+
+def _assert_pinned_leaf_antigravity(directory_fd: int, pinned: _PinnedLeafAntigravity) -> None:
+    try:
+        opened = os.fstat(pinned.descriptor)
+        current = os.stat(pinned.name, dir_fd=directory_fd, follow_symlinks=False)
+    except OSError as error:
+        raise ValueError("Exp445 predecessor leaf disappeared during verification") from error
+    if any(
+        not stat.S_ISREG(item.st_mode) or item.st_nlink != 1 or _identity_antigravity(item) != pinned.identity
+        for item in (opened, current)
+    ):
+        raise ValueError("Exp445 predecessor leaf changed during verification")
 
 
 def _strict_json_antigravity(payload: bytes, name: str) -> dict[str, Any]:
@@ -127,13 +145,33 @@ def _canonical_prefix_payload_sha256_antigravity(prefix: tuple[str, ...]) -> str
     return hashlib.sha256(payload).hexdigest()
 
 
-def _assert_source_database_antigravity() -> None:
+def _pin_source_database_antigravity() -> tuple[int, tuple[int, int, int, int, int, int, int]]:
     try:
-        metadata = os.stat(_SOURCE_DATABASE_PATH_ANTIGRAVITY, follow_symlinks=False)
+        before = os.stat(_SOURCE_DATABASE_PATH_ANTIGRAVITY, follow_symlinks=False)
+        descriptor = os.open(_SOURCE_DATABASE_PATH_ANTIGRAVITY, _LEAF_FLAGS_ANTIGRAVITY)
     except OSError as error:
         raise ValueError("Exp445 source database is unavailable") from error
-    if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
-        raise ValueError("Exp445 source database must be a single-link regular file")
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or _identity_antigravity(before) != _identity_antigravity(opened):
+            raise ValueError("Exp445 source database must be a single-link regular file")
+        return descriptor, _identity_antigravity(opened)
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _assert_source_database_antigravity(descriptor: int, expected: tuple[int, int, int, int, int, int, int]) -> None:
+    try:
+        opened = os.fstat(descriptor)
+        current = os.stat(_SOURCE_DATABASE_PATH_ANTIGRAVITY, follow_symlinks=False)
+    except OSError as error:
+        raise ValueError("Exp445 source database disappeared during verification") from error
+    if any(
+        not stat.S_ISREG(item.st_mode) or item.st_nlink != 1 or _identity_antigravity(item) != expected
+        for item in (opened, current)
+    ):
+        raise ValueError("Exp445 source database changed during verification")
 
 
 def _assert_terminal_semantics_antigravity(context_bytes: bytes, state_bytes: bytes, progress_bytes: bytes, pid_bytes: bytes, failure_bytes: bytes, record_prefix: tuple[str, ...]) -> None:
@@ -177,9 +215,14 @@ def _assert_terminal_semantics_antigravity(context_bytes: bytes, state_bytes: by
 
 def verify_exp445_predecessor_antigravity() -> Exp445PredecessorAuthorityAntigravity:
     """Authenticate immutable Exp445 evidence by descriptors without mutating it."""
-    _assert_source_database_antigravity()
-    root_fd, root_identity = _checked_directory_antigravity(None, _EXP445_ROOT_ANTIGRAVITY)
+    database_fd, database_identity = _pin_source_database_antigravity()
+    try:
+        root_fd, root_identity = _checked_directory_antigravity(None, _EXP445_ROOT_ANTIGRAVITY)
+    except BaseException:
+        os.close(database_fd)
+        raise
     attempts_fd = attempt_fd = checkpoint_fd = records_fd = -1
+    pinned_leaves: list[tuple[int, _PinnedLeafAntigravity]] = []
     try:
         _assert_exact_names_antigravity(root_fd, (EXP445_ATTEMPT_SEGMENTS_ANTIGRAVITY[0],))
         attempts_fd, attempts_identity = _checked_directory_antigravity(root_fd, EXP445_ATTEMPT_SEGMENTS_ANTIGRAVITY[0])
@@ -190,27 +233,47 @@ def verify_exp445_predecessor_antigravity() -> Exp445PredecessorAuthorityAntigra
         _assert_exact_names_antigravity(checkpoint_fd, _CHECKPOINT_NAMES_ANTIGRAVITY)
         records_fd, records_identity = _checked_directory_antigravity(checkpoint_fd, "records_antigravity")
         _assert_exact_names_antigravity(records_fd, _RECORD_NAMES_ANTIGRAVITY)
-        context = _read_leaf_antigravity(checkpoint_fd, "context_antigravity.json", EXP445_TERMINAL_SHA256_ANTIGRAVITY["checkpoint/context_antigravity.json"])
-        state = _read_leaf_antigravity(checkpoint_fd, "state_antigravity.json", EXP445_TERMINAL_SHA256_ANTIGRAVITY["checkpoint/state_antigravity.json"])
-        progress = _read_leaf_antigravity(attempt_fd, "progress_antigravity.json", EXP445_TERMINAL_SHA256_ANTIGRAVITY["progress_antigravity.json"])
-        pid = _read_leaf_antigravity(attempt_fd, "pid_antigravity.json", EXP445_TERMINAL_SHA256_ANTIGRAVITY["pid_antigravity.json"])
-        failure = _read_leaf_antigravity(attempt_fd, "publication_failure_antigravity.json", EXP445_TERMINAL_SHA256_ANTIGRAVITY["publication_failure_antigravity.json"])
-        _read_leaf_antigravity(attempt_fd, "events_antigravity.jsonl", EXP445_TERMINAL_SHA256_ANTIGRAVITY["events_antigravity.jsonl"])
-        _read_leaf_antigravity(attempt_fd, "text_antigravity.log", EXP445_TERMINAL_SHA256_ANTIGRAVITY["text_antigravity.log"])
-        for sequence, name in enumerate(_RECORD_NAMES_ANTIGRAVITY):
-            wrapper = _strict_json_antigravity(_read_leaf_antigravity(records_fd, name, EXP445_RECORD_SHA256_PREFIX_ANTIGRAVITY[sequence]), f"record {sequence}")
+        def pin(directory_fd: int, name: str) -> _PinnedLeafAntigravity:
+            pinned = _pin_leaf_antigravity(directory_fd, name)
+            pinned_leaves.append((directory_fd, pinned))
+            return pinned
+
+        context_leaf = pin(checkpoint_fd, "context_antigravity.json")
+        state_leaf = pin(checkpoint_fd, "state_antigravity.json")
+        progress_leaf = pin(attempt_fd, "progress_antigravity.json")
+        pid_leaf = pin(attempt_fd, "pid_antigravity.json")
+        failure_leaf = pin(attempt_fd, "publication_failure_antigravity.json")
+        events_leaf = pin(attempt_fd, "events_antigravity.jsonl")
+        text_leaf = pin(attempt_fd, "text_antigravity.log")
+        record_leaves = tuple(pin(records_fd, name) for name in _RECORD_NAMES_ANTIGRAVITY)
+        context = _read_pinned_leaf_antigravity(context_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["checkpoint/context_antigravity.json"])
+        state = _read_pinned_leaf_antigravity(state_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["checkpoint/state_antigravity.json"])
+        progress = _read_pinned_leaf_antigravity(progress_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["progress_antigravity.json"])
+        pid = _read_pinned_leaf_antigravity(pid_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["pid_antigravity.json"])
+        failure = _read_pinned_leaf_antigravity(failure_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["publication_failure_antigravity.json"])
+        _read_pinned_leaf_antigravity(events_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["events_antigravity.jsonl"])
+        _read_pinned_leaf_antigravity(text_leaf, EXP445_TERMINAL_SHA256_ANTIGRAVITY["text_antigravity.log"])
+        for sequence, pinned in enumerate(record_leaves):
+            wrapper = _strict_json_antigravity(_read_pinned_leaf_antigravity(pinned, EXP445_RECORD_SHA256_PREFIX_ANTIGRAVITY[sequence]), f"record {sequence}")
             if set(wrapper) != {"sequence", "result"} or wrapper.get("sequence") != sequence or not isinstance(wrapper.get("result"), dict):
                 raise ValueError("Exp445 predecessor record wrapper changed")
         prefix = tuple(EXP445_RECORD_SHA256_PREFIX_ANTIGRAVITY)
         if _canonical_prefix_payload_sha256_antigravity(prefix) != EXP445_RECORD_PREFIX_PAYLOAD_SHA256_ANTIGRAVITY:
             raise ValueError("Exp445 predecessor aggregate authority is invalid")
         _assert_terminal_semantics_antigravity(context, state, progress, pid, failure, prefix)
+        for directory_fd, pinned in pinned_leaves:
+            _assert_pinned_leaf_antigravity(directory_fd, pinned)
+        _assert_exact_names_antigravity(records_fd, _RECORD_NAMES_ANTIGRAVITY)
+        _assert_exact_names_antigravity(checkpoint_fd, _CHECKPOINT_NAMES_ANTIGRAVITY)
+        _assert_exact_names_antigravity(attempt_fd, _ATTEMPT_NAMES_ANTIGRAVITY)
+        _assert_exact_names_antigravity(attempts_fd, (EXP445_ATTEMPT_SEGMENTS_ANTIGRAVITY[1],))
+        _assert_exact_names_antigravity(root_fd, (EXP445_ATTEMPT_SEGMENTS_ANTIGRAVITY[0],))
         _assert_directory_antigravity(checkpoint_fd, "records_antigravity", records_fd, records_identity)
         _assert_directory_antigravity(attempt_fd, "checkpoint_antigravity", checkpoint_fd, checkpoint_identity)
         _assert_directory_antigravity(attempts_fd, EXP445_ATTEMPT_SEGMENTS_ANTIGRAVITY[1], attempt_fd, attempt_identity)
         _assert_directory_antigravity(root_fd, EXP445_ATTEMPT_SEGMENTS_ANTIGRAVITY[0], attempts_fd, attempts_identity)
         _assert_directory_antigravity(None, _EXP445_ROOT_ANTIGRAVITY, root_fd, root_identity)
-        _assert_source_database_antigravity()
+        _assert_source_database_antigravity(database_fd, database_identity)
         return Exp445PredecessorAuthorityAntigravity(
             reviewed_commit=EXP445_REVIEWED_COMMIT_ANTIGRAVITY,
             record_sha256_prefix=prefix,
@@ -218,9 +281,12 @@ def verify_exp445_predecessor_antigravity() -> Exp445PredecessorAuthorityAntigra
             terminal_sha256=MappingProxyType(dict(EXP445_TERMINAL_SHA256_ANTIGRAVITY)),
         )
     finally:
+        for _, pinned in pinned_leaves:
+            os.close(pinned.descriptor)
         for descriptor in (records_fd, checkpoint_fd, attempt_fd, attempts_fd, root_fd):
             if descriptor >= 0:
                 os.close(descriptor)
+        os.close(database_fd)
 
 
 __all__ = ["Exp445PredecessorAuthorityAntigravity", "verify_exp445_predecessor_antigravity"]
