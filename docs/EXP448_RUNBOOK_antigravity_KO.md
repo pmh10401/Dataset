@@ -2,7 +2,7 @@
 
 ```text
 approved_design_sha256 = 42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76
-approved_plan_sha256 = 7f9f646f55eb13791d94f094013b0149b247c127e63f94625e7a261a606db0c5
+approved_plan_sha256 = 269da62d0dc8de86ab3c81799fd541c6aa7d3e7aa2968d3d2a9c3c09f07a96a6
 ```
 
 ## 현재 상태
@@ -23,10 +23,11 @@ dashboard를 열도록 허가하지 않는다.
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT
 /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py evaluate --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py inspect --reviewed-commit REVIEWED_COMMIT
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py inspect
 ```
 
-정확한 순서는 readiness 1회 → evaluate 1회 → inspect 1회다. `new`, `resume`, `retry`,
+정확한 순서는 readiness 1회 → evaluate 1회 → bare inspect 1회다. readiness와 evaluate만
+exact lowercase 40-hex reviewed commit을 받고 inspect는 인자를 받지 않는다. `new`, `resume`, `retry`,
 override, abbreviation은 없다. 하나라도 nonzero면 Exp448을 영구 중단하며 같은 root/experiment를
 다시 실행하지 않는다. Exp447 command는 어떤 경우에도 실행하지 않는다.
 

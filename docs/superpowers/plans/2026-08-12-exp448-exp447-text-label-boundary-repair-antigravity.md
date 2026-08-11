@@ -170,7 +170,7 @@ label close/recheck, and raw-string non-escape.
 `tests/test_cli_antigravity.py`; map only in child commit.
 
 **RED:** parser accepts exactly `readiness --reviewed-commit`, `evaluate --reviewed-commit`,
-`inspect --reviewed-commit`; rejects `new`, `resume`, `retry`, abbreviations and every override.
+and bare `inspect`; rejects `new`, `resume`, `retry`, inspect arguments, abbreviations and every override.
 Readiness/inspect must prove no evaluator/label SQLite import. Dirty HEAD fails before lazy evaluator.
 
 **GREEN:** closed dispatcher and launcher only set numerical thread environment before importing CLI.
@@ -199,7 +199,7 @@ Exp448 root. Then exactly once:
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT
 /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py evaluate --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py inspect --reviewed-commit REVIEWED_COMMIT
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp448_exp447_text_label_boundary_repair_antigravity.py inspect
 ```
 
 Any nonzero permanently stops Exp448; no retry/root reuse. All-success only permits independent truth

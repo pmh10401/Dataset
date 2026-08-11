@@ -1086,10 +1086,10 @@
         "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md"
       ],
       "reviewed_design_sha256": "42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76",
-      "reviewed_plan_sha256": "7f9f646f55eb13791d94f094013b0149b247c127e63f94625e7a261a606db0c5",
+      "reviewed_plan_sha256": "269da62d0dc8de86ab3c81799fd541c6aa7d3e7aa2968d3d2a9c3c09f07a96a6",
       "preregistration_sha256": "b7c78a6619d0a5ceb4af1deaf4e69f6ec8f771e1e11e64a3cce99293858c1121",
-      "runbook_sha256": "28f225906f2ec9b29a6e1bbcd88399b0a8cf52dec9afada3cd057394b421a84e",
-      "implementation_report_sha256": "e989ca7f20363e90b80771d825414de50290d3ed7e3866cdf67c2f71d5f6419c",
+      "runbook_sha256": "a03d55395745db1776e333e9e2f178285659ad3be98099904987c883d4651ca5",
+      "implementation_report_sha256": "78622733618b663768387e18173f1ae61bb58d587761a808ab43c187988f2449",
       "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
       "artifact_schema": "exp448",
       "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
