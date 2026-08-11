@@ -34,6 +34,7 @@ from .checkpoint_antigravity import (
     CheckpointResumeInspectionAntigravity,
     Exp444CheckpointStoreAntigravity,
     ProcessIdentityAntigravity,
+    capture_exp446_terminal_authority_antigravity,
     current_process_identity_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
@@ -95,23 +96,12 @@ def _assert_exp446_topology_antigravity(workers: int) -> None:
 def _terminal_parity_payload_antigravity(predecessors: tuple[object, ...], attempt: Path) -> dict[str, object]:
     if len(predecessors) != 2:
         raise ValueError("Exp446 terminal predecessor authority is invalid")
-    names = (
-        "checkpoint_antigravity/context_antigravity.json", "checkpoint_antigravity/state_antigravity.json",
-        "progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log",
-        *(f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json" for index in range(30)),
+    authority = capture_exp446_terminal_authority_antigravity(
+        attempt,
+        reviewed_design_path=EXP446_PROFILE_ANTIGRAVITY.reviewed_design_path,
+        preregistration_path=EXP446_PROFILE_ANTIGRAVITY.preregistration_path,
     )
-    binding: dict[str, str] = {}
-    for name in names:
-        leaf = attempt / name
-        if leaf.is_symlink() or not leaf.is_file():
-            raise ValueError("Exp446 terminal evidence is invalid")
-        binding[name] = hashlib.sha256(leaf.read_bytes()).hexdigest()
-    return {
-        "schema": "exp446.terminal-parity.v1",
-        "record_prefix_payload_sha256": getattr(predecessors[0], "record_prefix_payload_sha256"),
-        "authorities": [getattr(item, "record_prefix_payload_sha256") for item in predecessors],
-        "terminal_sha256": binding,
-    }
+    return authority.marker_payload_antigravity(predecessors)
 
 
 def _error_view_index_antigravity(error: BaseException) -> int | None:

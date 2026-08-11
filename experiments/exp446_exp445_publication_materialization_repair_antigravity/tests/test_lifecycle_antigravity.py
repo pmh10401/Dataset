@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from contextlib import ExitStack
 from pathlib import Path
 import shutil
@@ -75,6 +76,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
         changed_after_readiness: bool = False, labels: int = 0, workers: int = 11,
         close_fault: bool = False, preexisting_root: str | None = None,
         ordered_failure: BaseException | None = None,
+        failure_seam: str | None = None,
         write_fault: str | None = None, reviewed_commit: str = _COMMIT_ANTIGRAVITY,
         commit_error: BaseException | None = None,
     ) -> tuple[Path, object]:
@@ -122,6 +124,13 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 self.assertEqual((kwargs["workers"], kwargs["distance_backend"]), (11, "cpu"))
                 if ordered_failure is not None:
                     raise ordered_failure
+                if failure_seam == "worker_dispatch":
+                    raise runtime.WorkerFailureAntigravity(0, active[0], RuntimeError("worker dispatch fixture fault"))
+                if failure_seam == "scorer":
+                    try:
+                        runtime.score_stability_candidate_antigravity(active[0])
+                    except BaseException as error:
+                        raise runtime.WorkerFailureAntigravity(0, active[0], error) from error
                 for index, item in enumerate(active):
                     progress(stage="active", sequence=index)
                     commit(index, item, _result_antigravity(item))
@@ -141,6 +150,10 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, labels)),
                 mock.patch.object(runtime, "production_worker_count_antigravity", return_value=workers),
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=ordered),
+                mock.patch.object(
+                    runtime, "score_stability_candidate_antigravity",
+                    side_effect=ValueError("scorer fixture fault") if failure_seam == "scorer" else runtime.score_stability_candidate_antigravity,
+                ),
                 mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=exp444),
                 mock.patch.object(runtime, "_verify_exp446_predecessor_antigravity", side_effect=verify_exp445),
                 mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
@@ -157,16 +170,53 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                             "write_terminal_parity_antigravity", side_effect=OSError("marker write fault"),
                         ))
                     else:
-                        method = {
-                            "progress": "_write_progress_antigravity",
-                            "pid": "_write_pid_antigravity",
-                            "event": "_append_event_antigravity",
-                            "text": "_append_text_antigravity",
-                        }[write_fault]
-                        patches.enter_context(mock.patch.object(
-                            progress_antigravity.ProgressWriterAntigravity, method,
-                            side_effect=OSError(f"{write_fault} write fault"),
-                        ))
+                        fired = False
+                        if write_fault == "progress":
+                            original = progress_antigravity._write_atomic_json_antigravity
+                            def terminal_progress_fault(path, payload):
+                                nonlocal fired
+                                if not fired and path.name == "progress_antigravity.json" and payload.get("stage") == "complete":
+                                    fired = True
+                                    raise OSError("progress write fault")
+                                return original(path, payload)
+                            patches.enter_context(mock.patch.object(
+                                progress_antigravity, "_write_atomic_json_antigravity", new=terminal_progress_fault,
+                            ))
+                        elif write_fault == "pid":
+                            original = progress_antigravity.ProgressWriterAntigravity._write_pid_antigravity
+                            def terminal_pid_fault(writer, active):
+                                nonlocal fired
+                                if not fired and active is False:
+                                    fired = True
+                                    raise OSError("pid write fault")
+                                return original(writer, active)
+                            patches.enter_context(mock.patch.object(
+                                progress_antigravity.ProgressWriterAntigravity, "_write_pid_antigravity", new=terminal_pid_fault,
+                            ))
+                        elif write_fault == "event":
+                            original = progress_antigravity.ProgressWriterAntigravity._append_event_antigravity
+                            def terminal_event_fault(writer, event, stage, extra=None):
+                                nonlocal fired
+                                if not fired and event == "terminal":
+                                    fired = True
+                                    raise OSError("event write fault")
+                                return original(writer, event, stage, extra)
+                            patches.enter_context(mock.patch.object(
+                                progress_antigravity.ProgressWriterAntigravity, "_append_event_antigravity", new=terminal_event_fault,
+                            ))
+                        elif write_fault == "text":
+                            original = progress_antigravity.ProgressWriterAntigravity._append_text_antigravity
+                            def terminal_text_fault(writer, line):
+                                nonlocal fired
+                                if not fired and line.startswith("종료 "):
+                                    fired = True
+                                    raise OSError("text write fault")
+                                return original(writer, line)
+                            patches.enter_context(mock.patch.object(
+                                progress_antigravity.ProgressWriterAntigravity, "_append_text_antigravity", new=terminal_text_fault,
+                            ))
+                        else:
+                            raise AssertionError(f"unexpected terminal write fault: {write_fault}")
                 try:
                     outcome = lifecycle_antigravity.run_new_antigravity(reviewed_commit)
                 except BaseException as error:
@@ -230,10 +280,8 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 root, outcome = self._run_antigravity(changed_index=index)
                 self.assertIsInstance(outcome, ValueError)
                 self.assertIn("record parity mismatch", str(outcome))
+                self._assert_exact_error_antigravity(root, outcome, sequence=index, message=str(outcome))
                 attempt = root / "attempts_antigravity/attempt_0000_antigravity"
-                state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
-                progress = json.loads((attempt / "progress_antigravity.json").read_text())
-                self.assertEqual((state["status"], state["completed_units"], progress["stage"], progress["active"]), ("error", index + 1, "error", False))
                 self.assertFalse((attempt / "publication_antigravity").exists())
 
     def test_aggregate_or_final_predecessor_change_blocks_terminal_complete_antigravity(self) -> None:
@@ -243,8 +291,7 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 root, outcome = self._run_antigravity(**kwargs)
                 self.assertIsInstance(outcome, ValueError)
                 self.assertIn("predecessor", str(outcome))
-                state = json.loads((root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/state_antigravity.json").read_text())
-                self.assertEqual(state["status"], "error")
+                self._assert_exact_error_antigravity(root, outcome, sequence=29, message=str(outcome))
 
     def test_worker_and_label_contracts_fail_before_root_allocation_antigravity(self) -> None:
         """Relaxing fixed CPU/11 or zero-label rules would allocate an invalid run root."""
@@ -292,23 +339,36 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
         self.assertFalse(root.exists())
 
     def test_worker_and_scorer_failure_preserve_exact_next_error_content_antigravity(self) -> None:
-        """A worker exception must not become an unbound terminal marker or misaligned progress."""
-        for failure in (RuntimeError("worker fixture fault"), ValueError("scorer fixture fault")):
-            with self.subTest(failure=type(failure).__name__):
-                root, outcome = self._run_antigravity(ordered_failure=failure)
-                self.assertIsInstance(outcome, type(failure))
-                self._assert_exact_error_antigravity(root, outcome, sequence=0, message=str(failure))
+        """Dispatch and scorer failures have distinct seams but one exact durable wrapper."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+
+        for seam in ("worker_dispatch", "scorer"):
+            with self.subTest(seam=seam):
+                root, outcome = self._run_antigravity(failure_seam=seam)
+                self.assertIsInstance(outcome, runtime.WorkerFailureAntigravity)
+                cause = "worker dispatch fixture fault" if seam == "worker_dispatch" else "scorer fixture fault"
+                expected = f"worker failed dataset=Fixture_00 candidate_index=0 instance_index=0: {cause}"
+                self._assert_exact_error_antigravity(root, outcome, sequence=0, message=expected)
                 self.assertFalse((root / "attempts_antigravity/attempt_0000_antigravity/terminal_parity_antigravity.json").exists())
 
     def test_terminal_marker_rejects_forged_or_noncanonical_terminal_evidence_antigravity(self) -> None:
         """A marker must authenticate canonical, complete terminal evidence rather than its own claims."""
-        for corruption in ("forged", "marker_symlink", "extra_marker_key", "missing_marker", "mutated_marker", "leaf_symlink", "mutated_leaf"):
+        for corruption in (
+            "forged", "marker_symlink", "extra_marker_key", "missing_marker", "mutated_marker",
+            "leaf_symlink", "mutated_leaf", "extra_state_key", "extra_progress_key",
+            "extra_pid_key", "extra_terminal_event_key", "altered_terminal_text",
+        ):
             with self.subTest(corruption=corruption):
                 root, outcome = self._run_antigravity()
                 self.assertEqual(outcome.status, "complete")
                 attempt = root / "attempts_antigravity/attempt_0000_antigravity"
                 marker = attempt / "terminal_parity_antigravity.json"
                 record = attempt / "checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"
+                state = attempt / "checkpoint_antigravity/state_antigravity.json"
+                progress = attempt / "progress_antigravity.json"
+                pid = attempt / "pid_antigravity.json"
+                events = attempt / "events_antigravity.jsonl"
+                text = attempt / "text_antigravity.log"
                 if corruption == "forged":
                     record.write_bytes(record.read_bytes() + b" ")
                     payload = json.loads(marker.read_text())
@@ -330,10 +390,64 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                     target = record.with_name("record_target_antigravity.json")
                     record.replace(target)
                     record.symlink_to(target.name)
+                elif corruption == "extra_state_key":
+                    payload = json.loads(state.read_text()); payload["forged"] = True
+                    state.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                    payload = json.loads(marker.read_text())
+                    payload["terminal_sha256"]["checkpoint_antigravity/state_antigravity.json"] = hashlib.sha256(state.read_bytes()).hexdigest()
+                    marker.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                elif corruption == "extra_progress_key":
+                    payload = json.loads(progress.read_text()); payload["forged"] = True
+                    progress.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                    payload = json.loads(marker.read_text())
+                    payload["terminal_sha256"]["progress_antigravity.json"] = hashlib.sha256(progress.read_bytes()).hexdigest()
+                    marker.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                elif corruption == "extra_pid_key":
+                    payload = json.loads(pid.read_text()); payload["forged"] = True
+                    pid.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                    payload = json.loads(marker.read_text())
+                    payload["terminal_sha256"]["pid_antigravity.json"] = hashlib.sha256(pid.read_bytes()).hexdigest()
+                    marker.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                elif corruption == "extra_terminal_event_key":
+                    rows = [json.loads(line) for line in events.read_text().splitlines()]
+                    rows[-1]["forged"] = True
+                    events.write_text("".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in rows))
+                    payload = json.loads(marker.read_text())
+                    payload["terminal_sha256"]["events_antigravity.jsonl"] = hashlib.sha256(events.read_bytes()).hexdigest()
+                    marker.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                elif corruption == "altered_terminal_text":
+                    text.write_text(text.read_text().replace("종료 stage=complete", "종료 stage=forged"))
+                    payload = json.loads(marker.read_text())
+                    payload["terminal_sha256"]["text_antigravity.log"] = hashlib.sha256(text.read_bytes()).hexdigest()
+                    marker.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
                 else:
                     record.write_bytes(record.read_bytes() + b" ")
                 with self.assertRaisesRegex(ValueError, "terminal parity"):
                     self._require_terminal_parity_antigravity(root)
+
+    def test_terminal_authority_rejects_same_size_cross_read_replacement_antigravity(self) -> None:
+        """The final namespace pass catches a replacement after its only read."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import checkpoint_antigravity
+
+        root, outcome = self._run_antigravity()
+        self.assertEqual(outcome.status, "complete")
+        state = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/state_antigravity.json"
+        original = checkpoint_antigravity._read_pinned_regular_leaf_antigravity
+        fired = False
+
+        def replace_after_read(directory_fd, name):
+            nonlocal fired
+            payload, identity = original(directory_fd, name)
+            if not fired and name == "state_antigravity.json":
+                fired = True
+                replacement = state.with_name("state_replacement_antigravity.json")
+                replacement.write_bytes(payload)
+                os.replace(replacement, state)
+            return payload, identity
+
+        with mock.patch.object(checkpoint_antigravity, "_read_pinned_regular_leaf_antigravity", new=replace_after_read):
+            with self.assertRaisesRegex(ValueError, "terminal parity"):
+                self._require_terminal_parity_antigravity(root)
 
     def test_write_fault_matrix_never_exposes_terminal_marker_antigravity(self) -> None:
         """Each terminal-evidence channel must fail closed without a publication capability."""
@@ -343,10 +457,13 @@ class Exp446LifecycleAntigravityTests(unittest.TestCase):
                 self.assertIsInstance(outcome, OSError)
                 attempt = root / "attempts_antigravity/attempt_0000_antigravity"
                 self.assertFalse((attempt / "terminal_parity_antigravity.json").exists())
+                progress = json.loads((attempt / "progress_antigravity.json").read_text())
+                pid = json.loads((attempt / "pid_antigravity.json").read_text())
+                self.assertEqual((progress["completed"], progress["total"], pid["active"]), (30, 30, False))
                 if channel == "marker":
-                    progress = json.loads((attempt / "progress_antigravity.json").read_text())
-                    pid = json.loads((attempt / "pid_antigravity.json").read_text())
-                    self.assertEqual((progress["stage"], progress["active"], pid["active"]), ("complete", False, False))
+                    self.assertEqual((progress["stage"], progress["active"]), ("complete", False))
+                else:
+                    self.assertEqual((progress["stage"], progress["active"]), ("error", False))
 
     def test_valid_terminal_marker_requires_inactive_complete_progress_and_pid_antigravity(self) -> None:
         """A valid eligibility marker is paired with inactive, complete terminal ownership evidence."""

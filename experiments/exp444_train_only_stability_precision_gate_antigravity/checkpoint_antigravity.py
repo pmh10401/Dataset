@@ -440,6 +440,159 @@ def _scan_records_antigravity(
     return tuple(prefix), orphan, orphan_result
 
 
+_EXP446_TERMINAL_LEAVES_ANTIGRAVITY = (
+    "checkpoint_antigravity/context_antigravity.json", "checkpoint_antigravity/state_antigravity.json",
+    "progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log",
+    *(f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json" for index in range(30)),
+)
+
+
+@dataclass(frozen=True)
+class Exp446TerminalAuthorityAntigravity:
+    """One descriptor-pinned Exp446 terminal snapshot, never a loose path collection."""
+
+    leaf_bytes: Mapping[str, bytes]
+    record_prefix_payload_sha256: str
+    marker_bytes_antigravity: bytes | None = None
+
+    def marker_payload_antigravity(self, authorities: tuple[object, ...]) -> dict[str, object]:
+        if len(authorities) != 2 or any(
+            type(getattr(item, "record_prefix_payload_sha256", None)) is not str
+            or _SHA256.fullmatch(getattr(item, "record_prefix_payload_sha256")) is None
+            for item in authorities
+        ):
+            raise ValueError("Exp446 terminal predecessor authority is invalid")
+        return {
+            "schema": "exp446.terminal-parity.v1",
+            "record_prefix_payload_sha256": self.record_prefix_payload_sha256,
+            "authorities": [item.record_prefix_payload_sha256 for item in authorities],
+            "terminal_sha256": {name: _sha256_bytes_antigravity(payload) for name, payload in self.leaf_bytes.items()},
+        }
+
+
+def _read_pinned_regular_leaf_antigravity(directory_fd: int, name: str) -> tuple[bytes, tuple[int, int, int, int, int, int, int]]:
+    """Read one no-follow regular leaf while retaining parent namespace evidence."""
+    try:
+        before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        descriptor = os.open(name, _CHECKPOINT_LEAF_FLAGS_ANTIGRAVITY, dir_fd=directory_fd)
+    except OSError as error:
+        raise ValueError("Exp446 terminal authority leaf is invalid") from error
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or _identity_antigravity(before) != _identity_antigravity(opened):
+            raise ValueError("Exp446 terminal authority leaf changed")
+        blocks: list[bytes] = []
+        while block := os.read(descriptor, 1 << 20):
+            blocks.append(block)
+        after = os.fstat(descriptor); current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if _identity_antigravity(after) != _identity_antigravity(opened) or _identity_antigravity(current) != _identity_antigravity(opened):
+            raise ValueError("Exp446 terminal authority leaf changed")
+        return b"".join(blocks), _identity_antigravity(opened)
+    except OSError as error:
+        raise ValueError("Exp446 terminal authority leaf is invalid") from error
+    finally:
+        os.close(descriptor)
+
+
+def capture_exp446_terminal_authority_antigravity(
+    attempt: Path, *, reviewed_design_path: Path, preregistration_path: Path,
+    include_marker: bool = False,
+) -> Exp446TerminalAuthorityAntigravity:
+    """Capture every Exp446 terminal leaf once and revalidate its complete namespace."""
+    attempt = Path(attempt)
+    if type(include_marker) is not bool or attempt.name != "attempt_0000_antigravity":
+        raise ValueError("Exp446 terminal authority attempt is invalid")
+    run_root = attempt.parent.parent
+    root_fd, root_identity = _open_pinned_directory_antigravity(None, run_root)
+    attempts_fd = checkpoint_fd = records_fd = attempt_fd = -1
+    document_fds: list[tuple[int, Path, tuple[int, int, int, int, int, int, int], str, tuple[int, int, int, int, int, int, int]]] = []
+    try:
+        if tuple(sorted(os.listdir(root_fd))) != ("attempts_antigravity",):
+            raise ValueError("Exp446 terminal authority root inventory is invalid")
+        attempts_fd, attempts_identity = _open_pinned_directory_antigravity(root_fd, "attempts_antigravity")
+        if tuple(sorted(os.listdir(attempts_fd))) != (attempt.name,):
+            raise ValueError("Exp446 terminal authority attempts inventory is invalid")
+        attempt_fd, attempt_identity = _open_pinned_directory_antigravity(attempts_fd, attempt.name)
+        attempt_names = {"checkpoint_antigravity", "progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log"}
+        if include_marker:
+            attempt_names.add("terminal_parity_antigravity.json")
+        if set(os.listdir(attempt_fd)) != attempt_names:
+            raise ValueError("Exp446 terminal authority attempt inventory is invalid")
+        checkpoint_fd, checkpoint_identity = _open_pinned_directory_antigravity(attempt_fd, "checkpoint_antigravity")
+        if set(os.listdir(checkpoint_fd)) != {"context_antigravity.json", "state_antigravity.json", "records_antigravity"}:
+            raise ValueError("Exp446 terminal authority checkpoint inventory is invalid")
+        records_fd, records_identity = _open_pinned_directory_antigravity(checkpoint_fd, "records_antigravity")
+        record_names = tuple(f"{index:04d}_record_antigravity.json" for index in range(30))
+        if tuple(sorted(os.listdir(records_fd))) != record_names:
+            raise ValueError("Exp446 terminal authority record inventory is invalid")
+        leaves: dict[str, bytes] = {}
+        leaf_identities: list[tuple[int, str, tuple[int, int, int, int, int, int, int]]] = []
+        def read_leaf(directory_fd: int, name: str, key: str) -> None:
+            payload, identity = _read_pinned_regular_leaf_antigravity(directory_fd, name)
+            leaves[key] = payload
+            leaf_identities.append((directory_fd, name, identity))
+        for name in ("context_antigravity.json", "state_antigravity.json"):
+            read_leaf(checkpoint_fd, name, f"checkpoint_antigravity/{name}")
+        for name in ("progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log"):
+            read_leaf(attempt_fd, name, name)
+        for name in record_names:
+            read_leaf(records_fd, name, f"checkpoint_antigravity/records_antigravity/{name}")
+        if tuple(leaves) != _EXP446_TERMINAL_LEAVES_ANTIGRAVITY:
+            raise ValueError("Exp446 terminal authority leaf inventory is invalid")
+        if include_marker:
+            marker, marker_identity = _read_pinned_regular_leaf_antigravity(attempt_fd, "terminal_parity_antigravity.json")
+            leaf_identities.append((attempt_fd, "terminal_parity_antigravity.json", marker_identity))
+        context = parse_canonical_json_bytes_antigravity(leaves["checkpoint_antigravity/context_antigravity.json"])
+        if not isinstance(context, Mapping): raise ValueError("Exp446 terminal authority context is invalid")
+        profile_context = ProfileCheckpointContextAntigravity.from_exp446_payload_antigravity(context)
+        for path, expected in ((reviewed_design_path, profile_context.reviewed_design_sha256), (preregistration_path, profile_context.preregistration_sha256)):
+            document_path = Path(path)
+            parent_fd, parent_identity = _open_pinned_directory_antigravity(None, document_path.parent)
+            try:
+                document, document_identity = _read_pinned_regular_leaf_antigravity(parent_fd, document_path.name)
+            except BaseException:
+                os.close(parent_fd)
+                raise
+            document_fds.append((parent_fd, document_path.parent, parent_identity, document_path.name, document_identity))
+            if _sha256_bytes_antigravity(document) != expected or not document:
+                raise ValueError("Exp446 terminal authority document changed")
+        state = parse_canonical_json_bytes_antigravity(leaves["checkpoint_antigravity/state_antigravity.json"])
+        if not isinstance(state, Mapping) or set(state) != _CHECKPOINT_STATE_KEYS_ANTIGRAVITY: raise ValueError("Exp446 terminal authority state schema is invalid")
+        prefix = state.get("record_sha256_prefix")
+        aggregate = _payload_hash_antigravity(tuple(prefix)) if isinstance(prefix, list) else ""
+        if (state.get("context_sha256") != _sha256_bytes_antigravity(leaves["checkpoint_antigravity/context_antigravity.json"]) or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None or type(prefix) is not list or len(prefix) != 30 or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix) or state.get("payload_sha256") != aggregate):
+            raise ValueError("Exp446 terminal authority state is invalid")
+        for index, expected in enumerate(prefix):
+            encoded = leaves[f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json"]
+            record = parse_canonical_json_bytes_antigravity(encoded)
+            if _sha256_bytes_antigravity(encoded) != expected or _validate_record_payload_antigravity(index, record, encoded) is None:
+                raise ValueError("Exp446 terminal authority record is invalid")
+        progress = parse_canonical_json_bytes_antigravity(leaves["progress_antigravity.json"]); pid = parse_canonical_json_bytes_antigravity(leaves["pid_antigravity.json"])
+        progress_keys = {"pid", "start_identity", "active", "current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count", "train_count", "train_missing", "train_used", "train_excluded", "test_count", "test_rows", "raw_length", "target_length", "stage", "backend", "completed", "total", "imported", "recomputed", "success", "abstention", "error", "throughput", "elapsed_seconds", "eta_seconds", "checkpoint", "heartbeat", "latest_error"}
+        if (not isinstance(progress, Mapping) or set(progress) != progress_keys or not isinstance(pid, Mapping) or set(pid) != {"pid", "start_identity", "active", "heartbeat"} or progress.get("stage") != "complete" or progress.get("active") is not False or progress.get("backend") != "cpu" or tuple(progress.get(name) for name in ("completed", "total", "imported", "recomputed", "success", "error")) != (30, 30, 0, 30, 30, 0) or progress.get("latest_error") is not None or progress.get("eta_seconds") is not None or any(progress.get(name) is not None for name in ("current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count")) or pid.get("active") is not False or pid.get("pid") != progress.get("pid") or pid.get("start_identity") != progress.get("start_identity")):
+            raise ValueError("Exp446 terminal authority progress is invalid")
+        rows = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in leaves["events_antigravity.jsonl"].splitlines()]
+        terminal = rows[-1] if rows else None
+        expected_event = {"event", "stage", "timestamp", "pid", "completed", "total", "latest_error"}
+        expected_text = "종료 stage=complete 오류=- 완료=30/30\n"
+        if not isinstance(terminal, Mapping) or set(terminal) != expected_event or terminal.get("event") != "terminal" or terminal.get("stage") != "complete" or terminal.get("pid") != progress.get("pid") or terminal.get("completed") != 30 or terminal.get("total") != 30 or terminal.get("latest_error") is not None or not leaves["text_antigravity.log"].decode("utf-8").endswith(expected_text):
+            raise ValueError("Exp446 terminal authority logs are invalid")
+        for directory_fd, name, identity in leaf_identities:
+            if _identity_antigravity(os.stat(name, dir_fd=directory_fd, follow_symlinks=False)) != identity:
+                raise ValueError("Exp446 terminal authority leaf changed")
+        for parent_fd, parent_path, parent_identity, name, identity in document_fds:
+            if _identity_antigravity(os.stat(name, dir_fd=parent_fd, follow_symlinks=False)) != identity:
+                raise ValueError("Exp446 terminal authority document changed")
+            _assert_pinned_directory_antigravity(None, parent_path, parent_fd, parent_identity)
+        _assert_pinned_directory_antigravity(checkpoint_fd, "records_antigravity", records_fd, records_identity); _assert_pinned_directory_antigravity(attempt_fd, "checkpoint_antigravity", checkpoint_fd, checkpoint_identity); _assert_pinned_directory_antigravity(attempts_fd, attempt.name, attempt_fd, attempt_identity); _assert_pinned_directory_antigravity(root_fd, "attempts_antigravity", attempts_fd, attempts_identity); _assert_pinned_directory_antigravity(None, run_root, root_fd, root_identity)
+        return Exp446TerminalAuthorityAntigravity(leaves, aggregate, marker if include_marker else None)
+    finally:
+        for descriptor, *_rest in document_fds:
+            os.close(descriptor)
+        for descriptor in (records_fd, checkpoint_fd, attempt_fd, attempts_fd, root_fd):
+            if descriptor >= 0: os.close(descriptor)
+
+
 class Exp444CheckpointStoreAntigravity:
     """Durable ordered prefix for exactly thirty Exp444 candidates."""
 
@@ -936,6 +1089,7 @@ class Exp444CheckpointStoreAntigravity:
 
 __all__ = [
     "CheckpointResumeInspectionAntigravity", "CommittedPrefixAuthorityAntigravity", "Exp444CheckpointStoreAntigravity",
+    "Exp446TerminalAuthorityAntigravity", "capture_exp446_terminal_authority_antigravity",
     "ProcessIdentityAntigravity",
     "current_process_identity_antigravity",
 ]

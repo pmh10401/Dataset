@@ -274,28 +274,48 @@ class ProgressWriterAntigravity:
             return float(self.total - self._counters["completed"])
         return max(0.0, float(self.total - self._counters["completed"]) / rate)
 
-    def _progress_payload_antigravity(self) -> dict[str, object]:
+    def _progress_payload_antigravity(
+        self,
+        *,
+        active: bool | None = None,
+        stage: str | None = None,
+        current_dataset: object = ...,
+        current_candidate_index: object = ...,
+        current_view: object = ...,
+        view_count: object = ...,
+        excluded_count: object = ...,
+        latest_error: object = ...,
+    ) -> dict[str, object]:
+        """Serialize either current live state or an uncommitted terminal proposal."""
         elapsed = self._elapsed_antigravity()
+        proposed_active = self._active if active is None else active
+        proposed_stage = self._stage if stage is None else stage
+        proposed_dataset = self._current_dataset if current_dataset is ... else current_dataset
+        proposed_index = self._current_candidate_index if current_candidate_index is ... else current_candidate_index
+        proposed_view = self._current_view if current_view is ... else current_view
+        proposed_view_count = self._view_count if view_count is ... else view_count
+        proposed_excluded = self._excluded_count if excluded_count is ... else excluded_count
+        proposed_error = self._latest_error if latest_error is ... else latest_error
         payload: dict[str, object] = {
             "pid": self.process.pid,
             "start_identity": self.process.start_identity,
-            "active": self._active,
-            "current_dataset": self._current_dataset,
-            "current_candidate_index": self._current_candidate_index,
-            "current_view": self._current_view,
-            "view_count": self._view_count,
-            "excluded_count": self._excluded_count,
+            "active": proposed_active,
+            "current_dataset": proposed_dataset,
+            "current_candidate_index": proposed_index,
+            "current_view": proposed_view,
+            "view_count": proposed_view_count,
+            "excluded_count": proposed_excluded,
             **self._dimensions,
-            "stage": self._stage,
+            "stage": proposed_stage,
             "backend": self._backend,
             **self._counters,
             "total": self.total,
             "throughput": self._throughput_antigravity(),
             "elapsed_seconds": elapsed,
-            "eta_seconds": self._eta_antigravity(),
+            "eta_seconds": None if not proposed_active else self._eta_antigravity(),
             "checkpoint": self.checkpoint_path,
             "heartbeat": _utc_now_antigravity(),
-            "latest_error": self._latest_error,
+            "latest_error": proposed_error,
         }
         if set(payload) != _PROGRESS_KEYS:
             raise AssertionError("progress schema drift")
@@ -346,7 +366,7 @@ class ProgressWriterAntigravity:
             os.close(descriptor)
 
     def _append_or_record_log_failure_antigravity(
-        self, operation: Callable[[], None], *, terminal: bool = False,
+        self, operation: Callable[[], None], *, terminal: bool = False, marker_stage: str | None = None,
     ) -> None:
         """Keep Exp445 core authority durable when its diagnostic logs are unavailable."""
         try:
@@ -366,7 +386,7 @@ class ProgressWriterAntigravity:
                     marker,
                     canonical_json_bytes_antigravity({
                         "schema": "exp445.log_failure.v1",
-                        "stage": self._stage,
+                        "stage": self._stage if marker_stage is None else marker_stage,
                         "completed": self._counters["completed"],
                         "error": {
                             "type": type(error).__name__,
@@ -739,9 +759,27 @@ class ProgressWriterAntigravity:
             raise ValueError("progress terminal status is invalid")
         if status == "complete" and self._counters["completed"] != self.total:
             raise ValueError("progress cannot complete before all candidates")
-        self._latest_error = latest_error if latest_error is not None else self._latest_error
-        if status in {"error", "failed"} and not self._latest_error:
-            self._latest_error = "terminal failure"
+        proposed_error = latest_error if latest_error is not None else self._latest_error
+        if status in {"error", "failed"} and not proposed_error:
+            proposed_error = "terminal failure"
+        # First persist a complete terminal proposal.  Keep the instance live
+        # until every required Exp446 closeout write succeeds: callers use that
+        # fact to reconcile a failed finalization rather than issuing success.
+        _write_atomic_json_antigravity(self.progress_path, self._progress_payload_antigravity(
+            active=False, stage=status, current_dataset=None,
+            current_candidate_index=None, current_view=None, view_count=None,
+            excluded_count=None, latest_error=proposed_error,
+        ))
+        self._write_pid_antigravity(False)
+        self._append_or_record_log_failure_antigravity(
+            lambda: self._append_event_antigravity("terminal", status, {"latest_error": proposed_error}),
+            terminal=True, marker_stage=status,
+        )
+        self._append_or_record_log_failure_antigravity(
+            lambda: self._append_text_antigravity(f"종료 stage={status} 오류={proposed_error or '-'} 완료={self._counters['completed']}/{self.total}\n"),
+            terminal=True, marker_stage=status,
+        )
+        self._latest_error = proposed_error
         self._active = False
         self._stage = status
         self._current_dataset = None
@@ -749,10 +787,6 @@ class ProgressWriterAntigravity:
         self._current_view = None
         self._view_count = None
         self._excluded_count = None
-        self._write_progress_antigravity()
-        self._write_pid_antigravity(False)
-        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity("terminal", status, {"latest_error": self._latest_error}), terminal=True)
-        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(f"종료 stage={status} 오류={self._latest_error or '-'} 완료={self._counters['completed']}/{self.total}\n"), terminal=True)
 
     def close_exp446_terminal_parity_antigravity(self, evidence_path: Path) -> None:
         """Close Exp446 only after its create-only parity evidence is durable."""
