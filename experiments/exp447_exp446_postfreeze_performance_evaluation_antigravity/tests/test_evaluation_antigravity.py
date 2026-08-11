@@ -341,11 +341,12 @@ class EvaluationAntigravityTests(unittest.TestCase):
 
     def test_descriptor_reader_rejects_namespace_replacement_and_symlink_races_antigravity(self) -> None:
         """The final root identity check binds descriptor reads to their namespace."""
-        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as module
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import evaluation_antigravity as evaluator
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import replay_antigravity as module
         for mode in ("replacement", "symlink"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory) / "evaluation_root_antigravity"; dependencies = _DependenciesAntigravity(root)
-                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                evaluator._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
                 original_stat = module.os.stat
                 replacement_done = False
 
