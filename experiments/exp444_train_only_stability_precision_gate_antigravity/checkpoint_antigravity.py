@@ -509,14 +509,15 @@ def _terminal_nonnegative_int_antigravity(value: object) -> bool:
 
 
 def validate_exp446_terminal_authority_bytes_antigravity(
-    leaves: Mapping[str, bytes], marker: bytes, *, reviewed_design_bytes: bytes, preregistration_bytes: bytes,
-) -> tuple[str, tuple[str, str]]:
+    leaves: Mapping[str, bytes], marker: bytes | None, *, reviewed_design_bytes: bytes, preregistration_bytes: bytes,
+    checkpoint_path: str,
+) -> tuple[str, tuple[str, str] | None]:
     """Validate retained Task5 bytes with the same terminal semantics as capture.
 
     Callers supply already descriptor-pinned leaves/documents; this function
     deliberately performs no path I/O, so it cannot bridge that authority.
     """
-    if set(leaves) != set(_EXP446_TERMINAL_LEAVES_ANTIGRAVITY):
+    if set(leaves) != set(_EXP446_TERMINAL_LEAVES_ANTIGRAVITY) or type(checkpoint_path) is not str or not checkpoint_path:
         raise ValueError("Exp446 terminal authority leaf inventory is invalid")
     context = parse_canonical_json_bytes_antigravity(leaves["checkpoint_antigravity/context_antigravity.json"])
     if not isinstance(context, Mapping):
@@ -529,7 +530,7 @@ def validate_exp446_terminal_authority_bytes_antigravity(
         raise ValueError("Exp446 terminal authority state schema is invalid")
     prefix = state.get("record_sha256_prefix"); process = state.get("process")
     aggregate = _payload_hash_antigravity(tuple(prefix)) if isinstance(prefix, list) else ""
-    if (state.get("context_sha256") != _sha256_bytes_antigravity(leaves["checkpoint_antigravity/context_antigravity.json"]) or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None or type(prefix) is not list or len(prefix) != 30 or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix) or state.get("payload_sha256") != aggregate or not isinstance(process, Mapping) or set(process) != {"pid", "start_identity"} or type(process.get("pid")) is not int or process.get("pid") < 1 or type(process.get("start_identity")) is not str or not process.get("start_identity") or not _terminal_timestamp_antigravity(state.get("updated_at"))):
+    if (type(state.get("context_sha256")) is not str or state.get("context_sha256") != _sha256_bytes_antigravity(leaves["checkpoint_antigravity/context_antigravity.json"]) or type(state.get("status")) is not str or state.get("status") != "complete" or type(state.get("completed_units")) is not int or state.get("completed_units") != 30 or type(state.get("total_units")) is not int or state.get("total_units") != 30 or type(state.get("error_count")) is not int or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None or type(prefix) is not list or len(prefix) != 30 or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix) or type(state.get("payload_sha256")) is not str or state.get("payload_sha256") != aggregate or not isinstance(process, Mapping) or set(process) != {"pid", "start_identity"} or type(process.get("pid")) is not int or process.get("pid") < 1 or type(process.get("start_identity")) is not str or not process.get("start_identity") or not _terminal_timestamp_antigravity(state.get("updated_at"))):
         raise ValueError("Exp446 terminal authority state is invalid")
     results = []
     for index, expected in enumerate(prefix):
@@ -540,7 +541,8 @@ def validate_exp446_terminal_authority_bytes_antigravity(
         results.append(result)
     progress = parse_canonical_json_bytes_antigravity(leaves["progress_antigravity.json"]); pid = parse_canonical_json_bytes_antigravity(leaves["pid_antigravity.json"])
     progress_keys = {"pid", "start_identity", "active", "current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count", "train_count", "train_missing", "train_used", "train_excluded", "test_count", "test_rows", "raw_length", "target_length", "stage", "backend", "completed", "total", "imported", "recomputed", "success", "abstention", "error", "throughput", "elapsed_seconds", "eta_seconds", "checkpoint", "heartbeat", "latest_error"}
-    if (not isinstance(progress, Mapping) or set(progress) != progress_keys or not isinstance(pid, Mapping) or set(pid) != {"pid", "start_identity", "active", "heartbeat"} or progress.get("stage") != "complete" or progress.get("active") is not False or progress.get("backend") != "cpu" or tuple(progress.get(name) for name in ("completed", "total", "imported", "recomputed", "success", "abstention", "error")) != (30, 30, 0, 30, 30, 0, 0) or any(not _terminal_nonnegative_int_antigravity(progress.get(name)) for name in ("completed", "total", "imported", "recomputed", "success", "abstention", "error", "train_count", "test_count", "test_rows", "raw_length", "target_length")) or any(progress.get(name) is not None for name in ("current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count", "train_missing", "train_used", "train_excluded", "latest_error", "eta_seconds")) or progress.get("test_rows") != progress.get("test_count") or progress.get("target_length") != progress.get("raw_length") or type(progress.get("throughput")) not in (int, float) or type(progress.get("elapsed_seconds")) not in (int, float) or not math.isfinite(float(progress["throughput"])) or not math.isfinite(float(progress["elapsed_seconds"])) or progress.get("pid") != process["pid"] or progress.get("start_identity") != process["start_identity"] or not _terminal_timestamp_antigravity(progress.get("heartbeat")) or pid.get("active") is not False or pid.get("pid") != process["pid"] or pid.get("start_identity") != process["start_identity"] or not _terminal_timestamp_antigravity(pid.get("heartbeat"))):
+    counters = ("completed", "total", "imported", "recomputed", "success", "abstention", "error")
+    if (not isinstance(progress, Mapping) or set(progress) != progress_keys or not isinstance(pid, Mapping) or set(pid) != {"pid", "start_identity", "active", "heartbeat"} or type(progress.get("stage")) is not str or progress.get("stage") != "complete" or type(progress.get("active")) is not bool or progress.get("active") is not False or type(progress.get("backend")) is not str or progress.get("backend") != "cpu" or type(progress.get("pid")) is not int or progress.get("pid") != process.get("pid") or type(progress.get("start_identity")) is not str or progress.get("start_identity") != process.get("start_identity") or type(progress.get("checkpoint")) is not str or progress.get("checkpoint") != checkpoint_path or tuple(progress.get(name) for name in counters) != (30, 30, 0, 30, 30, 0, 0) or any(not _terminal_nonnegative_int_antigravity(progress.get(name)) for name in counters) or any(progress.get(name) is not None for name in ("current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count", "train_missing", "train_used", "train_excluded")) or any(not _terminal_nonnegative_int_antigravity(progress.get(name)) for name in ("train_count", "test_count", "test_rows", "raw_length", "target_length")) or progress.get("test_rows") != progress.get("test_count") or progress.get("target_length") != progress.get("raw_length") or any(type(progress.get(name)) not in (int, float) or not math.isfinite(float(progress[name])) or float(progress[name]) < 0 for name in ("throughput", "elapsed_seconds")) or progress.get("latest_error") is not None or progress.get("eta_seconds") is not None or not _terminal_timestamp_antigravity(progress.get("heartbeat")) or type(pid.get("active")) is not bool or pid.get("active") is not False or type(pid.get("pid")) is not int or pid.get("pid") != progress.get("pid") or type(pid.get("start_identity")) is not str or pid.get("start_identity") != progress.get("start_identity") or not _terminal_timestamp_antigravity(pid.get("heartbeat"))):
         raise ValueError("Exp446 terminal authority progress is invalid")
     events = leaves["events_antigravity.jsonl"]; text = leaves["text_antigravity.log"]
     if not events.endswith(b"\n") or b"\r" in events or not text.endswith(b"\n") or b"\r" in text:
@@ -548,7 +550,7 @@ def validate_exp446_terminal_authority_bytes_antigravity(
     event_rows = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in events[:-1].split(b"\n")]
     core_event = {"event", "stage", "timestamp", "pid", "completed", "total"}
     def event_core(row: Mapping[str, object], stage: str, completed: int) -> bool:
-        return set(row) >= core_event and row.get("stage") == stage and row.get("pid") == process["pid"] and row.get("completed") == completed and row.get("total") == 30 and _terminal_timestamp_antigravity(row.get("timestamp"))
+        return (type(row.get("event")) is str and type(row.get("stage")) is str and row.get("stage") == stage and type(row.get("pid")) is int and row.get("pid") == process["pid"] and type(row.get("completed")) is int and row.get("completed") == completed and type(row.get("total")) is int and row.get("total") == 30 and _terminal_timestamp_antigravity(row.get("timestamp")))
     if len(event_rows) != 62 or not all(isinstance(row, Mapping) for row in event_rows) or set(event_rows[0]) != core_event or event_rows[0].get("event") != "start" or not event_core(event_rows[0], "initializing", 0) or set(event_rows[-1]) != core_event | {"latest_error"} or event_rows[-1].get("event") != "terminal" or not event_core(event_rows[-1], "complete", 30) or event_rows[-1].get("latest_error") is not None:
         raise ValueError("Exp446 terminal authority logs are invalid")
     text_lines = text[:-1].decode("utf-8").split("\n")
@@ -556,12 +558,14 @@ def validate_exp446_terminal_authority_bytes_antigravity(
         raise ValueError("Exp446 terminal authority logs are invalid")
     for index, result in enumerate(results):
         started, completed = event_rows[1 + 2 * index], event_rows[2 + 2 * index]
-        if (set(started) != core_event | {"dataset", "candidate_index"} or started.get("event") != "candidate_start" or not event_core(started, "candidate", index) or started.get("dataset") != result.candidate.dataset or started.get("candidate_index") != index or set(completed) != core_event | {"dataset", "status"} or completed.get("event") != "candidate_complete" or not event_core(completed, "running", index + 1) or completed.get("dataset") != result.candidate.dataset or completed.get("status") != "success" or text_lines[1 + 2 * index] != f"후보 시작 dataset={result.candidate.dataset} index={index} train={progress['train_count']} test={progress['test_count']} raw_length={progress['raw_length']}" or text_lines[2 + 2 * index] != f"후보 완료 dataset={result.candidate.dataset} status=success 완료={index + 1}/30"):
+        if (set(started) != core_event | {"dataset", "candidate_index"} or started.get("event") != "candidate_start" or not event_core(started, "candidate", index) or type(started.get("dataset")) is not str or started.get("dataset") != result.candidate.dataset or type(started.get("candidate_index")) is not int or started.get("candidate_index") != index or set(completed) != core_event | {"dataset", "status"} or completed.get("event") != "candidate_complete" or not event_core(completed, "running", index + 1) or type(completed.get("dataset")) is not str or completed.get("dataset") != result.candidate.dataset or type(completed.get("status")) is not str or completed.get("status") != "success" or text_lines[1 + 2 * index] != f"후보 시작 dataset={result.candidate.dataset} index={index} train={progress['train_count']} test={progress['test_count']} raw_length={progress['raw_length']}" or text_lines[2 + 2 * index] != f"후보 완료 dataset={result.candidate.dataset} status=success 완료={index + 1}/30"):
             raise ValueError("Exp446 terminal authority logs are invalid")
+    if marker is None:
+        return aggregate, None
     marker_payload = parse_canonical_json_bytes_antigravity(marker)
     terminal = marker_payload.get("terminal_sha256") if isinstance(marker_payload, Mapping) else None
     authorities = marker_payload.get("authorities") if isinstance(marker_payload, Mapping) else None
-    if (not isinstance(marker_payload, Mapping) or set(marker_payload) != {"schema", "record_prefix_payload_sha256", "authorities", "terminal_sha256"} or marker_payload.get("schema") != "exp446.terminal-parity.v1" or marker_payload.get("record_prefix_payload_sha256") != aggregate or not isinstance(authorities, list) or len(authorities) != 2 or any(type(item) is not str or _SHA256.fullmatch(item) is None for item in authorities) or not isinstance(terminal, Mapping) or set(terminal) != set(leaves) or any(terminal.get(name) != _sha256_bytes_antigravity(raw) for name, raw in leaves.items())):
+    if (not isinstance(marker_payload, Mapping) or set(marker_payload) != {"schema", "record_prefix_payload_sha256", "authorities", "terminal_sha256"} or marker_payload.get("schema") != "exp446.terminal-parity.v1" or marker_payload.get("record_prefix_payload_sha256") != aggregate or not isinstance(authorities, list) or len(authorities) != 2 or any(type(item) is not str or _SHA256.fullmatch(item) is None for item in authorities) or authorities[0] != aggregate or not isinstance(terminal, Mapping) or set(terminal) != set(leaves) or any(terminal.get(name) != _sha256_bytes_antigravity(raw) for name, raw in leaves.items())):
         raise ValueError("Exp446 terminal authority marker is invalid")
     return aggregate, (authorities[0], authorities[1])
 
@@ -630,60 +634,11 @@ def capture_exp446_terminal_authority_antigravity(
             document_bytes.append(document)
             if _sha256_bytes_antigravity(document) != expected or not document:
                 raise ValueError("Exp446 terminal authority document changed")
-        state = parse_canonical_json_bytes_antigravity(leaves["checkpoint_antigravity/state_antigravity.json"])
-        if not isinstance(state, Mapping) or set(state) != _CHECKPOINT_STATE_KEYS_ANTIGRAVITY: raise ValueError("Exp446 terminal authority state schema is invalid")
-        prefix = state.get("record_sha256_prefix")
-        aggregate = _payload_hash_antigravity(tuple(prefix)) if isinstance(prefix, list) else ""
-        process = state.get("process")
-        if (type(state.get("context_sha256")) is not str or state.get("context_sha256") != _sha256_bytes_antigravity(leaves["checkpoint_antigravity/context_antigravity.json"]) or type(state.get("status")) is not str or state.get("status") != "complete" or type(state.get("completed_units")) is not int or state.get("completed_units") != 30 or type(state.get("total_units")) is not int or state.get("total_units") != 30 or type(state.get("error_count")) is not int or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None or type(prefix) is not list or len(prefix) != 30 or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix) or type(state.get("payload_sha256")) is not str or state.get("payload_sha256") != aggregate or not isinstance(process, Mapping) or set(process) != {"pid", "start_identity"} or type(process.get("pid")) is not int or process.get("pid") < 1 or type(process.get("start_identity")) is not str or not process.get("start_identity") or not _terminal_timestamp_antigravity(state.get("updated_at"))):
-            raise ValueError("Exp446 terminal authority state is invalid")
-        results: list[CandidateStabilityResultAntigravity] = []
-        for index, expected in enumerate(prefix):
-            encoded = leaves[f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json"]
-            record = parse_canonical_json_bytes_antigravity(encoded)
-            result = _validate_record_payload_antigravity(index, record, encoded)
-            if _sha256_bytes_antigravity(encoded) != expected or result is None:
-                raise ValueError("Exp446 terminal authority record is invalid")
-            results.append(result)
-        progress = parse_canonical_json_bytes_antigravity(leaves["progress_antigravity.json"]); pid = parse_canonical_json_bytes_antigravity(leaves["pid_antigravity.json"])
-        progress_keys = {"pid", "start_identity", "active", "current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count", "train_count", "train_missing", "train_used", "train_excluded", "test_count", "test_rows", "raw_length", "target_length", "stage", "backend", "completed", "total", "imported", "recomputed", "success", "abstention", "error", "throughput", "elapsed_seconds", "eta_seconds", "checkpoint", "heartbeat", "latest_error"}
-        counters = ("completed", "total", "imported", "recomputed", "success", "abstention", "error")
-        if (not isinstance(progress, Mapping) or set(progress) != progress_keys or not isinstance(pid, Mapping) or set(pid) != {"pid", "start_identity", "active", "heartbeat"} or type(progress.get("stage")) is not str or progress.get("stage") != "complete" or type(progress.get("active")) is not bool or progress.get("active") is not False or type(progress.get("backend")) is not str or progress.get("backend") != "cpu" or type(progress.get("pid")) is not int or progress.get("pid") != process.get("pid") or type(progress.get("start_identity")) is not str or progress.get("start_identity") != process.get("start_identity") or type(progress.get("checkpoint")) is not str or progress.get("checkpoint") != str(attempt / "checkpoint_antigravity/state_antigravity.json") or tuple(progress.get(name) for name in ("completed", "total", "imported", "recomputed", "success", "abstention", "error")) != (30, 30, 0, 30, 30, 0, 0) or any(not _terminal_nonnegative_int_antigravity(progress.get(name)) for name in counters) or any(progress.get(name) is not None for name in ("current_dataset", "current_candidate_index", "current_view", "view_count", "excluded_count", "train_missing", "train_used", "train_excluded")) or any(not _terminal_nonnegative_int_antigravity(progress.get(name)) for name in ("train_count", "test_count", "test_rows", "raw_length", "target_length")) or progress.get("test_rows") != progress.get("test_count") or progress.get("target_length") != progress.get("raw_length") or any(type(progress.get(name)) not in (int, float) or not math.isfinite(float(progress[name])) or float(progress[name]) < 0 for name in ("throughput", "elapsed_seconds")) or progress.get("latest_error") is not None or progress.get("eta_seconds") is not None or not _terminal_timestamp_antigravity(progress.get("heartbeat")) or type(pid.get("active")) is not bool or pid.get("active") is not False or type(pid.get("pid")) is not int or pid.get("pid") != progress.get("pid") or type(pid.get("start_identity")) is not str or pid.get("start_identity") != progress.get("start_identity") or not _terminal_timestamp_antigravity(pid.get("heartbeat"))):
-            raise ValueError("Exp446 terminal authority progress is invalid")
-        event_bytes = leaves["events_antigravity.jsonl"]
-        if not event_bytes.endswith(b"\n") or b"\r" in event_bytes:
-            raise ValueError("Exp446 terminal authority logs are invalid")
-        rows = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in event_bytes[:-1].split(b"\n")]
-        core_event = {"event", "stage", "timestamp", "pid", "completed", "total"}
-        if len(rows) != 62 or any(not isinstance(row, Mapping) for row in rows):
-            raise ValueError("Exp446 terminal authority logs are invalid")
-        def event_core(row: Mapping[str, object], *, stage: str, completed: int) -> bool:
-            return (type(row.get("event")) is str and type(row.get("stage")) is str and row.get("stage") == stage and type(row.get("pid")) is int and row.get("pid") == progress["pid"] and type(row.get("completed")) is int and row.get("completed") == completed and type(row.get("total")) is int and row.get("total") == 30 and _terminal_timestamp_antigravity(row.get("timestamp")))
-        if set(rows[0]) != core_event or rows[0].get("event") != "start" or not event_core(rows[0], stage="initializing", completed=0):
-            raise ValueError("Exp446 terminal authority logs are invalid")
-        datasets: list[str] = []
-        for index, result in enumerate(results):
-            started, completed = rows[1 + 2 * index], rows[2 + 2 * index]
-            if (set(started) != core_event | {"dataset", "candidate_index"} or started.get("event") != "candidate_start" or not event_core(started, stage="candidate", completed=index) or type(started.get("dataset")) is not str or started.get("dataset") != result.candidate.dataset or type(started.get("candidate_index")) is not int or started.get("candidate_index") != index or set(completed) != core_event | {"dataset", "status"} or completed.get("event") != "candidate_complete" or not event_core(completed, stage="running", completed=index + 1) or type(completed.get("dataset")) is not str or completed.get("dataset") != result.candidate.dataset or type(completed.get("status")) is not str or completed.get("status") != "success"):
-                raise ValueError("Exp446 terminal authority logs are invalid")
-            datasets.append(result.candidate.dataset)
-        terminal = rows[-1]
-        if (set(terminal) != core_event | {"latest_error"} or terminal.get("event") != "terminal" or not event_core(terminal, stage="complete", completed=30) or terminal.get("latest_error") is not None):
-            raise ValueError("Exp446 terminal authority logs are invalid")
-        text_bytes = leaves["text_antigravity.log"]
-        if not text_bytes.endswith(b"\n") or b"\r" in text_bytes:
-            raise ValueError("Exp446 terminal authority logs are invalid")
-        try:
-            text_lines = text_bytes[:-1].decode("utf-8").split("\n")
-        except UnicodeDecodeError as error:
-            raise ValueError("Exp446 terminal authority logs are invalid") from error
-        if len(text_lines) != 62 or text_lines[0] != f"시작 pid={progress['pid']} 완료=0/30" or text_lines[-1] != "종료 stage=complete 오류=- 완료=30/30":
-            raise ValueError("Exp446 terminal authority logs are invalid")
-        for index, dataset in enumerate(datasets):
-            start, complete = text_lines[1 + 2 * index], text_lines[2 + 2 * index]
-            expected_start = f"후보 시작 dataset={dataset} index={index} train={progress['train_count']} test={progress['test_count']} raw_length={progress['raw_length']}"
-            if start != expected_start or complete != f"후보 완료 dataset={dataset} status=success 완료={index + 1}/30":
-                raise ValueError("Exp446 terminal authority logs are invalid")
+        aggregate, _authorities = validate_exp446_terminal_authority_bytes_antigravity(
+            leaves, marker if include_marker else None,
+            reviewed_design_bytes=document_bytes[0], preregistration_bytes=document_bytes[1],
+            checkpoint_path=str(attempt / "checkpoint_antigravity/state_antigravity.json"),
+        )
         for directory_fd, name, identity in leaf_identities:
             if _identity_antigravity(os.stat(name, dir_fd=directory_fd, follow_symlinks=False)) != identity:
                 raise ValueError("Exp446 terminal authority leaf changed")
@@ -692,12 +647,6 @@ def capture_exp446_terminal_authority_antigravity(
                 raise ValueError("Exp446 terminal authority document changed")
             _assert_pinned_directory_antigravity(None, parent_path, parent_fd, parent_identity)
         _assert_pinned_directory_antigravity(checkpoint_fd, "records_antigravity", records_fd, records_identity); _assert_pinned_directory_antigravity(attempt_fd, "checkpoint_antigravity", checkpoint_fd, checkpoint_identity); _assert_pinned_directory_antigravity(attempts_fd, attempt.name, attempt_fd, attempt_identity); _assert_pinned_directory_antigravity(root_fd, "attempts_antigravity", attempts_fd, attempts_identity); _assert_pinned_directory_antigravity(None, run_root, root_fd, root_identity)
-        if include_marker:
-            validated_aggregate, _authorities = validate_exp446_terminal_authority_bytes_antigravity(
-                leaves, marker, reviewed_design_bytes=document_bytes[0], preregistration_bytes=document_bytes[1]
-            )
-            if validated_aggregate != aggregate:
-                raise ValueError("Exp446 terminal authority marker is invalid")
         return Exp446TerminalAuthorityAntigravity(leaves, aggregate, marker if include_marker else None)
     finally:
         for descriptor, *_rest in document_fds:

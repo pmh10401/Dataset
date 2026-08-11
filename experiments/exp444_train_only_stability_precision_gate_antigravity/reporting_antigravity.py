@@ -275,52 +275,14 @@ def _exp446_read_leaf_at_antigravity(directory_fd: int, name: str) -> tuple[byte
         os.close(descriptor)
 
 
-def _validate_exp446_marker_authority_antigravity(marker: bytes, leaves: Mapping[str, bytes]) -> tuple[str, str]:
-    """Bind Task5's parity marker to the exact descriptor-captured leaf bytes."""
-    try:
-        payload = parse_canonical_json_bytes_antigravity(marker)
-    except (TypeError, ValueError) as error:
-        raise ValueError("Exp446 publication requires terminal parity") from error
-    if not isinstance(payload, Mapping):
-        raise ValueError("Exp446 publication requires terminal parity")
-    terminal = payload.get("terminal_sha256")
-    aggregate = payload.get("record_prefix_payload_sha256")
-    authorities = payload.get("authorities")
-    if (
-        set(payload) != {"schema", "record_prefix_payload_sha256", "authorities", "terminal_sha256"}
-        or payload.get("schema") != "exp446.terminal-parity.v1"
-        or type(aggregate) is not str or len(aggregate) != 64
-        or not isinstance(authorities, list) or len(authorities) != 2
-        or any(type(item) is not str or len(item) != 64 for item in authorities)
-        or aggregate != authorities[0]
-        or not isinstance(terminal, Mapping)
-        or set(terminal) != set(leaves) - {"terminal_parity_antigravity.json"}
-    ):
-        raise ValueError("Exp446 publication requires terminal parity")
-    for name, expected in terminal.items():
-        if type(expected) is not str or len(expected) != 64 or _sha256_antigravity(leaves[name]) != expected:
-            raise ValueError("Exp446 publication requires terminal parity")
-    state = parse_canonical_json_bytes_antigravity(leaves["checkpoint_antigravity/state_antigravity.json"])
-    prefix = state.get("record_sha256_prefix") if isinstance(state, Mapping) else None
-    if not isinstance(prefix, list) or _sha256_antigravity(canonical_json_bytes_antigravity(prefix)) != aggregate:
-        raise ValueError("Exp446 publication requires terminal parity")
-    if len(prefix) != len(_RECORD_NAMES_ANTIGRAVITY) or any(
-        type(digest) is not str
-        or _sha256_antigravity(leaves[f"checkpoint_antigravity/records_antigravity/{index:04d}_record_antigravity.json"]) != digest
-        for index, digest in enumerate(prefix)
-    ):
-        raise ValueError("Exp446 publication requires terminal parity")
-    return (authorities[0], authorities[1])
-
-
 def _validate_exp446_terminal_profile_documents_antigravity(
-    snapshot: _Exp446PublicationSnapshotAntigravity,
+    payloads: Mapping[str, bytes],
     profile: LifecycleProfileAntigravity,
 ) -> tuple[bytes, bytes]:
     """Bind retained Task5 context bytes to no-follow reviewed document bytes."""
     from .contracts_antigravity import ProfileCheckpointContextAntigravity
 
-    context = parse_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/context_antigravity.json"])
+    context = parse_canonical_json_bytes_antigravity(payloads["checkpoint/context_antigravity.json"])
     if not isinstance(context, Mapping):
         raise ValueError("Exp446 terminal authority context is invalid")
     checked = ProfileCheckpointContextAntigravity.from_exp446_payload_antigravity(context)
@@ -385,41 +347,38 @@ def _capture_exp446_publication_authority_antigravity(
             if descriptor >= 0:
                 os.close(descriptor)
         raise
-    try:
-        marker_authorities = _validate_exp446_marker_authority_antigravity(marker, leaves)
-    except BaseException as error:
-        _write_exp446_publication_failure_at_antigravity(attempt_fd, error)
-        for descriptor in (records_fd, checkpoint_fd, attempt_fd, attempts_fd, root_fd, run_parent_fd):
-            os.close(descriptor)
-        raise
     payloads = {
         "checkpoint/context_antigravity.json": leaves["checkpoint_antigravity/context_antigravity.json"],
         "checkpoint/state_antigravity.json": leaves["checkpoint_antigravity/state_antigravity.json"],
         **{name: leaves[name] for name in _ATTEMPT_FILES_ANTIGRAVITY},
         **{f"records/{name}": leaves[f"checkpoint_antigravity/records_antigravity/{name}"] for name in _RECORD_NAMES_ANTIGRAVITY},
     }
-    snapshot = _Exp446PublicationSnapshotAntigravity(
-        attempt.name, MappingProxyType(payloads), attempt_fd,
-        (attempt_identity[0], attempt_identity[1], attempt_identity[2], attempt_identity[5], attempt_identity[6]),
-        run_parent_fd, root_fd, attempts_fd, checkpoint_fd, records_fd, _checkpoint_identity, _records_identity, attempt.parent.parent.name, marker, marker_authorities,
-        MappingProxyType(identities),
-    )
     try:
-        reviewed_design, preregistration = _validate_exp446_terminal_profile_documents_antigravity(snapshot, profile)
+        reviewed_design, preregistration = _validate_exp446_terminal_profile_documents_antigravity(payloads, profile)
         from .checkpoint_antigravity import validate_exp446_terminal_authority_bytes_antigravity
-        aggregate, authorities = validate_exp446_terminal_authority_bytes_antigravity(
-            {name: raw for name, raw in leaves.items() if name != "terminal_parity_antigravity.json"},
-            marker,
-            reviewed_design_bytes=reviewed_design,
-            preregistration_bytes=preregistration,
-        )
-        if aggregate != _sha256_antigravity(canonical_json_bytes_antigravity(parse_canonical_json_bytes_antigravity(leaves["checkpoint_antigravity/state_antigravity.json"])["record_sha256_prefix"])) or authorities != marker_authorities:
+        try:
+            aggregate, authorities = validate_exp446_terminal_authority_bytes_antigravity(
+                {name: raw for name, raw in leaves.items() if name != "terminal_parity_antigravity.json"},
+                marker,
+                reviewed_design_bytes=reviewed_design,
+                preregistration_bytes=preregistration,
+                checkpoint_path=str(attempt / "checkpoint_antigravity/state_antigravity.json"),
+            )
+        except ValueError as error:
+            raise ValueError("Exp446 publication requires terminal parity") from error
+        if authorities is None:
             raise ValueError("Exp446 terminal authority marker changed")
     except BaseException as error:
         _write_exp446_publication_failure_at_antigravity(attempt_fd, error)
-        snapshot.close_antigravity()
+        for descriptor in (records_fd, checkpoint_fd, attempt_fd, attempts_fd, root_fd, run_parent_fd):
+            os.close(descriptor)
         raise
-    return snapshot
+    return _Exp446PublicationSnapshotAntigravity(
+        attempt.name, MappingProxyType(payloads), attempt_fd,
+        (attempt_identity[0], attempt_identity[1], attempt_identity[2], attempt_identity[5], attempt_identity[6]),
+        run_parent_fd, root_fd, attempts_fd, checkpoint_fd, records_fd, _checkpoint_identity, _records_identity, attempt.parent.parent.name, marker, authorities,
+        MappingProxyType(identities),
+    )
 
 
 def _capture_exp446_publication_snapshot_antigravity(
@@ -1176,6 +1135,8 @@ def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes],
 def _write_exp446_staging_at_antigravity(
     snapshot: _Exp446PublicationSnapshotAntigravity,
     payloads: Mapping[str, bytes],
+    *,
+    publication_identity: list[tuple[int, int]] | None = None,
 ) -> tuple[int, int]:
     """Create and commit Exp446's frozen leaves through its authenticated attempt fd.
 
@@ -1208,6 +1169,12 @@ def _write_exp446_staging_at_antigravity(
         with _pinned_publication_payloads_antigravity(root_fd=staging_fd) as staged:
             if staged != payloads:
                 raise ValueError("Exp446 publication staging bytes changed")
+        staged_info = os.fstat(staging_fd)
+        staged_identity = (staged_info.st_dev, staged_info.st_ino)
+        if publication_identity is not None:
+            if publication_identity:
+                raise ValueError("Exp446 publication identity is already set")
+            publication_identity.append(staged_identity)
         if _EXP446_STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY is not None:
             _EXP446_STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY(snapshot)
         _exclusive_rename_at_antigravity(attempt_fd, staging_name, PUBLICATION_DIRECTORY_ANTIGRAVITY)
@@ -1218,7 +1185,9 @@ def _write_exp446_staging_at_antigravity(
             with _pinned_publication_payloads_antigravity(root_fd=published_fd) as frozen:
                 if frozen != payloads:
                     raise ValueError("Exp446 publication destination bytes changed")
-            return (published.st_dev, published.st_ino)
+            if (published.st_dev, published.st_ino) != staged_identity:
+                raise ValueError("Exp446 publication destination changed")
+            return staged_identity
         finally:
             os.close(published_fd)
     finally:
@@ -1606,20 +1575,26 @@ def _publish_exp446_prediction_antigravity(
     profile: LifecycleProfileAntigravity = EXP446_PROFILE_ANTIGRAVITY,
 ) -> FrozenPublicationAntigravity:
     """Freeze Exp446 only after fresh dual predecessor and source authority checks."""
-    profile = _require_publication_profile_antigravity(profile)
-    if profile is not EXP446_PROFILE_ANTIGRAVITY:
-        raise ValueError("Exp446 publication profile is invalid")
     attempt = profile.run_root / "attempts_antigravity" / "attempt_0000_antigravity"
     destination = attempt / PUBLICATION_DIRECTORY_ANTIGRAVITY
     if destination.exists() or destination.is_symlink():
         raise ValueError("Exp446 publication already exists; same-root retry is forbidden")
     snapshot: _Exp446PublicationSnapshotAntigravity | None = None
     publication_identity: tuple[int, int] | None = None
+    staged_publication_identity: list[tuple[int, int]] = []
     try:
         # This guarded marker-inclusive capture is intentionally the first
         # terminal operation; a failure below leaves create-only evidence.
-        terminal_authority = _capture_exp446_publication_authority_antigravity(attempt, profile)
+        try:
+            terminal_authority = _capture_exp446_publication_authority_antigravity(attempt, profile)
+        except (OSError, ValueError) as error:
+            if "terminal finalization failure" in str(error):
+                raise
+            raise ValueError("Exp446 publication requires terminal parity") from error
         snapshot = _capture_exp446_publication_snapshot_antigravity(attempt, terminal_authority)
+        profile = _require_publication_profile_antigravity(profile)
+        if profile is not EXP446_PROFILE_ANTIGRAVITY:
+            raise ValueError("Exp446 publication profile is invalid")
         if _EXP446_TERMINAL_CAPTURE_HOOK_ANTIGRAVITY is not None:
             _EXP446_TERMINAL_CAPTURE_HOOK_ANTIGRAVITY(attempt)
         if _EXP446_PUBLICATION_CAPTURE_HOOK_ANTIGRAVITY is not None:
@@ -1655,7 +1630,9 @@ def _publish_exp446_prediction_antigravity(
         _assert_exp445_predecessor_parity_antigravity(snapshot, exp445)
         _assert_exp446_marker_predecessor_authorities_antigravity(snapshot, exp444, exp445)
         _assert_exp446_publication_snapshot_antigravity(attempt, snapshot, publication_present=False)
-        publication_identity = _write_exp446_staging_at_antigravity(snapshot, expected)
+        publication_identity = _write_exp446_staging_at_antigravity(
+            snapshot, expected, publication_identity=staged_publication_identity
+        )
         _assert_exp446_publication_snapshot_antigravity(attempt, snapshot, publication_present=True, publication_identity=publication_identity)
         publication_fd = os.open(
             destination.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
@@ -1671,12 +1648,14 @@ def _publish_exp446_prediction_antigravity(
         _assert_exp446_publication_snapshot_antigravity(attempt, snapshot, publication_present=True, publication_identity=publication_identity)
         return FrozenPublicationAntigravity(destination, manifest, inspected_selection)
     except BaseException as error:
+        if publication_identity is None and staged_publication_identity:
+            publication_identity = staged_publication_identity[0]
         if _EXP446_BEFORE_CLEANUP_HOOK_ANTIGRAVITY is not None:
             _EXP446_BEFORE_CLEANUP_HOOK_ANTIGRAVITY(snapshot, publication_identity)
         _quarantine_exp446_caller_rejection_antigravity(snapshot, destination, error, publication_identity)
         if snapshot is not None and snapshot.attempt_fd >= 0:
             _write_exp446_publication_failure_at_antigravity(snapshot.attempt_fd, error)
-        else:
+        elif attempt.is_dir() and not attempt.is_symlink():
             _write_exp446_publication_failure_antigravity(attempt, error)
         raise
     finally:

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T05:07:29Z",
-  "generated_from_commit": "94257cdd",
+  "generated_at": "2026-08-11T05:24:00Z",
+  "generated_from_commit": "2c305844",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1009,7 +1009,7 @@
       "boundary": "Exp446 engineering-only publication repair",
       "layer": 4,
       "path": "experiments/exp446_exp445_publication_materialization_repair_antigravity/lifecycle_antigravity.py",
-      "role": "Exp446 retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through the shared retained-bytes validator, and commits only through its retained attempt descriptor. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine.",
+      "role": "Exp446 retains marker-inclusive Task5 root/attempt/checkpoint/records descriptors, validates their exact Task5 semantics through one shared pure retained-bytes validator, and records the staging identity before atomic rename so every post-rename error can quarantine only that exact object. Nested namespace replacement and a swapped publication name fail closed without redirecting quarantine.",
       "entrypoints": [
         "run_readiness_antigravity",
         "run_new_antigravity",
@@ -1038,7 +1038,7 @@
         "Terminal-finalization-failure evidence, an absent or forged terminal marker, predecessor drift, label access, staging failure, or post-rename replay failure reject publication; a post-rename rejection quarantines the canonical directory and preserves create-only failure evidence.",
         "The marker-inclusive terminal capture records all terminal bytes and leaf identities; both a pre-staging descriptor replay and post-rename leaf identity recheck reject changes while preserving create-only failure evidence.",
         "The parser accepts only readiness/new with one lowercase 40-hex reviewed commit and inspect with abbreviation disabled; it exposes no resume, retry, evaluate, root, path, backend, worker, source, or evaluator import route. Inspect opens only frozen publication leaves and imports neither SQLite nor a label/evaluation module. The launcher has no hidden command and delegates every argv to this CLI after pinning seven thread variables.",
-        "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. Cleanup quarantines only the exact descriptor-created publication identity and never a swapped replacement."
+        "Root, attempt, checkpoint, and records descriptors plus namespace entries are identity-checked at every source/staging/audit gate. The pre-rename staging identity survives parent-fsync, destination-open, and frozen-byte failures; cleanup quarantines only that exact descriptor-created publication object and never a swapped replacement."
       ],
       "evidence": [
         {

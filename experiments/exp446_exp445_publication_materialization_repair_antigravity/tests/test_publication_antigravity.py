@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import hashlib
 import json
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -389,3 +391,99 @@ class Exp446PublicationAntigravityTests(unittest.TestCase):
             self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
             self.assertTrue((attempt / reporting._EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).is_file())
             self.assertEqual(len([item for item in attempt.iterdir() if "quarantine_antigravity" in item.name]), 1)
+
+    def test_retained_publication_capture_rejects_rebound_terminal_semantic_forgery_antigravity(self) -> None:
+        """Removing Task5's checkpoint/type/metric checks must reject a rehashed marker here."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+        from experiments.exp446_exp445_publication_materialization_repair_antigravity import lifecycle_antigravity
+
+        for field, forged in (
+            ("checkpoint", "/forged/checkpoint_antigravity/state_antigravity.json"),
+            ("throughput", -1.0),
+            ("elapsed_seconds", -1.0),
+            ("state_error_count", False),
+            ("event_completed", 1.0),
+        ):
+            with self.subTest(field=field):
+                _root, attempt, _exp444, _exp445 = self._real_terminal_root_antigravity()
+                progress_path = attempt / "progress_antigravity.json"
+                state_path = attempt / "checkpoint_antigravity" / "state_antigravity.json"
+                events_path = attempt / "events_antigravity.jsonl"
+                if field == "state_error_count":
+                    payload = json.loads(state_path.read_text())
+                    payload["error_count"] = forged
+                    state_path.write_bytes(reporting.canonical_json_bytes_antigravity(payload))
+                elif field == "event_completed":
+                    rows = [json.loads(line) for line in events_path.read_text().splitlines()]
+                    rows[1]["completed"] = forged
+                    events_path.write_bytes(b"".join(reporting.canonical_json_bytes_antigravity(row) for row in rows))
+                else:
+                    payload = json.loads(progress_path.read_text())
+                    payload[field] = forged
+                    progress_path.write_bytes(reporting.canonical_json_bytes_antigravity(payload))
+                marker_path = attempt / "terminal_parity_antigravity.json"
+                marker = json.loads(marker_path.read_text())
+                for name in reporting._ATTEMPT_FILES_ANTIGRAVITY:
+                    marker["terminal_sha256"][name] = hashlib.sha256((attempt / name).read_bytes()).hexdigest()
+                for name in reporting._CHECKPOINT_FILES_ANTIGRAVITY:
+                    marker["terminal_sha256"][f"checkpoint_antigravity/{name}"] = hashlib.sha256((attempt / "checkpoint_antigravity" / name).read_bytes()).hexdigest()
+                marker_path.write_bytes(reporting.canonical_json_bytes_antigravity(marker))
+                with self.assertRaisesRegex(ValueError, "terminal parity|terminal authority|progress|logs|state"):
+                    reporting._capture_exp446_publication_authority_antigravity(
+                        attempt, lifecycle_antigravity._EXP446_PROFILE_ANTIGRAVITY
+                    )
+
+    def test_postrename_staging_failure_retains_exact_identity_for_quarantine_antigravity(self) -> None:
+        """Parent fsync, destination open, and frozen-byte failures must expose the renamed object."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+
+        for failure in ("parent_fsync", "destination_open", "frozen_bytes"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory(prefix="exp446_postrename_identity_antigravity_") as directory:
+                attempt = Path(directory) / "attempt_antigravity"
+                attempt.mkdir()
+                attempt_fd = __import__("os").open(attempt, __import__("os").O_RDONLY | __import__("os").O_DIRECTORY)
+                self.addCleanup(__import__("os").close, attempt_fd)
+                snapshot = SimpleNamespace(attempt_fd=attempt_fd)
+                payloads = {name: f"{index}".encode() for index, name in enumerate(reporting._PUBLICATION_FILES_ANTIGRAVITY)}
+                identity: list[tuple[int, int]] = []
+                original_fsync = reporting.os.fsync
+                original_open = reporting.os.open
+                original_pinned = reporting._pinned_publication_payloads_antigravity
+
+                def injected_fsync(fd: int) -> None:
+                    if failure == "parent_fsync" and fd == attempt_fd:
+                        raise OSError("injected parent fsync failure")
+                    original_fsync(fd)
+
+                def injected_open(name: object, flags: int, *args: object, **kwargs: object) -> int:
+                    if failure == "destination_open" and name == reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY and kwargs.get("dir_fd") == attempt_fd:
+                        raise OSError("injected destination open failure")
+                    return original_open(name, flags, *args, **kwargs)
+
+                @contextmanager
+                def pinned_or_fail(*args: object, **kwargs: object):
+                    root_fd = kwargs["root_fd"]
+                    if failure == "frozen_bytes" and root_fd != attempt_fd:
+                        # The staging descriptor is never the attempt descriptor;
+                        # only fail the second frozen-leaf replay after rename.
+                        if identity and __import__("os").fstat(root_fd).st_ino == identity[0][1]:
+                            raise ValueError("injected frozen byte failure")
+                    with original_pinned(*args, **kwargs) as values:
+                        yield values
+
+                with (
+                    mock.patch.object(reporting.os, "fsync", side_effect=injected_fsync),
+                    mock.patch.object(reporting.os, "open", side_effect=injected_open),
+                    mock.patch.object(reporting, "_pinned_publication_payloads_antigravity", side_effect=pinned_or_fail),
+                ):
+                    with self.assertRaisesRegex((OSError, ValueError), "injected"):
+                        reporting._write_exp446_staging_at_antigravity(snapshot, payloads, publication_identity=identity)
+                self.assertEqual(len(identity), 1)
+                error = ValueError("postrename staging failure")
+                reporting._quarantine_exp446_caller_rejection_antigravity(snapshot, attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY, error, identity[0])
+                reporting._write_exp446_publication_failure_at_antigravity(attempt_fd, error)
+                self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+                quarantines = [item for item in attempt.iterdir() if "quarantine_antigravity" in item.name]
+                self.assertEqual(len(quarantines), 1)
+                self.assertEqual({item.name: item.read_bytes() for item in quarantines[0].iterdir()}, payloads)
+                self.assertTrue((attempt / reporting._EXP446_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).is_file())
