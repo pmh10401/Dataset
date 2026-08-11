@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T14:32:47Z",
-  "generated_from_commit": "e80858a1c469f64b80597b516a992c9f28ceb5f1",
+  "generated_at": "2026-08-11T14:44:17Z",
+  "generated_from_commit": "9bf5838e7479339f9ae43a01786edabfd971150a",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1234,12 +1234,12 @@
     },
     {
       "id": "exp447_evaluation_primitives",
-      "label": "Exp447 closed evaluation boundary",
+      "label": "Exp447 closed evaluation and replay boundary",
       "type": "pipeline",
       "boundary": "Exp447 post-freeze evaluation",
       "layer": 1,
       "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity",
-      "role": "Groups the immutable Exp447 source/readiness authority, single-use evaluator and closed CLI. The CLI exposes only readiness, evaluate and inspect. It lazily loads each route, rechecks a clean reviewed commit before evaluator import, serializes frozen slots dataclasses without mutable deep copies, and its outside-CWD launcher pins seven numerical thread controls to one before any package import. No official evaluation is run by this code map update.",
+      "role": "Groups Exp447 immutable source/readiness authority, single-use evaluator, source-free immutable replay, and closed CLI. Replay owns one semantic inspection implementation and imports no evaluator, source authority, SQLite, or TEST-label session. CLI inspect first lazily loads replay alone, then supplies only an immutable identity adapter for completed-artifact revalidation. No official evaluation is run by this code-map update.",
       "entrypoints": [
         "FROZEN_CONFIG_ANTIGRAVITY",
         "PublicationIdentityAntigravity",
@@ -1260,7 +1260,9 @@
         "FrozenEvaluationAntigravity",
         "build_parser_antigravity",
         "main_antigravity",
-        "run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py"
+        "run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py",
+        "inspect_replay_with_dependencies_antigravity",
+        "replay_antigravity.py"
       ],
       "tests": [
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_config_antigravity.py",
@@ -1270,7 +1272,8 @@
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_sources_antigravity.py",
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_replay_antigravity.py"
       ],
       "constraints": [
         "Evaluation-only: no new score, training, MLX/MPS benchmark, network, dashboard import, Exp446 mutation, champion change, or operational promotion.",
@@ -1279,7 +1282,8 @@
         "Inspect is source-free and label-free: it rechecks Exp446 identity, exact inventory/hash map, per-dataset metric reconstruction, transition lane conservation, diagnostics, fixed confusion, historical agreement, and bootstrap comparison names. Post-label failures create a unique sibling audit and neither retry nor overwrite partial/complete evidence.",
         "CLI is closed to exactly readiness/evaluate/inspect with allow_abbrev=False. readiness/evaluate require a lowercase full 40-hex reviewed commit; new/resume/retry and root/hash/source/lane/threshold/budget overrides do not exist.",
         "Help, readiness and inspect remain lazy. evaluate checks clean reviewed HEAD before evaluator import; inspect follows the label-free replay API and does not open TEST labels.",
-        "The scratch launcher resolves repository root from __file__, works outside the repository CWD, and overwrites OMP_NUM_THREADS, OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, VECLIB_MAXIMUM_THREADS, NUMEXPR_NUM_THREADS, BLIS_NUM_THREADS, and NUMBA_NUM_THREADS to 1 before package import."
+        "The scratch launcher resolves repository root from __file__, works outside the repository CWD, and overwrites OMP_NUM_THREADS, OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, VECLIB_MAXIMUM_THREADS, NUMEXPR_NUM_THREADS, BLIS_NUM_THREADS, and NUMBA_NUM_THREADS to 1 before package import.",
+        "Replay imports no evaluation_antigravity, sources_antigravity, sqlite3, or TEST-label session authority. Its dependency accepts only root plus capture_after; evaluator compatibility and CLI create that identity adapter outside the replay module."
       ],
       "evidence": [
         {
@@ -1343,7 +1347,7 @@
           "symbol": "def inspect_evaluation_antigravity"
         },
         {
-          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/evaluation_antigravity.py",
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/replay_antigravity.py",
           "symbol": "def _pinned_evaluation_leaves_antigravity"
         },
         {
@@ -1369,6 +1373,22 @@
         {
           "path": "scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py",
           "symbol": "for _name_antigravity in ("
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/replay_antigravity.py",
+          "symbol": "def inspect_replay_with_dependencies_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/replay_antigravity.py",
+          "symbol": "class FrozenEvaluationAntigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/evaluation_antigravity.py",
+          "symbol": "def _inspect_root_with_dependencies_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_replay_antigravity.py",
+          "symbol": "class ReplayAntigravityTests"
         }
       ]
     },
@@ -6601,7 +6621,7 @@
         "exp447_evaluation_primitives",
         "exp446_governance"
       ],
-      "outcome": "The CLI dispatches lazily: readiness remains no-label; evaluate rechecks the clean reviewed commit before the single-use evaluator can load; inspect replays frozen evidence without opening TEST labels. The launcher pins numerical library threads to one. This flow neither authorizes nor performs an official evaluation."
+      "outcome": "The CLI dispatches lazily: readiness remains no-label; evaluate rechecks the clean reviewed commit before the single-use evaluator can load; inspect loader imports only the source-free replay module, then supplies an immutable identity adapter for semantic replay. The launcher pins numerical library threads to one. This flow neither authorizes nor performs an official evaluation."
     }
   ],
   "unknown_relationships": [
