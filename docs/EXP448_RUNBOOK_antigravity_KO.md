@@ -1,7 +1,7 @@
 # Exp448 Exp447 TEXT label 경계 수리 실행 안내서
 
 ```text
-approved_design_sha256 = 42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76
+approved_design_sha256 = ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4
 approved_plan_sha256 = 269da62d0dc8de86ab3c81799fd541c6aa7d3e7aa2968d3d2a9c3c09f07a96a6
 ```
 

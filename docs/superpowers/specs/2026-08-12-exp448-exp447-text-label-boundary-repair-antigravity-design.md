@@ -29,8 +29,9 @@ interpreter = /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py
   `7e85d5c7948f8592db80f958d746f31138c67bfb`이고, Exp447 공식 시도의 reviewed commit은
   `33e7dc9c18c179a64bc0020b0bb939c5e4caa394`이다. readiness는 1회 exit 0,
   evaluate는 1회 exit 1, inspect는 0회였으며 Exp447은 절대 다시 실행하지 않는다.
-- Exp448 CLI는 reviewed commit을 받는 `readiness`, `evaluate`, `inspect`만 정확히
-  제공한다. `new`, `resume`, `retry`, override, 약어는 없다.
+- Exp448 CLI는 exact lowercase 40-hex reviewed commit을 받는 `readiness`와 `evaluate`,
+  그리고 인자를 받지 않는 bare `inspect`만 정확히 제공한다. `new`, `resume`, `retry`,
+  override, 약어는 없다.
 - 패키지와 의존성은 바꾸지 않는다. MLX/MPS, worker, training은 쓰지 않는다.
 - evaluator는 network나 dashboard를 import하지 않는다. readiness와 inspect에는
   label-capable SQLite가 없다.

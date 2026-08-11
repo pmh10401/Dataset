@@ -1,7 +1,7 @@
 # Exp448 구현 보고
 
 ```text
-approved_design_sha256 = 42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76
+approved_design_sha256 = ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4
 approved_plan_sha256 = 269da62d0dc8de86ab3c81799fd541c6aa7d3e7aa2968d3d2a9c3c09f07a96a6
 ```
 
@@ -45,8 +45,8 @@ evaluate, inspect 또는 root allocation이 허용되지 않는다.
 ## Read-only authority facts
 
 - Python/NumPy are `3.14.6` / `2.4.6`; design, plan, preregistration, and runbook SHA256 values
-  remain respectively `42166c0...ee76`, `269da62d...a96a6`, `b7c78a66...c112`, and
-  `7a80fff5...469f5`.
+  remain respectively `ed2b6e5e...3ce4`, `269da62d...a96a6`, `b7c78a66...c112`, and
+  `4db257d5...337b`.
 - The DB SHA256 is `8458e678...ef3c`, inode `1048138`, nlink `1`. The immutable Exp447 audit
   SHA256 is `9f8f7d3d...2b97`, inode `19812443`, nlink `1`.
 - Descriptor-pinned Exp446 identity remains `1117` datasets with manifest
