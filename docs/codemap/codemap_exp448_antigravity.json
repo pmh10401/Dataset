@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T02:43:11+09:00",
+  "generated_at": "2026-08-12T02:52:03+09:00",
   "generated_from_commit": "582f0d03bc2e63a8bf745fac1b8975a2af849cd6",
   "scope": [
     "Exp448 governance documents and implemented Task2 controlled-fork foundations",
@@ -137,14 +137,15 @@
     {
       "id": "exp448_implementation_report",
       "path": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md",
-      "role": "Current implementation status and explicit next action.",
+      "role": "Task1 governance snapshot preserved as historical evidence and superseded by the implemented Task2 foundations.",
       "entrypoints": [
         "implementation_status = not_started",
         "Task2 controlled-fork implementation"
       ],
       "tests": [],
       "constraints": [
-        "No product code, tests, DB/TEST-label access, official lifecycle, or dashboard work has occurred."
+        "The not_started wording is a Task1 snapshot, not the current Task2 implementation status.",
+        "No official lifecycle, DB/TEST-label access, or dashboard work has occurred through Task2."
       ],
       "evidence": [
         {
