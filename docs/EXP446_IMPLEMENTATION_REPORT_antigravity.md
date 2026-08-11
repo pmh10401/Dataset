@@ -2,11 +2,15 @@
 
 ## Status and authority
 
-Exp446 is `implementation_verified_awaiting_official_readiness`. This is an
-engineering-only verification of the approved recursive JSON materialization repair; it
-does not authorize official readiness, `new`, `inspect`, publication, evaluation, TEST-label
-access, promotion, or a scientific claim. All official prediction/publication/evaluation/champion/
-promotion hashes remain `null`, label access is `0`, and promotion is `false`.
+Exp446 is `official_completed_publication_succeeded_cli_serialization_failed_inspection_pending`.
+The official CPU/11 runtime and create-only publication completed, but the original CLI wrapper
+failed only after return while `dataclasses.asdict` deep-copied a nested `MappingProxyType` during
+stdout serialization. The immutable attempt is neither retried nor mutated; source-free official
+inspection is pending fresh Sol review. Prediction SHA256 is
+`602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100`, the publication artifact-map
+SHA256 is `d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d`, and manifest SHA256 is
+`bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11`. Label access is `0` and
+promotion is `false`.
 
 The approved design SHA256 is
 `3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281`; the preregistration
@@ -49,11 +53,13 @@ The corrected regression boundary passed once:
 - Exp445: `39` tests, `1.317` seconds, exit `0`.
 - Exp446: `47` tests, `10.132` seconds, exit `0`.
 
-Read-only checks also confirmed source DB inode `1048138` with `nlink=1`, a valid immutable
-Exp445 predecessor, and an absent Exp446 root. Full command, log hashes, test timing, and commit
-references are retained in the ignored Task 7 report.
+Read-only checks confirmed source DB inode `1048138` with `nlink=1`, a valid immutable Exp445
+predecessor, and the immutable completed Exp446 root. The official runtime used PID `74950` and
+completed/success/abstention/error `30/30/4/0` in `471.76320550008677` seconds. The CLI repair
+replaces only the post-publication dataclass deep-copy route with field-wise recursive serialization;
+focused `new` and source-free `inspect` seams pass without touching official artifacts.
 
 ## Remaining gate
 
-Only a fresh Sol High read-only final review of the clean implementation candidate may permit
-official readiness. This report does not claim that final review or a `ship` verdict.
+Only a fresh Sol High read-only review may permit the pending source-free official inspection.
+This report does not claim that inspection, evaluation, promotion, or a `ship` verdict.

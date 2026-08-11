@@ -855,7 +855,7 @@
     {
       "id": "Exp446",
       "kind": "exp445_publication_materialization_repair",
-      "status": "implementation_verified_awaiting_official_readiness",
+      "status": "official_completed_publication_succeeded_cli_serialization_failed_inspection_pending",
       "documents": [
         "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
         "docs/superpowers/plans/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity.md",
@@ -872,17 +872,18 @@
       "predecessor": "Exp445 immutable failed-publication attempt_0000_antigravity",
       "predecessor_ordered_record_payload_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
       "source_candidate_count": 30,
-      "prediction_sha256": null,
-      "publication_sha256": null,
+      "prediction_sha256": "602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100",
+      "publication_sha256": "d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d",
+      "publication_manifest_sha256": "bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11",
       "evaluation_sha256": null,
       "champion_sha256": null,
       "promotion_sha256": null,
-      "prediction_phase_started": false,
-      "prediction_phase_complete": false,
+      "prediction_phase_started": true,
+      "prediction_phase_complete": true,
       "test_labels_opened": false,
       "pre_freeze_label_access_count": 0,
-      "official_readiness": false,
-      "run_root_exists": false,
+      "official_readiness": true,
+      "run_root_exists": true,
       "backend": "cpu",
       "logical_cpu_count": 12,
       "cpu_workers": 11,
@@ -922,10 +923,23 @@
         },
         "exp445_predecessor_verified": true,
         "source_database_nlink": 1,
-        "exp446_root_absent": true
+        "exp446_root_absent": false
       },
-      "exact_next_command": "await_fresh_sol_high_final_review_before_official_readiness",
-      "notes": "Exp446 implementation is verified against immutable Exp445 wrappers and regression boundaries. The initial bounded harness schema-preflight failure is preserved; the corrected run only revalidated frozen-record scheduler/serialization parity and did not recompute scientific scores. official readiness/new/inspect, prediction, publication, evaluation, promotion, and TEST-label access remain unperformed."
+      "official_execution": {
+        "execution_commit": "c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb",
+        "pid": 74950,
+        "elapsed_seconds": 471.76320550008677,
+        "completed": 30,
+        "success": 30,
+        "abstention": 4,
+        "error": 0,
+        "label_access_count": 0,
+        "terminal_aggregate_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
+        "wrapper_failure": "post_publication_mappingproxy_serialization_typeerror",
+        "inspection_status": "pending_no_official_inspect_rerun"
+      },
+      "exact_next_command": "await_fresh_sol_high_read_only_review_before_source_free_inspection",
+      "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion. The original CLI wrapper failed only after return while dataclasses.asdict deep-copied a nested MappingProxyType; the immutable attempt is not retried or mutated, and source-free inspection remains pending fresh Sol review."
     }
   ]
 }

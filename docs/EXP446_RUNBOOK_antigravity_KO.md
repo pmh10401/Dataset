@@ -8,10 +8,22 @@ ATTEMPT=$RUN_ROOT/attempts_antigravity/attempt_0000_antigravity
 PREDECESSOR=/Users/mac/Documents/Dataset/exp445_exp444_publication_source_authority_repair_antigravity_20260810/attempts_antigravity/attempt_0000_antigravity
 ```
 
-Exp446는 `implementation_verified_awaiting_official_readiness`이다. 이 문서는 여전히 공식
-lifecycle 실행 권한이 아니다. 구현 검증은 완료됐지만 fresh Sol High final review가 `ship`을
-내리기 전에는 아래 명령을 실행하지 않는다. official readiness/new/inspect, prediction,
-publication, evaluation, promotion 및 TEST-label 접근은 모두 미수행이다.
+Exp446는 `official_completed_publication_succeeded_cli_serialization_failed_inspection_pending`이다.
+공식 CPU/11 실행과 create-only publication은 완료됐지만, 원래 CLI wrapper는 반환 뒤 nested
+`MappingProxyType`을 `dataclasses.asdict`가 deepcopy하면서 실패했다. 이 문서는 retry, resume,
+새 readiness/new 또는 재-inspect 권한이 아니다. immutable attempt를 바꾸지 않으며 fresh Sol High
+read-only review 전에는 source-free official inspect도 다시 실행하지 않는다. evaluation, promotion 및
+TEST-label 접근은 미수행이다.
+
+## 공식 완료 사실과 보존 경계
+
+- execution commit `c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb`, PID `74950`, elapsed
+  `471.76320550008677` seconds; completed/success/abstention/error is `30/30/4/0`.
+- prediction SHA256 is `602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100`;
+  publication artifact-map SHA256 is `d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d`;
+  manifest SHA256 is `bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11`.
+- labels remain `0`, promotion remains false, DB nlink is `1`, and the official Exp446 root is
+  immutable. Inspection is pending fresh Sol review; it is not a retry path.
 
 ## 구현 검증 증거 (공식 실행 아님)
 
