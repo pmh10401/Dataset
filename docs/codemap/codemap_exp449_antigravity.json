@@ -1,8 +1,8 @@
 {
   "generated_at": "2026-08-12T00:00:00+09:00",
-  "generated_from_commit": "e7328146fb8d752a20beabff5bc88d99662fb129",
+  "generated_from_commit": "5a919ed99636f6df01cf8bb58fef41ed29cc8f61",
   "scope": [
-    "Exp449 Task-1 governance, planned ledgers, immutable Exp448 predecessor, and future product boundaries"
+    "Exp449 Task-2 candidate registry, immutable contracts, canonical artifacts, fixed method audit, and future product boundaries"
   ],
   "nodes": [
     {
@@ -100,16 +100,58 @@
       ]
     },
     {
-      "id": "future_method_audit",
-      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py",
-      "role": "Future method-audit boundary; no source module or call exists at Task 1.",
+      "id": "candidate_registry",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py",
+      "role": "Frozen eight-family, two-candidate registry and pinned environment authority.",
       "tests": [
-        "future tests/test_method_audit_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_config_antigravity.py"
       ],
       "evidence": [
         {
-          "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
-          "symbol": "future method-audit"
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py",
+          "symbol": "FROZEN_CONFIG_ANTIGRAVITY"
+        }
+      ]
+    },
+    {
+      "id": "immutable_contracts",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py",
+      "role": "Frozen slots exact-type authorities for candidates, audits, bundles, baselines, and metrics.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_contracts_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py",
+          "symbol": "class MethodAuditAntigravity"
+        }
+      ]
+    },
+    {
+      "id": "canonical_artifacts",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py",
+      "role": "Canonical JSON/JSONL and create-only no-follow artifact inventory boundary.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_artifacts_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py",
+          "symbol": "def artifact_map_bytes_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "method_audit",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py",
+      "role": "Subprocess-only fixed-interpreter audit binding versions, source SHA256 values, and frozen public methods.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_method_audit_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py",
+          "symbol": "def audit_methods_antigravity"
         }
       ]
     },
@@ -227,11 +269,29 @@
     },
     {
       "from": "exp449_preregistration",
-      "to": "future_method_audit",
-      "type": "future_unknown",
+      "to": "candidate_registry",
+      "type": "governs",
       "evidence": {
-        "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
-        "symbol": "future method-audit"
+        "path": "docs/EXP449_PREREGISTRATION_antigravity_KO.html",
+        "symbol": "global_fp_max = 314"
+      }
+    },
+    {
+      "from": "method_audit",
+      "to": "candidate_registry",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py",
+        "symbol": "config_antigravity import"
+      }
+    },
+    {
+      "from": "method_audit",
+      "to": "immutable_contracts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py",
+        "symbol": "contracts_antigravity import"
       }
     },
     {
@@ -282,26 +342,36 @@
         "experiment_catalog",
         "champion_ledger"
       ],
-      "outcome": "Planned Exp449 truth only: no product source, no official command, no label access, no promotion or routing."
+      "outcome": "Planned Exp449 truth only: no official command, label access, promotion, or routing."
+    },
+    {
+      "trigger": "Task-2 contract freeze",
+      "steps": [
+        "exp449_preregistration",
+        "candidate_registry",
+        "immutable_contracts",
+        "canonical_artifacts",
+        "method_audit"
+      ],
+      "outcome": "The exact candidate inventory and fixed environment authority are implemented without prediction, readiness, evaluation, or official lifecycle execution."
     },
     {
       "trigger": "Future implementation boundary",
       "steps": [
-        "exp449_preregistration",
-        "future_method_audit",
+        "candidate_registry",
         "future_score_prediction",
         "future_evaluation_replay",
         "future_cli",
         "dashboard_presentation"
       ],
-      "outcome": "Relations are explicitly future/unknown until later tasks create and verify source modules."
+      "outcome": "Later product relations remain explicitly future/unknown until their source modules and tests exist."
     }
   ],
   "unknown_relationships": [
-    "All product-boundary relationships are future/unknown at Task 1; no imports, calls, routes, databases, queues, or dashboard source edges are claimed."
+    "Prediction, readiness, source authority, score, evaluation, replay, CLI, and dashboard product-boundary relationships remain future/unknown; no calls, routes, databases, queues, or dashboard source edges are claimed."
   ],
   "unknowns": [
-    "No Exp449 product implementation exists at Task 1.",
+    "No Exp449 official lifecycle or prediction/readiness source exists at Task 2.",
     "The existing owner-only dashboard has no mapped repository source and is presentation-only."
   ]
 }
