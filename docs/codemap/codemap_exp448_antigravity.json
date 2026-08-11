@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T04:50:00+09:00",
-  "generated_from_commit": "93cf44cdccc9a22ea0730ca4f1ac5d7ca5fc36a9",
+  "generated_at": "2026-08-12T04:34:34+0900",
+  "generated_from_commit": "53cf30e65c9b589ac4b3cc5a8f2b5cd36c96bce1",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary"
   ],
@@ -78,7 +78,7 @@
         "Task 6"
       ],
       "tests": [
-        "future test_controlled_fork_differential_antigravity.py"
+        "tests/test_controlled_fork_differential_antigravity.py"
       ],
       "constraints": [
         "Task 6 is gated by a clean candidate and fresh Sol ship; its command surface is readiness/evaluate reviewed commit plus bare inspect.",
@@ -442,39 +442,12 @@
       }
     },
     {
-      "from": "exp448_prelabel_source_boundary",
-      "to": "exp448_evaluation_replay_boundary",
-      "type": "calls",
-      "evidence": {
-        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/sources_antigravity.py",
-        "symbol": "convert_test_label_row_antigravity"
-      }
-    },
-    {
-      "from": "research_control",
-      "to": "exp448_closed_cli_boundary",
-      "type": "reads",
-      "evidence": {
-        "path": "RESEARCH_STATE.json",
-        "symbol": "fresh_sol_high_read_only_ship_review_current_clean_head"
-      }
-    },
-    {
       "from": "exp448_closed_cli_boundary",
       "to": "exp448_prelabel_source_boundary",
       "type": "imports",
       "evidence": {
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
         "symbol": "_load_readiness_antigravity"
-      }
-    },
-    {
-      "from": "exp448_closed_cli_boundary",
-      "to": "exp448_evaluation_replay_boundary",
-      "type": "imports",
-      "evidence": {
-        "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
-        "symbol": "_load_clean_review_antigravity"
       }
     },
     {
