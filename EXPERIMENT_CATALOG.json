@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-12T01:32:42+09:00",
+  "updated_at": "2026-08-12T09:00:00+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -1073,6 +1073,63 @@
       "exact_next_command": "none_exp447_is_immutable_no_retry_or_inspect_design_and_preregister_Exp448_first",
       "pause_reason": "Readiness passed once, evaluate failed once at the TEST-label boundary, and the absent run root has no result artifact. Exp447 may never run readiness, evaluate, or inspect again.",
       "notes": "Exp447 retains immutable failure evidence only. The post-freeze aggregate storage audit is forensic failure analysis, not prediction/readiness evidence. Evaluation/champion/promotion hashes remain null; no scientific winner, pending candidate, alert, dashboard payload, or same-experiment reselection exists."
+    },
+    {
+      "id": "Exp448",
+      "kind": "exp447_text_label_boundary_repair",
+      "status": "design_approved_implementation_planned",
+      "documents": [
+        "docs/superpowers/specs/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md",
+        "docs/EXP448_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP448_RUNBOOK_antigravity_KO.md",
+        "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md"
+      ],
+      "reviewed_design_sha256": "42166c0a43365e7e3a92ab0ed73a8a208ee24630ef070cc519b77f8491cdee76",
+      "reviewed_plan_sha256": "163835deffbd1c9ee4fbbf047afe7f32411ba5fd21ec98a2d0da025ddca585fd",
+      "preregistration_sha256": "71795888f68db69df1c3f743cd1b5564cf352b3b23ae1a89fdc2ec95ce076184",
+      "runbook_sha256": "87254a25c2675c3b06449fb0eb7d50733371d8e00985c572c4abef54749a7168",
+      "implementation_report_sha256": "6a6774333bd8b219e8c5d891b114a074b9cacd46856da73ee2d1853eb1adfac1",
+      "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
+      "artifact_schema": "exp448",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
+      "run_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
+      "predecessor": "Exp447 immutable TEXT-label boundary failure audit",
+      "dataset_count": 1117,
+      "test_label_rows": 195900,
+      "source_candidate_count": 30,
+      "stable_candidate_count": 26,
+      "unstable_candidate_count": 4,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "champion_sha256": null,
+      "promotion_sha256": null,
+      "prediction_phase_started": false,
+      "test_labels_opened": false,
+      "official_label_access_count": 0,
+      "official_readiness": false,
+      "official_evaluate": false,
+      "official_inspect": false,
+      "run_root_exists": false,
+      "scientific_success_criterion": null,
+      "evaluation_status": "not_started_no_official_authorization",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "automatic_champion_promotion": false,
+      "promotion_allowed": false,
+      "dashboard_presentation": {
+        "status": "post_success_only_no_current_export",
+        "public_payload_schema": "exp448.public-evaluation.v1",
+        "scientific_or_promotion_gate": false,
+        "dashboard_failure_changes_scientific_artifacts": false,
+        "dashboard_failure_allows_evaluation_retry": false
+      },
+      "next_action": "Task2_controlled_fork_implementation",
+      "exact_next_command": "Task2_controlled_fork_implementation",
+      "notes": "Planned engineering-only repair of the isolated TEXT label converter. Exp447 remains immutable and no Exp448 label, official lifecycle, evaluation, champion, promotion, or dashboard action has occurred."
     }
   ]
 }
