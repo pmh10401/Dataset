@@ -242,6 +242,31 @@
       "same_experiment_reselection_allowed": false,
       "test_informed_reselection_allowed": false,
       "promotion_allowed": false
+    },
+    {
+      "experiment": "Exp447",
+      "status": "design_approved_implementation_planned",
+      "reason": "Exp447 is an evaluation-only, design-approved plan for immutable Exp446 predictions. No source, official attempt, evaluation, or TEST-label access exists. Any future coherent evaluation is descriptive_complete_no_promotion: it cannot update the champion or pending candidate, select a scientific winner, promote an operational alert, or reselect candidates within Exp447.",
+      "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
+      "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
+      "run_identity": "exp447-exp446-postfreeze-performance-evaluation-antigravity-20260811",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp447_exp446_postfreeze_performance_evaluation_antigravity_20260811",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "champion_sha256": null,
+      "promotion_sha256": null,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "scientific_success_criterion": null,
+      "evaluation_status": "not_started",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "automatic_champion_promotion": false,
+      "promotion_allowed": false,
+      "dashboard_presentation": "deferred_private_aggregate_only_post_evaluation_not_scientific_or_promotion_gate_dashboard_failure_cannot_change_artifacts_or_allow_reevaluation"
     }
   ]
 }

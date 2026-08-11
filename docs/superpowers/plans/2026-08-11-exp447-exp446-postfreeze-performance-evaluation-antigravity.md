@@ -13,7 +13,7 @@
 - Every newly created filename contains `antigravity`; do not create `__init__.py`.
 - Experiment identity is `Exp447`; schema is `exp447`; run identity is `exp447-exp446-postfreeze-performance-evaluation-antigravity-20260811`.
 - Run root is `/Users/mac/Documents/Dataset/exp447_exp446_postfreeze_performance_evaluation_antigravity_20260811` and must be absent before official readiness.
-- Approved design path is `docs/superpowers/specs/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity-design.md` with SHA256 `f8d705fdc4daf3e02ea313b1d8fd2b68b6b818696739d44084a39478c146694a`.
+- Approved design path is `docs/superpowers/specs/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity-design.md` with SHA256 `043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868`.
 - Exp446 prediction SHA is `602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100`; manifest file SHA is `bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11`; artifact-map file SHA is `d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d`.
 - Exp446 population is exactly 1,117 datasets, 30 source coordinates, 26 stable coordinates, 4 unstable coordinates, and prediction label-access count 0.
 - Exp404 Hard prediction SHA is `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`.
@@ -28,6 +28,11 @@
 - Exp447 is an evaluation-only experiment, not a score source; no MLX/MPS benchmark or training is performed.
 - Compare `docs/codemap/codemap_exp446_antigravity.lock` with the current repository before the first source edit. Use `docs/codemap/codemap_exp446_antigravity.json` to identify callers, effects, and tests. Generate `docs/codemap/codemap_exp447_antigravity.html`, `.json`, and `.lock` together whenever the new boundary changes.
 - Native implementation uses `sol_advisor_terra_implementer`; design, commitment-boundary review, and final review use a fresh `sol_advisor_sol_reviewer`.
+- The private owner-only dashboard is `https://timeseries-research-observatory.pmh10401.chatgpt.site`; its separate repository is `/Users/mac/.codex/visualizations/2026/08/10/019fedc4-df12-73b2-9812-a5f8f387ac78/research-observatory-antigravity-site`. Do not touch it until immutable Exp447 evaluation plus label-free inspect have succeeded and that repository is clean.
+- The local/deterministic evaluator imports no network/dashboard code. A separate exporter may emit only sanitized aggregate data after truth closeout: never raw TEST labels, instance/anomaly indices, dataset names, local paths, hashes, logs, checkpoints, DB names, secrets, or per-dataset rows.
+- Live status is a separate non-scientific sync and uses only the existing exact 12-field `PublicExperimentStatus` allowlist: experiment_id, display_name, status, stage, completed, total, success, errors, backend, throughput, eta_seconds, updated_at. Exp447 total is 1117.
+- The completed dashboard payload is `exp447.public-evaluation.v1`: experiment_id, generated_at, dataset_count, decision, four aggregate comparison rows (hard baseline, hard+source30, hard+stable26, hard+unstable4; each TP/FP/FN/TN/precision/recall/F1/FPR), aggregate diagnostic counts (rescued, added-false-alarm, regressed, strong-regressed), and three paired-bootstrap aggregate delta/CI rows. It contains no dataset lists.
+- Dashboard work is a post-evaluation presentation boundary, not a scientific or promotion gate. Dashboard failure never changes immutable scientific artifacts and never permits evaluation retry or reevaluation.
 
 ## File Structure
 
@@ -66,7 +71,7 @@
 - [ ] **Step 1: Verify the approved design and current map convention**
 
 ```bash
-test "$(shasum -a 256 docs/superpowers/specs/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity-design.md | awk '{print $1}')" = "f8d705fdc4daf3e02ea313b1d8fd2b68b6b818696739d44084a39478c146694a"
+test "$(shasum -a 256 docs/superpowers/specs/2026-08-11-exp447-exp446-postfreeze-performance-evaluation-antigravity-design.md | awk '{print $1}')" = "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868"
 python3 -m json.tool docs/codemap/codemap_exp446_antigravity.lock >/dev/null
 git status --short --branch
 git rev-parse HEAD
@@ -476,10 +481,54 @@ Include a confusion-matrix chart, stable-versus-source comparison chart, and dat
 
 Record exact evaluation/prediction/manifest/artifact hashes, label query accounting, result metrics, artifact paths, inspect result, and `descriptive_complete_no_promotion` in the ledgers/report. Keep champion/promotion false. Regenerate and validate the Exp447 map triplet, commit truth then map, request a final read-only Sol verification, and stop for user discussion.
 
+---
+
+### Task 8: Present immutable aggregate results in the private research observatory
+
+**Files:**
+- Modify only after Task 7 truth closeout and clean external site repository: the existing private site repository and its existing presentation/test surfaces.
+- Export: sanitized `exp447.public-evaluation.v1` aggregate payload and the Exp447 code-map version; no raw or per-dataset scientific input is exported.
+
+**Interfaces:**
+- Consumes: immutable, independently verified Exp447 evaluation plus label-free inspect result; separate exact-allowlist live status.
+- Produces: an owner-only Exp447 observatory card/detail presentation and a saved private deployment version; no scientific artifact or ledger change.
+
+- [ ] **Step 1: Hold until the scientific and site gates are both closed**
+
+Require completed immutable Exp447 evaluation, successful label-free inspect, independently verified truth closeout, and a clean
+`/Users/mac/.codex/visualizations/2026/08/10/019fedc4-df12-73b2-9812-a5f8f387ac78/research-observatory-antigravity-site`.
+If the site repository is dirty, do not edit, build, commit, deploy, or contact it. Dashboard work never opens TEST labels,
+changes Exp447 evaluation bytes, or authorizes evaluation retry/reevaluation.
+
+- [ ] **Step 2: Export only the fixed public allowlists**
+
+Keep the evaluator local/deterministic and free of network/dashboard imports. Implement the exporter as a separate post-closeout
+boundary. Status sync is separate from the evaluator and contains exactly the 12 allowed `PublicExperimentStatus` fields
+(`experiment_id`, `display_name`, `status`, `stage`, `completed`, `total`, `success`, `errors`, `backend`, `throughput`,
+`eta_seconds`, `updated_at`) with `total=1117`. The completed `exp447.public-evaluation.v1` payload contains only its identity,
+generation time, aggregate decision, four aggregate comparison rows, aggregate diagnostic counts, and three aggregate
+paired-bootstrap delta/CI rows. Reject all raw TEST labels, indices, names, paths, hashes, logs, checkpoints, DB names,
+secrets, per-dataset rows, and dataset lists.
+
+- [ ] **Step 3: TDD the private observatory presentation**
+
+Use the Sites building workflow in the clean existing site repository. Add RED/GREEN parser and UI tests for exact payload
+allowlists, rejection of forbidden fields, status-field closure, Exp447 card/detail rendering, aggregate comparison chart,
+confusion presentation, and paired-bootstrap chart. Preserve private owner-only access and do not add presentation data to
+scientific decision or promotion logic.
+
+- [ ] **Step 4: Validate, commit, save, and deploy only the private presentation**
+
+Use the Sites hosting workflow after site tests, lint, deployment build, and requested browser verification pass. Export the
+Exp447 codemap version with the presentation. Commit the exact validated external site repository, save a version, and deploy
+that saved version to `https://timeseries-research-observatory.pmh10401.chatgpt.site` with owner-only access preserved.
+If any dashboard/parser/UI/build/deploy step fails, preserve immutable Exp447 scientific artifacts unchanged, do not retry
+evaluation, and report the separate presentation failure.
+
 ## Plan Self-Review
 
-- Design coverage: every identity, frozen hash, label-order gate, comparator, metric, bootstrap, audit, CLI, map, official command, and non-promotion requirement has an owning task.
+- Design coverage: every identity, frozen hash, label-order gate, comparator, metric, bootstrap, audit, CLI, map, official command, non-promotion requirement, and private aggregate-only dashboard handoff has an owning task.
 - Scope: one evaluation-only subsystem; Exp446 product code and artifacts remain read-only.
 - Type consistency: Task 2 types and functions are the exact interfaces consumed by Tasks 3-5.
-- No placeholder steps or deferred implementation remain.
+- The only intentionally deferred boundary is Task 8: it is blocked until immutable scientific truth exists and the separately owned site repository is clean.
 - Official TEST labels are inaccessible until Task 7 and only after a fresh reviewed clean candidate.

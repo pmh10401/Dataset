@@ -222,3 +222,32 @@ DB SHA/inode/nlink, Exp446 root/leaf/hash, Exp447 root absence가 모두 맞을 
 공식 순서는 `readiness -> evaluate -> inspect`이며 evaluate는 single-use다. 완료 후
 수치·혼동행렬·dataset 전환·bootstrap을 쉬운 한국어와 차트로 보고하고 자동 승격 없이
 논의를 위해 멈춘다.
+
+## 13. private dashboard presentation boundary
+
+Exp447 evaluator는 local/deterministic이며 network 또는 dashboard code를 import하지 않는다.
+immutable Exp447 evaluation과 label-free inspect가 모두 성공한 뒤에만 별도 exporter가
+sanitized aggregate data를 만들 수 있다. exporter는 raw TEST label, instance/anomaly index,
+dataset name, local path, hash, log, checkpoint, DB name, secret 또는 per-dataset row를 절대
+export하지 않는다.
+
+private owner-only dashboard는
+`https://timeseries-research-observatory.pmh10401.chatgpt.site`이며, separate site repository
+`/Users/mac/.codex/visualizations/2026/08/10/019fedc4-df12-73b2-9812-a5f8f387ac78/research-observatory-antigravity-site`
+만 presentation consumer다. Live status는 evaluator와 분리되어 existing exact
+12-field `PublicExperimentStatus` allowlist만 사용한다:
+`experiment_id`, `display_name`, `status`, `stage`, `completed`, `total`, `success`, `errors`,
+`backend`, `throughput`, `eta_seconds`, `updated_at`. Exp447 `total`은 1117이다.
+
+completed payload schema는 `exp447.public-evaluation.v1`이고 다음만 포함한다:
+`experiment_id`, `generated_at`, `dataset_count`, `decision`; aggregate comparison four rows
+(`hard_baseline`, `hard_plus_source_30`, `hard_plus_stable_26`, `hard_plus_unstable_4`) 각각의
+TP/FP/FN/TN/precision/recall/F1/FPR; aggregate diagnostic counts
+(`rescued`, `added_false_alarm`, `regressed`, `strong_regressed`); 및 three paired-bootstrap
+aggregate delta/CI rows. Dataset list를 포함하지 않는다.
+
+dashboard는 scientific or promotion gate가 아니라 immutable truth closeout 이후의 별도
+presentation boundary다. site repository가 clean 상태가 되기 전에는 변경·build·commit·deploy를
+하지 않는다. dashboard parser/UI/build/deploy failure는 Exp447 scientific artifact를 바꾸지
+않고 evaluation 재실행 또는 retry를 허용하지 않는다. 완료된 site work는 owner-only access를
+보존하고 existing site의 saved version을 같은 private site에 deploy한다.
