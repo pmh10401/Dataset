@@ -147,6 +147,74 @@ class SourcesAntigravityTests(unittest.TestCase):
         with self.assertRaises(OSError):
             os.fstat(descriptor)
 
+    def test_label_session_close_failure_is_terminal_and_releases_descriptor_antigravity(self) -> None:
+        """A failed connection close cannot be relabelled as a successful retry."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        authority = sources.capture_exp446_publication_antigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        expected = sources._identity_antigravity(os.fstat(descriptor))
+        close_calls = 0
+
+        class ConnectionAntigravity:
+            def set_authorizer(self, _authorizer: object) -> None:
+                pass
+
+            def close(self) -> None:
+                nonlocal close_calls
+                close_calls += 1
+                raise OSError("connection close failed")
+
+        sqlite = SimpleNamespace(
+            SQLITE_SELECT=1, SQLITE_READ=2, SQLITE_OK=0, SQLITE_DENY=1,
+            connect=lambda *_args, **_kwargs: ConnectionAntigravity(),
+        )
+        with (
+            patch.object(sources, "capture_exp446_publication_antigravity", side_effect=(replace(authority), replace(authority))),
+            patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, expected)),
+            patch.dict(sys.modules, {"sqlite3": sqlite}),
+        ):
+            session = sources.open_test_labels_antigravity(authority, replace(authority))
+            with self.assertRaisesRegex(OSError, "connection close failed"):
+                session.close_antigravity()
+            with self.assertRaisesRegex(OSError, "connection close failed"):
+                session.close_antigravity()
+        self.assertEqual(close_calls, 1)
+        with self.assertRaises(OSError):
+            os.fstat(descriptor)
+
+    def test_label_setup_authorizer_failure_closes_connection_and_descriptor_antigravity(self) -> None:
+        """A failing authorizer setup releases every already-open local resource."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity import sources_antigravity as sources
+
+        authority = sources.capture_exp446_publication_antigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        expected = sources._identity_antigravity(os.fstat(descriptor))
+        close_calls = 0
+
+        class ConnectionAntigravity:
+            def set_authorizer(self, _authorizer: object) -> None:
+                raise OSError("authorizer setup failed")
+
+            def close(self) -> None:
+                nonlocal close_calls
+                close_calls += 1
+
+        sqlite = SimpleNamespace(
+            SQLITE_SELECT=1, SQLITE_READ=2, SQLITE_OK=0, SQLITE_DENY=1,
+            connect=lambda *_args, **_kwargs: ConnectionAntigravity(),
+        )
+        with (
+            patch.object(sources, "capture_exp446_publication_antigravity", side_effect=(replace(authority), replace(authority))),
+            patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, expected)),
+            patch.dict(sys.modules, {"sqlite3": sqlite}),
+            self.assertRaisesRegex(OSError, "authorizer setup failed"),
+        ):
+            sources.open_test_labels_antigravity(authority, replace(authority))
+        self.assertEqual(close_calls, 1)
+        with self.assertRaises(OSError):
+            os.fstat(descriptor)
+
     def test_exp404_capture_rejects_tampered_bytes_before_schema_antigravity(self) -> None:
         # Break caught: Exp404's filename and later row validation are trusted
         # while its frozen byte digest no longer matches.

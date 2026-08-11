@@ -160,6 +160,48 @@ class EvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual(len(audits), 1)
             self.assertFalse(root.exists())
 
+    def test_label_close_failure_is_audited_once_without_retry_antigravity(self) -> None:
+        """A close failure stays caller-visible and cannot be hidden by cleanup retry."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+
+        class CloseFailureDependenciesAntigravity(_DependenciesAntigravity):
+            def open_labels(self, first: PublicationIdentityAntigravity, second: PublicationIdentityAntigravity) -> _SessionAntigravity:
+                self.events.append("open_labels"); self.compare_exp446(first, second)
+                return _SessionAntigravity(self.labels, self.events, close_error=OSError("close once"))
+
+        with tempfile.TemporaryDirectory(prefix="exp447_close_audit_antigravity_") as directory:
+            root = Path(directory) / "evaluation_root_antigravity"; dependencies = CloseFailureDependenciesAntigravity(root)
+            with self.assertRaisesRegex(OSError, "close once"):
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            audit = json.loads(next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text(encoding="utf-8"))
+            self.assertFalse(audit["label_session_closed"])
+            self.assertEqual(audit.get("label_session_state"), "close_failed")
+            self.assertEqual(audit["close_error"], "close once")
+            self.assertEqual(audit["error"], "close once")
+            self.assertEqual(dependencies.events.count("close_labels"), 1)
+
+    def test_label_setup_failure_is_audited_after_boundary_entry_antigravity(self) -> None:
+        """Opening a label session is post-boundary even when setup returns no session."""
+        from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+
+        class SetupFailureDependenciesAntigravity(_DependenciesAntigravity):
+            def open_labels(self, first: PublicationIdentityAntigravity, second: PublicationIdentityAntigravity) -> _SessionAntigravity:
+                self.events.append("open_labels"); self.compare_exp446(first, second)
+                raise OSError("authorizer setup failed")
+
+        with tempfile.TemporaryDirectory(prefix="exp447_setup_audit_antigravity_") as directory:
+            root = Path(directory) / "evaluation_root_antigravity"; dependencies = SetupFailureDependenciesAntigravity(root)
+            with self.assertRaisesRegex(OSError, "authorizer setup failed"):
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            audits = list(Path(directory).glob("evaluation_audit_*_antigravity.json"))
+            self.assertEqual(len(audits), 1)
+            if audits:
+                audit = json.loads(audits[0].read_text(encoding="utf-8"))
+                self.assertEqual((audit["phase"], audit["query_attempts"], audit["query_completions"], audit["label_rows"]), ("label_open", 0, 0, 0))
+                self.assertFalse(audit["label_session_closed"])
+                self.assertEqual(audit.get("label_session_state"), "setup_failed")
+                self.assertEqual(audit["error"], "authorizer setup failed")
+
     def test_audit_counts_attempt_before_failed_label_query_and_closes_session_antigravity(self) -> None:
         from experiments.exp447_exp446_postfreeze_performance_evaluation_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
         with tempfile.TemporaryDirectory() as directory:
@@ -468,7 +510,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
             audit = json.loads(next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text(encoding="utf-8"))
             self.assertEqual(set(audit), {
                 "schema", "phase", "query_attempts", "query_completions", "label_rows", "label_session_closed",
-                "destination_state", "error_type", "error", "close_error_type", "close_error", "exp446_identity",
+                "label_session_state", "destination_state", "error_type", "error", "close_error_type", "close_error", "exp446_identity",
             })
             self.assertEqual(audit["exp446_identity"], {
                 "root_device": dependencies.identity.root_device, "root_inode": dependencies.identity.root_inode,

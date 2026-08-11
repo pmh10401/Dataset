@@ -176,7 +176,7 @@ def _destination_state_antigravity(root: Path) -> str:
     return "complete" if names == set(_LEAVES_ANTIGRAVITY) else "partial"
 
 
-def _write_audit_antigravity(root: Path, phase: str, identity: PublicationIdentityAntigravity | None, *, attempts: int, completions: int, rows: int, closed: bool, close_error: BaseException | None, destination_state: str, error: BaseException) -> None:
+def _write_audit_antigravity(root: Path, phase: str, identity: PublicationIdentityAntigravity | None, *, attempts: int, completions: int, rows: int, closed: bool, session_state: str, close_error: BaseException | None, destination_state: str, error: BaseException) -> None:
     # Audit is a distinct sibling, not a mutation or completion of any destination.
     parent = root.parent
     if not parent.is_dir():
@@ -184,6 +184,7 @@ def _write_audit_antigravity(root: Path, phase: str, identity: PublicationIdenti
     payload = {
         "schema": "exp447_evaluation_audit", "phase": phase, "query_attempts": attempts,
         "query_completions": completions, "label_rows": rows, "label_session_closed": closed,
+        "label_session_state": session_state,
         "destination_state": destination_state, "error_type": type(error).__name__, "error": str(error),
         "close_error_type": None if close_error is None else type(close_error).__name__,
         "close_error": None if close_error is None else str(close_error),
@@ -202,10 +203,13 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
     root = Path(getattr(dependencies, "root"))
     identity: PublicationIdentityAntigravity | None = None
     labels_opened = False
+    label_boundary_entered = False
     labels_closed = False
     attempts = queries = rows_read = 0
     phase = "pre_label"
     session = None
+    session_state = "pre_label"
+    close_attempted = False
     close_failure: BaseException | None = None
     try:
         if root.exists() or root.is_symlink():
@@ -216,8 +220,15 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         second = dependencies.capture_exp446()
         dependencies.compare_exp446(identity, second)
         phase = "label_open"
-        session = dependencies.open_labels(identity, second)
+        label_boundary_entered = True
+        session_state = "setup_opening"
+        try:
+            session = dependencies.open_labels(identity, second)
+        except BaseException:
+            session_state = "setup_failed"
+            raise
         labels_opened = True
+        session_state = "open"
         hard_by_dataset = _coordinates_by_dataset_antigravity(tuple(hard_coordinates), identity.dataset_order)
         source_by_dataset = _coordinates_by_dataset_antigravity(identity.source_coordinates, identity.dataset_order)
         stable_by_dataset = _coordinates_by_dataset_antigravity(identity.stable_coordinates, identity.dataset_order)
@@ -249,8 +260,15 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         if (queries, rows_read) != (FROZEN_CONFIG_ANTIGRAVITY.dataset_count, FROZEN_CONFIG_ANTIGRAVITY.label_rows):
             raise ValueError("TEST label query or row population differs from frozen contract")
         phase = "label_close"
-        session.close_antigravity()
+        close_attempted = True
+        try:
+            session.close_antigravity()
+        except BaseException as error:
+            close_failure = error
+            session_state = _session_close_state_antigravity(session, "close_failed")
+            raise
         labels_closed = True
+        session_state = _session_close_state_antigravity(session, "closed")
         phase = "post_close_inspection"
         dependencies.compare_exp446(identity, dependencies.capture_after())
         metrics = {method: _metric_summary_antigravity(method, method_rows) for method, method_rows in rows_by_method.items()}
@@ -288,25 +306,31 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         _write_publication_antigravity(root, payloads)
         return result
     except BaseException as error:
-        if session is not None and not labels_closed:
+        if session is not None and not labels_closed and not close_attempted:
+            close_attempted = True
             try:
                 session.close_antigravity()
                 labels_closed = True
+                session_state = _session_close_state_antigravity(session, "closed")
             except BaseException as close_error:
                 close_failure = close_error
-        if labels_opened:
+                session_state = _session_close_state_antigravity(session, "close_failed")
+        if label_boundary_entered:
             try:
-                _write_audit_antigravity(root, phase, identity, attempts=attempts, completions=queries, rows=rows_read, closed=labels_closed, close_error=close_failure, destination_state=_destination_state_antigravity(root), error=error)
+                _write_audit_antigravity(root, phase, identity, attempts=attempts, completions=queries, rows=rows_read, closed=labels_closed, session_state=session_state, close_error=close_failure, destination_state=_destination_state_antigravity(root), error=error)
             except BaseException:
                 # The original failure must remain the caller-visible truth when audit storage itself fails.
                 pass
         raise
-    finally:
-        if session is not None and not labels_closed:
-            try:
-                session.close_antigravity()
-            except BaseException:
-                pass
+
+
+def _session_close_state_antigravity(session: object, fallback: str) -> str:
+    """Read the closure-private state when available without permitting retry."""
+    state = getattr(session, "close_state_antigravity", None)
+    if not callable(state):
+        return fallback
+    value = state()
+    return value if value in {"open", "closed", "close_failed"} else fallback
 
 
 def evaluate_antigravity(reviewed_commit: str) -> FrozenEvaluationAntigravity:

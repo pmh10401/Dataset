@@ -114,30 +114,55 @@ def open_test_labels_antigravity(identity: PublicationIdentityAntigravity, indep
     if fresh_first is fresh_second or any(capture != identity for capture in (fresh_first, fresh_second)):
         raise ValueError("fresh Exp446 source captures do not attest the outer authority")
     descriptor, expected = _verify_database_antigravity()
+    connection = None
     try:
         import sqlite3
         uri = f"file:/dev/fd/{descriptor}?mode=ro&immutable=1"
         connection = sqlite3.connect(uri, uri=True, isolation_level=None)
+        def authorizer(action: int, table: str | None, column: str | None, _database: str | None, _trigger: str | None) -> int:
+            permitted = {
+                ("instances", "instance_index"), ("instances", "label"), ("instances", "split"), ("instances", "dataset_id"),
+                ("datasets", "id"), ("datasets", "name"),
+            }
+            if action == sqlite3.SQLITE_SELECT or (action == sqlite3.SQLITE_READ and (table, column) in permitted):
+                return sqlite3.SQLITE_OK
+            return sqlite3.SQLITE_DENY
+        connection.set_authorizer(authorizer)
     except BaseException:
-        os.close(descriptor)
+        if connection is not None:
+            try:
+                connection.close()
+            except BaseException:
+                pass
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
         raise
     expected_order = identity.dataset_order
     next_index = 0
     closed = False
-    def authorizer(action: int, table: str | None, column: str | None, _database: str | None, _trigger: str | None) -> int:
-        permitted = {
-            ("instances", "instance_index"), ("instances", "label"), ("instances", "split"), ("instances", "dataset_id"),
-            ("datasets", "id"), ("datasets", "name"),
-        }
-        if action == sqlite3.SQLITE_SELECT or (action == sqlite3.SQLITE_READ and (table, column) in permitted):
-            return sqlite3.SQLITE_OK
-        return sqlite3.SQLITE_DENY
-    connection.set_authorizer(authorizer)
+    close_failure: BaseException | None = None
+    descriptor_released = False
+
+    def release_descriptor() -> None:
+        nonlocal descriptor_released
+        if not descriptor_released:
+            os.close(descriptor)
+            descriptor_released = True
+
     class LabelSessionAntigravity:
         __slots__ = ()
+
+        def close_state_antigravity(self) -> str:
+            return "closed" if closed else ("close_failed" if close_failure is not None else "open")
+
+        def close_error_antigravity(self) -> BaseException | None:
+            return close_failure
+
         def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
             nonlocal next_index
-            if closed or next_index >= len(expected_order) or dataset != expected_order[next_index]:
+            if closed or close_failure is not None or next_index >= len(expected_order) or dataset != expected_order[next_index]:
                 raise ValueError("TEST labels must be read once in frozen dataset order")
             rows = tuple(connection.execute("SELECT i.instance_index, i.label FROM instances AS i JOIN datasets AS d ON d.id=i.dataset_id WHERE d.name=? AND i.split='TEST' ORDER BY i.instance_index", (dataset,)))
             if any(type(index) is not int or type(label) is not int or label not in (0, 1) for index, label in rows):
@@ -147,10 +172,11 @@ def open_test_labels_antigravity(identity: PublicationIdentityAntigravity, indep
             next_index += 1
             return rows
         def close_antigravity(self) -> None:
-            nonlocal closed
+            nonlocal closed, close_failure
             if closed:
                 return
-            closed = True
+            if close_failure is not None:
+                raise close_failure
             try:
                 connection.close()
                 opened = os.fstat(descriptor)
@@ -162,8 +188,15 @@ def open_test_labels_antigravity(identity: PublicationIdentityAntigravity, indep
                         raise ValueError("source database changed during TEST-label session")
                 finally:
                     os.close(rechecked_descriptor)
-            finally:
-                os.close(descriptor)
+                release_descriptor()
+            except BaseException as error:
+                close_failure = error
+                try:
+                    release_descriptor()
+                except OSError:
+                    pass
+                raise
+            closed = True
     return LabelSessionAntigravity()
 
 
