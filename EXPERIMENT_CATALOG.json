@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-11T01:26:11+09:00",
+  "updated_at": "2026-08-11T00:00:00Z",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -851,6 +851,54 @@
       },
       "exact_next_command": "run_exp445_official_readiness_with_reviewed_commit",
       "notes": "Exp445 publication source authority만 복구하는 engineering-only 구현은 전체 244-test 회귀와 read-only boundary smoke로 검증됐고 exact clean HEAD 09903c608fb78508ae8fdd343594e3d99dfee660은 fresh Sol High ship verdict를 받았다. official readiness/new/inspect/evaluate는 아직 실행하지 않았다. Exp444/Exp442 bytes는 immutable이고 prediction/publication/evaluation hash는 null이며 pending candidate, champion, operational promotion은 만들지 않는다."
+    },
+    {
+      "id": "Exp446",
+      "kind": "exp445_publication_materialization_repair",
+      "status": "preregistered_implementation_pending",
+      "documents": [
+        "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity.md",
+        "docs/EXP446_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP446_RUNBOOK_antigravity_KO.md",
+        "docs/EXP446_IMPLEMENTATION_REPORT_antigravity.md"
+      ],
+      "reviewed_design_sha256": "3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281",
+      "run_identity": "exp446-exp445-publication-materialization-repair-antigravity-20260811",
+      "artifact_schema": "exp446",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811",
+      "run_root": "/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811",
+      "attempt": "attempt_0000_antigravity",
+      "predecessor": "Exp445 immutable failed-publication attempt_0000_antigravity",
+      "predecessor_ordered_record_payload_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
+      "source_candidate_count": 30,
+      "prediction_sha256": null,
+      "publication_sha256": null,
+      "evaluation_sha256": null,
+      "champion_sha256": null,
+      "promotion_sha256": null,
+      "prediction_phase_started": false,
+      "prediction_phase_complete": false,
+      "test_labels_opened": false,
+      "pre_freeze_label_access_count": 0,
+      "official_readiness": false,
+      "run_root_exists": false,
+      "backend": "cpu",
+      "logical_cpu_count": 12,
+      "cpu_workers": 11,
+      "cpu_worker_rule": "max(1, logical CPU - 1)",
+      "inner_numerical_threads": 1,
+      "backend_reselection": "not_applicable_frozen_exp445_replay_only",
+      "scientific_success_criterion": null,
+      "evaluation_status": "not_started_no_evaluation_command",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "implementation_report": "docs/EXP446_IMPLEMENTATION_REPORT_antigravity.md",
+      "exact_next_command": "implement_exp446_tdd_publication_materialization_boundary",
+      "notes": "Exp446는 Exp445의 immutable failed-publication predecessor를 보존하며 recursive JSON materialization at the encoding boundary만 허용한다. prediction/publication/evaluation/promotion/champion hash는 null이고, readiness/new/inspect product implementation 전에는 TEST label 접근과 official lifecycle 실행이 없다."
     }
   ]
 }

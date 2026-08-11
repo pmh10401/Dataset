@@ -1,0 +1,76 @@
+{
+  "changed_modules_since_prior_lock": [
+    "docs",
+    "root"
+  ],
+  "current_commit": "dcd527cafd91dde737a9d84c14a8299a6d85f2dc",
+  "excluded_directories": [
+    ".git",
+    ".worktrees",
+    "docs/codemap",
+    "vendor",
+    "node_modules",
+    "build",
+    "cache",
+    "dist",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".venv",
+    "venv",
+    "outputs",
+    "results"
+  ],
+  "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
+  "generated_at": "2026-08-11T00:00:00Z",
+  "module_fingerprints": {
+    ".superpowers": {
+      "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
+      "tracked_files": 44
+    },
+    "docs": {
+      "fingerprint": "a5dd945183bb88b3835fce6780613cd8eec9bf9b699711c88fa7620a90c30a8b",
+      "tracked_files": 383
+    },
+    "experiments": {
+      "fingerprint": "d50dcbba1f61136ea863d79306ac6c38eda47ca164ec13100ec63698875ef50c",
+      "tracked_files": 1303
+    },
+    "operational": {
+      "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
+      "tracked_files": 3
+    },
+    "reports": {
+      "fingerprint": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
+      "tracked_files": 4
+    },
+    "root": {
+      "fingerprint": "738a89f1e2be5b58c9b87f81d2df4b10e25c5f3a9ce1a21fe7e750001fb3b477",
+      "tracked_files": 210
+    },
+    "scratch": {
+      "fingerprint": "f313ff343b05200ac67afa6869f2bf9646b417cd376d3988eb448d539b471d12",
+      "tracked_files": 151
+    },
+    "scripts": {
+      "fingerprint": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
+      "tracked_files": 3
+    },
+    "vercel-dashboard": {
+      "fingerprint": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d",
+      "tracked_files": 81
+    }
+  },
+  "scanned_scope": [
+    "tracked root files including AGENTS.md",
+    ".superpowers",
+    "docs except docs/codemap",
+    "experiments",
+    "operational",
+    "reports",
+    "scratch",
+    "scripts",
+    "vercel-dashboard"
+  ],
+  "working_tree_dirty": true
+}
