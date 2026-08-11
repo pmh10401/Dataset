@@ -8,11 +8,11 @@ ATTEMPT=$RUN_ROOT/attempts_antigravity/attempt_0000_antigravity
 PREDECESSOR=/Users/mac/Documents/Dataset/exp445_exp444_publication_source_authority_repair_antigravity_20260810/attempts_antigravity/attempt_0000_antigravity
 ```
 
-Exp446는 `official_completed_publication_succeeded_cli_serialization_failed_inspection_pending`이다.
+Exp446는 `official_publication_inspected_complete_awaiting_discussion`이다.
 공식 CPU/11 실행과 create-only publication은 완료됐지만, 원래 CLI wrapper는 반환 뒤 nested
 `MappingProxyType`을 `dataclasses.asdict`가 deepcopy하면서 실패했다. 이 문서는 retry, resume,
-새 readiness/new 또는 재-inspect 권한이 아니다. immutable attempt를 바꾸지 않으며 fresh Sol High
-read-only review 전에는 source-free official inspect도 다시 실행하지 않는다. evaluation, promotion 및
+새 readiness/new 또는 재-inspect 권한이 아니다. immutable attempt를 바꾸지 않으며, 승인된 inspect
+pair 이후에도 추가 official command는 discussion 없이는 실행하지 않는다. evaluation, promotion 및
 TEST-label 접근은 미수행이다.
 
 ## 공식 완료 사실과 보존 경계
@@ -23,10 +23,16 @@ TEST-label 접근은 미수행이다.
   publication artifact-map SHA256 is `d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d`;
   manifest SHA256 is `bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11`.
 - labels remain `0`, promotion remains false, DB nlink is `1`, and the official Exp446 root is
-  immutable. Inspection is pending fresh Sol review; it is not a retry path.
+  immutable. The authorized source-free inspect pair both exited `0` with byte-identical output
+  SHA256 `937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0`: dataset `1117`,
+  candidates `30`, stable `26`, unstable `4`. It is not a retry path.
 - A pre-mock focused CLI test unintentionally performed one official inspect. It was source-free,
   label-free, mutation-free captured-output evidence, is not counted as either pending authorized
   inspection, and does not authorize an additional inspect.
+- The actual authorized pair is complete and remains distinct from that earlier unintended test
+  inspection. Execution commit is `c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb`, CLI repair commit
+  is `2da7ab234f138589ac72b8b6179f4051f701bf04`, and the truth/tool starting commit is
+  `827d7dedc00c678ca4309c928341fb6ee2946d53`.
 
 ## 구현 검증 증거 (공식 실행 아님)
 

@@ -2,11 +2,11 @@
 
 ## Status and authority
 
-Exp446 is `official_completed_publication_succeeded_cli_serialization_failed_inspection_pending`.
+Exp446 is `official_publication_inspected_complete_awaiting_discussion`.
 The official CPU/11 runtime and create-only publication completed, but the original CLI wrapper
 failed only after return while `dataclasses.asdict` deep-copied a nested `MappingProxyType` during
 stdout serialization. The immutable attempt is neither retried nor mutated; source-free official
-inspection is pending fresh Sol review. Prediction SHA256 is
+the authorized source-free inspection pair is complete. Prediction SHA256 is
 `602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100`, the publication artifact-map
 SHA256 is `d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d`, and manifest SHA256 is
 `bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11`. Label access is `0` and
@@ -62,7 +62,19 @@ Before that mock was installed, one focused CLI test unintentionally performed a
 It was source-free, label-free, mutation-free captured-output evidence; it is not counted as either
 pending authorized inspection, and no additional official inspect was run.
 
+## Authorized inspection closeout
+
+After authorization, the two official source-free inspections both exited `0` and produced
+byte-identical output with SHA256
+`937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0`.
+They confirm the immutable publication's `1117` datasets, `30` candidates, `26` stable and `4`
+unstable review rows, and label access `0`. The execution commit is
+`c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb`; the post-publication CLI serialization repair is
+`2da7ab234f138589ac72b8b6179f4051f701bf04`; this truth/tool closeout starts from
+`827d7dedc00c678ca4309c928341fb6ee2946d53`. The original `new` wrapper error remains disclosed:
+it occurred only after valid publication while serializing a nested `MappingProxyType`.
+
 ## Remaining gate
 
-Only a fresh Sol High read-only review may permit the pending source-free official inspection.
-This report does not claim that inspection, evaluation, promotion, or a `ship` verdict.
+The authorized inspection pair is complete. Evaluation, champion selection, promotion, and a
+`ship` verdict remain unstarted or false; the next state is discussion, with no automatic action.

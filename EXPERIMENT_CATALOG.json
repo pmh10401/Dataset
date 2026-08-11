@@ -855,7 +855,7 @@
     {
       "id": "Exp446",
       "kind": "exp445_publication_materialization_repair",
-      "status": "official_completed_publication_succeeded_cli_serialization_failed_inspection_pending",
+      "status": "official_publication_inspected_complete_awaiting_discussion",
       "documents": [
         "docs/superpowers/specs/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity-design.md",
         "docs/superpowers/plans/2026-08-11-exp446-exp445-publication-materialization-repair-antigravity.md",
@@ -927,6 +927,8 @@
       },
       "official_execution": {
         "execution_commit": "c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb",
+        "cli_repair_commit": "2da7ab234f138589ac72b8b6179f4051f701bf04",
+        "truth_closeout_commit": "827d7dedc00c678ca4309c928341fb6ee2946d53",
         "pid": 74950,
         "elapsed_seconds": 471.76320550008677,
         "completed": 30,
@@ -936,7 +938,21 @@
         "label_access_count": 0,
         "terminal_aggregate_sha256": "af24dd48f7ebe51881637c2ee584c82e7477240b4088d868b7876a61babab034",
         "wrapper_failure": "post_publication_mappingproxy_serialization_typeerror",
-        "inspection_status": "pending_no_additional_official_inspect_before_fresh_sol_review",
+        "inspection_status": "authorized_inspect_pair_complete_byte_identical",
+        "authorized_inspect_pair": {
+          "inspect_1_exit_code": 0,
+          "inspect_2_exit_code": 0,
+          "byte_identical": true,
+          "output_sha256": "937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0",
+          "dataset_count": 1117,
+          "source_candidate_count": 30,
+          "stable_count": 26,
+          "unstable_count": 4,
+          "label_access_count": 0,
+          "source_free": true,
+          "label_free": true,
+          "mutation_free": true
+        },
         "unintended_read_only_inspect": {
           "occurred_during": "pre_mock_focused_cli_test",
           "source_free": true,
@@ -947,8 +963,8 @@
           "additional_official_inspect_run": false
         }
       },
-      "exact_next_command": "await_fresh_sol_high_read_only_review_before_source_free_inspection",
-      "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion. The original CLI wrapper failed only after return while dataclasses.asdict deep-copied a nested MappingProxyType. One unintended pre-mock focused-test official inspect was source-free, label-free, mutation-free captured-output evidence; it is not counted as the pending authorized two inspections, and no additional official inspect is run before fresh Sol review. The immutable attempt is not retried or mutated."
+      "exact_next_command": "await_discussion_no_automatic_evaluation_or_promotion",
+      "notes": "Official Exp446 runtime and create-only publication completed with zero labels and no promotion at execution commit c5278ba600a2d7ee259f5f5f987e1f9cf20c04cb. The post-publication CLI repair is 2da7ab234f138589ac72b8b6179f4051f701bf04; current truth/tool commit is 827d7dedc00c678ca4309c928341fb6ee2946d53. The original new wrapper failure occurred only after valid publication while dataclasses.asdict deep-copied a nested MappingProxyType. The authorized two source-free, label-free, mutation-free official inspections both exited 0 and produced byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0. One earlier unintended pre-mock focused-test inspect remains separately disclosed and does not replace the authorized pair. Evaluation, champion, and promotion remain null or false; the immutable attempt is not retried or mutated."
     }
   ]
 }
