@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T04:10:00+09:00",
-  "generated_from_commit": "46928298ace8152b32a24781c288376d9cdb98ed",
+  "generated_at": "2026-08-12T04:20:00+09:00",
+  "generated_from_commit": "a0ac8297fb341fe5308ccf8c556f69621cfa1d8e",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary"
   ],
@@ -81,7 +81,7 @@
         "future test_controlled_fork_differential_antigravity.py"
       ],
       "constraints": [
-        "Task 6 is gated by a clean candidate and fresh Sol ship.",
+        "Task 6 is gated by a clean candidate and fresh Sol ship; its command surface is readiness/evaluate reviewed commit plus bare inspect.",
         "Any official nonzero permanently stops Exp448."
       ],
       "evidence": [
@@ -119,12 +119,12 @@
       "entrypoints": [
         "선행 gate",
         "허용될 수 있는 명령",
-        "실행 후"
+        "readiness/evaluate reviewed commit and bare inspect"
       ],
       "tests": [],
       "constraints": [
-        "No command is authorized before a fresh Sol High ship verdict.",
-        "readiness → evaluate → inspect runs once each only after all gates."
+        "No command is authorized before fresh Sol High ship.",
+        "readiness/evaluate require exact reviewed commit; inspect is bare and source-free."
       ],
       "evidence": [
         {
