@@ -55,7 +55,7 @@
   },
   "exp445_exp444_publication_source_authority_repair": {
     "experiment": "Exp445",
-    "status": "implementation_verified_awaiting_official_readiness",
+    "status": "official_engineering_failed_prepublication_label_free",
     "reviewed_design_sha256": "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
     "reviewed_plan_sha256": "4b369f044456ce9e3cca0abad141beb28b5b3431691677f19a2900997dc5ac9a",
     "run_identity": "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
@@ -68,11 +68,11 @@
     "prediction_sha256": null,
     "evaluation_sha256": null,
     "publication_sha256": null,
-    "prediction_started": false,
+    "prediction_started": true,
     "test_labels_opened": false,
     "pre_freeze_label_access_count": 0,
-    "official_readiness": false,
-    "run_root_exists": false,
+    "official_readiness": true,
+    "run_root_exists": true,
     "backend": "cpu",
     "logical_cpu_count": 12,
     "cpu_workers": 11,
@@ -80,7 +80,7 @@
     "inner_numerical_threads": 1,
     "backend_reselection": "not_applicable_inherited_exp444_authority_revalidation_only",
     "scientific_success_criterion": null,
-    "evaluation_status": "descriptive_complete_no_promotion",
+    "evaluation_status": "not_started_immutable_prepublication_failure",
     "scientific_winner_selected": false,
     "review_only": true,
     "operational_alert_eligible": false,
@@ -103,14 +103,14 @@
       "temporary_30_record_parity_sha256": "267449fa3a4d00e3d214ca3fa5b5f38c1f73ecd07ec3d33545003e0b92a76b30",
       "database_inode": 1048138,
       "database_link_count": 1,
-      "official_root_absent": true,
+      "official_root_absent": false,
       "test_labels_opened": false,
       "clean_head_review": {
         "reviewed_candidate_commit": "09903c608fb78508ae8fdd343594e3d99dfee660",
         "verdict": "ship"
       }
     },
-    "exact_next_command": "run_exp445_official_readiness_with_reviewed_commit"
+    "exact_next_command": "none_immutable_failed_publication_no_retry_resume_publication_evaluation"
   },
   "exp446_exp445_publication_materialization_repair": {
     "experiment": "Exp446",

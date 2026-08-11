@@ -1,9 +1,6 @@
 {
-  "changed_modules_since_prior_lock": [
-    "docs",
-    "root"
-  ],
-  "current_commit": "dcd527cafd91dde737a9d84c14a8299a6d85f2dc",
+  "changed_modules_since_prior_lock": [],
+  "current_commit": "a4959d4a7aaa657c91d96b65732999775a76c249",
   "excluded_directories": [
     ".git",
     ".worktrees",
@@ -29,7 +26,7 @@
       "tracked_files": 44
     },
     "docs": {
-      "fingerprint": "a5dd945183bb88b3835fce6780613cd8eec9bf9b699711c88fa7620a90c30a8b",
+      "fingerprint": "3087d84d1a88e59925b036fb3dac19ac1f9f9af1cbae776d05a13641bb66e4c1",
       "tracked_files": 383
     },
     "experiments": {
@@ -45,7 +42,7 @@
       "tracked_files": 4
     },
     "root": {
-      "fingerprint": "738a89f1e2be5b58c9b87f81d2df4b10e25c5f3a9ce1a21fe7e750001fb3b477",
+      "fingerprint": "d80802fe13d2929b2647948df0879b619e7cad064e58cabbfe89298beab44fb9",
       "tracked_files": 210
     },
     "scratch": {
