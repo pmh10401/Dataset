@@ -1,8 +1,18 @@
 {
-  "changed_modules_since_prior_lock": [
-    "experiments"
+  "current_commit": "e80858a1c469f64b80597b516a992c9f28ceb5f1",
+  "working_tree_dirty": false,
+  "generated_at": "2026-08-11T14:32:47Z",
+  "scanned_scope": [
+    "tracked root files including AGENTS.md",
+    ".superpowers",
+    "docs except docs/codemap",
+    "experiments",
+    "operational",
+    "reports",
+    "scratch",
+    "scripts",
+    "vercel-dashboard"
   ],
-    "current_commit": "c414c7abc1d6efc69317ba6ed0e081a9abf50feb",
   "excluded_directories": [
     ".git",
     ".worktrees",
@@ -21,8 +31,11 @@
     "results"
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
-    "generated_at": "2026-08-11T15:35:00Z",
   "module_fingerprints": {
+    "root": {
+      "fingerprint": "5fae99592ff37875cf6541f195b50e257c9e90a381f441e59ad05337c292efcf",
+      "tracked_files": 210
+    },
     ".superpowers": {
       "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
       "tracked_files": 44
@@ -32,8 +45,8 @@
       "tracked_files": 388
     },
     "experiments": {
-            "fingerprint": "98540f20adf358f193be1f1da8b19eade9e9483e560c215f6cbc841e7a2778f6",
-      "tracked_files": 1326
+      "fingerprint": "f8080d292f1f44c290b47286043943c245b540baef8b4b5ca3fee9912a80f8a8",
+      "tracked_files": 1328
     },
     "operational": {
       "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
@@ -43,13 +56,9 @@
       "fingerprint": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
       "tracked_files": 4
     },
-    "root": {
-      "fingerprint": "5fae99592ff37875cf6541f195b50e257c9e90a381f441e59ad05337c292efcf",
-      "tracked_files": 210
-    },
     "scratch": {
-      "fingerprint": "2ec3c16341891b790ed9f931359d87b49ec71c62fc5f09ddf377947297a80447",
-      "tracked_files": 152
+      "fingerprint": "b3b9311cbacfad6c0250d730958c6a66ac76d2af8ac9a339fb54a39fab90215b",
+      "tracked_files": 153
     },
     "scripts": {
       "fingerprint": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
@@ -60,16 +69,8 @@
       "tracked_files": 81
     }
   },
-  "scanned_scope": [
-    "tracked root files including AGENTS.md",
-    ".superpowers",
-    "docs except docs/codemap",
+  "changed_modules_since_prior_lock": [
     "experiments",
-    "operational",
-    "reports",
-    "scratch",
-    "scripts",
-    "vercel-dashboard"
-  ],
-  "working_tree_dirty": false
+    "scratch"
+  ]
 }

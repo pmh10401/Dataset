@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-11T15:35:00Z",
-  "generated_from_commit": "c414c7abc1d6efc69317ba6ed0e081a9abf50feb",
+  "generated_at": "2026-08-11T14:32:47Z",
+  "generated_from_commit": "e80858a1c469f64b80597b516a992c9f28ceb5f1",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -89,8 +89,8 @@
     "Exp446 official CPU/11 runtime and immutable create-only publication completed 30/30 with four abstentions and zero labels. The original new wrapper failed only after valid publication on MappingProxyType serialization. The authorized source-free, label-free, mutation-free inspect pair both exited 0 with byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0 (1117 datasets, 30 candidates, 26 stable, 4 unstable). The earlier unintended pre-mock focused-test inspect remains separately disclosed; evaluation, champion, and promotion remain disabled pending discussion.",
     "Exp446 terminal authority correction: frozen per-record dataset/train/raw dimensions and four lane-derived abstentions are validated without changing scientific computation or official lifecycle authority.",
     "Exp446 terminal identity repair: each immutable Exp445 wrapper binds sequence separately from candidate instance_index and original_rank; four abstentions are sequence/original-rank positions, never instance indices.",
-    "Exp446 official CPU/11 runtime and immutable create-only publication completed 30/30 with four abstentions and zero labels. The original new wrapper failed only after valid publication on MappingProxyType serialization. The authorized source-free, label-free, mutation-free inspect pair both exited 0 with byte-identical output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0 (1117 datasets, 30 candidates, 26 stable, 4 unstable). The earlier unintended pre-mock focused-test inspect remains separately disclosed; evaluation, champion, and promotion remain disabled pending discussion.",
-    "Exp447 approved governance: local deterministic post-freeze evaluation of immutable Exp446 predictions, with a separate private aggregate-only dashboard presentation boundary after immutable truth closeout; no Exp447 product source edge exists before implementation."
+    "Exp447 approved governance: local deterministic post-freeze evaluation of immutable Exp446 predictions, with a separate private aggregate-only dashboard presentation boundary after immutable truth closeout; no Exp447 product source edge exists before implementation.",
+    "Exp447 closed CLI and outside-CWD single-thread launcher"
   ],
   "nodes": [
     {
@@ -1234,12 +1234,12 @@
     },
     {
       "id": "exp447_evaluation_primitives",
-      "label": "Exp447 post-freeze evaluator",
+      "label": "Exp447 closed evaluation boundary",
       "type": "pipeline",
       "boundary": "Exp447 post-freeze evaluation",
       "layer": 1,
       "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity",
-      "role": "Freezes Exp447 value contracts, pins immutable Exp446/Exp404 sources, and performs the sole local deterministic post-freeze evaluation. It opens TEST labels only after two matching Exp446 captures, closes that session before metrics/bootstrap/publication, rechecks source identity after close/computation/pre-commit, writes an exact eleven-leaf create-only evaluation, and replays completed evidence without SQLite, network, or dashboard imports.",
+      "role": "Groups the immutable Exp447 source/readiness authority, single-use evaluator and closed CLI. The CLI exposes only readiness, evaluate and inspect. It lazily loads each route, rechecks a clean reviewed commit before evaluator import, serializes frozen slots dataclasses without mutable deep copies, and its outside-CWD launcher pins seven numerical thread controls to one before any package import. No official evaluation is run by this code map update.",
       "entrypoints": [
         "FROZEN_CONFIG_ANTIGRAVITY",
         "PublicationIdentityAntigravity",
@@ -1257,7 +1257,10 @@
         "readiness_antigravity",
         "evaluate_antigravity",
         "inspect_evaluation_antigravity",
-        "FrozenEvaluationAntigravity"
+        "FrozenEvaluationAntigravity",
+        "build_parser_antigravity",
+        "main_antigravity",
+        "run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py"
       ],
       "tests": [
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_config_antigravity.py",
@@ -1266,13 +1269,17 @@
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_bootstrap_antigravity.py",
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_sources_antigravity.py",
         "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_readiness_antigravity.py",
-        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_evaluation_antigravity.py"
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
         "Evaluation-only: no new score, training, MLX/MPS benchmark, network, dashboard import, Exp446 mutation, champion change, or operational promotion.",
         "The sole TEST-label session opens only after Exp446 capture, Exp404 Hard capture/derivation, a second byte/root-identical Exp446 capture, and equality comparison; it must close before post-close source validation, metric/bootstrap computation, and eleven-leaf create-only publication.",
         "Exact population is 1,117 datasets and 195,900 contiguous binary label rows. Source lane algebra is 30 = 26 stable + 4 unstable. Hard baseline is [1915,303,2003,191679]; source30 must reproduce frozen Exp442 [1930,318,1988,191664] solely as historical agreement, never prediction selection.",
-        "Inspect is source-free and label-free: it rechecks Exp446 identity, exact inventory/hash map, per-dataset metric reconstruction, transition lane conservation, diagnostics, fixed confusion, historical agreement, and bootstrap comparison names. Post-label failures create a unique sibling audit and neither retry nor overwrite partial/complete evidence."
+        "Inspect is source-free and label-free: it rechecks Exp446 identity, exact inventory/hash map, per-dataset metric reconstruction, transition lane conservation, diagnostics, fixed confusion, historical agreement, and bootstrap comparison names. Post-label failures create a unique sibling audit and neither retry nor overwrite partial/complete evidence.",
+        "CLI is closed to exactly readiness/evaluate/inspect with allow_abbrev=False. readiness/evaluate require a lowercase full 40-hex reviewed commit; new/resume/retry and root/hash/source/lane/threshold/budget overrides do not exist.",
+        "Help, readiness and inspect remain lazy. evaluate checks clean reviewed HEAD before evaluator import; inspect follows the label-free replay API and does not open TEST labels.",
+        "The scratch launcher resolves repository root from __file__, works outside the repository CWD, and overwrites OMP_NUM_THREADS, OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, VECLIB_MAXIMUM_THREADS, NUMEXPR_NUM_THREADS, BLIS_NUM_THREADS, and NUMBA_NUM_THREADS to 1 before package import."
       ],
       "evidence": [
         {
@@ -1342,6 +1349,26 @@
         {
           "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "class EvaluationAntigravityTests"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/cli_antigravity.py",
+          "symbol": "def build_parser_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/cli_antigravity.py",
+          "symbol": "def main_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/cli_antigravity.py",
+          "symbol": "def _json_safe_antigravity"
+        },
+        {
+          "path": "experiments/exp447_exp446_postfreeze_performance_evaluation_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "class CliAntigravityTests"
+        },
+        {
+          "path": "scratch/run_exp447_exp446_postfreeze_performance_evaluation_antigravity.py",
+          "symbol": "for _name_antigravity in ("
         }
       ]
     },
@@ -6564,6 +6591,17 @@
         "exp446_governance"
       ],
       "outcome": "The evaluator captures Exp446, captures/derives Exp404 Hard, independently recaptures and compares Exp446, then opens one ordered TEST-label session. After it closes, it computes four fixed comparisons, exact historical source30 agreement, diagnostics and shared-draw bootstrap, rechecks Exp446 three times, writes eleven create-only leaves, and later inspect replays them without labels. It remains descriptive and review-only."
+    },
+    {
+      "id": "exp447_closed_cli_flow",
+      "label": "Exp447 closed command boundary",
+      "trigger": "An operator runs the outside-CWD launcher with exactly readiness, evaluate, or inspect.",
+      "steps": [
+        "research_control",
+        "exp447_evaluation_primitives",
+        "exp446_governance"
+      ],
+      "outcome": "The CLI dispatches lazily: readiness remains no-label; evaluate rechecks the clean reviewed commit before the single-use evaluator can load; inspect replays frozen evidence without opening TEST labels. The launcher pins numerical library threads to one. This flow neither authorizes nor performs an official evaluation."
     }
   ],
   "unknown_relationships": [
