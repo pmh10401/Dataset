@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-12T00:00:00+00:00",
-  "generated_from_commit": "22d74345c55476674e0fe5ec2677a86d36f5b8ed",
+  "generated_from_commit": "1dfb57beb60d65259e91d8d54b878b99188ab5f4",
   "scope": [
     "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
   ],
