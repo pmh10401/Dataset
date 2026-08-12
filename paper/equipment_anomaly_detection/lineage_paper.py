@@ -266,7 +266,8 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     hashes = lock_payload.get("hashes")
     expected_names = {
         "config_paper.py", "contracts_paper.py", "lineage_lock_paper.json",
-        "codemap_paper.html", "codemap_paper.json", "sources_paper/source_provenance_paper.json",
+        "codemap_paper.html", "codemap_paper.json", "hard_route_paper.py",
+        "sources_paper/source_provenance_paper.json",
     } | _paper_source_helper_inventory(root)
     if not isinstance(hashes, dict) or set(hashes) != expected_names or any(type(value) is not str or not re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values()):
         raise ValueError("paper codemap lock hashes are invalid")

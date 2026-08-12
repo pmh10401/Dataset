@@ -38,6 +38,7 @@ class ConfigLineageTests(unittest.TestCase):
             {
                 "rocket_exp40", "exp55_best", "exp56_best", "exp84_family_guard",
                 "exp84_count_cap", "rocket_block_b", "canonical_normal_state",
+                "legacy_fullfit_route_evidence", "legacy_hard_route_chain",
                 "exp234_three_source", "minirocket_1024_seed_intersection",
                 "minirocket_4096_seed_intersection", "raw_exact_normal_guard",
                 "low_frequency_two_depth", "hard_empty_budget_30", "train_omission_stability",
