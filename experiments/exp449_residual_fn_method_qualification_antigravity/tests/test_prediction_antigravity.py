@@ -659,6 +659,68 @@ class PredictionAntigravityTests(unittest.TestCase):
                     manifest_path = root / "prediction_manifest_antigravity.json"; manifest = json.loads(manifest_path.read_text()); manifest["leaf_sha256"][authority.inventory[0]] = hashlib.sha256(leaf.read_bytes()).hexdigest(); manifest["aggregate_sha256"] = hashlib.sha256("".join(manifest["leaf_sha256"][item] for item in manifest["inventory"]).encode()).hexdigest(); manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
                 with self.assertRaises(ValueError): capture_frozen_prediction_authority_antigravity(root)
 
+    def test_descriptor_capture_rejects_rehashed_context_and_candidate_binding_tampering_antigravity(self) -> None:
+        """Break caught: capture accepts a self-consistent manifest after Task5-only context or ordered candidate binding changes."""
+        import hashlib
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import capture_frozen_prediction_authority_antigravity, run_synthetic_lifecycle_antigravity
+
+        for attack in ("mlx", "source_digest", "method_audit", "method_order"):
+            with self.subTest(attack=attack), tempfile.TemporaryDirectory(prefix="exp449_capture_context_antigravity_") as temporary:
+                root = Path(temporary) / "run"; authority = run_synthetic_lifecycle_antigravity(root, "a" * 40)
+                context_path = root / "context_antigravity.json"; context = json.loads(context_path.read_text())
+                if attack == "mlx":
+                    context["mlx"] = {}
+                elif attack == "source_digest":
+                    context["source_identity"]["evaluation_sha256"] = "G" * 64
+                elif attack == "method_audit":
+                    context["method_audit_sha256"] = "G" * 64
+                else:
+                    first, second = (root / authority.inventory[0], root / authority.inventory[1])
+                    first_payload, second_payload = json.loads(first.read_text()), json.loads(second.read_text())
+                    first_payload["method"], second_payload["method"] = second_payload["method"], first_payload["method"]
+                    first_payload["candidate_name"] = first_payload["dataset"] + "__" + first_payload["method"]
+                    second_payload["candidate_name"] = second_payload["dataset"] + "__" + second_payload["method"]
+                    first.write_bytes(canonical_json_bytes_antigravity(first_payload)); second.write_bytes(canonical_json_bytes_antigravity(second_payload))
+                context_path.write_bytes(canonical_json_bytes_antigravity(context))
+                manifest_path = root / "prediction_manifest_antigravity.json"; manifest = json.loads(manifest_path.read_text())
+                manifest["context_sha256"] = hashlib.sha256(context_path.read_bytes()).hexdigest()
+                for relative in authority.inventory:
+                    manifest["leaf_sha256"][relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
+                manifest["aggregate_sha256"] = hashlib.sha256("".join(manifest["leaf_sha256"][relative] for relative in manifest["inventory"]).encode()).hexdigest()
+                manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
+                with self.assertRaises(ValueError):
+                    capture_frozen_prediction_authority_antigravity(root)
+
+    def test_descriptor_capture_closes_distinct_same_basename_inventory_opens_after_primary_antigravity(self) -> None:
+        """Break caught: a basename-keyed FD registry loses an earlier retained leaf during later semantic failure cleanup."""
+        import hashlib
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_capture_basename_collision_antigravity_") as temporary:
+            root = Path(temporary) / "run"; authority = module.run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            manifest_path = root / "prediction_manifest_antigravity.json"; manifest = json.loads(manifest_path.read_text())
+            original_second = manifest["inventory"][1]; duplicate = "candidates_antigravity/nested_antigravity/" + Path(manifest["inventory"][0]).name
+            (root / original_second).unlink(); manifest["inventory"][1] = duplicate
+            manifest["leaf_sha256"].pop(original_second); manifest["leaf_sha256"][duplicate] = hashlib.sha256((root / authority.inventory[0]).read_bytes()).hexdigest()
+            manifest["aggregate_sha256"] = hashlib.sha256("".join(manifest["leaf_sha256"][relative] for relative in manifest["inventory"]).encode()).hexdigest()
+            manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
+            original_open, original_close = module.os.open, module.os.close
+            opened: list[int] = []; closed: list[int] = []
+            def record_open(*args: object, **kwargs: object) -> int:
+                descriptor = original_open(*args, **kwargs); opened.append(descriptor); return descriptor
+            def record_close(descriptor: int) -> None:
+                closed.append(descriptor); original_close(descriptor)
+            before = len(list(Path("/dev/fd").iterdir()))
+            with patch.object(module.os, "open", side_effect=record_open), patch.object(module.os, "close", side_effect=record_close):
+                with self.assertRaises(ValueError):
+                    module.capture_frozen_prediction_authority_antigravity(root)
+            self.assertTrue(set(opened).issubset(closed))
+            for descriptor in opened:
+                with self.assertRaises(OSError): os.fstat(descriptor)
+            self.assertEqual(len(list(Path("/dev/fd").iterdir())), before)
+
     def test_private_validator_rejects_candidate_symlink_and_root_extra_antigravity(self) -> None:
         """Break caught: traversing symlinks or accepting an unpinned prediction namespace."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415

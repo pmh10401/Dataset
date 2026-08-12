@@ -183,6 +183,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
     staging_fd: int | None = None
     staging_name: str | None = None
     primary: BaseException | None = None
+    canonical_published = False
     phase = "precommit"
     recovery: dict[str, object] = {"outcome": "not_needed", "forensic_basename": None, "errors": []}
     try:
@@ -214,6 +215,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
         phase = "post_rename_fsync"
         _fsync_directory_antigravity(staging_fd)
         _fsync_directory_antigravity(parent_fd)
+        canonical_published = True
     except BaseException as error:
         primary = error
         # Never touch a foreign object: only rename canonical when it still is retained identity.
@@ -254,7 +256,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
                 except BaseException as close_error:
                     if primary is not None:
                         primary.add_note(f"descriptor_close_error={type(close_error).__name__}: {close_error}")
-                    else:
+                    elif not canonical_published:
                         raise
         finally:
             try:
@@ -262,7 +264,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
             except BaseException as close_error:
                 if primary is not None:
                     primary.add_note(f"parent_descriptor_close_error={type(close_error).__name__}: {close_error}")
-                else:
+                elif not canonical_published:
                     raise
 
 

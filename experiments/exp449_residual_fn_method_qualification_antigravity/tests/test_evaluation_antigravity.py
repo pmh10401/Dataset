@@ -384,6 +384,50 @@ class EvaluationAntigravityTests(unittest.TestCase):
                         os.fstat(descriptor)
                 self.assertEqual(len(list(Path('/dev/fd').iterdir())), fd_count_before)
 
+    def test_successful_canonical_publish_swallows_staging_and_parent_close_errors_antigravity(self) -> None:
+        """Break caught: a close error after all canonical verification converts a successful publication into a failure audit."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_success_close_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original_open, original_close = module.os.open, module._close_descriptor_antigravity
+            directory_fds: list[int] = []; closed: list[int] = []
+            def record_open(*args: object, **kwargs: object) -> int:
+                descriptor = original_open(*args, **kwargs)
+                if type(args[1]) is int and args[1] & os.O_DIRECTORY: directory_fds.append(descriptor)
+                return descriptor
+            def close_then_fail(descriptor: int) -> None:
+                closed.append(descriptor); original_close(descriptor)
+                if descriptor in directory_fds[:2]: raise OSError(f"successful close fd={descriptor}")
+            with patch.object(module.os, "open", side_effect=record_open), patch.object(module, "_close_descriptor_antigravity", side_effect=close_then_fail):
+                result = module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual(result.label_session_count, 1)
+            self.assertTrue(dependencies.root.is_dir())
+            self.assertFalse(dependencies.audit_path.exists())
+            self.assertTrue(set(directory_fds[:2]).issubset(closed))
+
+    def test_precommit_primary_retains_both_retained_directory_close_notes_antigravity(self) -> None:
+        """Break caught: best-effort successful-close handling hides close diagnostics from an active precommit primary."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_primary_close_notes_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original_open, original_close = module.os.open, module._close_descriptor_antigravity
+            directory_fds: list[int] = []
+            def record_open(*args: object, **kwargs: object) -> int:
+                descriptor = original_open(*args, **kwargs)
+                if type(args[1]) is int and args[1] & os.O_DIRECTORY: directory_fds.append(descriptor)
+                return descriptor
+            def close_then_fail(descriptor: int) -> None:
+                original_close(descriptor)
+                if descriptor in directory_fds[:2]: raise OSError(f"primary close fd={descriptor}")
+            with patch.object(module.os, "open", side_effect=record_open), patch.object(module, "_write_leaf_at_antigravity", side_effect=OSError("precommit primary truth")), patch.object(module, "_close_descriptor_antigravity", side_effect=close_then_fail):
+                with self.assertRaisesRegex(OSError, "precommit primary truth") as raised:
+                    module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            notes = "\n".join(raised.exception.__notes__)
+            self.assertIn(f"descriptor_close_error=OSError: primary close fd={directory_fds[1]}", notes)
+            self.assertIn(f"parent_descriptor_close_error=OSError: primary close fd={directory_fds[0]}", notes)
+
     def test_partial_staging_and_audit_write_failure_preserve_primary_truth_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
 
