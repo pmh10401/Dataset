@@ -1,7 +1,7 @@
 {
-  "current_commit": "09e1e9ba3174e24f5dd49b18477755cf854145a2",
+  "current_commit": "1e4f25a460b163ffa9e88fad434de68500818b71",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-11T23:54:15+00:00",
+  "generated_at": "2026-08-12T00:00:00+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -35,10 +35,10 @@
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
     "docs": "11329357904129850286ec19cfe6421a163c605dae33e55401c38afbcf9992ba",
-    "experiments": "35ddbe466d530dacbf74d24218fbd52c65c1401ab832233893980eaae07545f1",
+    "experiments": "a37428d5e560b6a2060f53681b249dd749bacc0265f7e37c943888081f4a0471",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "ab02867a892d34a0b5a90225fd08181b3a8852557b0481cc1411de27b21f4fe3",
+    "scratch": "87e0e807fb268dff25277e2cad24e33dedb22c3b3492a495e88efafe5e8f04b9",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },

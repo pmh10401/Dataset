@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-11T23:54:15+00:00",
-  "generated_from_commit": "09e1e9ba3174e24f5dd49b18477755cf854145a2",
+  "generated_at": "2026-08-12T00:00:00+00:00",
+  "generated_from_commit": "1e4f25a460b163ffa9e88fad434de68500818b71",
   "scope": [
-    "Exp449 Task-2 candidate registry, immutable contracts, canonical artifacts, fixed method audit, verified HTML-plan progress policy, and future product boundaries"
+    "Exp449 Task-3 descriptor-pinned Exp448 authority, label-free source boundary, Task-2 contracts, and future product boundaries"
   ],
   "nodes": [
     {
@@ -198,6 +198,34 @@
       ]
     },
     {
+      "id": "exp448_authority",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py",
+      "role": "Descriptor-pinned immutable Exp448 11-leaf authority, independently binding the source-free Exp446 stable-26 publication.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py",
+          "symbol": "def capture_exp448_authority_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "label_free_source",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
+      "role": "Read-only descriptor-pinned value loader and Task-6-only closure-private TEST-label session boundary; no current caller exists.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
+          "symbol": "def load_target_bundle_antigravity"
+        }
+      ]
+    },
+    {
       "id": "future_score_prediction",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
       "role": "Future score/prediction boundary; no source module or call exists at Task 1.",
@@ -364,6 +392,33 @@
       }
     },
     {
+      "from": "exp448_authority",
+      "to": "immutable_contracts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py",
+        "symbol": "contracts_antigravity import"
+      }
+    },
+    {
+      "from": "exp448_authority",
+      "to": "candidate_registry",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py",
+        "symbol": "config_antigravity import"
+      }
+    },
+    {
+      "from": "label_free_source",
+      "to": "immutable_contracts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
+        "symbol": "contracts_antigravity import"
+      }
+    },
+    {
       "from": "exp449_preregistration",
       "to": "future_score_prediction",
       "type": "future_unknown",
@@ -420,18 +475,18 @@
         "html_implementation_plan",
         "governance_regression"
       ],
-      "outcome": "Only Task 1 and Task 2, plus their verified steps, render checked; pending work remains unchecked."
+      "outcome": "Only Task 1 and Task 2, plus their verified steps, render checked; Task 3 remains unchecked until independent review."
     },
     {
-      "trigger": "Task-2 contract freeze",
+      "trigger": "Task-3 source authority",
       "steps": [
         "exp449_preregistration",
-        "candidate_registry",
-        "immutable_contracts",
-        "canonical_artifacts",
-        "method_audit"
+        "exp448_predecessor",
+        "exp448_authority",
+        "label_free_source",
+        "immutable_contracts"
       ],
-      "outcome": "The exact candidate inventory and fixed environment authority are implemented without prediction, readiness, evaluation, or official lifecycle execution."
+      "outcome": "The 11-leaf Exp448 authority and values-only source are immutable inputs; no scoring, prediction, readiness, evaluation, or official lifecycle call exists."
     },
     {
       "trigger": "Future implementation boundary",
@@ -446,10 +501,10 @@
     }
   ],
   "unknown_relationships": [
-    "Prediction, readiness, source authority, score, evaluation, replay, CLI, and dashboard product-boundary relationships remain future/unknown; no calls, routes, databases, queues, or dashboard source edges are claimed."
+    "No actual caller of Exp448 authority or the label-free source exists at Task 3. Prediction, readiness, score, evaluation, replay, CLI, and dashboard product-boundary relationships remain future/unknown; no later calls, routes, queues, or dashboard source edges are claimed."
   ],
   "unknowns": [
-    "No Exp449 official lifecycle or prediction/readiness source exists at Task 2.",
+    "No Exp449 official lifecycle or prediction/readiness source exists at Task 3.",
     "The existing owner-only dashboard has no mapped repository source and is presentation-only."
   ]
 }
