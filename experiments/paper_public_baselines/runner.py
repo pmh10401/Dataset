@@ -78,14 +78,22 @@ class FrozenScoreManifest:
 def run_methods(
     config: ScoreRunConfig,
     *,
+    selected_methods: tuple[str, ...] | None = None,
     scorer: Scorer | None = None,
 ) -> RunSummary:
     """Score requested dataset-method pairs, safely reusing verified shards."""
     run_config, run_config_sha = _initialize_run(config)
+    active_methods = tuple(selected_methods or config.methods)
+    if (
+        not active_methods
+        or len(active_methods) != len(set(active_methods))
+        or any(method not in config.methods for method in active_methods)
+    ):
+        raise ValueError("selected methods must be a unique subset of run methods")
     pending: list[tuple[str, str]] = []
     reused = 0
     abstained = 0
-    for method in config.methods:
+    for method in active_methods:
         for dataset in config.datasets:
             existing = _reuse_verified_shard(
                 config, run_config_sha, method, dataset
@@ -131,7 +139,7 @@ def run_methods(
         _publish_shard(config, run_config_sha, payload)
         abstained += int(payload["status"] == "abstain")
     return RunSummary(
-        completed=len(config.datasets) * len(config.methods),
+        completed=len(config.datasets) * len(active_methods),
         reused=reused,
         abstained=abstained,
         failed=0,
@@ -281,7 +289,7 @@ def _run_config_payload(config: ScoreRunConfig) -> dict[str, object]:
         "alphas": list(ALPHAS),
         "seed": config.seed,
         "epochs": config.epochs,
-        "workers": config.workers,
+        "worker_policy": "classical_up_to_7_deep_exactly_1",
         "versions": {
             "python": platform.python_version(),
             "numpy": np.__version__,

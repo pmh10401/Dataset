@@ -190,6 +190,34 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("parallel-smoke-ok", completed.stdout)
 
+    def test_disjoint_method_commands_share_one_frozen_run_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = self._config(directory)
+            first = ScoreRunConfig(
+                db_path=base.db_path,
+                run_root=base.run_root,
+                datasets=base.datasets,
+                methods=("knn_distance", "lof_novelty"),
+                workers=2,
+                database_sha256=base.database_sha256,
+            )
+            second = ScoreRunConfig(
+                db_path=base.db_path,
+                run_root=base.run_root,
+                datasets=base.datasets,
+                methods=("knn_distance", "lof_novelty"),
+                workers=1,
+                database_sha256=base.database_sha256,
+            )
+            scorer = CountingScorer()
+
+            run_methods(first, selected_methods=("knn_distance",), scorer=scorer)
+            run_methods(second, selected_methods=("lof_novelty",), scorer=scorer)
+            manifest = freeze_score_root(base.run_root)
+
+        self.assertEqual(manifest.pair_count, 2)
+        self.assertEqual(scorer.calls, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
