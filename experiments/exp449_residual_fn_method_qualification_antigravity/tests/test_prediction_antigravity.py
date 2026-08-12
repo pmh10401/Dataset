@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,34 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_progress_channel_failure_preserves_committed_leaf_and_audits_exact_next_antigravity(self) -> None:
+        """Break caught: discarding a committed candidate or trusting failed progress after a channel error."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_failure_antigravity_") as temporary:
+            parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+            original = prediction.record_verified_progress_antigravity
+            def fail_at_48(path, inventory, completed):
+                if completed == 48:
+                    raise OSError("persistent progress channel failure")
+                return original(path, inventory, completed)
+            with patch.object(prediction, "record_verified_progress_antigravity", side_effect=fail_at_48), self.assertRaisesRegex(OSError, "persistent progress"):
+                prediction.run_synthetic_lifecycle_antigravity(root, "1" * 40, audit_path=audit)
+            self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 48)
+            self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 48)
+            self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+
+    def test_audit_write_failure_keeps_primary_failure_fact_antigravity(self) -> None:
+        """Break caught: replacing the primary worker failure when independent audit persistence also fails."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_failure_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            with patch.object(prediction, "write_failure_audit_antigravity", side_effect=OSError("audit unavailable")):
+                with self.assertRaisesRegex(RuntimeError, "synthetic post-leaf failure exact_next_sequence=1"):
+                    prediction.run_synthetic_lifecycle_antigravity(root, "2" * 40, fail_after_leaf=0)
+            self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 1)
+            self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
     def test_private_validator_reconstructs_exact_dataset_order_and_rejects_tampered_leaf_antigravity(self) -> None:
         """Break caught: accepting a rehashed/tampered manifest or deriving order without canonical leaves."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
