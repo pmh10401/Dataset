@@ -22,15 +22,35 @@ class ProgressAntigravityTests(unittest.TestCase):
                     commit_candidate_leaf_antigravity(directory, "000_leaf_antigravity.json", {"sequence": 0}, fault_hook=fault)
                 self.assertFalse((directory / "000_leaf_antigravity.json").exists())
 
-    def test_writer_real_fstat_syscall_failure_after_exclusive_create_removes_only_created_name_antigravity(self) -> None:
-        """Break caught: an actual os.fstat exception after O_EXCL leaves an unverified orphan."""
+    def test_writer_real_fstat_syscall_failure_preserves_an_unprovable_name_and_reports_cleanup_antigravity(self) -> None:
+        """Break caught: treating a pathname as proof of the O_EXCL inode after fstat fails."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
         with tempfile.TemporaryDirectory(prefix="exp449_fstat_syscall_antigravity_") as temporary:
-            directory = Path(temporary); original = progress.os.fstat
+            directory = Path(temporary); destination = directory / "000_leaf_antigravity.json"
             with patch.object(progress.os, "fstat", side_effect=OSError("actual fstat failure")):
-                with self.assertRaisesRegex(OSError, "actual fstat failure"):
+                with self.assertRaisesRegex(OSError, "actual fstat failure") as raised:
                     progress.commit_candidate_leaf_antigravity(directory, "000_leaf_antigravity.json", {"sequence": 0})
-            self.assertFalse((directory / "000_leaf_antigravity.json").exists())
+            self.assertTrue(destination.exists())
+            self.assertIn("candidate_cleanup_error=OSError: unable to prove created inode after fstat failure", "\n".join(getattr(raised.exception, "__notes__", ())))
+
+    def test_writer_replacement_between_exclusive_open_and_fstat_is_never_deleted_antigravity(self) -> None:
+        """Break caught: an open-to-fstat replacement is mistaken for the created inode during cleanup."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_pre_fstat_replace_antigravity_") as temporary:
+            directory = Path(temporary); destination = directory / "000_leaf_antigravity.json"; original_fstat = progress.os.fstat; replaced = False
+            def replace_before_fstat(fd):
+                nonlocal replaced
+                if not replaced:
+                    replaced = True
+                    replacement = directory / "replacement_antigravity.json"; replacement.write_text('{"replacement":true}\n')
+                    os.replace(replacement, destination)
+                    raise OSError("fstat failure after replacement")
+                return original_fstat(fd)
+            with patch.object(progress.os, "fstat", side_effect=replace_before_fstat):
+                with self.assertRaisesRegex(OSError, "fstat failure after replacement"):
+                    progress.commit_candidate_leaf_antigravity(directory, destination.name, {"sequence": 0})
+            self.assertTrue(replaced)
+            self.assertEqual(json.loads(destination.read_text()), {"replacement": True})
 
     def test_writer_does_not_unlink_namespace_replacement_after_verification_fault_antigravity(self) -> None:
         """Break caught: cleanup deleting a replacement object that was not the created inode."""

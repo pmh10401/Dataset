@@ -75,6 +75,64 @@ class PredictionAntigravityTests(unittest.TestCase):
             self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
             self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 96)
 
+    def test_manifest_path_stat_failure_cannot_escape_its_descriptor_commit_antigravity(self) -> None:
+        """Break caught: a post-commit pathname stat failure leaves a manifest and masks validation."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_manifest_stat_antigravity_") as temporary:
+            root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"; original_stat = prediction.os.stat
+            def fail_legacy_manifest_stat(path, *args, **kwargs):
+                if path == root / "prediction_manifest_antigravity.json":
+                    raise OSError("legacy manifest pathname stat")
+                return original_stat(path, *args, **kwargs)
+            def fault(tag, sequence):
+                if (tag, sequence) == ("post_manifest_validation", 96):
+                    raise RuntimeError("post manifest validation truth")
+            with patch.object(prediction.os, "stat", side_effect=fail_legacy_manifest_stat):
+                with self.assertRaisesRegex(RuntimeError, "post manifest validation truth"):
+                    prediction.run_synthetic_lifecycle_antigravity(root, "a" * 40, audit_path=audit, fault_hook=fault)
+            self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+
+    def test_manifest_replacement_before_legacy_identity_stat_is_never_deleted_antigravity(self) -> None:
+        """Break caught: a manifest replacement becomes cleanup authority through a second pathname stat."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_manifest_replace_antigravity_") as temporary:
+            root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"; destination = root / "prediction_manifest_antigravity.json"; original_commit = prediction.commit_candidate_leaf_antigravity
+            def commit_then_replace(directory, name, value, **kwargs):
+                result = original_commit(directory, name, value, **kwargs)
+                if name == destination.name:
+                    replacement = directory / "replacement_antigravity.json"; replacement.write_text('{"replacement":true}\n')
+                    os.replace(replacement, destination)
+                return result
+            def fault(tag, sequence):
+                if (tag, sequence) == ("post_manifest_validation", 96):
+                    raise RuntimeError("post manifest validation truth")
+            with patch.object(prediction, "commit_candidate_leaf_antigravity", side_effect=commit_then_replace):
+                with self.assertRaisesRegex(RuntimeError, "post manifest validation truth"):
+                    prediction.run_synthetic_lifecycle_antigravity(root, "a" * 40, audit_path=audit, fault_hook=fault)
+            self.assertEqual(json.loads(destination.read_text()), {"replacement": True})
+
+    def test_manifest_cleanup_pid_and_audit_errors_do_not_replace_validation_truth_antigravity(self) -> None:
+        """Break caught: manifest cleanup escaping the handler replaces the original validation failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_manifest_multi_error_antigravity_") as temporary:
+            root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"; original_pid = prediction._set_pid_inactive_antigravity; pid_calls = 0
+            def fault(tag, sequence):
+                if (tag, sequence) == ("post_manifest_validation", 96):
+                    raise RuntimeError("post manifest validation truth")
+            def fail_cleanup_pid(path):
+                nonlocal pid_calls
+                pid_calls += 1
+                if pid_calls == 1:
+                    return original_pid(path)
+                raise OSError("pid cleanup failure")
+            with patch.object(prediction, "_remove_exact_manifest_antigravity", side_effect=OSError("manifest cleanup failure")), patch.object(prediction, "_set_pid_inactive_antigravity", side_effect=fail_cleanup_pid), patch.object(prediction, "write_failure_audit_antigravity", side_effect=OSError("audit persistence failure")):
+                with self.assertRaisesRegex(RuntimeError, "post manifest validation truth") as raised:
+                    prediction.run_synthetic_lifecycle_antigravity(root, "a" * 40, audit_path=audit, fault_hook=fault)
+            notes = "\n".join(getattr(raised.exception, "__notes__", ()))
+            self.assertIn("manifest_cleanup_error=OSError: manifest cleanup failure", notes)
+            self.assertIn("pid_cleanup_error=OSError: pid cleanup failure", notes)
+            self.assertIn("failure_audit_error=OSError: audit persistence failure", notes)
+
     def test_validator_rejects_exact_context_source_mlx_type_and_rehash_attacks_antigravity(self) -> None:
         """Break caught: accepting rehashed semantic context aliases, bool-as-int, or source order drift."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity  # noqa: PLC0415

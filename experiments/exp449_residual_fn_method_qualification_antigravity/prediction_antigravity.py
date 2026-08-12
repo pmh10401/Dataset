@@ -203,13 +203,15 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"{synthetic_families[sequence // 2]}_synthetic_{sequence // 2:03d}__{dict(CANDIDATE_MATRIX_ANTIGRAVITY)[synthetic_families[sequence // 2]][sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(root, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
-        commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest, fault_hook=fault_hook, sequence=96, fault_prefix="manifest_")
-        manifest_info = os.stat(root / "prediction_manifest_antigravity.json", follow_symlinks=False)
+        _manifest_digest, manifest_identity = commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest, fault_hook=fault_hook, sequence=96, fault_prefix="manifest_", return_created_identity=True)
         try:
             _fault_antigravity(fault_hook, "post_manifest_validation", 96)
             validate_prediction_root_antigravity(root, authority)
-        except BaseException:
-            _remove_exact_manifest_antigravity(root, (manifest_info.st_dev, manifest_info.st_ino))
+        except BaseException as validation_error:
+            try:
+                _remove_exact_manifest_antigravity(root, manifest_identity)
+            except BaseException as cleanup_error:
+                validation_error.add_note(f"manifest_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
             raise
         return authority
     except BaseException as primary_error:
@@ -505,12 +507,14 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
         authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
-        commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, "prediction_manifest_antigravity.json", manifest)
-        manifest_info = os.stat(_OFFICIAL_ROOT_ANTIGRAVITY / "prediction_manifest_antigravity.json", follow_symlinks=False)
+        _manifest_digest, manifest_identity = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, "prediction_manifest_antigravity.json", manifest, return_created_identity=True)
         try:
             validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
-        except BaseException:
-            _remove_exact_manifest_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, (manifest_info.st_dev, manifest_info.st_ino))
+        except BaseException as validation_error:
+            try:
+                _remove_exact_manifest_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, manifest_identity)
+            except BaseException as cleanup_error:
+                validation_error.add_note(f"manifest_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
             raise
         return authority
     except BaseException as primary_error:

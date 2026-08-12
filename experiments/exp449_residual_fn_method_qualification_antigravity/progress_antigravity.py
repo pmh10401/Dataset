@@ -81,16 +81,38 @@ def _syscall_fault_antigravity(hook, operation: str, sequence: int) -> None:
     if hook is not None: hook(operation, sequence)
 
 
-def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0, fault_prefix: str = "") -> str:
+def _cleanup_created_leaf_antigravity(parent_fd: int, name: str, created_fd: int, created_identity: tuple[int, int] | None, primary_error: BaseException) -> None:
+    """Remove a failed create only when the opened descriptor proves its exact inode."""
+    identity = created_identity
+    if identity is None:
+        try:
+            opened = os.fstat(created_fd)
+            identity = (opened.st_dev, opened.st_ino)
+        except BaseException:
+            primary_error.add_note("candidate_cleanup_error=OSError: unable to prove created inode after fstat failure")
+            return
+    try:
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        if (current.st_dev, current.st_ino) == identity:
+            os.unlink(name, dir_fd=parent_fd)
+            os.fsync(parent_fd)
+    except BaseException as cleanup_error:
+        primary_error.add_note(f"candidate_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
+
+
+def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0, fault_prefix: str = "", return_created_identity: bool = False) -> str | tuple[str, tuple[int, int]]:
     """Commit a candidate only after file and parent fsync plus canonical no-follow reread."""
     if not isinstance(directory, Path) or type(name) is not str or "/" in name or not name.endswith(".json"):
         raise ValueError("candidate destination is invalid")
     if type(fault_prefix) is not str:
         raise ValueError("candidate fault prefix is invalid")
+    if type(return_created_identity) is not bool:
+        raise ValueError("candidate identity return option is invalid")
     directory.mkdir(mode=0o700, exist_ok=True)
     payload = canonical_json_bytes_antigravity(value)
     destination = directory / name
     parent_fd = -1
+    fd = -1
     created_identity: tuple[int, int] | None = None
     try:
         _syscall_fault_antigravity(fault_hook, fault_prefix + "open_parent", sequence)
@@ -98,16 +120,13 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
         _syscall_fault_antigravity(fault_hook, fault_prefix + "cache_create", sequence); _syscall_fault_antigravity(fault_hook, fault_prefix + "open_create", sequence)
         fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=parent_fd)
         try:
-            # `open(O_EXCL)` is already the creation boundary.  Pin the name's
-            # identity before the first fstat so an actual fstat syscall failure
-            # still has a replacement-safe cleanup target.
-            named = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
-            created_identity = (named.st_dev, named.st_ino)
+            # The descriptor is the only creation authority.  A pathname can be
+            # replaced between O_EXCL and stat, so do not use it to identify this
+            # transaction's inode.
             info = os.fstat(fd)
+            created_identity = (info.st_dev, info.st_ino)
             if (info.st_dev, info.st_ino) != created_identity:
                 raise ValueError("candidate leaf identity changed during creation")
-            # The injected failure is deliberately after the real fstat: cleanup now
-            # has the exact inode and cannot erase a namespace replacement.
             _syscall_fault_antigravity(fault_hook, fault_prefix + "fstat_create", sequence)
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1: raise ValueError("candidate leaf is unsafe")
             view = memoryview(payload)
@@ -116,7 +135,9 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
             _syscall_fault_antigravity(fault_hook, fault_prefix + "fsync_leaf", sequence)
             os.fsync(fd)
         finally:
-            os.close(fd)
+            if fd >= 0:
+                os.close(fd)
+                fd = -1
         _syscall_fault_antigravity(fault_hook, fault_prefix + "cache_fsync", sequence); _syscall_fault_antigravity(fault_hook, fault_prefix + "fsync_parent", sequence)
         os.fsync(parent_fd)
         _syscall_fault_antigravity(fault_hook, fault_prefix + "open_read", sequence); fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
@@ -134,17 +155,18 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
             _syscall_fault_antigravity(fault_hook, fault_prefix + "stat_name", sequence)
             current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
             if (opened.st_dev, opened.st_ino) != created_identity or (current.st_dev, current.st_ino) != created_identity: raise ValueError("candidate leaf identity changed")
-            return hashlib.sha256(reread).hexdigest()
-        finally: os.close(fd)
-    except BaseException:
-        if created_identity is not None and parent_fd >= 0:
-            try:
-                current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
-                if (current.st_dev, current.st_ino) == created_identity:
-                    os.unlink(name, dir_fd=parent_fd); os.fsync(parent_fd)
-            except OSError: pass
+            digest = hashlib.sha256(reread).hexdigest()
+            return (digest, created_identity) if return_created_identity else digest
+        finally:
+            if fd >= 0:
+                os.close(fd)
+                fd = -1
+    except BaseException as primary_error:
+        if parent_fd >= 0:
+            _cleanup_created_leaf_antigravity(parent_fd, name, fd, created_identity, primary_error)
         raise
     finally:
+        if fd >= 0: os.close(fd)
         if parent_fd >= 0: os.close(parent_fd)
 
 
