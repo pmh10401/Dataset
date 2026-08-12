@@ -1,6 +1,6 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "5fe0821495996e4507d1b98be1039ea74e6fd3ad",
+  "source_parent_commit": "6c37056b1c0709f63d29564b0e8580938897e0de",
   "working_tree_dirty": false,
   "represented_paths": [
     "docs/codemap/codemap_exp449_antigravity.html",
@@ -10,7 +10,7 @@
     "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html",
     "scratch/build_codemap_exp449_antigravity.py"
   ],
-  "generated_at": "2026-08-12T12:45:00+00:00",
+  "generated_at": "2026-08-12T13:35:00+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -32,22 +32,26 @@
     "build",
     "cache",
     "dist",
-    "docs/codemap",
     "node_modules",
     "outputs",
     "results",
     "vendor",
     "venv"
   ],
-  "fingerprint_algorithm": "sha256-v1: proposed post-change tracked tree; sort non-map-triplet repo-relative paths by module; append UTF-8 path, NUL, decimal byte length, NUL, current bytes, NUL.",
+  "excluded_paths": [
+    "docs/codemap/codemap_exp449_antigravity.html",
+    "docs/codemap/codemap_exp449_antigravity.json",
+    "docs/codemap/codemap_exp449_antigravity.lock"
+  ],
+  "fingerprint_algorithm": "sha256-v1: proposed post-change tracked tree; sort every tracked repo-relative path except the exact Exp449 map triplet by module; append UTF-8 path, NUL, decimal byte length, NUL, current bytes, NUL.",
   "module_fingerprints": {
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "7d53edaf9d1fce13c28db9fe98d3a52cb13b1bfa7c94bb7eee5a1473776cc1d0",
+    "docs": "377b030c52260c05eb810e611024ec2981ebaf19e7db7dcd14062064c70afad5",
     "experiments": "78e7e2fcba0df2fcae33c7d1e21edd083cd35d5a88cb4619b09664bc41f71907",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "a033ab659ddcdf3acdd9dfd1cae3d3da665bd2968a7b2ea344b041101a26d3b5",
+    "scratch": "5ab21f331fbbb800bd3415049a2ff1997ff0d671a4cfb951d270ed125e922a2a",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
