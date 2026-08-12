@@ -210,39 +210,58 @@ assert sys.version_info[:3] == (3, 14, 6)
 assert aeon.__version__ == '1.5.0' and sklearn.__version__ == '1.8.0'
 import run_experiment_149_150_virtual_run_conformal_policy as historical
 import run_model_hard_research_experiments as model_hard
-from experiments.exp153_157.exp153_157_bridge import crossfit_confirmation_scores
+from experiments.exp153_157 import exp153_157_bridge as bridge
 from experiments.exp177_185.core import canonical_features, crossfit_scores
 from paper.equipment_anomaly_detection.calibration_paper import upper_tail_pvalues
 from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import crossfit_confirmation_scores_paper, crossfit_source_paper, _canonical_source_paper
 from paper.equipment_anomaly_detection.sources_paper.imaging_paper import EXP55_CONFIG_PAPER, imaging_score_pair_paper
-train=np.asarray([np.sin(np.linspace(0, 6.28, 32)+i/10)+i/100 for i in range(5)], dtype=np.float32)
-test=np.asarray([np.cos(np.linspace(0, 6.28, 32)+i/7) for i in range(3)], dtype=np.float32)
+count, length = 200, 32
+grid=np.linspace(0, 2*np.pi, length, dtype=np.float32); rng=np.random.default_rng(20260812)
+train=np.asarray([np.sin(grid+rng.normal(0,.03))+rng.normal(0,.01,length) for _ in range(count)], dtype=np.float32)
+test=np.vstack([np.sign(np.sin(grid*5))*4, np.r_[np.zeros(length//2),np.ones(length//2)*20], np.cos(grid)]).astype(np.float32)
 record={'actual_len_median':32, 'dataset_name':'__virtual_run_dataset__', 'family':'__family_neutral__'}
-def candidate(scores, query):
+def pvalues_and_candidate(scores, query):
     p=upper_tail_pvalues(scores, query)
-    return [np.flatnonzero(p <= alpha).tolist() for alpha in (.005,.01,.02,.05)]
+    return p, [np.flatnonzero(p <= alpha).tolist() for alpha in (.005,.01,.02,.05)]
 for name in ('rocket_exp40','exp55_best','exp56_best','exp84'):
     origin=historical.crossfit_source(name, train, test, record)
     paper=crossfit_source_paper(name, train, test, 32)
-    np.testing.assert_allclose(origin['train_oof_scores'], paper[0], rtol=1e-5, atol=1e-2)
+    np.testing.assert_allclose(origin['train_oof_scores'], paper[0], rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(origin['test_scores'], paper[1], rtol=1e-5, atol=1e-5)
-    assert candidate(origin['train_oof_scores'], origin['test_scores']) == candidate(paper[0], paper[1])
-origin=crossfit_confirmation_scores(train, test); paper=crossfit_confirmation_scores_paper(train, test)
-np.testing.assert_allclose(origin['block_b_train_oof'], paper[0]); np.testing.assert_allclose(origin['block_b_test'], paper[1])
-assert candidate(origin['block_b_train_oof'], origin['block_b_test']) == candidate(paper[0], paper[1])
+    origin_p, origin_candidates=pvalues_and_candidate(origin['train_oof_scores'], origin['test_scores']); paper_p, paper_candidates=pvalues_and_candidate(paper[0], paper[1])
+    np.testing.assert_allclose(origin_p, paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
+origin_oof=np.full(len(train),np.nan)
+for fit, query in bridge.exp152_core.fold_plan(len(train), seed=20260717):
+    _, scores=bridge._block_b_score_pair(train[fit],train[query]); origin_oof[query]=scores
+_, origin_test=bridge._block_b_score_pair(train,test); paper=crossfit_confirmation_scores_paper(train, test)
+np.testing.assert_allclose(origin_oof, paper[0]); np.testing.assert_allclose(origin_test, paper[1])
+origin_p, origin_candidates=pvalues_and_candidate(origin_oof, origin_test); paper_p, paper_candidates=pvalues_and_candidate(paper[0], paper[1])
+np.testing.assert_allclose(origin_p, paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
 origin=crossfit_scores(canonical_features(train), canonical_features(test), backend='knn_local_gap', seed=20260717); paper=_canonical_source_paper(train,test)
 np.testing.assert_allclose(origin[0],paper[0]); np.testing.assert_allclose(origin[1],paper[1])
-assert candidate(origin[0],origin[1]) == candidate(paper[0],paper[1])
-large=np.sin(np.linspace(0,6.28,32)[None,:]+np.arange(1000)[:,None]/10).astype(np.float32); probe=test
-prepared=model_hard.prepare_series_pair_for_scale('train_global_minmax_clip',large,probe,large,probe)
-origin=model_hard.score_pair_for_config(prepared[0],prepared[1],32,EXP55_CONFIG_PAPER,{},{}); paper=imaging_score_pair_paper(large,probe,EXP55_CONFIG_PAPER)
-np.testing.assert_allclose(origin[0],paper[0],rtol=1e-5,atol=1e-5); np.testing.assert_allclose(origin[1],paper[1],rtol=1e-5,atol=1e-5)
-assert candidate(origin[0],origin[1]) == candidate(paper[0],paper[1])
-print('source-parity: rocket_exp40 rocket_block_b exp55_small exp55_randomized exp56 exp84 canonical')
+origin_p, origin_candidates=pvalues_and_candidate(origin[0],origin[1]); paper_p, paper_candidates=pvalues_and_candidate(paper[0],paper[1])
+np.testing.assert_allclose(origin_p,paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
+large_count=1250; large_rng=np.random.default_rng(20260813)
+large=np.asarray([np.sin(grid+large_rng.normal(0,.03))+large_rng.normal(0,.01,length) for _ in range(large_count)],dtype=np.float32)
+origin=historical.crossfit_source('exp55_best',large,test,record)
+import paper.equipment_anomaly_detection.sources_paper.imaging_paper as imaging
+real_pca, pca_rows = imaging.PCA, []
+def traced_pca(*args, **kwargs):
+    model=real_pca(*args, **kwargs); real_fit=model.fit_transform
+    def fit_transform(values, *fit_args, **fit_kwargs): pca_rows.append(len(values)); return real_fit(values, *fit_args, **fit_kwargs)
+    model.fit_transform=fit_transform
+    return model
+imaging.PCA=traced_pca
+paper=crossfit_source_paper('exp55_best',large,test,length)
+assert pca_rows == [1000,1000,1000,1000,1000,1250], pca_rows
+np.testing.assert_allclose(origin['train_oof_scores'],paper[0],rtol=1e-5,atol=1e-5); np.testing.assert_allclose(origin['test_scores'],paper[1],rtol=1e-5,atol=1e-5)
+origin_p, origin_candidates=pvalues_and_candidate(origin['train_oof_scores'],origin['test_scores']); paper_p, paper_candidates=pvalues_and_candidate(paper[0],paper[1])
+np.testing.assert_allclose(origin_p,paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
+print('source-parity: rocket_exp40 rocket_block_b exp55_small exp55_randomized_crossfit exp56 exp84 canonical')
 '''
         completed = subprocess.run([str(oracle), "-c", code], cwd=Path.cwd(),
-                                   check=True, capture_output=True, text=True, timeout=90)
-        self.assertIn("source-parity:", completed.stdout)
+                                   check=True, timeout=90)
+        self.assertEqual(completed.returncode, 0)
 
 
 if __name__ == "__main__":
