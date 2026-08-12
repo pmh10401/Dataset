@@ -130,6 +130,14 @@ def _exp93_order(view: FullFitScoreView, count: int = MAX_TOP_PAPER) -> list[int
     return [int(index) for index in np.argsort(-np.asarray(view.test_score), kind="stable")[:max(1, min(int(count), len(view.test_score)))]]
 
 
+def _exp90_top_score_index(view: FullFitScoreView) -> int | None:
+    """Copy Exp90's imported ``top_score_indices(..., 1)`` primitive."""
+    scores = np.asarray(view.test_score, dtype=np.float64)
+    if not len(scores):
+        return None
+    return int(np.argsort(-scores)[:1][0])
+
+
 def _ranked_primary(evidence: LegacyRouteEvidence, count: int) -> set[int]:
     n = evidence.n_test
     combined = np.zeros(n, dtype=float)
@@ -167,8 +175,10 @@ def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, f
     if not exp89 and evidence.n_train > 10:
         if top1 is not None and exp84_fg.train_exceed_rate <= .015 and exp84_fg.top1_threshold_margin >= 0.0:
             repair.add(top1)
-        elif rocket.order and rocket.train_exceed_rate <= .02:
-            repair.add(rocket.order[0])
+        elif rocket.train_exceed_rate <= .02:
+            rocket_top1 = _exp90_top_score_index(rocket)
+            if rocket_top1 is not None:
+                repair.add(rocket_top1)
     exp90 = frozenset(set(exp89) | repair)
 
     orders = {"rocket": _exp93_order(rocket), "exp55": _exp93_order(exp55), "exp56": _exp93_order(exp56), "exp84_fg": list(exp84_fg.order[:MAX_TOP_PAPER]) if exp84_fg.train_exceed_rate <= .015 else [], "exp84_cap3": list(exp84_cap3.order[:MAX_TOP_PAPER]) if exp84_cap3.train_exceed_rate <= .02 else []}

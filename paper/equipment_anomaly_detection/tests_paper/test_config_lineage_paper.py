@@ -11,12 +11,22 @@ import unittest
 from paper.equipment_anomaly_detection.config_paper import FROZEN_CONFIG, LINEAGE_LOCK_PATH, PAPER_ROOT
 from paper.equipment_anomaly_detection.lineage_paper import (
     LINEAGE_NODES,
+    _ast_import_callers,
     validate_codemap_triplet,
     validate_lineage_lock,
 )
 
 
 class ConfigLineageTests(unittest.TestCase):
+    def test_codemap_callers_are_complete_static_ast_import_edges(self) -> None:
+        """Every direct paper import is represented by its callee's caller list."""
+        codemap = validate_codemap_triplet(PAPER_ROOT)
+        actual = _ast_import_callers(PAPER_ROOT)
+        self.assertEqual(
+            {module: frozenset(detail["callers"]) for module, detail in codemap.modules.items()},
+            actual,
+        )
+
     def test_frozen_identity_and_counts(self) -> None:
         """A changed public rerun identity or aggregate changes the frozen experiment."""
         self.assertEqual(FROZEN_CONFIG.run_identity, "paper-proposal-clean-rerun-20260812")
@@ -165,6 +175,26 @@ class ConfigLineageTests(unittest.TestCase):
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ValueError, "hash"):
+                validate_codemap_triplet(copied_root)
+
+    def test_codemap_rejects_missing_required_scientific_caller_edge(self) -> None:
+        """The checked graph is regenerated from the hard-route AST dependency edges."""
+        with tempfile.TemporaryDirectory() as temporary:
+            copied_root = Path(temporary) / "paper"
+            for source in PAPER_ROOT.rglob("*"):
+                if source.is_file() and "__pycache__" not in source.parts:
+                    target = copied_root / source.relative_to(PAPER_ROOT)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(source.read_bytes())
+            codemap_path = copied_root / "codemap_paper.json"
+            codemap = json.loads(codemap_path.read_text(encoding="utf-8"))
+            codemap["modules"]["sources_paper/rocket_paper.py"]["callers"].remove("sources_paper/legacy_route_sources_paper.py")
+            codemap_path.write_text(json.dumps(codemap, separators=(",", ":")), encoding="utf-8")
+            lock_path = copied_root / "codemap_paper.lock"
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            lock["hashes"]["codemap_paper.json"] = sha256(codemap_path.read_bytes()).hexdigest()
+            lock_path.write_text(json.dumps(lock, separators=(",", ":")), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "caller graph"):
                 validate_codemap_triplet(copied_root)
 
 

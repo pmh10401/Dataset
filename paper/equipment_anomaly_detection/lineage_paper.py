@@ -18,6 +18,18 @@ _NODE_FIELDS = frozenset({
     "paper_module", "label_access", "parity_oracle",
 })
 _CODEMAP_FIELDS = ("callers", "effects", "tests", "source_origins")
+_REQUIRED_CODEMAP_CALLERS = {
+    "calibration_paper.py": frozenset({"hard_route_paper.py", "sources_paper/minirocket_paper.py"}),
+    "contracts_paper.py": frozenset({"hard_route_paper.py", "sources_paper/legacy_route_sources_paper.py", "sources_paper/minirocket_paper.py"}),
+    "sources_paper/hard_sources_paper.py": frozenset({"hard_route_paper.py"}),
+    "sources_paper/legacy_route_sources_paper.py": frozenset({"hard_route_paper.py", "tests_paper/test_hard_route_paper.py"}),
+    "sources_paper/minirocket_paper.py": frozenset({"hard_route_paper.py", "tests_paper/test_minirocket_paper.py"}),
+    "sources_paper/imaging_paper.py": frozenset({"sources_paper/legacy_route_sources_paper.py"}),
+    "sources_paper/knn_paper.py": frozenset({"sources_paper/legacy_route_sources_paper.py"}),
+    "sources_paper/multirocket_hydra_paper.py": frozenset({"sources_paper/legacy_route_sources_paper.py"}),
+    "sources_paper/preprocessing_paper.py": frozenset({"sources_paper/legacy_route_sources_paper.py", "sources_paper/minirocket_paper.py"}),
+    "sources_paper/rocket_paper.py": frozenset({"sources_paper/legacy_route_sources_paper.py"}),
+}
 _LOCK_FIELDS = frozenset({"schema", "hashes"})
 _SOURCE_PROVENANCE_FIELDS = frozenset({"schema", "helpers"})
 _SOURCE_PROVENANCE_HELPER_FIELDS = frozenset({"paper_sha256", "origins"})
@@ -214,6 +226,37 @@ def _parse_codemap(payload: object) -> PaperCodemap:
     return PaperCodemap(required, modules)
 
 
+def _ast_import_callers(paper_root: Path) -> dict[str, frozenset[str]]:
+    """Return the direct paper-module caller graph from unexecuted import ASTs."""
+    root = Path(paper_root).resolve(strict=True)
+    modules = {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*_paper.py")
+        if "__pycache__" not in path.parts
+    }
+    callers: dict[str, set[str]] = {module: set() for module in modules}
+    package_prefix = "paper.equipment_anomaly_detection."
+    for path in root.rglob("*_paper.py"):
+        if "__pycache__" in path.parts:
+            continue
+        caller = path.relative_to(root).as_posix()
+        package = path.relative_to(root).parts[:-1]
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or node.module is None:
+                continue
+            if node.level:
+                base = package[:len(package) - (node.level - 1)]
+                imported = "/".join(base + tuple(node.module.split("."))) + ".py"
+            elif node.module.startswith(package_prefix):
+                imported = node.module.removeprefix(package_prefix).replace(".", "/") + ".py"
+            else:
+                continue
+            if imported in callers:
+                callers[imported].add(caller)
+    return {module: frozenset(value) for module, value in callers.items()}
+
+
 def _render_codemap_html(codemap: PaperCodemap) -> str:
     graph = json.dumps(
         {"schema": "paper-codemap.v1", "required_fields": list(codemap.required_fields), "modules": codemap.modules},
@@ -279,6 +322,11 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
         if sha256_file(root / name) != expected:
             raise ValueError(f"paper codemap hash differs: {name}")
     parsed = _parse_codemap(read_strict_json(codemap))
+    actual_callers = _ast_import_callers(root)
+    if any(not callers <= actual_callers.get(module, frozenset()) for module, callers in _REQUIRED_CODEMAP_CALLERS.items()):
+        raise ValueError("paper codemap caller graph omits required scientific AST edges")
+    if {module: frozenset(detail["callers"]) for module, detail in parsed.modules.items()} != actual_callers:
+        raise ValueError("paper codemap caller graph differs from required AST edges")
     validate_source_provenance_paper(root)
     if set(parsed.modules) != _paper_module_inventory(root):
         raise ValueError("paper codemap module inventory differs")

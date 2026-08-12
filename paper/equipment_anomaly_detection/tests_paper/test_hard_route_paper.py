@@ -8,6 +8,7 @@ import math
 import tempfile
 import unittest
 import subprocess
+from types import SimpleNamespace
 from unittest.mock import patch
 from pathlib import Path
 
@@ -31,7 +32,6 @@ from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import Con
 from paper.equipment_anomaly_detection.hard_route_paper import (
     _exp93_order,
     RouteLanes,
-    compare_parity,
     exact_normal_guard,
     freeze_canonical_smoke,
     minimum_source_expansion,
@@ -47,7 +47,7 @@ def _origin_functions(path: str, names: tuple[str, ...]) -> dict[str, object]:
     selected = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
     if {node.name for node in selected} != set(names):
         raise AssertionError("requested origin helper is unavailable")
-    namespace = {"np": np, "math": math, "Counter": Counter}
+    namespace = {"np": np, "math": math, "Counter": Counter, "MAX_TOP": 12}
     exec(compile(ast.Module(body=selected, type_ignores=[]), path, "exec"), namespace)
     return namespace
 
@@ -173,6 +173,21 @@ class HardRouteTests(unittest.TestCase):
         from paper.equipment_anomaly_detection.hard_route_paper import _exp93_order
         self.assertEqual(_exp93_order(primary["rocket_exp40"], 3), [0, 1, 2])
 
+    def test_exp90_tied_rocket_fallback_uses_origin_top_score_index_zero(self) -> None:
+        """Exp90 must preserve ``np.argsort(-scores)[:1]``, not reversed argsort."""
+        train = np.linspace(0.0, 1.1, 12)
+        primary = {
+            "rocket_exp40": FullFitScoreView("rocket_exp40", train, np.zeros(20), .015),
+            "exp55_best": FullFitScoreView("exp55_best", train, np.full(20, -1.0), .015),
+            "exp56_best": FullFitScoreView("exp56_best", train, np.full(20, -1.0), .015),
+        }
+        exp84 = FullFitScoreView("exp84", np.zeros(12), np.full(20, -1.0), .03)
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, train, np.zeros(20), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        evidence = LegacyRouteEvidence("tie-normal", "tie", 12, 20, 16, primary, exp84, blocks)
+        _, exp89, exp90, _ = replay_exp74d_89_90_93(evidence)
+        self.assertEqual(exp89, frozenset())
+        self.assertEqual(exp90, frozenset({0}))
+
     def test_exp74d_and_exp90_tied_score_primitives_match_unimported_origin_ast(self) -> None:
         names = ("selection", "indices_at_least", "cap_indices", "cap_indices_count", "exp69_base_selection", "rank_ensemble_indices", "top_score_indices", "rank_ensemble_guarded_indices", "large_data_budget", "top_score_order")
         origin = _origin_functions("run_experiment_60_62_rocket_imaging_selector_variants.py", names)
@@ -195,6 +210,83 @@ class HardRouteTests(unittest.TestCase):
         from paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper import count_cap_threshold_paper
         for rate in (.015, .01):
             self.assertEqual(count_cap_threshold_paper(train, rate), origin(train, rate))
+
+    def test_executable_origin_exp133_to_137_selectors_match_paper_lanes(self) -> None:
+        """Execute selector ASTs with label-free stubs and compare their lane decisions."""
+        parse = lambda value: {int(item) for item in str(value).split()} if value else set()
+        blocks = self.evidence.confirmation_blocks
+        paper = replay_exp133_134_135_137(frozenset({1, 2}), blocks)
+        exp133 = _origin_functions("run_experiment_133_block_b_confidence_tiers.py", ("run_one",))["run_one"]
+        exp133.__globals__.update({"load_dataset_data": lambda _: (None, None, np.zeros(6)), "parse_indices": parse, "make_row": lambda _d, _y, _h, _b, config, selected, high, standard, _reason: {"config": config, "selected": selected, "high": high, "standard": standard}})
+        rows133 = exp133(("fixture", {"selected_indices": "1 2"}, {"selected_indices": "1"}))
+        tiered = next(row for row in rows133 if row["config"] == "tiered_all_validated_exp93_hard_alerts")
+        self.assertEqual(frozenset(tiered["high"]), paper.hard)
+        self.assertEqual(frozenset(tiered["standard"]), paper.standard)
+
+        exp134 = _origin_functions("run_experiment_134_block_b_review_tail_guard.py", ("run_one",))["run_one"]
+        exp134.__globals__.update({
+            "load_dataset_data": lambda _: (np.zeros((12, 3)), np.zeros((6, 3)), np.zeros(6)),
+            "z_normalize": lambda values: values,
+            "np": np,
+            "parse_indices": parse,
+            "count_cap_threshold": lambda scores, rate: (blocks.block_a.threshold if scores is blocks.block_a.train_score else (blocks.block_b_01.threshold if rate == .01 else blocks.block_b_015.threshold), rate, 0),
+            "RATES": (.005, .01, .015),
+            "base": SimpleNamespace(block_scores=lambda _t, _q: (blocks.block_a.train_score, blocks.block_a.test_score, blocks.block_b_015.train_score, blocks.block_b_015.test_score, 12, 0), make_row=lambda _d, _y, _h, config, review, _reason, _diag: {"config": config, "review": review}),
+        })
+        rows134 = exp134(("fixture", {"selected_indices": "1 2"}, {}))
+        review134 = next(row["review"] for row in rows134 if row["config"] == "review_block_ba_tail_pct_1p0_top1")
+        self.assertEqual(frozenset(review134) & frozenset(blocks.block_c.candidate), paper.priority)
+
+        exp135 = _origin_functions("run_experiment_135_block_c_review_confirmation.py", ("run_one",))["run_one"]
+        exp135.__globals__.update({
+            "load_dataset_data": lambda _: (np.zeros((12, 3)), np.zeros((6, 3)), np.zeros(6)),
+            "z_normalize": lambda values: values,
+            "parse_indices": parse, "as_float": float,
+            "block_c_candidates": lambda _t, _q: (set(blocks.block_c.candidate), blocks.block_c.test_score, 12, 0, .01, 0),
+            "base": SimpleNamespace(make_row=lambda _d, _y, _h, config, review, _reason, _diag: {"config": config, "review": review}),
+        })
+        rows135 = exp135(("fixture", {"selected_indices": "1 2", "review_candidate_indices": "2", "train_normal_count": "12", "tiny_train": "0"}, {"high_confidence_count": "1", "standard_confidence_count": "1"}))
+        origin_priority = next(row["review"] for row in rows135 if row["config"] == "review_tail1pct_all_standard_and_block_c")
+        self.assertEqual(origin_priority, set())
+
+        origin137 = _origin_functions("run_experiment_137_operational_triage.py", ("route_tiers",))["route_tiers"]
+        tiers137 = origin137(set(paper.hard), set(paper.standard), set(paper.priority), 6)
+        self.assertEqual(frozenset(tiers137["hard"]), paper.hard)
+        self.assertEqual(frozenset(tiers137["standard_review"]), paper.standard)
+        self.assertEqual(frozenset(tiers137["priority_review"]), paper.priority)
+
+    def test_executable_origin_exp89_90_93_selector_primitives_match_paper_outputs(self) -> None:
+        """Direct AST execution covers Exp89/90 selection primitives and Exp93 replacement."""
+        names = ("first_top_index", "exp84_bundle_from_row")
+        exp89 = _origin_functions("run_experiment_89_74d_with_exp84_candidate.py", names)
+        exp89["exp84_bundle_from_row"].__globals__.update({"parse_indices": lambda value: {int(item) for item in str(value).split()} if value else set(), "as_float": lambda value, default=0.0: float(value) if value is not None else default})
+        row = {"selected_indices": "", "top_score_indices": "0 1 2", "train_exceed_rate": ".01", "top1_threshold_margin": "1", "top1_top2_margin": "0"}
+        parsed = exp89["exp84_bundle_from_row"](row, 20)
+        self.assertEqual(exp89["first_top_index"]({"top_score_indices": "0 1 2"}), 0)
+        self.assertEqual(parsed["top1"], 0)
+
+        exp90 = _origin_functions("run_experiment_90_zero_f1_repair_selector.py", ("first_top_index_from_bundle",))["first_top_index_from_bundle"]
+        origin60 = _origin_functions("run_experiment_60_62_rocket_imaging_selector_variants.py", ("top_score_indices",))
+        exp90.__globals__["top_score_indices"] = origin60["top_score_indices"]
+        tie_bundle = {"test_scores": np.zeros(20)}
+        self.assertEqual(exp90(tie_bundle), 0)
+
+        primary = {
+            "rocket_exp40": FullFitScoreView("rocket_exp40", np.linspace(0, 1, 12), np.arange(20, dtype=float), .015),
+            "exp55_best": FullFitScoreView("exp55_best", np.linspace(0, 1, 12), np.r_[np.arange(1, 20), 0.0], .015),
+            "exp56_best": FullFitScoreView("exp56_best", np.linspace(0, 1, 12), np.r_[np.arange(2, 20), 0.0, 1.0], .015),
+        }
+        exp84 = FullFitScoreView("exp84", np.linspace(0, 1, 12), np.arange(20, dtype=float), .03)
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, np.linspace(0, 1, 12), np.zeros(20), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        evidence = LegacyRouteEvidence("selector-fixture", "fixture", 12, 20, 16, primary, exp84, blocks)
+        _, _, paper90, paper93 = replay_exp74d_89_90_93(evidence)
+        origin93 = _origin_functions("run_experiment_93_nonpos_candidate_reranker.py", ("score_candidates", "sorted_candidates", "weak_base_indices"))
+        maps = {name: {index: rank for rank, index in enumerate(_exp93_order(view), 1)} for name, view in (("rocket", primary["rocket_exp40"]), ("exp55", primary["exp55_best"]), ("exp56", primary["exp56_best"]))}
+        scored = origin93["score_candidates"](set().union(*(set(order) for order in maps.values())) | set(paper90), maps, {"rocket": .36, "exp55": .22, "exp56": .22})
+        candidate = next(index for index in origin93["sorted_candidates"](scored) if index not in paper90)
+        weak = origin93["weak_base_indices"](set(paper90), scored)
+        if weak and len(paper90) <= 1 and scored[candidate]["support"] >= 2 and scored[candidate]["best_rank"] <= 3:
+            self.assertIn(candidate, paper93)
 
     def test_fullfit_exp74d_primary_rates_are_all_one_point_five_percent(self) -> None:
         values = _values()
@@ -226,65 +318,56 @@ class HardRouteTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             FullFitScoreView("bad", np.ones(2), np.ones((2, 1)), .015)
 
-    def test_ten_dataset_new_smoke_freezes_before_a_separate_oracle_compare(self) -> None:
-        new = {f"raw-smoke-{index:02d}": frozenset({index % 3}) for index in range(10)}
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            frozen = freeze_canonical_smoke(new, root / "new-route.json")
-            self.assertEqual(len(frozen.datasets), 10)
-            self.assertTrue(frozen.path.is_file())
-            oracle = root / "oracle.jsonl"
-            oracle.write_text("\n".join(__import__("json").dumps({"dataset": name, "indices": sorted(indices)}) for name, indices in new.items()) + "\n", encoding="utf-8")
-            self.assertTrue(compare_parity(new, oracle).exact)
-
-    def test_capable_ten_dataset_actual_raw_smoke_freezes_then_compares_origin_route_and_abc(self) -> None:
-        """Bounded smoke uses actual raw scorers; no coordinate artifact enters scoring."""
+    def test_capable_ten_frozen_db_raw_smoke_freezes_then_compares_exp137_and_exp236_artifacts(self) -> None:
+        """Ten DB rows freeze before separate original Exp137 and Exp236 artifact comparisons."""
         oracle = Path("/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python")
         if not oracle.is_file():
             self.skipTest("capable frozen oracle interpreter is unavailable")
         code = r'''
-import logging, tempfile
+import csv, json, logging, tempfile
 from pathlib import Path
 logging.FileHandler=lambda *a, **k: logging.StreamHandler()
 import numpy as np
 import run_experiment_132_block_b_review_integration as exp132
 import run_experiment_135_block_c_review_confirmation as exp135
-import run_experiment_60_62_rocket_imaging_selector_variants as exp60
-from paper.equipment_anomaly_detection.contracts_paper import RawDataset
-from paper.equipment_anomaly_detection.hard_route_paper import freeze_canonical_smoke, replay_exp74d_89_90_93, replay_exp133_134_135_137, compare_parity
+from paper.equipment_anomaly_detection.config_paper import FROZEN_CONFIG
+from paper.equipment_anomaly_detection.data_paper import load_population, load_dataset_values
+from paper.equipment_anomaly_detection.hard_route_paper import freeze_canonical_smoke, minimum_source_expansion, replay_exp74d_89_90_93, replay_exp133_134_135_137, union_three_source_hard
+from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import score_hard_sources
 from paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper import build_legacy_route_evidence
 from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import z_normalize_paper
-import json
-rows={}
-for dataset in range(10):
-  rng=np.random.default_rng(20260812+dataset)
-  train=rng.normal(size=(5,16+dataset%3)).astype('float32'); test=rng.normal(size=(3,16+dataset%3)).astype('float32')
-  values=RawDataset(f'raw-smoke-{dataset:02d}',16+dataset%3,tuple(range(5)),tuple(bytes([dataset,i])*4 for i in range(5)),tuple(train),tuple(range(3)),tuple(bytes([dataset,20+i])*4 for i in range(3)),tuple(test))
-  evidence=build_legacy_route_evidence(values)
-  ztrain,ztest=z_normalize_paper(train),z_normalize_paper(test)
-  a_train,a_test,b_train,b_test,*_=exp132.block_scores(ztrain,ztest)
-  np.testing.assert_allclose(a_train,evidence.confirmation_blocks.block_a.train_score,rtol=1e-6,atol=1e-6)
-  np.testing.assert_allclose(a_test,evidence.confirmation_blocks.block_a.test_score,rtol=1e-6,atol=1e-6)
-  np.testing.assert_allclose(b_train,evidence.confirmation_blocks.block_b_015.train_score,rtol=1e-6,atol=1e-6)
-  np.testing.assert_allclose(b_test,evidence.confirmation_blocks.block_b_015.test_score,rtol=1e-6,atol=1e-6)
-  c_indices,c_score,*_=exp135.block_c_candidates(ztrain,ztest)
-  np.testing.assert_allclose(c_score,evidence.confirmation_blocks.block_c.test_score,rtol=1e-6,atol=1e-6)
-  assert c_indices == set(evidence.confirmation_blocks.block_c.candidate)
-  bundles={name:{'indices':set(view.candidate),'test_scores':view.test_score} for name,view in evidence.primary.items()}
-  origin_base=exp60.exp69_base_selection(bundles)['indices']
-  paper74, paper89, paper90, paper93=replay_exp74d_89_90_93(evidence)
-  assert paper74.hard == frozenset(origin_base) and not paper74.standard
-  lanes137=replay_exp133_134_135_137(paper93,evidence.confirmation_blocks)
-  rows[values.dataset]=frozenset(lanes137.hard|lanes137.standard|lanes137.priority)
+names=load_population(FROZEN_CONFIG.database_path)[:10]
+assert names == ('ACSF1_normal_0','ACSF1_normal_1','ACSF1_normal_2','ACSF1_normal_3','ACSF1_normal_4','ACSF1_normal_5','ACSF1_normal_6','ACSF1_normal_7','ACSF1_normal_8','ACSF1_normal_9')
+rows={}; lane_rows={}; exp236_rows={}
+for name in names:
+  values=load_dataset_values(FROZEN_CONFIG.database_path,name); evidence=build_legacy_route_evidence(values)
+  train,test=z_normalize_paper(np.asarray(values.train_rows)),z_normalize_paper(np.asarray(values.test_rows))
+  a,at,b,bt,*_=exp132.block_scores(train,test); ci,cs,*_=exp135.block_c_candidates(train,test)
+  np.testing.assert_allclose(a,evidence.confirmation_blocks.block_a.train_score,rtol=1e-6,atol=1e-6); np.testing.assert_allclose(at,evidence.confirmation_blocks.block_a.test_score,rtol=1e-6,atol=1e-6)
+  np.testing.assert_allclose(b,evidence.confirmation_blocks.block_b_015.train_score,rtol=1e-6,atol=1e-6); np.testing.assert_allclose(bt,evidence.confirmation_blocks.block_b_015.test_score,rtol=1e-6,atol=1e-6)
+  np.testing.assert_allclose(cs,evidence.confirmation_blocks.block_c.test_score,rtol=1e-6,atol=1e-6); assert ci == set(evidence.confirmation_blocks.block_c.candidate)
+  _,_,_,exp93=replay_exp74d_89_90_93(evidence); lanes=replay_exp133_134_135_137(exp93,evidence.confirmation_blocks)
+  lane_rows[name]=lanes; rows[name]=frozenset(lanes.hard|lanes.standard|lanes.priority)
+  exp234=minimum_source_expansion(lanes,score_hard_sources(values),alpha=.01); exp236=union_three_source_hard(lanes,exp234)
+  exp236_rows[name]=(exp236.hard,exp236.standard,exp236.priority)
 with tempfile.TemporaryDirectory() as directory:
-  root=Path(directory); frozen=freeze_canonical_smoke(rows,root/'new.json')
-  oracle_path=root/'origin-route.jsonl'
-  oracle_path.write_text(''.join(json.dumps({'dataset':name,'indices':sorted(indices)})+'\n' for name,indices in rows.items()),encoding='utf-8')
-  assert compare_parity(rows,oracle_path).exact and frozen.path.is_file()
-print('actual-raw-10-smoke-parity')
+  frozen=freeze_canonical_smoke(rows,Path(directory)/'frozen-new-route.json')
+  assert frozen.datasets == names and frozen.path.is_file()
+  artifact=Path('results/exp137/experiment_137_operational_triage_results.csv')
+  assert artifact.is_file(), artifact
+  historical={row['dataset_name']: tuple(frozenset(int(x) for x in row[field].split() if x) for field in ('hard_alert_indices','standard_review_indices','priority_review_indices')) for row in csv.DictReader(artifact.open(encoding='utf-8')) if row['dataset_name'] in names}
+  assert set(historical) == set(names)
+  assert all((lanes.hard,lanes.standard,lanes.priority) == historical[name] for name, lanes in lane_rows.items())
+  exp236_paths=(Path('outputs/exp236_detection_coverage_expansion/exp236_frozen_predictions.jsonl'),Path('/Users/mac/Documents/Dataset/experiments/exp236_direct_run_antigravity/exp236_frozen_predictions.jsonl'))
+  for exp236_path in exp236_paths:
+    assert exp236_path.is_file(), exp236_path
+    historical236={row['dataset']: tuple(frozenset(int(i) for i in row[field]) for field in ('hard_indices','standard_review_indices','priority_review_indices')) for row in (json.loads(line) for line in exp236_path.read_text(encoding='utf-8').splitlines() if line.strip()) if row['dataset'] in names}
+    assert set(historical236) == set(names)
+    assert all(exp236_rows[name] == historical236[name] for name in names)
+print('frozen-db-10-exp137-exp236-artifact-parity',','.join(names))
 '''
-        completed = subprocess.run([str(oracle), "-c", code], cwd=Path.cwd(), check=True, capture_output=True, text=True, timeout=180)
-        self.assertIn("actual-raw-10-smoke-parity", completed.stdout)
+        completed = subprocess.run([str(oracle), "-c", code], cwd=Path.cwd(), check=True, capture_output=True, text=True, timeout=360)
+        self.assertIn("frozen-db-10-exp137-exp236-artifact-parity", completed.stdout)
 
     def test_route_preserves_stages_and_exact_blob_guard(self) -> None:
         with patch("paper.equipment_anomaly_detection.hard_route_paper.build_legacy_route_evidence", return_value=self.evidence):
