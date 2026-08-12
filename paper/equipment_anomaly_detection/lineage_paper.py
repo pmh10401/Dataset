@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import ast
 from hashlib import sha256
+from html import escape
 import json
 from pathlib import Path
 import re
 
-from .config_paper import REPOSITORY_ROOT
+from .config_paper import LINEAGE_LOCK_PATH, REPOSITORY_ROOT
 from .contracts_paper import LineageNode, PaperCodemap
 
 
@@ -25,8 +26,22 @@ def sha256_file(path: Path) -> str:
 
 
 def read_strict_json(path: Path) -> object:
+    return _strict_json_loads(path.read_text(encoding="utf-8"))
+
+
+def reject_duplicate_object_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def _strict_json_loads(payload: str) -> object:
     return json.loads(
-        path.read_text(encoding="utf-8"),
+        payload,
+        object_pairs_hook=reject_duplicate_object_keys,
         parse_constant=lambda value: (_ for _ in ()).throw(
             ValueError(f"non-finite JSON constant: {value}")
         ),
@@ -145,28 +160,81 @@ def _parse_codemap(payload: object) -> PaperCodemap:
     return PaperCodemap(required, modules)
 
 
+def _render_codemap_html(codemap: PaperCodemap) -> str:
+    graph = json.dumps(
+        {"schema": "paper-codemap.v1", "required_fields": list(codemap.required_fields), "modules": codemap.modules},
+        ensure_ascii=False,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    rows = "\n".join(
+        "<tr>" + "".join((
+            f"<td>{escape(module)}</td>",
+            f"<td>{escape('; '.join(detail['callers']))}</td>",
+            f"<td>{escape('; '.join(detail['effects']))}</td>",
+            f"<td>{escape('; '.join(detail['tests']))}</td>",
+            f"<td>{escape('; '.join(detail['source_origins']))}</td>",
+        )) + "</tr>"
+        for module, detail in codemap.modules.items()
+    )
+    return "\n".join((
+        "<!doctype html>",
+        "<html lang=\"en\"><head><meta charset=\"utf-8\"><title>Equipment Anomaly Detection paper codemap</title></head>",
+        "<body>",
+        "<h1>Equipment Anomaly Detection paper dependency map</h1>",
+        "<p>Validation mode: <code>static_ast_sha256</code>. Frozen legacy origins are resolved, parsed, and SHA256-bound without import execution because some have import-time file effects or optional environment dependencies. Tasks 4–7 establish executable parity after scientific copies enter this namespace.</p>",
+        "<table><thead><tr><th>Module</th><th>Callers</th><th>Effects</th><th>Tests</th><th>Source origins</th></tr></thead><tbody>",
+        rows,
+        "</tbody></table>",
+        "<script id=\"codemap-graph-paper\" type=\"application/json\">",
+        graph,
+        "</script>",
+        "</body></html>",
+        "",
+    ))
+
+
+def _paper_module_inventory(root: Path) -> frozenset[str]:
+    return frozenset(
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*_paper.py")
+        if "__pycache__" not in path.parts
+    )
+
+
 def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     root = Path(paper_root)
     html, codemap, lock = (root / "codemap_paper.html", root / "codemap_paper.json", root / "codemap_paper.lock")
-    config, lineage = root / "config_paper.py", root / "lineage_lock_paper.json"
-    required_paths = (html, codemap, lock, config, lineage)
+    config, contracts, lineage = root / "config_paper.py", root / "contracts_paper.py", root / "lineage_lock_paper.json"
+    required_paths = (html, codemap, lock, config, contracts, lineage)
     if any(not item.is_file() for item in required_paths):
         raise ValueError("paper codemap triplet is incomplete")
-    parsed = _parse_codemap(read_strict_json(codemap))
     lock_payload = read_strict_json(lock)
     if not isinstance(lock_payload, dict) or set(lock_payload) != _LOCK_FIELDS or lock_payload.get("schema") != "paper-codemap-lock.v1":
         raise ValueError("paper codemap lock schema is invalid")
     hashes = lock_payload.get("hashes")
-    expected_names = {"config_paper.py", "lineage_lock_paper.json", "codemap_paper.html", "codemap_paper.json"}
+    expected_names = {
+        "config_paper.py", "contracts_paper.py", "lineage_lock_paper.json",
+        "codemap_paper.html", "codemap_paper.json",
+    }
     if not isinstance(hashes, dict) or set(hashes) != expected_names or any(type(value) is not str or not re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values()):
         raise ValueError("paper codemap lock hashes are invalid")
     for name, expected in hashes.items():
         if sha256_file(root / name) != expected:
             raise ValueError(f"paper codemap hash differs: {name}")
+    parsed = _parse_codemap(read_strict_json(codemap))
+    if set(parsed.modules) != _paper_module_inventory(root):
+        raise ValueError("paper codemap module inventory differs")
+    if html.read_text(encoding="utf-8") != _render_codemap_html(parsed):
+        raise ValueError("paper codemap HTML graph differs")
     return parsed
 
 
 __all__ = [
-    "parse_nodes", "read_strict_json", "resolve_repo_module_source", "sha256_file",
-    "static_top_level_names", "validate_codemap_triplet", "validate_lineage_lock",
+    "LINEAGE_NODES", "parse_nodes", "read_strict_json", "reject_duplicate_object_keys",
+    "resolve_repo_module_source", "sha256_file", "static_top_level_names",
+    "validate_codemap_triplet", "validate_lineage_lock",
 ]
+
+
+LINEAGE_NODES = validate_lineage_lock(LINEAGE_LOCK_PATH)
