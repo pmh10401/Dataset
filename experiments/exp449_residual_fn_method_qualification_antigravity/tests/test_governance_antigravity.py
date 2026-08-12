@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 import unittest
 from html.parser import HTMLParser
 from pathlib import Path
@@ -121,6 +122,17 @@ class Exp449GovernanceTest(unittest.TestCase):
                 for box in group
             )
         )
+
+    def test_codemap_generator_records_task6_ship_and_task7_8_unchecked_antigravity(self):
+        """Break caught: regenerated map retains the stale Task-5-only completion claim."""
+        from scratch.build_codemap_exp449_antigravity import build_map_antigravity
+
+        source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+        graph, _lock, html = build_map_antigravity(source_commit, "2026-08-12T11:30:00+00:00")
+        plan = next(node for node in graph["nodes"] if node["id"] == "html_implementation_plan")
+        expected = "Self-contained Exp449 implementation plan; fresh Sol ship records Tasks 1–6 complete while Tasks 7–8 controls remain disabled and unchecked."
+        self.assertEqual(plan["role"], expected)
+        self.assertIn(expected, html)
 
     def test_planned_truth_and_global_constraints_are_exact_antigravity(self):
         prereg = Path("docs/EXP449_PREREGISTRATION_antigravity_KO.html").read_text(encoding="utf-8")
