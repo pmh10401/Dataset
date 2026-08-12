@@ -4,10 +4,17 @@ from __future__ import annotations
 import json
 import os
 import inspect
+import importlib.util
+import re
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
+
+
+def _session_inventory_antigravity() -> tuple[str, ...]:
+    return tuple(f"{sequence:03d}_leaf_antigravity.json" for sequence in range(96))
 
 
 class ProgressAntigravityTests(unittest.TestCase):
@@ -27,7 +34,7 @@ class ProgressAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_commit_session_antigravity_") as temporary:
             root = Path(temporary)
             progress.initialise_attempt_antigravity(root, {"schema": "exp449"})
-            session = progress._new_empty_commit_session_antigravity(root, ("000_leaf_antigravity.json", "001_leaf_antigravity.json"))
+            session = progress._new_empty_commit_session_antigravity(root, _session_inventory_antigravity())
             with self.assertRaises(ValueError):
                 session.commit(1, {"sequence": 1})
             session.commit(0, {"sequence": 0})
@@ -43,7 +50,7 @@ class ProgressAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_commit_session_antigravity_") as temporary:
             root = Path(temporary)
             progress.initialise_attempt_antigravity(root, {"schema": "exp449"})
-            inventory = ("000_leaf_antigravity.json", "001_leaf_antigravity.json")
+            inventory = _session_inventory_antigravity()
             session = progress._new_empty_commit_session_antigravity(root, inventory)
             self.assertEqual(tuple(inspect.signature(session.record_progress).parameters), ())
             with self.assertRaises(TypeError):
@@ -52,6 +59,38 @@ class ProgressAntigravityTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 session.commit(0, {"sequence": 0})
             self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 0)
+
+    def test_commit_session_requires_exact_96_ordered_inventory_antigravity(self) -> None:
+        """Break caught: a session accepts a partial, oversized, duplicate, or unordered commit inventory."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_commit_session_antigravity_") as temporary:
+            root = Path(temporary)
+            for count in (0, 1, 2, 95, 97):
+                with self.subTest(count=count), self.assertRaises(ValueError):
+                    progress._new_empty_commit_session_antigravity(root, tuple(f"{sequence:03d}_leaf_antigravity.json" for sequence in range(count)))
+            unordered = list(_session_inventory_antigravity()); unordered[0], unordered[1] = unordered[1], unordered[0]
+            with self.assertRaises(ValueError):
+                progress._new_empty_commit_session_antigravity(root, tuple(unordered))
+
+    def test_map_validation_rejects_nonexistent_or_wrong_map_parent_antigravity(self) -> None:
+        """Break caught: a code map claims a non-commit or a map-child's wrong source parent."""
+        root = Path(__file__).resolve().parents[3]
+        spec = importlib.util.spec_from_file_location("build_codemap_exp449_antigravity", root / "scratch/build_codemap_exp449_antigravity.py")
+        self.assertIsNotNone(spec); module = importlib.util.module_from_spec(spec); self.assertIsNotNone(spec.loader); spec.loader.exec_module(module)
+        graph = json.loads((root / "docs/codemap/codemap_exp449_antigravity.json").read_text())
+        lock = json.loads((root / "docs/codemap/codemap_exp449_antigravity.lock").read_text())
+        html = (root / "docs/codemap/codemap_exp449_antigravity.html").read_text()
+        def html_for(graph_payload):
+            payload = json.dumps(graph_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            return re.sub(r'(<script id="codemap-data" type="application/json">).*?(</script>)', r"\1" + payload + r"\2", html)
+        graph["generated_from_commit"] = "0" * 40; lock["current_commit"] = "0" * 40
+        with self.assertRaisesRegex(ValueError, "source commit"):
+            module.validate_map_antigravity(graph, lock, html_for(graph))
+        map_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        graph["generated_from_commit"] = map_head; lock["current_commit"] = map_head
+        with self.assertRaisesRegex(ValueError, "map parent"):
+            module.validate_map_antigravity(graph, lock, html_for(graph))
     def test_writer_actual_syscall_faults_leave_no_unverified_orphan_antigravity(self) -> None:
         """Break caught: a create/write/fsync/read/stat syscall failure leaves a candidate namespace artifact."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415
@@ -141,14 +180,19 @@ class ProgressAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
             initialise_attempt_antigravity(root, {"schema": "exp449"})
-            session = _new_empty_commit_session_antigravity(root, ("000_Crop_A.json",))
+            session = _new_empty_commit_session_antigravity(root, _session_inventory_antigravity())
             with self.assertRaises(ValueError):
                 session.record_progress()
             session.commit(0, {"sequence": 0})
             session.record_progress()
             self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 1)
+            self.assertFalse(json.loads((root / "progress_antigravity.json").read_text())["terminal"])
             self.assertEqual((root / "progress_antigravity.jsonl").read_text().count("\n"), 1)
             self.assertEqual((root / "progress_antigravity.txt").read_text(), "1\n")
+            for sequence in range(1, 96):
+                session.commit(sequence, {"sequence": sequence})
+                session.record_progress()
+            self.assertTrue(json.loads((root / "progress_antigravity.json").read_text())["terminal"])
 
     def test_create_only_leaf_commit_requires_canonical_re_read_antigravity(self) -> None:
         """Break caught: accepting a leaf before its durable canonical reread."""
@@ -175,12 +219,12 @@ class ProgressAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
             initialise_attempt_antigravity(root, {"schema": "exp449"})
-            session = _new_empty_commit_session_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"))
+            session = _new_empty_commit_session_antigravity(root, _session_inventory_antigravity())
             session.commit(0, {"sequence": 0})
             self.assertEqual(session._verified_prefix(), 1)
             replacement = root / "candidates_antigravity" / "replacement_antigravity.json"
             replacement.write_text('{"sequence":0}\n')
-            os.replace(replacement, root / "candidates_antigravity" / "000_Crop_A.json")
+            os.replace(replacement, root / "candidates_antigravity" / _session_inventory_antigravity()[0])
             with self.assertRaisesRegex(ValueError, "session"):
                 session._verified_prefix()
 

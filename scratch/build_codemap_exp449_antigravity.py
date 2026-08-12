@@ -21,6 +21,7 @@ HTML_PATH = MAP_DIR / "codemap_exp449_antigravity.html"
 SCANNED_TOP_LEVEL = (".superpowers", "docs", "experiments", "operational", "reports", "scratch", "scripts", "vercel-dashboard")
 EXCLUDED_PARTS = {".git", ".worktrees", "vendor", "node_modules", "build", "cache", "dist", "__pycache__", ".pytest_cache", ".mypy_cache", ".venv", "venv", "outputs", "results"}
 EDGE_TYPES = {"imports", "reads", "governs", "future_unknown"}
+_MAP_ONLY_PATHS_ANTIGRAVITY = {"scratch/build_codemap_exp449_antigravity.py"}
 
 
 def strict_json_antigravity(text: str) -> Any:
@@ -73,10 +74,36 @@ def evidence_antigravity(path: str, symbol: str) -> dict[str, str]:
     return {"path": path, "symbol": symbol}
 
 
+def _git_commit_exists_antigravity(commit: str) -> bool:
+    """Return whether a full source binding resolves to a commit object in this repository."""
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        return False
+    return subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
+
+
+def _is_map_only_commit_antigravity(commit: str) -> bool:
+    """Recognize a map-only child without letting map contents fingerprint themselves."""
+    paths = [path for path in subprocess.check_output(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", commit], cwd=ROOT, text=True).splitlines() if path]
+    return bool(paths) and all(path.startswith("docs/codemap/") or path in _MAP_ONLY_PATHS_ANTIGRAVITY for path in paths)
+
+
+def _expected_map_parent_antigravity() -> str | None:
+    """Return the first non-map parent only when the checked-out HEAD is a map-only child."""
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    if not _is_map_only_commit_antigravity(head):
+        return None
+    parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True).strip()
+    while _is_map_only_commit_antigravity(parent):
+        parent = subprocess.check_output(["git", "rev-parse", f"{parent}^"], cwd=ROOT, text=True).strip()
+    return parent
+
+
 def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[str, object], dict[str, object], str]:
     """Return JSON graph, lock, and self-contained HTML for the same graph."""
     if not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise ValueError("source_commit must be lowercase 40-hex")
+    if not _git_commit_exists_antigravity(source_commit):
+        raise ValueError("source commit does not exist")
     nodes: list[dict[str, object]] = [
         {"id": "research_control", "path": "RESEARCH_STATE.json", "role": "Planned Exp449 active state with zero label access and closed official lifecycle.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("RESEARCH_STATE.json", '"exp449"')]},
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "Non-promotion ledger retaining the unchanged pending candidate.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", '"experiment": "Exp449"')]},
@@ -132,6 +159,12 @@ def validate_map_antigravity(graph: object, lock: object, html: str) -> None:
     """Reject missing evidence, unresolved refs, >20 primary nodes, and fingerprint drift."""
     if not isinstance(graph, dict) or not isinstance(lock, dict):
         raise ValueError("graph and lock must be objects")
+    source_commit = graph.get("generated_from_commit")
+    if source_commit != lock.get("current_commit") or not _git_commit_exists_antigravity(source_commit):
+        raise ValueError("source commit binding is invalid")
+    expected_parent = _expected_map_parent_antigravity()
+    if expected_parent is not None and source_commit != expected_parent:
+        raise ValueError("source commit differs from map parent")
     nodes = graph.get("nodes")
     edges = graph.get("edges")
     flows = graph.get("flows")

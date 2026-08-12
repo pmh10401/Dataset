@@ -228,6 +228,8 @@ class _CommitSessionAntigravity:
 
 def _new_empty_commit_session_antigravity(root: Path, inventory: tuple[str, ...], *, fault_hook=None) -> _CommitSessionAntigravity:
     """Private lifecycle/test seam that can create only a new, empty exact-inventory session."""
-    if not isinstance(root, Path) or type(inventory) is not tuple or not inventory or any(type(name) is not str or "/" in name or not name.endswith(".json") for name in inventory) or len(set(inventory)) != len(inventory):
+    if (not isinstance(root, Path) or type(inventory) is not tuple or len(inventory) != 96 or
+            any(type(name) is not str or name != f"{sequence:03d}_{name[4:]}" or "/" in name or not name.endswith(".json") for sequence, name in enumerate(inventory)) or
+            len(set(inventory)) != 96):
         raise ValueError("commit session inventory is invalid")
     return _CommitSessionAntigravity(_SESSION_FACTORY_TOKEN_ANTIGRAVITY, root, inventory, fault_hook)
