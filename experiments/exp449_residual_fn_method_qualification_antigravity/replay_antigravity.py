@@ -105,7 +105,37 @@ def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int
     return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
+def _pin_leaves_at_fd_antigravity(root_fd: int) -> dict[str, bytes]:
+    """Pin the exact inventory under an already retained O_DIRECTORY descriptor."""
+    if type(root_fd) is not int:
+        raise ValueError("publication descriptor is invalid")
+    before = _identity_antigravity(os.fstat(root_fd))
+    if not stat.S_ISDIR(before[2]) or set(os.listdir(root_fd)) != set(_LEAVES_ANTIGRAVITY):
+        raise ValueError("publication inventory is not exact")
+    leaves: dict[str, bytes] = {}
+    identities: dict[str, tuple[int, int, int, int, int, int, int]] = {}
+    for name in _LEAVES_ANTIGRAVITY:
+        leaf_fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=root_fd)
+        try:
+            info = os.fstat(leaf_fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                raise ValueError("publication leaf is unsafe")
+            identities[name] = _identity_antigravity(info)
+            leaves[name] = b"".join(iter(lambda: os.read(leaf_fd, 1 << 20), b""))
+            if _identity_antigravity(os.fstat(leaf_fd)) != identities[name]:
+                raise ValueError("publication leaf changed while pinned")
+        finally:
+            os.close(leaf_fd)
+    if _identity_antigravity(os.fstat(root_fd)) != before:
+        raise ValueError("publication directory changed while pinned")
+    for name, identity in identities.items():
+        if _identity_antigravity(os.stat(name, dir_fd=root_fd, follow_symlinks=False)) != identity:
+            raise ValueError("publication leaf changed after read")
+    return leaves
+
+
 def _pin_leaves_antigravity(root: Path) -> dict[str, bytes]:
+    """Path replay pins its namespace once, then reuses the fd-root transaction."""
     if not isinstance(root, Path):
         raise ValueError("publication root is invalid")
     root_info = os.lstat(root)
@@ -113,28 +143,11 @@ def _pin_leaves_antigravity(root: Path) -> dict[str, bytes]:
         raise ValueError("publication root is unsafe")
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
-        before = _identity_antigravity(os.fstat(root_fd))
-        if _identity_antigravity(root_info) != before or set(os.listdir(root_fd)) != set(_LEAVES_ANTIGRAVITY):
-            raise ValueError("publication inventory is not exact")
-        leaves: dict[str, bytes] = {}
-        identities: dict[str, tuple[int, int, int, int, int, int, int]] = {}
-        for name in _LEAVES_ANTIGRAVITY:
-            leaf_fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=root_fd)
-            try:
-                info = os.fstat(leaf_fd)
-                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                    raise ValueError("publication leaf is unsafe")
-                identities[name] = _identity_antigravity(info)
-                leaves[name] = b"".join(iter(lambda: os.read(leaf_fd, 1 << 20), b""))
-                if _identity_antigravity(os.fstat(leaf_fd)) != identities[name]:
-                    raise ValueError("publication leaf changed while pinned")
-            finally:
-                os.close(leaf_fd)
-        if _identity_antigravity(os.fstat(root_fd)) != before or _identity_antigravity(os.lstat(root)) != before:
+        if _identity_antigravity(root_info) != _identity_antigravity(os.fstat(root_fd)):
             raise ValueError("publication directory changed while pinned")
-        for name, identity in identities.items():
-            if _identity_antigravity(os.stat(name, dir_fd=root_fd, follow_symlinks=False)) != identity:
-                raise ValueError("publication leaf changed after read")
+        leaves = _pin_leaves_at_fd_antigravity(root_fd)
+        if _identity_antigravity(os.lstat(root)) != _identity_antigravity(os.fstat(root_fd)):
+            raise ValueError("publication directory changed while pinned")
         return leaves
     finally:
         os.close(root_fd)
@@ -243,11 +256,10 @@ def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigrav
                 raise ValueError("bootstrap interval differs")
 
 
-def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
-    """Reconstruct publication semantics against independently captured Task-5 rows."""
+def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+    """Reconstruct semantics only after a caller has pinned the complete leaf set."""
     if type(expected_prediction_authority) is not PredictionAuthorityAntigravity:
         raise ValueError("trusted prediction authority differs")
-    leaves = _pin_leaves_antigravity(root)
     artifact_map = _json_antigravity(leaves, "artifact_sha256_antigravity.json")
     if not isinstance(artifact_map, dict) or set(artifact_map) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("artifact hash map differs")
@@ -330,9 +342,19 @@ def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: 
     return result
 
 
+def inspect_replay_at_fd_antigravity(root_fd: int, *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+    """Private retained-descriptor transaction used before canonical publication."""
+    return _inspect_replay_leaves_antigravity(_pin_leaves_at_fd_antigravity(root_fd), expected_prediction_authority=expected_prediction_authority)
+
+
+def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+    """Source-free public replay that pins its pathname before semantic validation."""
+    return _inspect_replay_leaves_antigravity(_pin_leaves_antigravity(root), expected_prediction_authority=expected_prediction_authority)
+
+
 def inspect_antigravity() -> FrozenEvaluationAntigravity:
     """Public inspection is deliberately unavailable until Task 7 supplies a reviewed root."""
     raise ValueError("Task-6 inspection requires the closed Task-7 reviewed publication root")
 
 
-__all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "capture_prediction_authority_antigravity", "inspect_antigravity", "inspect_replay_at_antigravity"]
+__all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "capture_prediction_authority_antigravity", "inspect_antigravity", "inspect_replay_at_antigravity", "inspect_replay_at_fd_antigravity"]

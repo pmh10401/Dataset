@@ -7,9 +7,7 @@ import errno
 from hashlib import sha256
 import os
 from pathlib import Path
-import stat
 import sys
-import uuid
 
 import numpy as np
 
@@ -17,7 +15,7 @@ from .artifacts_antigravity import canonical_json_bytes_antigravity, canonical_j
 from .bootstrap_antigravity import BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, paired_delta_antigravity
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY, FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import CandidateMetricAntigravity, ConfusionAntigravity, DatasetBaselineAntigravity
-from .replay_antigravity import FrozenEvaluationAntigravity, PredictionAuthorityAntigravity, capture_prediction_authority_antigravity, inspect_replay_at_antigravity
+from .replay_antigravity import FrozenEvaluationAntigravity, PredictionAuthorityAntigravity, capture_prediction_authority_antigravity, inspect_replay_at_fd_antigravity
 
 
 _LEAVES_ANTIGRAVITY = (
@@ -107,10 +105,36 @@ def _audit_antigravity(path: Path, error: BaseException, *, phase: str, label_op
         error.add_note(f"failure_audit_error={type(audit_error).__name__}: {audit_error}")
 
 
-def _fsync_directory_antigravity(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    try: os.fsync(descriptor)
-    finally: os.close(descriptor)
+def _fsync_directory_antigravity(descriptor: int) -> None:
+    """Durably flush an already retained directory descriptor."""
+    if type(descriptor) is not int:
+        raise ValueError("directory descriptor is invalid")
+    os.fsync(descriptor)
+
+
+def _close_descriptor_antigravity(descriptor: int) -> None:
+    """Release a retained descriptor; callers decide whether close is reportable."""
+    if type(descriptor) is not int:
+        raise ValueError("directory descriptor is invalid")
+    os.close(descriptor)
+
+
+def _write_leaf_at_antigravity(directory_fd: int, name: str, payload: bytes) -> None:
+    """Create, flush, and retain no pathname dependency for one private leaf."""
+    if type(directory_fd) is not int or name not in _LEAVES_ANTIGRAVITY or type(payload) is not bytes:
+        raise ValueError("private leaf write is invalid")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    leaf_fd = os.open(name, flags, 0o600, dir_fd=directory_fd)
+    try:
+        offset = 0
+        while offset < len(payload):
+            written = os.write(leaf_fd, payload[offset:])
+            if type(written) is not int or written <= 0:
+                raise OSError(errno.EIO, "private leaf write made no progress", name)
+            offset += written
+        os.fsync(leaf_fd)
+    finally:
+        _close_descriptor_antigravity(leaf_fd)
 
 
 def _rename_no_replace_at_antigravity(parent_fd: int, source_name: str, destination_name: str) -> None:
@@ -129,85 +153,56 @@ def _rename_no_replace_at_antigravity(parent_fd: int, source_name: str, destinat
         raise OSError(error, os.strerror(error), destination_name)
 
 
-def _rename_no_replace_antigravity(staging: Path, destination: Path) -> None:
-    """Use Darwin's exclusive directory rename; fail closed where that primitive is absent."""
-    if staging.parent != destination.parent:
-        raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
-    parent_fd = os.open(staging.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    try:
-        _rename_no_replace_at_antigravity(parent_fd, staging.name, destination.name)
-    finally:
-        os.close(parent_fd)
-
-
-def _quarantine_expected_root_antigravity(root: Path, parent_fd: int, identity: tuple[int, int]) -> Path:
-    """Move the retained staging inode only, through the retained parent descriptor."""
-    current = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
-    if stat.S_ISLNK(current.st_mode) or (current.st_dev, current.st_ino) != identity:
-        raise ValueError("canonical publication was replaced before quarantine")
-    for _attempt in range(64):
-        forensic_name = f".{root.name}.forensic_{uuid.uuid4().hex}_antigravity"
-        try:
-            os.stat(forensic_name, dir_fd=parent_fd, follow_symlinks=False)
-        except FileNotFoundError:
-            current = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
-            if stat.S_ISLNK(current.st_mode) or (current.st_dev, current.st_ino) != identity:
-                raise ValueError("canonical publication was replaced before quarantine")
-            _rename_no_replace_at_antigravity(parent_fd, root.name, forensic_name)
-            moved = os.stat(forensic_name, dir_fd=parent_fd, follow_symlinks=False)
-            if stat.S_ISLNK(moved.st_mode) or (moved.st_dev, moved.st_ino) != identity:
-                raise ValueError("forensic publication identity differs")
-            os.fsync(parent_fd)
-            return root.parent / forensic_name
-        except FileExistsError:
-            continue
-        else:
-            continue
-    raise FileExistsError("unique forensic destination could not be created")
+def _assert_directory_entry_identity_at_antigravity(parent_fd: int, name: str, retained: os.stat_result) -> None:
+    """Prove a hidden namespace entry still names the directory held by its fd."""
+    entry = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    if (entry.st_dev, entry.st_ino, entry.st_mode, entry.st_nlink) != (retained.st_dev, retained.st_ino, retained.st_mode, retained.st_nlink):
+        raise ValueError("sealed publication namespace identity differs")
 
 
 def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_prediction_authority: PredictionAuthorityAntigravity) -> None:
+    """Seal every fallible publication step before the one-way canonical commit."""
     if root.exists() or root.is_symlink() or set(payloads) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("publication destination is invalid or already exists")
-    staging = root.parent / f".{root.name}.staging_antigravity"
-    if staging.exists() or staging.is_symlink():
-        raise ValueError("publication staging destination already exists")
-    staging.mkdir(mode=0o700)
-    renamed = False
-    root_identity: tuple[int, int] | None = None
-    staging_fd = os.open(staging, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     parent_fd = os.open(root.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    staging_fd: int | None = None
+    committed = False
     try:
-        staged = os.fstat(staging_fd)
-        root_identity = (staged.st_dev, staged.st_ino)
-        for name in _LEAVES_ANTIGRAVITY[:-1]: write_create_only_antigravity(staging / name, payloads[name])
+        staging_name = f".{root.name}.staging_{os.urandom(16).hex()}_antigravity"
+        sealed_name = f".{root.name}.sealed_{os.urandom(16).hex()}_antigravity"
+        os.mkdir(staging_name, 0o700, dir_fd=parent_fd)
+        staging_fd = os.open(staging_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
+        for name in _LEAVES_ANTIGRAVITY[:-1]: _write_leaf_at_antigravity(staging_fd, name, payloads[name])
         hashes = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
-        write_create_only_antigravity(staging / _LEAVES_ANTIGRAVITY[-1], canonical_json_bytes_antigravity(hashes))
-        _fsync_directory_antigravity(staging)
-        # Semantic replay is completed while this namespace is still private.
-        inspect_replay_at_antigravity(staging, expected_prediction_authority=expected_prediction_authority)
-        _fsync_directory_antigravity(root.parent)
-        if root.exists() or root.is_symlink(): raise ValueError("publication destination appeared before commit")
-        _rename_no_replace_antigravity(staging, root)
-        renamed = True
-        opened = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
-        if stat.S_ISLNK(opened.st_mode) or (opened.st_dev, opened.st_ino) != root_identity:
-            raise ValueError("canonical publication identity differs after commit")
-        _fsync_directory_antigravity(root.parent)
-        # Reopen the canonical path after commit, through replay's descriptor transaction.
-        inspect_replay_at_antigravity(root, expected_prediction_authority=expected_prediction_authority)
-    except BaseException as error:
-        if renamed:
-            try:
-                if root_identity is None: raise ValueError("publication identity was not retained")
-                _quarantine_expected_root_antigravity(root, parent_fd, root_identity)
-            except BaseException as rollback_error:
-                error.add_note(f"publication_rollback_error={type(rollback_error).__name__}: {rollback_error}")
-        # A failed staging namespace is never a valid public root and is kept for forensic preservation.
-        raise
+        _write_leaf_at_antigravity(staging_fd, _LEAVES_ANTIGRAVITY[-1], canonical_json_bytes_antigravity(hashes))
+        _fsync_directory_antigravity(staging_fd)
+        _rename_no_replace_at_antigravity(parent_fd, staging_name, sealed_name)
+        _fsync_directory_antigravity(parent_fd)
+        sealed_identity = os.fstat(staging_fd)
+        _assert_directory_entry_identity_at_antigravity(parent_fd, sealed_name, sealed_identity)
+        inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority)
+        if (os.fstat(staging_fd).st_dev, os.fstat(staging_fd).st_ino, os.fstat(staging_fd).st_mode, os.fstat(staging_fd).st_nlink) != (sealed_identity.st_dev, sealed_identity.st_ino, sealed_identity.st_mode, sealed_identity.st_nlink):
+            raise ValueError("sealed publication directory changed while retained")
+        _fsync_directory_antigravity(staging_fd)
+        _fsync_directory_antigravity(parent_fd)
+        _assert_directory_entry_identity_at_antigravity(parent_fd, sealed_name, sealed_identity)
+        _close_descriptor_antigravity(staging_fd)
+        staging_fd = None
+        _rename_no_replace_at_antigravity(parent_fd, sealed_name, root.name)
+        committed = True
     finally:
-        os.close(staging_fd)
-        os.close(parent_fd)
+        try:
+            if staging_fd is not None:
+                _close_descriptor_antigravity(staging_fd)
+        finally:
+            if committed:
+                # The canonical rename is already visible: close failure cannot alter success.
+                try:
+                    _close_descriptor_antigravity(parent_fd)
+                except BaseException:
+                    pass
+            else:
+                _close_descriptor_antigravity(parent_fd)
 
 
 def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencies: object) -> FrozenEvaluationAntigravity:
