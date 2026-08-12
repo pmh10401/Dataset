@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import inspect
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,47 @@ from pathlib import Path
 
 
 class ProgressAntigravityTests(unittest.TestCase):
+    def test_commit_session_removes_caller_forgeable_receipt_and_raw_progress_authority_antigravity(self) -> None:
+        """Break caught: callers can forge progress authority from leaf metadata or a count."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+
+        self.assertFalse(hasattr(progress, "CandidateCommitReceiptAntigravity"))
+        self.assertNotIn("return_commit_receipt", inspect.signature(progress.commit_candidate_leaf_antigravity).parameters)
+        self.assertFalse(hasattr(progress, "record_verified_progress_antigravity"))
+        self.assertFalse(hasattr(progress, "verified_prefix_antigravity"))
+
+    def test_commit_session_rejects_noncontiguous_commit_sequences_antigravity(self) -> None:
+        """Break caught: a session records a duplicate, skipped, or nonzero first candidate commit."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_commit_session_antigravity_") as temporary:
+            root = Path(temporary)
+            progress.initialise_attempt_antigravity(root, {"schema": "exp449"})
+            session = progress._new_empty_commit_session_antigravity(root, ("000_leaf_antigravity.json", "001_leaf_antigravity.json"))
+            with self.assertRaises(ValueError):
+                session.commit(1, {"sequence": 1})
+            session.commit(0, {"sequence": 0})
+            with self.assertRaises(ValueError):
+                session.commit(0, {"sequence": 0})
+            with self.assertRaises(ValueError):
+                session.commit(2, {"sequence": 2})
+
+    def test_commit_session_derives_progress_and_cannot_adopt_external_leaf_antigravity(self) -> None:
+        """Break caught: a caller advances progress by count or adopts an independently written canonical leaf."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_commit_session_antigravity_") as temporary:
+            root = Path(temporary)
+            progress.initialise_attempt_antigravity(root, {"schema": "exp449"})
+            inventory = ("000_leaf_antigravity.json", "001_leaf_antigravity.json")
+            session = progress._new_empty_commit_session_antigravity(root, inventory)
+            self.assertEqual(tuple(inspect.signature(session.record_progress).parameters), ())
+            with self.assertRaises(TypeError):
+                session.record_progress(1)
+            progress.commit_candidate_leaf_antigravity(root / "candidates_antigravity", inventory[0], {"sequence": 0})
+            with self.assertRaises(FileExistsError):
+                session.commit(0, {"sequence": 0})
+            self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 0)
     def test_writer_actual_syscall_faults_leave_no_unverified_orphan_antigravity(self) -> None:
         """Break caught: a create/write/fsync/read/stat syscall failure leaves a candidate namespace artifact."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415
@@ -89,21 +131,21 @@ class ProgressAntigravityTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 write_failure_audit_antigravity(audit, RuntimeError("replacement"), None)
 
-    def test_attempt_channels_advance_only_after_verified_prefix_antigravity(self) -> None:
+    def test_attempt_channels_advance_only_after_session_commit_antigravity(self) -> None:
         """Break caught: reporting progress before the candidate leaf is durably committed."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
-            commit_candidate_leaf_antigravity,
+            _new_empty_commit_session_antigravity,
             initialise_attempt_antigravity,
-            record_verified_progress_antigravity,
         )
 
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
             initialise_attempt_antigravity(root, {"schema": "exp449"})
+            session = _new_empty_commit_session_antigravity(root, ("000_Crop_A.json",))
             with self.assertRaises(ValueError):
-                record_verified_progress_antigravity(root, ("000_Crop_A.json",), (), 1)
-            receipt = commit_candidate_leaf_antigravity(root / "candidates_antigravity", "000_Crop_A.json", {"sequence": 0}, return_commit_receipt=True)
-            record_verified_progress_antigravity(root, ("000_Crop_A.json",), (receipt,), 1)
+                session.record_progress()
+            session.commit(0, {"sequence": 0})
+            session.record_progress()
             self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 1)
             self.assertEqual((root / "progress_antigravity.jsonl").read_text().count("\n"), 1)
             self.assertEqual((root / "progress_antigravity.txt").read_text(), "1\n")
@@ -112,52 +154,53 @@ class ProgressAntigravityTests(unittest.TestCase):
         """Break caught: accepting a leaf before its durable canonical reread."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
             commit_candidate_leaf_antigravity,
-            verified_prefix_antigravity,
         )
 
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
             payload = {"sequence": 0, "candidate_name": "Crop_A", "indices": [1], "contains_test_labels": False}
-            receipt = commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload, return_commit_receipt=True)
-            self.assertEqual(len(receipt.sha256), 64)
+            digest = commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload)
+            self.assertEqual(len(digest), 64)
             self.assertEqual(json.loads((root / "000_Crop_A.json").read_text()), payload)
-            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"), (receipt,)), 1)
             with self.assertRaises(FileExistsError):
                 commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload)
 
-    def test_receipt_bound_prefix_rejects_received_leaf_replacement_antigravity(self) -> None:
-        """Break caught: trusting a canonical pathname after its returned receipt was replaced."""
+    def test_session_prefix_rejects_committed_leaf_replacement_antigravity(self) -> None:
+        """Break caught: trusting a canonical pathname after a session-owned commit was replaced."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
-            commit_candidate_leaf_antigravity,
-            verified_prefix_antigravity,
+            _new_empty_commit_session_antigravity,
+            initialise_attempt_antigravity,
         )
 
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
-            receipt = commit_candidate_leaf_antigravity(root, "000_Crop_A.json", {"sequence": 0}, return_commit_receipt=True)
-            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"), (receipt,)), 1)
-            replacement = root / "replacement_antigravity.json"
+            initialise_attempt_antigravity(root, {"schema": "exp449"})
+            session = _new_empty_commit_session_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"))
+            session.commit(0, {"sequence": 0})
+            self.assertEqual(session._verified_prefix(), 1)
+            replacement = root / "candidates_antigravity" / "replacement_antigravity.json"
             replacement.write_text('{"sequence":0}\n')
-            os.replace(replacement, root / "000_Crop_A.json")
-            with self.assertRaisesRegex(ValueError, "receipt"):
-                verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"), (receipt,))
+            os.replace(replacement, root / "candidates_antigravity" / "000_Crop_A.json")
+            with self.assertRaisesRegex(ValueError, "session"):
+                session._verified_prefix()
 
-    def test_receipt_bound_prefix_ignores_official_shaped_unreturned_next_leaf_at_0_47_95_antigravity(self) -> None:
-        """Break caught: canonical official-shaped next-slot JSON is mistaken for a returned commit."""
+    def test_session_prefix_ignores_official_shaped_unreturned_next_leaf_at_0_47_95_antigravity(self) -> None:
+        """Break caught: canonical official-shaped next-slot JSON is mistaken for a session commit."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
-            commit_candidate_leaf_antigravity,
-            verified_prefix_antigravity,
+            _new_empty_commit_session_antigravity,
+            initialise_attempt_antigravity,
         )
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _candidate_payload_antigravity  # noqa: PLC0415
         from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity  # noqa: PLC0415
 
-        inventory = tuple(f"{sequence:03d}_receipt_antigravity.json" for sequence in range(96))
+        inventory = tuple(f"{sequence:03d}_session_antigravity.json" for sequence in range(96))
         for completed in (0, 47, 95):
-            with self.subTest(completed=completed), tempfile.TemporaryDirectory(prefix="exp449_receipt_prefix_antigravity_") as temporary:
-                root = Path(temporary); receipts = []
+            with self.subTest(completed=completed), tempfile.TemporaryDirectory(prefix="exp449_session_prefix_antigravity_") as temporary:
+                root = Path(temporary)
+                initialise_attempt_antigravity(root, {"schema": "exp449"})
+                session = _new_empty_commit_session_antigravity(root, inventory)
                 for sequence in range(completed):
-                    receipt = commit_candidate_leaf_antigravity(root, inventory[sequence], {"sequence": sequence}, sequence=sequence, return_commit_receipt=True)
-                    receipts.append(receipt)
+                    session.commit(sequence, {"sequence": sequence})
                 replacement = _candidate_payload_antigravity(completed, "Crop_normal_1", "Crop", "minirocket_local_gap", [], 3, 5, [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}])
-                (root / inventory[completed]).write_bytes(canonical_json_bytes_antigravity(replacement))
-                self.assertEqual(verified_prefix_antigravity(root, inventory, tuple(receipts)), completed)
+                (root / "candidates_antigravity" / inventory[completed]).write_bytes(canonical_json_bytes_antigravity(replacement))
+                self.assertEqual(session._verified_prefix(), completed)

@@ -347,12 +347,12 @@ class PredictionAntigravityTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="exp449_failure_antigravity_") as temporary:
             parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
-            original = prediction.record_verified_progress_antigravity
-            def fail_at_48(path, inventory, receipts, completed, **_kwargs):
-                if completed == 48:
+            original = prediction._CommitSessionAntigravity.record_progress
+            def fail_at_48(session):
+                if len(session._commits) == 48:
                     raise OSError("persistent progress channel failure")
-                return original(path, inventory, receipts, completed, **_kwargs)
-            with patch.object(prediction, "record_verified_progress_antigravity", side_effect=fail_at_48), self.assertRaisesRegex(OSError, "persistent progress"):
+                return original(session)
+            with patch.object(prediction._CommitSessionAntigravity, "record_progress", autospec=True, side_effect=fail_at_48), self.assertRaisesRegex(OSError, "persistent progress"):
                 prediction.run_synthetic_lifecycle_antigravity(root, "1" * 40, audit_path=audit)
             self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 48)
             self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 48)
