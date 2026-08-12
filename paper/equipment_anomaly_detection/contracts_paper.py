@@ -45,6 +45,17 @@ class RawDataset:
 
 
 @dataclass(frozen=True, slots=True)
+class LeafEvidence:
+    """Immutable continuous evidence for one score-source leaf."""
+
+    pvalue: np.ndarray
+    margin: np.ndarray
+    strength: np.ndarray
+    native_pass: np.ndarray
+    evidence_missing: np.ndarray
+
+
+@dataclass(frozen=True, slots=True)
 class PaperCodemap:
     required_fields: tuple[str, ...]
     modules: dict[str, dict[str, object]]
