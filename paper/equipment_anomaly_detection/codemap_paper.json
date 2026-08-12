@@ -48,16 +48,19 @@
         "data_paper.py",
         "hard_route_paper.py",
         "lineage_paper.py",
+        "routing_paper.py",
         "sources_paper/hard_sources_paper.py",
         "sources_paper/legacy_route_sources_paper.py",
         "sources_paper/low_frequency_paper.py",
         "sources_paper/minirocket_paper.py",
         "sources_paper/preprocessing_paper.py",
+        "sources_paper/stability_paper.py",
         "tests_paper/test_calibration_adapter_paper.py",
         "tests_paper/test_hard_route_paper.py",
         "tests_paper/test_hard_sources_paper.py",
         "tests_paper/test_low_frequency_paper.py",
-        "tests_paper/test_minirocket_paper.py"
+        "tests_paper/test_minirocket_paper.py",
+        "tests_paper/test_stability_paper.py"
       ],
       "effects": [
         "defines frozen configuration, lineage, raw values, defensively immutable continuous leaf evidence, and codemap value contracts including database identity and excluded datasets",
@@ -162,8 +165,24 @@
       ],
       "source_origins": []
     },
+    "routing_paper.py": {
+      "callers": [
+        "tests_paper/test_stability_paper.py"
+      ],
+      "effects": [
+        "constructs the frozen hard-only, source, stable-source, and unstable-source ablations with coordinate conservation and deep immutable route contracts",
+        "takes the elementwise maximum of Hard and low-frequency continuous evidence while producing separate route-preserving continuous scores for every policy mask"
+      ],
+      "tests": [
+        "tests_paper/test_stability_paper.py"
+      ],
+      "source_origins": [
+        "score_adapter_paper.py"
+      ]
+    },
     "score_adapter_paper.py": {
       "callers": [
+        "routing_paper.py",
         "tests_paper/test_calibration_adapter_paper.py"
       ],
       "effects": [
@@ -267,7 +286,9 @@
     },
     "sources_paper/low_frequency_paper.py": {
       "callers": [
-        "tests_paper/test_low_frequency_paper.py"
+        "sources_paper/stability_paper.py",
+        "tests_paper/test_low_frequency_paper.py",
+        "tests_paper/test_stability_paper.py"
       ],
       "effects": [
         "replays copied Exp440 exact-length finite-TRAIN grouped low-frequency evidence for every TEST row, with strict two-depth raw score thresholds/ranks and deterministic missing outcomes",
@@ -375,6 +396,24 @@
         "run_experiment_131_rocket_block_b_calibration.py"
       ]
     },
+    "sources_paper/stability_paper.py": {
+      "callers": [
+        "routing_paper.py",
+        "tests_paper/test_stability_paper.py"
+      ],
+      "effects": [
+        "copies deterministic Exp444 omission-mask identity, retained-TRAIN-only low-frequency refit, required survival count, and exact selected-only stable/unstable partition without legacy runtime imports",
+        "records every view mask identity, retained indices, raw depth evidence, missing candidate reason, survival, and frozen threshold"
+      ],
+      "tests": [
+        "tests_paper/test_stability_paper.py"
+      ],
+      "source_origins": [
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/config_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/masks_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py"
+      ]
+    },
     "tests_paper/test_calibration_adapter_paper.py": {
       "callers": [],
       "effects": [
@@ -443,6 +482,16 @@
       ],
       "tests": [
         "tests_paper/test_minirocket_paper.py"
+      ],
+      "source_origins": []
+    },
+    "tests_paper/test_stability_paper.py": {
+      "callers": [],
+      "effects": [
+        "exercises deterministic omission masks, 14/16 threshold, retained-TRAIN-only replay, selected-only partition, immutable policy routes, endpoint/missing score bands, Exp444 runtime isolation, and executable-origin parity"
+      ],
+      "tests": [
+        "tests_paper/test_stability_paper.py"
       ],
       "source_origins": []
     }

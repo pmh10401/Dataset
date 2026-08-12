@@ -180,6 +180,7 @@ def _paper_source_helper_inventory(root: Path) -> frozenset[str]:
     # The route is scientific copied logic too; provenance must bind its bytes
     # and every frozen selector origin, not only scorer helpers under sources/.
     helpers.add("hard_route_paper.py")
+    helpers.add("routing_paper.py")
     return frozenset(helpers)
 
 
@@ -359,7 +360,7 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
         raise ValueError("paper codemap lock schema is invalid")
     hashes = lock_payload.get("hashes")
     expected_names = {
-        "config_paper.py", "contracts_paper.py", "lineage_lock_paper.json",
+        "config_paper.py", "contracts_paper.py", "lineage_paper.py", "lineage_lock_paper.json",
         "codemap_paper.html", "codemap_paper.json", "hard_route_paper.py",
         "sources_paper/source_provenance_paper.json", ARTIFACT_PARITY_CLAIM_PATH.name,
     } | _paper_source_helper_inventory(root)

@@ -442,6 +442,50 @@
           "source_sha256": "22c93cf072946f4e52bd69dd0090bb487bb5938ced237ed15c216c0d9864bf7a"
         }
       ]
+    },
+    "sources_paper/stability_paper.py": {
+      "paper_sha256": "93221c4f9be044fa23940d90b6f3c11c433396eb705a089ca71c37f95f96ad49",
+      "origins": [
+        {
+          "module": "experiments.exp444_train_only_stability_precision_gate_antigravity.config_antigravity",
+          "symbols": [
+            "FROZEN_CONFIG",
+            "Exp444FrozenConfig"
+          ],
+          "source_sha256": "3f4aa59b345c7cbb4f4f4f8e0f6811843e19268c56495145aedf8239bc808896"
+        },
+        {
+          "module": "experiments.exp444_train_only_stability_precision_gate_antigravity.masks_antigravity",
+          "symbols": [
+            "canonical_mask_identity_sha256_antigravity",
+            "generate_omission_masks_antigravity",
+            "omission_count_antigravity",
+            "required_survival_count_antigravity"
+          ],
+          "source_sha256": "b44c3d13ddca570f1d6747b39f52285a04d18d017d46c32dcd6709d9ecc94daa"
+        },
+        {
+          "module": "experiments.exp444_train_only_stability_precision_gate_antigravity.stability_antigravity",
+          "symbols": [
+            "aggregate_stability_views_antigravity",
+            "classify_view_antigravity",
+            "score_stability_candidate_antigravity"
+          ],
+          "source_sha256": "aaa14d720613f39815945aac9526d86ad275577f46c792d8879cd5e16131ef4c"
+        }
+      ]
+    },
+    "routing_paper.py": {
+      "paper_sha256": "5ee5e2453492153ddb7919d12bccd2bd5322fa9195737b58390b3584d71b87a9",
+      "origins": [
+        {
+          "module": "paper.equipment_anomaly_detection.score_adapter_paper",
+          "symbols": [
+            "route_preserving_scores"
+          ],
+          "source_sha256": "e6b3e9747c9a1696440907a254306e09f50da5103f4d55d4fceeca57fdd27b8a"
+        }
+      ]
     }
   }
 }
