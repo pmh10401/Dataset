@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T11:10:00+00:00",
-  "generated_from_commit": "5f6c6bf8ced0cd7e79b9c3768be87571ef086d69",
+  "generated_at": "2026-08-12T11:35:00+00:00",
+  "generated_from_commit": "79a006e9d3ce347a4009bda81326af4474da8fa2",
   "scope": [
     "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
   ],
@@ -78,14 +78,14 @@
     {
       "id": "html_implementation_plan",
       "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
-      "role": "Self-contained Exp449 implementation plan; fresh Sol ship records Task 5 completion while Task 6–8 controls remain disabled and unchecked.",
+      "role": "Self-contained Exp449 implementation plan; fresh Sol ship records Tasks 1–6 complete while Tasks 7–8 controls remain disabled and unchecked.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
       "evidence": [
         {
           "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
-          "symbol": "Task 5: Frozen Prediction Lifecycle"
+          "symbol": "Task 6: One-Session Counterfactual Evaluation and Source-Free Replay"
         }
       ]
     },
