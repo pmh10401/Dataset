@@ -49,7 +49,13 @@ paper/equipment_anomaly_detection/
   score_adapter_paper.py               route-preserving binary/continuous score
   sources_paper/
     package_paper.py
-    hard_sources_paper.py              raw Exp40/55/56/84/Block-B/canonical scores
+    preprocessing_paper.py             sanitize, align, z-normalize, TRAIN-only metadata
+    knn_paper.py                       balanced density/local-gap and scaling primitives
+    rocket_paper.py                    Exp40 and Block-B Rocket feature closure
+    imaging_paper.py                   exact Exp55/56 transform/PCA/scoring closure
+    multirocket_hydra_paper.py         exact Exp84 official aeon closure
+    canonical_paper.py                 canonical features and crossfit closure
+    hard_sources_paper.py              six-source orchestration only
     minirocket_paper.py                raw 1024/4096 two-seed MiniROCKET evidence
     low_frequency_paper.py             full TEST Exp440 multi-depth score replay
     stability_paper.py                 exact 30-candidate Exp444 omission replay
@@ -419,12 +425,21 @@ git commit -m "feat: add route preserving evidence score"
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
+- Modify: `paper/equipment_anomaly_detection/data_paper.py`
 - Create: `paper/equipment_anomaly_detection/sources_paper/package_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/knn_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/rocket_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/imaging_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/canonical_paper.py`
 - Create: `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_data_boundary_paper.py`
 
 **Interfaces:**
-- Consumes: `RawDataset`, `LineageNode`, fixed seeds and source configs.
+- Consumes: `RawDataset` including frozen dataset-table `metadata_length`, `LineageNode`, fixed seeds and source configs.
 - Produces: `score_hard_sources(values: RawDataset) -> HardSourceBundle` containing TRAIN OOF, TEST score, p-value, threshold, native pass, eligibility for every source.
 
 - [ ] **Step 1: Write failing label-free deterministic source tests**
@@ -460,7 +475,9 @@ def _historical_source(name: str, train: np.ndarray, test: np.ndarray, record: M
     return crossfit_source_paper(name, train, test, record)
 ```
 
-원본의 `crossfit_source`와 `source_score_pair` 과학 로직만 `hard_sources_paper.py`에 복사하고 provenance header에 원본 module, symbol, source SHA256를 기록한다. `load_test_labels`, `load_candidate_predictions`, `prediction_bundle`, `row_with_metrics`는 복사하거나 호출하지 않는다. `RawDataset`에서 길이 정렬 metadata를 만든다. 원 source config는 Exp40 `rocket_256_knn3_local_gap`, Exp55 `train_global_minmax_clip_spectrogram_32_pca32_knn3`, Exp56 `glcm_rp_32_pca32_knn3`, Exp84 `aeon_mrh_mr1024_hk4_g32_prune1024_stable_tail_local_gap_knn3`다. paper scientific module의 AST에는 `experiments.exp` runtime import가 없어야 한다.
+원본 closure를 책임별 paper helper에 복사하고 각 module provenance에 원본 file, symbol, SHA256를 기록한다. `hard_sources_paper.py`에는 crossfit과 six-source orchestration만 둔다. `load_test_labels`, prediction/CSV/metric writer는 복사하거나 호출하지 않는다. paper scientific AST에는 `experiments.exp` runtime import가 없어야 한다.
+
+`RawDataset`에는 datasets table의 positive `metadata_length`를 추가한다. `SourceDatasetMetadata`는 artifact용 실제 dataset identity와 scoring용 neutral alias `dataset_name="__virtual_run_dataset__"`, `family="__family_neutral__"`를 분리한다. `actual_len_median`, `actual_len_max`, `train_target_len`은 TRAIN row만으로 만들고 `test_actual_len_median=train_target_len`으로 고정해 TEST length가 model parameter에 관여하지 않게 한다. 원 source config는 Exp40 `rocket_256_knn3_local_gap`, Exp55 `train_global_minmax_clip_spectrogram_32_pca32_knn3`, Exp56 `glcm_rp_32_pca32_knn3`, Exp84 `aeon_mrh_mr1024_hk4_g32_prune1024_stable_tail_local_gap_knn3`다.
 
 - [ ] **Step 4: Add Block-B and canonical normal-state sources**
 
@@ -473,11 +490,11 @@ canonical_oof, canonical_test = crossfit_scores_paper(
 )
 ```
 
-Block-B와 canonical feature/crossfit 함수도 같은 provenance 규칙으로 paper file에 복사한다. 각 source가 실행 불가능하면 원 eligibility 이유와 빈 score를 기록한다. 다른 detector로 대체하지 않는다. synthetic fixture에서 paper copy와 원본 함수의 score/native-pass parity를 확인한다.
+Block-B와 canonical feature/crossfit 함수도 같은 provenance 규칙으로 복사한다. 각 source가 실행 불가능하면 원 eligibility 이유와 빈 score를 기록한다. 다른 detector로 대체하지 않는다. synthetic fixture에서 paper copy와 원본 함수의 score/native-pass parity를 확인한다. Exp84 aeon parity는 frozen `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python`이 존재하고 환경 검증을 통과할 때만 그 interpreter를 oracle로 사용하며, default interpreter에서 aeon이 없으면 `dependency_unavailable`로 명시한다. 환경을 새로 설치하거나 full dataset을 실행하지 않는다.
 
 - [ ] **Step 5: Run source tests and commit**
 
-Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_hard_sources_paper experiments.exp177_185.test_exp177_185_core -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_hard_sources_paper paper.equipment_anomaly_detection.tests_paper.test_data_boundary_paper experiments.exp177_185.test_exp177_185_core -v`
 
 Expected: PASS.
 
