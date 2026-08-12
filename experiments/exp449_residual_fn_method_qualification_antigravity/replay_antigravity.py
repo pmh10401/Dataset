@@ -65,6 +65,42 @@ class FrozenEvaluationAntigravity:
                 raise ValueError("evaluation hash differs")
 
 
+@dataclass(frozen=True, slots=True)
+class PredictionAuthorityAntigravity:
+    """The independently captured Task-5 prediction authority used by private replay."""
+    dataset_identity: tuple[tuple[str, str], ...]
+    prediction_rows: bytes
+    prediction_row_sha256: tuple[str, ...]
+    prediction_aggregate_sha256: str
+    prediction_manifest: bytes
+    prediction_manifest_sha256: str
+
+    def __post_init__(self) -> None:
+        if (type(self.dataset_identity) is not tuple or self.dataset_identity != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY
+                or type(self.prediction_rows) is not bytes or type(self.prediction_row_sha256) is not tuple
+                or len(self.prediction_row_sha256) != 96 or any(type(value) is not str or len(value) != 64 for value in self.prediction_row_sha256)
+                or any(type(value) is not str or len(value) != 64 for value in (self.prediction_aggregate_sha256, self.prediction_manifest_sha256))
+                or type(self.prediction_manifest) is not bytes):
+            raise ValueError("trusted prediction authority differs")
+
+
+def capture_prediction_authority_antigravity(rows: object, exp448_authority: object) -> PredictionAuthorityAntigravity:
+    """Capture trusted Task-5 rows before the one synthetic label session opens."""
+    datasets = getattr(exp448_authority, "target_dataset_names", None)
+    baselines = getattr(exp448_authority, "target_baseline_rows", None)
+    identity = tuple((dataset, getattr(baseline, "family", None)) for dataset, baseline in zip(datasets, baselines, strict=True)) if type(datasets) is tuple and type(baselines) is tuple and len(datasets) == len(baselines) else ()
+    if identity != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or type(rows) is not tuple or len(rows) != 96:
+        raise ValueError("trusted prediction authority differs")
+    try:
+        row_bytes = tuple(canonical_json_bytes_antigravity(row) for row in rows)
+    except (TypeError, ValueError) as error:
+        raise ValueError("trusted prediction authority differs") from error
+    prediction_rows = b"".join(row_bytes)
+    row_sha256 = tuple(sha256(row.rstrip(b"\n")).hexdigest() for row in row_bytes)
+    manifest = canonical_json_bytes_antigravity({"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(prediction_rows).hexdigest()})
+    return PredictionAuthorityAntigravity(identity, prediction_rows, row_sha256, sha256("".join(row_sha256).encode("ascii")).hexdigest(), manifest, sha256(manifest).hexdigest())
+
+
 def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
     return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
@@ -207,8 +243,10 @@ def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigrav
                 raise ValueError("bootstrap interval differs")
 
 
-def inspect_replay_at_antigravity(root: Path) -> FrozenEvaluationAntigravity:
-    """Reconstruct Task-6 authority from only twelve descriptor-pinned publication leaves."""
+def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+    """Reconstruct publication semantics against independently captured Task-5 rows."""
+    if type(expected_prediction_authority) is not PredictionAuthorityAntigravity:
+        raise ValueError("trusted prediction authority differs")
     leaves = _pin_leaves_antigravity(root)
     artifact_map = _json_antigravity(leaves, "artifact_sha256_antigravity.json")
     if not isinstance(artifact_map, dict) or set(artifact_map) != set(_LEAVES_ANTIGRAVITY[:-1]):
@@ -226,6 +264,13 @@ def inspect_replay_at_antigravity(root: Path) -> FrozenEvaluationAntigravity:
         raise ValueError("publication context or compatibility differs")
     if not isinstance(manifest, dict) or manifest != {"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(leaves["frozen_predictions_antigravity.jsonl"]).hexdigest()}:
         raise ValueError("frozen prediction manifest differs")
+    row_sha256 = tuple(sha256(line).hexdigest() for line in leaves["frozen_predictions_antigravity.jsonl"].splitlines())
+    if (leaves["frozen_predictions_antigravity.jsonl"] != expected_prediction_authority.prediction_rows
+            or row_sha256 != expected_prediction_authority.prediction_row_sha256
+            or sha256("".join(row_sha256).encode("ascii")).hexdigest() != expected_prediction_authority.prediction_aggregate_sha256
+            or leaves["prediction_manifest_antigravity.json"] != expected_prediction_authority.prediction_manifest
+            or sha256(leaves["prediction_manifest_antigravity.json"]).hexdigest() != expected_prediction_authority.prediction_manifest_sha256):
+        raise ValueError("trusted prediction authority differs")
     if not isinstance(evaluation, dict) or set(evaluation) != {"schema", "reviewed_commit", "candidate_count", "qualified_count", "label_session_count", "label_query_count", "label_row_count", "routing_research_eligible", "dataset_evidence"} or type(evaluation["dataset_evidence"]) is not list or evaluation["dataset_evidence"] != context["target_datasets"] and any(True for _ in ()):
         raise ValueError("evaluation schema differs")
     evidence: list[dict[str, object]] = []
@@ -290,4 +335,4 @@ def inspect_antigravity() -> FrozenEvaluationAntigravity:
     raise ValueError("Task-6 inspection requires the closed Task-7 reviewed publication root")
 
 
-__all__ = ["FrozenEvaluationAntigravity", "inspect_antigravity", "inspect_replay_at_antigravity"]
+__all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "capture_prediction_authority_antigravity", "inspect_antigravity", "inspect_replay_at_antigravity"]

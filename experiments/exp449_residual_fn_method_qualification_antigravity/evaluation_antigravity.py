@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import stat
 import sys
+import uuid
 
 import numpy as np
 
@@ -16,7 +17,7 @@ from .artifacts_antigravity import canonical_json_bytes_antigravity, canonical_j
 from .bootstrap_antigravity import BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, paired_delta_antigravity
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY, FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import CandidateMetricAntigravity, ConfusionAntigravity, DatasetBaselineAntigravity
-from .replay_antigravity import FrozenEvaluationAntigravity, inspect_replay_at_antigravity
+from .replay_antigravity import FrozenEvaluationAntigravity, PredictionAuthorityAntigravity, capture_prediction_authority_antigravity, inspect_replay_at_antigravity
 
 
 _LEAVES_ANTIGRAVITY = (
@@ -112,40 +113,60 @@ def _fsync_directory_antigravity(path: Path) -> None:
     finally: os.close(descriptor)
 
 
-def _rename_no_replace_antigravity(staging: Path, destination: Path) -> None:
-    """Use Darwin's exclusive directory rename; fail closed where that primitive is absent."""
-    if staging.parent != destination.parent or sys.platform != "darwin":
+def _rename_no_replace_at_antigravity(parent_fd: int, source_name: str, destination_name: str) -> None:
+    """Use Darwin's descriptor-relative exclusive directory rename."""
+    if sys.platform != "darwin":
         raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
     libc = ctypes.CDLL(None, use_errno=True)
-    renamex = getattr(libc, "renamex_np", None)
+    renamex = getattr(libc, "renameatx_np", None)
     if renamex is None:
         raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
-    renamex.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint)
+    renamex.argtypes = (ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint)
     renamex.restype = ctypes.c_int
     # RENAME_EXCL is the Darwin no-replacement flag; its failure leaves both names intact.
-    if renamex(os.fsencode(staging), os.fsencode(destination), 0x00000004) != 0:
+    if renamex(parent_fd, os.fsencode(source_name), parent_fd, os.fsencode(destination_name), 0x00000004) != 0:
         error = ctypes.get_errno()
-        raise OSError(error, os.strerror(error), destination)
+        raise OSError(error, os.strerror(error), destination_name)
 
 
-def _quarantine_expected_root_antigravity(root: Path, forensic: Path, identity: tuple[int, int]) -> None:
-    """Move only the just-committed inode away from canonical publication naming."""
-    current = os.stat(root, follow_symlinks=False)
+def _rename_no_replace_antigravity(staging: Path, destination: Path) -> None:
+    """Use Darwin's exclusive directory rename; fail closed where that primitive is absent."""
+    if staging.parent != destination.parent:
+        raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
+    parent_fd = os.open(staging.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        _rename_no_replace_at_antigravity(parent_fd, staging.name, destination.name)
+    finally:
+        os.close(parent_fd)
+
+
+def _quarantine_expected_root_antigravity(root: Path, parent_fd: int, identity: tuple[int, int]) -> Path:
+    """Move the retained staging inode only, through the retained parent descriptor."""
+    current = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
     if stat.S_ISLNK(current.st_mode) or (current.st_dev, current.st_ino) != identity:
         raise ValueError("canonical publication was replaced before quarantine")
-    try:
-        _rename_no_replace_antigravity(root, forensic)
-    except BaseException as primary:
-        # The helper can be fault-injected; revalidate first, then use a final same-parent
-        # namespace move only when the forensic name remains absent and the exact inode remains.
-        current = os.stat(root, follow_symlinks=False)
-        if forensic.exists() or forensic.is_symlink() or (current.st_dev, current.st_ino) != identity:
-            raise primary
-        os.rename(root, forensic)
-    _fsync_directory_antigravity(root.parent)
+    for _attempt in range(64):
+        forensic_name = f".{root.name}.forensic_{uuid.uuid4().hex}_antigravity"
+        try:
+            os.stat(forensic_name, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            current = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
+            if stat.S_ISLNK(current.st_mode) or (current.st_dev, current.st_ino) != identity:
+                raise ValueError("canonical publication was replaced before quarantine")
+            _rename_no_replace_at_antigravity(parent_fd, root.name, forensic_name)
+            moved = os.stat(forensic_name, dir_fd=parent_fd, follow_symlinks=False)
+            if stat.S_ISLNK(moved.st_mode) or (moved.st_dev, moved.st_ino) != identity:
+                raise ValueError("forensic publication identity differs")
+            os.fsync(parent_fd)
+            return root.parent / forensic_name
+        except FileExistsError:
+            continue
+        else:
+            continue
+    raise FileExistsError("unique forensic destination could not be created")
 
 
-def _publish_antigravity(root: Path, payloads: Mapping[str, bytes]) -> None:
+def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_prediction_authority: PredictionAuthorityAntigravity) -> None:
     if root.exists() or root.is_symlink() or set(payloads) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("publication destination is invalid or already exists")
     staging = root.parent / f".{root.name}.staging_antigravity"
@@ -154,31 +175,39 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes]) -> None:
     staging.mkdir(mode=0o700)
     renamed = False
     root_identity: tuple[int, int] | None = None
-    forensic = root.parent / f".{root.name}.forensic_antigravity"
+    staging_fd = os.open(staging, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    parent_fd = os.open(root.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
+        staged = os.fstat(staging_fd)
+        root_identity = (staged.st_dev, staged.st_ino)
         for name in _LEAVES_ANTIGRAVITY[:-1]: write_create_only_antigravity(staging / name, payloads[name])
         hashes = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
         write_create_only_antigravity(staging / _LEAVES_ANTIGRAVITY[-1], canonical_json_bytes_antigravity(hashes))
         _fsync_directory_antigravity(staging)
         # Semantic replay is completed while this namespace is still private.
-        inspect_replay_at_antigravity(staging)
+        inspect_replay_at_antigravity(staging, expected_prediction_authority=expected_prediction_authority)
         _fsync_directory_antigravity(root.parent)
         if root.exists() or root.is_symlink(): raise ValueError("publication destination appeared before commit")
         _rename_no_replace_antigravity(staging, root)
         renamed = True
-        opened = os.stat(root, follow_symlinks=False); root_identity = (opened.st_dev, opened.st_ino)
+        opened = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
+        if stat.S_ISLNK(opened.st_mode) or (opened.st_dev, opened.st_ino) != root_identity:
+            raise ValueError("canonical publication identity differs after commit")
         _fsync_directory_antigravity(root.parent)
         # Reopen the canonical path after commit, through replay's descriptor transaction.
-        inspect_replay_at_antigravity(root)
+        inspect_replay_at_antigravity(root, expected_prediction_authority=expected_prediction_authority)
     except BaseException as error:
         if renamed:
             try:
-                if root_identity is None or forensic.exists() or forensic.is_symlink(): raise FileExistsError("forensic destination exists")
-                _quarantine_expected_root_antigravity(root, forensic, root_identity)
+                if root_identity is None: raise ValueError("publication identity was not retained")
+                _quarantine_expected_root_antigravity(root, parent_fd, root_identity)
             except BaseException as rollback_error:
                 error.add_note(f"publication_rollback_error={type(rollback_error).__name__}: {rollback_error}")
         # A failed staging namespace is never a valid public root and is kept for forensic preservation.
         raise
+    finally:
+        os.close(staging_fd)
+        os.close(parent_fd)
 
 
 def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencies: object) -> FrozenEvaluationAntigravity:
@@ -192,6 +221,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         if root.exists() or root.is_symlink(): raise ValueError("publication destination already exists")
         authority = getattr(dependencies, "capture_exp448_antigravity")()
         predictions = _prediction_rows_antigravity(dependencies, authority)
+        expected_prediction_authority = capture_prediction_authority_antigravity(predictions, authority)
         baseline_global = getattr(authority, "baseline_confusion", None)
         baselines = getattr(authority, "target_baseline_rows", None)
         datasets = getattr(authority, "target_dataset_names", None)
@@ -245,7 +275,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift before commit")
         artifact_map = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
         expected = FrozenEvaluationAntigravity(reviewed_commit, 16, qualified_count, 1, 48, 72300, tuple(metrics), sha256(canonical_json_bytes_antigravity(artifact_map)).hexdigest(), sha256(canonical_json_bytes_antigravity(decision)).hexdigest(), routing_research_eligible)
-        _publish_antigravity(root, payloads)
+        _publish_antigravity(root, payloads, expected_prediction_authority)
         return expected
     except BaseException as error:
         if session is not None and opened and not closed:

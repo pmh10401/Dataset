@@ -11,18 +11,55 @@ from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_a
 
 
 class ReplayAntigravityTests(unittest.TestCase):
+    def _trusted_authority_antigravity(self):
+        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import capture_prediction_authority_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
+        with tempfile.TemporaryDirectory(prefix="exp449_trusted_authority_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "unused_antigravity")
+            return capture_prediction_authority_antigravity(dependencies.frozen_predictions_antigravity(), dependencies.authority)
+
     def _publication_antigravity(self, directory: str):
         from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
         from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
         dependencies = _DependenciesAntigravity(Path(directory) / "publication_antigravity")
         return _evaluate_with_dependencies_antigravity("a" * 40, dependencies), dependencies.root
 
+    def test_replay_requires_independent_prediction_authority_for_fully_propagated_alternative_antigravity(self) -> None:
+        """Changing the trusted Task-5 rows must reject even a new internally coherent publication."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import capture_prediction_authority_antigravity, inspect_replay_at_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
+
+        class AlternatePredictionsAntigravity(_DependenciesAntigravity):
+            def frozen_predictions_antigravity(self) -> tuple[dict[str, object], ...]:
+                rows = [dict(row) for row in super().frozen_predictions_antigravity()]
+                for row in rows:
+                    row["indices"] = [40, 41]
+                return tuple(rows)
+
+        with tempfile.TemporaryDirectory(prefix="exp449_replay_independent_authority_antigravity_") as temporary:
+            trusted = _DependenciesAntigravity(Path(temporary) / "trusted_publication_antigravity")
+            expected_authority = capture_prediction_authority_antigravity(
+                trusted.frozen_predictions_antigravity(), trusted.authority,
+            )
+            alternate = AlternatePredictionsAntigravity(Path(temporary) / "alternate_publication_antigravity")
+            alternate_authority = capture_prediction_authority_antigravity(
+                alternate.frozen_predictions_antigravity(), alternate.authority,
+            )
+            alternate_result = _evaluate_with_dependencies_antigravity("a" * 40, alternate)
+            # This is what the former publication-self-trusting replay accepted.
+            self.assertEqual(inspect_replay_at_antigravity(alternate.root, expected_prediction_authority=alternate_authority), alternate_result)
+            with self.assertRaisesRegex(ValueError, "trusted prediction authority differs"):
+                inspect_replay_at_antigravity(alternate.root, expected_prediction_authority=expected_authority)
+            genuine_result = _evaluate_with_dependencies_antigravity("a" * 40, trusted)
+            self.assertEqual(inspect_replay_at_antigravity(trusted.root, expected_prediction_authority=expected_authority), genuine_result)
+
     def test_replay_matches_evaluation_without_source_modules_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
 
         with tempfile.TemporaryDirectory(prefix="exp449_replay_antigravity_") as temporary:
             expected, root = self._publication_antigravity(temporary)
-            self.assertEqual(inspect_replay_at_antigravity(root), expected)
+            self.assertEqual(inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity()), expected)
 
     def test_replay_rejects_rehashed_semantic_and_canonical_attacks_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
@@ -46,7 +83,7 @@ class ReplayAntigravityTests(unittest.TestCase):
                 hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text())
                 hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
                 (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
-                with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+                with self.assertRaises(ValueError): inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
 
     def test_replay_rejects_extra_and_symlink_leaf_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
@@ -54,7 +91,7 @@ class ReplayAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_replay_namespace_antigravity_") as temporary:
             _expected, root = self._publication_antigravity(temporary)
             (root / "extra_antigravity.json").write_bytes(b"{}\n")
-            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
 
     def test_replay_rejects_rehashed_prediction_and_bootstrap_content_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
@@ -77,7 +114,7 @@ class ReplayAntigravityTests(unittest.TestCase):
                 for changed in (path, *( (root / "prediction_manifest_antigravity.json",) if mutate == "prediction" else ())):
                     hashes[changed.name] = hashlib.sha256(changed.read_bytes()).hexdigest()
                 (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
-                with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+                with self.assertRaises(ValueError): inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
 
     def test_replay_rejects_self_consistent_prediction_identity_rehash_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
@@ -94,7 +131,7 @@ class ReplayAntigravityTests(unittest.TestCase):
             hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text())
             for changed in (predictions_path, context_path, evaluation_path, manifest_path): hashes[changed.name] = hashlib.sha256(changed.read_bytes()).hexdigest()
             (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
-            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
 
     def test_replay_rejects_self_consistent_bootstrap_matrix_rehash_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.bootstrap_antigravity import paired_delta_antigravity
@@ -107,12 +144,12 @@ class ReplayAntigravityTests(unittest.TestCase):
             replacement = paired_delta_antigravity(np.asarray(row["baseline_dataset_confusions"], dtype=np.int64), np.asarray(row["candidate_dataset_confusions"], dtype=np.int64))
             row.update(replacement); path.write_bytes(canonical_json_bytes_antigravity(bootstrap))
             hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text()); hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest(); (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
-            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
         with tempfile.TemporaryDirectory(prefix="exp449_replay_symlink_antigravity_") as temporary:
             _expected, root = self._publication_antigravity(temporary)
             target = root / "context_antigravity.json"; replacement = root / "replacement_antigravity.json"
             replacement.write_bytes(target.read_bytes()); target.unlink(); target.symlink_to(replacement.name)
-            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+            with self.assertRaises(ValueError): inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
 
 
 if __name__ == "__main__":

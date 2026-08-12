@@ -184,15 +184,91 @@ class EvaluationAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_postpublication_replay_antigravity_") as temporary:
             dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
             original, calls = module.inspect_replay_at_antigravity, 0
-            def fail_after_staging(root: Path):
+            def fail_after_staging(root: Path, **_kwargs: object):
                 nonlocal calls
                 calls += 1
                 if calls > 1: raise OSError("post publication replay")
-                return original(root)
+                return original(root, **_kwargs)
             with patch.object(module, "inspect_replay_at_antigravity", side_effect=fail_after_staging), self.assertRaisesRegex(OSError, "post publication replay"):
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             self.assertEqual(calls, 2); self.assertFalse(dependencies.root.exists())
+            self.assertEqual(len(list(Path(temporary).glob(".publication_antigravity.forensic_*_antigravity"))), 1)
+            self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_postpublication_failure_uses_unique_forensic_name_when_old_name_is_occupied_antigravity(self) -> None:
+        """A stale forensic name cannot leave the committed inode at the canonical name."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_forensic_collision_antigravity_") as temporary:
+            root = Path(temporary) / "publication_antigravity"
+            (Path(temporary) / ".publication_antigravity.forensic_antigravity").mkdir()
+            dependencies = _DependenciesAntigravity(root)
+            original, calls = module.inspect_replay_at_antigravity, 0
+            def fail_after_private_replay(path: Path, **_kwargs: object):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("post publication replay")
+                return original(path, **_kwargs)
+            with patch.object(module, "inspect_replay_at_antigravity", side_effect=fail_after_private_replay), self.assertRaisesRegex(OSError, "post publication replay"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertFalse(root.exists())
             self.assertTrue((Path(temporary) / ".publication_antigravity.forensic_antigravity").is_dir())
+            self.assertEqual(len(list(Path(temporary).glob(".publication_antigravity.forensic_*_antigravity"))), 1)
+            self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_name_swap_after_exclusive_rename_never_quarantines_attacker_root_antigravity(self) -> None:
+        """The retained staging descriptor, rather than a post-rename path stat, identifies the root."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_name_swap_antigravity_") as temporary:
+            root, retained = Path(temporary) / "publication_antigravity", Path(temporary) / "retained_expected_antigravity"
+            dependencies = _DependenciesAntigravity(root)
+            original_rename, original_replay, calls = module._rename_no_replace_antigravity, module.inspect_replay_at_antigravity, 0
+            def rename_then_swap(staging: Path, destination: Path) -> None:
+                original_rename(staging, destination)
+                destination.rename(retained)
+                destination.mkdir(); (destination / "attacker_antigravity").write_text("attacker")
+            def fail_after_private_replay(path: Path, **kwargs: object):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("post publication replay")
+                return original_replay(path, **kwargs)
+            with patch.object(module, "_rename_no_replace_antigravity", side_effect=rename_then_swap), patch.object(module, "inspect_replay_at_antigravity", side_effect=fail_after_private_replay), self.assertRaisesRegex(ValueError, "identity differs after commit") as raised:
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual({path.name for path in root.iterdir()}, {"attacker_antigravity"})
+            self.assertTrue(retained.is_dir())
+            self.assertIn("publication_rollback_error=ValueError: canonical publication was replaced before quarantine", "\n".join(raised.exception.__notes__))
+            self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_cleanup_primitive_failure_after_name_swap_retains_primary_error_antigravity(self) -> None:
+        """A cleanup syscall race cannot move an attacker object or mask the post-publication error."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_cleanup_swap_antigravity_") as temporary:
+            root, retained = Path(temporary) / "publication_antigravity", Path(temporary) / "retained_expected_antigravity"
+            dependencies = _DependenciesAntigravity(root)
+            original_replay, original_rename_at, calls, rename_calls = module.inspect_replay_at_antigravity, module._rename_no_replace_at_antigravity, 0, 0
+            def replay_then_fail(path: Path, **kwargs: object):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("post publication primary")
+                return original_replay(path, **kwargs)
+            def swap_then_fail(parent_fd: int, source: str, destination: str) -> None:
+                nonlocal rename_calls
+                rename_calls += 1
+                if rename_calls == 2:
+                    root.rename(retained)
+                    root.mkdir(); (root / "attacker_antigravity").write_text("attacker")
+                    raise OSError("cleanup primitive")
+                original_rename_at(parent_fd, source, destination)
+            with patch.object(module, "inspect_replay_at_antigravity", side_effect=replay_then_fail), patch.object(module, "_rename_no_replace_at_antigravity", side_effect=swap_then_fail), self.assertRaisesRegex(OSError, "post publication primary") as raised:
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual({path.name for path in root.iterdir()}, {"attacker_antigravity"})
+            self.assertTrue(retained.is_dir())
+            self.assertIn("publication_rollback_error=OSError: cleanup primitive", "\n".join(raised.exception.__notes__))
             self.assertTrue(dependencies.audit_path.is_file())
 
     def test_quarantine_failure_retains_primary_error_and_never_keeps_expected_root_antigravity(self) -> None:
@@ -201,18 +277,18 @@ class EvaluationAntigravityTests(unittest.TestCase):
             dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
             original_replay, original_rename = module.inspect_replay_at_antigravity, module._rename_no_replace_antigravity
             calls = 0
-            def replay_then_fail(root: Path):
+            def replay_then_fail(root: Path, **_kwargs: object):
                 nonlocal calls
                 calls += 1
                 if calls == 2: raise OSError("post publication primary")
-                return original_replay(root)
+                return original_replay(root, **_kwargs)
             def fail_quarantine(source: Path, destination: Path) -> None:
                 if source == dependencies.root: raise OSError("quarantine primitive")
                 original_rename(source, destination)
             with patch.object(module, "inspect_replay_at_antigravity", side_effect=replay_then_fail), patch.object(module, "_rename_no_replace_antigravity", side_effect=fail_quarantine), self.assertRaisesRegex(OSError, "post publication primary") as raised:
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             self.assertFalse(dependencies.root.exists())
-            self.assertTrue((Path(temporary) / ".publication_antigravity.forensic_antigravity").is_dir())
+            self.assertEqual(len(list(Path(temporary).glob(".publication_antigravity.forensic_*_antigravity"))), 1)
             self.assertTrue(dependencies.audit_path.is_file())
 
     def test_partial_staging_and_audit_write_failure_preserve_primary_truth_antigravity(self) -> None:
