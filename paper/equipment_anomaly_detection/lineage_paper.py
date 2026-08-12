@@ -359,11 +359,13 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     if not isinstance(lock_payload, dict) or set(lock_payload) != _LOCK_FIELDS or lock_payload.get("schema") != "paper-codemap-lock.v1":
         raise ValueError("paper codemap lock schema is invalid")
     hashes = lock_payload.get("hashes")
-    expected_names = {
-        "config_paper.py", "contracts_paper.py", "lineage_paper.py", "lineage_lock_paper.json",
-        "codemap_paper.html", "codemap_paper.json", "hard_route_paper.py",
+    # The lock binds every current paper module (including the sole CLI and its
+    # tests) plus the static provenance inputs.  Adding a module therefore
+    # cannot leave a partially refreshed codemap closure behind.
+    expected_names = set(_paper_module_inventory(root)) | {
+        "lineage_lock_paper.json", "codemap_paper.html", "codemap_paper.json",
         "sources_paper/source_provenance_paper.json", ARTIFACT_PARITY_CLAIM_PATH.name,
-    } | _paper_source_helper_inventory(root)
+    }
     if not isinstance(hashes, dict) or set(hashes) != expected_names or any(type(value) is not str or not re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values()):
         raise ValueError("paper codemap lock hashes are invalid")
     for name, expected in hashes.items():

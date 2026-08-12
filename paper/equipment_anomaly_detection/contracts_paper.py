@@ -30,6 +30,17 @@ def _readonly(values: np.ndarray) -> np.ndarray:
     return values
 
 
+def _deeply_immutable(value: object) -> object:
+    """Detach nested manifest data so public freeze objects have no mutable leaf."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _deeply_immutable(nested) for key, nested in value.items()})
+    if isinstance(value, list):
+        return tuple(_deeply_immutable(nested) for nested in value)
+    if isinstance(value, tuple):
+        return tuple(_deeply_immutable(nested) for nested in value)
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class LineageNode:
     node_id: str
@@ -53,6 +64,52 @@ class FrozenPaperConfig:
     test_row_count: int = 195900
     seed: int = 20260812
     ablation_alert_counts: tuple[int, int, int, int] = (2218, 2248, 2244, 2222)
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenProposalManifest:
+    """Hash-bound, path-free proposal inventory produced by create-only freeze."""
+
+    schema: str
+    limited_for_smoke: bool
+    datasets: tuple[str, ...]
+    test_row_count: int
+    shard_hashes: Mapping[str, str]
+    inventory_sha256: str
+    config_sha256: str
+
+    def __post_init__(self) -> None:
+        hashes = dict(self.shard_hashes)
+        if self.schema != "paper-proposal-manifest.v3" or type(self.limited_for_smoke) is not bool:
+            raise ValueError("proposal manifest schema is invalid")
+        if self.datasets != tuple(sorted(self.datasets)) or not self.datasets or set(hashes) != set(self.datasets):
+            raise ValueError("proposal manifest inventory is invalid")
+        if type(self.test_row_count) is not int or self.test_row_count < 0:
+            raise ValueError("proposal manifest row count is invalid")
+        if any(type(value) is not str or len(value) != 64 for value in (*hashes.values(), self.inventory_sha256, self.config_sha256)):
+            raise ValueError("proposal manifest hashes are invalid")
+        object.__setattr__(self, "shard_hashes", MappingProxyType(hashes))
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenPipelineManifest:
+    """Immutable public summary of a validated fixed-order pipeline state."""
+
+    schema: str
+    config_sha256: str
+    lineage_sha256: str
+    code_sha256: str
+    environment_sha256: str
+    stages: Mapping[str, Mapping[str, object]]
+    last_complete_stage: str | None
+
+    def __post_init__(self) -> None:
+        stages = {name: _deeply_immutable(record) for name, record in dict(self.stages).items()}
+        if self.schema != "paper-pipeline-manifest.v1" or not stages:
+            raise ValueError("pipeline manifest schema is invalid")
+        if any(type(value) is not str or len(value) != 64 for value in (self.config_sha256, self.lineage_sha256, self.code_sha256, self.environment_sha256)):
+            raise ValueError("pipeline manifest hashes are invalid")
+        object.__setattr__(self, "stages", MappingProxyType(stages))
 
 
 @dataclass(frozen=True, slots=True)

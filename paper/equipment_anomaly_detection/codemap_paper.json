@@ -7,6 +7,20 @@
     "source_origins"
   ],
   "modules": {
+    "artifacts_paper.py": {
+      "callers": [
+        "catalog_paper.py",
+        "runner_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "effects": [
+        "validates exact label-free v2 proposal shards, frozen inventories, canonical bytes, and create-only immutable manifests"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "source_origins": []
+    },
     "calibration_paper.py": {
       "callers": [
         "hard_route_paper.py",
@@ -27,6 +41,7 @@
         "data_paper.py",
         "label_access_paper.py",
         "lineage_paper.py",
+        "runner_paper.py",
         "tests_paper/test_config_lineage_paper.py",
         "tests_paper/test_data_boundary_paper.py",
         "tests_paper/test_hard_sources_paper.py"
@@ -43,6 +58,7 @@
     },
     "contracts_paper.py": {
       "callers": [
+        "artifacts_paper.py",
         "calibration_paper.py",
         "config_paper.py",
         "data_paper.py",
@@ -119,6 +135,7 @@
     },
     "label_access_paper.py": {
       "callers": [
+        "runner_paper.py",
         "tests_paper/test_data_boundary_paper.py"
       ],
       "effects": [
@@ -131,6 +148,8 @@
     },
     "lineage_paper.py": {
       "callers": [
+        "artifacts_paper.py",
+        "runner_paper.py",
         "sources_paper/hard_sources_paper.py",
         "tests_paper/test_config_lineage_paper.py",
         "tests_paper/test_hard_sources_paper.py"
@@ -162,6 +181,29 @@
       ],
       "tests": [
         "tests_paper/test_config_lineage_paper.py"
+      ],
+      "source_origins": []
+    },
+    "pipeline_paper.py": {
+      "callers": [],
+      "effects": [
+        "is the sole public run/status/verify entrypoint; status and verify reconstruct immutable journal state without mutation"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "source_origins": []
+    },
+    "runner_paper.py": {
+      "callers": [
+        "pipeline_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "effects": [
+        "derives resume authority from a create-only hash-chained journal and independently reverified typed stage artifact sets; production fails closed at unimplemented stages"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
       ],
       "source_origins": []
     },
@@ -425,6 +467,16 @@
       ],
       "source_origins": []
     },
+    "tests_paper/test_artifacts_runner_paper.py": {
+      "callers": [],
+      "effects": [
+        "adversarially exercises v2 shard domains, inventory/hash tampering, immutable journal chains, complete context identity, parity oracle binding, root symlink safety, and terminal failed roots"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "source_origins": []
+    },
     "tests_paper/test_config_lineage_paper.py": {
       "callers": [],
       "effects": [
@@ -495,6 +547,21 @@
         "tests_paper/test_stability_paper.py"
       ],
       "source_origins": []
+    },
+    "catalog_paper.py": {
+      "callers": [
+        "runner_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "effects": [
+        "builds canonical read-only values-only population catalogs and separately frozen acceptance contracts"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "source_origins": [
+        "data_paper.py"
+      ]
     }
   }
 }
