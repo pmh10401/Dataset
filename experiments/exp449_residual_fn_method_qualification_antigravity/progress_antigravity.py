@@ -98,8 +98,14 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
         _syscall_fault_antigravity(fault_hook, fault_prefix + "cache_create", sequence); _syscall_fault_antigravity(fault_hook, fault_prefix + "open_create", sequence)
         fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=parent_fd)
         try:
+            # `open(O_EXCL)` is already the creation boundary.  Pin the name's
+            # identity before the first fstat so an actual fstat syscall failure
+            # still has a replacement-safe cleanup target.
+            named = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+            created_identity = (named.st_dev, named.st_ino)
             info = os.fstat(fd)
-            created_identity = (info.st_dev, info.st_ino)
+            if (info.st_dev, info.st_ino) != created_identity:
+                raise ValueError("candidate leaf identity changed during creation")
             # The injected failure is deliberately after the real fstat: cleanup now
             # has the exact inode and cannot erase a namespace replacement.
             _syscall_fault_antigravity(fault_hook, fault_prefix + "fstat_create", sequence)

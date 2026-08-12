@@ -22,6 +22,16 @@ class ProgressAntigravityTests(unittest.TestCase):
                     commit_candidate_leaf_antigravity(directory, "000_leaf_antigravity.json", {"sequence": 0}, fault_hook=fault)
                 self.assertFalse((directory / "000_leaf_antigravity.json").exists())
 
+    def test_writer_real_fstat_syscall_failure_after_exclusive_create_removes_only_created_name_antigravity(self) -> None:
+        """Break caught: an actual os.fstat exception after O_EXCL leaves an unverified orphan."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_fstat_syscall_antigravity_") as temporary:
+            directory = Path(temporary); original = progress.os.fstat
+            with patch.object(progress.os, "fstat", side_effect=OSError("actual fstat failure")):
+                with self.assertRaisesRegex(OSError, "actual fstat failure"):
+                    progress.commit_candidate_leaf_antigravity(directory, "000_leaf_antigravity.json", {"sequence": 0})
+            self.assertFalse((directory / "000_leaf_antigravity.json").exists())
+
     def test_writer_does_not_unlink_namespace_replacement_after_verification_fault_antigravity(self) -> None:
         """Break caught: cleanup deleting a replacement object that was not the created inode."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415

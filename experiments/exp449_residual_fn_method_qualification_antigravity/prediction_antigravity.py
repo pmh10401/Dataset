@@ -28,6 +28,15 @@ _LOGICAL_CPUS_ANTIGRAVITY = 12
 _WORKERS_ANTIGRAVITY = 11
 
 
+def _candidate_payload_antigravity(sequence: int, dataset: str, family: str, method: str, indices: list[int], target_length: int, train_count: int, score_identities: list[dict[str, int]]) -> dict[str, object]:
+    """The one canonical worker/fixture candidate representation accepted by validation."""
+    return {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "dataset": dataset,
+            "family": family, "method": method, "indices": indices, "contains_test_labels": False,
+            "target_length": target_length, "train_count": train_count, "test_count": target_length,
+            "seeds": list(FROZEN_CONFIG_ANTIGRAVITY["seeds"]), "score_identities": score_identities,
+            "alpha": 0.005}
+
+
 def _semantic_context_antigravity(reviewed_commit: str, *, source_identity: object, method_audit_sha256: str, mlx: object) -> dict[str, object]:
     """Canonical label-free context that the manifest and descriptor validator both bind."""
     return {
@@ -81,13 +90,7 @@ def _production_worker_antigravity(sequence: int, dataset: str, family: str, met
         raise ValueError("non-finite score")
     indices = [int(index) for index in empirical_candidates(train_median, test_median, 0.005).indices]
     name = f"{dataset}__{method}"
-    return sequence, name, {
-        "sequence": sequence, "candidate_name": name, "family": family, "method": method,
-        "contains_test_labels": False, "target_length": bundle.target_length,
-        "train_count": int(len(bundle.train_normal)), "test_count": int(len(bundle.test_values)),
-        "score_identities": [{"seed": row.seed, "feature_dimension": row.feature_dimension} for row in rows],
-        "indices": indices, "alpha": 0.005,
-    }
+    return sequence, name, _candidate_payload_antigravity(sequence, dataset, family, method, indices, bundle.target_length, int(len(bundle.train_normal)), [{"seed": row.seed, "feature_dimension": row.feature_dimension} for row in rows])
 
 
 def schedule_synthetic_units_antigravity(sequences: tuple[int, ...]) -> tuple[tuple[int, ...], tuple[int, ...], dict[str, int]]:
@@ -123,6 +126,18 @@ def _set_pid_inactive_antigravity(root: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _remove_exact_manifest_antigravity(root: Path, identity: tuple[int, int]) -> None:
+    """Remove only the manifest inode just committed, then persist its namespace change."""
+    parent = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        current = os.stat("prediction_manifest_antigravity.json", dir_fd=parent, follow_symlinks=False)
+        if (current.st_dev, current.st_ino) == identity:
+            os.unlink("prediction_manifest_antigravity.json", dir_fd=parent)
+            os.fsync(parent)
+    finally:
+        os.close(parent)
 
 
 def _assert_terminal_channels_antigravity(root: Path, inventory: tuple[str, ...]) -> None:
@@ -173,7 +188,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
             _fault_antigravity(fault_hook, "predecessor_drift", sequence)
             _fault_antigravity(fault_hook, "before_commit", sequence)
             family = synthetic_families[sequence // 2]; dataset = f"{family}_synthetic_{sequence // 2:03d}"; method = dict(CANDIDATE_MATRIX_ANTIGRAVITY)[family][sequence % 2]
-            payload = {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "dataset": dataset, "family": family, "method": method, "indices": [], "contains_test_labels": False, "target_length": 3, "train_count": 5, "test_count": 3, "seeds": [20260721, 20261721], "score_identities": [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}], "alpha": 0.005}
+            payload = _candidate_payload_antigravity(sequence, dataset, family, method, [], 3, 5, [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}])
             digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], payload, fault_hook=fault_hook, sequence=sequence)
             digests.append(("candidates_antigravity/" + inventory[sequence], digest))
             _fault_antigravity(fault_hook, "after_commit", sequence)
@@ -189,7 +204,13 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         validate_prediction_root_antigravity(root, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
         commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest, fault_hook=fault_hook, sequence=96, fault_prefix="manifest_")
-        validate_prediction_root_antigravity(root, authority)
+        manifest_info = os.stat(root / "prediction_manifest_antigravity.json", follow_symlinks=False)
+        try:
+            _fault_antigravity(fault_hook, "post_manifest_validation", 96)
+            validate_prediction_root_antigravity(root, authority)
+        except BaseException:
+            _remove_exact_manifest_antigravity(root, (manifest_info.st_dev, manifest_info.st_ino))
+            raise
         return authority
     except BaseException as primary_error:
         cleanup_error: BaseException | None = None
@@ -386,6 +407,24 @@ def _revalidate_predecessor_before_commit_antigravity(original: object, capture:
         raise ValueError("Exp448 predecessor drift before candidate commit")
 
 
+def _consume_pending_executor_antigravity(futures: dict[object, int], authority: object, capture: Callable[[], object], commit: Callable[[int, object], None], sequence_of: Callable[[object], int]) -> None:
+    """The sole ProcessPool completion/pending/ordered-commit loop used by production and its private seam."""
+    pending: dict[int, object] = {}
+    next_sequence = 0
+    for future in as_completed(futures):
+        result = future.result()
+        sequence = sequence_of(result)
+        if type(sequence) is not int or sequence not in futures.values() or sequence in pending:
+            raise ValueError("production worker sequence differs")
+        pending[sequence] = result
+        while next_sequence in pending:
+            _revalidate_predecessor_before_commit_antigravity(authority, capture)
+            commit(next_sequence, pending.pop(next_sequence))
+            next_sequence += 1
+    if next_sequence != len(futures):
+        raise RuntimeError("production worker completion did not reach the frozen inventory")
+
+
 def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAntigravity, *, reviewed_commit: str = "synthetic") -> FrozenPredictionAuthorityAntigravity:
     """Run synthetic/test dependencies in frozen sequence, committing only canonical leaves."""
     if type(dependencies) is not PredictionDependenciesAntigravity or type(reviewed_commit) is not str or not reviewed_commit:
@@ -411,7 +450,7 @@ def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAn
             if not np.isfinite(train_median).all() or not np.isfinite(test_median).all():
                 raise ValueError("non-finite score")
             indices = tuple(int(item) for item in empirical_candidates(train_median, test_median, 0.005).indices)
-            payload = {"sequence": unit_sequence, "candidate_name": name, "dataset": dataset, "family": family, "method": method, "indices": list(indices), "contains_test_labels": False, "target_length": int(len(test)), "train_count": int(len(train)), "test_count": int(len(test)), "seeds": list(FROZEN_CONFIG_ANTIGRAVITY["seeds"]), "score_identities": [{"seed": seed, "feature_dimension": int(train.shape[1])} for seed in FROZEN_CONFIG_ANTIGRAVITY["seeds"]], "alpha": 0.005}
+            payload = _candidate_payload_antigravity(unit_sequence, dataset, family, method, list(indices), int(len(test)), int(len(train)), [{"seed": seed, "feature_dimension": int(train.shape[1])} for seed in FROZEN_CONFIG_ANTIGRAVITY["seeds"]])
             digest = commit_candidate_leaf_antigravity(leaves, relative, payload)
             names.append(name)
             inventory.append("candidates_antigravity/" + relative)
@@ -448,24 +487,18 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
         source_identity = {"artifact_map_sha256": predecessor.artifact_map_sha256, "evaluation_sha256": predecessor.evaluation_sha256, "decision_sha256": predecessor.decision_sha256, "target_dataset_names": list(predecessor.target_dataset_names)}
         context = _semantic_context_antigravity(reviewed_commit, source_identity=source_identity, method_audit_sha256=audit_sha256, mlx=mlx_payload)
         initialise_attempt_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, context)
-        pending: dict[int, tuple[str, dict[str, object]]] = {}
         names: list[str] = []
         digests: list[tuple[str, str]] = []
-        next_sequence = 0
         with ProcessPoolExecutor(max_workers=_WORKERS_ANTIGRAVITY) as executor:
             futures = {executor.submit(_production_worker_antigravity, sequence, dataset, family, method): sequence for sequence, (dataset, family, method) in enumerate(jobs)}
-            for future in as_completed(futures):
-                sequence, name, payload = future.result()
-                pending[sequence] = (name, payload)
-                while next_sequence in pending:
-                    item_name, item_payload = pending.pop(next_sequence)
-                    _revalidate_predecessor_before_commit_antigravity(predecessor, capture_exp448_authority_antigravity)
-                    digest = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory[next_sequence], item_payload)
-                    names.append(item_name); digests.append(("candidates_antigravity/" + inventory[next_sequence], digest))
-                    next_sequence += 1
-                    record_verified_progress_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory, next_sequence)
-        if next_sequence != 96:
-            raise RuntimeError("production worker completion did not reach the frozen inventory")
+            def commit(sequence: int, result: object) -> None:
+                item_sequence, item_name, item_payload = result
+                if item_sequence != sequence:
+                    raise ValueError("production worker sequence differs")
+                digest = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory[sequence], item_payload)
+                names.append(item_name); digests.append(("candidates_antigravity/" + inventory[sequence], digest))
+                record_verified_progress_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory, sequence + 1)
+            _consume_pending_executor_antigravity(futures, predecessor, capture_exp448_authority_antigravity, commit, lambda result: result[0])
         _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
         _assert_terminal_channels_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory)
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
@@ -473,7 +506,12 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
         validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
         commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, "prediction_manifest_antigravity.json", manifest)
-        validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
+        manifest_info = os.stat(_OFFICIAL_ROOT_ANTIGRAVITY / "prediction_manifest_antigravity.json", follow_symlinks=False)
+        try:
+            validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
+        except BaseException:
+            _remove_exact_manifest_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, (manifest_info.st_dev, manifest_info.st_ino))
+            raise
         return authority
     except BaseException as primary_error:
         cleanup_error: BaseException | None = None

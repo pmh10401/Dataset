@@ -25,6 +25,29 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_actual_processpool_pending_commit_loop_rejects_predecessor_drift_0_47_95_antigravity(self) -> None:
+        """Break caught: the ProcessPool/as-completed pending loop commits after predecessor drift."""
+        from concurrent.futures import ProcessPoolExecutor
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _consume_pending_executor_antigravity, _synthetic_worker_antigravity  # noqa: PLC0415
+        for drift_at in (0, 47, 95):
+            with self.subTest(drift_at=drift_at):
+                original = ("frozen",); calls = 0; committed: list[int] = []
+                def capture():
+                    nonlocal calls
+                    calls += 1
+                    return ("drift",) if calls == drift_at + 1 else original
+                with ProcessPoolExecutor(max_workers=11) as executor:
+                    futures = {executor.submit(_synthetic_worker_antigravity, item): item for item in range(96)}
+                    with self.assertRaisesRegex(ValueError, "predecessor drift"):
+                        _consume_pending_executor_antigravity(futures, original, capture, lambda sequence, result: committed.append(sequence), lambda result: result)
+                self.assertEqual(committed, list(range(drift_at)))
+    def test_canonical_production_candidate_builder_has_exact_validator_schema_antigravity(self) -> None:
+        """Break caught: a real worker payload omits dataset/seeds or adds unvalidated fields."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _candidate_payload_antigravity  # noqa: PLC0415
+        payload = _candidate_payload_antigravity(0, "Crop_normal_1", "Crop", "minirocket_local_gap", [0, 2], 3, 5, [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}])
+        self.assertEqual(set(payload), {"sequence", "candidate_name", "dataset", "family", "method", "indices", "contains_test_labels", "target_length", "train_count", "test_count", "seeds", "score_identities", "alpha"})
+        self.assertEqual(payload["dataset"], "Crop_normal_1")
+        self.assertEqual(payload["seeds"], [20260721, 20261721])
     def test_manifest_durable_boundary_fault_matrix_leaves_no_manifest_or_authority_antigravity(self) -> None:
         """Break caught: treating a manifest syscall failure as a successful terminal authority."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
@@ -39,6 +62,18 @@ class PredictionAntigravityTests(unittest.TestCase):
                 self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
                 self.assertEqual(len(tuple((root / "candidates_antigravity").iterdir())), 96)
                 self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 96)
+
+    def test_post_manifest_validation_failure_removes_durable_manifest_antigravity(self) -> None:
+        """Break caught: a manifest survives when full post-commit descriptor validation fails."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_post_manifest_antigravity_") as temporary:
+            root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"
+            def fault(tag, sequence):
+                if (tag, sequence) == ("post_manifest_validation", 96): raise ValueError("post manifest invalid")
+            with self.assertRaisesRegex(ValueError, "post manifest invalid"):
+                run_synthetic_lifecycle_antigravity(root, "a" * 40, audit_path=audit, fault_hook=fault)
+            self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+            self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 96)
 
     def test_validator_rejects_exact_context_source_mlx_type_and_rehash_attacks_antigravity(self) -> None:
         """Break caught: accepting rehashed semantic context aliases, bool-as-int, or source order drift."""
