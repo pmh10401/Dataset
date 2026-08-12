@@ -123,8 +123,8 @@ class Exp449GovernanceTest(unittest.TestCase):
             )
         )
 
-    def test_codemap_generator_records_task2_implementation_truth_antigravity(self):
-        """Break caught: regenerated map describes Task 2 as a future boundary after its lifecycle node ships."""
+    def test_codemap_generator_records_task3_implementation_truth_antigravity(self):
+        """Break caught: regenerated map leaves the implemented-for-review Task 3 boundary in the future."""
         from scratch.build_codemap_exp449_antigravity import build_map_antigravity
 
         source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -132,7 +132,7 @@ class Exp449GovernanceTest(unittest.TestCase):
         lifecycle = next(node for node in graph["nodes"] if node["id"] == "receipt_lifecycle")
         self.assertIn("Task-2", lifecycle["role"])
         self.assertIn("implemented", graph["scope"][0])
-        self.assertIn("Task 2 implementation", html)
+        self.assertIn("Task 3 readiness/CLI/launcher is implemented-for-review", html)
 
     def test_planned_truth_and_global_constraints_are_exact_antigravity(self):
         prereg = Path("docs/EXP449_PREREGISTRATION_antigravity_KO.html").read_text(encoding="utf-8")

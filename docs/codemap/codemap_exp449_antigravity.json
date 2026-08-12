@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-13T05:15:00+00:00",
-  "source_parent_commit": "e8a0a6b8adc752f23b7ce753d5673a67e662694b",
+  "generated_at": "2026-08-13T06:00:00+00:00",
+  "source_parent_commit": "3f60be54fa551be4d2695de154477d48b522ad9c",
   "scope": [
-    "Task 1 and Task 2 are implemented and functionally complete on recorded parent evidence; Task 3 readiness/CLI and all official lifecycle, truth, dashboard, and publication actions remain unauthorized."
+    "Task 3 readiness/CLI/launcher is implemented-for-review; all official lifecycle, truth, dashboard, and publication actions remain unauthorized."
   ],
   "topology_note": "The map retains 20 nodes by consolidating prediction progress into the public prediction-authority boundary while retaining its concrete import, progress tests, 96-leaf completion gate, and lifecycle flow. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
   "nodes": [
@@ -241,10 +241,12 @@
     {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Receipt inventory closes its transaction in finally; root walk immediately registers raw child descriptors before post-open validation; absent pins close parent failures after open. Complete precommit closes root and audit in close-all order. Official execution remains closed.",
+      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit, now entered by Task-3 reviewed-map readiness, the exact lazy CLI, and the outside-CWD launcher. Official execution remains closed.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_cli_antigravity.py"
       ],
       "evidence": [
         {
@@ -252,12 +254,16 @@
           "symbol": "def validate_receipt_inventory_antigravity"
         },
         {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "class _RootIdentityTransactionAntigravity"
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/readiness_antigravity.py",
+          "symbol": "def validate_reviewed_map_antigravity"
         },
         {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "class _AbsentPathPinAntigravity"
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/cli_antigravity.py",
+          "symbol": "def main_antigravity"
+        },
+        {
+          "path": "scratch/run_exp449_residual_fn_method_qualification_antigravity.py",
+          "symbol": "AEON_NUM_THREADS"
         }
       ]
     },
@@ -571,7 +577,7 @@
   ],
   "flows": [
     {
-      "trigger": "Completed Task 2 lifecycle boundary",
+      "trigger": "Task 3 closed readiness boundary",
       "steps": [
         "two_root_correction_design",
         "receipt_lifecycle",
@@ -579,7 +585,7 @@
         "task6_evaluation",
         "task6_replay"
       ],
-      "outcome": "Task 2 provides verified receipt/audit mechanics and source-free replay wrappers without authorizing any official command; Task 3 is the next implementation boundary."
+      "outcome": "Task 3 adds reviewed-map readiness, the exact lazy CLI, and the outside-CWD launcher without authorizing an official command."
     },
     {
       "trigger": "Descriptor capture to sole label session",
@@ -604,7 +610,7 @@
     }
   ],
   "unknown_relationships": [
-    "Task 3 same-commit readiness/CLI validation, clean-candidate truth, single-use official commands, and presentation-only dashboard publication remain future plan stages."
+    "Task 4 clean-candidate truth and presentation-only dashboard publication remain future plan stages."
   ],
   "unknowns": [
     "Exp448 locally binds Sites source commit 500ccbe12b07475e51e8cdcbfa8619d9fbdefddb, version 6, and one-account/no-group custom owner ACL; no local dashboard URL exists, dashboard_access remains blocked, and future Task 4 must obtain it only through authenticated metadata reads."
