@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import os
+import stat
 from pathlib import Path
 from typing import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -13,12 +15,31 @@ import numpy as np
 from experiments.exp239_248_diverse_score_sources.calibration import empirical_candidates
 
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY, FROZEN_CONFIG_ANTIGRAVITY
-from .progress_antigravity import commit_candidate_leaf_antigravity
+from .artifacts_antigravity import canonical_json_bytes_antigravity, write_create_only_antigravity
+from .progress_antigravity import (
+    commit_candidate_leaf_antigravity, initialise_attempt_antigravity,
+    record_verified_progress_antigravity, verified_prefix_antigravity,
+    write_failure_audit_antigravity,
+)
 
 
 _OFFICIAL_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812")
 _LOGICAL_CPUS_ANTIGRAVITY = 12
 _WORKERS_ANTIGRAVITY = 11
+
+
+def prepare_attempt_root_antigravity(root: Path) -> None:
+    """Reject every preexisting namespace before a lifecycle can create its attempt root."""
+    if not isinstance(root, Path):
+        raise ValueError("attempt root is invalid")
+    try:
+        info = os.lstat(root)
+    except FileNotFoundError:
+        root.mkdir(mode=0o700)
+        return
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode) or os.listdir(root):
+        raise ValueError("official attempt root already exists or is unsafe")
+    raise ValueError("official attempt root already exists")
 
 
 def _synthetic_worker_antigravity(sequence: int) -> int:
@@ -47,6 +68,60 @@ def schedule_synthetic_units_antigravity(sequences: tuple[int, ...]) -> tuple[tu
     if tuple(ordered) != sequences:
         raise RuntimeError("scheduler did not commit a contiguous frozen prefix")
     return tuple(ordered), tuple(completed), {"logical_cpus": _LOGICAL_CPUS_ANTIGRAVITY, "workers": _WORKERS_ANTIGRAVITY}
+
+
+def _set_pid_inactive_antigravity(root: Path) -> None:
+    """Close the lifecycle marker with a no-follow, durable replacement payload."""
+    path = root / "pid_antigravity.json"
+    payload = canonical_json_bytes_antigravity({"active": False})
+    descriptor = os.open(path, os.O_WRONLY | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        if os.write(descriptor, payload) != len(payload):
+            raise OSError("short PID marker write")
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fail_after_leaf: int | None = None, audit_path: Path | None = None) -> "FrozenPredictionAuthorityAntigravity":
+    """Private test lifecycle with real fixed workers and parent-only ordered durable commits."""
+    if not isinstance(root, Path) or type(reviewed_commit) is not str or len(reviewed_commit) != 40:
+        raise ValueError("synthetic lifecycle inputs are invalid")
+    if fail_after_leaf is not None and (type(fail_after_leaf) is not int or not 0 <= fail_after_leaf < 96):
+        raise ValueError("synthetic failure sequence is invalid")
+    inventory = tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))
+    try:
+        initialise_attempt_antigravity(root, {"schema": "exp449", "reviewed_commit": reviewed_commit, "logical_cpus": _LOGICAL_CPUS_ANTIGRAVITY, "workers": _WORKERS_ANTIGRAVITY, "label_access_count": 0})
+        ordered, _completed, _provenance = schedule_synthetic_units_antigravity(tuple(range(96)))
+        leaves = root / "candidates_antigravity"
+        digests: list[tuple[str, str]] = []
+        for sequence in ordered:
+            digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], {"sequence": sequence, "candidate_name": f"synthetic_{sequence:03d}", "contains_test_labels": False, "scores": {"20260721": [0.0], "20261721": [0.0]}, "alpha": 0.005})
+            digests.append(("candidates_antigravity/" + inventory[sequence], digest))
+            record_verified_progress_antigravity(root, inventory, sequence + 1)
+            if sequence == fail_after_leaf:
+                raise RuntimeError(f"synthetic post-leaf failure exact_next_sequence={sequence + 1}")
+        _set_pid_inactive_antigravity(root)
+        if verified_prefix_antigravity(leaves, inventory) != 96:
+            raise RuntimeError("terminal candidate prefix is incomplete")
+        aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
+        manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "label_access_count": 0, "dataset_units": 96}
+        write_create_only_antigravity(root / "prediction_manifest_antigravity.json", canonical_json_bytes_antigravity(manifest))
+        return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"synthetic_{sequence:03d}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
+    except BaseException as primary_error:
+        cleanup_error: BaseException | None = None
+        try:
+            if root.exists() and (root / "pid_antigravity.json").exists():
+                _set_pid_inactive_antigravity(root)
+        except BaseException as error:
+            cleanup_error = error
+        target_audit = audit_path if audit_path is not None else root.parent / "exp449_failure_audit_antigravity.json"
+        try:
+            prefix = verified_prefix_antigravity(root / "candidates_antigravity", tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))) if (root / "candidates_antigravity").is_dir() else 0
+            write_failure_audit_antigravity(target_audit, primary_error, cleanup_error, exact_next_sequence=prefix)
+        except BaseException as audit_error:
+            raise RuntimeError(f"{primary_error}; failure_audit_error={audit_error}") from primary_error
+        raise
 
 
 @dataclass(frozen=True, slots=True)

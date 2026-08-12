@@ -15,13 +15,14 @@ _ATTEMPT_LEAVES_ANTIGRAVITY = (
 )
 
 
-def write_failure_audit_antigravity(destination: Path, primary_error: BaseException, cleanup_error: BaseException | None) -> None:
+def write_failure_audit_antigravity(destination: Path, primary_error: BaseException, cleanup_error: BaseException | None, *, exact_next_sequence: int | None = None) -> None:
     """Write the independent fallback once, retaining primary and cleanup channel failures."""
-    if not isinstance(destination, Path) or not isinstance(primary_error, BaseException) or (cleanup_error is not None and not isinstance(cleanup_error, BaseException)):
+    if not isinstance(destination, Path) or not isinstance(primary_error, BaseException) or (cleanup_error is not None and not isinstance(cleanup_error, BaseException)) or (exact_next_sequence is not None and (type(exact_next_sequence) is not int or exact_next_sequence < 0)):
         raise ValueError("failure audit inputs are invalid")
     payload = {
         "schema": "exp449_failure_audit", "primary_error": f"{type(primary_error).__name__}: {primary_error}",
         "cleanup_error": None if cleanup_error is None else f"{type(cleanup_error).__name__}: {cleanup_error}",
+        "exact_next_sequence": exact_next_sequence,
     }
     write_create_only_antigravity(destination, canonical_json_bytes_antigravity(payload))
 

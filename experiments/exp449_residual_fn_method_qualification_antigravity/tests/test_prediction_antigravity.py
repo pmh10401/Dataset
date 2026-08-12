@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,6 +21,58 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_attempt_preflight_rejects_existing_partial_and_symlink_roots_antigravity(self) -> None:
+        """Break caught: beginning work in a preexisting, partial, or symlinked attempt root."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import prepare_attempt_root_antigravity  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_antigravity_") as temporary:
+            parent = Path(temporary)
+            partial = parent / "partial"
+            partial.mkdir()
+            (partial / "context_antigravity.json").write_text("{}\n")
+            with self.assertRaises(ValueError):
+                prepare_attempt_root_antigravity(partial)
+            target = parent / "target"
+            target.mkdir()
+            link = parent / "link"
+            link.symlink_to(target, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                prepare_attempt_root_antigravity(link)
+            fresh = parent / "fresh"
+            prepare_attempt_root_antigravity(fresh)
+            self.assertTrue(fresh.is_dir())
+
+    def test_private_lifecycle_commits_exact_prefix_then_audits_next_sequence_antigravity(self) -> None:
+        """Break caught: committing progress ahead of leaves or returning authority after a post-leaf failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_antigravity_") as temporary:
+            parent = Path(temporary)
+            root = parent / "run"
+            audit = parent / "audit_antigravity.json"
+            with self.assertRaisesRegex(RuntimeError, "exact_next_sequence=48"):
+                run_synthetic_lifecycle_antigravity(root, "d" * 40, fail_after_leaf=47, audit_path=audit)
+            leaves = tuple(sorted((root / "candidates_antigravity").glob("*.json")))
+            self.assertEqual(len(leaves), 48)
+            self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 48)
+            self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+            self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+            self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 48)
+
+    def test_private_lifecycle_is_byte_identical_after_real_process_completion_antigravity(self) -> None:
+        """Break caught: allowing out-of-order worker completion to alter durable leaf bytes."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_antigravity_") as temporary:
+            parent = Path(temporary)
+            first = run_synthetic_lifecycle_antigravity(parent / "first", "e" * 40)
+            second = run_synthetic_lifecycle_antigravity(parent / "second", "e" * 40)
+            self.assertEqual(first, second)
+            first_bytes = tuple((parent / "first" / item).read_bytes() for item in first.inventory)
+            second_bytes = tuple((parent / "second" / item).read_bytes() for item in second.inventory)
+            self.assertEqual(first_bytes, second_bytes)
+            self.assertEqual(first.dataset_units, 96)
+
     def test_real_eleven_worker_scheduler_commits_reversed_completion_in_sequence_antigravity(self) -> None:
         """Break caught: allowing ProcessPool completion order to determine leaf order."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
