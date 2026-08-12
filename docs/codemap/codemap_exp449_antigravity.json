@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T14:06:59+00:00",
-  "source_parent_commit": "26d73146288c80a3000653069123c2fa4874c263",
+  "generated_at": "2026-08-12T14:24:32+00:00",
+  "source_parent_commit": "0e06802b00e69190d26fd6d9940680e4a9d9d138",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, and dashboard publication remain unauthorized."
   ],
@@ -452,6 +452,24 @@
       }
     },
     {
+      "from": "receipt_lifecycle",
+      "to": "canonical_artifacts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+        "symbol": "artifacts_antigravity import"
+      }
+    },
+    {
+      "from": "prediction_authority",
+      "to": "score_sources",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
+        "symbol": "empirical_candidates"
+      }
+    },
+    {
       "from": "task6_evaluation",
       "to": "exp448_authority",
       "type": "reads",
@@ -476,6 +494,15 @@
       "evidence": {
         "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
         "symbol": "capture_frozen_prediction_authority_antigravity"
+      }
+    },
+    {
+      "from": "task6_evaluation",
+      "to": "label_free_source",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+        "symbol": "sources_antigravity import"
       }
     },
     {

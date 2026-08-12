@@ -389,7 +389,7 @@ def _evaluate_with_lifecycle_dependencies_antigravity(reviewed_commit: str, capt
         if captured is None:
             raise ValueError("prediction was not descriptor-captured")
         return operation(captured)
-    keywords = {"path_precondition": precondition, "evaluation_root": evaluation_root}
+    keywords = {"path_precondition": precondition, "prediction_root": evaluation_root.parent / "prediction", "evaluation_root": evaluation_root}
     if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
     if audit_path is not None: keywords["audit_path"] = audit_path
     return run_phase_antigravity("evaluate", reviewed_commit, run, **keywords)

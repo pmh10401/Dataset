@@ -1,6 +1,6 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "26d73146288c80a3000653069123c2fa4874c263",
+  "source_parent_commit": "0e06802b00e69190d26fd6d9940680e4a9d9d138",
   "working_tree_dirty": false,
   "represented_paths": [
     "docs/codemap/codemap_exp449_antigravity.html",
@@ -8,14 +8,11 @@
     "docs/codemap/codemap_exp449_antigravity.lock",
     "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
     "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
     "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
     "scratch/build_codemap_exp449_antigravity.py"
   ],
-  "generated_at": "2026-08-12T14:06:59+00:00",
+  "generated_at": "2026-08-12T14:24:32+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -53,10 +50,10 @@
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
     "docs": "47946926654a7d2ccaea225a94f5443f1179dd83b7be8c46c97fcd7e6bca0fef",
-    "experiments": "7e6888bd18be5cd4afc289004e2145a90995f6a6f368deb051a4bfc63ecb1e7d",
+    "experiments": "9f4b942f02d9cbd534afad8e009c2291fa4fcc6a05a26178e57377734f8a727d",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "17301c4071febca20398ef3ad068eb46bd7e69cbd653bab6ba8d8bef6492ec83",
+    "scratch": "5aa50c0ed576b1beb0102be34a68aee0995af64cb2068f69012c36efa92107b0",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
