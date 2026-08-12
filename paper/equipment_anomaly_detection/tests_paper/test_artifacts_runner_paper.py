@@ -6,6 +6,7 @@ import json, sqlite3, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace
 import sys
+from unittest.mock import patch
 
 import numpy as np
 
@@ -154,7 +155,16 @@ class Task9AccelerationTests(unittest.TestCase):
     def test_historical_acceleration_manifest_does_not_reprobe_another_interpreter(self):
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest, verify_acceleration_manifest
         manifest = build_acceleration_manifest("b" * 64, logical_cpu_count=12)
-        self.assertEqual(verify_acceleration_manifest(manifest, "b" * 64), manifest)
+        with patch("paper.equipment_anomaly_detection.acceleration_paper._backends", side_effect=AssertionError("ambient backend reprobe")):
+            self.assertEqual(verify_acceleration_manifest(manifest, "b" * 64), manifest)
+
+    def test_acceleration_assessment_hash_rejects_any_unhashed_field_mutation(self):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest, verify_acceleration_manifest
+        manifest = build_acceleration_manifest("d" * 64, logical_cpu_count=12)
+        forged = json.loads(json.dumps(manifest))
+        forged["fallback_reason"] = "forged"
+        with self.assertRaisesRegex(ValueError, "acceleration artifact assessment hash differs"):
+            verify_acceleration_manifest(forged, "d" * 64)
 
     def test_acceleration_resume_reports_interpreter_identity_mismatch(self):
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest, verify_acceleration_manifest
