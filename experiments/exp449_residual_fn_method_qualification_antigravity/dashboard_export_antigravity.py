@@ -10,7 +10,8 @@ STATUS_FIELDS_ANTIGRAVITY = (
     "target_family_count", "candidate_pair_count", "dataset_unit_total",
     "dataset_unit_completed", "method_family", "backend", "label_access_started",
 )
-_SENSITIVE_ANTIGRAVITY = frozenset({"dataset", "instance_index", "sha256", "path", "log", "database", "label", "labels", "sql"})
+_SENSITIVE_ANTIGRAVITY = frozenset({"dataset", "instance_index", "sha256", "path", "log", "database", "label", "labels", "raw_labels", "sql", "checkpoint", "secret", "audit"})
+_RESULT_FIELDS_ANTIGRAVITY = ("schema", "experiment", "baseline", "candidates", "families", "status", "runtime")
 
 
 def _safe_antigravity(value: object) -> bool:
@@ -39,3 +40,23 @@ def public_status_antigravity(snapshot: Mapping[str, object]) -> Mapping[str, ob
 def snapshot_status_antigravity(**values: object) -> Mapping[str, object]:
     """Validate the controller's local aggregate before its owner-only projection."""
     return public_status_antigravity(values)
+
+
+def public_result_antigravity(result: Mapping[str, object]) -> Mapping[str, object]:
+    """Project only aggregate Task-6 truth; reject all raw, identifier, and operational material."""
+    if not isinstance(result, Mapping) or set(result) != set(_RESULT_FIELDS_ANTIGRAVITY) or not _safe_antigravity(result):
+        raise ValueError("public result is invalid or sensitive")
+    if result["schema"] != "exp449.public-method-qualification.v1" or result["experiment"] != "Exp449" or type(result["status"]) is not str:
+        raise ValueError("public result identity differs")
+    def counts(value: object) -> bool:
+        return isinstance(value, Mapping) and set(value) == {"tp", "fp", "fn", "tn", "f1"} and all(type(value[key]) is int and value[key] >= 0 for key in ("tp", "fp", "fn", "tn")) and type(value["f1"]) is float
+    allowed_families = tuple(("Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves"))
+    allowed_methods = {family: methods for family, methods in (("Crop", ("minirocket_local_gap", "multirocket_local_gap")), ("ElectricDevices", ("multirocket_local_gap", "hydra_multirocket_local_gap")), ("FordA", ("minirocket_local_gap", "hydra_local_gap")), ("FordB", ("multirocket_local_gap", "hydra_local_gap")), ("Yoga", ("multirocket_local_gap", "hydra_multirocket_local_gap")), ("ECG5000", ("multirocket_local_gap", "hydra_local_gap")), ("ChlorineConcentration", ("minirocket_local_gap", "multirocket_local_gap")), ("StarLightCurves", ("multirocket_local_gap", "hydra_local_gap")))}
+    if not counts(result["baseline"]) or type(result["families"]) is not list or tuple(result["families"]) != allowed_families:
+        raise ValueError("public aggregate baseline differs")
+    if type(result["candidates"]) is not list or any(not isinstance(item, Mapping) or set(item) != {"family", "method", "qualified", "global"} or item["family"] not in allowed_methods or item["method"] not in allowed_methods[item["family"]] or type(item["qualified"]) is not bool or not counts(item["global"]) for item in result["candidates"]):
+        raise ValueError("public candidate aggregate differs")
+    runtime = result["runtime"]
+    if not isinstance(runtime, Mapping) or runtime != {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}:
+        raise ValueError("public runtime aggregate differs")
+    return {key: result[key] for key in _RESULT_FIELDS_ANTIGRAVITY}

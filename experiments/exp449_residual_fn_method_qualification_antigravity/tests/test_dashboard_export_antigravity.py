@@ -5,6 +5,19 @@ import unittest
 
 
 class DashboardExportAntigravityTests(unittest.TestCase):
+    def test_public_result_exposes_aggregate_only_allowlist_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity.dashboard_export_antigravity import public_result_antigravity
+
+        payload = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935}, "candidates": [{"family": "Crop", "method": "minirocket_local_gap", "qualified": True, "global": {"tp": 1978, "fp": 314, "fn": 1940, "tn": 191668, "f1": 0.6409062885}}], "families": ["Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves"], "status": "synthetic_complete", "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
+        self.assertEqual(public_result_antigravity(payload), payload)
+
+    def test_public_result_rejects_forbidden_or_unallowlisted_nested_fields_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity.dashboard_export_antigravity import public_result_antigravity
+
+        valid = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935}, "candidates": [], "families": ["Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves"], "status": "synthetic_complete", "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
+        for mutation in ({"dataset": "Crop_normal_1"}, {"candidates": [{"family": "Crop", "raw_labels": [1]}]}, {"runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300, "path": "/tmp"}}):
+            candidate = dict(valid); candidate.update(mutation)
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError): public_result_antigravity(candidate)
     def test_public_status_returns_exact_twelve_allowlisted_fields_antigravity(self) -> None:
         """Break caught: leaking implementation details or omitting a local status field."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.dashboard_export_antigravity import (  # noqa: PLC0415
