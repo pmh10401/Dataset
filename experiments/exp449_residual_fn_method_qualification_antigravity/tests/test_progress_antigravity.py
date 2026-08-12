@@ -8,6 +8,19 @@ from pathlib import Path
 
 
 class ProgressAntigravityTests(unittest.TestCase):
+    def test_failure_audit_is_independent_create_only_fallback_antigravity(self) -> None:
+        """Break caught: losing the primary failure when run-root channels cannot be written."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import write_failure_audit_antigravity  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
+            audit = Path(temporary) / "failure_antigravity.json"
+            write_failure_audit_antigravity(audit, ValueError("progress write failed"), OSError("pid close failed"))
+            payload = json.loads(audit.read_text())
+            self.assertEqual(payload["primary_error"], "ValueError: progress write failed")
+            self.assertEqual(payload["cleanup_error"], "OSError: pid close failed")
+            with self.assertRaises(FileExistsError):
+                write_failure_audit_antigravity(audit, RuntimeError("replacement"), None)
+
     def test_attempt_channels_advance_only_after_verified_prefix_antigravity(self) -> None:
         """Break caught: reporting progress before the candidate leaf is durably committed."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415

@@ -15,6 +15,17 @@ _ATTEMPT_LEAVES_ANTIGRAVITY = (
 )
 
 
+def write_failure_audit_antigravity(destination: Path, primary_error: BaseException, cleanup_error: BaseException | None) -> None:
+    """Write the independent fallback once, retaining primary and cleanup channel failures."""
+    if not isinstance(destination, Path) or not isinstance(primary_error, BaseException) or (cleanup_error is not None and not isinstance(cleanup_error, BaseException)):
+        raise ValueError("failure audit inputs are invalid")
+    payload = {
+        "schema": "exp449_failure_audit", "primary_error": f"{type(primary_error).__name__}: {primary_error}",
+        "cleanup_error": None if cleanup_error is None else f"{type(cleanup_error).__name__}: {cleanup_error}",
+    }
+    write_create_only_antigravity(destination, canonical_json_bytes_antigravity(payload))
+
+
 def initialise_attempt_antigravity(root: Path, context: object) -> None:
     """Create the exact non-terminal attempt namespace without an authority manifest."""
     if not isinstance(root, Path) or (root.exists() and any(root.iterdir())):
