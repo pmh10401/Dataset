@@ -27,6 +27,7 @@ _LEAVES_ANTIGRAVITY = (
     "decision_antigravity.json", "dashboard_snapshot_antigravity.json", "artifact_sha256_antigravity.json",
 )
 _OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_evaluation_antigravity_20260812")
+_OFFICIAL_PREDICTION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812")
 _OFFICIAL_AUDIT_PATH_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json")
 
 
@@ -356,12 +357,13 @@ def evaluate_antigravity(reviewed_commit: str) -> FrozenEvaluationAntigravity:
     """Receipt-gated production evaluation with one closure-private label session."""
     if type(reviewed_commit) is not str or len(reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in reviewed_commit):
         raise ValueError("reviewed commit is invalid")
-    from .lifecycle_antigravity import run_phase_antigravity
-    from .predecessor_antigravity import capture_exp448_authority_antigravity
     from .prediction_antigravity import capture_frozen_prediction_authority_antigravity
-    from .sources_antigravity import open_test_labels_once_antigravity
 
     def operation(captured_prediction) -> FrozenEvaluationAntigravity:
+        # This import is label-capable: lifecycle must have persisted
+        # evaluate_started before SQLite can be imported or reached.
+        from .predecessor_antigravity import capture_exp448_authority_antigravity
+        from .sources_antigravity import open_test_labels_once_antigravity
         dependencies = SimpleNamespace(
             root=_OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY,
             audit_path=_OFFICIAL_AUDIT_PATH_ANTIGRAVITY,
@@ -389,7 +391,7 @@ def _evaluate_with_lifecycle_dependencies_antigravity(reviewed_commit: str, capt
         if captured is None:
             raise ValueError("prediction was not descriptor-captured")
         return operation(captured)
-    keywords = {"path_precondition": precondition, "prediction_root": evaluation_root.parent / "prediction", "evaluation_root": evaluation_root}
+    keywords = {"path_precondition": precondition, "prediction_root": _OFFICIAL_PREDICTION_ROOT_ANTIGRAVITY if receipt_dir is None else evaluation_root.parent / "prediction", "evaluation_root": evaluation_root}
     if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
     if audit_path is not None: keywords["audit_path"] = audit_path
     return run_phase_antigravity("evaluate", reviewed_commit, run, **keywords)

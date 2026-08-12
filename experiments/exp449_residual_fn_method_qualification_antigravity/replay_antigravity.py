@@ -366,7 +366,8 @@ def _inspect_with_dependencies_antigravity(receipt_commit, capture_prediction, r
         if prediction.authority.reviewed_commit != reviewed_commit:
             raise ValueError("prediction reviewed commit differs")
         return replay(evaluation_root, prediction)
-    keywords = {"path_precondition": precondition, "prediction_root": evaluation_root.parent / "prediction", "evaluation_root": evaluation_root}
+    prediction_root = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812") if receipt_dir is None else evaluation_root.parent / "prediction"
+    keywords = {"path_precondition": precondition, "prediction_root": prediction_root, "evaluation_root": evaluation_root}
     if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
     if audit_path is not None: keywords["audit_path"] = audit_path
     return run_phase_antigravity("inspect", reviewed_commit, operation, **keywords)

@@ -106,8 +106,8 @@ class ReceiptClassificationAntigravity:
             raise ValueError("receipt classification is invalid")
 
 
-class _ReceiptTransactionAntigravity:
-    """One retained parent/receipt descriptor transaction for classify, append, and revalidation."""
+class _LifecycleTransactionAntigravity:
+    """One command-wide pinned receipt namespace; it is never pathname-reopened."""
     __slots__ = ("path", "parent_fd", "directory_fd", "directory_identity", "leaves", "classification")
 
     def __init__(self, path: Path, *, create_s0: bool) -> None:
@@ -130,9 +130,9 @@ class _ReceiptTransactionAntigravity:
                 raise ValueError("receipt directory is unsafe")
             self.directory_fd = os.open(path.name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=self.parent_fd)
             opened = os.fstat(self.directory_fd)
-            if (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
+            if _namespace_identity_antigravity(opened) != _namespace_identity_antigravity(info):
                 raise ValueError("receipt directory was replaced")
-            self.directory_identity = (opened.st_dev, opened.st_ino)
+            self.directory_identity = _namespace_identity_antigravity(opened)
             self.classification = self._classify()
         except BaseException:
             self.close(None); raise
@@ -149,7 +149,7 @@ class _ReceiptTransactionAntigravity:
         previous = None; reviewed = None
         for ordinal, name in enumerate(success):
             fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=self.directory_fd)
-            info = os.fstat(fd); identity = (info.st_dev, info.st_ino)
+            info = os.fstat(fd); identity = _namespace_identity_antigravity(info)
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1: raise ValueError("receipt leaf is unsafe")
             payload = b"".join(iter(lambda: os.read(fd, 1 << 20), b"")); receipt = _receipt_from_bytes_antigravity(payload)
             if (receipt.phase, receipt.event) != _LEAF_EVENTS_ANTIGRAVITY[ordinal] or receipt.permanent_stop or receipt.ordinal != ordinal or receipt.previous_leaf_sha256 != previous:
@@ -165,7 +165,7 @@ class _ReceiptTransactionAntigravity:
             self.leaves.append((name, fd, identity, payload, receipt)); previous = hashlib.sha256(payload).hexdigest()
         if stopped:
             fd = os.open(_STOPPED_LEAF_ANTIGRAVITY, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=self.directory_fd)
-            info = os.fstat(fd); identity = (info.st_dev, info.st_ino); payload = b"".join(iter(lambda: os.read(fd, 1 << 20), b"")); receipt = _receipt_from_bytes_antigravity(payload)
+            info = os.fstat(fd); identity = _namespace_identity_antigravity(info); payload = b"".join(iter(lambda: os.read(fd, 1 << 20), b"")); receipt = _receipt_from_bytes_antigravity(payload)
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or receipt.event != "stopped" or not receipt.permanent_stop or receipt.ordinal != len(success) or receipt.previous_leaf_sha256 != previous or (reviewed is not None and receipt.reviewed_commit != reviewed):
                 raise ValueError("terminal receipt differs")
             self.leaves.append((_STOPPED_LEAF_ANTIGRAVITY, fd, identity, payload, receipt)); return ReceiptClassificationAntigravity("STOPPED", True, False, None, receipt.reviewed_commit, hashlib.sha256(payload).hexdigest())
@@ -175,32 +175,40 @@ class _ReceiptTransactionAntigravity:
         if self.directory_fd < 0: return
         retained = os.fstat(self.directory_fd)
         current = os.stat(self.path.name, dir_fd=self.parent_fd, follow_symlinks=False)
-        if (retained.st_dev, retained.st_ino) != self.directory_identity or (current.st_dev, current.st_ino) != self.directory_identity:
+        if _namespace_identity_antigravity(retained) != self.directory_identity or _namespace_identity_antigravity(current) != self.directory_identity:
             raise ValueError("receipt directory was rebound")
         if set(os.listdir(self.directory_fd)) != {item[0] for item in self.leaves}:
             raise ValueError("receipt inventory changed during transaction")
         for name, fd, identity, payload, _receipt in self.leaves:
             info = os.fstat(fd); current = os.stat(name, dir_fd=self.directory_fd, follow_symlinks=False)
-            if (info.st_dev, info.st_ino) != identity or (current.st_dev, current.st_ino) != identity:
+            if _namespace_identity_antigravity(info) != identity or _namespace_identity_antigravity(current) != identity:
                 raise ValueError("receipt leaf was replaced")
             os.lseek(fd, 0, os.SEEK_SET)
             if b"".join(iter(lambda: os.read(fd, 1 << 20), b"")) != payload:
                 raise ValueError("receipt leaf changed")
 
     def close(self, primary: BaseException | None) -> None:
+        first: BaseException | None = None
         for _name, fd, _identity, _payload, _receipt in reversed(self.leaves):
             try: os.close(fd)
             except BaseException as error:
                 if primary is not None: primary.add_note(f"receipt_leaf_close_error={type(error).__name__}: {error}")
-                else: raise
+                elif first is None: first = error
         self.leaves.clear()
         for descriptor in (self.directory_fd, self.parent_fd):
             if descriptor >= 0:
                 try: os.close(descriptor)
                 except BaseException as error:
                     if primary is not None: primary.add_note(f"receipt_directory_close_error={type(error).__name__}: {error}")
-                    else: raise
+                    elif first is None: first = error
         self.directory_fd = self.parent_fd = -1
+        if primary is None and first is not None:
+            raise first
+
+
+# Compatibility alias for existing synthetic tests; command code uses the explicit
+# lifecycle name so the ownership boundary is visible at each public phase.
+_ReceiptTransactionAntigravity = _LifecycleTransactionAntigravity
 
 
 def _receipt_from_bytes_antigravity(payload: bytes) -> LifecycleReceiptAntigravity:
@@ -226,74 +234,44 @@ def _read_leaf_antigravity(directory_fd: int, name: str) -> tuple[bytes, tuple[i
         os.close(descriptor)
 
 
-def validate_receipt_inventory_antigravity(receipt_dir: Path = _RECEIPT_DIR_ANTIGRAVITY) -> ReceiptClassificationAntigravity:
+def _validate_bound_root_identities_antigravity(
+    transaction: _LifecycleTransactionAntigravity, prediction_root: Path, evaluation_root: Path,
+) -> None:
+    """Bind every recorded non-null root digest to current descriptor-captured bytes."""
+    prediction = _RootIdentityTransactionAntigravity(prediction_root)
+    evaluation = _RootIdentityTransactionAntigravity(evaluation_root)
+    primary: BaseException | None = None
+    try:
+        for _name, _fd, _identity, _payload, receipt in transaction.leaves:
+            if receipt.prediction_root_identity is not None and receipt.prediction_root_identity != prediction.identity:
+                raise ValueError("prediction root identity differs from receipt chain")
+            if receipt.evaluation_root_identity is not None and receipt.evaluation_root_identity != evaluation.identity:
+                raise ValueError("evaluation root identity differs from receipt chain")
+        prediction.end_validate(); evaluation.end_validate()
+    except BaseException as error:
+        primary = error
+        raise
+    finally:
+        prediction.close(primary); evaluation.close(primary)
+
+
+def validate_receipt_inventory_antigravity(receipt_dir: Path = _RECEIPT_DIR_ANTIGRAVITY, *, prediction_root: Path | None = None, evaluation_root: Path | None = None) -> ReceiptClassificationAntigravity:
     """Classify the complete receipt namespace without treating pathname shape as authority."""
     if not isinstance(receipt_dir, Path):
         raise ValueError("receipt directory must be a Path")
     try:
-        transaction = _ReceiptTransactionAntigravity(receipt_dir, create_s0=False)
+        transaction = _LifecycleTransactionAntigravity(receipt_dir, create_s0=False)
         result = transaction.classification
         transaction.end_validate()
+        if (prediction_root is None) != (evaluation_root is None):
+            raise ValueError("root identity validation requires both roots")
+        if prediction_root is not None and evaluation_root is not None:
+            _validate_bound_root_identities_antigravity(transaction, prediction_root, evaluation_root)
         transaction.close(None)
         if result is None: raise ValueError("receipt transaction did not classify")
         return result
     except BaseException as error:
         return ReceiptClassificationAntigravity("INVALID", False, True, f"{type(error).__name__}: {error}")
-    # Historical path-based implementation retained below only for source
-    # archaeology; every caller returns through the retained transaction above.
-    try:
-        info = os.lstat(receipt_dir)
-    except FileNotFoundError:
-        return ReceiptClassificationAntigravity("S0", False, False, None)
-    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
-        return ReceiptClassificationAntigravity("INVALID", False, True, "receipt directory is unsafe")
-    try:
-        directory_fd = os.open(receipt_dir, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
-        try:
-            opened = os.fstat(directory_fd)
-            if (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
-                raise ValueError("receipt directory was replaced")
-            names = set(os.listdir(directory_fd))
-            stopped = _STOPPED_LEAF_ANTIGRAVITY in names
-            success = [name for name in _SUCCESS_LEAVES_ANTIGRAVITY if name in names]
-            expected_names = set(success) | ({_STOPPED_LEAF_ANTIGRAVITY} if stopped else set())
-            if names != expected_names or success != list(_SUCCESS_LEAVES_ANTIGRAVITY[:len(success)]):
-                raise ValueError("receipt inventory is not a contiguous prefix")
-            if not success and not stopped:
-                raise ValueError("receipt directory is an invalid empty namespace")
-            previous: str | None = None
-            reviewed: str | None = None
-            ordinal = 0
-            for index, name in enumerate(success):
-                payload, _identity = _read_leaf_antigravity(directory_fd, name)
-                receipt = _receipt_from_bytes_antigravity(payload)
-                if ((receipt.phase, receipt.event) != _LEAF_EVENTS_ANTIGRAVITY[index] or receipt.permanent_stop
-                        or receipt.ordinal != ordinal or receipt.previous_leaf_sha256 != previous):
-                    raise ValueError("receipt transition differs")
-                reviewed = receipt.reviewed_commit if reviewed is None else reviewed
-                if receipt.reviewed_commit != reviewed:
-                    raise ValueError("receipt reviewed commit differs")
-                previous = hashlib.sha256(payload).hexdigest(); ordinal += 1
-            if stopped:
-                payload, _identity = _read_leaf_antigravity(directory_fd, _STOPPED_LEAF_ANTIGRAVITY)
-                receipt = _receipt_from_bytes_antigravity(payload)
-                if (receipt.event != "stopped" or not receipt.permanent_stop or receipt.ordinal != ordinal
-                        or receipt.previous_leaf_sha256 != previous or (reviewed is not None and receipt.reviewed_commit != reviewed)):
-                    raise ValueError("terminal receipt differs")
-                current_root = os.stat(receipt_dir, follow_symlinks=False)
-                if (current_root.st_dev, current_root.st_ino) != (opened.st_dev, opened.st_ino) or set(os.listdir(directory_fd)) != names:
-                    raise ValueError("receipt directory changed during validation")
-                return ReceiptClassificationAntigravity("STOPPED", True, False, None, receipt.reviewed_commit, hashlib.sha256(payload).hexdigest())
-            current_root = os.stat(receipt_dir, follow_symlinks=False)
-            if (current_root.st_dev, current_root.st_ino) != (opened.st_dev, opened.st_ino) or set(os.listdir(directory_fd)) != names:
-                raise ValueError("receipt directory changed during validation")
-            return ReceiptClassificationAntigravity(f"S{len(success)}", False, False, None, reviewed, previous)
-        finally:
-            os.close(directory_fd)
-    except BaseException as error:
-        return ReceiptClassificationAntigravity("INVALID", False, True, f"{type(error).__name__}: {error}")
-
-
 def receipt_reviewed_commit_antigravity(receipt_dir: Path = _RECEIPT_DIR_ANTIGRAVITY) -> str:
     """Return the descriptor-validated run commit for the bare inspect command."""
     classification = validate_receipt_inventory_antigravity(receipt_dir)
@@ -310,6 +288,11 @@ def _fsync_parent_antigravity(path: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _namespace_identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int]:
+    """The descriptor-bound identity used for every retained directory and leaf."""
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink)
 
 
 def _root_identity_antigravity(root: Path) -> str | None:
@@ -362,67 +345,85 @@ def _root_identity_antigravity(root: Path) -> str | None:
 
 class _RootIdentityTransactionAntigravity:
     """Retain every descriptor used for a root identity until a receipt commits."""
-    __slots__ = ("root", "root_fd", "descriptors", "records", "identity")
+    __slots__ = ("root", "root_name", "parent_fd", "root_fd", "descriptors", "records", "identity")
 
     def __init__(self, root: Path, fault_hook=None) -> None:
-        self.root = root; self.root_fd = -1; self.descriptors: list[tuple[int, tuple[int, int], tuple[str, ...]]] = []; self.records: list[tuple[int, tuple[int, int], str, bytes]] = []; self.identity = None
+        self.root = root; self.root_name = root.name; self.parent_fd = self.root_fd = -1; self.descriptors: list[tuple[int, tuple[int, int, int, int], tuple[str, ...]]] = []; self.records: list[tuple[int, tuple[int, int, int, int], str, bytes]] = []; self.identity = None
+        self.parent_fd = os.open(root.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
         try:
-            path_info = os.lstat(root)
+            path_info = os.stat(self.root_name, dir_fd=self.parent_fd, follow_symlinks=False)
         except FileNotFoundError:
             return
-        if stat.S_ISLNK(path_info.st_mode) or not stat.S_ISDIR(path_info.st_mode): raise ValueError("root identity path is unsafe")
-        self.root_fd = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        if stat.S_ISLNK(path_info.st_mode) or not stat.S_ISDIR(path_info.st_mode):
+            error = ValueError("root identity path is unsafe"); self.close(error); raise error
+        self.root_fd = os.open(self.root_name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=self.parent_fd)
         root_info = os.fstat(self.root_fd)
-        if (root_info.st_dev, root_info.st_ino) != (path_info.st_dev, path_info.st_ino): raise ValueError("root identity path was replaced")
+        if _namespace_identity_antigravity(root_info) != _namespace_identity_antigravity(path_info):
+            error = ValueError("root identity path was replaced"); self.close(error); raise error
         digest = hashlib.sha256()
         def walk(fd: int, prefix: tuple[str, ...]) -> None:
-            info = os.fstat(fd); self.descriptors.append((fd, (info.st_dev, info.st_ino), prefix))
+            info = os.fstat(fd); self.descriptors.append((fd, _namespace_identity_antigravity(info), prefix))
             for name in sorted(os.listdir(fd)):
                 item = os.stat(name, dir_fd=fd, follow_symlinks=False); relative = "/".join(prefix + (name,))
                 if stat.S_ISDIR(item.st_mode):
                     digest.update(b"D\0" + relative.encode() + b"\0")
                     child = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd)
-                    if (os.fstat(child).st_dev, os.fstat(child).st_ino) != (item.st_dev, item.st_ino): raise ValueError("root directory was replaced")
+                    if _namespace_identity_antigravity(os.fstat(child)) != _namespace_identity_antigravity(item): raise ValueError("root directory was replaced")
                     walk(child, prefix + (name,))
                     _fault_antigravity(fault_hook, "after_child_capture")
                 elif stat.S_ISREG(item.st_mode) and item.st_nlink == 1:
                     child = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd); child_info = os.fstat(child)
-                    if (child_info.st_dev, child_info.st_ino) != (item.st_dev, item.st_ino): raise ValueError("root leaf was replaced")
+                    if _namespace_identity_antigravity(child_info) != _namespace_identity_antigravity(item): raise ValueError("root leaf was replaced")
                     payload = b"".join(iter(lambda: os.read(child, 1 << 20), b"")); digest.update(b"F\0" + relative.encode() + b"\0" + payload)
-                    self.records.append((child, (child_info.st_dev, child_info.st_ino), relative, payload))
+                    self.records.append((child, _namespace_identity_antigravity(child_info), relative, payload))
                     _fault_antigravity(fault_hook, "after_leaf_read")
                 else: raise ValueError("root identity inventory is unsafe")
-        walk(self.root_fd, ())
+        try:
+            walk(self.root_fd, ())
+        except BaseException as error:
+            self.close(error)
+            raise
         self.identity = digest.hexdigest()
 
     def end_validate(self) -> None:
         if self.root_fd < 0: return
-        path_info = os.stat(self.root, follow_symlinks=False); info = os.fstat(self.root_fd)
-        if (path_info.st_dev, path_info.st_ino) != (info.st_dev, info.st_ino): raise ValueError("root namespace was replaced")
+        path_info = os.stat(self.root_name, dir_fd=self.parent_fd, follow_symlinks=False); info = os.fstat(self.root_fd)
+        if _namespace_identity_antigravity(path_info) != _namespace_identity_antigravity(info): raise ValueError("root namespace was replaced")
         for fd, identity, prefix in self.descriptors:
             current = os.fstat(fd)
-            if (current.st_dev, current.st_ino) != identity: raise ValueError("root descriptor changed")
+            if _namespace_identity_antigravity(current) != identity: raise ValueError("root descriptor changed")
             if prefix:
                 parent_fd = next(parent for parent, _parent_identity, parent_prefix in self.descriptors if parent_prefix == prefix[:-1])
                 namespace = os.stat(prefix[-1], dir_fd=parent_fd, follow_symlinks=False)
-                if (namespace.st_dev, namespace.st_ino) != identity: raise ValueError("root directory was replaced")
+                if _namespace_identity_antigravity(namespace) != identity: raise ValueError("root directory was replaced")
             expected = {path[-1] for _fd, _id, path in self.descriptors if path and path[:-1] == prefix} | {relative.rsplit("/", 1)[-1] for _fd, _id, relative, _payload in self.records if tuple(relative.split("/")[:-1]) == prefix}
             if set(os.listdir(fd)) != expected: raise ValueError("root inventory changed")
         for fd, identity, relative, payload in self.records:
             info = os.fstat(fd)
             os.lseek(fd, 0, os.SEEK_SET)
-            if (info.st_dev, info.st_ino) != identity or b"".join(iter(lambda: os.read(fd, 1 << 20), b"")) != payload: raise ValueError("root leaf changed")
+            if _namespace_identity_antigravity(info) != identity or b"".join(iter(lambda: os.read(fd, 1 << 20), b"")) != payload: raise ValueError("root leaf changed")
 
     def close(self, primary: BaseException | None) -> None:
+        first: BaseException | None = None
         for fd, *_ in reversed(self.records):
             try: os.close(fd)
             except BaseException as error:
                 if primary is not None: primary.add_note(f"root_leaf_close_error={type(error).__name__}: {error}")
+                elif first is None: first = error
         for fd, *_ in reversed(self.descriptors):
             try: os.close(fd)
             except BaseException as error:
                 if primary is not None: primary.add_note(f"root_directory_close_error={type(error).__name__}: {error}")
-        self.records.clear(); self.descriptors.clear(); self.root_fd = -1
+                elif first is None: first = error
+        self.records.clear(); self.descriptors.clear()
+        if self.parent_fd >= 0:
+            try: os.close(self.parent_fd)
+            except BaseException as error:
+                if primary is not None: primary.add_note(f"root_parent_close_error={type(error).__name__}: {error}")
+                elif first is None: first = error
+        self.root_fd = self.parent_fd = -1
+        if primary is None and first is not None:
+            raise first
 
 
 def _fault_antigravity(fault_hook, point: str) -> None:
@@ -437,7 +438,7 @@ def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, n
     created: tuple[int, int] | None = None
     primary: BaseException | None = None
     try:
-        info = os.fstat(leaf); created = (info.st_dev, info.st_ino)
+        info = os.fstat(leaf); created = _namespace_identity_antigravity(info)
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
             raise ValueError("receipt leaf is unsafe")
         view = memoryview(payload)
@@ -467,7 +468,7 @@ def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, n
     try:
         opened = os.fstat(reader)
         current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
-        if created is None or (opened.st_dev, opened.st_ino) != created or (current.st_dev, current.st_ino) != created or not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+        if created is None or _namespace_identity_antigravity(opened) != created or _namespace_identity_antigravity(current) != created or not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
             raise ValueError("receipt leaf was rebound")
         reread = b"".join(iter(lambda: os.read(reader, 1 << 20), b""))
         if reread != payload or canonical_json_bytes_antigravity(strict_json_bytes_antigravity(reread)) != reread:
@@ -484,22 +485,19 @@ def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, n
                 primary.add_note(f"reread_close_error={type(error).__name__}: {error}")
             else:
                 raise
-    current_directory = os.stat(directory, follow_symlinks=False)
-    retained = os.fstat(directory_fd)
-    if (current_directory.st_dev, current_directory.st_ino) != (retained.st_dev, retained.st_ino):
-        raise ValueError("receipt directory was rebound")
 
 
-def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, reviewed_commit: str, *, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), fault_hook=None) -> LifecycleReceiptAntigravity:
+def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, reviewed_commit: str, *, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), fault_hook=None, _transaction=None) -> LifecycleReceiptAntigravity:
     """Append the one next governed receipt leaf and revalidate the complete prefix."""
     if not isinstance(receipt_dir, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path) or phase not in _PREDECESSOR_ANTIGRAVITY or event not in ("started", "complete", "stopped") or not _is_lower_hex_antigravity(reviewed_commit, 40):
         raise ValueError("receipt append inputs are invalid")
-    if not receipt_dir.exists() and not receipt_dir.is_symlink():
+    if not receipt_dir.exists() and not receipt_dir.is_symlink() and _transaction is None:
         _fault_antigravity(fault_hook, "directory_create")
-    transaction = _ReceiptTransactionAntigravity(receipt_dir, create_s0=True)
+    transaction = _ReceiptTransactionAntigravity(receipt_dir, create_s0=True) if _transaction is None else _transaction
     classification = transaction.classification
     if classification is None or classification.stopped:
-        transaction.close(None); raise ValueError("receipt namespace cannot be appended")
+        if _transaction is None: transaction.close(None)
+        raise ValueError("receipt namespace cannot be appended")
     state_number = int(classification.state[1:])
     if event == "stopped":
         name = _STOPPED_LEAF_ANTIGRAVITY
@@ -517,10 +515,24 @@ def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, review
     receipt = LifecycleReceiptAntigravity(_SCHEMA_ANTIGRAVITY, _EXPERIMENT_ID_ANTIGRAVITY, _RUN_IDENTITY_ANTIGRAVITY, reviewed_commit, phase, event, state_number, previous, prediction_identity, evaluation_identity, event == "stopped")
     primary: BaseException | None = None
     try:
+        # Receipt and root evidence must be fully revalidated and every root
+        # descriptor closed before the final receipt durability sequence starts.
+        _fault_antigravity(fault_hook, "before_end_validate")
+        transaction.end_validate()
+        prediction_transaction.end_validate(); evaluation_transaction.end_validate()
+    except BaseException as error:
+        primary = error
+        raise
+    finally:
+        prediction_transaction.close(primary); evaluation_transaction.close(primary)
+    try:
         _append_leaf_at_descriptor_antigravity(receipt_dir, transaction.directory_fd, name, canonical_json_bytes_antigravity(receipt.payload_antigravity()), fault_hook)
         leaf_fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=transaction.directory_fd)
         leaf_info = os.fstat(leaf_fd); leaf_payload = b"".join(iter(lambda: os.read(leaf_fd, 1 << 20), b""))
-        transaction.leaves.append((name, leaf_fd, (leaf_info.st_dev, leaf_info.st_ino), leaf_payload, receipt))
+        transaction.leaves.append((name, leaf_fd, _namespace_identity_antigravity(leaf_info), leaf_payload, receipt))
+        # Darwin increments a directory link count for a newly created leaf;
+        # capture that governed mutation before checking for hostile rebinding.
+        transaction.directory_identity = _namespace_identity_antigravity(os.fstat(transaction.directory_fd))
         transaction.end_validate(); os.fsync(transaction.directory_fd)
     except BaseException as error:
         primary = error
@@ -532,21 +544,14 @@ def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, review
         except BaseException as error:
             if primary is not None: primary.add_note(f"directory_close_error={type(error).__name__}: {error}")
             else: close_error = error
-        transaction.close(primary)
-        try:
-            _fault_antigravity(fault_hook, "before_end_validate")
-            prediction_transaction.end_validate(); evaluation_transaction.end_validate()
-        except BaseException as error:
-            if primary is not None: primary.add_note(f"root_identity_revalidation_error={type(error).__name__}: {error}")
-            else: raise
-        finally:
-            prediction_transaction.close(primary); evaluation_transaction.close(primary)
+        if _transaction is None: transaction.close(primary)
         if close_error is not None:
             raise close_error
-    result = validate_receipt_inventory_antigravity(receipt_dir)
     expected_state = "STOPPED" if event == "stopped" else f"S{state_number + 1}"
-    if result.state != expected_state:
-        raise ValueError("receipt append failed revalidation")
+    transaction.classification = ReceiptClassificationAntigravity(expected_state, event == "stopped", False, None, reviewed_commit, hashlib.sha256(canonical_json_bytes_antigravity(receipt.payload_antigravity())).hexdigest())
+    if _transaction is None:
+        result = validate_receipt_inventory_antigravity(receipt_dir)
+        if result.state != expected_state: raise ValueError("receipt append failed revalidation")
     return receipt
 
 
@@ -571,14 +576,14 @@ def _root_destinations_antigravity(phase: str) -> tuple[str, ...]:
     return (_PREDICTION_ROOT_ANTIGRAVITY, _EVALUATION_ROOT_ANTIGRAVITY)
 
 
-def _stop_and_audit_antigravity(receipt_dir: Path, audit_path: Path, phase: str, reviewed_commit: str, primary: BaseException, prediction_root: Path, evaluation_root: Path) -> None:
+def _stop_and_audit_antigravity(receipt_dir: Path, audit_path: Path, phase: str, reviewed_commit: str, primary: BaseException, prediction_root: Path, evaluation_root: Path, *, transaction: _LifecycleTransactionAntigravity | None = None) -> None:
     notes: list[str] = []
     try:
-        append_receipt_antigravity(receipt_dir, phase, "stopped", reviewed_commit, prediction_root=prediction_root, evaluation_root=evaluation_root)
+        append_receipt_antigravity(receipt_dir, phase, "stopped", reviewed_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, _transaction=transaction)
     except BaseException as secondary:
         primary.add_note(f"stopped_receipt_error={type(secondary).__name__}: {secondary}")
         notes.append(f"stopped_receipt_error={type(secondary).__name__}: {secondary}")
-    post = validate_receipt_inventory_antigravity(receipt_dir)
+    post = transaction.classification if transaction is not None else validate_receipt_inventory_antigravity(receipt_dir, prediction_root=prediction_root, evaluation_root=evaluation_root)
     recovery_state = "stopped" if post.stopped else ("receipt_failed" if post.invalid else "stop_failed")
     if post.reason is not None:
         notes.append(f"post_stop_receipt={post.reason}")
@@ -592,10 +597,21 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
     """Run one reusable lifecycle phase; synthetic tests inject only operation and paths."""
     if phase not in _PREDECESSOR_ANTIGRAVITY or not _is_lower_hex_antigravity(reviewed_commit, 40) or not callable(operation) or not isinstance(receipt_dir, Path) or not isinstance(audit_path, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path) or (path_precondition is not None and not callable(path_precondition)):
         raise ValueError("lifecycle phase inputs are invalid")
-    classification = validate_receipt_inventory_antigravity(receipt_dir)
-    if classification.invalid:
+    try:
+        transaction = _LifecycleTransactionAntigravity(receipt_dir, create_s0=True)
+        classification = transaction.classification
+        transaction.end_validate()
+        _validate_bound_root_identities_antigravity(transaction, prediction_root, evaluation_root)
+    except BaseException as error:
+        if 'transaction' in locals():
+            try: transaction.close(error)
+            except BaseException as close_error: error.add_note(f"lifecycle_close_error={type(close_error).__name__}: {close_error}")
+        raise ValueError("receipt inventory is invalid") from error
+    if classification is None or classification.invalid:
+        transaction.close(None)
         raise ValueError("receipt inventory is invalid")
     if classification.stopped:
+        transaction.close(None)
         raise ValueError("receipt lifecycle is permanently stopped")
     audit_occupied = audit_path.exists() or audit_path.is_symlink()
     primary: BaseException | None = None
@@ -613,22 +629,26 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
         except BaseException as error:
             primary = error
     if primary is not None:
-        _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, primary, prediction_root, evaluation_root)
+        _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, primary, prediction_root, evaluation_root, transaction=transaction)
+        transaction.close(primary)
         raise primary
     try:
         if phase != "readiness":
-            append_receipt_antigravity(receipt_dir, phase, "started", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root)
+            append_receipt_antigravity(receipt_dir, phase, "started", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, _transaction=transaction)
         result = operation()
     except BaseException as error:
-        _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root)
+        _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root, transaction=transaction)
+        transaction.close(error)
         raise
     try:
         # A complete receipt is a durable commit point only after the complete
         # append function has returned from its own descriptor revalidation.
-        append_receipt_antigravity(receipt_dir, phase, "complete", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root)
+        append_receipt_antigravity(receipt_dir, phase, "complete", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, _transaction=transaction)
     except BaseException as error:
-        _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root)
+        _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root, transaction=transaction)
+        transaction.close(error)
         raise
+    transaction.close(None)
     return result
 
 

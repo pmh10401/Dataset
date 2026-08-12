@@ -52,6 +52,86 @@ class LifecycleAntigravityTests(unittest.TestCase):
             self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
             self.assertFalse(audit.exists())
 
+    def test_phase_keeps_one_receipt_namespace_transaction_until_complete_antigravity(self) -> None:
+        """Break caught: a phase closes and pathname-reopens receipts between start and complete."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_single_transaction_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "8" * 40)
+            original, opened = lifecycle._LifecycleTransactionAntigravity, []
+
+            class RecordingTransaction(original):
+                def __init__(self, *args, **kwargs):
+                    opened.append((args, kwargs)); super().__init__(*args, **kwargs)
+
+            prediction = parent / "prediction"
+            with patch.object(lifecycle, "_LifecycleTransactionAntigravity", RecordingTransaction):
+                lifecycle.run_phase_antigravity(
+                    "predict", "8" * 40,
+                    lambda: (prediction.mkdir(), (prediction / "identity_antigravity.json").write_bytes(b"{}\n"), "ok")[2],
+                    receipt_dir=receipts, audit_path=parent / "audit_antigravity.json",
+                    prediction_root=prediction, evaluation_root=parent / "evaluation",
+                )
+            self.assertEqual(len(opened), 1)
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S3")
+
+    def test_classification_rejects_current_root_content_drift_antigravity(self) -> None:
+        """Break caught: S3 accepts a receipt whose named prediction authority no longer has its signed bytes."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_root_drift_antigravity_") as temporary:
+            parent = Path(temporary); receipts, prediction = parent / "receipts", parent / "prediction"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "9" * 40)
+            prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"original\n")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "started", "9" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "complete", "9" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            (prediction / "identity_antigravity.json").write_bytes(b"forged\n")
+            classified = lifecycle.validate_receipt_inventory_antigravity(
+                receipts, prediction_root=prediction, evaluation_root=parent / "evaluation",
+            )
+            self.assertTrue(classified.invalid)
+            self.assertEqual(classified.state, "INVALID")
+
+    def test_close_attempts_every_descriptor_before_reporting_first_error_antigravity(self) -> None:
+        """Break caught: one close failure leaks later retained receipt descriptors."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_close_all_antigravity_") as temporary:
+            transaction = lifecycle._ReceiptTransactionAntigravity(Path(temporary) / "receipts", create_s0=True)
+            first, second = transaction.parent_fd, transaction.directory_fd
+            calls, real_close = [], os.close
+            def closing(descriptor: int) -> None:
+                calls.append(descriptor)
+                if descriptor == first:
+                    raise OSError("first close")
+                real_close(descriptor)
+            with patch.object(lifecycle.os, "close", side_effect=closing):
+                with self.assertRaisesRegex(OSError, "first close"):
+                    transaction.close(None)
+            self.assertIn(first, calls)
+            self.assertIn(second, calls)
+
+    def test_prefinal_root_validation_fault_cannot_leave_complete_receipt_antigravity(self) -> None:
+        """Break caught: a root revalidation failure is discovered only after a complete leaf commits."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_prefinal_fault_antigravity_") as temporary:
+            parent = Path(temporary); receipts, prediction = parent / "receipts", parent / "prediction"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "a" * 40)
+            prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "started", "a" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            def fail(point: str) -> None:
+                if point == "before_end_validate":
+                    raise OSError("prefinal root check")
+            with self.assertRaisesRegex(OSError, "prefinal root check"):
+                lifecycle.append_receipt_antigravity(
+                    receipts, "predict", "complete", "a" * 40,
+                    prediction_root=prediction, evaluation_root=parent / "evaluation", fault_hook=fail,
+                )
+            self.assertFalse((receipts / "predict_complete_antigravity.json").exists())
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S2")
+
     def test_valid_wrong_predecessor_stops_before_create_only_audit_antigravity(self) -> None:
         """Break caught: a valid S-state command bypasses terminal stop or overwrites failure evidence."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
