@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T07:18:12+00:00",
-  "generated_from_commit": "63f31618c67d14b723bdf472e1ecad258df21d4f",
+  "generated_at": "2026-08-12T07:51:10+00:00",
+  "generated_from_commit": "0d0f52594edb76caa6834ac247f5c5e8374dcf7b",
   "scope": [
     "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
   ],
@@ -247,7 +247,7 @@
     {
       "id": "task6_evaluation",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
-      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, exact 12-leaf staging publication, pre-label trusted Task-5 prediction capture, and retained-descriptor no-replace/quarantine boundary.",
+      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, pre-label trusted Task-5 prediction capture, and a retained-descriptor hidden staging-to-sealed 12-leaf publication whose exclusive canonical rename is the one-way commit.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py"
       ],
@@ -526,7 +526,7 @@
         "task6_replay",
         "aggregate_result_projection"
       ],
-      "outcome": "Exactly one dependency-injected ordered synthetic label session creates a private 12-leaf publication, replays semantics before publication, and permits only aggregate result projection; no official root, lifecycle call, routing, or external dashboard publication is exposed."
+      "outcome": "Exactly one dependency-injected ordered synthetic label session creates a private 12-leaf publication, replays semantics while sealed, then performs one exclusive canonical rename as the final reportable commit; failure retains only hidden staging or sealed forensic state and permits only aggregate result projection."
     }
   ],
   "unknown_relationships": [
