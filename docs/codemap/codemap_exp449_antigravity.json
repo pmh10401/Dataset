@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-12T00:00:00+00:00",
-  "generated_from_commit": "c843b48c294924a4a9a7fcf0399c73c982f57829",
+  "generated_from_commit": "a16d7b2ba72122c1cd687ed349dd58b232ba0996",
   "scope": [
     "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
   ],
@@ -44,18 +44,6 @@
         {
           "path": "CHAMPION_LEDGER.json",
           "symbol": "\"experiment\": \"Exp449\""
-        }
-      ]
-    },
-    {
-      "id": "exp448_predecessor",
-      "path": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md",
-      "role": "Immutable stable-26 predecessor aggregate truth.",
-      "tests": [],
-      "evidence": [
-        {
-          "path": "docs/EXP449_PREREGISTRATION_antigravity_KO.html",
-          "symbol": "immutable Exp448 stable-26"
         }
       ]
     },
@@ -272,7 +260,7 @@
     {
       "id": "frozen_prediction_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Task-5 label-free frozen 96-unit prediction authority, Task-3 descriptor validator seam, and fixed-order candidate commitment consumer of Task-2 registry and Task-4 score contracts.",
+      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent contiguous durable commits, descriptor validator firewall, failure audit boundary, and local-only dashboard status projection.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
@@ -282,6 +270,21 @@
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
           "symbol": "def validate_frozen_prediction_authority_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "prediction_progress",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
+      "role": "Task-5 create-only candidate durability, verified-prefix derivation, split progress channels, and independent failure audit authority.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
+          "symbol": "def commit_candidate_leaf_antigravity"
         }
       ]
     }
@@ -348,15 +351,6 @@
       "evidence": {
         "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
         "symbol": "test_html_plan_records_only_verified_task_and_step_progress_antigravity"
-      }
-    },
-    {
-      "from": "exp449_preregistration",
-      "to": "exp448_predecessor",
-      "type": "reads",
-      "evidence": {
-        "path": "docs/EXP449_PREREGISTRATION_antigravity_KO.html",
-        "symbol": "immutable Exp448 stable-26"
       }
     },
     {
@@ -475,6 +469,15 @@
         "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
         "symbol": "validate_frozen_prediction_authority_antigravity"
       }
+    },
+    {
+      "from": "frozen_prediction_lifecycle",
+      "to": "prediction_progress",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
+        "symbol": "progress_antigravity import"
+      }
     }
   ],
   "flows": [
@@ -500,13 +503,15 @@
       "outcome": "CPU aeon representations and Exp249 LocalGap return finite deterministic scores; MLX/MPS availability cannot approve acceleration without the full stage gate."
     },
     {
-      "trigger": "Task-5 frozen prediction validation",
+      "trigger": "Task-5 durable prediction authority",
       "steps": [
+        "exp448_authority",
+        "label_free_source",
         "score_sources",
         "frozen_prediction_lifecycle",
-        "label_free_source"
+        "prediction_progress"
       ],
-      "outcome": "Task 5 constructs label-free candidate leaves in frozen order and exposes the exact descriptor-validator seam required before Task 6 can open TEST labels; evaluation and publication remain downstream."
+      "outcome": "A fixed 11-worker production route commits only a verified contiguous candidate prefix; its database-free descriptor validator must succeed before Task 6 can open TEST labels, while status remains local-only."
     }
   ],
   "unknown_relationships": [
