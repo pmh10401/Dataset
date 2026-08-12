@@ -85,23 +85,24 @@ class Exp449GovernanceTest(unittest.TestCase):
         for task_number, state in tasks.items():
             self.assertEqual(len(state["heading"]), 1, f"Task {task_number} requires one task-level checkbox")
             self.assertTrue(state["heading"][0]["disabled"])
-            self.assertEqual(state["heading"][0]["checked"], task_number in {1, 2, 3, 4, 5})
+            self.assertEqual(state["heading"][0]["checked"], task_number in {1, 2, 3, 4, 5, 6})
         self.assertEqual(len(tasks[1]["steps"]), 8)
         self.assertEqual(len(tasks[2]["steps"]), 7)
         self.assertEqual(len(tasks[3]["steps"]), 8)
         self.assertTrue(
             all(
                 box["disabled"] and box["checked"]
-                for task_number in (1, 2, 3, 4, 5)
+                for task_number in (1, 2, 3, 4, 5, 6)
                 for box in tasks[task_number]["steps"]
             )
         )
         self.assertEqual(len(tasks[5]["steps"]), 8)
-        self.assertEqual(sum(box["checked"] for state in tasks.values() for box in state["steps"]), 39)
+        self.assertEqual(len(tasks[6]["steps"]), 9)
+        self.assertEqual(sum(box["checked"] for state in tasks.values() for box in state["steps"]), 48)
         self.assertTrue(
             all(
                 not box["checked"]
-                for task_number in range(6, 9)
+                for task_number in range(7, 9)
                 for box in tasks[task_number]["steps"]
             )
         )
