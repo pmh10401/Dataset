@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp449 Task 5 CommitSession Authority 구현 계획</title>
+<style>:root{color-scheme:light dark;--bg:#f7f8fa;--panel:#fff;--text:#172033;--muted:#5c667a;--line:#d9deea;--accent:#3157d5;--code:#f0f3f8}@media(prefers-color-scheme:dark){:root{--bg:#111522;--panel:#191f2d;--text:#edf1fa;--muted:#aeb8ca;--line:#343d51;--accent:#8ca7ff;--code:#222a3a}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:250px minmax(0,920px);gap:24px;max-width:1240px;margin:auto;padding:28px}nav{position:sticky;top:20px;align-self:start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}nav a{display:block;color:var(--muted);text-decoration:none;padding:3px 0}main{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:34px 42px}h1,h2,h3{line-height:1.25;scroll-margin-top:16px}h1{margin-top:0}h2{border-top:1px solid var(--line);padding-top:26px;margin-top:34px}pre{background:var(--code);padding:15px;border-radius:10px;overflow:auto;border:1px solid var(--line)}code{font-family:"SFMono-Regular",Consolas,monospace;background:var(--code);padding:.12em .35em;border-radius:5px}.meta{color:var(--muted);font-size:.9rem}input[type=checkbox]{margin-right:.45em}@media(max-width:820px){.layout{display:block;padding:12px}nav{position:static;margin-bottom:12px}main{padding:24px 20px}}</style></head>
+<body><div class="layout"><nav><strong>목차</strong><a href="#goal">목표</a><a href="#constraints">Global Constraints</a><a href="#task-1">Task 1 · CommitSession</a><a href="#task-2">Task 2 · Failure truth</a><a href="#verification">최종 검증</a></nav><main>
+<h1>Exp449 Task 5 CommitSession Authority 구현 계획</h1>
+<p class="meta">승인 사양: <code>2026-08-12-exp449-task5-commit-session-authority-antigravity-design.html</code></p>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans. 완료된 단계만 checkbox를 체크한다.</p>
+
+<section id="goal"><h2>목표와 구조</h2>
+<p><strong>Goal:</strong> 공개 receipt/count 권한을 제거하고, lifecycle 내부 성공 commit만으로 progress와 failure audit를 산출한다.</p>
+<p><strong>Architecture:</strong> module-private slotted session이 exact inventory와 성공 commit state를 소유한다. production과 synthetic lifecycle은 같은 commit/progress/prefix/failure 경계를 사용하며 terminal descriptor validator와 artifact 형식은 유지한다.</p>
+<p><strong>Tech stack:</strong> Python 3.14, <code>os.open</code>/<code>dir_fd</code>/<code>O_NOFOLLOW</code>, <code>ProcessPoolExecutor(max_workers=11)</code>, unittest, deterministic Exp449 codemap builder.</p></section>
+
+<section id="constraints"><h2>Global Constraints</h2><ul>
+<li>모든 새 파일명에는 <code>antigravity</code>가 포함되고 <code>__init__.py</code>를 만들지 않는다.</li>
+<li>exact 96 ordered units, worker 11, parent contiguous commit을 변경하지 않는다.</li>
+<li>공식 실행, TEST labels, DB/root/audit mutation, dashboard/site/network, Task 6을 금지한다.</li>
+<li>문서는 self-contained HTML만 사용한다.</li>
+<li>코드 경계 변경 시 Exp449 HTML/JSON/lock을 함께 재생성하고 functional parent에 결속한다.</li>
+<li>Task 5 전체 구현·검증·fresh Sol <code>ship</code> 전에는 기존 Task 5 체크박스를 체크하지 않는다.</li>
+</ul></section>
+
+<section id="task-1"><h2><input disabled type="checkbox"> Task 1: 공개 Receipt 제거와 CommitSession 도입</h2>
+<p><strong>Files:</strong></p><ul>
+<li>Modify: <code>experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py</code></li>
+<li>Modify: <code>experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py</code></li>
+<li>Test: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py</code></li>
+<li>Test: <code>experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py</code></li>
+</ul>
+<p><strong>Produces:</strong> lifecycle 내부 <code>_CommitSessionAntigravity</code>; 인자 없는 <code>record_progress()</code>; 예외를 던지지 않는 prefix result.</p>
+
+<ol>
+<li><input disabled type="checkbox"> <strong>Step 1: 공개 위조 표면 RED 작성</strong><p>다음 동작을 한 테스트 표로 고정한다.</p><pre><code>assert not hasattr(progress, "CandidateCommitReceiptAntigravity")
+assert "return_commit_receipt" not in inspect.signature(progress.commit_candidate_leaf_antigravity).parameters
+assert not hasattr(progress, "record_verified_progress_antigravity")
+assert not hasattr(progress, "verified_prefix_antigravity")</code></pre></li>
+<li><input disabled type="checkbox"> <strong>Step 2: 순서 및 caller-state RED 작성</strong><p>세션이 sequence 1을 첫 commit으로 받거나 동일 sequence를 두 번 받으면 거부하고, progress에 completed 인자를 전달할 수 없음을 검증한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 3: RED 실행</strong><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY -m unittest \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_progress_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_prediction_antigravity -q</code></pre><p>Expected: 공개 receipt/raw progress 표면 또는 순서 위반이 현재 허용되어 실패.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 4: 최소 CommitSession 구현</strong><p>세션은 root/inventory/internal commits만 소유한다. <code>commit(sequence,value)</code>는 내부 count와 exact inventory를 강제하고 기존 durable writer 성공 후에만 state를 append한다. <code>record_progress()</code>는 내부 count만 사용한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 5: 공개 receipt/raw API 제거</strong><p>receipt dataclass, receipt return flag, raw root/inventory/receipt/count를 받는 progress/prefix API를 제거한다. 테스트용 접근은 lifecycle private seam만 사용한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 6: GREEN 및 Task 1 commit</strong><p>focused suite를 두 번 실행하고 functional commit을 만든다.</p></li>
+</ol></section>
+
+<section id="task-2"><h2><input disabled type="checkbox"> Task 2: Longest Prefix와 Failure Truth 통합</h2>
+<p><strong>Files:</strong> Task 1의 네 파일, <code>scratch/build_codemap_exp449_antigravity.py</code>, Exp449 map triplet, ignored HTML Task 5 report.</p>
+<p><strong>Produces:</strong> <code>PrefixValidationAntigravity(valid_prefix, error)</code>와 production/synthetic 공용 failure handler.</p>
+<ol>
+<li><input disabled type="checkbox"> <strong>Step 1: prefix RED 작성</strong><p>0/47/95 unreturned official-shaped leaf는 무시한다. 성공 leaf <code>k</code>의 missing/replacement/symlink/hash mismatch는 <code>valid_prefix=k</code>와 별도 오류를 반환한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 2: primary 보존 RED 작성</strong><p>production과 synthetic 각각에서 primary run error 뒤 prefix validation과 audit persistence를 강제로 실패시킨다. 동일 primary 객체/traceback이 다시 발생하고 별도 <code>prefix_validation_error</code>/<code>failure_audit_error</code>가 남아야 한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 3: RED 실행</strong><p>Expected: production catch가 prefix 예외로 primary/audit를 덮거나 공용 경계가 없어 실패.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 4: PrefixValidation 구현</strong><p>내부 successful commit state만 descriptor/no-follow로 재검증하고 첫 불일치에서 예외를 던지지 않고 result를 반환한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 5: 공용 failure handler 구현</strong><p>prefix validation과 audit write를 독립 try로 감싼다. audit schema에 별도 prefix validation 오류를 기록하고 마지막에는 bare <code>raise</code>로 primary를 보존한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 6: 성공 경로 불변 검증</strong><p>96-unit 실제 ProcessPool pending/commit synthetic lifecycle, worker=11, canonical 13-field leaves, terminal validator를 검증한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 7: 전체 회귀 실행</strong><pre><code>$PY -m unittest \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_prediction_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_progress_antigravity \
+  experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_dashboard_export_antigravity -q</code></pre><p>두 번 실행한다. 이어 governance/config/contracts/artifacts/method-audit/predecessor/sources/scoring/MLX 회귀를 한 번 실행한다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 8: map·외부 상태·commit</strong><p><code>py_compile</code>, <code>git diff --check</code>, map validate-only, official root/audit absent, DB inode <code>1048138</code>/nlink <code>1</code>, active Exp449 process 없음 확인. 기능 commit 뒤 clean map-only child를 만든다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 9: fresh Sol ship gate</strong><p>exact clean HEAD에서 fresh Sol이 <code>ship</code>을 반환할 때만 이 addendum의 Task 1–2와 기존 Task 5의 8 steps를 체크한다. Task 6은 미체크 유지한다.</p></li>
+</ol></section>
+
+<section id="verification"><h2>최종 검증과 중지 조건</h2><ul>
+<li>모든 신규 테스트는 RED가 의도한 원인으로 실패한 기록이 있어야 한다.</li>
+<li>구현 후 Task 5와 영향 회귀가 고정 aeon interpreter에서 0 failure여야 한다.</li>
+<li>fresh Sol이 <code>fix-first</code> 또는 <code>rethink</code>이면 체크하지 않고 Task 6을 시작하지 않는다.</li>
+<li><code>ship</code> 후에는 HTML 체크박스와 map만 닫고 Task 6 시작 전 사용자에게 결과를 보고한다.</li>
+</ul></section>
+</main></div></body></html>
