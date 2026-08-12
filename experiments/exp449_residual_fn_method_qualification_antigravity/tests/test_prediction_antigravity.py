@@ -21,6 +21,45 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_private_validator_reconstructs_exact_dataset_order_and_rejects_tampered_leaf_antigravity(self) -> None:
+        """Break caught: accepting a rehashed/tampered manifest or deriving order without canonical leaves."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
+            run_synthetic_lifecycle_antigravity,
+            validate_prediction_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "f" * 40)
+            self.assertEqual(validate_prediction_root_antigravity(root, authority), tuple(f"synthetic_dataset_{index:03d}" for index in range(48)))
+            leaf = root / authority.inventory[0]
+            leaf.write_bytes(b'{"sequence":0}\n')
+            with self.assertRaises(ValueError):
+                validate_prediction_root_antigravity(root, authority)
+
+    def test_private_validator_rejects_candidate_symlink_and_root_extra_antigravity(self) -> None:
+        """Break caught: traversing symlinks or accepting an unpinned prediction namespace."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
+            run_synthetic_lifecycle_antigravity,
+            validate_prediction_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            leaf = root / authority.inventory[0]
+            replacement = root / "replacement_antigravity.json"
+            replacement.write_bytes(leaf.read_bytes())
+            leaf.unlink(); leaf.symlink_to(replacement.name)
+            with self.assertRaises(ValueError):
+                validate_prediction_root_antigravity(root, authority)
+        with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "b" * 40)
+            (root / "extra_antigravity.json").write_text("{}\n")
+            with self.assertRaises(ValueError):
+                validate_prediction_root_antigravity(root, authority)
+
     def test_attempt_preflight_rejects_existing_partial_and_symlink_roots_antigravity(self) -> None:
         """Break caught: beginning work in a preexisting, partial, or symlinked attempt root."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import prepare_attempt_root_antigravity  # noqa: PLC0415
