@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T12:00:00+00:00",
-  "generated_from_commit": "b962477c875f16777af90e7db4dec0453f4889c2",
+  "generated_at": "2026-08-12T12:05:00+00:00",
+  "generated_from_commit": "78625a206eb0c4bf9945e0dc72bcb37f61d58475",
   "scope": [
     "Exp449 verified Tasks 1–6 remain implemented. The approved correction design and prospective two-root correction plan supersede only unsafe original Task 7–8 lifecycle wording; no two-root production adapter, readiness CLI, official lifecycle, or dashboard publication has been implemented by this planning commit."
   ],
