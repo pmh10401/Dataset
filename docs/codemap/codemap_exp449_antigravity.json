@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-12T05:40:42+00:00",
-  "generated_from_commit": "cfef89575edeb0d95d77ecbed0116f35f3926880",
+  "generated_at": "2026-08-12T06:10:02+00:00",
+  "generated_from_commit": "af7f7ce16420fbb46cefc6c68b6e0048fec554fc",
   "scope": [
-    "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
+    "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
   ],
   "nodes": [
     {
@@ -202,20 +202,6 @@
       ]
     },
     {
-      "id": "local_gap",
-      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py",
-      "role": "Exp249-compatible robust-scaled LocalGap model under the Exp449 namespace.",
-      "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py",
-          "symbol": "class LocalGapModelAntigravity"
-        }
-      ]
-    },
-    {
       "id": "score_sources",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
       "role": "Sequential deterministic five-fold, reference-capped, chunked label-free scores; its frozen score contract is the future Task-5 prediction input.",
@@ -259,31 +245,44 @@
       ]
     },
     {
-      "id": "prediction_progress",
-      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
-      "role": "Task-5 create-only candidate durability with a lifecycle-owned private CommitSession that retains only writer-returned provenance, derives split progress channels, and returns nonthrowing longest-prefix evidence.",
+      "id": "task6_evaluation",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, exact 12-leaf staging publication, semantic replay-before-rename, and immutable aggregate authority.",
       "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py"
       ],
       "evidence": [
         {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
-          "symbol": "class PrefixValidationAntigravity"
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+          "symbol": "def _evaluate_with_dependencies_antigravity"
         }
       ]
     },
     {
-      "id": "local_status_projection",
+      "id": "task6_replay",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
+      "role": "Task-6 descriptor-pinned source-free canonical semantic replay of the final twelve leaves.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
+          "symbol": "def inspect_replay_at_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "aggregate_result_projection",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py",
-      "role": "Task-5 local-only exact-twelve-field dashboard status boundary with recursive sensitive-value/type firewall and no scientific-module import.",
+      "role": "Task-5 local status plus Task-6 strict aggregate-only public result projection, with recursive sensitive-value and nested-field firewall.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"
       ],
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py",
-          "symbol": "def public_status_antigravity"
+          "symbol": "def public_result_antigravity"
         }
       ]
     }
@@ -426,15 +425,6 @@
     },
     {
       "from": "score_sources",
-      "to": "local_gap",
-      "type": "imports",
-      "evidence": {
-        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
-        "symbol": "local_gap_antigravity import"
-      }
-    },
-    {
-      "from": "score_sources",
       "to": "immutable_contracts",
       "type": "imports",
       "evidence": {
@@ -461,12 +451,48 @@
       }
     },
     {
-      "from": "frozen_prediction_lifecycle",
-      "to": "prediction_progress",
+      "from": "task6_evaluation",
+      "to": "exp448_authority",
+      "type": "reads",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+        "symbol": "capture_exp448_antigravity"
+      }
+    },
+    {
+      "from": "task6_evaluation",
+      "to": "frozen_prediction_lifecycle",
+      "type": "reads",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+        "symbol": "frozen_predictions_antigravity"
+      }
+    },
+    {
+      "from": "task6_evaluation",
+      "to": "task6_replay",
       "type": "imports",
       "evidence": {
-        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-        "symbol": "progress_antigravity import"
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+        "symbol": "replay_antigravity import"
+      }
+    },
+    {
+      "from": "task6_replay",
+      "to": "canonical_artifacts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
+        "symbol": "artifacts_antigravity import"
+      }
+    },
+    {
+      "from": "task6_evaluation",
+      "to": "aggregate_result_projection",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+        "symbol": "dashboard_export_antigravity import"
       }
     }
   ],
@@ -486,28 +512,27 @@
       "steps": [
         "label_free_source",
         "representation_sources",
-        "local_gap",
         "score_sources",
         "acceleration_gate"
       ],
       "outcome": "CPU aeon representations and Exp249 LocalGap return finite deterministic scores; MLX/MPS availability cannot approve acceleration without the full stage gate."
     },
     {
-      "trigger": "Task-5 durable prediction authority",
+      "trigger": "Task-6 synthetic evaluation and replay",
       "steps": [
         "exp448_authority",
-        "label_free_source",
-        "score_sources",
         "frozen_prediction_lifecycle",
-        "prediction_progress"
+        "task6_evaluation",
+        "task6_replay",
+        "aggregate_result_projection"
       ],
-      "outcome": "A fixed 11-worker production route derives progress and failure exact-next evidence only from lifecycle-owned CommitSession state appended after durable writer success; one shared failure boundary independently records a nonthrowing descriptor prefix, or zero when validation machinery throws, and audit outcome before Task 6 can open TEST labels, while status remains local-only."
+      "outcome": "Exactly one dependency-injected ordered synthetic label session creates a private 12-leaf publication, replays semantics before publication, and permits only aggregate result projection; no official root, lifecycle call, routing, or external dashboard publication is exposed."
     }
   ],
   "unknown_relationships": [
-    "Task 6 evaluation, replay, launcher, and external dashboard publication remain unimplemented."
+    "Task 7 readiness/CLI and Task 8 official lifecycle and external dashboard publication remain unimplemented."
   ],
   "unknowns": [
-    "The Task-6 label opener remains fail-closed until an official Task-5 prediction authority is present at its fixed root."
+    "The Task-6 public evaluator and inspector remain fail-closed until Task 7 supplies a clean reviewed-commit readiness boundary and an official Task-5 prediction authority."
   ]
 }
