@@ -40,6 +40,65 @@ class PredictionAntigravityTests(unittest.TestCase):
                 self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], expected_prefix)
                 self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
                 self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+
+    def test_named_fault_matrix_preserves_boundary_specific_prefixes_antigravity(self) -> None:
+        """Break caught: treating cache and channel failures as one generic scheduling failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        pre_tags = ("worker_exception", "scorer_exception", "nonfinite_scores", "cache_create", "cache_fsync", "cache_reread", "cache_sha_mismatch")
+        post_tags = ("progress_json", "progress_jsonl", "progress_text")
+        for tag in pre_tags + post_tags:
+            sequence, expected_prefix = (0, 0) if tag in pre_tags else (47, 48)
+            with self.subTest(tag=tag), tempfile.TemporaryDirectory(prefix="exp449_fault_antigravity_") as temporary:
+                parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+                def fault(current_tag, current_sequence):
+                    if (current_tag, current_sequence) == (tag, sequence):
+                        raise RuntimeError(f"{tag} injected")
+                with self.assertRaisesRegex(RuntimeError, f"{tag} injected"):
+                    run_synthetic_lifecycle_antigravity(root, "4" * 40, audit_path=audit, fault_hook=fault)
+                self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), expected_prefix)
+                evidence = json.loads(audit.read_text())
+                self.assertEqual(evidence["exact_next_sequence"], expected_prefix)
+                self.assertIn(tag, evidence["primary_error"])
+                self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+                self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+
+    def test_predecessor_drift_matrix_rejects_next_leaf_at_0_47_95_antigravity(self) -> None:
+        """Break caught: committing after the immutable predecessor authority has drifted."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        for sequence in (0, 47, 95):
+            with self.subTest(sequence=sequence), tempfile.TemporaryDirectory(prefix="exp449_drift_antigravity_") as temporary:
+                parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+                def fault(tag, current):
+                    if tag == "predecessor_drift" and current == sequence:
+                        raise RuntimeError("predecessor_drift injected")
+                with self.assertRaisesRegex(RuntimeError, "predecessor_drift"):
+                    run_synthetic_lifecycle_antigravity(root, "5" * 40, audit_path=audit, fault_hook=fault)
+                self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), sequence)
+                self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], sequence)
+
+    def test_pid_and_audit_faults_keep_primary_truth_antigravity(self) -> None:
+        """Break caught: returning authority after PID close failure or masking a primary failure with audit failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_pid_antigravity_") as temporary:
+            parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+            def pid_fault(tag, sequence):
+                if tag == "pid_close": raise OSError("pid_close injected")
+            with self.assertRaisesRegex(OSError, "pid_close injected"):
+                run_synthetic_lifecycle_antigravity(root, "6" * 40, audit_path=audit, fault_hook=pid_fault)
+            self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 96)
+            self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+            self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 96)
+        with tempfile.TemporaryDirectory(prefix="exp449_audit_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            def audit_fault(tag, sequence):
+                if tag == "cache_create" and sequence == 0: raise RuntimeError("cache_create injected")
+                if tag == "failure_audit": raise OSError("failure_audit injected")
+            with self.assertRaisesRegex(RuntimeError, "cache_create injected"):
+                run_synthetic_lifecycle_antigravity(root, "7" * 40, fault_hook=audit_fault)
+            self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 0)
     def test_progress_channel_failure_preserves_committed_leaf_and_audits_exact_next_antigravity(self) -> None:
         """Break caught: discarding a committed candidate or trusting failed progress after a channel error."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415

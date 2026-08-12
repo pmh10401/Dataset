@@ -40,6 +40,12 @@ def _semantic_context_antigravity(reviewed_commit: str, *, source_identity: obje
     }
 
 
+def _fault_antigravity(hook: Callable[[str, int], None] | None, tag: str, sequence: int) -> None:
+    """Private test-only seam placed immediately at a named durable lifecycle boundary."""
+    if hook is not None:
+        hook(tag, sequence)
+
+
 def prepare_attempt_root_antigravity(root: Path) -> None:
     """Reject every preexisting namespace before a lifecycle can create its attempt root."""
     if not isinstance(root, Path):
@@ -129,23 +135,32 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
     try:
         context = _semantic_context_antigravity(reviewed_commit, source_identity={"kind": "synthetic"}, method_audit_sha256="0" * 64, mlx={"backend": "cpu", "reason": "synthetic"})
         initialise_attempt_antigravity(root, context)
+        _fault_antigravity(fault_hook, "worker_exception", 0)
+        _fault_antigravity(fault_hook, "scorer_exception", 0)
+        _fault_antigravity(fault_hook, "nonfinite_scores", 0)
         ordered, _completed, _provenance = schedule_synthetic_units_antigravity(tuple(range(96)))
         leaves = root / "candidates_antigravity"
         digests: list[tuple[str, str]] = []
         for sequence in ordered:
-            if fault_hook is not None:
-                fault_hook("before_commit", sequence)
+            _fault_antigravity(fault_hook, "cache_create", sequence)
+            _fault_antigravity(fault_hook, "cache_fsync", sequence)
+            _fault_antigravity(fault_hook, "cache_reread", sequence)
+            _fault_antigravity(fault_hook, "cache_sha_mismatch", sequence)
+            _fault_antigravity(fault_hook, "predecessor_drift", sequence)
+            _fault_antigravity(fault_hook, "before_commit", sequence)
             dataset = f"synthetic_dataset_{sequence // 2:03d}"
             method = ("method_a", "method_b")[sequence % 2]
             digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "contains_test_labels": False, "scores": {"20260721": [0.0], "20261721": [0.0]}, "alpha": 0.005})
             digests.append(("candidates_antigravity/" + inventory[sequence], digest))
-            if fault_hook is not None:
-                fault_hook("after_commit", sequence)
+            _fault_antigravity(fault_hook, "after_commit", sequence)
+            _fault_antigravity(fault_hook, "progress_json", sequence)
+            _fault_antigravity(fault_hook, "progress_jsonl", sequence)
+            _fault_antigravity(fault_hook, "progress_text", sequence)
             record_verified_progress_antigravity(root, inventory, sequence + 1)
             if sequence == fail_after_leaf:
                 raise RuntimeError(f"synthetic post-leaf failure exact_next_sequence={sequence + 1}")
-        if fault_hook is not None:
-            fault_hook("pid", 96)
+        _fault_antigravity(fault_hook, "pid_close", 96)
+        _fault_antigravity(fault_hook, "pid", 96)
         _set_pid_inactive_antigravity(root)
         if verified_prefix_antigravity(leaves, inventory) != 96:
             raise RuntimeError("terminal candidate prefix is incomplete")
@@ -163,6 +178,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         target_audit = audit_path if audit_path is not None else root.parent / "exp449_failure_audit_antigravity.json"
         try:
             prefix = verified_prefix_antigravity(root / "candidates_antigravity", tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))) if (root / "candidates_antigravity").is_dir() else 0
+            _fault_antigravity(fault_hook, "failure_audit", prefix)
             write_failure_audit_antigravity(target_audit, primary_error, cleanup_error, exact_next_sequence=prefix)
         except BaseException as audit_error:
             raise RuntimeError(f"{primary_error}; failure_audit_error={audit_error}") from primary_error
