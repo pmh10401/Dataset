@@ -1,19 +1,13 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "7815382ee8a155651286946951d30e0539bfc8ed",
+  "source_parent_commit": "56884078aad22596d71eb48a83224ca45ec5a7c9",
   "working_tree_dirty": false,
   "represented_paths": [
-    "CHAMPION_LEDGER.json",
-    "EXPERIMENT_CATALOG.json",
-    "RESEARCH_STATE.json",
-    "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.json",
-    "docs/codemap/codemap_exp449_antigravity.lock",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py",
-    "scratch/build_codemap_exp449_antigravity.py"
+    "docs/codemap/codemap_exp449_antigravity.lock"
   ],
-  "generated_at": "2026-08-12T23:11:18Z",
+  "generated_at": "2026-08-12T23:22:31+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -50,7 +44,7 @@
   "module_fingerprints": {
     "root": "7e1b993d70336f151219cee88dc09229f1c02f193449b65b879e4761796ec256",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "d883342f0c796cdaec69ba9f9dd9a93248e2d6342ba8fc95f7a196240cca6992",
+    "docs": "0f68ef57f9ccf4af3b5a4e2230929a08f76f633cb5583115f9bd8ecc2802170a",
     "experiments": "abf53499d546a00140b555bd20faea97729f820872b577d85698b906cfe9fcad",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
@@ -425,7 +419,7 @@
     "docs/superpowers/plans/2026-08-12-exp448-exp447-text-label-boundary-repair-antigravity.md": "b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934",
     "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html": "de61210e0727d6804922a2594a54938f2038e93b759a7e30b0c5ded65c18ec00",
     "docs/superpowers/plans/2026-08-12-exp449-task5-commit-session-authority-antigravity.html": "56fafba5b6102f6f1a1550ab40467872dcf2761ca0437cde8e62483c1db8e987",
-    "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html": "486089222d54e88cfab108665642566f676ba6f97eb20ac63df052fd7328c7e4",
+    "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html": "f43bac0f29b276d1343df17854765ef5aae9306f36da974303495d75e5deb72b",
     "docs/superpowers/specs/2026-07-12-exp137-operational-triage-design.md": "3304d6228a76c667dc87013cfbc572def8dfe5417035e7eb8f8c96a0ab032d74",
     "docs/superpowers/specs/2026-07-14-exp162-full-coverage-alternative-score-cache-design.md": "58c71e9914225aadbd4f7504cd8ead0ab0c8618e7b03b59937313d4017c8ac03",
     "docs/superpowers/specs/2026-07-14-exp163-alternative-source-tail-agreement-review-design.md": "e89fc7c91b0d04fd8eda4f7208badee472e3388834a2879acd4450894d54ee91",
@@ -2640,9 +2634,6 @@
     "verify_sqlite.py": "11701a84b3ac5d487c72aeee8730b0992d5c77d5599cff0c39424d4ce8249e0e"
   },
   "changed_modules_since_source_parent": [
-    "docs",
-    "experiments",
-    "root",
-    "scratch"
+    "docs"
   ]
 }
