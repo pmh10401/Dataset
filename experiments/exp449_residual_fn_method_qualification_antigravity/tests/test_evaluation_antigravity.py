@@ -139,6 +139,65 @@ class EvaluationAntigravityTests(unittest.TestCase):
             self.assertFalse(dependencies.root.exists())
             self.assertEqual(len(list(Path(temporary).glob(".publication_antigravity.forensic_*_antigravity"))), 1)
 
+    def test_postmove_recovery_keeps_forensic_inode_and_moved_audit_when_validation_or_fsync_fails_antigravity(self) -> None:
+        """Break caught: a post-move recovery diagnostic overwrites the successful quarantine outcome."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        import json
+
+        for recovery_fault in ("validation", "fsync"):
+            with self.subTest(recovery_fault=recovery_fault), tempfile.TemporaryDirectory(prefix="exp449_postmove_truth_antigravity_") as temporary:
+                dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+                original_replay = module.inspect_replay_at_fd_antigravity
+                original_rename = module._rename_no_replace_at_antigravity
+                original_assert = module._assert_directory_entry_identity_at_antigravity
+                original_fsync = module._fsync_directory_antigravity
+                replay_calls = 0
+                moved: dict[str, object] = {}
+
+                def fail_postrename_replay(descriptor: int, **kwargs: object):
+                    nonlocal replay_calls
+                    replay_calls += 1
+                    if replay_calls == 2:
+                        raise OSError("primary postrename truth")
+                    return original_replay(descriptor, **kwargs)
+
+                def record_forensic_move(parent_fd: int, source: str, destination: str) -> None:
+                    original_rename(parent_fd, source, destination)
+                    if source == dependencies.root.name and ".forensic_" in destination:
+                        moved["basename"] = destination
+                        moved["identity"] = (os.stat(destination, dir_fd=parent_fd, follow_symlinks=False).st_dev, os.stat(destination, dir_fd=parent_fd, follow_symlinks=False).st_ino)
+
+                def fail_recovery_validation(parent_fd: int, name: str, expected: object) -> None:
+                    if recovery_fault == "validation" and name == moved.get("basename"):
+                        raise OSError("recovery validation truth")
+                    return original_assert(parent_fd, name, expected)
+
+                def fail_recovery_fsync(descriptor: int) -> None:
+                    if recovery_fault == "fsync" and moved:
+                        raise OSError("recovery fsync truth")
+                    return original_fsync(descriptor)
+
+                with patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=fail_postrename_replay), patch.object(module, "_rename_no_replace_at_antigravity", side_effect=record_forensic_move), patch.object(module, "_assert_directory_entry_identity_at_antigravity", side_effect=fail_recovery_validation), patch.object(module, "_fsync_directory_antigravity", side_effect=fail_recovery_fsync):
+                    with self.assertRaisesRegex(OSError, "primary postrename truth") as raised:
+                        module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+
+                self.assertFalse(dependencies.root.exists())
+                forensic = Path(temporary) / str(moved["basename"])
+                self.assertTrue(forensic.is_dir())
+                self.assertEqual((forensic.stat().st_dev, forensic.stat().st_ino), moved["identity"])
+                raw_audit = dependencies.audit_path.read_bytes()
+                audit = json.loads(raw_audit)
+                self.assertEqual(raw_audit, canonical_json_bytes_antigravity(audit))
+                self.assertEqual(audit["recovery"]["outcome"], "moved")
+                self.assertEqual(audit["recovery"]["forensic_basename"], moved["basename"])
+                self.assertEqual(audit["error"], "OSError: primary postrename truth")
+                self.assertEqual(str(raised.exception), "primary postrename truth")
+                key = f"recovery_{recovery_fault}_error"
+                self.assertEqual(audit["recovery"][key], f"OSError: recovery {recovery_fault} truth")
+                self.assertNotEqual(audit["recovery"]["outcome"], "recovery_failed")
+                self.assertIsNotNone(audit["recovery"]["forensic_basename"])
+
     def test_postrename_close_failure_is_a_note_not_a_primary_replacement_antigravity(self) -> None:
         """Break caught: retained-descriptor close masks an active recovery primary error."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module

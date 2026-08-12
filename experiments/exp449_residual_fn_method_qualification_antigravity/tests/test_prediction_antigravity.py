@@ -542,6 +542,86 @@ class PredictionAntigravityTests(unittest.TestCase):
             self.assertEqual(capture.authority, authority)
             self.assertEqual((len(capture.canonical_rows.splitlines()), len(capture.canonical_row_sha256), capture.authority.label_access_count), (96, 96, 0))
 
+    def test_capture_closes_every_registered_descriptor_after_leaf_fstat_primary_and_all_close_failures_antigravity(self) -> None:
+        """Break caught: an opened leaf is unregistered before fstat, or cleanup aborts after its first close error."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_capture_fstat_close_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            module.run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            original_open, original_fstat, original_close = module.os.open, module.os.fstat, module.os.close
+            opened: list[int] = []
+            leaf_fds: list[int] = []
+            closed: list[int] = []
+            failed_fd: int | None = None
+
+            def record_open(name: object, *args: object, **kwargs: object) -> int:
+                descriptor = original_open(name, *args, **kwargs)
+                opened.append(descriptor)
+                if isinstance(name, str) and name != "candidates_antigravity" and kwargs.get("dir_fd") is not None:
+                    leaf_fds.append(descriptor)
+                return descriptor
+
+            def fail_second_leaf_fstat(descriptor: int):
+                nonlocal failed_fd
+                if descriptor in leaf_fds and len(leaf_fds) >= 2 and descriptor == leaf_fds[1] and failed_fd is None:
+                    failed_fd = descriptor
+                    raise OSError("leaf fstat primary truth")
+                return original_fstat(descriptor)
+
+            def close_then_fail(descriptor: int) -> None:
+                closed.append(descriptor)
+                original_close(descriptor)
+                if descriptor in {failed_fd, leaf_fds[0] if leaf_fds else -1, opened[0], opened[1]}:
+                    raise OSError(f"close truth fd={descriptor}")
+
+            fd_count_before = len(list(Path("/dev/fd").iterdir()))
+            with patch.object(module.os, "open", side_effect=record_open), patch.object(module.os, "fstat", side_effect=fail_second_leaf_fstat), patch.object(module.os, "close", side_effect=close_then_fail):
+                with self.assertRaisesRegex(OSError, "leaf fstat primary truth") as raised:
+                    module.capture_frozen_prediction_authority_antigravity(root)
+            self.assertIsNotNone(failed_fd)
+            self.assertTrue(set(opened).issubset(closed))
+            self.assertIn(failed_fd, closed)
+            notes = "\n".join(raised.exception.__notes__)
+            for descriptor in (failed_fd, leaf_fds[0], opened[0], opened[1]):
+                self.assertIn(f"capture_close_error=OSError: close truth fd={descriptor}", notes)
+            for descriptor in opened:
+                with self.assertRaises(OSError):
+                    os.fstat(descriptor)
+            self.assertEqual(len(list(Path("/dev/fd").iterdir())), fd_count_before)
+
+        with tempfile.TemporaryDirectory(prefix="exp449_capture_multiclose_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            module.run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            original_open, original_close = module.os.open, module.os.close
+            opened: list[int] = []
+            closed: list[int] = []
+
+            def record_open(*args: object, **kwargs: object) -> int:
+                descriptor = original_open(*args, **kwargs)
+                opened.append(descriptor)
+                return descriptor
+
+            def close_then_fail(descriptor: int) -> None:
+                closed.append(descriptor)
+                original_close(descriptor)
+                if descriptor in opened[:3]:
+                    raise OSError(f"close truth fd={descriptor}")
+
+            fd_count_before = len(list(Path("/dev/fd").iterdir()))
+            with patch.object(module.os, "open", side_effect=record_open), patch.object(module.os, "close", side_effect=close_then_fail):
+                with self.assertRaisesRegex(OSError, f"close truth fd={opened[2] if len(opened) > 2 else ''}") as raised:
+                    module.capture_frozen_prediction_authority_antigravity(root)
+            self.assertTrue(set(opened).issubset(closed))
+            self.assertEqual(str(raised.exception), f"close truth fd={opened[2]}")
+            notes = "\n".join(raised.exception.__notes__)
+            for descriptor in opened[:2]:
+                self.assertIn(f"capture_close_error=OSError: close truth fd={descriptor}", notes)
+            for descriptor in opened:
+                with self.assertRaises(OSError):
+                    os.fstat(descriptor)
+            self.assertEqual(len(list(Path("/dev/fd").iterdir())), fd_count_before)
+
     def test_descriptor_capture_rejects_same_byte_candidates_directory_replacement_antigravity(self) -> None:
         """Break caught: capture accepts same-byte candidates replacement after retaining its fd."""
         import shutil
