@@ -68,6 +68,20 @@ class PredictionAntigravityTests(unittest.TestCase):
             os.link(root / "progress_antigravity.txt", Path(temporary) / "linked_progress_antigravity.txt")
             with self.assertRaises(ValueError):
                 validate_prediction_root_antigravity(root, authority)
+
+    def test_private_validator_rejects_rewritten_terminal_text_antigravity(self) -> None:
+        """Break caught: accepting a terminal text channel that disagrees with verified leaf prefix."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
+            run_synthetic_lifecycle_antigravity,
+            validate_prediction_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "d" * 40)
+            (root / "progress_antigravity.txt").write_text("96\n")
+            with self.assertRaises(ValueError):
+                validate_prediction_root_antigravity(root, authority)
         with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
             root = Path(temporary) / "run"
             authority = run_synthetic_lifecycle_antigravity(root, "b" * 40)
