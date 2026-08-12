@@ -434,6 +434,32 @@ class SourcesAntigravityTests(unittest.TestCase):
             session.close_antigravity()
             self.assertEqual(connection.close_calls, 1)
 
+    def test_valid_descriptor_early_close_is_terminal_and_released_once_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        _, authority = self._install_prediction_module_antigravity()
+        class ConnectionAntigravity:
+            def __init__(self): self.close_calls = 0
+            def execute(self, sql, parameters=()): return ()
+            def close(self): self.close_calls += 1
+        connection = ConnectionAntigravity()
+        with tempfile.TemporaryDirectory(prefix="exp449_early_close_antigravity_") as temporary:
+            descriptor = os.open(Path(temporary) / "descriptor_antigravity.bin", os.O_RDWR | os.O_CREAT, 0o600)
+            with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))):
+                session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+                with self.assertRaisesRegex(ValueError, "did not complete"):
+                    session.close_antigravity()
+                self.assertEqual(session.close_state_antigravity(), "terminal")
+                self.assertIsInstance(session.terminal_error_antigravity(), ValueError)
+                self.assertIsNone(session.close_error_antigravity())
+                self.assertEqual(connection.close_calls, 1)
+                with self.assertRaises(OSError): os.fstat(descriptor)
+                with self.assertRaisesRegex(ValueError, "did not complete"):
+                    session.labels_for_dataset_antigravity("Crop_normal_1")
+                with self.assertRaisesRegex(ValueError, "did not complete"):
+                    session.close_antigravity()
+                self.assertEqual(connection.close_calls, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
