@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-12T01:40:24Z",
-  "generated_from_commit": "51dab16b7e4e3c3fe02086e66128913df5a1d484",
+  "generated_at": "2026-08-12T00:00:00+00:00",
+  "generated_from_commit": "c843b48c294924a4a9a7fcf0399c73c982f57829",
   "scope": [
-    "Exp449 verified Tasks 1–4: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, and CPU-canonical acceleration record; Task 5 is next and unimplemented"
+    "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
   ],
   "nodes": [
     {
@@ -270,16 +270,18 @@
       ]
     },
     {
-      "id": "future_score_prediction",
+      "id": "frozen_prediction_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Future Task-5 frozen prediction authority and consumer of Task-4 score contracts; no source module exists yet.",
+      "role": "Task-5 label-free frozen 96-unit prediction authority, Task-3 descriptor validator seam, and fixed-order candidate commitment consumer of Task-2 registry and Task-4 score contracts.",
       "tests": [
-        "future tests/test_prediction_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"
       ],
       "evidence": [
         {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
-          "symbol": "_PREDICTION_MODULE_ANTIGRAVITY"
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
+          "symbol": "def validate_frozen_prediction_authority_antigravity"
         }
       ]
     }
@@ -458,11 +460,20 @@
     },
     {
       "from": "score_sources",
-      "to": "future_score_prediction",
-      "type": "future_unknown",
+      "to": "frozen_prediction_lifecycle",
+      "type": "imports",
       "evidence": {
-        "path": "docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html",
-        "symbol": "prediction bytes"
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
+        "symbol": "empirical_candidates"
+      }
+    },
+    {
+      "from": "label_free_source",
+      "to": "frozen_prediction_lifecycle",
+      "type": "reads",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
+        "symbol": "validate_frozen_prediction_authority_antigravity"
       }
     }
   ],
@@ -489,18 +500,19 @@
       "outcome": "CPU aeon representations and Exp249 LocalGap return finite deterministic scores; MLX/MPS availability cannot approve acceleration without the full stage gate."
     },
     {
-      "trigger": "Task 5 next / unimplemented boundary",
+      "trigger": "Task-5 frozen prediction validation",
       "steps": [
         "score_sources",
-        "future_score_prediction"
+        "frozen_prediction_lifecycle",
+        "label_free_source"
       ],
-      "outcome": "Task 4 is complete. Task 5 is next and unimplemented: it alone may consume frozen score contracts, while its authority source and later evaluation, CLI, and dashboard work remain absent."
+      "outcome": "Task 5 constructs label-free candidate leaves in frozen order and exposes the exact descriptor-validator seam required before Task 6 can open TEST labels; evaluation and publication remain downstream."
     }
   ],
   "unknown_relationships": [
-    "No caller of the Task-4 score source exists. The sole declared downstream relationship is next/unimplemented Task-5 prediction; evaluation, replay, launcher, and dashboard work remain unmapped and unimplemented."
+    "Task 6 evaluation, replay, launcher, and external dashboard publication remain unimplemented."
   ],
   "unknowns": [
-    "No Exp449 official lifecycle or Task-5 prediction source exists. The Task-6 label opener fails closed until Task 5 supplies the documented validator."
+    "The Task-6 label opener remains fail-closed until an official Task-5 prediction authority is present at its fixed root."
   ]
 }
