@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import re
 
-from .config_paper import LINEAGE_LOCK_PATH, REPOSITORY_ROOT, SOURCE_PROVENANCE_PATH
+from .config_paper import ARTIFACT_PARITY_CLAIM_PATH, LINEAGE_LOCK_PATH, REPOSITORY_ROOT, SOURCE_PROVENANCE_PATH
 from .contracts_paper import LineageNode, PaperCodemap
 
 
@@ -34,6 +34,9 @@ _LOCK_FIELDS = frozenset({"schema", "hashes"})
 _SOURCE_PROVENANCE_FIELDS = frozenset({"schema", "helpers"})
 _SOURCE_PROVENANCE_HELPER_FIELDS = frozenset({"paper_sha256", "origins"})
 _SOURCE_PROVENANCE_ORIGIN_FIELDS = frozenset({"module", "symbols", "source_sha256"})
+_ARTIFACT_PARITY_CLAIM_FIELDS = frozenset({"schema", "parity_kind", "frozen_datasets", "freeze_before_artifact_read", "available_stages", "unavailable_stages", "artifacts"})
+_ARTIFACT_PARITY_AVAILABLE = ("exp137", "exp236")
+_ARTIFACT_PARITY_UNAVAILABLE = ("exp74d", "exp89", "exp90", "exp93", "exp253")
 
 
 def sha256_file(path: Path) -> str:
@@ -210,6 +213,27 @@ def validate_source_provenance_paper(paper_root: Path) -> dict[str, object]:
     return helpers
 
 
+def validate_artifact_parity_claim(paper_root: Path) -> dict[str, object]:
+    """Validate the narrow, post-freeze historical-artifact parity boundary."""
+    root = Path(paper_root)
+    path = root / ARTIFACT_PARITY_CLAIM_PATH.name
+    payload = read_strict_json(path)
+    if not isinstance(payload, dict) or set(payload) != _ARTIFACT_PARITY_CLAIM_FIELDS:
+        raise ValueError("paper artifact parity claim schema is invalid")
+    if payload["schema"] != "paper-artifact-parity-claim.v1" or payload["parity_kind"] != "historical_artifact_lanes":
+        raise ValueError("paper artifact parity claim kind is invalid")
+    datasets, available, unavailable, artifacts = payload["frozen_datasets"], payload["available_stages"], payload["unavailable_stages"], payload["artifacts"]
+    if not isinstance(datasets, list) or len(datasets) != 10 or any(type(name) is not str or not name for name in datasets):
+        raise ValueError("paper artifact parity claim datasets are invalid")
+    if type(payload["freeze_before_artifact_read"]) is not bool or payload["freeze_before_artifact_read"] is not True:
+        raise ValueError("paper artifact parity claim must require create-only freeze")
+    if tuple(available) != _ARTIFACT_PARITY_AVAILABLE or tuple(unavailable) != _ARTIFACT_PARITY_UNAVAILABLE:
+        raise ValueError("paper artifact parity stage boundary differs")
+    if not isinstance(artifacts, dict) or set(artifacts) != set(_ARTIFACT_PARITY_AVAILABLE) or any(not isinstance(paths, list) or not paths or any(type(item) is not str or not item for item in paths) for paths in artifacts.values()):
+        raise ValueError("paper artifact parity artifact paths are invalid")
+    return {"available_stages": tuple(available), "unavailable_stages": tuple(unavailable), "freeze_before_artifact_read": payload["freeze_before_artifact_read"]}
+
+
 def _parse_codemap(payload: object) -> PaperCodemap:
     if not isinstance(payload, dict) or set(payload) != {"schema", "required_fields", "modules"}:
         raise ValueError("paper codemap schema is invalid")
@@ -243,17 +267,20 @@ def _ast_import_callers(paper_root: Path) -> dict[str, frozenset[str]]:
         package = path.relative_to(root).parts[:-1]
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if not isinstance(node, ast.ImportFrom) or node.module is None:
+            if not isinstance(node, ast.ImportFrom):
                 continue
             if node.level:
                 base = package[:len(package) - (node.level - 1)]
-                imported = "/".join(base + tuple(node.module.split("."))) + ".py"
-            elif node.module.startswith(package_prefix):
-                imported = node.module.removeprefix(package_prefix).replace(".", "/") + ".py"
+                candidates = ["/".join(base + tuple(node.module.split("."))) + ".py"] if node.module else ["/".join(base + (alias.name,)) + ".py" for alias in node.names]
+            elif node.module == package_prefix.removesuffix("."):
+                candidates = [alias.name + ".py" for alias in node.names]
+            elif node.module is not None and node.module.startswith(package_prefix):
+                candidates = [node.module.removeprefix(package_prefix).replace(".", "/") + ".py"]
             else:
                 continue
-            if imported in callers:
-                callers[imported].add(caller)
+            for imported in candidates:
+                if imported in callers:
+                    callers[imported].add(caller)
     return {module: frozenset(value) for module, value in callers.items()}
 
 
@@ -303,8 +330,8 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     root = Path(paper_root)
     html, codemap, lock = (root / "codemap_paper.html", root / "codemap_paper.json", root / "codemap_paper.lock")
     config, contracts, lineage = root / "config_paper.py", root / "contracts_paper.py", root / "lineage_lock_paper.json"
-    provenance = root / "sources_paper" / "source_provenance_paper.json"
-    required_paths = (html, codemap, lock, config, contracts, lineage, provenance)
+    provenance, claim = root / "sources_paper" / "source_provenance_paper.json", root / ARTIFACT_PARITY_CLAIM_PATH.name
+    required_paths = (html, codemap, lock, config, contracts, lineage, provenance, claim)
     if any(not item.is_file() for item in required_paths):
         raise ValueError("paper codemap triplet is incomplete")
     lock_payload = read_strict_json(lock)
@@ -314,7 +341,7 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     expected_names = {
         "config_paper.py", "contracts_paper.py", "lineage_lock_paper.json",
         "codemap_paper.html", "codemap_paper.json", "hard_route_paper.py",
-        "sources_paper/source_provenance_paper.json",
+        "sources_paper/source_provenance_paper.json", ARTIFACT_PARITY_CLAIM_PATH.name,
     } | _paper_source_helper_inventory(root)
     if not isinstance(hashes, dict) or set(hashes) != expected_names or any(type(value) is not str or not re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values()):
         raise ValueError("paper codemap lock hashes are invalid")
@@ -328,6 +355,7 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     if {module: frozenset(detail["callers"]) for module, detail in parsed.modules.items()} != actual_callers:
         raise ValueError("paper codemap caller graph differs from required AST edges")
     validate_source_provenance_paper(root)
+    validate_artifact_parity_claim(root)
     if set(parsed.modules) != _paper_module_inventory(root):
         raise ValueError("paper codemap module inventory differs")
     if html.read_text(encoding="utf-8") != _render_codemap_html(parsed):
@@ -338,7 +366,7 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
 __all__ = [
     "LINEAGE_NODES", "parse_nodes", "read_strict_json", "reject_duplicate_object_keys",
     "resolve_repo_module_source", "sha256_file", "static_top_level_names",
-    "validate_codemap_triplet", "validate_lineage_lock", "validate_source_provenance_paper",
+    "validate_artifact_parity_claim", "validate_codemap_triplet", "validate_lineage_lock", "validate_source_provenance_paper",
 ]
 
 

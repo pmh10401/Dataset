@@ -288,6 +288,103 @@ class HardRouteTests(unittest.TestCase):
         if weak and len(paper90) <= 1 and scored[candidate]["support"] >= 2 and scored[candidate]["best_rank"] <= 3:
             self.assertIn(candidate, paper93)
 
+    def test_executable_origin_exp89_and_exp93_nonvacuously_match_paper_selectors(self) -> None:
+        """Origin Exp89/93 selector outputs must equal paper selectors on active branches."""
+        from paper.equipment_anomaly_detection.hard_route_paper import _replay_exp93_from_exp90
+
+        parse = lambda value: {int(item) for item in str(value).split()} if value else set()
+        train = np.zeros(12)
+        primary = {
+            name: FullFitScoreView(name, train, np.full(6, -1.0), .015)
+            for name in ("rocket_exp40", "exp55_best", "exp56_best")
+        }
+        exp84 = FullFitScoreView("exp84", train, np.array([0., 6., 5., 4., 3., 2.]), .03)
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, train, np.zeros(6), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        evidence = LegacyRouteEvidence("selector-normal", "fixture", 12, 6, 3, primary, exp84, blocks)
+        _, paper89, _, _ = replay_exp74d_89_90_93(evidence)
+        exp89 = _origin_functions("run_experiment_89_74d_with_exp84_candidate.py", ("choose_rows_for_dataset", "parse_indices", "exp84_bundle_from_row"))["choose_rows_for_dataset"]
+        bundles = {name: {"indices": set(), "test_scores": view.test_score} for name, view in primary.items()}
+        exp89.__globals__.update({
+            "CALIBRATION_PROFILES": {"relaxed_15pct": {}},
+            "as_float": lambda value, default=0.0: float(value) if value not in (None, "") else default,
+            "load_candidate_predictions": lambda _name, threshold_rates: ({"train_series": [0] * 12}, np.zeros(6), bundles),
+            "is_large_data_case": lambda _record, _test: False,
+            "large_data_budget": lambda _test, **_kwargs: 2,
+            "top_score_indices": lambda bundle, count: set(np.argsort(-bundle["test_scores"])[:count].tolist()),
+            "indices_at_least": lambda minimum, sets: {index for index in set().union(*sets) if sum(index in values for values in sets) >= minimum},
+            "cap_indices_count": lambda indices, _bundle, count: set(sorted(indices)[:count]),
+            "passthrough_row": lambda *_args, **_kwargs: {},
+            "computed_row": lambda _dataset, _record, _test, _bundles, _base, selector, indices, *_args: {"selector_name": selector, "selected_indices": set(indices)},
+        })
+        rows89 = exp89(("fixture", {"selected_indices": ""}, {"selected_indices": ""}, {("fixture", "family_guard_v1"): {"selected_indices": "1", "top_score_indices": "1 2 3 4 5 0", "train_exceed_rate": ".015", "top1_threshold_margin": "0", "top1_top2_margin": "0"}}))
+        origin89 = next(row["selected_indices"] for row in rows89 if row.get("selector_name") == "exp84_four_model_fg_plus_noalert_repair")
+        self.assertEqual(frozenset(origin89), paper89)
+        self.assertEqual(paper89, frozenset({1}))
+
+        weak_train = np.arange(100., dtype=float)
+        weak_primary = {
+            "rocket_exp40": FullFitScoreView("rocket_exp40", weak_train, np.arange(20., 0., -1.), .015),
+            "exp55_best": FullFitScoreView("exp55_best", weak_train, np.r_[20., 19., 18., 17., 16., -100., np.arange(14., 0., -1.)], .015),
+            "exp56_best": FullFitScoreView("exp56_best", weak_train, np.r_[20., 19., 18., 17., 16., -100., np.arange(14., 0., -1.)], .015),
+        }
+        weak_exp84 = FullFitScoreView("exp84", weak_train, np.zeros(20), .03)
+        weak_blocks = ConfirmationBlocks(*(FullFitScoreView(name, weak_train, np.zeros(20), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        weak_evidence = LegacyRouteEvidence("weak-selector", "fixture", 100, 20, 3, weak_primary, weak_exp84, weak_blocks)
+        paper93 = _replay_exp93_from_exp90(weak_evidence, frozenset({5}))
+        exp93 = _origin_functions("run_experiment_93_nonpos_candidate_reranker.py", ("choose_rows_for_dataset", "parse_order", "bundle_order", "exp84_order", "rank_map", "candidate_pool", "score_candidates", "sorted_candidates", "top_non_base", "weak_base_indices", "passthrough_row"))["choose_rows_for_dataset"]
+        exp93.__globals__.update({
+            "CALIBRATION_PROFILES": {"relaxed_15pct": {}}, "MAX_TOP": 12, "EXPERIMENT_ID": "fixture",
+            "parse_indices": parse, "as_float": lambda value, default=0.0: float(value) if value not in (None, "") else default,
+            "top_score_order": lambda bundle, count: [int(index) for index in np.argsort(-bundle["test_scores"])[:count]],
+            "load_candidate_predictions": lambda _name, threshold_rates: ({"train_series": [0] * 12}, np.zeros(20), {name: {"test_scores": view.test_score} for name, view in weak_primary.items()}),
+            "row_with_metrics": lambda _dataset, _record, _test, _bundles, _base, selector, indices, *_args: {"selector_name": selector, "selected_indices": set(indices)},
+        })
+        exp87 = {("fixture", "family_guard_v1"): {"top_score_indices": "", "train_exceed_rate": "1"}, ("fixture", "count_cap_3pct"): {"top_score_indices": "", "train_exceed_rate": "1"}}
+        rows93 = exp93(("fixture", {"selected_indices": "5", "train_normal_count": "12"}, {"selected_indices": "5"}, exp87))
+        origin93 = next(row["selected_indices"] for row in rows93 if row.get("selector_name") == "nonpos_weak_alert_replace")
+        self.assertEqual(frozenset(origin93), paper93)
+        self.assertEqual(paper93, frozenset({0}))
+
+    def test_executable_origin_exp134_and_exp135_cover_positive_and_negative_priority_membership(self) -> None:
+        """Executable Block-B/C selectors agree with paper for eligible and rejected reviews."""
+        parse = lambda value: {int(item) for item in str(value).split()} if value else set()
+        train = np.arange(200., dtype=float)
+        def blocks(*, block_b_support: bool) -> ConfirmationBlocks:
+            a_test = np.array([0., 250., 0.]) if block_b_support else np.array([250., 0., 0.])
+            c_test = np.array([0., 250., 0.]) if block_b_support else np.array([250., 0., 0.])
+            return ConfirmationBlocks(
+                FullFitScoreView("a", train, a_test, .015),
+                FullFitScoreView("b", train, np.array([250., 250., 0.]), .015),
+                FullFitScoreView("b", train, np.array([250., 250., 0.]), .01),
+                FullFitScoreView("c", train, c_test, .01),
+            )
+        exp134 = _origin_functions("run_experiment_134_block_b_review_tail_guard.py", ("run_one",))["run_one"]
+        exp134.__globals__.update({
+            "load_dataset_data": lambda _name: (np.zeros((12, 3)), np.zeros((3, 3)), np.zeros(3)), "z_normalize": lambda values: values,
+            "parse_indices": parse, "RATES": (.005, .01, .015), "np": np,
+            "count_cap_threshold": lambda _scores, rate: (196.0 if rate == .015 else 197.0, rate, 0),
+            "base": SimpleNamespace(make_row=lambda _d, _y, _hard, config, review, _reason, _diagnostics: {"config": config, "review": set(review)}),
+        })
+        exp135 = _origin_functions("run_experiment_135_block_c_review_confirmation.py", ("run_one",))["run_one"]
+        exp135.__globals__.update({
+            "load_dataset_data": lambda _name: (np.zeros((12, 3)), np.zeros((3, 3)), np.zeros(3)), "z_normalize": lambda values: values,
+            "parse_indices": parse, "as_float": float,
+            "base": SimpleNamespace(make_row=lambda _d, _y, _hard, config, review, _reason, _diagnostics: {"config": config, "review": set(review)}),
+        })
+        for support, expected in ((False, frozenset({0})), (True, frozenset())):
+            current = blocks(block_b_support=support)
+            exp93_index, review_index = (0, 1) if support else (2, 0)
+            exp134.__globals__["base"].block_scores = lambda _train, _test, current=current: (train, current.block_a.test_score, train, current.block_b_01.test_score, 200, 0)
+            exp135.__globals__["block_c_candidates"] = lambda _train, _test, current=current: (set(current.block_c.candidate), current.block_c.test_score, 200, 0, .01, 0)
+            paper = replay_exp133_134_135_137(frozenset({exp93_index}), current)
+            rows134 = exp134(("fixture", {"selected_indices": str(exp93_index)}, {}))
+            origin134 = next(row["review"] for row in rows134 if row["config"] == "review_block_ba_tail_pct_1p0_top1")
+            self.assertEqual(frozenset(origin134), frozenset({review_index}))
+            rows135 = exp135(("fixture", {"selected_indices": str(exp93_index), "review_candidate_indices": str(review_index), "train_normal_count": "200", "tiny_train": "0"}, {"high_confidence_count": "1" if support else "0", "standard_confidence_count": "0" if support else "1"}))
+            origin135 = next(row["review"] for row in rows135 if row["config"] == "review_tail1pct_all_standard_and_block_c")
+            self.assertEqual(frozenset(origin135), paper.priority)
+            self.assertEqual(paper.priority, expected)
+
     def test_fullfit_exp74d_primary_rates_are_all_one_point_five_percent(self) -> None:
         values = _values()
         with patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._fullfit_primary", side_effect=lambda name, train, test, target: FullFitScoreView(name, np.arange(len(train), dtype=float), np.arange(len(test), dtype=float), .015)), patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._confirmation_blocks", return_value=self.evidence.confirmation_blocks):

@@ -149,6 +149,30 @@ def _ranked_primary(evidence: LegacyRouteEvidence, count: int) -> set[int]:
     return set(np.argsort(combined)[:max(1, min(int(count), n))].astype(int).tolist())
 
 
+def _replay_exp93_from_exp90(evidence: LegacyRouteEvidence, exp90: frozenset[int]) -> frozenset[int]:
+    """Copy Exp93's replacement selector for one already-selected Exp90 lane."""
+    rocket, exp55, exp56 = (evidence.primary[name] for name in ("rocket_exp40", "exp55_best", "exp56_best"))
+    exp84_fg, exp84_cap3 = evidence.exp84_family_guard, evidence.exp84_count_cap_3pct
+    orders = {"rocket": _exp93_order(rocket), "exp55": _exp93_order(exp55), "exp56": _exp93_order(exp56), "exp84_fg": list(exp84_fg.order[:MAX_TOP_PAPER]) if exp84_fg.train_exceed_rate <= .015 else [], "exp84_cap3": list(exp84_cap3.order[:MAX_TOP_PAPER]) if exp84_cap3.train_exceed_rate <= .02 else []}
+    maps = {name: {index: rank for rank, index in enumerate(order, 1)} for name, order in orders.items()}
+    pool = set().union(*(set(order[:8]) for order in orders.values())) | set(exp90)
+    scored: dict[int, tuple[float, int, int, float]] = {}
+    for index in pool:
+        ranks = [mapping[index] for mapping in maps.values() if index in mapping]
+        support, best, rank_sum = len(ranks), min(ranks, default=MAX_TOP_PAPER + 1), float(sum(ranks) if ranks else 999.0)
+        weighted = sum(EXP93_WEIGHTS_PAPER[name] * ((MAX_TOP_PAPER + 1 - maps[name][index]) / MAX_TOP_PAPER) for name in maps if index in maps[name]) + .08 * max(0, support - 1)
+        scored[index] = (weighted, support, best, rank_sum)
+    ranked = sorted(scored, key=lambda index: (scored[index][0], scored[index][1], -scored[index][2], -scored[index][3], -index), reverse=True)
+    candidate = next((index for index in ranked if index not in exp90), None)
+    weak = {index for index in exp90 if scored.get(index, (0., 0, 99, 999.))[1] <= 1 and scored.get(index, (0., 0, 99, 999.))[2] > 5}
+    base_best = max((scored.get(index, (0., 0, 99, 999.))[0] for index in exp90), default=0.)
+    if evidence.n_train > 10 and len(exp90) <= 1 and weak and candidate is not None:
+        score, support, best, _ = scored[candidate]
+        if support >= 2 and best <= 3 and score - base_best >= .04:
+            return frozenset((set(exp90) - weak) | {candidate})
+    return exp90
+
+
 def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, frozenset[int], frozenset[int], frozenset[int]]:
     """Replay frozen selectors through Exp93 with their original tie behaviors."""
     rocket, exp55, exp56 = (evidence.primary[name] for name in ("rocket_exp40", "exp55_best", "exp56_best"))
@@ -181,25 +205,7 @@ def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, f
                 repair.add(rocket_top1)
     exp90 = frozenset(set(exp89) | repair)
 
-    orders = {"rocket": _exp93_order(rocket), "exp55": _exp93_order(exp55), "exp56": _exp93_order(exp56), "exp84_fg": list(exp84_fg.order[:MAX_TOP_PAPER]) if exp84_fg.train_exceed_rate <= .015 else [], "exp84_cap3": list(exp84_cap3.order[:MAX_TOP_PAPER]) if exp84_cap3.train_exceed_rate <= .02 else []}
-    maps = {name: {index: rank for rank, index in enumerate(order, 1)} for name, order in orders.items()}
-    pool = set().union(*(set(order[:8]) for order in orders.values())) | set(exp90)
-    scored: dict[int, tuple[float, int, int, float]] = {}
-    for index in pool:
-        ranks = [mapping[index] for mapping in maps.values() if index in mapping]
-        support, best, rank_sum = len(ranks), min(ranks, default=MAX_TOP_PAPER + 1), float(sum(ranks) if ranks else 999.0)
-        weighted = sum(EXP93_WEIGHTS_PAPER[name] * ((MAX_TOP_PAPER + 1 - maps[name][index]) / MAX_TOP_PAPER) for name in maps if index in maps[name]) + .08 * max(0, support - 1)
-        scored[index] = (weighted, support, best, rank_sum)
-    ranked = sorted(scored, key=lambda index: (scored[index][0], scored[index][1], -scored[index][2], -scored[index][3], -index), reverse=True)
-    candidate = next((index for index in ranked if index not in exp90), None)
-    weak = {index for index in exp90 if scored.get(index, (0., 0, 99, 999.))[1] <= 1 and scored.get(index, (0., 0, 99, 999.))[2] > 5}
-    base_best = max((scored.get(index, (0., 0, 99, 999.))[0] for index in exp90), default=0.)
-    if evidence.n_train > 10 and len(exp90) <= 1 and weak and candidate is not None:
-        score, support, best, _ = scored[candidate]
-        exp93 = frozenset((set(exp90) - weak) | {candidate}) if support >= 2 and best <= 3 and score - base_best >= .04 else exp90
-    else:
-        exp93 = exp90
-    return exp74d, exp89, exp90, frozenset(exp93)
+    return exp74d, exp89, exp90, _replay_exp93_from_exp90(evidence, exp90)
 
 
 def replay_exp133_134_135_137(exp93: frozenset[int], blocks: ConfirmationBlocks) -> RouteLanes:

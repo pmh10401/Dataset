@@ -12,12 +12,49 @@ from paper.equipment_anomaly_detection.config_paper import FROZEN_CONFIG, LINEAG
 from paper.equipment_anomaly_detection.lineage_paper import (
     LINEAGE_NODES,
     _ast_import_callers,
+    validate_artifact_parity_claim,
     validate_codemap_triplet,
     validate_lineage_lock,
 )
 
 
 class ConfigLineageTests(unittest.TestCase):
+    def test_ast_caller_scanner_resolves_module_form_direct_and_aliased_imports(self) -> None:
+        """Module aliases are caller edges, not attribute imports to discard."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name in ("data_paper.py", "contracts_paper.py"):
+                (root / name).write_text("", encoding="utf-8")
+            (root / "caller_paper.py").write_text(
+                "from paper.equipment_anomaly_detection import data_paper\n"
+                "from paper.equipment_anomaly_detection import contracts_paper as contracts\n",
+                encoding="utf-8",
+            )
+            (root / "relative_paper.py").write_text(
+                "from . import data_paper as data\n", encoding="utf-8"
+            )
+            callers = _ast_import_callers(root)
+        self.assertEqual(callers["data_paper.py"], frozenset({"caller_paper.py", "relative_paper.py"}))
+        self.assertEqual(callers["contracts_paper.py"], frozenset({"caller_paper.py"}))
+
+    def test_artifact_parity_claim_is_hash_bound_and_precisely_scoped(self) -> None:
+        """Artifact parity may claim only the frozen smoke's available historical stages."""
+        claim = validate_artifact_parity_claim(PAPER_ROOT)
+        self.assertEqual(claim["available_stages"], ("exp137", "exp236"))
+        self.assertEqual(claim["unavailable_stages"], ("exp74d", "exp89", "exp90", "exp93", "exp253"))
+        self.assertTrue(claim["freeze_before_artifact_read"])
+        with tempfile.TemporaryDirectory() as temporary:
+            copied_root = Path(temporary) / "paper"
+            for source in PAPER_ROOT.rglob("*"):
+                if source.is_file() and "__pycache__" not in source.parts:
+                    target = copied_root / source.relative_to(PAPER_ROOT)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(source.read_bytes())
+            claim_path = copied_root / "artifact_parity_claim_paper.json"
+            claim_path.write_text(claim_path.read_text(encoding="utf-8").replace('"exp253"', '"exp999"'), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "hash differs"):
+                validate_codemap_triplet(copied_root)
+
     def test_codemap_callers_are_complete_static_ast_import_edges(self) -> None:
         """Every direct paper import is represented by its callee's caller list."""
         codemap = validate_codemap_triplet(PAPER_ROOT)

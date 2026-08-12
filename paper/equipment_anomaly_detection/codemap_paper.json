@@ -71,7 +71,8 @@
     },
     "data_paper.py": {
       "callers": [
-        "label_access_paper.py"
+        "label_access_paper.py",
+        "tests_paper/test_data_boundary_paper.py"
       ],
       "effects": [
         "opens only the exact SHA256-verified descriptor-pinned read-only database; returns normal TRAIN and label-free TEST raw float32 values with contiguous indices",
@@ -89,7 +90,7 @@
       ],
       "effects": [
         "replays full-fit Exp74d→137 and OOF-only Exp234 expansion with exact disjoint lanes, immutable route values, and a create-only ten-dataset smoke freeze",
-        "removes byte-equal normal TRAIN blobs from Hard; historical artifacts are reachable only through the separate parity comparator"
+        "replays frozen routes from raw evidence only; test-only historical artifact parity is create-only-freeze-gated and limited by artifact_parity_claim_paper.json to Exp137/Exp236"
       ],
       "tests": [
         "tests_paper/test_hard_route_paper.py"
@@ -110,7 +111,9 @@
       ]
     },
     "label_access_paper.py": {
-      "callers": [],
+      "callers": [
+        "tests_paper/test_data_boundary_paper.py"
+      ],
       "effects": [
         "lazily converts only exact TEXT TEST labels to integer tuples after values-only scoring"
       ],

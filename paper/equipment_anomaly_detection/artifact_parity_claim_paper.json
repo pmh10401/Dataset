@@ -1,0 +1,15 @@
+{
+  "schema": "paper-artifact-parity-claim.v1",
+  "parity_kind": "historical_artifact_lanes",
+  "frozen_datasets": [
+    "ACSF1_normal_0", "ACSF1_normal_1", "ACSF1_normal_2", "ACSF1_normal_3", "ACSF1_normal_4",
+    "ACSF1_normal_5", "ACSF1_normal_6", "ACSF1_normal_7", "ACSF1_normal_8", "ACSF1_normal_9"
+  ],
+  "freeze_before_artifact_read": true,
+  "available_stages": ["exp137", "exp236"],
+  "unavailable_stages": ["exp74d", "exp89", "exp90", "exp93", "exp253"],
+  "artifacts": {
+    "exp137": ["results/exp137/experiment_137_operational_triage_results.csv"],
+    "exp236": ["outputs/exp236_detection_coverage_expansion/exp236_frozen_predictions.jsonl", "/Users/mac/Documents/Dataset/experiments/exp236_direct_run_antigravity/exp236_frozen_predictions.jsonl"]
+  }
+}
