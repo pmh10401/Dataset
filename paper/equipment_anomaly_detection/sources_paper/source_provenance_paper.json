@@ -360,6 +360,73 @@
           "source_sha256": "6e0d48249a5966e7832ea46f897f03667081db5f668c0032fa8b6f20f7e0edca"
         }
       ]
+    },
+    "sources_paper/low_frequency_paper.py": {
+      "paper_sha256": "9a2db8400b0e5cb4ce3c78dc767ea74d257c05d09d78847c43de0b39ebf97b44",
+      "origins": [
+        {
+          "module": "experiments.exp439_scale_aware_reconstruction_repair_antigravity.aspe_antigravity",
+          "symbols": [
+            "amplitude_sensitive_permutation_entropy_antigravity"
+          ],
+          "source_sha256": "104bdcb7849616d867ea4ef4a65d8f4e53f0c68074edd043c495a9f06d438f6c"
+        },
+        {
+          "module": "experiments.exp439_scale_aware_reconstruction_repair_antigravity.config_antigravity",
+          "symbols": [
+            "FROZEN_CONFIG",
+            "Exp439FrozenConfig"
+          ],
+          "source_sha256": "253a4e9e2476fd4a618f478f37cbf5716143746427c425a96af649694984ff74"
+        },
+        {
+          "module": "experiments.exp439_scale_aware_reconstruction_repair_antigravity.features_antigravity",
+          "symbols": [
+            "fft_split_antigravity",
+            "lower_median_depth_antigravity",
+            "maximum_depth_antigravity",
+            "preferred_depth_antigravity"
+          ],
+          "source_sha256": "8257c345de406373c2d932368667a214e0d6b10625a09ad3919de6d9397b01a3"
+        },
+        {
+          "module": "experiments.exp439_scale_aware_reconstruction_repair_antigravity.scoring_antigravity",
+          "symbols": [
+            "score_channel_cpu_antigravity"
+          ],
+          "source_sha256": "d233ad8360ebf87dff77ae83cbdb1ea8069523ae97d10af584fa6bb3b58feeb6"
+        },
+        {
+          "module": "experiments.exp440_train_only_low_frequency_precision_gate_antigravity.config_antigravity",
+          "symbols": [
+            "FROZEN_CONFIG",
+            "Exp440FrozenConfig"
+          ],
+          "source_sha256": "e664a3a2b9d7b2ae8d81b2470bd148b1352442ae7079e9f0197fb9cb13832041"
+        },
+        {
+          "module": "experiments.exp440_train_only_low_frequency_precision_gate_antigravity.features_antigravity",
+          "symbols": [
+            "adjacent_depths_antigravity",
+            "fit_group_calibration_antigravity"
+          ],
+          "source_sha256": "ead6e21da7cdb78b2cfc62411123b5da7d56752d1b81699b9094fcf3775de329"
+        },
+        {
+          "module": "experiments.exp440_train_only_low_frequency_precision_gate_antigravity.scoring_antigravity",
+          "symbols": [
+            "score_test_row_antigravity"
+          ],
+          "source_sha256": "ef3675e63b1cf2907cc0b3c97d204db77b2573d867590520a1e8e660a01ca976"
+        },
+        {
+          "module": "experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity",
+          "symbols": [
+            "select_hard_empty_single_shot_antigravity"
+          ],
+          "source_sha256": "22c93cf072946f4e52bd69dd0090bb487bb5938ced237ed15c216c0d9864bf7a"
+        }
+      ]
     }
   }
 }
