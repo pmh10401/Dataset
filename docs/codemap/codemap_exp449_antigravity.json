@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T05:20:55+00:00",
-  "generated_from_commit": "ee58c98e8622775e9dc071e3e5825a139981fc61",
+  "generated_at": "2026-08-12T05:32:58+00:00",
+  "generated_from_commit": "6be8559b73a779142743b2341c38e2055ed01468",
   "scope": [
     "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
   ],
@@ -246,7 +246,7 @@
     {
       "id": "frozen_prediction_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent-contiguous lifecycle-owned CommitSession commits, descriptor validator firewall, and one shared non-masking failure-audit boundary.",
+      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent-contiguous lifecycle-owned CommitSession commits, descriptor validator firewall, and one shared non-masking failure-audit boundary that fails closed to prefix zero if validation machinery throws.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py"
@@ -501,7 +501,7 @@
         "frozen_prediction_lifecycle",
         "prediction_progress"
       ],
-      "outcome": "A fixed 11-worker production route derives progress and failure exact-next evidence only from lifecycle-owned CommitSession state appended after durable writer success; one shared failure boundary independently records a nonthrowing descriptor prefix and audit outcome before Task 6 can open TEST labels, while status remains local-only."
+      "outcome": "A fixed 11-worker production route derives progress and failure exact-next evidence only from lifecycle-owned CommitSession state appended after durable writer success; one shared failure boundary independently records a nonthrowing descriptor prefix, or zero when validation machinery throws, and audit outcome before Task 6 can open TEST labels, while status remains local-only."
     }
   ],
   "unknown_relationships": [
