@@ -125,6 +125,15 @@ Stable 추가 경로
 strict 비교, 결측/길이 eligibility 및 tie-break를 변경하지 않는다. source 간에
 임의의 공통 전처리를 새로 덮어쓰지 않는다.
 
+Hard 경로에는 서로 다른 두 score 계약이 공존한다. Exp234 독립 합의는 OOF score의
+경험적 p-value를 사용한다. 반면 Exp74d→137의 동결된 selector는 full-fit 정상 TRAIN
+calibration score의 count-cap threshold를 사용하므로 OOF score로 대체하지 않는다.
+Exp40은 database metadata length를, Exp55/56/84는 과거와 동일한 TRAIN+TEST 실제
+길이 median을 사용한다. 후자는 TEST label을 쓰지 않는 transductive value
+preprocessing이므로 그대로 재현하되 manifest와 논문 limitation에 명시한다. 두 Exp84
+threshold view와 Block A/B/C full-fit score도 원시 값에서 다시 계산해야 하며 과거
+좌표 파일로 메울 수 없다.
+
 ### 5.3 필수 parity
 
 1,117개 전체 재실행은 label을 열기 전에 다음 좌표 수와 exact coordinate identity를

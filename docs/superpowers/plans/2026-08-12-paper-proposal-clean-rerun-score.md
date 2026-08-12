@@ -57,6 +57,7 @@ paper/equipment_anomaly_detection/
     canonical_paper.py                 canonical features and crossfit closure
     hard_sources_paper.py              six-source orchestration only
     source_provenance_paper.json       exact copied origin/symbol/SHA closure
+    legacy_route_sources_paper.py      exact full-fit score views for the frozen Hard route
     minirocket_paper.py                raw 1024/4096 two-seed MiniROCKET evidence
     low_frequency_paper.py             full TEST Exp440 multi-depth score replay
     stability_paper.py                 exact 30-candidate Exp444 omission replay
@@ -516,27 +517,37 @@ git commit -m "feat: replay raw hard score sources"
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
 - Create: `paper/equipment_anomaly_detection/hard_route_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py`
 - Create: `paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py`
 
 **Interfaces:**
-- Consumes: `HardSourceBundle`, `RawDataset` blobs.
-- Produces: `replay_hard_route(values, sources) -> HardRouteResult` with base lanes, Exp234 expansion, MiniROCKET promotion, exact-normal exclusion, and `automatic_hard`.
+- Consumes: `RawDataset`, Task 4 `HardSourceBundle` OOF evidence, and fresh `MiniRocketResult`.
+- Produces: `build_legacy_route_evidence(values) -> LegacyRouteEvidence` and `replay_hard_route(values, sources, mini) -> HardRouteResult` with every Exp74d/89/90/93/137/234/236/253 intermediate, exact-normal exclusion, and `automatic_hard`.
+
+Task 4의 `train_oof_score`는 Exp234의 경험적 p-value에만 사용한다. 과거 Exp74d→137 경로는 OOF가 아니라 full-fit TRAIN calibration score를 count-cap threshold에 사용했으므로 이를 대체해서는 안 된다. `legacy_route_sources_paper.py`는 원시 값에서 다음 별도 evidence를 정확히 다시 계산한다.
+
+- Exp40: database `metadata_length` alignment의 full-fit TRAIN/TEST score
+- Exp55/56/84: frozen historical TRAIN+TEST actual-length median alignment의 full-fit TRAIN/TEST score
+- Exp84: 동일 score에서 `family_guard_v1`와 `count_cap_3pct` 두 threshold view, 원래의 비안정 `np.argsort(scores)[::-1]` top order와 margin 진단
+- Block A/B/C: 공유 reference, 512/768 kernel slice와 각각 1.5%/1% count-cap view
+
+dataset family는 dataset 이름에서 frozen `parse_family` 규칙으로 계산한다. TEST 길이·개수·score·rank는 label-free TEST value state이며 허용하지만, 이 historical transductive preprocessing 사실을 manifest와 논문 limitation에 기록한다. TEST label/metric/legacy coordinate는 score 및 route 입력으로 금지한다.
 
 - [ ] **Step 1: Write synthetic route and exact-blob RED tests**
 
 ```python
 class HardRouteTests(unittest.TestCase):
     def test_route_preserves_stage_counts_and_exact_guard(self) -> None:
-        result = replay_hard_route(self.values, self.sources)
+        result = replay_hard_route(self.values, self.sources, self.mini)
         self.assertEqual(result.exp236_hard, frozenset({1, 2}))
         self.assertEqual(result.exp253_hard, frozenset({1, 2, 3}))
         self.assertEqual(result.automatic_hard, frozenset({2, 3}))
 
     def test_old_coordinate_artifact_cannot_be_passed(self) -> None:
         with self.assertRaises(TypeError):
-            replay_hard_route(self.values, self.sources, frozen_coordinates={9})
+            replay_hard_route(self.values, self.sources, self.mini, frozen_coordinates={9})
 ```
 
 - [ ] **Step 2: Verify RED**
@@ -550,18 +561,22 @@ Expected: FAIL because route replay is absent.
 `hard_route_paper.py`는 다음 stage를 순서대로 호출하고 각 중간 coordinate identity를 기록한다.
 
 ```python
-def replay_hard_route(values: RawDataset, sources: HardSourceBundle) -> HardRouteResult:
-    exp93 = replay_exp74d_89_90_93_119(sources, values)
-    exp137 = partition_block_b_confidence(exp93, sources.by_name["rocket_block_b"])
-    exp234 = minimum_source_expansion(exp137, sources, required=3, alpha=0.01)
+def replay_hard_route(values: RawDataset, sources: HardSourceBundle,
+                      mini: MiniRocketResult) -> HardRouteResult:
+    evidence = build_legacy_route_evidence(values)
+    exp74d, exp89, exp90, exp93 = replay_exp74d_89_90_93(evidence)
+    exp137 = replay_exp133_134_135_137(exp93, evidence.confirmation_blocks)
+    exp234 = minimum_source_expansion(exp137, sources, alpha=0.01)
     exp236 = union_three_source_hard(exp137, exp234)
-    mini = score_minirocket_confirmations(values)
-    exp253 = exp236.hard | (exp236.standard & (mini.k1024 | mini.k4096))
-    automatic = exact_normal_guard(exp253, values.train_blobs, values.test_blobs)
-    return HardRouteResult(exp137, exp236, exp253, automatic, sources.continuous_strength)
+    promoted = exp236.standard & (mini.k1024 | mini.k4096)
+    exp253 = RouteLanes(exp236.hard | promoted, exp236.standard - promoted,
+                        exp236.priority)
+    automatic = exact_normal_guard(exp253.hard, values.train_blobs, values.test_blobs)
+    return HardRouteResult(exp74d, exp89, exp90, exp93, exp137,
+                           exp234, exp236, promoted, exp253, automatic)
 ```
 
-Exp74d→89→90→93→119 route의 pure rank/set 함수와 고정 selector constant를 provenance와 함께 `hard_route_paper.py`로 복사한다. runtime에는 해당 내부 Exp package import가 없어야 하고 원본 route 함수와 synthetic set parity를 검사한다. CSV row loader와 metric writer는 복사하지 않는다. 중간 전체 parity 목표는 Exp137 Hard `2005`, Exp236 Hard `2116`, Exp253 Hard `2253`, exact guard 이후 Hard `2218`이다.
+Exp74d→89→90→93→119 route의 pure rank/set 함수와 고정 selector constant를 provenance와 함께 `hard_route_paper.py`로 복사한다. Exp133/134/135/137의 Block-B confidence partition과 all-Standard + Block-C priority gate도 누락 없이 복사한다. runtime에는 해당 내부 Exp package import가 없어야 하고 원본 route 함수와 synthetic set parity를 검사한다. CSV row loader와 metric writer는 복사하지 않는다. Exp234에는 `rocket_exp40`, `exp55_best`, `exp56_best`, `exp84`, `canonical_normal_state` 다섯 OOF source만 alpha `0.01`로 사용하고 `rocket_block_b`는 제외한다. 중간 전체 parity 목표는 Exp137 Hard `2005`/Standard `639`/Priority `9`, Exp236 Hard `2116`/Standard `967`/Priority `9`, Exp253 Hard `2253`, exact guard 이후 Hard `2218`이다.
 
 - [ ] **Step 4: Implement raw MiniROCKET two-seed intersection**
 
@@ -569,14 +584,14 @@ Exp74d→89→90→93→119 route의 pure rank/set 함수와 고정 selector con
 def score_minirocket_confirmations(values: RawDataset) -> MiniRocketResult:
     configs = ((1024, 1008), (4096, 4032))
     # score_configuration for seeds 20260721 and 20261721
-    # candidate is p<=0.005 under both seeds
+    # each k candidate is the p<=0.005 intersection of both seeds
 ```
 
-원본 `score_configuration`과 필요한 pure helper를 `minirocket_paper.py`로 복사해 두 seed OOF/TEST score를 새로 만들고 `p <= 0.005` 교집합을 계산한다. runtime에는 `experiments.exp249_250...` import가 없어야 하며 synthetic fixture에서 원본과 paper copy의 score/candidate parity를 검사한다. 기존 Exp249 prediction JSONL은 읽지 않는다.
+원본 `score_configuration`, official aeon transformer, local-gap, crossfit/reference/chunk helper의 최소 standalone closure를 `minirocket_paper.py`로 복사해 두 seed OOF/TEST score를 새로 만들고 각 kernel 수별 `p <= 0.005` seed 교집합을 계산한다. runtime에는 `experiments.exp249_250...` import가 없어야 하며 capable interpreter의 synthetic fixture에서 원본과 paper copy의 feature dimension, OOF/TEST score와 candidate parity를 검사한다. 기존 Exp249 prediction JSONL은 읽지 않는다. optional dependency 부재만 typed abstention이며 다른 구현 오류는 전파한다.
 
 - [ ] **Step 5: Add label-free parity smoke against old artifacts**
 
-새로 계산한 10-dataset smoke output을 먼저 canonical bytes로 freeze한 후에만 기존 Exp137/236/253/291 좌표와 비교한다. 비교 함수 signature는 `compare_parity(new: Mapping[str, frozenset[int]], oracle_path: Path) -> ParityReport`이고 새 route 함수에 oracle path를 전달할 수 없게 한다.
+새로 계산한 10-dataset smoke output을 먼저 canonical bytes로 freeze한 후에만 기존 Exp74d/89/90/93/137/236/253/291 좌표와 비교한다. 각 중간 좌표 identity와 lane partition을 확인하며, 비교 함수 signature는 `compare_parity(new: Mapping[str, frozenset[int]], oracle_path: Path) -> ParityReport`이고 새 route/evidence 함수에 oracle path를 전달할 수 없게 한다. 원본 artifact는 parity 단계 전에는 열 수 없다.
 
 - [ ] **Step 6: Run route tests and commit**
 
