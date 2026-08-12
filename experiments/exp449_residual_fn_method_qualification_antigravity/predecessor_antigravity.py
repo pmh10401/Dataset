@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
-import json
 import os
 from pathlib import Path
 from typing import Mapping
@@ -16,6 +15,7 @@ from experiments.exp448_exp447_text_label_boundary_repair_antigravity.publicatio
 
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY
 from .contracts_antigravity import ConfusionAntigravity, DatasetBaselineAntigravity
+from .artifacts_antigravity import canonical_jsonl_bytes_antigravity, strict_json_bytes_antigravity
 
 
 _EXP448_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812")
@@ -47,17 +47,9 @@ class Exp448AuthorityAntigravity:
 
 
 def _strict_json_antigravity(payload: bytes, name: str) -> Mapping[str, object]:
-    def reject_pairs_antigravity(items: list[tuple[str, object]]) -> dict[str, object]:
-        result: dict[str, object] = {}
-        for key, value in items:
-            if key in result:
-                raise ValueError(f"Exp448 {name} has duplicate JSON keys")
-            result[key] = value
-        return result
     try:
-        value = json.loads(payload.decode("utf-8"), object_pairs_hook=reject_pairs_antigravity,
-                           parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        value = strict_json_bytes_antigravity(payload)
+    except ValueError as error:
         raise ValueError(f"Exp448 {name} is not strict JSON") from error
     if type(value) is not dict:
         raise ValueError(f"Exp448 {name} is not a JSON object")
@@ -65,9 +57,17 @@ def _strict_json_antigravity(payload: bytes, name: str) -> Mapping[str, object]:
 
 
 def _strict_jsonl_antigravity(payload: bytes, name: str) -> tuple[Mapping[str, object], ...]:
+    if payload == b"":
+        return ()
     if not payload.endswith(b"\n"):
         raise ValueError(f"Exp448 {name} is not complete JSONL")
-    return tuple(_strict_json_antigravity(line, name) for line in payload.splitlines() if line)
+    lines = payload.splitlines(keepends=True)
+    if any(line in (b"", b"\n", b"\r\n") for line in lines):
+        raise ValueError(f"Exp448 {name} has blank JSONL rows")
+    rows = tuple(_strict_json_antigravity(line, f"{name} row {index}") for index, line in enumerate(lines, 1))
+    if canonical_jsonl_bytes_antigravity(rows) != payload:
+        raise ValueError(f"Exp448 {name} is non-canonical JSONL")
+    return rows
 
 
 def _confusion_antigravity(value: object, name: str) -> ConfusionAntigravity:
@@ -82,17 +82,19 @@ def _confusion_antigravity(value: object, name: str) -> ConfusionAntigravity:
 def _validate_antigravity(leaves: Mapping[str, bytes], digests: Mapping[str, str], root_identity: tuple[int, int, int, int, int, int, int]) -> Exp448AuthorityAntigravity:
     if digests["artifact_sha256_antigravity.json"] != _ARTIFACT_SHA256_ANTIGRAVITY or digests["evaluation_antigravity.json"] != _EVALUATION_SHA256_ANTIGRAVITY or digests["decision_antigravity.json"] != _DECISION_SHA256_ANTIGRAVITY:
         raise ValueError("Exp448 frozen leaf digest differs")
-    artifact_map = _strict_json_antigravity(leaves["artifact_sha256_antigravity.json"], "artifact map")
+    json_leaves = {name: _strict_json_antigravity(leaves[name], name) for name in _LEAVES_ANTIGRAVITY if name.endswith(".json")}
+    jsonl_leaves = {name: _strict_jsonl_antigravity(leaves[name], name) for name in _LEAVES_ANTIGRAVITY if name.endswith(".jsonl")}
+    artifact_map = json_leaves["artifact_sha256_antigravity.json"]
     expected_names = set(_LEAVES_ANTIGRAVITY) - {"artifact_sha256_antigravity.json"}
     if set(artifact_map) != expected_names or any(artifact_map.get(name) != digests[name] for name in expected_names):
         raise ValueError("Exp448 artifact map does not bind the exact leaves")
-    evaluation = _strict_json_antigravity(leaves["evaluation_antigravity.json"], "evaluation")
+    evaluation = json_leaves["evaluation_antigravity.json"]
     if (evaluation.get("experiment_id"), evaluation.get("schema"), evaluation.get("dataset_count"), evaluation.get("label_rows"), evaluation.get("run_identity")) != ("Exp448", "exp448", 1117, 195900, "exp448-exp447-text-label-boundary-repair-antigravity-20260812"):
         raise ValueError("Exp448 evaluation authority is invalid")
-    decision = _strict_json_antigravity(leaves["decision_antigravity.json"], "decision")
+    decision = json_leaves["decision_antigravity.json"]
     if decision.get("evaluation_status") != "descriptive_complete_no_promotion" or decision.get("scientific_winner_selected") is not False:
         raise ValueError("Exp448 decision authority is invalid")
-    confusion_payload = _strict_json_antigravity(leaves["confusion_antigravity.json"], "confusion")
+    confusion_payload = json_leaves["confusion_antigravity.json"]
     methods = confusion_payload.get("methods")
     if not isinstance(methods, list):
         raise ValueError("Exp448 confusion methods are invalid")
@@ -100,7 +102,7 @@ def _validate_antigravity(leaves: Mapping[str, bytes], digests: Mapping[str, str
     baseline_confusion = _confusion_antigravity(by_name.get("hard_plus_stable_26"), "stable-26")
     if (baseline_confusion.tp, baseline_confusion.fp, baseline_confusion.fn, baseline_confusion.tn) != (1930, 314, 1988, 191668):
         raise ValueError("Exp448 stable-26 confusion differs")
-    metrics = _strict_jsonl_antigravity(leaves["dataset_metrics_antigravity.jsonl"], "dataset metrics")
+    metrics = jsonl_leaves["dataset_metrics_antigravity.jsonl"]
     if len(metrics) != 1117:
         raise ValueError("Exp448 dataset population differs")
     families = tuple(name for name, _ in CANDIDATE_MATRIX_ANTIGRAVITY)
@@ -116,6 +118,11 @@ def _validate_antigravity(leaves: Mapping[str, bytes], digests: Mapping[str, str
         for family in families:
             if dataset.startswith(family + "_"):
                 family_rows[family].append(row)
+    for method_name in ("hard_baseline", "hard_plus_source_30", "hard_plus_stable_26", "hard_plus_unstable_4"):
+        aggregate = _confusion_antigravity(by_name.get(method_name), method_name)
+        rows_total = tuple(sum(_confusion_antigravity(row[method_name], f"{method_name} dataset").__getattribute__(field) for row in metrics) for field in ("tp", "fp", "fn", "tn"))
+        if rows_total != (aggregate.tp, aggregate.fp, aggregate.fn, aggregate.tn):
+            raise ValueError("Exp448 dataset confusion does not conserve aggregate authority")
     if tuple(len(family_rows[family]) for family in families) != _TARGET_COUNTS_ANTIGRAVITY:
         raise ValueError("Exp448 target family membership is invalid")
     first = capture_exp446_publication_antigravity()
