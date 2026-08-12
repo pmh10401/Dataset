@@ -458,7 +458,7 @@ class Exp448AuthorityAntigravity:
 git commit -m &quot;feat(exp449): pin residual FN source authority&quot;
 </code></pre>
 <hr>
-<h3><input disabled="" type="checkbox"> Task 4: Four Fixed Representations, Shared LocalGap Scoring, and Acceleration Decision</h3>
+<h3><input disabled="" type="checkbox" checked=""> Task 4: Four Fixed Representations, Shared LocalGap Scoring, and Acceleration Decision</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py</code></li>
@@ -478,7 +478,7 @@ git commit -m &quot;feat(exp449): pin residual FN source authority&quot;
 </li>
 <li><p>Produces: <code>make_representation_antigravity(name, seed) -&gt; RepresentationAntigravity</code>; <code>score_candidate_antigravity(...) -&gt; CandidateScoresAntigravity</code>; <code>assess_mlx_antigravity() -&gt; MlxDecisionAntigravity</code>, which records tensor eligibility and CPU/MLX/PyTorch-MPS availability, parity, timing, and canonical fallback.</p>
 </li>
-<li><p><input disabled="" type="checkbox"> <strong>Step 1: Write representation and scoring RED tests</strong></p>
+<li><p><input disabled="" type="checkbox" checked=""> <strong>Step 1: Write representation and scoring RED tests</strong></p>
 </li>
 </ul>
 <pre><code class="language-python">def test_all_four_representations_are_finite_and_repeatable_antigravity(self):
@@ -496,7 +496,7 @@ def test_hydra_multirocket_concatenation_order_is_exact_antigravity(self):
 </code></pre>
 <p>Cover wrong seed, feature dimension drift, nonfinite output, bool numeric fields, inconsistent fold dimensions, reference-sampling order, and fewer than five TRAIN rows.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 2: Write acceleration-governance RED tests</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 2: Write acceleration-governance RED tests</strong></li>
 </ul>
 <pre><code class="language-python">def test_missing_mlx_is_a_recorded_cpu_fallback_antigravity(self):
     decision = assess_mlx_antigravity(package_probe=lambda _: None)
@@ -506,11 +506,11 @@ def test_hydra_multirocket_concatenation_order_is_exact_antigravity(self):
 </code></pre>
 <p>Add a separate dependency-injected test that records the PyTorch version and MPS built/available probe without treating availability as acceleration approval. Test tensor-ineligible stages, transfer/synchronization/warm-up/compile-inclusive benchmark failure, nonfinite outputs, candidate-index mismatch at any preregistered alpha, and numerical-tolerance failure as CPU fallbacks.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 3: Run RED</strong></li>
 </ul>
 <p>Run the three Task 4 test modules with the fixed aeon interpreter. Expected: imports fail because modules are absent.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 4: Implement the exact representation adapters</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 4: Implement the exact representation adapters</strong></li>
 </ul>
 <p>Expose a small protocol:</p>
 <pre><code class="language-python">class RepresentationAntigravity(Protocol):
@@ -520,7 +520,7 @@ def test_hydra_multirocket_concatenation_order_is_exact_antigravity(self):
 <p>Use <code>MiniRocket</code>, <code>MultiRocket</code>, and <code>HydraTransformer</code> from aeon 1.4.0 with <code>n_jobs=1</code> and exact seed. For <code>hydra_multirocket_local_gap</code>, reproduce the official aeon 1.4.0 order: Hydra transform → <code>_SparseScaler</code>; MultiROCKET transform → <code>StandardScaler</code>; concatenate Hydra first, MultiROCKET second. Never instantiate or fit <code>RidgeClassifierCV</code>.</p>
 <p>Use MiniROCKET 4,096 requested kernels; MultiROCKET 1,024 requested kernels, 32 maximum dilations, four features per kernel, and <code>normalise=False</code>; Hydra eight kernels and 64 groups. Do not expose these settings as CLI options.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 5: Implement exact LocalGap and five-fold scoring</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 5: Implement exact LocalGap and five-fold scoring</strong></li>
 </ul>
 <p>Port the Exp249 semantics into antigravity-named code, retaining <code>KNN_NEIGHBORS=3</code>, <code>MAX_TRAIN_REFERENCE=1000</code>, <code>QUERY_CHUNK_SIZE=128</code>, and deterministic five-fold <code>crossfit_plan</code>. Add a source-semantic regression that compares the Exp449 LocalGap output with <code>experiments.exp249_250_official_mini_multirocket.local_gap.LocalGapModel</code> on the same arrays.</p>
 <p>Return exact immutable score and backend contracts:</p>
@@ -549,15 +549,15 @@ class MlxDecisionAntigravity:
     speedup: float | None
 </code></pre>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 6: Implement CPU/MLX/PyTorch-MPS preflight record</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 6: Implement CPU/MLX/PyTorch-MPS preflight record</strong></li>
 </ul>
 <p>The fixed environment probe must report <code>mlx</code> and <code>mlx-metal</code> absent, and must separately record the observed <code>torch 2.13.0</code>, <code>mps_built=True</code>, and <code>mps_available=True</code>; select CPU without package installation unless a tensor-eligible stage passes the complete gate. Record package/version/device availability, transfer/synchronization/warm-up/compile-inclusive timing, and fallback reason. Keep the full parity/speed fields in the contract so a future environment could select MLX or MPS only after exact candidate-index parity at every preregistered alpha, finite scores, tolerance compliance, and speedup <code>&gt;=1.1</code>.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice and a bounded real smoke</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 7: Run GREEN twice and a bounded real smoke</strong></li>
 </ul>
 <p>Run all three focused modules twice. Then run one label-free representative dataset per representation, sequentially, recording time, feature dimension, finite status, candidate SHA, and DB nlink. Do not run the full 48-dataset matrix yet.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 8: Update map and commit Task 4</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 8: Update map and commit Task 4</strong></li>
 </ul>
 <pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/mlx_gate_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_representations_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_mlx_gate_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
 git commit -m &quot;feat(exp449): add fixed representation score sources&quot;
