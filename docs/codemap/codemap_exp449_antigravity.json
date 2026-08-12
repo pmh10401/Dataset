@@ -1,14 +1,15 @@
 {
-  "generated_at": "2026-08-12T11:35:00+00:00",
-  "generated_from_commit": "79a006e9d3ce347a4009bda81326af4474da8fa2",
+  "generated_at": "2026-08-12T12:00:00+00:00",
+  "generated_from_commit": "b962477c875f16777af90e7db4dec0453f4889c2",
   "scope": [
-    "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
+    "Exp449 verified Tasks 1–6 remain implemented. The approved correction design and prospective two-root correction plan supersede only unsafe original Task 7–8 lifecycle wording; no two-root production adapter, readiness CLI, official lifecycle, or dashboard publication has been implemented by this planning commit."
   ],
+  "topology_note": "The map retains 20 nodes by consolidating the prior champion-ledger node into research_control and replacing the prior original-plan node with the correction-plan node; both original-plan and champion evidence remain explicit.",
   "nodes": [
     {
       "id": "research_control",
       "path": "RESEARCH_STATE.json",
-      "role": "Planned Exp449 active state with zero label access and closed official lifecycle.",
+      "role": "Planned Exp449 state and consolidated non-promotion truth: zero label access, closed official lifecycle, and unchanged champion/pending candidate.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
@@ -16,17 +17,7 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"exp449\""
-        }
-      ]
-    },
-    {
-      "id": "champion_ledger",
-      "path": "CHAMPION_LEDGER.json",
-      "role": "Non-promotion ledger retaining the unchanged pending candidate.",
-      "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
-      ],
-      "evidence": [
+        },
         {
           "path": "CHAMPION_LEDGER.json",
           "symbol": "\"experiment\": \"Exp449\""
@@ -76,13 +67,31 @@
       ]
     },
     {
-      "id": "html_implementation_plan",
-      "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
-      "role": "Self-contained Exp449 implementation plan; fresh Sol ship records Tasks 1–6 complete while Tasks 7–8 controls remain disabled and unchecked.",
+      "id": "two_root_correction_design",
+      "path": "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html",
+      "role": "Approved Exp449 correction authority that separates immutable prediction authority from evaluation publication and prohibits retrospective official execution.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
       "evidence": [
+        {
+          "path": "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html",
+          "symbol": "Exp449 two-root official lifecycle correction"
+        }
+      ]
+    },
+    {
+      "id": "two_root_correction_plan",
+      "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
+      "role": "Executable superseding plan: original Tasks 1–6 remain checked, original Tasks 7–8 remain unchecked, and all two-root correction work is prospective.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
+          "symbol": "Task 5: Single-use official lifecycle and truth/dashboard closeout"
+        },
         {
           "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
           "symbol": "Task 6: One-Session Counterfactual Evaluation and Source-Free Replay"
@@ -307,21 +316,21 @@
       }
     },
     {
-      "from": "champion_ledger",
-      "to": "research_control",
-      "type": "governs",
-      "evidence": {
-        "path": "CHAMPION_LEDGER.json",
-        "symbol": "pending_candidate_changed"
-      }
-    },
-    {
       "from": "project_execution_policy",
-      "to": "html_implementation_plan",
+      "to": "two_root_correction_plan",
       "type": "governs",
       "evidence": {
         "path": "AGENTS.md",
         "symbol": "In HTML implementation plans"
+      }
+    },
+    {
+      "from": "two_root_correction_design",
+      "to": "two_root_correction_plan",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html",
+        "symbol": "The approved design has two distinct filesystem roots"
       }
     },
     {
@@ -335,7 +344,7 @@
     },
     {
       "from": "governance_regression",
-      "to": "html_implementation_plan",
+      "to": "two_root_correction_plan",
       "type": "reads",
       "evidence": {
         "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
@@ -498,14 +507,13 @@
   ],
   "flows": [
     {
-      "trigger": "Governance and fixed method inputs",
+      "trigger": "Correction governance",
       "steps": [
-        "exp449_preregistration",
-        "candidate_registry",
-        "method_audit",
-        "immutable_contracts"
+        "two_root_correction_design",
+        "two_root_correction_plan",
+        "research_control"
       ],
-      "outcome": "Frozen candidate and exact-type authority constrain Task-4 methods without label access, promotion, or routing."
+      "outcome": "The approved two-root architecture governs prospective work without changing completed Tasks 1–6 or authorizing an official command."
     },
     {
       "trigger": "Task-4 label-free score generation",
@@ -530,9 +538,9 @@
     }
   ],
   "unknown_relationships": [
-    "Task 7 readiness/CLI and Task 8 official lifecycle and external dashboard publication remain unimplemented."
+    "Two-root production lifecycle adapters, closed readiness/CLI, full verification truth, single-use official commands, and aggregate-only dashboard publication are future plan stages, not current product behavior."
   ],
   "unknowns": [
-    "The Task-6 public evaluator and inspector remain fail-closed until Task 7 supplies a clean reviewed-commit readiness boundary and an official Task-5 prediction authority."
+    "The existing Task-6 public evaluator and inspector remain fail-closed; the correction plan names future interfaces but creates no future product-source edges."
   ]
 }
