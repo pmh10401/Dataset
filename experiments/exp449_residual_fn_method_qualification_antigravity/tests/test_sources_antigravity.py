@@ -5,6 +5,10 @@ import unittest
 import os
 import sys
 import types
+import hashlib
+from pathlib import Path
+import tempfile
+from unittest.mock import patch
 
 import numpy as np
 
@@ -25,6 +29,9 @@ class RecordingConnectionAntigravity:
 
 
 class SourcesAntigravityTests(unittest.TestCase):
+    def _database_constants_antigravity(self, sources, path: Path):  # type: ignore[no-untyped-def]
+        info = path.stat()
+        return patch.object(sources, "_DATABASE_ANTIGRAVITY", path), patch.object(sources, "_DATABASE_SHA256_ANTIGRAVITY", hashlib.sha256(path.read_bytes()).hexdigest()), patch.object(sources, "_DATABASE_INODE_ANTIGRAVITY", info.st_ino)
     def _install_prediction_module_antigravity(self, order: tuple[str, ...] | None = None) -> tuple[types.ModuleType, object]:
         name = "experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity"
         module = types.ModuleType(name)
@@ -51,6 +58,56 @@ class SourcesAntigravityTests(unittest.TestCase):
         self.assertEqual(bundle.test_values.shape, (1, 2))
         self.assertFalse(any("label" in sql.casefold() for sql in connection.sql))
         self.assertTrue(connection.closed)
+
+    def test_database_identity_rejects_sha_inode_link_and_symlink_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        with tempfile.TemporaryDirectory(prefix="exp449_db_identity_antigravity_") as temporary:
+            path = Path(temporary) / "source_antigravity.db"
+            path.write_bytes(b"synthetic database bytes\n")
+            path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
+            with path_patch, sha_patch, inode_patch:
+                descriptor, identity = sources._verify_database_antigravity()
+                os.close(descriptor)
+            with patch.object(sources, "_DATABASE_ANTIGRAVITY", path), patch.object(sources, "_DATABASE_SHA256_ANTIGRAVITY", "0" * 64), patch.object(sources, "_DATABASE_INODE_ANTIGRAVITY", path.stat().st_ino), self.assertRaises(ValueError):
+                sources._verify_database_antigravity()
+            with patch.object(sources, "_DATABASE_ANTIGRAVITY", path), patch.object(sources, "_DATABASE_SHA256_ANTIGRAVITY", hashlib.sha256(path.read_bytes()).hexdigest()), patch.object(sources, "_DATABASE_INODE_ANTIGRAVITY", path.stat().st_ino + 1), self.assertRaises(ValueError):
+                sources._verify_database_antigravity()
+            linked = Path(temporary) / "linked_antigravity.db"
+            os.link(path, linked)
+            with patch.object(sources, "_DATABASE_ANTIGRAVITY", path), patch.object(sources, "_DATABASE_SHA256_ANTIGRAVITY", hashlib.sha256(path.read_bytes()).hexdigest()), patch.object(sources, "_DATABASE_INODE_ANTIGRAVITY", path.stat().st_ino), self.assertRaises(ValueError):
+                sources._verify_database_antigravity()
+            linked.unlink()
+            symlink = Path(temporary) / "symlink_antigravity.db"
+            symlink.symlink_to(path)
+            with patch.object(sources, "_DATABASE_ANTIGRAVITY", symlink), patch.object(sources, "_DATABASE_SHA256_ANTIGRAVITY", hashlib.sha256(path.read_bytes()).hexdigest()), patch.object(sources, "_DATABASE_INODE_ANTIGRAVITY", path.stat().st_ino), self.assertRaises(ValueError):
+                sources._verify_database_antigravity()
+
+    def test_database_postverify_metadata_and_content_drift_are_rejected_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        with tempfile.TemporaryDirectory(prefix="exp449_db_drift_antigravity_") as temporary:
+            path = Path(temporary) / "source_antigravity.db"
+            path.write_bytes(b"synthetic database bytes\n")
+            path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
+            with path_patch, sha_patch, inode_patch:
+                descriptor, identity = sources._verify_database_antigravity()
+                try:
+                    os.utime(path, ns=(path.stat().st_atime_ns, path.stat().st_mtime_ns + 1))
+                    with self.assertRaisesRegex(ValueError, "changed during read"):
+                        sources._assert_database_unchanged_antigravity(descriptor, identity)
+                finally:
+                    os.close(descriptor)
+            path.write_bytes(b"synthetic database bytEs\n")
+            path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
+            with path_patch, sha_patch, inode_patch:
+                descriptor, identity = sources._verify_database_antigravity()
+                try:
+                    path.write_bytes(b"synthetic database bytXs\n")
+                    with self.assertRaisesRegex(ValueError, "changed during read"):
+                        sources._assert_database_unchanged_antigravity(descriptor, identity)
+                finally:
+                    os.close(descriptor)
 
     def test_forged_prediction_authority_is_rejected_before_database_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.sources_antigravity import open_test_labels_once_antigravity
@@ -201,6 +258,73 @@ class SourcesAntigravityTests(unittest.TestCase):
             self.assertEqual(connection.close_calls, 1)
         finally:
             sources._verify_database_antigravity = original  # type: ignore[assignment]
+
+    def test_session_rejects_empty_bad_index_bad_label_and_iterator_rows_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        cases = {
+            "empty": (), "bool": ((True, "0"),), "gap": ((1, "0"),), "label": ((0, b"0"),),
+        }
+        for name, rows in cases.items():
+            with self.subTest(name=name):
+                _, authority = self._install_prediction_module_antigravity()
+                class ConnectionAntigravity:
+                    def __init__(self): self.close_calls = 0
+                    def execute(self, sql, parameters=()): return rows
+                    def close(self): self.close_calls += 1
+                connection = ConnectionAntigravity(); descriptor = os.open("/dev/null", os.O_RDONLY)
+                with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))):
+                    session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+                    with self.assertRaises(ValueError): session.labels_for_dataset_antigravity("Crop_normal_1")
+                    self.assertEqual(session.close_state_antigravity(), "terminal")
+                    self.assertEqual(connection.close_calls, 1)
+                    with self.assertRaises(ValueError): session.labels_for_dataset_antigravity("Crop_normal_1")
+        _, authority = self._install_prediction_module_antigravity()
+        class IteratorFailureConnectionAntigravity:
+            def __init__(self): self.close_calls = 0
+            def execute(self, sql, parameters=()):
+                def rows():
+                    yield (0, "0")
+                    raise RuntimeError("iterator boom")
+                return rows()
+            def close(self): self.close_calls += 1
+        connection = IteratorFailureConnectionAntigravity(); descriptor = os.open("/dev/null", os.O_RDONLY)
+        with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))):
+            session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+            with self.assertRaisesRegex(RuntimeError, "iterator boom"): session.labels_for_dataset_antigravity("Crop_normal_1")
+            self.assertEqual(connection.close_calls, 1)
+
+    def test_session_wrong_order_and_total_under_over_are_terminal_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        _, authority = self._install_prediction_module_antigravity()
+        class SimpleConnectionAntigravity:
+            def __init__(self): self.close_calls = 0
+            def execute(self, sql, parameters=()): return ((0, "0"),)
+            def close(self): self.close_calls += 1
+        connection = SimpleConnectionAntigravity(); descriptor = os.open("/dev/null", os.O_RDONLY)
+        with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))):
+            session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+            with self.assertRaises(ValueError): session.labels_for_dataset_antigravity("wrong_antigravity")
+            self.assertEqual(connection.close_calls, 1)
+        for count in (72300 - 1, 72300 + 1):
+            with self.subTest(count=count):
+                order = tuple(f"count_target_{index}_antigravity" for index in range(48))
+                _, authority = self._install_prediction_module_antigravity(order)
+                class CountConnectionAntigravity:
+                    def __init__(self): self.calls = 0; self.close_calls = 0
+                    def execute(self, sql, parameters=()):
+                        self.calls += 1
+                        size = 1 if self.calls < 48 else count - 47
+                        return tuple((index, "0") for index in range(size))
+                    def close(self): self.close_calls += 1
+                connection = CountConnectionAntigravity(); descriptor = os.open("/dev/null", os.O_RDONLY)
+                with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))):
+                    session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+                    for dataset in order[:-1]: session.labels_for_dataset_antigravity(dataset)
+                    with self.assertRaisesRegex(ValueError, "row count"): session.labels_for_dataset_antigravity(order[-1])
+                    self.assertEqual(session.close_state_antigravity(), "terminal")
+                    self.assertEqual(connection.close_calls, 1)
 
 
 if __name__ == "__main__":
