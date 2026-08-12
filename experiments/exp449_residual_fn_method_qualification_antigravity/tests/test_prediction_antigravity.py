@@ -559,6 +559,26 @@ class PredictionAntigravityTests(unittest.TestCase):
             with patch.object(module, "_read_pinned_antigravity", side_effect=replace_after_candidates_open), self.assertRaises(ValueError):
                 module.capture_frozen_prediction_authority_antigravity(root)
 
+    def test_descriptor_capture_rejects_rehashed_full_task5_semantic_tampering_antigravity(self) -> None:
+        """Break caught: capture validates only projected Task6 fields and hashes."""
+        import hashlib
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import capture_frozen_prediction_authority_antigravity, run_synthetic_lifecycle_antigravity
+        for attack in ("contains", "alpha", "seeds", "score_identities", "terminal"):
+            with self.subTest(attack=attack), tempfile.TemporaryDirectory(prefix="exp449_capture_semantic_antigravity_") as temporary:
+                root = Path(temporary) / "run"; authority = run_synthetic_lifecycle_antigravity(root, "a" * 40)
+                if attack == "terminal":
+                    (root / "progress_antigravity.json").write_bytes(canonical_json_bytes_antigravity({"dataset_unit_completed": 95, "next_sequence": 96, "terminal": True}))
+                else:
+                    leaf = root / authority.inventory[0]; payload = json.loads(leaf.read_text())
+                    if attack == "contains": payload["contains_test_labels"] = True
+                    elif attack == "alpha": payload["alpha"] = 0.01
+                    elif attack == "seeds": payload["seeds"] = [1, 2]
+                    else: payload["score_identities"] = [{"seed": 1, "feature_dimension": 1}, {"seed": 2, "feature_dimension": 1}]
+                    leaf.write_bytes(canonical_json_bytes_antigravity(payload))
+                    manifest_path = root / "prediction_manifest_antigravity.json"; manifest = json.loads(manifest_path.read_text()); manifest["leaf_sha256"][authority.inventory[0]] = hashlib.sha256(leaf.read_bytes()).hexdigest(); manifest["aggregate_sha256"] = hashlib.sha256("".join(manifest["leaf_sha256"][item] for item in manifest["inventory"]).encode()).hexdigest(); manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
+                with self.assertRaises(ValueError): capture_frozen_prediction_authority_antigravity(root)
+
     def test_private_validator_rejects_candidate_symlink_and_root_extra_antigravity(self) -> None:
         """Break caught: traversing symlinks or accepting an unpinned prediction namespace."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415

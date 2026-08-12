@@ -227,14 +227,22 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
                 if current is not None and _identity_antigravity(current) == _identity_antigravity(retained):
                     forensic = _forensic_name_antigravity(root)
                     _rename_no_replace_at_antigravity(parent_fd, root.name, forensic)
-                    _assert_directory_entry_identity_at_antigravity(parent_fd, forensic, retained)
-                    _fsync_directory_antigravity(parent_fd)
-                    recovery = {"outcome": "forensic_renamed", "forensic_basename": forensic, "errors": []}
+                    recovery = {"outcome": "moved", "forensic_basename": forensic, "recovery_validation_error": None, "recovery_fsync_error": None}
+                    try:
+                        _assert_directory_entry_identity_at_antigravity(parent_fd, forensic, retained)
+                    except BaseException as validation_error:
+                        error.add_note(f"recovery_validation_error={type(validation_error).__name__}: {validation_error}")
+                        recovery["recovery_validation_error"] = f"{type(validation_error).__name__}: {validation_error}"
+                    try:
+                        _fsync_directory_antigravity(parent_fd)
+                    except BaseException as fsync_error:
+                        error.add_note(f"recovery_fsync_error={type(fsync_error).__name__}: {fsync_error}")
+                        recovery["recovery_fsync_error"] = f"{type(fsync_error).__name__}: {fsync_error}"
                 elif current is not None:
                     recovery = {"outcome": "foreign_canonical_preserved", "forensic_basename": None, "errors": []}
         except BaseException as recovery_error:
             error.add_note(f"recovery_error={type(recovery_error).__name__}: {recovery_error}")
-            recovery = {"outcome": "recovery_failed", "forensic_basename": None, "errors": [f"{type(recovery_error).__name__}: {recovery_error}"]}
+            recovery = {"outcome": "recovery_failed", "forensic_basename": None, "recovery_validation_error": f"{type(recovery_error).__name__}: {recovery_error}", "recovery_fsync_error": None}
         setattr(error, "_exp449_phase_antigravity", phase)
         setattr(error, "_exp449_recovery_antigravity", recovery)
         raise

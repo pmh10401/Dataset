@@ -107,7 +107,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             audit = json.loads(dependencies.audit_path.read_text())
             self.assertEqual(audit["phase"], "post_rename_replay")
-            self.assertEqual(audit["recovery"]["outcome"], "forensic_renamed")
+            self.assertEqual(audit["recovery"]["outcome"], "moved")
             self.assertFalse(dependencies.root.exists())
     def test_task6_requires_a_descriptor_captured_task5_authority_antigravity(self) -> None:
         """Break caught: Task6 mints a reduced authority from caller-projected rows."""
