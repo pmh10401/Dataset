@@ -82,8 +82,10 @@ class ProgressAntigravityTests(unittest.TestCase):
             audit = Path(temporary) / "failure_antigravity.json"
             write_failure_audit_antigravity(audit, ValueError("progress write failed"), OSError("pid close failed"))
             payload = json.loads(audit.read_text())
+            self.assertEqual(set(payload), {"schema", "primary_error", "cleanup_error", "primary_error_notes", "exact_next_sequence"})
             self.assertEqual(payload["primary_error"], "ValueError: progress write failed")
             self.assertEqual(payload["cleanup_error"], "OSError: pid close failed")
+            self.assertEqual(payload["primary_error_notes"], [])
             with self.assertRaises(FileExistsError):
                 write_failure_audit_antigravity(audit, RuntimeError("replacement"), None)
 
@@ -99,9 +101,9 @@ class ProgressAntigravityTests(unittest.TestCase):
             root = Path(temporary)
             initialise_attempt_antigravity(root, {"schema": "exp449"})
             with self.assertRaises(ValueError):
-                record_verified_progress_antigravity(root, ("000_Crop_A.json",), 1)
-            commit_candidate_leaf_antigravity(root / "candidates_antigravity", "000_Crop_A.json", {"sequence": 0})
-            record_verified_progress_antigravity(root, ("000_Crop_A.json",), 1)
+                record_verified_progress_antigravity(root, ("000_Crop_A.json",), (), 1)
+            receipt = commit_candidate_leaf_antigravity(root / "candidates_antigravity", "000_Crop_A.json", {"sequence": 0}, return_commit_receipt=True)
+            record_verified_progress_antigravity(root, ("000_Crop_A.json",), (receipt,), 1)
             self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 1)
             self.assertEqual((root / "progress_antigravity.jsonl").read_text().count("\n"), 1)
             self.assertEqual((root / "progress_antigravity.txt").read_text(), "1\n")
@@ -116,15 +118,15 @@ class ProgressAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
             payload = {"sequence": 0, "candidate_name": "Crop_A", "indices": [1], "contains_test_labels": False}
-            digest = commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload)
-            self.assertEqual(len(digest), 64)
+            receipt = commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload, return_commit_receipt=True)
+            self.assertEqual(len(receipt.sha256), 64)
             self.assertEqual(json.loads((root / "000_Crop_A.json").read_text()), payload)
-            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json")), 1)
+            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"), (receipt,)), 1)
             with self.assertRaises(FileExistsError):
                 commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload)
 
-    def test_verified_prefix_stops_at_predecessor_drift_antigravity(self) -> None:
-        """Break caught: trusting progress past a missing or altered predecessor leaf."""
+    def test_receipt_bound_prefix_rejects_received_leaf_replacement_antigravity(self) -> None:
+        """Break caught: trusting a canonical pathname after its returned receipt was replaced."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
             commit_candidate_leaf_antigravity,
             verified_prefix_antigravity,
@@ -132,7 +134,30 @@ class ProgressAntigravityTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
             root = Path(temporary)
-            commit_candidate_leaf_antigravity(root, "000_Crop_A.json", {"sequence": 0})
-            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json")), 1)
-            (root / "000_Crop_A.json").write_text('{"sequence":0}\n')
-            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json")), 1)
+            receipt = commit_candidate_leaf_antigravity(root, "000_Crop_A.json", {"sequence": 0}, return_commit_receipt=True)
+            self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"), (receipt,)), 1)
+            replacement = root / "replacement_antigravity.json"
+            replacement.write_text('{"sequence":0}\n')
+            os.replace(replacement, root / "000_Crop_A.json")
+            with self.assertRaisesRegex(ValueError, "receipt"):
+                verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json"), (receipt,))
+
+    def test_receipt_bound_prefix_ignores_official_shaped_unreturned_next_leaf_at_0_47_95_antigravity(self) -> None:
+        """Break caught: canonical official-shaped next-slot JSON is mistaken for a returned commit."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
+            commit_candidate_leaf_antigravity,
+            verified_prefix_antigravity,
+        )
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _candidate_payload_antigravity  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity  # noqa: PLC0415
+
+        inventory = tuple(f"{sequence:03d}_receipt_antigravity.json" for sequence in range(96))
+        for completed in (0, 47, 95):
+            with self.subTest(completed=completed), tempfile.TemporaryDirectory(prefix="exp449_receipt_prefix_antigravity_") as temporary:
+                root = Path(temporary); receipts = []
+                for sequence in range(completed):
+                    receipt = commit_candidate_leaf_antigravity(root, inventory[sequence], {"sequence": sequence}, sequence=sequence, return_commit_receipt=True)
+                    receipts.append(receipt)
+                replacement = _candidate_payload_antigravity(completed, "Crop_normal_1", "Crop", "minirocket_local_gap", [], 3, 5, [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}])
+                (root / inventory[completed]).write_bytes(canonical_json_bytes_antigravity(replacement))
+                self.assertEqual(verified_prefix_antigravity(root, inventory, tuple(receipts)), completed)

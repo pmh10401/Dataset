@@ -17,7 +17,7 @@ from experiments.exp239_248_diverse_score_sources.calibration import empirical_c
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY, FROZEN_CONFIG_ANTIGRAVITY
 from .artifacts_antigravity import canonical_json_bytes_antigravity, strict_json_bytes_antigravity, write_create_only_antigravity
 from .progress_antigravity import (
-    commit_candidate_leaf_antigravity, initialise_attempt_antigravity,
+    CandidateCommitReceiptAntigravity, commit_candidate_leaf_antigravity, initialise_attempt_antigravity,
     record_verified_progress_antigravity, verified_prefix_antigravity,
     write_failure_audit_antigravity,
 )
@@ -140,10 +140,12 @@ def _remove_exact_manifest_antigravity(root: Path, identity: tuple[int, int]) ->
         os.close(parent)
 
 
-def _assert_terminal_channels_antigravity(root: Path, inventory: tuple[str, ...]) -> None:
+def _assert_terminal_channels_antigravity(root: Path, inventory: tuple[str, ...], receipts: tuple[CandidateCommitReceiptAntigravity, ...]) -> None:
     """Gate manifest creation on leaf-derived terminal progress and a durably inactive PID."""
-    if verified_prefix_antigravity(root / "candidates_antigravity", inventory) != len(inventory):
+    if verified_prefix_antigravity(root / "candidates_antigravity", inventory, receipts) != len(inventory):
         raise ValueError("terminal candidate prefix differs")
+    if set(os.listdir(root / "candidates_antigravity")) != set(inventory):
+        raise ValueError("terminal candidate namespace differs")
     if strict_json_bytes_antigravity((root / "progress_antigravity.json").read_bytes()) != {"dataset_unit_completed": len(inventory), "next_sequence": len(inventory), "terminal": True}:
         raise ValueError("terminal progress differs")
     if strict_json_bytes_antigravity((root / "pid_antigravity.json").read_bytes()) != {"active": False}:
@@ -163,6 +165,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
     inventory = tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))
     synthetic_families = tuple(family for family, count in zip(tuple(name for name, _ in CANDIDATE_MATRIX_ANTIGRAVITY), (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))
     synthetic_names = tuple(f"{family}_synthetic_{index:03d}" for index, family in enumerate(synthetic_families))
+    receipts: list[CandidateCommitReceiptAntigravity] = []
     try:
         # Synthetic data use the production descriptor shape; their fixed digests are
         # opaque identities, never a source/database escape hatch.
@@ -181,24 +184,31 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         _fault_antigravity(fault_hook, "worker_exception", 0)
         _fault_antigravity(fault_hook, "scorer_exception", 0)
         _fault_antigravity(fault_hook, "nonfinite_scores", 0)
-        ordered, _completed, _provenance = schedule_synthetic_units_antigravity(tuple(range(96)))
         leaves = root / "candidates_antigravity"
         digests: list[tuple[str, str]] = []
-        for sequence in ordered:
+        def commit(sequence: int, result: object) -> None:
+            if result != sequence:
+                raise ValueError("synthetic worker sequence differs")
             _fault_antigravity(fault_hook, "predecessor_drift", sequence)
             _fault_antigravity(fault_hook, "before_commit", sequence)
             family = synthetic_families[sequence // 2]; dataset = f"{family}_synthetic_{sequence // 2:03d}"; method = dict(CANDIDATE_MATRIX_ANTIGRAVITY)[family][sequence % 2]
             payload = _candidate_payload_antigravity(sequence, dataset, family, method, [], 3, 5, [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}])
-            digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], payload, fault_hook=fault_hook, sequence=sequence)
-            digests.append(("candidates_antigravity/" + inventory[sequence], digest))
+            receipt = commit_candidate_leaf_antigravity(leaves, inventory[sequence], payload, fault_hook=fault_hook, sequence=sequence, return_commit_receipt=True)
+            if type(receipt) is not CandidateCommitReceiptAntigravity:
+                raise ValueError("candidate writer did not return a commit receipt")
+            receipts.append(receipt)
+            digests.append(("candidates_antigravity/" + inventory[sequence], receipt.sha256))
             _fault_antigravity(fault_hook, "after_commit", sequence)
-            record_verified_progress_antigravity(root, inventory, sequence + 1, fault_hook=fault_hook)
+            record_verified_progress_antigravity(root, inventory, tuple(receipts), sequence + 1, fault_hook=fault_hook)
             if sequence == fail_after_leaf:
                 raise RuntimeError(f"synthetic post-leaf failure exact_next_sequence={sequence + 1}")
+        with ProcessPoolExecutor(max_workers=_WORKERS_ANTIGRAVITY) as executor:
+            futures = {executor.submit(_synthetic_worker_antigravity, sequence): sequence for sequence in range(96)}
+            _consume_pending_executor_antigravity(futures, "synthetic", lambda: "synthetic", commit, lambda result: result)
         _fault_antigravity(fault_hook, "pid_close", 96)
         _fault_antigravity(fault_hook, "pid", 96)
         _set_pid_inactive_antigravity(root)
-        _assert_terminal_channels_antigravity(root, inventory)
+        _assert_terminal_channels_antigravity(root, inventory, tuple(receipts))
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"{synthetic_families[sequence // 2]}_synthetic_{sequence // 2:03d}__{dict(CANDIDATE_MATRIX_ANTIGRAVITY)[synthetic_families[sequence // 2]][sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(root, authority, require_manifest=False)
@@ -225,7 +235,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
             primary_error.add_note(f"pid_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
         target_audit = audit_path if audit_path is not None else root.parent / "exp449_failure_audit_antigravity.json"
         try:
-            prefix = verified_prefix_antigravity(root / "candidates_antigravity", tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))) if (root / "candidates_antigravity").is_dir() else 0
+            prefix = verified_prefix_antigravity(root / "candidates_antigravity", inventory, tuple(receipts))
             _fault_antigravity(fault_hook, "failure_audit", prefix)
             write_failure_audit_antigravity(target_audit, primary_error, cleanup_error, exact_next_sequence=prefix)
         except BaseException as audit_error:
@@ -473,6 +483,7 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
     prepare_attempt_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
     audit_path = Path("/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json")
     inventory: tuple[str, ...] = ()
+    receipts: list[CandidateCommitReceiptAntigravity] = []
     try:
         predecessor = capture_exp448_authority_antigravity()
         families = _families_antigravity(predecessor)
@@ -497,12 +508,15 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
                 item_sequence, item_name, item_payload = result
                 if item_sequence != sequence:
                     raise ValueError("production worker sequence differs")
-                digest = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory[sequence], item_payload)
-                names.append(item_name); digests.append(("candidates_antigravity/" + inventory[sequence], digest))
-                record_verified_progress_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory, sequence + 1)
+                receipt = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory[sequence], item_payload, sequence=sequence, return_commit_receipt=True)
+                if type(receipt) is not CandidateCommitReceiptAntigravity:
+                    raise ValueError("candidate writer did not return a commit receipt")
+                receipts.append(receipt)
+                names.append(item_name); digests.append(("candidates_antigravity/" + inventory[sequence], receipt.sha256))
+                record_verified_progress_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory, tuple(receipts), sequence + 1)
             _consume_pending_executor_antigravity(futures, predecessor, capture_exp448_authority_antigravity, commit, lambda result: result[0])
         _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
-        _assert_terminal_channels_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory)
+        _assert_terminal_channels_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory, tuple(receipts))
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority, require_manifest=False)
@@ -526,7 +540,7 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
             cleanup_error = error
         if cleanup_error is not None:
             primary_error.add_note(f"pid_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
-        prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory) if inventory and (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").is_dir() else 0
+        prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory, tuple(receipts))
         try:
             write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
         except BaseException as audit_error:

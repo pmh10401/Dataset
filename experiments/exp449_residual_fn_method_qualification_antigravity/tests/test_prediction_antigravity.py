@@ -25,6 +25,56 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_first_fstat_failure_with_official_shaped_replacement_never_advances_receipt_prefix_antigravity(self) -> None:
+        """Break caught: pathname-valid next leaves advance failure evidence without a writer receipt."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity  # noqa: PLC0415
+
+        for failed_sequence in (0, 47, 95):
+            with self.subTest(failed_sequence=failed_sequence), tempfile.TemporaryDirectory(prefix="exp449_receipt_fstat_antigravity_") as temporary:
+                parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+                leaves = root / "candidates_antigravity"
+                destination = leaves / f"{failed_sequence:03d}_synthetic_{failed_sequence:03d}.json"
+                family_order = tuple(name for name, _ in prediction.CANDIDATE_MATRIX_ANTIGRAVITY)
+                family = tuple(item for item, count in zip(family_order, (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))[failed_sequence // 2]
+                method = dict(prediction.CANDIDATE_MATRIX_ANTIGRAVITY)[family][failed_sequence % 2]
+                replacement_payload = prediction._candidate_payload_antigravity(
+                    failed_sequence, f"{family}_synthetic_{failed_sequence // 2:03d}", family, method,
+                    [], 3, 5,
+                    [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}],
+                )
+                returned: list[tuple[str, object]] = []; fired = False
+                original_fstat = progress.os.fstat; original_commit = prediction.commit_candidate_leaf_antigravity
+
+                def replace_then_fail(fd):
+                    nonlocal fired
+                    if not fired and destination.exists():
+                        fired = True
+                        replacement = parent / "official_shaped_replacement_antigravity.json"
+                        replacement.write_bytes(canonical_json_bytes_antigravity(replacement_payload))
+                        os.replace(replacement, destination)
+                        raise OSError("actual first fstat failure")
+                    return original_fstat(fd)
+
+                def track_return(directory, name, value, **kwargs):
+                    result = original_commit(directory, name, value, **kwargs)
+                    returned.append((name, result))
+                    return result
+
+                with patch.object(progress.os, "fstat", side_effect=replace_then_fail), patch.object(prediction, "commit_candidate_leaf_antigravity", side_effect=track_return):
+                    with self.assertRaisesRegex(OSError, "actual first fstat failure"):
+                        prediction.run_synthetic_lifecycle_antigravity(root, "r" * 40, audit_path=audit)
+                self.assertTrue(fired)
+                self.assertNotIn(destination.name, tuple(name for name, _result in returned))
+                self.assertEqual(json.loads(destination.read_text()), replacement_payload)
+                self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], failed_sequence)
+                evidence = json.loads(audit.read_text())
+                self.assertEqual(evidence["exact_next_sequence"], failed_sequence)
+                self.assertIn("candidate_cleanup_error=OSError: unable to prove created inode after fstat failure", evidence["primary_error_notes"])
+                self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+                self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+
     def test_actual_processpool_pending_commit_loop_rejects_predecessor_drift_0_47_95_antigravity(self) -> None:
         """Break caught: the ProcessPool/as-completed pending loop commits after predecessor drift."""
         from concurrent.futures import ProcessPoolExecutor
@@ -248,8 +298,7 @@ class PredictionAntigravityTests(unittest.TestCase):
                         raise RuntimeError(f"{tag} injected")
                 with self.assertRaisesRegex(RuntimeError, f"{tag} injected"):
                     run_synthetic_lifecycle_antigravity(root, "4" * 40, audit_path=audit, fault_hook=fault)
-                from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import verified_prefix_antigravity  # noqa: PLC0415
-                self.assertEqual(verified_prefix_antigravity(root / "candidates_antigravity", tuple(f"{item:03d}_synthetic_{item:03d}.json" for item in range(96))), expected_prefix)
+                self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), expected_prefix)
                 evidence = json.loads(audit.read_text())
                 self.assertEqual(evidence["exact_next_sequence"], expected_prefix)
                 self.assertIn(tag, evidence["primary_error"])
@@ -299,10 +348,10 @@ class PredictionAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_failure_antigravity_") as temporary:
             parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
             original = prediction.record_verified_progress_antigravity
-            def fail_at_48(path, inventory, completed, **_kwargs):
+            def fail_at_48(path, inventory, receipts, completed, **_kwargs):
                 if completed == 48:
                     raise OSError("persistent progress channel failure")
-                return original(path, inventory, completed, **_kwargs)
+                return original(path, inventory, receipts, completed, **_kwargs)
             with patch.object(prediction, "record_verified_progress_antigravity", side_effect=fail_at_48), self.assertRaisesRegex(OSError, "persistent progress"):
                 prediction.run_synthetic_lifecycle_antigravity(root, "1" * 40, audit_path=audit)
             self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 48)

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import stat
+from dataclasses import dataclass
 from pathlib import Path
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, strict_json_bytes_antigravity, write_create_only_antigravity
@@ -16,6 +17,15 @@ _ATTEMPT_LEAVES_ANTIGRAVITY = (
 )
 
 
+@dataclass(frozen=True)
+class CandidateCommitReceiptAntigravity:
+    """A parent-held proof that one exact candidate create returned successfully."""
+    sequence: int
+    name: str
+    sha256: str
+    identity: tuple[int, int]
+
+
 def write_failure_audit_antigravity(destination: Path, primary_error: BaseException, cleanup_error: BaseException | None, *, exact_next_sequence: int | None = None) -> None:
     """Write the independent fallback once, retaining primary and cleanup channel failures."""
     if not isinstance(destination, Path) or not isinstance(primary_error, BaseException) or (cleanup_error is not None and not isinstance(cleanup_error, BaseException)) or (exact_next_sequence is not None and (type(exact_next_sequence) is not int or exact_next_sequence < 0)):
@@ -23,6 +33,7 @@ def write_failure_audit_antigravity(destination: Path, primary_error: BaseExcept
     payload = {
         "schema": "exp449_failure_audit", "primary_error": f"{type(primary_error).__name__}: {primary_error}",
         "cleanup_error": None if cleanup_error is None else f"{type(cleanup_error).__name__}: {cleanup_error}",
+        "primary_error_notes": list(getattr(primary_error, "__notes__", ())),
         "exact_next_sequence": exact_next_sequence,
     }
     write_create_only_antigravity(destination, canonical_json_bytes_antigravity(payload))
@@ -61,11 +72,11 @@ def _append_progress_text_antigravity(path: Path, payload: bytes, fault_hook, se
         handle.write(payload); handle.flush(); os.fsync(handle.fileno())
 
 
-def record_verified_progress_antigravity(root: Path, inventory: tuple[str, ...], completed: int, *, fault_hook=None) -> None:
+def record_verified_progress_antigravity(root: Path, inventory: tuple[str, ...], receipts: tuple[CandidateCommitReceiptAntigravity, ...], completed: int, *, fault_hook=None) -> None:
     """Advance mutable observability only after the independently verified prefix reaches it."""
     if type(completed) is not int or completed < 0 or completed > len(inventory):
         raise ValueError("progress count is invalid")
-    if verified_prefix_antigravity(root / "candidates_antigravity", inventory) != completed:
+    if verified_prefix_antigravity(root / "candidates_antigravity", inventory, receipts) != completed:
         raise ValueError("progress cannot outrun the verified candidate prefix")
     progress = root / "progress_antigravity.json"
     current = strict_json_bytes_antigravity(progress.read_bytes())
@@ -100,13 +111,13 @@ def _cleanup_created_leaf_antigravity(parent_fd: int, name: str, created_fd: int
         primary_error.add_note(f"candidate_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
 
 
-def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0, fault_prefix: str = "", return_created_identity: bool = False) -> str | tuple[str, tuple[int, int]]:
+def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0, fault_prefix: str = "", return_created_identity: bool = False, return_commit_receipt: bool = False) -> str | tuple[str, tuple[int, int]] | CandidateCommitReceiptAntigravity:
     """Commit a candidate only after file and parent fsync plus canonical no-follow reread."""
     if not isinstance(directory, Path) or type(name) is not str or "/" in name or not name.endswith(".json"):
         raise ValueError("candidate destination is invalid")
     if type(fault_prefix) is not str:
         raise ValueError("candidate fault prefix is invalid")
-    if type(return_created_identity) is not bool:
+    if type(return_created_identity) is not bool or type(return_commit_receipt) is not bool or (return_created_identity and return_commit_receipt):
         raise ValueError("candidate identity return option is invalid")
     directory.mkdir(mode=0o700, exist_ok=True)
     payload = canonical_json_bytes_antigravity(value)
@@ -156,6 +167,8 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
             current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
             if (opened.st_dev, opened.st_ino) != created_identity or (current.st_dev, current.st_ino) != created_identity: raise ValueError("candidate leaf identity changed")
             digest = hashlib.sha256(reread).hexdigest()
+            if return_commit_receipt:
+                return CandidateCommitReceiptAntigravity(sequence, name, digest, created_identity)
             return (digest, created_identity) if return_created_identity else digest
         finally:
             if fd >= 0:
@@ -170,26 +183,51 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
         if parent_fd >= 0: os.close(parent_fd)
 
 
-def verified_prefix_antigravity(directory: Path, inventory: tuple[str, ...]) -> int:
-    """Derive the completed count exclusively from present canonical candidate leaves."""
-    if not isinstance(directory, Path) or type(inventory) is not tuple:
+def _validate_receipts_antigravity(inventory: tuple[str, ...], receipts: tuple[CandidateCommitReceiptAntigravity, ...]) -> None:
+    """Reject any receipt not returned in the exact parent-owned inventory order."""
+    if type(inventory) is not tuple or type(receipts) is not tuple or len(receipts) > len(inventory):
+        raise ValueError("receipt prefix inputs are invalid")
+    for sequence, receipt in enumerate(receipts):
+        if (type(receipt) is not CandidateCommitReceiptAntigravity or receipt.sequence != sequence or
+                receipt.name != inventory[sequence] or type(receipt.sha256) is not str or
+                len(receipt.sha256) != 64 or any(character not in "0123456789abcdef" for character in receipt.sha256) or
+                type(receipt.identity) is not tuple or len(receipt.identity) != 2 or
+                any(type(part) is not int or part < 0 for part in receipt.identity)):
+            raise ValueError("candidate commit receipt differs")
+
+
+def verified_prefix_antigravity(directory: Path, inventory: tuple[str, ...], receipts: tuple[CandidateCommitReceiptAntigravity, ...]) -> int:
+    """Revalidate only parent-returned commit receipts; pathnames never discover progress."""
+    if not isinstance(directory, Path):
         raise ValueError("prefix inputs are invalid")
-    if directory.exists() and set(os.listdir(directory)) - set(inventory):
-        raise ValueError("candidate directory has unexpected leaf")
-    completed = 0
-    for name in inventory:
-        path = directory / name
-        try:
-            fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-        except FileNotFoundError:
-            break
-        try:
-            payload = b"".join(iter(lambda: os.read(fd, 1 << 20), b""))
-            if canonical_json_bytes_antigravity(strict_json_bytes_antigravity(payload)) != payload:
-                break
-        except ValueError:
-            break
-        finally:
-            os.close(fd)
-        completed += 1
-    return completed
+    _validate_receipts_antigravity(inventory, receipts)
+    if not directory.is_dir() and receipts:
+        raise ValueError("candidate receipt directory is unavailable")
+    parent_fd = -1
+    try:
+        if receipts:
+            parent_fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        for receipt in receipts:
+            fd = -1
+            try:
+                fd = os.open(receipt.name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+                opened = os.fstat(fd)
+                if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or
+                        (opened.st_dev, opened.st_ino) != receipt.identity):
+                    raise ValueError("received candidate receipt no longer matches descriptor")
+                payload = b"".join(iter(lambda: os.read(fd, 1 << 20), b""))
+                if (hashlib.sha256(payload).hexdigest() != receipt.sha256 or
+                        canonical_json_bytes_antigravity(strict_json_bytes_antigravity(payload)) != payload):
+                    raise ValueError("received candidate receipt no longer matches bytes")
+                current = os.stat(receipt.name, dir_fd=parent_fd, follow_symlinks=False)
+                if (current.st_dev, current.st_ino) != receipt.identity:
+                    raise ValueError("received candidate receipt no longer matches namespace")
+            except FileNotFoundError:
+                return receipt.sequence
+            finally:
+                if fd >= 0:
+                    os.close(fd)
+    finally:
+        if parent_fd >= 0:
+            os.close(parent_fd)
+    return len(receipts)
