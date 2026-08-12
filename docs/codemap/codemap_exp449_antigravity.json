@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T23:22:31+00:00",
-  "source_parent_commit": "56884078aad22596d71eb48a83224ca45ec5a7c9",
+  "generated_at": "2026-08-12T23:26:39+00:00",
+  "source_parent_commit": "aec8d0d28f20bfc86ef7dfc33aef2878d2e0446d",
   "scope": [
     "Task 3 readiness/CLI/launcher is implemented-for-review; Task 4 clean-candidate verification is implemented-for-review. Official lifecycle remains unauthorized, and dashboard_access=blocked is presentation-only."
   ],
