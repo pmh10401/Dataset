@@ -1,5 +1,5 @@
 {
-  "current_commit": "0c3899e803b29f97d0fb8316fdcc7c0bd9d8133f",
+  "current_commit": "8587b138f20b05d55e4bcae5ef1869177e6d1d2e",
   "working_tree_dirty": false,
   "generated_at": "2026-08-12T00:00:00+00:00",
   "scanned_scope": [
@@ -35,7 +35,7 @@
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
     "docs": "9d195c24758f3888b040f1664bd2111e2b7ee56088cfdb2b7b667720dc42d994",
-    "experiments": "79b9ec61d4956ed25a369e385d743fd5aed3200ede94341c7451ab6f48da7d64",
+    "experiments": "61fd824474e11c066a1a1f0f525c61d2bb1a4bb9f83f0d7bec2e69a227389abf",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
     "scratch": "cbff575930b034327387e4f1584c2ca61470c8e711960dd0dcf9e4b4018073f8",
