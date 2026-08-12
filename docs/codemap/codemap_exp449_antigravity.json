@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T05:07:09+00:00",
-  "generated_from_commit": "ea3d5d05281eb56c88b342a1a9c997858dc597b1",
+  "generated_at": "2026-08-12T05:20:55+00:00",
+  "generated_from_commit": "ee58c98e8622775e9dc071e3e5825a139981fc61",
   "scope": [
     "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
   ],
@@ -246,7 +246,7 @@
     {
       "id": "frozen_prediction_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent-contiguous lifecycle-owned CommitSession commits, descriptor validator firewall, and failure audit boundary.",
+      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent-contiguous lifecycle-owned CommitSession commits, descriptor validator firewall, and one shared non-masking failure-audit boundary.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py"
@@ -254,14 +254,14 @@
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-          "symbol": "def validate_frozen_prediction_authority_antigravity"
+          "symbol": "def _handle_lifecycle_failure_antigravity"
         }
       ]
     },
     {
       "id": "prediction_progress",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
-      "role": "Task-5 create-only candidate durability with a lifecycle-owned private CommitSession that retains only writer-returned provenance, derives split progress channels, and keeps prefix revalidation internal.",
+      "role": "Task-5 create-only candidate durability with a lifecycle-owned private CommitSession that retains only writer-returned provenance, derives split progress channels, and returns nonthrowing longest-prefix evidence.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
@@ -269,7 +269,7 @@
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
-          "symbol": "class _CommitSessionAntigravity"
+          "symbol": "class PrefixValidationAntigravity"
         }
       ]
     },
@@ -501,7 +501,7 @@
         "frozen_prediction_lifecycle",
         "prediction_progress"
       ],
-      "outcome": "A fixed 11-worker production route derives progress and failure exact-next evidence only from lifecycle-owned CommitSession state appended after durable writer success; its database-free descriptor validator must succeed before Task 6 can open TEST labels, while status remains local-only."
+      "outcome": "A fixed 11-worker production route derives progress and failure exact-next evidence only from lifecycle-owned CommitSession state appended after durable writer success; one shared failure boundary independently records a nonthrowing descriptor prefix and audit outcome before Task 6 can open TEST labels, while status remains local-only."
     }
   ],
   "unknown_relationships": [
