@@ -11,7 +11,7 @@ from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, Raw
 from .hard_route_paper import HardRouteResult
 from .lineage_paper import read_strict_json
 from .routing_paper import PolicyBundle
-from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle
+from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
 from .sources_paper.stability_paper import StabilityPartition
 
 SHARD_SCHEMA="paper-task8-proposal-shard.v1"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
@@ -80,6 +80,12 @@ def _raw_identity(raw:RawDataset,entry:dict[str,object])->None:
     for indices,blobs,identity in ((raw.train_indices,raw.train_blobs,entry["train"]),(raw.test_indices,raw.test_blobs,entry["test"])):
         if tuple(indices)!=tuple(identity["indices"]) or len(blobs)!=identity["count"] or [sha256(bytes(blob)).hexdigest() for blob in blobs]!=identity["values_blob_sha256"]:raise ValueError("typed raw identity differs")
     if len(raw.train_rows)!=len(raw.train_blobs) or len(raw.test_rows)!=len(raw.test_blobs):raise ValueError("typed raw rows differ")
+    for blobs,rows in ((raw.train_blobs,raw.train_rows),(raw.test_blobs,raw.test_rows)):
+        for blob,row in zip(blobs,rows,strict=True):
+            decoded=np.frombuffer(blob,dtype="<f4")
+            array=np.asarray(row)
+            if array.dtype!=np.dtype("<f4") or array.ndim!=1 or array.shape!=decoded.shape or array.tobytes()!=blob:
+                raise ValueError("typed decoded raw rows differ")
 def _array(values:object,n:int,name:str)->list[float]:
     value=np.asarray(values)
     if value.ndim!=1 or value.size!=n or value.dtype.kind not in "iuf" or not np.all(np.isfinite(value)):raise ValueError(f"{name} differs")
@@ -98,6 +104,7 @@ def _typed_payload(raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,
     source_rows=[]
     for order,name in enumerate(EXPECTED_HARD_SOURCES):
         result=sources.by_name[name]
+        if not isinstance(result,HardSourceResult):raise TypeError("typed Task4 source child is invalid")
         if result.name!=name or type(result.eligible)is not bool or type(result.eligibility_reason)is not str:raise ValueError("typed Task4 source result differs")
         source_rows.append({"source_id":name,"order":order,"test_score":_array(result.test_score,n,"source score"),"pvalue":_array(result.test_pvalue,n,"source pvalue"),"native_pass":_bools(result.test_native_pass,n,"source pass"),"eligible":result.eligible,"reason":result.eligibility_reason})
     if not isinstance(hard,HardRouteResult) or hard.n_test!=n:raise TypeError("typed Task5 route result is invalid")

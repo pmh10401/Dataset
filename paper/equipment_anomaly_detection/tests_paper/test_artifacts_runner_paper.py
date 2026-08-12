@@ -4,6 +4,7 @@ from __future__ import annotations
 from hashlib import sha256
 import json, sqlite3, tempfile, unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -75,6 +76,16 @@ class Task8LifecycleTests(unittest.TestCase):
         raw=args[0]; bad=list(args); bad[0]=RawDataset("alpha",2,raw.train_indices,(_blob((99,99)),)+raw.train_blobs[1:],raw.train_rows,raw.test_indices,raw.test_blobs,raw.test_rows)
         with self.assertRaises(ValueError):write_typed_proposal_shard(self.root,self.catalog,*bad)
         bad=list(args); bad[4]={"selected":[]}
+        with self.assertRaises(TypeError):write_typed_proposal_shard(self.root,self.catalog,*bad)
+    def test_typed_writer_rejects_substituted_decoded_rows_and_duck_typed_source(self):
+        """Trusting RawDataset blobs without their decoded <f4 rows must fail here."""
+        from paper.equipment_anomaly_detection.artifacts_paper import write_typed_proposal_shard
+        from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+        args=list(self._typed()); raw=args[0]
+        bad=list(args); bad[0]=RawDataset(raw.dataset,raw.metadata_length,raw.train_indices,raw.train_blobs,(np.array((42,43),dtype="<f4"),)+raw.train_rows[1:],raw.test_indices,raw.test_blobs,raw.test_rows)
+        with self.assertRaises(ValueError):write_typed_proposal_shard(self.root,self.catalog,*bad)
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle
+        bad=list(args); sources=bad[1]; copied=dict(sources.by_name); source=copied["rocket_exp40"]; copied["rocket_exp40"]=SimpleNamespace(name=source.name,origin=source.origin,train_oof_score=source.train_oof_score,test_score=source.test_score,test_pvalue=source.test_pvalue,threshold=source.threshold,test_native_pass=source.test_native_pass,eligible=source.eligible,eligibility_reason=source.eligibility_reason); bad[1]=HardSourceBundle(sources.source_names,copied)
         with self.assertRaises(TypeError):write_typed_proposal_shard(self.root,self.catalog,*bad)
     def test_manifest_parity_and_lifecycle_recompute_canonical_files(self):
         """Trusting stored totals, acceptance dicts, or undeclared namespaces fails here."""
