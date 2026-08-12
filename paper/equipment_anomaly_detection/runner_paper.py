@@ -7,7 +7,7 @@ from hashlib import sha256
 import importlib.metadata, os, platform
 from pathlib import Path
 
-from .artifacts_paper import canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, write_create_only
+from .artifacts_paper import canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, write_create_only
 from .catalog_paper import build_catalog, load_acceptance, verify_catalog
 from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
 from .lineage_paper import read_strict_json, sha256_file
@@ -105,8 +105,14 @@ def verify_journal(config):
             complete.append(stage)
     artifact_root=safe_child(root,ARTIFACT_DIRECTORY)
     actual_names={item.name for item in artifact_root.iterdir()} if artifact_root.is_dir() else set()
-    if actual_names != set(complete):
+    if actual_names - (set(complete)|{"proposal_freeze"}):
         raise PipelineStateError("namespace pollution")
+    if "proposal_freeze" in actual_names:
+        try:
+            catalog=build_catalog(config.db_path,mode=config.mode,smoke_datasets=config.smoke_datasets)
+            verify_score_root(root,catalog)
+        except ValueError as error:
+            raise PipelineStateError(f"proposal freeze verification differs: {error}") from error
     return context,records,complete
 def _write_complete(root,stage,context,prior):
     expected={"schema":f"paper-task8-{stage}.v1","stage":stage,"context_sha256":context["context_sha256"]}

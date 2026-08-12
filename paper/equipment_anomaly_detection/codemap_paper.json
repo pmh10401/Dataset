@@ -14,7 +14,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "creates no-follow/exclusive canonical Task 8 artifacts; verifies standalone typed proposal freeze and parity without journal authority"
+        "creates the Task 8 lifecycle-owned proposal-freeze namespace from exact typed Task1--7 objects and independently validates canonical shard/manifest/parity authority"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -38,6 +38,7 @@
     },
     "config_paper.py": {
       "callers": [
+        "catalog_paper.py",
         "data_paper.py",
         "label_access_paper.py",
         "lineage_paper.py",
@@ -71,6 +72,7 @@
         "sources_paper/minirocket_paper.py",
         "sources_paper/preprocessing_paper.py",
         "sources_paper/stability_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py",
         "tests_paper/test_calibration_adapter_paper.py",
         "tests_paper/test_hard_route_paper.py",
         "tests_paper/test_hard_sources_paper.py",
@@ -82,7 +84,7 @@
         "defines frozen configuration, lineage, raw values, defensively immutable continuous leaf evidence, and codemap value contracts including database identity and excluded datasets",
         "defines SourceDatasetMetadata and RawDataset metadata_length",
         "defines immutable validated low-frequency depth, row, provisional-candidate, and full cross-dataset result contracts with a bijective provisional-row/candidate invariant",
-        "defines the immutable standalone Task 8 frozen proposal manifest"
+        "defines immutable Task 8 proposal manifest and frozen CPU backend decision contracts"
       ],
       "tests": [
         "tests_paper/test_config_lineage_paper.py",
@@ -110,6 +112,8 @@
     },
     "hard_route_paper.py": {
       "callers": [
+        "artifacts_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py",
         "tests_paper/test_hard_route_paper.py"
       ],
       "effects": [
@@ -151,6 +155,7 @@
         "artifacts_paper.py",
         "runner_paper.py",
         "sources_paper/hard_sources_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py",
         "tests_paper/test_config_lineage_paper.py",
         "tests_paper/test_hard_sources_paper.py"
       ],
@@ -200,7 +205,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "runs and re-verifies only the preflight/prepare semantic records; fail-closes acceleration as an immutable terminal failure"
+        "runs and re-verifies only preflight/prepare, fail-closes acceleration, and recognizes a verified standalone proposal-freeze namespace without journal advancement"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -209,6 +214,8 @@
     },
     "routing_paper.py": {
       "callers": [
+        "artifacts_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py",
         "tests_paper/test_stability_paper.py"
       ],
       "effects": [
@@ -251,7 +258,9 @@
     },
     "sources_paper/hard_sources_paper.py": {
       "callers": [
+        "artifacts_paper.py",
         "hard_route_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py",
         "tests_paper/test_hard_route_paper.py",
         "tests_paper/test_hard_sources_paper.py"
       ],
@@ -440,7 +449,9 @@
     },
     "sources_paper/stability_paper.py": {
       "callers": [
+        "artifacts_paper.py",
         "routing_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py",
         "tests_paper/test_stability_paper.py"
       ],
       "effects": [
@@ -550,11 +561,12 @@
     },
     "catalog_paper.py": {
       "callers": [
+        "artifacts_paper.py",
         "runner_paper.py",
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "recomputes Task2 normal-TRAIN and label-free-TEST catalog identities directly from SQLite and validates an external acceptance contract"
+        "recomputes Task2 normal-TRAIN and label-free-TEST identities using FrozenPaperConfig exclusions and validates external acceptance authority"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"

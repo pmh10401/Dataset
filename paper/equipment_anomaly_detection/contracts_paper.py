@@ -75,6 +75,9 @@ class Task8FrozenManifest:
     datasets: tuple[str, ...]
     test_row_count: int
     shard_hashes: Mapping[str, str]
+    acceptance_path: str
+    acceptance_sha256: str
+    acceptance_file_sha256: str
 
     def __post_init__(self) -> None:
         hashes = dict(self.shard_hashes)
@@ -82,9 +85,22 @@ class Task8FrozenManifest:
             raise ValueError("Task 8 proposal manifest inventory is invalid")
         if set(hashes) != set(self.datasets) or type(self.test_row_count) is not int or self.test_row_count < 0:
             raise ValueError("Task 8 proposal manifest coverage is invalid")
-        if any(type(item) is not str or len(item) != 64 for item in (self.catalog_sha256, *hashes.values())):
+        if type(self.acceptance_path) is not str or not self.acceptance_path or any(type(item) is not str or len(item) != 64 for item in (self.catalog_sha256, self.acceptance_sha256, self.acceptance_file_sha256, *hashes.values())):
             raise ValueError("Task 8 proposal manifest hashes are invalid")
         object.__setattr__(self, "shard_hashes", MappingProxyType(hashes))
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenTask8BackendDecision:
+    """The only Task 8 backend declaration until Task 9 owns acceleration."""
+
+    selected_backend: str = "cpu"
+    reason: str = "task9_pending"
+    verdict: str = "cpu_fallback"
+
+    def __post_init__(self) -> None:
+        if (self.selected_backend, self.reason, self.verdict) != ("cpu", "task9_pending", "cpu_fallback"):
+            raise ValueError("Task 8 backend decision is invalid")
 
 
 @dataclass(frozen=True, slots=True)

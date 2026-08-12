@@ -7,6 +7,7 @@ import sqlite3
 from typing import Iterable
 
 from .artifacts_paper import canonical_json_bytes, read_canonical, safe_root, sha256_bytes
+from .config_paper import FROZEN_CONFIG
 
 CATALOG_SCHEMA = "paper-task8-catalog.v1"
 ACCEPTANCE_SCHEMA = "paper-task8-acceptance.v1"
@@ -66,9 +67,10 @@ def build_catalog(db_path: Path, *, mode: str, smoke_datasets: tuple[str, ...] =
             raise ValueError("catalog dataset inventory is invalid")
         tokens = tuple(row[0] for row in connection.execute("SELECT DISTINCT split FROM instances").fetchall())
         if set(tokens) - {"TRAIN", "TEST"}: raise ValueError("catalog has unknown split token")
-        wanted = tuple(smoke_datasets) if mode == "smoke" else tuple(name for _, name, _ in names)
+        frozen_names=tuple(name for _,name,_ in names if name not in FROZEN_CONFIG.excluded_datasets)
+        wanted = tuple(smoke_datasets) if mode == "smoke" else frozen_names
         if (mode == "smoke" and (not wanted or wanted != tuple(sorted(set(wanted))))
-                or any(name not in {row[1] for row in names} for name in wanted)):
+                or any(name not in frozen_names for name in wanted)):
             raise ValueError("smoke dataset subset is invalid")
         rows_by_name = {name: (dataset_id, length) for dataset_id, name, length in names}
         entries = [_entry(connection, name, *rows_by_name[name]) for name in wanted]
