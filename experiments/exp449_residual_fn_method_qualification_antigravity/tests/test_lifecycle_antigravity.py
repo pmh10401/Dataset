@@ -838,3 +838,55 @@ with tempfile.TemporaryDirectory() as raw:
                 with self.assertRaisesRegex(ValueError, "transition"):
                     lifecycle.append_receipt_antigravity(parent / f"receipts_{index}", "predict", "complete", "c" * 40, prediction_root=parent / f"prediction_{index}", evaluation_root=parent / f"evaluation_{index}")
             self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_invalid_hardlinked_receipt_classification_closes_opened_leaf_descriptors_antigravity(self) -> None:
+        """Break caught: validation opens an unsafe hardlinked receipt leaf before registering it for close-all."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_receipt_classification_fd_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            for index in range(20):
+                receipts = parent / f"receipts_{index}"
+                lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "d" * 40)
+                leaf = receipts / "readiness_complete_antigravity.json"
+                os.link(leaf, parent / f"hardlink_{index}_antigravity.json")
+                self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_root_constructor_open_failure_closes_partial_parent_authority_antigravity(self) -> None:
+        """Break caught: a root open failure after parent capture leaks the partially constructed transaction."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_constructor_fd_antigravity_") as temporary:
+            parent = Path(temporary); root = parent / "root"; root.mkdir(); before = len(os.listdir("/dev/fd")); original_open = lifecycle.os.open
+            def fail_root_open(path, *args, **kwargs):
+                if path == root.name and kwargs.get("dir_fd") is not None:
+                    raise OSError("root open failure")
+                return original_open(path, *args, **kwargs)
+            with patch.object(lifecycle.os, "open", side_effect=fail_root_open):
+                for _ in range(20):
+                    with self.assertRaisesRegex(OSError, "root open failure"):
+                        lifecycle._RootIdentityTransactionAntigravity(root)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_complete_precommit_root_close_failure_still_closes_audit_pin_antigravity(self) -> None:
+        """Break caught: root close raises before audit-pin close, leaking authority into terminal recovery."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_precommit_close_all_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd")); audit_closes: list[Path] = []
+            original_root_close = lifecycle._CommandRootAuthorityAntigravity.close
+            original_pin_close = lifecycle._AbsentPathPinAntigravity.close
+            def root_close(authority, primary):
+                original_root_close(authority, primary)
+                if primary is None: raise OSError("root close failure")
+            def pin_close(pin, primary):
+                if pin.path.name.startswith("audit_") and pin.parent_fd >= 0: audit_closes.append(pin.path)
+                return original_pin_close(pin, primary)
+            with patch.object(lifecycle._CommandRootAuthorityAntigravity, "close", root_close), patch.object(lifecycle._AbsentPathPinAntigravity, "close", pin_close):
+                for index in range(10):
+                    space = parent / f"space_{index}"; space.mkdir(); audit = space / f"audit_{index}.json"
+                    with self.assertRaisesRegex(OSError, "root close failure"):
+                        lifecycle.run_phase_antigravity("readiness", "e" * 40, lambda: "ready", receipt_dir=space / "receipts", audit_path=audit, prediction_root=space / "prediction", evaluation_root=space / "evaluation")
+            self.assertEqual(len(audit_closes), 10)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)

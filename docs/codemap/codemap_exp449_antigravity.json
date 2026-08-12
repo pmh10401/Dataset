@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T03:10:00+00:00",
-  "source_parent_commit": "d7fcf94f03b02678c9ad0c12b76275cd0f518863",
+  "generated_at": "2026-08-13T04:00:00+00:00",
+  "source_parent_commit": "6329752649e0835598dd80504eae7e73f7b9e83a",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
   ],
@@ -241,7 +241,7 @@
     {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Command root and audit authority stays live through complete leaf reread and precommit validation; exact-inode cleanup removes an undurable leaf before recovery; only receipt directory then parent fsync create success. Bare inspect derives its review commit from the already-open transaction, using fixed zero40 only for its S0 terminal stop. Official execution remains closed.",
+      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Classification registers every leaf descriptor before validation; root constructors close partial authority; complete precommit closes root and audit in close-all order. Command root/audit authority stays live through complete reread, exact-inode cleanup removes an undurable leaf before recovery, and only receipt directory then parent fsync create success. Official execution remains closed.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
@@ -249,15 +249,15 @@
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "def _remove_created_leaf_antigravity"
+          "symbol": "class _LifecycleTransactionAntigravity"
         },
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "def append_receipt_antigravity"
+          "symbol": "class _RootIdentityTransactionAntigravity"
         },
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "def run_inspect_phase_antigravity"
+          "symbol": "def _close_complete_authorities_antigravity"
         }
       ]
     },
