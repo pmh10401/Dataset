@@ -163,10 +163,11 @@ class ProgressAntigravityTests(unittest.TestCase):
             audit = Path(temporary) / "failure_antigravity.json"
             write_failure_audit_antigravity(audit, ValueError("progress write failed"), OSError("pid close failed"))
             payload = json.loads(audit.read_text())
-            self.assertEqual(set(payload), {"schema", "primary_error", "cleanup_error", "primary_error_notes", "exact_next_sequence"})
+            self.assertEqual(set(payload), {"schema", "primary_error", "cleanup_error", "primary_error_notes", "prefix_validation_error", "exact_next_sequence"})
             self.assertEqual(payload["primary_error"], "ValueError: progress write failed")
             self.assertEqual(payload["cleanup_error"], "OSError: pid close failed")
             self.assertEqual(payload["primary_error_notes"], [])
+            self.assertIsNone(payload["prefix_validation_error"])
             with self.assertRaises(FileExistsError):
                 write_failure_audit_antigravity(audit, RuntimeError("replacement"), None)
 
@@ -209,24 +210,50 @@ class ProgressAntigravityTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 commit_candidate_leaf_antigravity(root, "000_Crop_A.json", payload)
 
-    def test_session_prefix_rejects_committed_leaf_replacement_antigravity(self) -> None:
-        """Break caught: trusting a canonical pathname after a session-owned commit was replaced."""
+    def test_session_validate_prefix_returns_longest_prefix_for_all_received_leaf_tampering_antigravity(self) -> None:
+        """Break caught: a received leaf defect raises or advances past its first failed sequence."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
             _new_empty_commit_session_antigravity,
             initialise_attempt_antigravity,
         )
 
-        with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
-            root = Path(temporary)
-            initialise_attempt_antigravity(root, {"schema": "exp449"})
-            session = _new_empty_commit_session_antigravity(root, _session_inventory_antigravity())
-            session.commit(0, {"sequence": 0})
-            self.assertEqual(session._verified_prefix(), 1)
-            replacement = root / "candidates_antigravity" / "replacement_antigravity.json"
-            replacement.write_text('{"sequence":0}\n')
-            os.replace(replacement, root / "candidates_antigravity" / _session_inventory_antigravity()[0])
-            with self.assertRaisesRegex(ValueError, "session"):
-                session._verified_prefix()
+        for received in (0, 47, 95):
+            for defect in ("missing", "replacement", "symlink", "noncanonical", "hash_mismatch"):
+                with self.subTest(received=received, defect=defect), tempfile.TemporaryDirectory(prefix="exp449_prefix_antigravity_") as temporary:
+                    root = Path(temporary)
+                    initialise_attempt_antigravity(root, {"schema": "exp449"})
+                    inventory = _session_inventory_antigravity()
+                    session = _new_empty_commit_session_antigravity(root, inventory)
+                    for sequence in range(received + 1):
+                        session.commit(sequence, {"sequence": sequence})
+                    leaf = root / "candidates_antigravity" / inventory[received]
+                    if defect == "missing":
+                        leaf.unlink()
+                    elif defect == "replacement":
+                        replacement = root / "replacement_antigravity.json"
+                        replacement.write_text(f'{{"sequence":{received}}}\n')
+                        os.replace(replacement, leaf)
+                    elif defect == "symlink":
+                        replacement = root / "symlink_target_antigravity.json"
+                        replacement.write_text(f'{{"sequence":{received}}}\n')
+                        leaf.unlink(); leaf.symlink_to(replacement.name)
+                    elif defect == "noncanonical":
+                        leaf.write_text(f'{{"sequence": {received}}}\n')
+                    else:
+                        leaf.write_text(f'{{"sequence":{received},"tampered":true}}\n')
+                    result = session.validate_prefix()
+                    self.assertEqual(result.valid_prefix, received)
+                    self.assertIsInstance(result.error, str)
+                    self.assertTrue(result.error)
+
+    def test_prefix_validation_value_is_immutable_slotted_and_ignores_unreturned_official_leaf_antigravity(self) -> None:
+        """Break caught: externally shaped namespace state becomes session provenance or mutable validation evidence."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+
+        self.assertTrue(hasattr(progress, "PrefixValidationAntigravity"))
+        self.assertTrue(hasattr(progress.PrefixValidationAntigravity, "__slots__"))
+        with self.assertRaises((AttributeError, TypeError)):
+            progress.PrefixValidationAntigravity(0, None).valid_prefix = 1
 
     def test_session_prefix_ignores_official_shaped_unreturned_next_leaf_at_0_47_95_antigravity(self) -> None:
         """Break caught: canonical official-shaped next-slot JSON is mistaken for a session commit."""
@@ -247,4 +274,6 @@ class ProgressAntigravityTests(unittest.TestCase):
                     session.commit(sequence, {"sequence": sequence})
                 replacement = _candidate_payload_antigravity(completed, "Crop_normal_1", "Crop", "minirocket_local_gap", [], 3, 5, [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}])
                 (root / "candidates_antigravity" / inventory[completed]).write_bytes(canonical_json_bytes_antigravity(replacement))
-                self.assertEqual(session._verified_prefix(), completed)
+                result = session.validate_prefix()
+                self.assertEqual(result.valid_prefix, completed)
+                self.assertIsNone(result.error)

@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 import hashlib
 import os
 import stat
+import sys
 from pathlib import Path
 from typing import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -157,6 +158,37 @@ def _assert_terminal_channels_antigravity(root: Path, session: _CommitSessionAnt
         raise ValueError("terminal event or text differs")
 
 
+def _handle_lifecycle_failure_antigravity(root: Path, session: _CommitSessionAntigravity | None, audit_path: Path, fault_hook: Callable[[str, int], None] | None = None) -> None:
+    """Persist bounded failure evidence without replacing the exception active in a lifecycle catch."""
+    primary_error = sys.exception()
+    if not isinstance(primary_error, BaseException):
+        raise RuntimeError("failure handler requires an active exception")
+    cleanup_error: BaseException | None = None
+    try:
+        if root.exists() and (root / "pid_antigravity.json").exists():
+            _set_pid_inactive_antigravity(root)
+    except BaseException as error:
+        cleanup_error = error
+        primary_error.add_note(f"pid_cleanup_error={type(error).__name__}: {error}")
+    prefix = 0
+    prefix_validation_error: str | None = None
+    if session is not None:
+        try:
+            validation = session.validate_prefix()
+            prefix = validation.valid_prefix
+            prefix_validation_error = validation.error
+        except BaseException as error:
+            # `_proven_prefix` only advances after this session itself has reread
+            # each prior writer-returned descriptor, so it is conservative evidence.
+            prefix = session._proven_prefix
+            prefix_validation_error = f"{type(error).__name__}: {error}"
+    try:
+        _fault_antigravity(fault_hook, "failure_audit", prefix)
+        write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, prefix_validation_error=prefix_validation_error, exact_next_sequence=prefix)
+    except BaseException as audit_error:
+        primary_error.add_note(f"failure_audit_error={type(audit_error).__name__}: {audit_error}")
+
+
 def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fail_after_leaf: int | None = None, audit_path: Path | None = None, fault_hook: Callable[[str, int], None] | None = None) -> "FrozenPredictionAuthorityAntigravity":
     """Private test lifecycle with real fixed workers and parent-only ordered durable commits."""
     if not isinstance(root, Path) or type(reviewed_commit) is not str or len(reviewed_commit) != 40:
@@ -223,24 +255,10 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
                 validation_error.add_note(f"manifest_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
             raise
         return authority
-    except BaseException as primary_error:
-        cleanup_error: BaseException | None = None
-        try:
-            if root.exists() and (root / "pid_antigravity.json").exists():
-                _set_pid_inactive_antigravity(root)
-        except BaseException as error:
-            cleanup_error = error
-        if cleanup_error is not None:
-            primary_error.add_note(f"pid_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
+    except BaseException:
         target_audit = audit_path if audit_path is not None else root.parent / "exp449_failure_audit_antigravity.json"
-        try:
-            prefix = 0 if session is None else session._verified_prefix()
-            _fault_antigravity(fault_hook, "failure_audit", prefix)
-            write_failure_audit_antigravity(target_audit, primary_error, cleanup_error, exact_next_sequence=prefix)
-        except BaseException as audit_error:
-            # Audit persistence is evidence, never a replacement for the run's cause.
-            primary_error.add_note(f"failure_audit_error={type(audit_error).__name__}: {audit_error}")
-        raise primary_error
+        _handle_lifecycle_failure_antigravity(root, session, target_audit, fault_hook)
+        raise
 
 
 def _read_nofollow_json_antigravity(path: Path) -> object:
@@ -528,21 +546,9 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
                 validation_error.add_note(f"manifest_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
             raise
         return authority
-    except BaseException as primary_error:
-        cleanup_error: BaseException | None = None
-        try:
-            if (_OFFICIAL_ROOT_ANTIGRAVITY / "pid_antigravity.json").exists():
-                _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
-        except BaseException as error:
-            cleanup_error = error
-        if cleanup_error is not None:
-            primary_error.add_note(f"pid_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
-        try:
-            prefix = 0 if session is None else session._verified_prefix()
-            write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
-        except BaseException as audit_error:
-            primary_error.add_note(f"failure_audit_error={type(audit_error).__name__}: {audit_error}")
-        raise primary_error
+    except BaseException:
+        _handle_lifecycle_failure_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, session, audit_path)
+        raise
 
 
 def validate_frozen_prediction_authority_antigravity(authority: object) -> tuple[str, ...]:

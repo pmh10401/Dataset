@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import stat
+from dataclasses import dataclass
 from pathlib import Path
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, strict_json_bytes_antigravity, write_create_only_antigravity
@@ -16,14 +17,18 @@ _ATTEMPT_LEAVES_ANTIGRAVITY = (
 )
 
 
-def write_failure_audit_antigravity(destination: Path, primary_error: BaseException, cleanup_error: BaseException | None, *, exact_next_sequence: int | None = None) -> None:
+def write_failure_audit_antigravity(destination: Path, primary_error: BaseException, cleanup_error: BaseException | None, *, prefix_validation_error: str | None = None, exact_next_sequence: int | None = None) -> None:
     """Write the independent fallback once, retaining primary and cleanup channel failures."""
-    if not isinstance(destination, Path) or not isinstance(primary_error, BaseException) or (cleanup_error is not None and not isinstance(cleanup_error, BaseException)) or (exact_next_sequence is not None and (type(exact_next_sequence) is not int or exact_next_sequence < 0)):
+    if (not isinstance(destination, Path) or not isinstance(primary_error, BaseException) or
+            (cleanup_error is not None and not isinstance(cleanup_error, BaseException)) or
+            (prefix_validation_error is not None and type(prefix_validation_error) is not str) or
+            (exact_next_sequence is not None and (type(exact_next_sequence) is not int or exact_next_sequence < 0))):
         raise ValueError("failure audit inputs are invalid")
     payload = {
         "schema": "exp449_failure_audit", "primary_error": f"{type(primary_error).__name__}: {primary_error}",
         "cleanup_error": None if cleanup_error is None else f"{type(cleanup_error).__name__}: {cleanup_error}",
         "primary_error_notes": list(getattr(primary_error, "__notes__", ())),
+        "prefix_validation_error": prefix_validation_error,
         "exact_next_sequence": exact_next_sequence,
     }
     write_create_only_antigravity(destination, canonical_json_bytes_antigravity(payload))
@@ -158,9 +163,20 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
 _SESSION_FACTORY_TOKEN_ANTIGRAVITY = object()
 
 
+@dataclass(frozen=True, slots=True)
+class PrefixValidationAntigravity:
+    """Nonthrowing descriptor-derived contiguous-prefix result."""
+    valid_prefix: int
+    error: str | None
+
+    def __post_init__(self) -> None:
+        if type(self.valid_prefix) is not int or self.valid_prefix < 0 or (self.error is not None and type(self.error) is not str):
+            raise ValueError("prefix validation result is invalid")
+
+
 class _CommitSessionAntigravity:
     """Lifecycle-private provenance for commits that actually returned from the durable writer."""
-    __slots__ = ("_root", "_inventory", "_commits", "_fault_hook")
+    __slots__ = ("_root", "_inventory", "_commits", "_fault_hook", "_proven_prefix")
 
     def __init__(self, factory_token: object, root: Path, inventory: tuple[str, ...], fault_hook) -> None:
         if factory_token is not _SESSION_FACTORY_TOKEN_ANTIGRAVITY:
@@ -169,6 +185,7 @@ class _CommitSessionAntigravity:
         self._inventory = inventory
         self._commits: list[tuple[str, str, tuple[int, int]]] = []
         self._fault_hook = fault_hook
+        self._proven_prefix = 0
 
     def commit(self, sequence: int, value: object) -> str:
         """Durably commit exactly the next inventory leaf before retaining its provenance."""
@@ -185,7 +202,8 @@ class _CommitSessionAntigravity:
     def record_progress(self) -> None:
         """Advance progress from this session's successful commits only."""
         completed = len(self._commits)
-        if completed < 1 or self._verified_prefix() != completed:
+        validation = self.validate_prefix()
+        if completed < 1 or validation.error is not None or validation.valid_prefix != completed:
             raise ValueError("progress cannot outrun the verified candidate prefix")
         progress = self._root / "progress_antigravity.json"
         current = strict_json_bytes_antigravity(progress.read_bytes())
@@ -197,12 +215,15 @@ class _CommitSessionAntigravity:
         _append_progress_jsonl_antigravity(self._root / "progress_antigravity.jsonl", canonical_json_bytes_antigravity({"dataset_unit_completed": completed}), self._fault_hook, completed - 1)
         _append_progress_text_antigravity(self._root / "progress_antigravity.txt", f"{completed}\n".encode(), self._fault_hook, completed - 1)
 
-    def _verified_prefix(self) -> int:
-        """Revalidate only writer-returned private state; pathnames never discover progress."""
+    def validate_prefix(self) -> PrefixValidationAntigravity:
+        """Return only the longest descriptor-proven prefix of writer-returned commits."""
+        proven = 0
         if not self._commits:
-            return 0
-        parent_fd = os.open(self._root / "candidates_antigravity", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+            self._proven_prefix = 0
+            return PrefixValidationAntigravity(0, None)
+        parent_fd = -1
         try:
+            parent_fd = os.open(self._root / "candidates_antigravity", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
             for sequence, (name, digest, identity) in enumerate(self._commits):
                 fd = -1
                 try:
@@ -216,14 +237,31 @@ class _CommitSessionAntigravity:
                     current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
                     if (current.st_dev, current.st_ino) != identity:
                         raise ValueError("session commit no longer matches namespace")
-                except FileNotFoundError:
-                    return sequence
+                except BaseException as error:
+                    self._proven_prefix = proven
+                    return PrefixValidationAntigravity(proven, f"{type(error).__name__}: {error}")
                 finally:
                     if fd >= 0:
                         os.close(fd)
+                proven += 1
+        except BaseException as error:
+            self._proven_prefix = proven
+            return PrefixValidationAntigravity(proven, f"{type(error).__name__}: {error}")
         finally:
-            os.close(parent_fd)
-        return len(self._commits)
+            if parent_fd >= 0:
+                try:
+                    os.close(parent_fd)
+                except BaseException:
+                    pass
+        self._proven_prefix = proven
+        return PrefixValidationAntigravity(proven, None)
+
+    def _verified_prefix(self) -> int:
+        """Compatibility guard for success-only callers that require an all-valid session."""
+        result = self.validate_prefix()
+        if result.error is not None:
+            raise ValueError(result.error)
+        return result.valid_prefix
 
 
 def _new_empty_commit_session_antigravity(root: Path, inventory: tuple[str, ...], *, fault_hook=None) -> _CommitSessionAntigravity:
