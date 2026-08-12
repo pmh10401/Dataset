@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T00:20:00+00:00",
-  "source_parent_commit": "24bd05e4c0b531a5c338be34e99a4c310affa468",
+  "generated_at": "2026-08-13T00:45:00+00:00",
+  "source_parent_commit": "006ab956c7a13ab0dafb82d3fca5f5f6bc773d1a",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
   ],
