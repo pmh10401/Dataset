@@ -41,6 +41,7 @@ class Exp448AuthorityAntigravity:
     population: int
     target_dataset_count: int
     target_dataset_order: tuple[int, ...]
+    target_dataset_names: tuple[str, ...]
     target_baseline_rows: tuple[DatasetBaselineAntigravity, ...]
     baseline_confusion: ConfusionAntigravity
     target_family_fn: tuple[int, ...]
@@ -141,7 +142,11 @@ def _validate_antigravity(leaves: Mapping[str, bytes], digests: Mapping[str, str
     family_fn = tuple(sum(item.confusion.fn for item in baselines if item.family == family) for family in families)
     if family_fn != _TARGET_FN_ANTIGRAVITY or sum(item.confusion.fn for item in baselines) != sum(_TARGET_FN_ANTIGRAVITY):
         raise ValueError("Exp448 target family FN authority differs")
-    return Exp448AuthorityAntigravity(root_identity, _ARTIFACT_SHA256_ANTIGRAVITY, _EVALUATION_SHA256_ANTIGRAVITY, _DECISION_SHA256_ANTIGRAVITY, 1117, 48, tuple(item.dataset_order for item in baselines), tuple(baselines), baseline_confusion, family_fn)
+    target_names = tuple(row["dataset"] for row in target_rows)
+    if (len(target_names) != 48 or len(set(target_names)) != 48 or any(type(name) is not str or not name for name in target_names)
+            or tuple(next(family for family, _ in CANDIDATE_MATRIX_ANTIGRAVITY if name.startswith(family + "_")) for name in target_names) != tuple(item.family for item in baselines)):
+        raise ValueError("Exp448 target dataset names differ")
+    return Exp448AuthorityAntigravity(root_identity, _ARTIFACT_SHA256_ANTIGRAVITY, _EVALUATION_SHA256_ANTIGRAVITY, _DECISION_SHA256_ANTIGRAVITY, 1117, 48, tuple(item.dataset_order for item in baselines), target_names, tuple(baselines), baseline_confusion, family_fn)
 
 
 def capture_exp448_authority_antigravity(root: Path | None = None) -> Exp448AuthorityAntigravity:

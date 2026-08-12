@@ -27,6 +27,11 @@ class PredecessorAntigravityTests(unittest.TestCase):
         self.assertEqual(authority.target_family_fn, (246, 200, 88, 75, 63, 56, 56, 53))
         self.assertEqual((authority.baseline_confusion.tp, authority.baseline_confusion.fp, authority.baseline_confusion.fn, authority.baseline_confusion.tn), (1930, 314, 1988, 191668))
         self.assertEqual(len(authority.target_baseline_rows), 48)
+        self.assertEqual(len(authority.target_dataset_names), 48)
+        self.assertEqual(len(set(authority.target_dataset_names)), 48)
+        self.assertTrue(all(type(name) is str and name for name in authority.target_dataset_names))
+        self.assertEqual(authority.target_dataset_names[0], "ChlorineConcentration_normal_1")
+        self.assertEqual(authority.target_dataset_names[-1], "Yoga_normal_2")
 
     def test_root_and_leaf_links_are_rejected_before_parse_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import predecessor_antigravity as predecessor

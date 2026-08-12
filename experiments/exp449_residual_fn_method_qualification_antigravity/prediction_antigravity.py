@@ -48,6 +48,30 @@ def _synthetic_worker_antigravity(sequence: int) -> int:
     return sequence
 
 
+def _production_worker_antigravity(sequence: int, dataset: str, family: str, method: str) -> tuple[int, str, dict[str, object]]:
+    """Picklable label-free Task-3/4 worker; parent alone writes every durable artifact."""
+    from .contracts_antigravity import MethodCandidateAntigravity
+    from .scoring_antigravity import score_candidate_antigravity
+    from .sources_antigravity import load_target_bundle_antigravity
+
+    bundle = load_target_bundle_antigravity(dataset)
+    candidate = MethodCandidateAntigravity(method, method, tuple(FROZEN_CONFIG_ANTIGRAVITY["seeds"]), (0.005,))
+    rows = tuple(score_candidate_antigravity(bundle.train_normal, bundle.test_values, candidate, seed=seed) for seed in FROZEN_CONFIG_ANTIGRAVITY["seeds"])
+    train_median = np.median(np.stack([row.train_oof for row in rows]), axis=0)
+    test_median = np.median(np.stack([row.test_scores for row in rows]), axis=0)
+    if not np.isfinite(train_median).all() or not np.isfinite(test_median).all():
+        raise ValueError("non-finite score")
+    indices = [int(index) for index in empirical_candidates(train_median, test_median, 0.005).indices]
+    name = f"{dataset}__{method}"
+    return sequence, name, {
+        "sequence": sequence, "candidate_name": name, "family": family, "method": method,
+        "contains_test_labels": False, "target_length": bundle.target_length,
+        "train_count": int(len(bundle.train_normal)), "test_count": int(len(bundle.test_values)),
+        "score_identities": [{"seed": row.seed, "feature_dimension": row.feature_dimension} for row in rows],
+        "indices": indices, "alpha": 0.005,
+    }
+
+
 def schedule_synthetic_units_antigravity(sequences: tuple[int, ...]) -> tuple[tuple[int, ...], tuple[int, ...], dict[str, int]]:
     """Exercise the exact fixed-size process scheduler; parent emits only contiguous order."""
     if type(sequences) is not tuple or sequences != tuple(range(96)):
@@ -190,8 +214,58 @@ def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAn
 
 
 def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigravity:
-    """Official lifecycle is unavailable until the sealed controller supplies real dependencies."""
-    raise RuntimeError("official Exp449 prediction lifecycle requires the sealed controller")
+    """Single-use fixed-root production lifecycle; its only dependencies are frozen Task 3/4 authorities."""
+    if type(reviewed_commit) is not str or len(reviewed_commit) != 40:
+        raise ValueError("reviewed commit is invalid")
+    from .method_audit_antigravity import audit_methods_antigravity
+    from .mlx_gate_antigravity import assess_mlx_antigravity
+    from .predecessor_antigravity import capture_exp448_authority_antigravity
+
+    prepare_attempt_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
+    audit_path = Path("/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json")
+    try:
+        predecessor = capture_exp448_authority_antigravity()
+        families = _families_antigravity(predecessor)
+        if predecessor.target_dataset_names and len(predecessor.target_dataset_names) != 48:
+            raise ValueError("Exp448 target dataset names differ")
+        methods = dict(CANDIDATE_MATRIX_ANTIGRAVITY)
+        jobs = tuple((dataset, family, method) for dataset, family in zip(predecessor.target_dataset_names, families, strict=True) for method in methods[family])
+        if len(jobs) != 96 or len(set((dataset, method) for dataset, _family, method in jobs)) != 96:
+            raise ValueError("frozen production job inventory differs")
+        inventory = tuple(f"{sequence:03d}_{dataset}__{method}.json" for sequence, (dataset, _family, method) in enumerate(jobs))
+        initialise_attempt_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, {"schema": "exp449", "reviewed_commit": reviewed_commit, "logical_cpus": _LOGICAL_CPUS_ANTIGRAVITY, "workers": _WORKERS_ANTIGRAVITY, "label_access_count": 0, "method_audit": [item.__dict__ if hasattr(item, "__dict__") else repr(item) for item in audit_methods_antigravity()], "mlx": repr(assess_mlx_antigravity())})
+        pending: dict[int, tuple[str, dict[str, object]]] = {}
+        names: list[str] = []
+        digests: list[tuple[str, str]] = []
+        next_sequence = 0
+        with ProcessPoolExecutor(max_workers=_WORKERS_ANTIGRAVITY) as executor:
+            futures = {executor.submit(_production_worker_antigravity, sequence, dataset, family, method): sequence for sequence, (dataset, family, method) in enumerate(jobs)}
+            for future in as_completed(futures):
+                sequence, name, payload = future.result()
+                pending[sequence] = (name, payload)
+                while next_sequence in pending:
+                    item_name, item_payload = pending.pop(next_sequence)
+                    digest = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory[next_sequence], item_payload)
+                    names.append(item_name); digests.append(("candidates_antigravity/" + inventory[next_sequence], digest))
+                    next_sequence += 1
+                    record_verified_progress_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory, next_sequence)
+        if next_sequence != 96:
+            raise RuntimeError("production worker completion did not reach the frozen inventory")
+        _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
+        aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
+        manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "label_access_count": 0, "dataset_units": 96}
+        write_create_only_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "prediction_manifest_antigravity.json", canonical_json_bytes_antigravity(manifest))
+        return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
+    except BaseException as primary_error:
+        cleanup_error: BaseException | None = None
+        try:
+            if (_OFFICIAL_ROOT_ANTIGRAVITY / "pid_antigravity.json").exists():
+                _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
+        except BaseException as error:
+            cleanup_error = error
+        prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", tuple(item.name for item in (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").glob("*.json"))) if (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").is_dir() else 0
+        write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
+        raise
 
 
 def validate_frozen_prediction_authority_antigravity(authority: object) -> tuple[str, ...]:
