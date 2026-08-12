@@ -367,7 +367,7 @@ class CandidateMetricAntigravity:
 git commit -m &quot;feat(exp449): freeze method qualification contracts&quot;
 </code></pre>
 <hr>
-<h3><input disabled="" type="checkbox"> Task 3: Descriptor-Pinned Exp448 and Label-Free Data Authority</h3>
+<h3><input disabled="" type="checkbox" checked=""> Task 3: Descriptor-Pinned Exp448 and Label-Free Data Authority</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py</code></li>
@@ -384,12 +384,12 @@ git commit -m &quot;feat(exp449): freeze method qualification contracts&quot;
 </li>
 <li><p>Produces: <code>capture_exp448_authority_antigravity() -&gt; Exp448AuthorityAntigravity</code>; <code>load_target_bundle_antigravity(dataset: str) -&gt; DatasetBundleAntigravity</code>; <code>open_test_labels_once_antigravity(...)</code> for Task 6 only.</p>
 </li>
-<li><p><input disabled="" type="checkbox"> <strong>Step 1: Map preflight and read-only authority check</strong></p>
+<li><p><input disabled="" type="checkbox" checked=""> <strong>Step 1: Map preflight and read-only authority check</strong></p>
 </li>
 </ul>
 <p>Verify current map, Exp448 root inventory, DB SHA/inode/nlink, and absence of the Exp449 root and failure audit. Do not issue label SQL.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 2: Write adversarial predecessor RED tests</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 2: Write adversarial predecessor RED tests</strong></li>
 </ul>
 <pre><code class="language-python">def test_target_family_authority_is_exact_antigravity(self):
     authority = capture_exp448_authority_antigravity(root=self.fixture_root)
@@ -404,7 +404,7 @@ def test_leaf_swap_after_read_is_rejected_antigravity(self):
 </code></pre>
 <p>Cover symlink leaf/root, hard-linked leaf, extra/missing leaf, duplicate JSON key, same-size overwrite, directory replacement, false dataset order, wrong family prefix membership, and baseline sum mismatch.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 3: Write label-firewall and DB RED tests</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 3: Write label-firewall and DB RED tests</strong></li>
 </ul>
 <pre><code class="language-python">def test_values_bundle_never_selects_label_antigravity(self):
     connection = RecordingConnectionAntigravity()
@@ -417,7 +417,7 @@ def test_label_session_requires_frozen_prediction_authority_antigravity(self):
 </code></pre>
 <p>Cover database SHA mismatch, inode replacement, nlink &gt;1, path symlink, metadata drift, invalid exact TEXT label type, noncontiguous index, query count drift, and truthful close failure.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 4: Run RED</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 4: Run RED</strong></li>
 </ul>
 <pre><code class="language-bash">python3 -m unittest \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_predecessor_antigravity \
@@ -425,7 +425,7 @@ def test_label_session_requires_frozen_prediction_authority_antigravity(self):
 </code></pre>
 <p>Expected: import errors for absent modules.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 5: Implement one descriptor transaction for Exp448</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 5: Implement one descriptor transaction for Exp448</strong></li>
 </ul>
 <p>Pin the Exp448 root and every required leaf with <code>O_NOFOLLOW</code>, require regular single-link leaves, read bytes from retained descriptors, parse strict canonical JSON/JSONL, recompute the artifact map, validate 1,117 ordered datasets and the eight fixed prefix groups, then revalidate descriptor and namespace identities before return. Independently call Exp448&#39;s source-free <code>capture_exp446_publication_antigravity()</code> twice, require distinct but value-identical authorities, and bind the exact stable-26 candidate coordinates used to construct each <code>DatasetBaselineAntigravity</code>.</p>
 <p>Return only immutable values:</p>
@@ -443,15 +443,15 @@ class Exp448AuthorityAntigravity:
     target_family_fn: tuple[int, ...]
 </code></pre>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 6: Implement label-free values and closure-private labels</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 6: Implement label-free values and closure-private labels</strong></li>
 </ul>
 <p>Use read-only SQLite descriptors and exact query allowlists. <code>load_target_bundle_antigravity</code> may read only values/split/index required to construct z-normalized TRAIN-normal and TEST-value matrices. It must not select label. <code>open_test_labels_once_antigravity</code> is closure-private, accepts only the exact frozen prediction authority, validates exact string <code>&#39;0&#39;/&#39;1&#39;</code>, counts one completion per ordered target dataset, and closes before evaluation artifacts are computed.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice, real pre-label capture once, and regress Exp448</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 7: Run GREEN twice, real pre-label capture once, and regress Exp448</strong></li>
 </ul>
 <p>Run the focused pair twice. Then call only <code>capture_exp448_authority_antigravity</code> and label-free target bundle loading against the real source. Assert DB nlink returns to 1 and Exp449 root remains absent. Run Exp448 source/replay focused tests without invoking its CLI.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 8: Update map and commit Task 3</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 8: Update map and commit Task 3</strong></li>
 </ul>
 <p>Regenerate map nodes/edges for predecessor and source authority, validate fingerprints, then commit:</p>
 <pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
