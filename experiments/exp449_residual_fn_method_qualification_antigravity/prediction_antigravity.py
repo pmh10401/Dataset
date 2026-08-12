@@ -178,9 +178,9 @@ def _handle_lifecycle_failure_antigravity(root: Path, session: _CommitSessionAnt
             prefix = validation.valid_prefix
             prefix_validation_error = validation.error
         except BaseException as error:
-            # `_proven_prefix` only advances after this session itself has reread
-            # each prior writer-returned descriptor, so it is conservative evidence.
-            prefix = session._proven_prefix
+            # This is a failure of validation machinery itself.  No current
+            # descriptor prefix has been established, so the audit fails closed.
+            prefix = 0
             prefix_validation_error = f"{type(error).__name__}: {error}"
     try:
         _fault_antigravity(fault_hook, "failure_audit", prefix)

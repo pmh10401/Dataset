@@ -28,6 +28,41 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_unexpected_failure_time_prefix_exception_fails_closed_after_stale_progress_proof_antigravity(self) -> None:
+        """Break caught: stale progress-era proof advances audit after validation machinery cannot recheck a tampered leaf."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
+
+        for failure_sequence in (1, 47, 95):
+            with self.subTest(failure_sequence=failure_sequence), tempfile.TemporaryDirectory(prefix="exp449_stale_prefix_antigravity_") as temporary:
+                root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"
+                primary = RuntimeError(f"primary failure at {failure_sequence}")
+                original_validate = progress._CommitSessionAntigravity.validate_prefix
+                active_traces: list[object] = []
+                original_handler = prediction._handle_lifecycle_failure_antigravity
+                def force_after_tamper(session):
+                    if len(session._commits) == failure_sequence + 1:
+                        raise OSError("unexpected prefix machinery failure")
+                    return original_validate(session)
+                def observe_handler(*args, **kwargs):
+                    active_traces.append(sys.exception().__traceback__)
+                    return original_handler(*args, **kwargs)
+                def fault(tag, sequence):
+                    if (tag, sequence) == ("after_commit", failure_sequence):
+                        target = root / "candidates_antigravity" / "000_synthetic_000.json"
+                        replacement = root / "replacement_antigravity.json"
+                        replacement.write_bytes(target.read_bytes())
+                        os.replace(replacement, target)
+                        raise primary
+                with patch.object(progress._CommitSessionAntigravity, "validate_prefix", autospec=True, side_effect=force_after_tamper), patch.object(prediction, "_handle_lifecycle_failure_antigravity", side_effect=observe_handler):
+                    with self.assertRaisesRegex(RuntimeError, f"primary failure at {failure_sequence}") as raised:
+                        prediction.run_synthetic_lifecycle_antigravity(root, "z" * 40, audit_path=audit, fault_hook=fault)
+                self.assertIs(raised.exception, primary)
+                self.assertIn("fault", tuple(frame.name for frame in traceback.extract_tb(active_traces[0])))
+                evidence = json.loads(audit.read_text())
+                self.assertEqual(evidence["exact_next_sequence"], 0)
+                self.assertEqual(evidence["prefix_validation_error"], "OSError: unexpected prefix machinery failure")
+
     def test_production_and_synthetic_failure_boundary_preserves_primary_when_prefix_and_audit_fail_antigravity(self) -> None:
         """Break caught: either lifecycle lets prefix/audit failure replace its original raised object."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415

@@ -176,7 +176,7 @@ class PrefixValidationAntigravity:
 
 class _CommitSessionAntigravity:
     """Lifecycle-private provenance for commits that actually returned from the durable writer."""
-    __slots__ = ("_root", "_inventory", "_commits", "_fault_hook", "_proven_prefix")
+    __slots__ = ("_root", "_inventory", "_commits", "_fault_hook")
 
     def __init__(self, factory_token: object, root: Path, inventory: tuple[str, ...], fault_hook) -> None:
         if factory_token is not _SESSION_FACTORY_TOKEN_ANTIGRAVITY:
@@ -185,7 +185,6 @@ class _CommitSessionAntigravity:
         self._inventory = inventory
         self._commits: list[tuple[str, str, tuple[int, int]]] = []
         self._fault_hook = fault_hook
-        self._proven_prefix = 0
 
     def commit(self, sequence: int, value: object) -> str:
         """Durably commit exactly the next inventory leaf before retaining its provenance."""
@@ -219,7 +218,6 @@ class _CommitSessionAntigravity:
         """Return only the longest descriptor-proven prefix of writer-returned commits."""
         proven = 0
         if not self._commits:
-            self._proven_prefix = 0
             return PrefixValidationAntigravity(0, None)
         parent_fd = -1
         try:
@@ -238,14 +236,12 @@ class _CommitSessionAntigravity:
                     if (current.st_dev, current.st_ino) != identity:
                         raise ValueError("session commit no longer matches namespace")
                 except BaseException as error:
-                    self._proven_prefix = proven
                     return PrefixValidationAntigravity(proven, f"{type(error).__name__}: {error}")
                 finally:
                     if fd >= 0:
                         os.close(fd)
                 proven += 1
         except BaseException as error:
-            self._proven_prefix = proven
             return PrefixValidationAntigravity(proven, f"{type(error).__name__}: {error}")
         finally:
             if parent_fd >= 0:
@@ -253,7 +249,6 @@ class _CommitSessionAntigravity:
                     os.close(parent_fd)
                 except BaseException:
                     pass
-        self._proven_prefix = proven
         return PrefixValidationAntigravity(proven, None)
 
     def _verified_prefix(self) -> int:
