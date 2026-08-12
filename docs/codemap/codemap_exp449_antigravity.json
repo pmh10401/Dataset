@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-12T13:35:00+00:00",
-  "source_parent_commit": "6c37056b1c0709f63d29564b0e8580938897e0de",
+  "generated_at": "2026-08-12T13:55:00+00:00",
+  "source_parent_commit": "2b531d8ac05386c23e20bce6dbfff18abd7eb101",
   "scope": [
-    "Base 6c37056b1c0709f63d29564b0e8580938897e0de is a Task-1 correction candidate, not a pre-Task-1 state. This same-commit review-fix candidate clarifies prospective receipt-backed two-root governance only; no lifecycle/progress integration, readiness CLI, official lifecycle, or dashboard publication is implemented or authorized."
+    "Task-1 correction is shipped and closed. Task-2 lifecycle/progress integration, readiness CLI, official lifecycle, and dashboard publication remain unimplemented or unauthorized; official surfaces remain closed."
   ],
   "topology_note": "The map retains 20 nodes by consolidating champion ledger evidence into research_control and replacing the original-plan node with the correction-plan node. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths; prior map-only ancestry is historical only.",
   "nodes": [
@@ -517,7 +517,7 @@
         "two_root_correction_plan",
         "research_control"
       ],
-      "outcome": "The review-fix candidate governs prospective two-root work without authorizing a command; Task 2 waits for fresh Sol ship, checkbox-only closeout, primary verification, and fresh Sol re-review."
+      "outcome": "The shipped and closed Task-1 correction governs prospective two-root work without authorizing a command; Task 2 waits only for primary verification and fresh Sol re-review of this closeout."
     },
     {
       "trigger": "Task-4 label-free score generation",

@@ -1,16 +1,14 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "6c37056b1c0709f63d29564b0e8580938897e0de",
+  "source_parent_commit": "2b531d8ac05386c23e20bce6dbfff18abd7eb101",
   "working_tree_dirty": false,
   "represented_paths": [
     "docs/codemap/codemap_exp449_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.json",
     "docs/codemap/codemap_exp449_antigravity.lock",
-    "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
-    "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html",
-    "scratch/build_codemap_exp449_antigravity.py"
+    "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html"
   ],
-  "generated_at": "2026-08-12T13:35:00+00:00",
+  "generated_at": "2026-08-12T13:55:00+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -47,7 +45,7 @@
   "module_fingerprints": {
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "377b030c52260c05eb810e611024ec2981ebaf19e7db7dcd14062064c70afad5",
+    "docs": "47946926654a7d2ccaea225a94f5443f1179dd83b7be8c46c97fcd7e6bca0fef",
     "experiments": "78e7e2fcba0df2fcae33c7d1e21edd083cd35d5a88cb4619b09664bc41f71907",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
@@ -56,7 +54,6 @@
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_source_parent": [
-    "docs",
-    "scratch"
+    "docs"
   ]
 }
