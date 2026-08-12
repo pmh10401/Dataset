@@ -21,7 +21,7 @@
 <li>Task 5 전체 구현·검증·fresh Sol <code>ship</code> 전에는 기존 Task 5 체크박스를 체크하지 않는다.</li>
 </ul></section>
 
-<section id="task-1"><h2><input disabled type="checkbox"> Task 1: 공개 Receipt 제거와 CommitSession 도입</h2>
+<section id="task-1"><h2><input checked disabled type="checkbox"> Task 1: 공개 Receipt 제거와 CommitSession 도입</h2>
 <p><strong>Files:</strong></p><ul>
 <li>Modify: <code>experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py</code></li>
 <li>Modify: <code>experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py</code></li>
@@ -31,18 +31,18 @@
 <p><strong>Produces:</strong> lifecycle 내부 <code>_CommitSessionAntigravity</code>; 인자 없는 <code>record_progress()</code>; 예외를 던지지 않는 prefix result.</p>
 
 <ol>
-<li><input disabled type="checkbox"> <strong>Step 1: 공개 위조 표면 RED 작성</strong><p>다음 동작을 한 테스트 표로 고정한다.</p><pre><code>assert not hasattr(progress, "CandidateCommitReceiptAntigravity")
+<li><input checked disabled type="checkbox"> <strong>Step 1: 공개 위조 표면 RED 작성</strong><p>다음 동작을 한 테스트 표로 고정한다.</p><pre><code>assert not hasattr(progress, "CandidateCommitReceiptAntigravity")
 assert "return_commit_receipt" not in inspect.signature(progress.commit_candidate_leaf_antigravity).parameters
 assert not hasattr(progress, "record_verified_progress_antigravity")
 assert not hasattr(progress, "verified_prefix_antigravity")</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 2: 순서 및 caller-state RED 작성</strong><p>세션이 sequence 1을 첫 commit으로 받거나 동일 sequence를 두 번 받으면 거부하고, progress에 completed 인자를 전달할 수 없음을 검증한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 3: RED 실행</strong><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+<li><input checked disabled type="checkbox"> <strong>Step 2: 순서 및 caller-state RED 작성</strong><p>세션이 sequence 1을 첫 commit으로 받거나 동일 sequence를 두 번 받으면 거부하고, progress에 completed 인자를 전달할 수 없음을 검증한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 3: RED 실행</strong><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
 $PY -m unittest \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_progress_antigravity \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_prediction_antigravity -q</code></pre><p>Expected: 공개 receipt/raw progress 표면 또는 순서 위반이 현재 허용되어 실패.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 4: 최소 CommitSession 구현</strong><p>세션은 root/inventory/internal commits만 소유한다. <code>commit(sequence,value)</code>는 내부 count와 exact inventory를 강제하고 기존 durable writer 성공 후에만 state를 append한다. <code>record_progress()</code>는 내부 count만 사용한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 5: 공개 receipt/raw API 제거</strong><p>receipt dataclass, receipt return flag, raw root/inventory/receipt/count를 받는 progress/prefix API를 제거한다. 테스트용 접근은 lifecycle private seam만 사용한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 6: GREEN 및 Task 1 commit</strong><p>focused suite를 두 번 실행하고 functional commit을 만든다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 4: 최소 CommitSession 구현</strong><p>세션은 root/inventory/internal commits만 소유한다. <code>commit(sequence,value)</code>는 내부 count와 exact inventory를 강제하고 기존 durable writer 성공 후에만 state를 append한다. <code>record_progress()</code>는 내부 count만 사용한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 5: 공개 receipt/raw API 제거</strong><p>receipt dataclass, receipt return flag, raw root/inventory/receipt/count를 받는 progress/prefix API를 제거한다. 테스트용 접근은 lifecycle private seam만 사용한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 6: GREEN 및 Task 1 commit</strong><p>focused suite를 두 번 실행하고 functional commit을 만든다.</p></li>
 </ol></section>
 
 <section id="task-2"><h2><input disabled type="checkbox"> Task 2: Longest Prefix와 Failure Truth 통합</h2>
