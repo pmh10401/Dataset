@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T00:00:00+00:00",
-  "generated_from_commit": "1e4f25a460b163ffa9e88fad434de68500818b71",
+  "generated_at": "2026-08-12T01:00:00+00:00",
+  "generated_from_commit": "70d8921aca67a8345ef1a1c52075385b5b92bbaa",
   "scope": [
     "Exp449 Task-3 descriptor-pinned Exp448 authority, label-free source boundary, Task-2 contracts, and future product boundaries"
   ],
@@ -214,14 +214,14 @@
     {
       "id": "label_free_source",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
-      "role": "Read-only descriptor-pinned value loader and Task-6-only closure-private TEST-label session boundary; no current caller exists.",
+      "role": "Read-only descriptor-pinned value loader and Task-6-only closure-private TEST-label session boundary. It dynamically requires the future Task-5 module's exact authority class and descriptor-backed 96-leaf validator before DB reachability; no current caller exists.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py"
       ],
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
-          "symbol": "def load_target_bundle_antigravity"
+          "symbol": "def _frozen_prediction_order_antigravity"
         }
       ]
     },
@@ -419,6 +419,15 @@
       }
     },
     {
+      "from": "label_free_source",
+      "to": "future_score_prediction",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
+        "symbol": "_PREDICTION_MODULE_ANTIGRAVITY"
+      }
+    },
+    {
       "from": "exp449_preregistration",
       "to": "future_score_prediction",
       "type": "future_unknown",
@@ -484,9 +493,10 @@
         "exp448_predecessor",
         "exp448_authority",
         "label_free_source",
-        "immutable_contracts"
+        "immutable_contracts",
+        "future_score_prediction"
       ],
-      "outcome": "The 11-leaf Exp448 authority and values-only source are immutable inputs; no scoring, prediction, readiness, evaluation, or official lifecycle call exists."
+      "outcome": "The 11-leaf Exp448 authority and values-only source are immutable inputs. The Task-6 label opener has one explicit future Task-5 integration: exact prediction type plus its descriptor-backed frozen-inventory validator; no scoring or official lifecycle call exists."
     },
     {
       "trigger": "Future implementation boundary",
@@ -501,10 +511,10 @@
     }
   ],
   "unknown_relationships": [
-    "No actual caller of Exp448 authority or the label-free source exists at Task 3. Prediction, readiness, score, evaluation, replay, CLI, and dashboard product-boundary relationships remain future/unknown; no later calls, routes, queues, or dashboard source edges are claimed."
+    "No actual caller of Exp448 authority or the label-free source exists at Task 3. The sole declared future integration is the missing Task-5 exact prediction authority validator; prediction, readiness, score, evaluation, replay, CLI, and dashboard product-boundary relationships otherwise remain future/unknown."
   ],
   "unknowns": [
-    "No Exp449 official lifecycle or prediction/readiness source exists at Task 3.",
+    "No Exp449 official lifecycle or Task-5 prediction source exists at Task 3; calling the label opener fails closed until Task 5 supplies the documented validator.",
     "The existing owner-only dashboard has no mapped repository source and is presentation-only."
   ]
 }
