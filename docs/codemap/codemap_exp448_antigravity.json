@@ -1,8 +1,9 @@
 {
-  "generated_at": "2026-08-12T04:34:34+0900",
-  "generated_from_commit": "53cf30e65c9b589ac4b3cc5a8f2b5cd36c96bce1",
+  "generated_at": "2026-08-13T06:43:51+0900",
+  "generated_from_commit": "4509bfabd24f892ba747e67b2557dbbacfae6f0e",
   "scope": [
-    "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary"
+    "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
+    "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
   ],
   "nodes": [
     {
@@ -321,6 +322,140 @@
           "symbol": "OMP_NUM_THREADS"
         }
       ]
+    },
+    {
+      "id": "paper_internal_rerun_boundary",
+      "path": "paper/equipment_anomaly_detection",
+      "role": "Explicitly separate internal paper Task8/Task9 rerun boundary; it is not an Exp448 official-lifecycle component.",
+      "entrypoints": [
+        "pipeline_paper.py run|status|verify"
+      ],
+      "callers": [],
+      "effects": [
+        "documents the active paper pipeline without granting Exp448 readiness, evaluation, inspection, promotion, or dashboard authority"
+      ],
+      "tests": [
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_config_lineage_paper.py"
+      ],
+      "constraints": [
+        "The paper pipeline is internal engineering work and remains disjoint from the immutable official Exp448 lifecycle.",
+        "It is values-only through proposal score and does not claim historical parity."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/pipeline_paper.py",
+          "symbol": "build_parser"
+        }
+      ]
+    },
+    {
+      "id": "paper_pipeline_cli",
+      "path": "paper/equipment_anomaly_detection/pipeline_paper.py",
+      "role": "Sole public paper run/status/verify CLI entrypoint with optional authenticated historical acceptance authority.",
+      "entrypoints": [
+        "main",
+        "build_parser"
+      ],
+      "callers": [],
+      "effects": [
+        "is the sole public run/status/verify entrypoint and accepts an optional authenticated historical acceptance oracle"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "constraints": [
+        "This is an internal paper-rerun component. It is separate from, and cannot authorize, mutate, or satisfy any immutable official Exp448 lifecycle gate."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/pipeline_paper.py",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "paper_runner",
+      "path": "paper/equipment_anomaly_detection/runner_paper.py",
+      "role": "Closed paper preflight, prepare, acceleration, and proposal-score stage runner plus semantic verifier.",
+      "entrypoints": [
+        "run_pipeline",
+        "verify_completed"
+      ],
+      "callers": [
+        "pipeline_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "effects": [
+        "runs and semantically re-verifies the closed preflight, prepare, acceleration, and proposal-score stages; proposal score freezes typed shards without claiming historical parity"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "constraints": [
+        "This is an internal paper-rerun component. It is separate from, and cannot authorize, mutate, or satisfy any immutable official Exp448 lifecycle gate."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/runner_paper.py",
+          "symbol": "run_pipeline"
+        }
+      ]
+    },
+    {
+      "id": "paper_acceleration",
+      "path": "paper/equipment_anomaly_detection/acceleration_paper.py",
+      "role": "Paper CPU-worker provenance and PyTorch/MLX/MPS parity-and-speed acceleration gate.",
+      "entrypoints": [
+        "build_acceleration_manifest",
+        "decide_dense_mlx_gate"
+      ],
+      "callers": [
+        "runner_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "effects": [
+        "records CPU worker caps and actual PyTorch, MLX, and MPS availability; rejects unbenchmarked or non-parity MLX acceleration"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "constraints": [
+        "This is an internal paper-rerun component. It is separate from, and cannot authorize, mutate, or satisfy any immutable official Exp448 lifecycle gate."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/acceleration_paper.py",
+          "symbol": "build_acceleration_manifest"
+        }
+      ]
+    },
+    {
+      "id": "paper_proposal_score",
+      "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "role": "Values-only Task4–7 paper score composition, selection, stability, and typed Task8 shard freeze.",
+      "entrypoints": [
+        "compose_proposal_score",
+        "write_and_freeze_proposal_score"
+      ],
+      "callers": [
+        "runner_paper.py"
+      ],
+      "effects": [
+        "composes exact Task4--7 values-only scoring over one mapping, performs Task6 global selection before selected-only Task7 stability, and freezes only typed Task8 shards"
+      ],
+      "tests": [
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "constraints": [
+        "This is an internal paper-rerun component. It is separate from, and cannot authorize, mutate, or satisfy any immutable official Exp448 lifecycle gate."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+          "symbol": "compose_proposal_score"
+        }
+      ]
     }
   ],
   "edges": [
@@ -458,6 +593,42 @@
         "path": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/cli_antigravity.py",
         "symbol": "_load_inspect_antigravity"
       }
+    },
+    {
+      "from": "paper_internal_rerun_boundary",
+      "to": "paper_pipeline_cli",
+      "type": "scopes",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/pipeline_paper.py",
+        "symbol": "run|status|verify"
+      }
+    },
+    {
+      "from": "paper_pipeline_cli",
+      "to": "paper_runner",
+      "type": "calls",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/pipeline_paper.py",
+        "symbol": "run_pipeline, verify_completed"
+      }
+    },
+    {
+      "from": "paper_runner",
+      "to": "paper_acceleration",
+      "type": "imports",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/runner_paper.py",
+        "symbol": "build_acceleration_manifest, verify_acceleration_manifest"
+      }
+    },
+    {
+      "from": "paper_runner",
+      "to": "paper_proposal_score",
+      "type": "imports",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/runner_paper.py",
+        "symbol": "compose_proposal_score, write_and_freeze_proposal_score"
+      }
     }
   ],
   "flows": [
@@ -525,10 +696,22 @@
         "research_control"
       ],
       "outcome": "Readiness imports only readiness; evaluate checks clean reviewed HEAD before lazy evaluator import; inspect stays source-free; no official command is authorized before fresh Sol ship."
+    },
+    {
+      "trigger": "Internal paper rerun (separate from immutable Exp448 official lifecycle)",
+      "steps": [
+        "paper_internal_rerun_boundary",
+        "paper_pipeline_cli",
+        "paper_runner",
+        "paper_acceleration",
+        "paper_proposal_score"
+      ],
+      "outcome": "The paper Task8/Task9 preflight-to-proposal-score pipeline records CPU/accelerator evidence and freezes typed values-only proposal shards; it neither executes nor authorizes Exp448 readiness, evaluation, inspection, promotion, or dashboard activity."
     }
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Only official lifecycle execution and dashboard relationships remain unimplemented and intentionally unasserted."
+    "Only official lifecycle execution and dashboard relationships remain unimplemented and intentionally unasserted.",
+    "The separate paper rerun has no authority to advance, alter, or satisfy any official Exp448 lifecycle gate."
   ]
 }
