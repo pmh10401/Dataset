@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T06:59:09+0900",
-  "generated_from_commit": "313d83a7442cbfcc01023621cb4266274326a997",
+  "generated_at": "2026-08-13T07:09:00+0900",
+  "generated_from_commit": "77f674fb7dcd757f90f2734eeefd83f4dbd19cfa",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
     "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
@@ -387,7 +387,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "runs and semantically re-verifies the closed preflight, prepare, acceleration, and proposal-score stages; passes the verified acceleration manifest into proposal scoring and independently checks each shard backend against that manifest before freezing typed shards without claiming historical parity"
+        "runs and semantically re-verifies the closed preflight, prepare, acceleration, and proposal-score stages; binds the context registry to the exported acceleration schema, passes the verified acceleration manifest into proposal scoring, and independently checks each shard backend against that manifest before freezing typed shards without claiming historical parity"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"

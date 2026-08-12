@@ -144,6 +144,18 @@ class Task8LifecycleTests(unittest.TestCase):
 
 
 class Task9AccelerationTests(unittest.TestCase):
+    def test_context_registry_binds_exported_acceleration_schema(self):
+        """A copied schema literal can leave context lineage one revision behind its artifact verifier."""
+        from paper.equipment_anomaly_detection.acceleration_paper import ACCELERATION_SCHEMA
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        fixture = Task8LifecycleTests("run")
+        fixture.setUp()
+        try:
+            with patch("paper.equipment_anomaly_detection.runner_paper._closure", return_value={}):
+                self.assertEqual(context_payload(fixture.config())["constants"]["registry"]["acceleration"], ACCELERATION_SCHEMA)
+        finally:
+            fixture.tearDown()
+
     def test_worker_policy_uses_all_but_one_logical_cpu_and_records_parallel_mode(self):
         """Capping a 12-core CPU stage at seven would silently violate the official policy."""
         from paper.equipment_anomaly_detection.acceleration_paper import WorkerRecord, build_acceleration_manifest

@@ -7,7 +7,7 @@ from hashlib import sha256
 import os
 from pathlib import Path
 
-from .acceleration_paper import build_acceleration_manifest, verify_acceleration_manifest
+from .acceleration_paper import ACCELERATION_SCHEMA, build_acceleration_manifest, verify_acceleration_manifest
 from .artifacts_paper import canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, write_create_only
 from .catalog_paper import build_catalog, load_acceptance
 from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
@@ -62,7 +62,7 @@ def context_payload(config: PipelineConfig):
         acceptance=_acceptance_context(config,catalog)
     except ValueError as error:
         raise PipelineStateError(f"catalog or acceptance context differs: {error}") from error
-    base={"schema":"paper-task9-context.v1","mode":config.mode,"smoke_datasets":list(config.smoke_datasets),"paths":_paths(config),"database":catalog["database"],"catalog_sha256":catalog["catalog_sha256"],"parity_authority":acceptance,"lineage_sha256":sha256_file(LINEAGE_LOCK_PATH),"codemap_lock_sha256":sha256_file(PAPER_ROOT/"codemap_paper.lock"),"code_closure":_closure(),"constants":{"stage_order":list(PIPELINE_STAGE_ORDER),"registry":{"preflight":"paper-task8-preflight.v1","prepare":"paper-task8-prepare.v1","acceleration":"paper-task9-acceleration.v1","proposal_score":"paper-task9-proposal-score.v1"}}}
+    base={"schema":"paper-task9-context.v1","mode":config.mode,"smoke_datasets":list(config.smoke_datasets),"paths":_paths(config),"database":catalog["database"],"catalog_sha256":catalog["catalog_sha256"],"parity_authority":acceptance,"lineage_sha256":sha256_file(LINEAGE_LOCK_PATH),"codemap_lock_sha256":sha256_file(PAPER_ROOT/"codemap_paper.lock"),"code_closure":_closure(),"constants":{"stage_order":list(PIPELINE_STAGE_ORDER),"registry":{"preflight":"paper-task8-preflight.v1","prepare":"paper-task8-prepare.v1","acceleration":ACCELERATION_SCHEMA,"proposal_score":"paper-task9-proposal-score.v1"}}}
     return {**base,"context_sha256":_sha(base)}
 
 def _record(payload): return {**payload,"record_sha256":_sha(payload)}
