@@ -127,6 +127,24 @@ class EvaluationAntigravityTests(unittest.TestCase):
             dependencies = _DependenciesAntigravity(root)
             with self.assertRaises(ValueError): _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             self.assertEqual(dependencies.open_labels_calls, 0)
+        with tempfile.TemporaryDirectory(prefix="exp449_symlink_destination_antigravity_") as temporary:
+            root = Path(temporary) / "publication_antigravity"; root.symlink_to("missing_antigravity")
+            dependencies = _DependenciesAntigravity(root)
+            with self.assertRaises(ValueError): _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual(dependencies.open_labels_calls, 0)
+
+    def test_no_replace_commit_refuses_directory_that_appears_after_private_replay_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_directory_replace_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            def appeared(staging: Path, destination: Path) -> None:
+                destination.mkdir(); (destination / "attacker_antigravity").write_text("not publication")
+                raise FileExistsError("destination appeared")
+            with patch.object(module, "_rename_no_replace_antigravity", side_effect=appeared), self.assertRaisesRegex(FileExistsError, "destination appeared"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual({path.name for path in dependencies.root.iterdir()}, {"attacker_antigravity"})
+            self.assertTrue(dependencies.audit_path.is_file())
 
     def test_partial_staging_and_audit_write_failure_preserve_primary_truth_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module

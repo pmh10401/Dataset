@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import ctypes
+import errno
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -106,6 +108,22 @@ def _fsync_directory_antigravity(path: Path) -> None:
     finally: os.close(descriptor)
 
 
+def _rename_no_replace_antigravity(staging: Path, destination: Path) -> None:
+    """Use Darwin's exclusive directory rename; fail closed where that primitive is absent."""
+    if staging.parent != destination.parent or sys.platform != "darwin":
+        raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
+    libc = ctypes.CDLL(None, use_errno=True)
+    renamex = getattr(libc, "renamex_np", None)
+    if renamex is None:
+        raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
+    renamex.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint)
+    renamex.restype = ctypes.c_int
+    # RENAME_EXCL is the Darwin no-replacement flag; its failure leaves both names intact.
+    if renamex(os.fsencode(staging), os.fsencode(destination), 0x00000004) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error), destination)
+
+
 def _publish_antigravity(root: Path, payloads: Mapping[str, bytes]) -> None:
     if root.exists() or root.is_symlink() or set(payloads) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("publication destination is invalid or already exists")
@@ -122,7 +140,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes]) -> None:
         inspect_replay_at_antigravity(staging)
         _fsync_directory_antigravity(root.parent)
         if root.exists() or root.is_symlink(): raise ValueError("publication destination appeared before commit")
-        os.rename(staging, root)
+        _rename_no_replace_antigravity(staging, root)
         _fsync_directory_antigravity(root.parent)
     except BaseException:
         # A failed staging namespace is never a valid public root and is kept for forensic preservation.
