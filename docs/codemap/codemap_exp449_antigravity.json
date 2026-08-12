@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T09:03:39+00:00",
-  "generated_from_commit": "88d4402196de03b3df08169419c4e4da4f36b822",
+  "generated_at": "2026-08-12T09:21:39+00:00",
+  "generated_from_commit": "f3d6ebac24a4a77b22a3c3c8e2d74fb10519c66e",
   "scope": [
     "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
   ],
@@ -247,7 +247,7 @@
     {
       "id": "task6_evaluation",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
-      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, descriptor-captured Task-5 authority, and retained-FD post-rename identity/replay recovery for its 12-leaf publication.",
+      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, exact Task-5 descriptor capture, retained-FD post-rename identity/replay recovery, and phase/recovery-private audit evidence for its 12-leaf publication.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py"
       ],
