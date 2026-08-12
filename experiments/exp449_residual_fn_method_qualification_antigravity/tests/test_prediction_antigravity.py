@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -51,6 +52,20 @@ class PredictionAntigravityTests(unittest.TestCase):
             replacement = root / "replacement_antigravity.json"
             replacement.write_bytes(leaf.read_bytes())
             leaf.unlink(); leaf.symlink_to(replacement.name)
+            with self.assertRaises(ValueError):
+                validate_prediction_root_antigravity(root, authority)
+
+    def test_private_validator_rejects_hardlinked_status_channel_antigravity(self) -> None:
+        """Break caught: accepting a status channel that can be mutated through another name."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
+            run_synthetic_lifecycle_antigravity,
+            validate_prediction_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "c" * 40)
+            os.link(root / "progress_antigravity.txt", Path(temporary) / "linked_progress_antigravity.txt")
             with self.assertRaises(ValueError):
                 validate_prediction_root_antigravity(root, authority)
         with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
