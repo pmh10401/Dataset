@@ -35,3 +35,9 @@ class DashboardExportAntigravityTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 public_status_antigravity({**valid, key: "forbidden"})
 
+    def test_public_status_rejects_non_allowlisted_fields_antigravity(self) -> None:
+        """Break caught: silently projecting a snapshot that carries undeclared fields."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.dashboard_export_antigravity import public_status_antigravity  # noqa: PLC0415
+        valid = {"schema": "exp449", "experiment_id": "Exp449", "phase": "prediction", "status": "running", "reviewed_commit": "a" * 40, "target_family_count": 8, "candidate_pair_count": 16, "dataset_unit_total": 96, "dataset_unit_completed": 0, "method_family": "Crop", "backend": "cpu", "label_access_started": False}
+        with self.assertRaises(ValueError):
+            public_status_antigravity({**valid, "worker_elapsed_ms": 1})

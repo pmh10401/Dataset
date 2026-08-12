@@ -2,10 +2,55 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from pathlib import Path
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, strict_json_bytes_antigravity, write_create_only_antigravity
+
+
+_ATTEMPT_LEAVES_ANTIGRAVITY = (
+    "context_antigravity.json", "progress_antigravity.json", "progress_antigravity.jsonl",
+    "progress_antigravity.txt", "pid_antigravity.json", "candidates_antigravity",
+)
+
+
+def initialise_attempt_antigravity(root: Path, context: object) -> None:
+    """Create the exact non-terminal attempt namespace without an authority manifest."""
+    if not isinstance(root, Path) or (root.exists() and any(root.iterdir())):
+        raise ValueError("attempt root must be new or empty")
+    root.mkdir(mode=0o700, exist_ok=True)
+    (root / "candidates_antigravity").mkdir(mode=0o700)
+    write_create_only_antigravity(root / "context_antigravity.json", canonical_json_bytes_antigravity(context))
+    write_create_only_antigravity(root / "progress_antigravity.json", canonical_json_bytes_antigravity({"dataset_unit_completed": 0, "next_sequence": 0, "terminal": False}))
+    write_create_only_antigravity(root / "progress_antigravity.jsonl", b"")
+    write_create_only_antigravity(root / "progress_antigravity.txt", b"")
+    write_create_only_antigravity(root / "pid_antigravity.json", canonical_json_bytes_antigravity({"active": True}))
+
+
+def record_verified_progress_antigravity(root: Path, inventory: tuple[str, ...], completed: int) -> None:
+    """Advance mutable observability only after the independently verified prefix reaches it."""
+    if type(completed) is not int or completed < 0 or completed > len(inventory):
+        raise ValueError("progress count is invalid")
+    if verified_prefix_antigravity(root / "candidates_antigravity", inventory) != completed:
+        raise ValueError("progress cannot outrun the verified candidate prefix")
+    progress = root / "progress_antigravity.json"
+    current = strict_json_bytes_antigravity(progress.read_bytes())
+    if type(current) is not dict or current.get("dataset_unit_completed") is None or current["dataset_unit_completed"] > completed:
+        raise ValueError("progress state is invalid")
+    payload = canonical_json_bytes_antigravity({"dataset_unit_completed": completed, "next_sequence": completed, "terminal": completed == len(inventory)})
+    fd = os.open(progress, os.O_WRONLY | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        os.write(fd, payload)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    with (root / "progress_antigravity.jsonl").open("ab") as handle:
+        handle.write(canonical_json_bytes_antigravity({"dataset_unit_completed": completed}))
+        handle.flush(); os.fsync(handle.fileno())
+    with (root / "progress_antigravity.txt").open("ab") as handle:
+        handle.write(f"{completed}\n".encode())
+        handle.flush(); os.fsync(handle.fileno())
 
 
 def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object) -> str:

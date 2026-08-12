@@ -8,6 +8,25 @@ from pathlib import Path
 
 
 class ProgressAntigravityTests(unittest.TestCase):
+    def test_attempt_channels_advance_only_after_verified_prefix_antigravity(self) -> None:
+        """Break caught: reporting progress before the candidate leaf is durably committed."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
+            commit_candidate_leaf_antigravity,
+            initialise_attempt_antigravity,
+            record_verified_progress_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp449_progress_antigravity_") as temporary:
+            root = Path(temporary)
+            initialise_attempt_antigravity(root, {"schema": "exp449"})
+            with self.assertRaises(ValueError):
+                record_verified_progress_antigravity(root, ("000_Crop_A.json",), 1)
+            commit_candidate_leaf_antigravity(root / "candidates_antigravity", "000_Crop_A.json", {"sequence": 0})
+            record_verified_progress_antigravity(root, ("000_Crop_A.json",), 1)
+            self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["dataset_unit_completed"], 1)
+            self.assertEqual((root / "progress_antigravity.jsonl").read_text().count("\n"), 1)
+            self.assertEqual((root / "progress_antigravity.txt").read_text(), "1\n")
+
     def test_create_only_leaf_commit_requires_canonical_re_read_antigravity(self) -> None:
         """Break caught: accepting a leaf before its durable canonical reread."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import (  # noqa: PLC0415
@@ -38,4 +57,3 @@ class ProgressAntigravityTests(unittest.TestCase):
             self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json")), 1)
             (root / "000_Crop_A.json").write_text('{"sequence":0}\n')
             self.assertEqual(verified_prefix_antigravity(root, ("000_Crop_A.json", "001_Crop_B.json")), 1)
-

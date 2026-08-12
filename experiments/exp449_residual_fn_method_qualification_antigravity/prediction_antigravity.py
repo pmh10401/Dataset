@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 from typing import Callable
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import time
 
 import numpy as np
 
@@ -15,6 +17,36 @@ from .progress_antigravity import commit_candidate_leaf_antigravity
 
 
 _OFFICIAL_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812")
+_LOGICAL_CPUS_ANTIGRAVITY = 12
+_WORKERS_ANTIGRAVITY = 11
+
+
+def _synthetic_worker_antigravity(sequence: int) -> int:
+    """Picklable process worker with deterministic inverse latency for scheduling regression."""
+    time.sleep((95 - sequence % 96) * 0.0001)
+    return sequence
+
+
+def schedule_synthetic_units_antigravity(sequences: tuple[int, ...]) -> tuple[tuple[int, ...], tuple[int, ...], dict[str, int]]:
+    """Exercise the exact fixed-size process scheduler; parent emits only contiguous order."""
+    if type(sequences) is not tuple or sequences != tuple(range(96)):
+        raise ValueError("synthetic scheduler requires the frozen 96 sequences")
+    completed: list[int] = []
+    pending: dict[int, int] = {}
+    ordered: list[int] = []
+    next_sequence = 0
+    with ProcessPoolExecutor(max_workers=_WORKERS_ANTIGRAVITY) as executor:
+        futures = {executor.submit(_synthetic_worker_antigravity, sequence): sequence for sequence in sequences}
+        for future in as_completed(futures):
+            sequence = future.result()
+            completed.append(sequence)
+            pending[sequence] = sequence
+            while next_sequence in pending:
+                ordered.append(pending.pop(next_sequence))
+                next_sequence += 1
+    if tuple(ordered) != sequences:
+        raise RuntimeError("scheduler did not commit a contiguous frozen prefix")
+    return tuple(ordered), tuple(completed), {"logical_cpus": _LOGICAL_CPUS_ANTIGRAVITY, "workers": _WORKERS_ANTIGRAVITY}
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,4 +133,4 @@ def validate_frozen_prediction_authority_antigravity(authority: object) -> tuple
     return datasets
 
 
-__all__ = ["FrozenPredictionAuthorityAntigravity", "PredictionDependenciesAntigravity", "predict_antigravity", "predict_with_dependencies_antigravity", "validate_frozen_prediction_authority_antigravity"]
+__all__ = ["FrozenPredictionAuthorityAntigravity", "PredictionDependenciesAntigravity", "predict_antigravity", "predict_with_dependencies_antigravity", "schedule_synthetic_units_antigravity", "validate_frozen_prediction_authority_antigravity"]

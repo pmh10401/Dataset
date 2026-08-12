@@ -20,6 +20,18 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_real_eleven_worker_scheduler_commits_reversed_completion_in_sequence_antigravity(self) -> None:
+        """Break caught: allowing ProcessPool completion order to determine leaf order."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
+            schedule_synthetic_units_antigravity,
+        )
+
+        ordered, completed, provenance = schedule_synthetic_units_antigravity(tuple(range(96)))
+        self.assertEqual(ordered, tuple(range(96)))
+        self.assertEqual(len(completed), 96)
+        self.assertNotEqual(completed, tuple(range(96)))
+        self.assertEqual(provenance, {"logical_cpus": 12, "workers": 11})
+
     def test_prediction_inventory_commits_ordered_96_label_free_units_antigravity(self) -> None:
         """Break caught: unordered, duplicate, non-96, or label-bearing candidate commitments."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
@@ -57,4 +69,3 @@ class PredictionAntigravityTests(unittest.TestCase):
         authority = FrozenPredictionAuthorityAntigravity("c" * 40, 16, 96, (), (), (), "d" * 64, 0)
         with self.assertRaises(ValueError):
             validate_frozen_prediction_authority_antigravity(authority)
-

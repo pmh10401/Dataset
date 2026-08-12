@@ -22,7 +22,7 @@ def _safe_antigravity(value: object) -> bool:
 
 def public_status_antigravity(snapshot: Mapping[str, object]) -> Mapping[str, object]:
     """Return only the fixed twelve non-sensitive fields; no publication occurs here."""
-    if not isinstance(snapshot, Mapping) or set(snapshot) != set(STATUS_FIELDS_ANTIGRAVITY) | (set(snapshot) - set(STATUS_FIELDS_ANTIGRAVITY)):
+    if not isinstance(snapshot, Mapping) or set(snapshot) != set(STATUS_FIELDS_ANTIGRAVITY):
         raise ValueError("status snapshot is invalid")
     if any(type(key) is not str and True for key in snapshot) or any(key.lower() in _SENSITIVE_ANTIGRAVITY for key in snapshot) or not _safe_antigravity(snapshot):
         raise ValueError("status contains sensitive data")
@@ -34,4 +34,3 @@ def public_status_antigravity(snapshot: Mapping[str, object]) -> Mapping[str, ob
 def snapshot_status_antigravity(**values: object) -> Mapping[str, object]:
     """Validate the controller's local aggregate before its owner-only projection."""
     return public_status_antigravity(values)
-
