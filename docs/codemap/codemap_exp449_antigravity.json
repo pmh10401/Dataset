@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T00:45:00+00:00",
-  "source_parent_commit": "006ab956c7a13ab0dafb82d3fca5f5f6bc773d1a",
+  "generated_at": "2026-08-13T02:00:00+00:00",
+  "source_parent_commit": "9057706d10390b5699d952efa31205a14680cd5e",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
   ],
@@ -241,7 +241,7 @@
     {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Its command-wide root authority pins existing roots or absence parents through started/operation/complete, binds receipt hashes only after exact-predecessor root preconditions, and treats complete-parent fsync as final durable commit; official execution remains closed.",
+      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Command authority retains root leaf parent-relative identities, exact absent-path pins, and audit absence through precommit; bare inspect derives its review commit from the already-open receipt transaction, while complete-parent fsync remains final durable commit. Official execution remains closed.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
@@ -253,7 +253,11 @@
         },
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "def run_phase_antigravity"
+          "symbol": "class _AbsentPathPinAntigravity"
+        },
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+          "symbol": "def run_inspect_phase_antigravity"
         }
       ]
     },
@@ -298,14 +302,15 @@
     {
       "id": "task6_replay",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
-      "role": "Task-6 descriptor-pinned source-free canonical semantic replay of twelve leaves against actual Task-5 authority, canonical rows, inventory, leaf/aggregate, context/source, and manifest provenance.",
+      "role": "Task-6 descriptor-pinned source-free canonical semantic replay of twelve leaves against actual Task-5 authority, canonical rows, inventory, leaf/aggregate, context/source, and manifest provenance. Bare inspect enters lifecycle before receipt-derived commit/capture/replay.",
       "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py"
       ],
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
-          "symbol": "def inspect_replay_at_antigravity"
+          "symbol": "def _inspect_with_dependencies_antigravity"
         }
       ]
     }

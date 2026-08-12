@@ -519,13 +519,12 @@ class LifecycleAntigravityTests(unittest.TestCase):
             events: list[str] = []
             capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="d" * 40))
             result = replay._inspect_with_dependencies_antigravity(
-                lambda: events.append("receipt") or "d" * 40,
                 lambda: events.append("capture") or capture,
                 lambda root, value: events.append("replay") or "replayed",
                 evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent / "audit.json",
             )
             self.assertEqual(result, "replayed")
-            self.assertEqual(events, ["receipt", "capture", "replay"])
+            self.assertEqual(events, ["capture", "replay"])
             self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
 
     def test_private_predict_wrapper_commits_zero_label_immutable_root_antigravity(self) -> None:
@@ -575,7 +574,7 @@ with tempfile.TemporaryDirectory() as raw:
         if index == 4: (parent/'evaluation'/'identity.json').write_bytes(b'{}\\n')
         life.append_receipt_antigravity(receipts, phase, event, 'a'*40, prediction_root=parent/'prediction', evaluation_root=parent/'evaluation')
     capture=SimpleNamespace(authority=SimpleNamespace(reviewed_commit='a'*40))
-    result=replay._inspect_with_dependencies_antigravity(lambda:'a'*40, lambda:capture, lambda root,value:'ok', evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent/'audit.json')
+    result=replay._inspect_with_dependencies_antigravity(lambda:capture, lambda root,value:'ok', evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent/'audit.json')
     import sys
     forbidden=('sqlite3','experiments.exp449_residual_fn_method_qualification_antigravity.sources_antigravity','experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity','aeon')
     print(json.dumps({'result':result,'loaded':[name for name in forbidden if name in sys.modules]}))
@@ -617,7 +616,7 @@ with tempfile.TemporaryDirectory() as raw:
                 return original(directory, phase, event, commit, **kwargs)
             with patch.object(lifecycle, "append_receipt_antigravity", side_effect=fail_complete):
                 with self.assertRaisesRegex(OSError, "complete fsync"):
-                    lifecycle.run_phase_antigravity("predict", "2" * 40, lambda: "must-not-return", receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+                    lifecycle.run_phase_antigravity("predict", "2" * 40, lambda: ((parent / "prediction").mkdir(), ((parent / "prediction") / "identity_antigravity.json").write_bytes(b"{}\n"), "must-not-return")[2], receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
             self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
             self.assertTrue(audit.is_file())
 
@@ -649,3 +648,116 @@ with tempfile.TemporaryDirectory() as raw:
                     os.rename(nested, parent / "moved_empty"); replacement.rename(nested)
             with self.assertRaisesRegex(ValueError, "root directory was replaced"):
                 lifecycle.append_receipt_antigravity(parent / "receipts", "readiness", "complete", "4" * 40, prediction_root=root, evaluation_root=parent / "evaluation", fault_hook=replace)
+
+    def test_root_leaf_path_replacement_and_hardlink_reject_retained_authority_antigravity(self) -> None:
+        """Break caught: a retained root leaf fd hides same-byte pathname replacement or a late hardlink."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_leaf_authority_antigravity_") as temporary:
+            parent = Path(temporary)
+            for defect in ("replace", "hardlink"):
+                with self.subTest(defect=defect):
+                    root = parent / defect; root.mkdir(); leaf = root / "leaf_antigravity.json"; leaf.write_bytes(b"same bytes\n")
+                    transaction = lifecycle._RootIdentityTransactionAntigravity(root)
+                    try:
+                        if defect == "replace":
+                            leaf.rename(parent / f"moved_{defect}_antigravity.json")
+                            leaf.write_bytes(b"same bytes\n")
+                        else:
+                            os.link(leaf, parent / f"linked_{defect}_antigravity.json")
+                        with self.assertRaisesRegex(ValueError, "root leaf"):
+                            transaction.end_validate()
+                    finally:
+                        transaction.close(None)
+
+    def test_direct_append_pins_absent_roots_until_final_receipt_commit_antigravity(self) -> None:
+        """Break caught: direct readiness append accepts an absent root that appears at its final validation seam."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_direct_absence_pin_antigravity_") as temporary:
+            parent = Path(temporary); prediction = parent / "prediction"; receipts = parent / "receipts"
+            for kind in ("directory", "file", "symlink"):
+                with self.subTest(kind=kind):
+                    def appear(point: str) -> None:
+                        if point == "before_end_validate":
+                            if kind == "directory": prediction.mkdir()
+                            elif kind == "file": prediction.write_bytes(b"occupied\n")
+                            else:
+                                target = parent / "target_antigravity.json"; target.write_bytes(b"occupied\n"); prediction.symlink_to(target)
+                    with self.assertRaisesRegex(ValueError, "absent"):
+                        lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "5" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation", fault_hook=appear)
+                    self.assertFalse((receipts / "readiness_complete_antigravity.json").exists())
+                    if prediction.is_dir(): prediction.rmdir()
+                    else: prediction.unlink()
+
+    def test_audit_appearance_stops_all_exact_predecessors_without_overwrite_antigravity(self) -> None:
+        """Break caught: audit appearance during an otherwise exact phase permits complete or overwrites forensic evidence."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        expected = {"readiness": "S0", "predict": "S1", "evaluate": "S3", "inspect": "S5"}
+        with tempfile.TemporaryDirectory(prefix="exp449_audit_pin_matrix_antigravity_") as temporary:
+            parent = Path(temporary)
+            for phase, state in expected.items():
+                for kind in ("file", "symlink"):
+                    with self.subTest(phase=phase, kind=kind):
+                        space = parent / f"{phase}_{kind}"; space.mkdir()
+                        receipts, audit = space / "receipts", space / "audit_antigravity.json"
+                        prediction, evaluation = space / "prediction", space / "evaluation"
+                        self._seed_state_antigravity(lifecycle, receipts, state, "6" * 40)
+                        if kind == "symlink":
+                            (space / "audit_target_antigravity.json").write_bytes(b"occupied\n")
+                        if phase in ("evaluate", "inspect"):
+                            prediction.mkdir(exist_ok=True); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                        if phase == "inspect":
+                            evaluation.mkdir(exist_ok=True); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                        def operation() -> None:
+                            if phase == "predict": prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                            if phase == "evaluate": evaluation.mkdir(); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                            if kind == "file": audit.write_bytes(b"occupied\n")
+                            else:
+                                audit.symlink_to(space / "audit_target_antigravity.json")
+                        with self.assertRaisesRegex(ValueError, "absent"):
+                            lifecycle.run_phase_antigravity(phase, "6" * 40, operation, receipt_dir=receipts, audit_path=audit, prediction_root=prediction, evaluation_root=evaluation)
+                        self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                        self.assertEqual(audit.resolve().read_bytes(), b"occupied\n")
+
+    def test_inspect_seam_enters_lifecycle_before_receipt_commit_is_derived_antigravity(self) -> None:
+        """Break caught: bare inspect opens and closes a receipt path before the retained lifecycle transaction starts."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_inspect_receipt_authority_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; evaluation = parent / "evaluation"; evaluation.mkdir()
+            self._seed_state_antigravity(lifecycle, receipts, "S5", "7" * 40)
+            capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="7" * 40))
+            with patch.object(lifecycle, "receipt_reviewed_commit_antigravity", side_effect=AssertionError("bare receipt reopen")):
+                result = replay._inspect_with_dependencies_antigravity(
+                    lambda: capture, lambda root, value: "replayed",
+                    evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent / "audit.json",
+                )
+            self.assertEqual(result, "replayed")
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
+
+    def test_inspect_receipt_rebind_during_operation_is_not_reopened_by_path_antigravity(self) -> None:
+        """Break caught: bare inspect reads a receipt commit, then accepts a same-name receipt directory rebind."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_inspect_rebind_authority_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; evaluation = parent / "evaluation"; evaluation.mkdir()
+            self._seed_state_antigravity(lifecycle, receipts, "S5", "8" * 40)
+            capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="8" * 40))
+            for defect in ("directory", "leaf"):
+                with self.subTest(defect=defect):
+                    active = parent / f"receipts_{defect}"; self._seed_state_antigravity(lifecycle, active, "S5", "8" * 40)
+                    moved = parent / f"moved_{defect}"
+                    def rebind(root, value):
+                        if defect == "directory":
+                            active.rename(moved); active.mkdir()
+                        else:
+                            leaf = active / "inspect_started_antigravity.json"; payload = leaf.read_bytes()
+                            leaf.rename(moved); leaf.write_bytes(payload)
+                        return "must-not-return"
+                    with self.assertRaisesRegex(ValueError, "receipt (directory was rebound|leaf was replaced)"):
+                        replay._inspect_with_dependencies_antigravity(lambda: capture, rebind, evaluation_root=evaluation, receipt_dir=active, audit_path=parent / f"audit_{defect}.json")
+                    self.assertTrue((parent / f"audit_{defect}.json").is_file())

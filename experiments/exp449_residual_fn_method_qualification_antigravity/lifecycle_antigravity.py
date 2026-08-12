@@ -345,14 +345,16 @@ def _root_identity_antigravity(root: Path) -> str | None:
 
 class _RootIdentityTransactionAntigravity:
     """Retain every descriptor used for a root identity until a receipt commits."""
-    __slots__ = ("root", "root_name", "parent_fd", "root_fd", "descriptors", "records", "identity")
+    __slots__ = ("root", "root_name", "parent_fd", "root_fd", "descriptors", "records", "identity", "absence")
 
     def __init__(self, root: Path, fault_hook=None) -> None:
-        self.root = root; self.root_name = root.name; self.parent_fd = self.root_fd = -1; self.descriptors: list[tuple[int, tuple[int, int, int, int], tuple[str, ...]]] = []; self.records: list[tuple[int, tuple[int, int, int, int], str, bytes]] = []; self.identity = None
+        self.root = root; self.root_name = root.name; self.parent_fd = self.root_fd = -1; self.descriptors: list[tuple[int, tuple[int, int, int, int], tuple[str, ...]]] = []; self.records: list[tuple[int, tuple[int, int, int, int], int, str, bytes]] = []; self.identity = None; self.absence = None
         self.parent_fd = os.open(root.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
         try:
             path_info = os.stat(self.root_name, dir_fd=self.parent_fd, follow_symlinks=False)
         except FileNotFoundError:
+            os.close(self.parent_fd); self.parent_fd = -1
+            self.absence = _AbsentPathPinAntigravity(root)
             return
         if stat.S_ISLNK(path_info.st_mode) or not stat.S_ISDIR(path_info.st_mode):
             error = ValueError("root identity path is unsafe"); self.close(error); raise error
@@ -375,7 +377,10 @@ class _RootIdentityTransactionAntigravity:
                     child = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd); child_info = os.fstat(child)
                     if _namespace_identity_antigravity(child_info) != _namespace_identity_antigravity(item): raise ValueError("root leaf was replaced")
                     payload = b"".join(iter(lambda: os.read(child, 1 << 20), b"")); digest.update(b"F\0" + relative.encode() + b"\0" + payload)
-                    self.records.append((child, _namespace_identity_antigravity(child_info), relative, payload))
+                    # The leaf pathname is authority too: retain its immediate
+                    # parent fd and basename so end validation rejects a
+                    # same-byte replacement that leaves the old fd readable.
+                    self.records.append((child, _namespace_identity_antigravity(child_info), fd, name, payload))
                     _fault_antigravity(fault_hook, "after_leaf_read")
                 else: raise ValueError("root identity inventory is unsafe")
         try:
@@ -386,6 +391,9 @@ class _RootIdentityTransactionAntigravity:
         self.identity = digest.hexdigest()
 
     def end_validate(self) -> None:
+        if self.absence is not None:
+            self.absence.end_validate()
+            return
         if self.root_fd < 0: return
         path_info = os.stat(self.root_name, dir_fd=self.parent_fd, follow_symlinks=False); info = os.fstat(self.root_fd)
         if _namespace_identity_antigravity(path_info) != _namespace_identity_antigravity(info): raise ValueError("root namespace was replaced")
@@ -396,12 +404,15 @@ class _RootIdentityTransactionAntigravity:
                 parent_fd = next(parent for parent, _parent_identity, parent_prefix in self.descriptors if parent_prefix == prefix[:-1])
                 namespace = os.stat(prefix[-1], dir_fd=parent_fd, follow_symlinks=False)
                 if _namespace_identity_antigravity(namespace) != identity: raise ValueError("root directory was replaced")
-            expected = {path[-1] for _fd, _id, path in self.descriptors if path and path[:-1] == prefix} | {relative.rsplit("/", 1)[-1] for _fd, _id, relative, _payload in self.records if tuple(relative.split("/")[:-1]) == prefix}
+            expected = {path[-1] for _fd, _id, path in self.descriptors if path and path[:-1] == prefix} | {name for _fd, _id, parent_fd, name, _payload in self.records if parent_fd == fd}
             if set(os.listdir(fd)) != expected: raise ValueError("root inventory changed")
-        for fd, identity, relative, payload in self.records:
+        for fd, identity, parent_fd, name, payload in self.records:
             info = os.fstat(fd)
+            current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
             os.lseek(fd, 0, os.SEEK_SET)
-            if _namespace_identity_antigravity(info) != identity or b"".join(iter(lambda: os.read(fd, 1 << 20), b"")) != payload: raise ValueError("root leaf changed")
+            if (_namespace_identity_antigravity(info) != identity or _namespace_identity_antigravity(current) != identity
+                    or b"".join(iter(lambda: os.read(fd, 1 << 20), b"")) != payload):
+                raise ValueError("root leaf was replaced")
 
     def close(self, primary: BaseException | None) -> None:
         first: BaseException | None = None
@@ -416,6 +427,12 @@ class _RootIdentityTransactionAntigravity:
                 if primary is not None: primary.add_note(f"root_directory_close_error={type(error).__name__}: {error}")
                 elif first is None: first = error
         self.records.clear(); self.descriptors.clear()
+        if self.absence is not None:
+            try: self.absence.close(primary)
+            except BaseException as error:
+                if primary is not None: primary.add_note(f"root_absence_close_error={type(error).__name__}: {error}")
+                elif first is None: first = error
+            self.absence = None
         if self.parent_fd >= 0:
             try: os.close(self.parent_fd)
             except BaseException as error:
@@ -426,38 +443,59 @@ class _RootIdentityTransactionAntigravity:
             raise first
 
 
-class _AbsentRootPinAntigravity:
-    """Pin a root's parent and prove the governed root name stays absent."""
-    __slots__ = ("root", "parent_fd", "parent_identity")
+class _AbsentPathPinAntigravity:
+    """Pin an exact absent child name plus its parent identity and inventory."""
+    __slots__ = ("path", "name", "parent_fd", "parent_identity", "parent_inventory", "permitted_names")
 
-    def __init__(self, root: Path) -> None:
-        self.root = root; self.parent_fd = os.open(root.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+    def __init__(self, path: Path, *, permitted_names: tuple[str, ...] = ()) -> None:
+        self.path = path; self.name = path.name; self.parent_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
         parent = os.fstat(self.parent_fd)
         self.parent_identity = (parent.st_dev, parent.st_ino, parent.st_mode)
+        self.parent_inventory = frozenset(os.listdir(self.parent_fd))
+        self.permitted_names = frozenset(permitted_names)
         try:
-            os.stat(root.name, dir_fd=self.parent_fd, follow_symlinks=False)
+            os.stat(self.name, dir_fd=self.parent_fd, follow_symlinks=False)
         except FileNotFoundError:
             return
-        error = ValueError("absent root destination is occupied")
+        error = ValueError("absent root path destination is occupied")
         self.close(error)
         raise error
 
     def end_validate(self) -> None:
         if self.parent_fd < 0:
             return
-        self.validate_parent()
+        self._validate_parent_identity()
         try:
-            os.stat(self.root.name, dir_fd=self.parent_fd, follow_symlinks=False)
+            os.stat(self.name, dir_fd=self.parent_fd, follow_symlinks=False)
         except FileNotFoundError:
+            self._validate_parent_inventory(False)
             return
-        raise ValueError("absent root appeared during command")
+        raise ValueError("absent root path appeared during command")
 
-    def validate_parent(self) -> None:
+    def _validate_parent_identity(self) -> None:
         if self.parent_fd < 0:
             return
         parent = os.fstat(self.parent_fd)
         if (parent.st_dev, parent.st_ino, parent.st_mode) != self.parent_identity:
-            raise ValueError("absent root parent was replaced")
+            raise ValueError("absent root path parent was replaced")
+
+    def _validate_parent_inventory(self, permit_name: bool) -> None:
+        if self.parent_fd < 0:
+            return
+        current = frozenset(os.listdir(self.parent_fd))
+        allowed = self.parent_inventory | self.permitted_names | ({self.name} if permit_name else set())
+        if not self.parent_inventory <= current <= allowed:
+            raise ValueError("absent root path parent inventory changed")
+
+    def validate_parent(self, *, permit_name: bool = False) -> None:
+        self._validate_parent_identity(); self._validate_parent_inventory(permit_name)
+
+    def validate_produced(self) -> None:
+        self.validate_parent(permit_name=True)
+        try:
+            os.stat(self.name, dir_fd=self.parent_fd, follow_symlinks=False)
+        except FileNotFoundError as error:
+            raise ValueError("absent root path production is missing") from error
 
     def close(self, primary: BaseException | None) -> None:
         if self.parent_fd < 0:
@@ -472,6 +510,10 @@ class _AbsentRootPinAntigravity:
                 raise
 
 
+# Compatibility alias for the Round-3 command authority naming.
+_AbsentRootPinAntigravity = _AbsentPathPinAntigravity
+
+
 class _CommandRootAuthorityAntigravity:
     """Command-wide root authority retained from precondition through final receipt commit."""
     __slots__ = ("phase", "prediction_root", "evaluation_root", "prediction", "evaluation", "prediction_absent", "evaluation_absent", "identities")
@@ -483,8 +525,10 @@ class _CommandRootAuthorityAntigravity:
         try:
             self.prediction = _RootIdentityTransactionAntigravity(prediction_root) if require_prediction else None
             self.evaluation = _RootIdentityTransactionAntigravity(evaluation_root) if require_evaluation else None
-            self.prediction_absent = None if require_prediction else _AbsentRootPinAntigravity(prediction_root)
-            self.evaluation_absent = None if require_evaluation else _AbsentRootPinAntigravity(evaluation_root)
+            self.prediction_absent = None if require_prediction else _AbsentPathPinAntigravity(prediction_root)
+            self.evaluation_absent = None if require_evaluation else _AbsentPathPinAntigravity(
+                evaluation_root, permitted_names=(prediction_root.name,) if phase == "predict" else (),
+            )
         except BaseException as error:
             self.close(error)
             raise
@@ -499,10 +543,10 @@ class _CommandRootAuthorityAntigravity:
 
     def capture_produced(self) -> None:
         if self.phase == "predict":
-            self.prediction_absent.validate_parent(); self.prediction_absent.close(None); self.prediction_absent = None
+            self.prediction_absent.validate_produced(); self.prediction_absent.close(None); self.prediction_absent = None
             self.prediction = _RootIdentityTransactionAntigravity(self.prediction_root)
         elif self.phase == "evaluate":
-            self.evaluation_absent.validate_parent(); self.evaluation_absent.close(None); self.evaluation_absent = None
+            self.evaluation_absent.validate_produced(); self.evaluation_absent.close(None); self.evaluation_absent = None
             self.evaluation = _RootIdentityTransactionAntigravity(self.evaluation_root)
         self.identities = (self.prediction.identity if self.prediction is not None else None, self.evaluation.identity if self.evaluation is not None else None)
 
@@ -699,9 +743,10 @@ def _stop_and_audit_antigravity(receipt_dir: Path, audit_path: Path, phase: str,
         primary.add_note(f"failure_audit_error={type(secondary).__name__}: {secondary}")
 
 
-def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[[], _T], *, receipt_dir: Path = _RECEIPT_DIR_ANTIGRAVITY, audit_path: Path = _AUDIT_PATH_ANTIGRAVITY, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), path_precondition: Callable[[], None] | None = None) -> _T:
+def run_phase_antigravity(phase: str, reviewed_commit: str | None, operation: Callable[..., _T], *, receipt_dir: Path = _RECEIPT_DIR_ANTIGRAVITY, audit_path: Path = _AUDIT_PATH_ANTIGRAVITY, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), path_precondition: Callable[[], None] | None = None) -> _T:
     """Run one reusable lifecycle phase; synthetic tests inject only operation and paths."""
-    if phase not in _PREDECESSOR_ANTIGRAVITY or not _is_lower_hex_antigravity(reviewed_commit, 40) or not callable(operation) or not isinstance(receipt_dir, Path) or not isinstance(audit_path, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path) or (path_precondition is not None and not callable(path_precondition)):
+    bare_inspect = phase == "inspect" and reviewed_commit is None
+    if phase not in _PREDECESSOR_ANTIGRAVITY or (not bare_inspect and not _is_lower_hex_antigravity(reviewed_commit, 40)) or not callable(operation) or not isinstance(receipt_dir, Path) or not isinstance(audit_path, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path) or (path_precondition is not None and not callable(path_precondition)):
         raise ValueError("lifecycle phase inputs are invalid")
     try:
         transaction = _LifecycleTransactionAntigravity(receipt_dir, create_s0=True)
@@ -719,16 +764,21 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
         transaction.close(None)
         raise ValueError("receipt lifecycle is permanently stopped")
     audit_occupied = audit_path.exists() or audit_path.is_symlink()
-    primary: BaseException | None = None
+    primary: BaseException | None = None; audit_pin = None
     chain_commit = classification.reviewed_commit or reviewed_commit
+    if chain_commit is None:
+        transaction.close(None)
+        raise ValueError("receipt run identity is unavailable")
     if classification.state != _PREDECESSOR_ANTIGRAVITY[phase]:
         primary = ValueError("command does not have the exact predecessor")
-    elif classification.reviewed_commit is not None and classification.reviewed_commit != reviewed_commit:
+    elif not bare_inspect and classification.reviewed_commit is not None and classification.reviewed_commit != reviewed_commit:
         primary = ValueError("reviewed commit does not match receipt chain")
     elif audit_occupied:
         primary = ValueError("failure audit destination is occupied")
     else:
         try:
+            permitted = ((prediction_root.name,) if phase == "predict" else ((evaluation_root.name,) if phase == "evaluate" else ()))
+            audit_pin = _AbsentPathPinAntigravity(audit_path, permitted_names=permitted)
             roots = _CommandRootAuthorityAntigravity(phase, prediction_root, evaluation_root)
             roots.verify_receipts(transaction)
             if path_precondition is not None:
@@ -738,6 +788,9 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
     if 'roots' not in locals():
         roots = None
     if primary is not None:
+        if audit_pin is not None:
+            try: audit_pin.close(primary)
+            except BaseException as close_error: primary.add_note(f"audit_pin_close_error={type(close_error).__name__}: {close_error}")
         if roots is not None:
             try: roots.close(primary)
             except BaseException as close_error: primary.add_note(f"command_root_close_error={type(close_error).__name__}: {close_error}")
@@ -745,16 +798,26 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
         transaction.close(primary)
         raise primary
     try:
+        audit_pin.end_validate()
         if phase != "readiness":
             append_receipt_antigravity(receipt_dir, phase, "started", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, root_identities=roots.identities, _transaction=transaction)
-        result = operation()
+        audit_pin.end_validate()
+        result = operation(chain_commit) if bare_inspect else operation()
         roots.capture_produced()
         roots.end_validate()
         transaction.end_validate()
+        audit_pin.end_validate()
+        # The audit pin's last fallible close is also pre-commit.  On failure
+        # the durable complete point has not yet been reached and stop/audit
+        # recovery remains available.
+        audit_pin.close(None); audit_pin = None
         # All command-root validation and fallible root closes precede the
         # complete leaf's parent fsync, which is the final durable commit.
         roots.close(None)
     except BaseException as error:
+        if audit_pin is not None:
+            try: audit_pin.close(error)
+            except BaseException as close_error: error.add_note(f"audit_pin_close_error={type(close_error).__name__}: {close_error}")
         try: roots.close(error)
         except BaseException as close_error: error.add_note(f"command_root_close_error={type(close_error).__name__}: {close_error}")
         _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root, transaction=transaction)
@@ -775,4 +838,9 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
     return result
 
 
-__all__ = ["LifecycleReceiptAntigravity", "ReceiptClassificationAntigravity", "append_receipt_antigravity", "receipt_reviewed_commit_antigravity", "run_phase_antigravity", "validate_receipt_inventory_antigravity", "write_failure_audit_antigravity"]
+def run_inspect_phase_antigravity(operation: Callable[[str], _T], **keywords) -> _T:
+    """Derive inspect's reviewed commit from its already-pinned receipt transaction."""
+    return run_phase_antigravity("inspect", None, operation, **keywords)
+
+
+__all__ = ["LifecycleReceiptAntigravity", "ReceiptClassificationAntigravity", "append_receipt_antigravity", "receipt_reviewed_commit_antigravity", "run_inspect_phase_antigravity", "run_phase_antigravity", "validate_receipt_inventory_antigravity", "write_failure_audit_antigravity"]

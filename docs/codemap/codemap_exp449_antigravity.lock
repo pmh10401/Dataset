@@ -1,14 +1,17 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "006ab956c7a13ab0dafb82d3fca5f5f6bc773d1a",
+  "source_parent_commit": "9057706d10390b5699d952efa31205a14680cd5e",
   "working_tree_dirty": false,
   "represented_paths": [
     "docs/codemap/codemap_exp449_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.json",
     "docs/codemap/codemap_exp449_antigravity.lock",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py"
+    "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
+    "scratch/build_codemap_exp449_antigravity.py"
   ],
-  "generated_at": "2026-08-13T00:45:00+00:00",
+  "generated_at": "2026-08-13T02:00:00+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -46,15 +49,16 @@
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
     "docs": "47946926654a7d2ccaea225a94f5443f1179dd83b7be8c46c97fcd7e6bca0fef",
-    "experiments": "7f934422cdda829b20a2dfe04597de0084ae36cc1d0e36becba0ba0a55676f89",
+    "experiments": "bdd12a03d38efe7554614f531906f08960d3c8eb5960ba4b18c2f650489c2691",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "f0fbd1fbd6f3dbbdf7ce78bf1e1b559c78f3ca85f3b3f84d43fce12382fac67f",
+    "scratch": "1beaf78e2d98ffae935c64107b579c88d7fee3b129854f1b8eca668196b6a866",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_source_parent": [
     "docs",
-    "experiments"
+    "experiments",
+    "scratch"
   ]
 }

@@ -343,25 +343,23 @@ def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: 
 
 def inspect_antigravity() -> FrozenEvaluationAntigravity:
     """Receipt-gated source-free replay of the fixed immutable two-root publication."""
-    from .lifecycle_antigravity import receipt_reviewed_commit_antigravity, run_phase_antigravity
     from .prediction_antigravity import capture_frozen_prediction_authority_antigravity
 
     evaluation_root = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_evaluation_antigravity_20260812")
     return _inspect_with_dependencies_antigravity(
-        receipt_reviewed_commit_antigravity, capture_frozen_prediction_authority_antigravity,
+        capture_frozen_prediction_authority_antigravity,
         lambda root, capture: inspect_replay_at_antigravity(root, expected_prediction_authority=capture),
         evaluation_root=evaluation_root,
     )
 
 
-def _inspect_with_dependencies_antigravity(receipt_commit, capture_prediction, replay, *, evaluation_root: Path, receipt_dir=None, audit_path=None) -> FrozenEvaluationAntigravity:
-    """Private synthetic seam: caller supplies descriptor capture and source-free replay only."""
-    from .lifecycle_antigravity import run_phase_antigravity
-    reviewed_commit = receipt_commit()
+def _inspect_with_dependencies_antigravity(capture_prediction, replay, *, evaluation_root: Path, receipt_dir=None, audit_path=None) -> FrozenEvaluationAntigravity:
+    """Private synthetic seam: lifecycle owns receipt authority before capture/replay."""
+    from .lifecycle_antigravity import run_inspect_phase_antigravity
     def precondition() -> None:
         if not evaluation_root.is_dir() or evaluation_root.is_symlink():
             raise ValueError("evaluation publication is unavailable")
-    def operation() -> FrozenEvaluationAntigravity:
+    def operation(reviewed_commit: str) -> FrozenEvaluationAntigravity:
         prediction = capture_prediction()
         if prediction.authority.reviewed_commit != reviewed_commit:
             raise ValueError("prediction reviewed commit differs")
@@ -370,7 +368,7 @@ def _inspect_with_dependencies_antigravity(receipt_commit, capture_prediction, r
     keywords = {"path_precondition": precondition, "prediction_root": prediction_root, "evaluation_root": evaluation_root}
     if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
     if audit_path is not None: keywords["audit_path"] = audit_path
-    return run_phase_antigravity("inspect", reviewed_commit, operation, **keywords)
+    return run_inspect_phase_antigravity(operation, **keywords)
 
 
 __all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "inspect_antigravity", "inspect_replay_at_antigravity", "inspect_replay_at_fd_antigravity"]
