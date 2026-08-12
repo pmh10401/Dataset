@@ -563,7 +563,7 @@ class MlxDecisionAntigravity:
 git commit -m &quot;feat(exp449): add fixed representation score sources&quot;
 </code></pre>
 <hr>
-<h3><input disabled="" type="checkbox"> Task 5: Frozen Prediction Lifecycle, Durable Progress, and Sanitized Live Status</h3>
+<h3><input disabled="" type="checkbox" checked=""> Task 5: Frozen Prediction Lifecycle, Durable Progress, and Sanitized Live Status</h3>
 <p><strong>Files:</strong></p>
 <ul>
 <li>Create: <code>experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py</code></li>
@@ -582,7 +582,7 @@ git commit -m &quot;feat(exp449): add fixed representation score sources&quot;
 </li>
 <li><p>Produces: <code>predict_antigravity(reviewed_commit: str) -&gt; FrozenPredictionAuthorityAntigravity</code>; <code>snapshot_status_antigravity(...) -&gt; Mapping[str, object&gt;</code>; <code>public_status_antigravity(...) -&gt; Mapping[str, object&gt;</code>.</p>
 </li>
-<li><p><input disabled="" type="checkbox"> <strong>Step 1: Write exact inventory and no-label RED tests</strong></p>
+<li><p><input disabled="" type="checkbox" checked=""> <strong>Step 1: Write exact inventory and no-label RED tests</strong></p>
 </li>
 </ul>
 <pre><code class="language-python">def test_prediction_inventory_has_sixteen_family_method_pairs_antigravity(self):
@@ -599,20 +599,20 @@ def test_public_status_rejects_sensitive_fields_antigravity(self):
 </code></pre>
 <p>The 96 units are 48 target datasets × exactly two preregistered candidates per family. Test exact dataset order from Exp448, candidate order from config, and no duplicates.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 2: Write failure-ordering RED tests</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 2: Write failure-ordering RED tests</strong></li>
 </ul>
 <p>Cover worker exception, scorer exception, nonfinite score, cache write failure, progress write failure, event/text failure, PID close failure, candidate SHA mismatch, predecessor drift after candidate 0/47/95, and persistent status-channel failure. Check exact-next error evidence, inactive PID when writable, unchanged completed candidate bytes, no frozen prediction authority, and no label calls.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 3: Run RED</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 3: Run RED</strong></li>
 </ul>
 <p>Run Task 5&#39;s three modules. Expected: absent-module import errors.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 4: Implement deterministic dataset scheduling and prediction bytes</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 4: Implement deterministic dataset scheduling and prediction bytes</strong></li>
 </ul>
 <p>Use exactly <code>11</code> outer <code>ProcessPoolExecutor</code> workers from the current preflight of 12 logical CPUs minus one, submit units in frozen sequence, and commit results only in sequence order. Record detected logical CPUs <code>12</code> and selected worker count <code>11</code> in official run provenance. Each dataset-method result must contain exact TRAIN-only config, target length, train/test counts, the two frozen seed score identities, and <code>contains_test_labels=false</code>.</p>
 <p>For each dataset-method unit, compute both frozen seeds, take the elementwise median of TRAIN-OOF scores and TEST scores, then call <code>empirical_candidates(train_median, test_median, 0.005)</code>. The returned <code>p &lt;= 0.005</code> indices are the sole binary prediction. Do not compute performance candidates at any other alpha or use seed intersections.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 5: Implement durable progress and prediction authority</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 5: Implement durable progress and prediction authority</strong></li>
 </ul>
 <p>Attempt inventory:</p>
 <pre><code class="language-text">context_antigravity.json
@@ -637,7 +637,7 @@ class FrozenPredictionAuthorityAntigravity:
     label_access_count: int
 </code></pre>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 6: Implement the sanitized dashboard status projection</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 6: Implement the sanitized dashboard status projection</strong></li>
 </ul>
 <p>Use exact status fields:</p>
 <pre><code class="language-python">STATUS_FIELDS_ANTIGRAVITY = (
@@ -648,11 +648,11 @@ class FrozenPredictionAuthorityAntigravity:
 </code></pre>
 <p>No scientific module imports network or dashboard code. The controller reads this local aggregate snapshot and publishes owner-only status at task start, after each family boundary, on failure, and on completion.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 7: Run GREEN twice and a synthetic 96-unit lifecycle</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 7: Run GREEN twice and a synthetic 96-unit lifecycle</strong></li>
 </ul>
 <p>Use small dependency-injected matrices so all 96 units finish quickly. Assert two runs are byte-identical, progress counts 0→96, status contains exactly 12 fields, and label access stays false.</p>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Step 8: Update map and commit Task 5</strong></li>
+<li><input disabled="" type="checkbox" checked=""> <strong>Step 8: Update map and commit Task 5</strong></li>
 </ul>
 <pre><code class="language-bash">git add experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py docs/codemap/codemap_exp449_antigravity.html docs/codemap/codemap_exp449_antigravity.json docs/codemap/codemap_exp449_antigravity.lock
 git commit -m &quot;feat(exp449): freeze label-free method predictions&quot;

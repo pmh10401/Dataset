@@ -45,22 +45,22 @@ $PY -m unittest \
 <li><input checked disabled type="checkbox"> <strong>Step 6: GREEN 및 Task 1 commit</strong><p>focused suite를 두 번 실행하고 functional commit을 만든다.</p></li>
 </ol></section>
 
-<section id="task-2"><h2><input disabled type="checkbox"> Task 2: Longest Prefix와 Failure Truth 통합</h2>
+<section id="task-2"><h2><input checked disabled type="checkbox"> Task 2: Longest Prefix와 Failure Truth 통합</h2>
 <p><strong>Files:</strong> Task 1의 네 파일, <code>scratch/build_codemap_exp449_antigravity.py</code>, Exp449 map triplet, ignored HTML Task 5 report.</p>
 <p><strong>Produces:</strong> <code>PrefixValidationAntigravity(valid_prefix, error)</code>와 production/synthetic 공용 failure handler.</p>
 <ol>
-<li><input disabled type="checkbox"> <strong>Step 1: prefix RED 작성</strong><p>0/47/95 unreturned official-shaped leaf는 무시한다. 성공 leaf <code>k</code>의 missing/replacement/symlink/hash mismatch는 <code>valid_prefix=k</code>와 별도 오류를 반환한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 2: primary 보존 RED 작성</strong><p>production과 synthetic 각각에서 primary run error 뒤 prefix validation과 audit persistence를 강제로 실패시킨다. 동일 primary 객체/traceback이 다시 발생하고 별도 <code>prefix_validation_error</code>/<code>failure_audit_error</code>가 남아야 한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 3: RED 실행</strong><p>Expected: production catch가 prefix 예외로 primary/audit를 덮거나 공용 경계가 없어 실패.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 4: PrefixValidation 구현</strong><p>내부 successful commit state만 descriptor/no-follow로 재검증하고 첫 불일치에서 예외를 던지지 않고 result를 반환한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 5: 공용 failure handler 구현</strong><p>prefix validation과 audit write를 독립 try로 감싼다. audit schema에 별도 prefix validation 오류를 기록하고 마지막에는 bare <code>raise</code>로 primary를 보존한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 6: 성공 경로 불변 검증</strong><p>96-unit 실제 ProcessPool pending/commit synthetic lifecycle, worker=11, canonical 13-field leaves, terminal validator를 검증한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 7: 전체 회귀 실행</strong><pre><code>$PY -m unittest \
+<li><input checked disabled type="checkbox"> <strong>Step 1: prefix RED 작성</strong><p>0/47/95 unreturned official-shaped leaf는 무시한다. 성공 leaf <code>k</code>의 missing/replacement/symlink/hash mismatch는 <code>valid_prefix=k</code>와 별도 오류를 반환한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 2: primary 보존 RED 작성</strong><p>production과 synthetic 각각에서 primary run error 뒤 prefix validation과 audit persistence를 강제로 실패시킨다. 동일 primary 객체/traceback이 다시 발생하고 별도 <code>prefix_validation_error</code>/<code>failure_audit_error</code>가 남아야 한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 3: RED 실행</strong><p>Expected: production catch가 prefix 예외로 primary/audit를 덮거나 공용 경계가 없어 실패.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 4: PrefixValidation 구현</strong><p>내부 successful commit state만 descriptor/no-follow로 재검증하고 첫 불일치에서 예외를 던지지 않고 result를 반환한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 5: 공용 failure handler 구현</strong><p>prefix validation과 audit write를 독립 try로 감싼다. audit schema에 별도 prefix validation 오류를 기록하고 마지막에는 bare <code>raise</code>로 primary를 보존한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 6: 성공 경로 불변 검증</strong><p>96-unit 실제 ProcessPool pending/commit synthetic lifecycle, worker=11, canonical 13-field leaves, terminal validator를 검증한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 7: 전체 회귀 실행</strong><pre><code>$PY -m unittest \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_prediction_antigravity \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_progress_antigravity \
   experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_dashboard_export_antigravity -q</code></pre><p>두 번 실행한다. 이어 governance/config/contracts/artifacts/method-audit/predecessor/sources/scoring/MLX 회귀를 한 번 실행한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 8: map·외부 상태·commit</strong><p><code>py_compile</code>, <code>git diff --check</code>, map validate-only, official root/audit absent, DB inode <code>1048138</code>/nlink <code>1</code>, active Exp449 process 없음 확인. 기능 commit 뒤 clean map-only child를 만든다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 9: fresh Sol ship gate</strong><p>exact clean HEAD에서 fresh Sol이 <code>ship</code>을 반환할 때만 이 addendum의 Task 1–2와 기존 Task 5의 8 steps를 체크한다. Task 6은 미체크 유지한다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 8: map·외부 상태·commit</strong><p><code>py_compile</code>, <code>git diff --check</code>, map validate-only, official root/audit absent, DB inode <code>1048138</code>/nlink <code>1</code>, active Exp449 process 없음 확인. 기능 commit 뒤 clean map-only child를 만든다.</p></li>
+<li><input checked disabled type="checkbox"> <strong>Step 9: fresh Sol ship gate</strong><p>exact clean HEAD에서 fresh Sol이 <code>ship</code>을 반환할 때만 이 addendum의 Task 1–2와 기존 Task 5의 8 steps를 체크한다. Task 6은 미체크 유지한다.</p></li>
 </ol></section>
 
 <section id="verification"><h2>최종 검증과 중지 조건</h2><ul>

@@ -31,6 +31,7 @@ class PlanCheckboxParserAntigravity(HTMLParser):
     def __init__(self):
         super().__init__()
         self._heading_depth = 0
+        self._heading_tag = None
         self._heading_parts = []
         self._heading_checkboxes = []
         self._current_task = None
@@ -38,8 +39,9 @@ class PlanCheckboxParserAntigravity(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
-        if tag == "h3":
+        if tag in ("h2", "h3"):
             self._heading_depth += 1
+            self._heading_tag = tag
             self._heading_parts = []
             self._heading_checkboxes = []
             return
@@ -56,9 +58,10 @@ class PlanCheckboxParserAntigravity(HTMLParser):
             self._heading_parts.append(data)
 
     def handle_endtag(self, tag):
-        if tag != "h3" or not self._heading_depth:
+        if tag != self._heading_tag or not self._heading_depth:
             return
         self._heading_depth -= 1
+        self._heading_tag = None
         match = re.fullmatch(r"\s*Task ([1-8]):.*", "".join(self._heading_parts), flags=re.DOTALL)
         if match:
             task_number = int(match.group(1))
@@ -82,23 +85,39 @@ class Exp449GovernanceTest(unittest.TestCase):
         for task_number, state in tasks.items():
             self.assertEqual(len(state["heading"]), 1, f"Task {task_number} requires one task-level checkbox")
             self.assertTrue(state["heading"][0]["disabled"])
-            self.assertEqual(state["heading"][0]["checked"], task_number in {1, 2, 3, 4})
+            self.assertEqual(state["heading"][0]["checked"], task_number in {1, 2, 3, 4, 5})
         self.assertEqual(len(tasks[1]["steps"]), 8)
         self.assertEqual(len(tasks[2]["steps"]), 7)
         self.assertEqual(len(tasks[3]["steps"]), 8)
         self.assertTrue(
             all(
                 box["disabled"] and box["checked"]
-                for task_number in (1, 2, 3, 4)
+                for task_number in (1, 2, 3, 4, 5)
                 for box in tasks[task_number]["steps"]
             )
         )
-        self.assertEqual(sum(box["checked"] for state in tasks.values() for box in state["steps"]), 31)
+        self.assertEqual(len(tasks[5]["steps"]), 8)
+        self.assertEqual(sum(box["checked"] for state in tasks.values() for box in state["steps"]), 39)
         self.assertTrue(
             all(
                 not box["checked"]
-                for task_number in range(5, 9)
+                for task_number in range(6, 9)
                 for box in tasks[task_number]["steps"]
+            )
+        )
+
+    def test_task5_commit_session_addendum_records_ship_closeout_antigravity(self):
+        tasks = parse_plan_checkboxes_antigravity(
+            Path("docs/superpowers/plans/2026-08-12-exp449-task5-commit-session-authority-antigravity.html")
+        )
+        self.assertEqual(set(tasks), {1, 2})
+        self.assertEqual(tuple(len(tasks[number]["steps"]) for number in (1, 2)), (6, 9))
+        self.assertTrue(
+            all(
+                box["disabled"] and box["checked"]
+                for state in tasks.values()
+                for group in (state["heading"], state["steps"])
+                for box in group
             )
         )
 
