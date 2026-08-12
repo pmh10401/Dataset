@@ -56,17 +56,17 @@
       <tbody>
         <tr><td>Prediction authority root</td><td><code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812</code></td><td>Predict creates this root only. After successful predict it is immutable exact Task5 authority containing the exact 96 candidates. Evaluate and inspect read it by descriptor; neither mutates it.</td></tr>
         <tr><td>Evaluation publication root</td><td><code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_evaluation_antigravity_20260812</code></td><td>Evaluate creates this root only after descriptor capture and publishes the final exact 12-leaf Task6 publication there. Inspect reads it by descriptor. Predict never creates or writes it.</td></tr>
-        <tr><td>Failure audit</td><td><code>/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json</code></td><td>All phase failures record truthful phase, root destination, and recovery state. Audit recording never overwrites a primary error.</td></tr>
+        <tr><td>Failure audit</td><td><code>/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json</code></td><td>It is create-only on a phase failure and records truthful phase, root destination or no publication destination for readiness, recovery state, primary error, and cleanup notes. Audit recording never overwrites a primary error.</td></tr>
       </tbody>
     </table>
-    <p class="rule">Readiness requires both roots and the audit to be absent and non-symlink at entry and at its successful exit. A nonzero readiness outcome is terminal rather than a successful exit; its audit treatment follows the primary-error rule below. Readiness also requires a clean reviewed commit first and last, standard-library-only work before any external capture, and zero label-capable imports before the approved evaluation label session.</p>
+    <p class="rule">Readiness success leaves both roots and the audit absent and non-symlink at entry and exit. A nonzero readiness outcome permanently stops Exp449: both roots remain absent and non-symlink, and the fixed audit is created only to record <code>phase=readiness</code>, no publication destination, the primary error, cleanup notes, and permanent-stop state. If audit writing fails, it does not mask the primary error and does not permit retry. Readiness also requires a clean reviewed commit first and last, standard-library-only work before any external capture, and zero label-capable imports before the approved evaluation label session.</p>
     <p>Symlinks are never accepted as substitutes for absent, owned, or immutable paths. Every root check resolves the path identity without following a link into a different namespace. The fixed audit is an audit object, not a root-state repair mechanism.</p>
   </section>
 
   <section id="flow">
     <h2>3. Lifecycle and data flow</h2>
     <ol>
-      <li><strong>Readiness:</strong> verify the clean reviewed commit, absent/non-symlink state of both roots and the audit, standard-library-only pre-capture state, and the disallowed-import boundary. It performs no prediction, evaluation, label access, dashboard access, or publication.</li>
+      <li><strong>Readiness:</strong> verify the clean reviewed commit, absent/non-symlink state of both roots and the audit, standard-library-only pre-capture state, and the disallowed-import boundary. On success it leaves all three paths absent and non-symlink. On nonzero outcome it permanently stops Exp449, leaves both roots absent and non-symlink, and create-only records the readiness failure in the fixed audit without masking the primary error. It performs no prediction, evaluation, label access, dashboard access, or publication.</li>
       <li><strong>Predict:</strong> create only the prediction authority root. Run the frozen Task5 prediction procedure with label access equal to zero, produce and freeze exactly 96 candidates, and retain its immutable authority evidence. The bootstrap remains <code>PCG64(44920260812)</code>, with 20,000 × 48 draws and SHA-256 <code>264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a</code>. The exact worker budget is 11 workers from 12−1, with <code>n_jobs=1</code>; no package installation occurs.</li>
       <li><strong>Evaluate:</strong> descriptor-capture the immutable prediction authority root before any evaluation work. Require the evaluation publication root to be absent and non-symlink. Open the sole exact label session of 48 queries and 72,300 rows, evaluate against the captured exact 96-candidate authority, and publish exactly 12 final leaves only under the evaluation root. It never changes any byte in the prediction root.</li>
       <li><strong>Inspect:</strong> a bare inspect descriptor-captures both roots and replays evaluation semantics against the exact prediction authority. It imports no SQLite module, source module, evaluator module, aeon module, network module, or dashboard module. Inspect is permitted only after complete evaluate success.</li>
@@ -80,14 +80,14 @@
     <table>
       <thead><tr><th>Failure point</th><th>Required preserved evidence</th><th>Audit truth</th></tr></thead>
       <tbody>
-        <tr><td>Readiness failure</td><td>Both roots and audit remain absent/non-symlink when the failure happened before creation; no phase proceeds.</td><td>Phase is readiness; root destination identifies no publication; recovery truth states permanently stopped.</td></tr>
+        <tr><td>Readiness failure</td><td>Both roots remain absent/non-symlink; no phase proceeds. The fixed audit is create-only and contains the failure record.</td><td><code>phase=readiness</code>; no publication destination; primary error; cleanup notes; permanent-stop state. An audit-write failure does not mask the primary error and does not permit retry.</td></tr>
         <tr><td>Predict failure</td><td>Prediction partial evidence is preserved in the prediction root; evaluation root remains absent/non-symlink.</td><td>Phase is predict; root destination is the prediction authority root; recovery truth states no retry or resume. The original failure remains the primary error.</td></tr>
         <tr><td>Evaluate failure before publication-root creation</td><td>Prediction-root bytes remain unchanged; evaluation root remains absent/non-symlink.</td><td>Phase is evaluate; root destination is the evaluation publication root; recovery truth states no retry or resume. The original failure remains the primary error.</td></tr>
         <tr><td>Evaluate failure after publication-root creation</td><td>Prediction-root bytes remain unchanged; evaluation root is retained only as identity-bound forensic evidence and is never promoted to final publication.</td><td>Phase is evaluate; root destination is the evaluation publication root; recovery truth describes the forensic root state and permanent stop. The original failure remains the primary error.</td></tr>
         <tr><td>Inspect failure</td><td>Both prior roots remain byte-preserved; no publication is altered.</td><td>Phase is inspect; root destinations identify both descriptor inputs; recovery truth states permanently stopped. The original failure remains the primary error.</td></tr>
       </tbody>
     </table>
-    <p>The audit writer is secondary error handling. If audit creation or serialization fails, it reports that secondary failure without masking, replacing, or reclassifying the primary phase failure.</p>
+    <p>The audit writer is secondary error handling. If audit creation or serialization fails, it reports that secondary failure without masking, replacing, or reclassifying the primary phase failure; it never permits retry, resume, override, rerun, root reuse, or recovery.</p>
   </section>
 
   <section id="invariants">
@@ -108,7 +108,8 @@
     <table>
       <thead><tr><th>Case</th><th>Expected assertion</th></tr></thead>
       <tbody>
-        <tr><td>Fresh readiness</td><td>Both exact roots and the fixed audit are absent/non-symlink at entry and exit; reviewed commit requirements and standard-library/import boundaries pass.</td></tr>
+        <tr><td>Successful readiness</td><td>Both exact roots and the fixed audit are absent/non-symlink at entry and exit; reviewed commit requirements and standard-library/import boundaries pass.</td></tr>
+        <tr><td>Readiness nonzero outcome</td><td>Both roots remain absent/non-symlink; the fixed audit is create-only and records <code>phase=readiness</code>, no publication destination, the primary error, cleanup notes, and permanent-stop state. If audit writing fails, the primary error remains authoritative and retry is refused.</td></tr>
         <tr><td>Occupied or symlinked prediction root</td><td>Readiness and predict reject it without evaluating or creating the other root.</td></tr>
         <tr><td>Successful predict</td><td>Only the prediction root is created; it contains frozen exact 96-candidate Task5 authority; label access is zero; bootstrap and worker assertions match the exact values.</td></tr>
         <tr><td>Predict nonzero outcome</td><td>Partial prediction evidence remains, evaluation root is absent/non-symlink, audit preserves predict as the primary failure, and a second invocation is refused.</td></tr>
@@ -139,7 +140,7 @@
   <section id="tasks">
     <h2>8. Implementation task decomposition</h2>
     <ol>
-      <li><strong>Governance and hash rebind:</strong> define the two exact roots, audit phase/destination/recovery fields, cleanliness checks, descriptor contracts, and the lock-parent validation rule.</li>
+      <li><strong>Governance and hash rebind:</strong> define the two exact roots, create-only audit phase/destination/recovery/primary-error/cleanup fields, successful-readiness absence checks, readiness-failure permanent-stop semantics, descriptor contracts, and the lock-parent validation rule.</li>
       <li><strong>Predict contract:</strong> add failing and passing tests for absent/non-symlink entry, zero label access, exact bootstrap, 11-worker constraint, immutable 96-candidate Task5 authority, and preserved partial failure evidence.</li>
       <li><strong>Evaluate contract:</strong> add failing and passing tests for prediction descriptor capture, absent/non-symlink evaluation destination, sole 48-query/72,300-row label session, byte-invariant prediction root, exact 12-leaf publication, and forensic evaluation failures.</li>
       <li><strong>Inspect contract:</strong> add failing and passing tests for both descriptors, complete-evaluation gate, semantic replay, and the prohibited-import boundary.</li>
@@ -163,6 +164,7 @@
       <li>The structural sequence is readiness → predict → evaluate → inspect; predict creates only the prediction root, evaluate creates only the evaluation root, and inspect reads both completed roots by descriptor.</li>
       <li>Predict freezes exact 96 candidates with zero label access; evaluate uses the sole exact 48-query/72,300-row label session and publishes exactly 12 final leaves only under the evaluation root.</li>
       <li>The bootstrap is PCG64(44920260812), 20,000 × 48, SHA-256 <code>264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a</code>; execution uses 11 workers from 12−1 and <code>n_jobs=1</code>.</li>
+      <li>Successful readiness leaves both roots and the fixed audit absent/non-symlink at entry and exit. A readiness nonzero outcome permanently stops Exp449, leaves both roots absent/non-symlink, and create-only records <code>phase=readiness</code>, no publication destination, primary error, cleanup notes, and permanent-stop state; audit-write failure never masks the primary error or permits retry.</li>
       <li>Every nonzero official phase command permanently stops Exp449, preserves the specified evidence, and records truthful audit phase/root destination/recovery state without overwriting the primary error.</li>
       <li>Bare inspect imports none of SQLite, source, evaluator, aeon, network, or dashboard modules and cannot run before complete evaluate success.</li>
       <li>Task7 dashboard verification is authenticated and read-only; unavailable access is recorded blocked and never inferred; synthetic Exp449 payload remains local.</li>
