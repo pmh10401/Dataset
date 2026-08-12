@@ -14,7 +14,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "validates exact label-free v2 proposal shards, frozen inventories, canonical bytes, and create-only immutable manifests"
+        "creates no-follow/exclusive canonical Task 8 artifacts; verifies standalone typed proposal freeze and parity without journal authority"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -81,7 +81,8 @@
       "effects": [
         "defines frozen configuration, lineage, raw values, defensively immutable continuous leaf evidence, and codemap value contracts including database identity and excluded datasets",
         "defines SourceDatasetMetadata and RawDataset metadata_length",
-        "defines immutable validated low-frequency depth, row, provisional-candidate, and full cross-dataset result contracts with a bijective provisional-row/candidate invariant"
+        "defines immutable validated low-frequency depth, row, provisional-candidate, and full cross-dataset result contracts with a bijective provisional-row/candidate invariant",
+        "defines the immutable standalone Task 8 frozen proposal manifest"
       ],
       "tests": [
         "tests_paper/test_config_lineage_paper.py",
@@ -135,7 +136,6 @@
     },
     "label_access_paper.py": {
       "callers": [
-        "runner_paper.py",
         "tests_paper/test_data_boundary_paper.py"
       ],
       "effects": [
@@ -187,7 +187,7 @@
     "pipeline_paper.py": {
       "callers": [],
       "effects": [
-        "is the sole public run/status/verify entrypoint; status and verify reconstruct immutable journal state without mutation"
+        "is the sole public run/status/verify entrypoint and requires DB, mode, smoke subset, and acceptance facts"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -200,7 +200,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "derives resume authority from a create-only hash-chained journal and independently reverified typed stage artifact sets; production fails closed at unimplemented stages"
+        "runs and re-verifies only the preflight/prepare semantic records; fail-closes acceleration as an immutable terminal failure"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -554,7 +554,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "builds canonical read-only values-only population catalogs and separately frozen acceptance contracts"
+        "recomputes Task2 normal-TRAIN and label-free-TEST catalog identities directly from SQLite and validates an external acceptance contract"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"

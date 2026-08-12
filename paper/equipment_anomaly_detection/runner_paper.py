@@ -1,160 +1,136 @@
-"""Closed v2 pipeline authority: context recomputation and fixed stage registry."""
+"""Closed Task 8 pipeline: only context and independently recomputed prepare exist."""
 from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from hashlib import sha256
-import importlib.metadata
-import os
+import importlib.metadata, os, platform
 from pathlib import Path
-import platform
-import re
-from typing import Callable,Mapping
-from .artifacts_paper import canonical_json_bytes,policy_coordinates,read_canonical,safe_child,safe_root,sha256_bytes,verify_score_root,write_create_only
-from .catalog_paper import load_acceptance,load_catalog
-from .config_paper import LINEAGE_LOCK_PATH,PAPER_ROOT
-from .lineage_paper import read_strict_json,sha256_file
+
+from .artifacts_paper import canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, write_create_only
+from .catalog_paper import build_catalog, load_acceptance, verify_catalog
+from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
+from .lineage_paper import read_strict_json, sha256_file
 
 PIPELINE_STAGE_ORDER=("preflight","prepare","acceleration","proposal_score","proposal_freeze","proposal_parity","public_baselines","baseline_bridge","evaluate","report","independent_verify")
-JOURNAL_DIRECTORY="pipeline_journal_paper";ARTIFACT_DIRECTORY="stage_artifacts_paper";_HEX=re.compile(r"[0-9a-f]{64}")
-class PipelineStateError(ValueError):pass
-class PipelineFailedError(RuntimeError):pass
-class PipelineNotImplementedError(NotImplementedError):pass
-def _sha(value:object)->str:return sha256(canonical_json_bytes(value)).hexdigest()
-def _now()->str:return datetime.now(timezone.utc).isoformat(timespec="microseconds")
-@dataclass(frozen=True,slots=True)
-class StageSpec:
-    stage:str;verifier_id:str;version:str;predecessor:str|None;filename:str;schema:str;evidence_key:str
-    @property
-    def relative_path(self)->str:return f"{ARTIFACT_DIRECTORY}/{self.stage}/{self.filename}"
-STAGE_REGISTRY={stage:StageSpec(stage,f"{stage}-verifier","v2",None if index==0 else PIPELINE_STAGE_ORDER[index-1],f"{stage}_paper.json",f"paper-stage-{stage}.v2",f"{stage}_evidence") for index,stage in enumerate(PIPELINE_STAGE_ORDER)}
+JOURNAL_DIRECTORY="pipeline_journal_paper"; ARTIFACT_DIRECTORY="stage_artifacts_paper"
+class PipelineStateError(ValueError): pass
+class PipelineNotImplementedError(NotImplementedError): pass
 @dataclass(frozen=True,slots=True)
 class PipelineConfig:
-    db_path:Path;run_root:Path;mode:str;catalog_path:Path;acceptance_path:Path
+    db_path: Path; run_root: Path; mode: str; smoke_datasets: tuple[str,...]; acceptance_path: Path
     def __post_init__(self):
-        if self.mode not in {"smoke","full"}:raise ValueError("mode invalid")
-        object.__setattr__(self,"db_path",Path(self.db_path));object.__setattr__(self,"run_root",Path(self.run_root));object.__setattr__(self,"catalog_path",Path(self.catalog_path));object.__setattr__(self,"acceptance_path",Path(self.acceptance_path))
-    def artifact_payload(self)->dict[str,object]:
-        catalog=load_catalog(self.catalog_path,self.db_path,self.mode);entries=catalog["datasets"]
-        bare={"mode":self.mode,"datasets":[entry["dataset"] for entry in entries],"test_rows":{entry["dataset"]:entry["test"]["count"] for entry in entries},"train_identity_digests":{entry["dataset"]:entry["train"]["row_digest"] for entry in entries},"test_identity_digests":{entry["dataset"]:entry["test"]["row_digest"] for entry in entries}}
-        return {**bare,"context_sha256":_sha(bare)}
-def _environment()->dict[str,object]:
-    def version(name:str):
+        if self.mode not in {"smoke","full"}: raise ValueError("mode invalid")
+        datasets=tuple(self.smoke_datasets)
+        if self.mode=="smoke" and (not datasets or datasets!=tuple(sorted(set(datasets)))): raise ValueError("smoke subset invalid")
+        if self.mode=="full" and datasets: raise ValueError("full mode has no smoke subset")
+        for field in ("db_path","run_root","acceptance_path"): object.__setattr__(self,field,Path(getattr(self,field)))
+        object.__setattr__(self,"smoke_datasets",datasets)
+def _now(): return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+def _sha(value): return sha256(canonical_json_bytes(value)).hexdigest()
+def _closure():
+    lock=read_strict_json(PAPER_ROOT/"codemap_paper.lock")
+    if not isinstance(lock,dict) or set(lock)!={"schema","hashes"} or lock["schema"]!="paper-codemap-lock.v1" or not isinstance(lock["hashes"],dict): raise PipelineStateError("codemap closure lock invalid")
+    hashes=lock["hashes"]
+    required={"artifacts_paper.py","catalog_paper.py","runner_paper.py","pipeline_paper.py","contracts_paper.py"}
+    if not required <= set(hashes) or any(not isinstance(path,str) or not isinstance(digest,str) or len(digest)!=64 for path,digest in hashes.items()): raise PipelineStateError("codemap closure missing executor")
+    if any(not (PAPER_ROOT/path).is_file() or sha256_file(PAPER_ROOT/path)!=digest for path,digest in hashes.items()): raise PipelineStateError("codemap closure differs")
+    return hashes
+def _environment():
+    def version(name):
         try:return importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:return None
-    torch=version("torch");mlx=version("mlx");cpu=os.cpu_count() or 1
-    return {"python":platform.python_version(),"platform":platform.platform(),"cpu_count":cpu,"dataset_workers":min(max(1,cpu-1),7),"dependencies":{"numpy":version("numpy"),"torch":torch,"mlx":mlx},"accelerators":{"pytorch_available":torch is not None,"mlx_available":mlx is not None,"mps_assessment":"unavailable_until_task9"}}
-def _closure()->dict[str,str]:
-    """External codemap lock binds every listed source, including executing modules."""
-    lock=read_strict_json(PAPER_ROOT/"codemap_paper.lock");hashes=lock.get("hashes") if isinstance(lock,dict) else None
-    if not isinstance(hashes,dict):raise PipelineStateError("codemap closure lock invalid")
-    actual={name:sha256_file(PAPER_ROOT/name) for name in hashes if (PAPER_ROOT/name).is_file()}
-    if actual!=hashes:raise PipelineStateError("codemap closure differs")
-    return actual
-def _path_fields(path:Path)->dict[str,str]:
-    raw=str(path);resolved=str(safe_root(path));return {"unresolved_path":raw,"resolved_path":resolved}
-def context_payload(config:PipelineConfig)->dict[str,object]:
-    try:catalog=load_catalog(config.catalog_path,config.db_path,config.mode);acceptance=load_acceptance(config.acceptance_path,catalog)
-    except ValueError as error:raise PipelineStateError(f"catalog or acceptance context differs: {error}") from error
-    base={"schema":"paper-pipeline-context.v3","mode":config.mode,"db_path":_path_fields(config.db_path),"run_root":_path_fields(config.run_root),"catalog_path":_path_fields(config.catalog_path),"acceptance_path":_path_fields(config.acceptance_path),"catalog_sha256":catalog["catalog_sha256"],"acceptance_sha256":acceptance["acceptance_sha256"],"lineage_sha256":sha256_file(LINEAGE_LOCK_PATH),"codemap_lock_sha256":sha256_file(PAPER_ROOT/"codemap_paper.lock"),"code_closure":_closure(),"environment":_environment(),"constants":{"source_order":["rocket_exp40","exp55_best","exp56_best","exp84","rocket_block_b","canonical_normal_state"],"policy_order":["hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable"],"shard_schema":"paper-proposal-shard.v3","registry":{k:[v.verifier_id,v.version,v.schema] for k,v in STAGE_REGISTRY.items()}}}
-    return {**base,"context_sha256":_sha(base)}
-def _path(root:Path,index:int,stage:str)->Path:return safe_child(root,JOURNAL_DIRECTORY,f"{index:06d}_{stage}_paper.json")
-def _record(bare:dict[str,object])->dict[str,object]:return {**bare,"record_sha256":_sha(bare)}
-def _read_record(path:Path)->dict[str,object]:
-    value=read_canonical(path)
-    if not isinstance(value,dict) or value.get("record_sha256")!=_sha({k:v for k,v in value.items() if k!="record_sha256"}):raise PipelineStateError("forged journal record")
-    return value
-def _stage_payload(spec:StageSpec,context:dict[str,object],predecessor:str)->dict[str,object]:return {"schema":spec.schema,"stage":spec.stage,"verifier_id":spec.verifier_id,"verifier_version":spec.version,"context_sha256":context["context_sha256"],"predecessor_record_sha256":predecessor,"evidence":{spec.evidence_key:_sha([spec.stage,context["context_sha256"],predecessor])}}
-def stage_file(config:PipelineConfig,spec:StageSpec)->Path:return safe_child(safe_root(config.run_root),ARTIFACT_DIRECTORY,spec.stage,spec.filename)
-def _verify_stage(root:Path,spec:StageSpec,record:dict[str,object],context:dict[str,object])->None:
-    artifact=record.get("artifact_set")
-    if not isinstance(artifact,dict) or set(artifact)!={"relative_path","size","sha256","schema","verifier_id","verifier_version"} or artifact["relative_path"]!=spec.relative_path or artifact["schema"]!=spec.schema or artifact["verifier_id"]!=spec.verifier_id or artifact["verifier_version"]!=spec.version:raise PipelineStateError("closed stage registry artifact mismatch")
-    namespace=safe_child(root,ARTIFACT_DIRECTORY,spec.stage);actual={p.relative_to(root).as_posix() for p in namespace.rglob("*") if p.is_file()} if namespace.is_dir() and not namespace.is_symlink() else set()
-    if actual!={spec.relative_path}:raise PipelineStateError("stage namespace pollution or missing artifact")
-    path=root/spec.relative_path;value=read_canonical(path)
-    if path.stat().st_size!=artifact["size"] or sha256_bytes(path.read_bytes())!=artifact["sha256"] or value!=_stage_payload(spec,context,record["previous_record_sha256"]):raise PipelineStateError("stage semantic verifier failed")
-def _files(root:Path)->list[Path]:
-    d=safe_child(root,JOURNAL_DIRECTORY)
-    if not d.is_dir() or d.is_symlink():raise PipelineStateError("journal missing")
-    files=sorted(d.iterdir())
-    if not files:raise PipelineStateError("journal missing genesis")
-    for index,path in enumerate(files):
-        expected="context" if index==0 else PIPELINE_STAGE_ORDER[index-1]
-        if path.name!=f"{index:06d}_{expected}_paper.json":raise PipelineStateError("journal gap, reorder, duplicate, or truncation evidence invalid")
-    return files
-def _legacy_root(root:Path)->bool:
-    if (root/"pipeline_state_paper.json").exists():return True
-    manifest=root/"proposal_freeze_manifest_paper.json"
-    if manifest.is_file() and b"paper-proposal-manifest.v3" not in manifest.read_bytes():return True
-    genesis=root/JOURNAL_DIRECTORY/"000000_context_paper.json"
-    return genesis.is_file() and b"paper-journal-context.v3" not in genesis.read_bytes()
-def verify_journal(config:PipelineConfig)->tuple[dict[str,object],list[dict[str,object]]]:
+    cpu=os.cpu_count() or 1
+    return {"python":platform.python_version(),"platform":platform.platform(),"cpu_count":cpu,"dataset_workers":min(max(1,cpu-1),7),"dependencies":{"numpy":version("numpy"),"torch":version("torch"),"mlx":version("mlx")},"acceleration_assessment":{"tensor_eligible":False,"pytorch":version("torch") is not None,"mlx":version("mlx") is not None,"mps":"not_assessed_until_task9","canonical":"cpu","benchmark_required":"deterministic parity and >=1.1x including transfer"}}
+def _paths(config):
+    def field(path):
+        raw=str(path); resolved=str(safe_root(path)); return {"unresolved_path":raw,"resolved_path":resolved}
+    return {"db_path":field(config.db_path),"run_root":field(config.run_root),"acceptance_path":field(config.acceptance_path)}
+def context_payload(config: PipelineConfig):
     root=safe_root(config.run_root)
-    if _legacy_root(root):raise PipelineStateError("legacy_root_requires_new_root")
-    files=_files(root);records=[];prior="genesis"
-    for index,path in enumerate(files):
-        record=_read_record(path)
-        if record.get("previous_record_sha256")!=prior:raise PipelineStateError("journal chain differs")
-        if index==0:
-            if record.get("schema")!="paper-journal-context.v3" or not isinstance(record.get("context"),dict):raise PipelineStateError("journal genesis invalid")
-        else:
-            spec=STAGE_REGISTRY[PIPELINE_STAGE_ORDER[index-1]]
-            if record.get("stage")!=spec.stage:
-                raise PipelineStateError("journal stage differs")
-            if record.get("schema")=="paper-journal-failure.v3":
-                if index!=len(files)-1 or not isinstance(record.get("failure_evidence"),dict):raise PipelineStateError("failure journal invalid")
-            elif record.get("schema")=="paper-journal-stage.v3":_verify_stage(root,spec,record,records[0]["context"])
-            else:raise PipelineStateError("journal schema invalid")
-        prior=record["record_sha256"];records.append(record)
-    current=context_payload(config)
-    if records[0]["context"]!=current:raise PipelineStateError("context recomputation differs")
-    allowed={JOURNAL_DIRECTORY,ARTIFACT_DIRECTORY}
-    if {p.name for p in root.iterdir()}-allowed:raise PipelineStateError("root pollution")
-    return current,records
-def _write_stage(config:PipelineConfig,spec:StageSpec,context:dict[str,object],prior:str)->None:
-    write_create_only(stage_file(config,spec),canonical_json_bytes(_stage_payload(spec,context,prior)))
-def _preflight(config:PipelineConfig,context:dict[str,object],prior:str)->None:_write_stage(config,STAGE_REGISTRY["preflight"],context,prior)
-def run_pipeline(config:PipelineConfig,*,test_stage_builders:Mapping[str,Callable[[PipelineConfig,StageSpec,dict[str,object],str],None]]|None=None):
-    root=safe_root(config.run_root)
-    if not root.exists():root.mkdir(parents=True)
-    if not root.is_dir() or root.is_symlink():raise PipelineStateError("run root invalid")
-    if _legacy_root(root):raise PipelineStateError("legacy_root_requires_new_root")
-    if not (root/JOURNAL_DIRECTORY).exists():
-        if any(root.iterdir()):raise PipelineStateError("run root pollution")
-        (root/JOURNAL_DIRECTORY).mkdir();context=context_payload(config);write_create_only(_path(root,0,"context"),canonical_json_bytes(_record({"schema":"paper-journal-context.v3","context":context,"previous_record_sha256":"genesis"})))
-    context,records=verify_journal(config)
-    if records[-1].get("schema")=="paper-journal-failure.v3":raise PipelineStateError("failed root requires clean root")
-    if len(records)-1==len(PIPELINE_STAGE_ORDER):return records
-    spec=STAGE_REGISTRY[PIPELINE_STAGE_ORDER[len(records)-1]];prior=records[-1]["record_sha256"]
     try:
-        if test_stage_builders is not None and spec.stage in test_stage_builders:test_stage_builders[spec.stage](config,spec,context,prior)
-        elif spec.stage=="preflight":_preflight(config,context,prior)
-        else:raise PipelineNotImplementedError(f"{spec.stage} is not implemented at Task 8")
-        path=stage_file(config,spec);value=read_canonical(path);data=path.read_bytes()
-        record=_record({"schema":"paper-journal-stage.v3","stage":spec.stage,"previous_record_sha256":prior,"started_at":_now(),"finished_at":_now(),"artifact_set":{"relative_path":spec.relative_path,"size":len(data),"sha256":sha256_bytes(data),"schema":spec.schema,"verifier_id":spec.verifier_id,"verifier_version":spec.version}})
-        _verify_stage(root,spec,record,context);write_create_only(_path(root,len(records),spec.stage),canonical_json_bytes(record))
-    except Exception as error:
-        failure=_record({"schema":"paper-journal-failure.v3","stage":spec.stage,"previous_record_sha256":prior,"started_at":_now(),"finished_at":_now(),"failure_evidence":{"type":type(error).__name__,"message":str(error)}});write_create_only(_path(root,len(records),spec.stage),canonical_json_bytes(failure));raise
-    return run_pipeline(config,test_stage_builders=test_stage_builders)
-def verify_completed(config:PipelineConfig):
-    context,records=verify_journal(config)
-    names=[r.get("stage") for r in records[1:] if r.get("schema")=="paper-journal-stage.v3"]
-    if "proposal_freeze" in names:verify_score_root(config.run_root)
-    if "proposal_parity" in names:verify_parity(config)
-    return {"status":"failed" if records[-1].get("schema")=="paper-journal-failure.v3" else "completed_prefix","completed_stages":names,"next_stage":None if len(names)==len(PIPELINE_STAGE_ORDER) else PIPELINE_STAGE_ORDER[len(records)-1]}
-def verify_parity(config:PipelineConfig)->dict[str,object]:
-    root=safe_root(config.run_root);catalog=load_catalog(config.catalog_path,config.db_path,config.mode);acceptance=load_acceptance(config.acceptance_path,catalog);manifest=verify_score_root(root);report=read_canonical(safe_child(root,ARTIFACT_DIRECTORY,"proposal_parity","proposal_parity_paper.json"))
-    required={"schema","proposal_manifest_sha256","acceptance_sha256","policy_counts","policy_coordinate_digests","oracle_identifier","oracle_version","oracle_relative_path","oracle_sha256","oracle_result_sha256","comparison_result"}
-    if not isinstance(report,dict) or set(report)!=required or report.get("schema")!="paper-proposal-parity.v3" or report.get("proposal_manifest_sha256")!=sha256_file(root/"proposal_freeze_manifest_paper.json") or report.get("acceptance_sha256")!=acceptance["acceptance_sha256"] or report.get("comparison_result")!="exact" or report.get("oracle_identifier")!="historical-coordinate-oracle" or report.get("oracle_version")!="v1":raise ValueError("parity report invalid")
-    rel=report["oracle_relative_path"]
-    if type(rel)is not str or Path(rel).is_absolute() or ".." in Path(rel).parts:raise ValueError("parity oracle path invalid")
-    oracle=root/rel
-    if not oracle.is_file() or sha256_file(oracle)!=report.get("oracle_sha256"):raise ValueError("parity oracle invalid")
-    oracle_value=read_canonical(oracle);observed=policy_coordinates(root,manifest);expected=tuple(tuple((str(d),int(i)) for d,i in policy) for policy in acceptance["policies"])
-    digests=[_sha([[d,i] for d,i in values]) for values in observed];counts=[len(values) for values in observed]
-    if observed!=expected or report["policy_counts"]!=counts or report["policy_coordinate_digests"]!=digests or report["oracle_result_sha256"]!=sha256_bytes(canonical_json_bytes(oracle_value)):raise ValueError("parity coordinate binding differs")
-    return report
-def evaluate_stage(config:PipelineConfig):
-    verify_parity(config)
-    from . import label_access_paper
-    raise PipelineNotImplementedError("evaluation remains Task 11")
-__all__=["ARTIFACT_DIRECTORY","JOURNAL_DIRECTORY","PIPELINE_STAGE_ORDER","PipelineConfig","PipelineFailedError","PipelineNotImplementedError","PipelineStateError","STAGE_REGISTRY","StageSpec","context_payload","evaluate_stage","run_pipeline","stage_file","verify_completed","verify_journal","verify_parity"]
+        catalog=build_catalog(config.db_path,mode=config.mode,smoke_datasets=config.smoke_datasets)
+        acceptance=load_acceptance(config.acceptance_path,catalog)
+    except ValueError as error:
+        raise PipelineStateError(f"catalog or acceptance context differs: {error}") from error
+    base={"schema":"paper-task8-context.v1","mode":config.mode,"smoke_datasets":list(config.smoke_datasets),"paths":_paths(config),"database":catalog["database"],"catalog_sha256":catalog["catalog_sha256"],"acceptance_sha256":acceptance["acceptance_sha256"],"acceptance_path_sha256":sha256_file(config.acceptance_path),"lineage_sha256":sha256_file(LINEAGE_LOCK_PATH),"codemap_lock_sha256":sha256_file(PAPER_ROOT/"codemap_paper.lock"),"code_closure":_closure(),"environment":_environment(),"constants":{"stage_order":list(PIPELINE_STAGE_ORDER),"registry":{"preflight":"paper-task8-preflight.v1","prepare":"paper-task8-prepare.v1"}}}
+    return {**base,"context_sha256":_sha(base)}
+def _record(payload): return {**payload,"record_sha256":_sha(payload)}
+def _journal_path(root,index,name): return safe_child(root,JOURNAL_DIRECTORY,f"{index:06d}_{name}_paper.json")
+def _artifact_path(root,stage): return safe_child(root,ARTIFACT_DIRECTORY,stage,f"{stage}_paper.json")
+def _legacy(root):
+    old={"pipeline_state_paper.json","proposal_inventory_paper.json","proposal_freeze_manifest_paper.json"}
+    if any((root/name).exists() for name in old): return True
+    journal=root/JOURNAL_DIRECTORY
+    return journal.exists() and any(path.name=="000000_context_paper.json" and b"paper-task8-journal-context.v1" not in path.read_bytes() for path in journal.iterdir() if path.is_file())
+def _records(root):
+    journal=safe_child(root,JOURNAL_DIRECTORY)
+    if not journal.is_dir(): raise PipelineStateError("journal missing")
+    files=sorted(journal.iterdir())
+    if not files: raise PipelineStateError("journal missing")
+    names=("context","preflight","prepare","acceleration")
+    result=[]; prior="genesis"
+    for index,path in enumerate(files):
+        if index>=len(names) or path.name!=f"{index:06d}_{names[index]}_paper.json": raise PipelineStateError("journal gap, reorder, or truncation")
+        record=read_canonical(path)
+        if not isinstance(record,dict) or record.get("record_sha256")!=_sha({key:value for key,value in record.items() if key!="record_sha256"}) or record.get("previous_record_sha256")!=prior: raise PipelineStateError("forged journal record")
+        if index==0 and (record.get("schema")!="paper-task8-journal-context.v1" or set(record)!={"schema","context","previous_record_sha256","record_sha256"}): raise PipelineStateError("journal genesis invalid")
+        if index in (1,2) and record.get("schema")!="paper-task8-journal-complete.v1": raise PipelineStateError("journal completion invalid")
+        if index==3 and (record.get("schema")!="paper-task8-journal-failure.v1" or record.get("reason")!="stage_not_implemented"): raise PipelineStateError("journal failure invalid")
+        prior=record["record_sha256"]; result.append(record)
+    return result
+def _artifact_record(root, stage, context, prior):
+    path=_artifact_path(root,stage); raw=path.read_bytes(); value=read_canonical(path)
+    expected={"schema":f"paper-task8-{stage}.v1","stage":stage,"context_sha256":context["context_sha256"]}
+    if stage=="prepare":
+        catalog=build_catalog(Path(context["paths"]["db_path"]["unresolved_path"]),mode=context["mode"],smoke_datasets=tuple(context["smoke_datasets"]))
+        acceptance=load_acceptance(Path(context["paths"]["acceptance_path"]["unresolved_path"]),catalog)
+        expected["catalog"]=catalog; expected["acceptance"]={key:value for key,value in acceptance.items() if key!="_path"}; expected["acceptance_sha256"]=context["acceptance_sha256"]
+    if value!=expected: raise PipelineStateError("stage semantic verifier failed")
+    return {"relative_path":str(path.relative_to(root)),"size":len(raw),"sha256":sha256_bytes(raw),"schema":expected["schema"]}
+def verify_journal(config):
+    root=safe_root(config.run_root)
+    if _legacy(root): raise PipelineStateError("legacy_root_requires_new_root")
+    records=_records(root); context=context_payload(config)
+    if records[0]["context"]!=context: raise PipelineStateError("context recomputation differs")
+    allowed={JOURNAL_DIRECTORY,ARTIFACT_DIRECTORY}
+    if {item.name for item in root.iterdir()}-allowed: raise PipelineStateError("root pollution")
+    complete=[]
+    for record in records[1:]:
+        if record["schema"]=="paper-task8-journal-complete.v1":
+            stage=record.get("stage");
+            if stage not in {"preflight","prepare"} or record.get("artifact")!=_artifact_record(root,stage,context,record["previous_record_sha256"]): raise PipelineStateError("journal artifact differs")
+            namespace=safe_child(root,ARTIFACT_DIRECTORY,stage)
+            if {item.relative_to(root).as_posix() for item in namespace.iterdir() if item.is_file()}!={record["artifact"]["relative_path"]}: raise PipelineStateError("namespace pollution")
+            complete.append(stage)
+    artifact_root=safe_child(root,ARTIFACT_DIRECTORY)
+    actual_names={item.name for item in artifact_root.iterdir()} if artifact_root.is_dir() else set()
+    if actual_names != set(complete):
+        raise PipelineStateError("namespace pollution")
+    return context,records,complete
+def _write_complete(root,stage,context,prior):
+    expected={"schema":f"paper-task8-{stage}.v1","stage":stage,"context_sha256":context["context_sha256"]}
+    if stage=="prepare":
+        catalog=build_catalog(Path(context["paths"]["db_path"]["unresolved_path"]),mode=context["mode"],smoke_datasets=tuple(context["smoke_datasets"]))
+        acceptance=load_acceptance(Path(context["paths"]["acceptance_path"]["unresolved_path"]),catalog)
+        expected["catalog"]=catalog; expected["acceptance"]={key:value for key,value in acceptance.items() if key!="_path"}; expected["acceptance_sha256"]=context["acceptance_sha256"]
+    path=_artifact_path(root,stage); write_create_only(path,canonical_json_bytes(expected)); artifact=_artifact_record(root,stage,context,prior)
+    write_create_only(_journal_path(root,1 if stage=="preflight" else 2,stage),canonical_json_bytes(_record({"schema":"paper-task8-journal-complete.v1","stage":stage,"previous_record_sha256":prior,"artifact":artifact,"finished_at":_now()})))
+def run_pipeline(config: PipelineConfig):
+    root=safe_root(config.run_root)
+    if _legacy(root): raise PipelineStateError("legacy_root_requires_new_root")
+    if not root.exists(): _mkdir_parent=root.parent; _mkdir_parent.mkdir(parents=True,exist_ok=True); os.mkdir(root)
+    if not root.is_dir() or root.is_symlink(): raise PipelineStateError("run root invalid")
+    if not (root/JOURNAL_DIRECTORY).exists():
+        if any(root.iterdir()): raise PipelineStateError("root pollution")
+        context=context_payload(config); write_create_only(_journal_path(root,0,"context"),canonical_json_bytes(_record({"schema":"paper-task8-journal-context.v1","context":context,"previous_record_sha256":"genesis"})))
+    context,records,complete=verify_journal(config)
+    if records[-1].get("schema")=="paper-task8-journal-failure.v1": raise PipelineNotImplementedError("acceleration: stage_not_implemented")
+    if len(complete)==0: _write_complete(root,"preflight",context,records[-1]["record_sha256"]); return run_pipeline(config)
+    if len(complete)==1: _write_complete(root,"prepare",context,records[-1]["record_sha256"]); return run_pipeline(config)
+    failure=_record({"schema":"paper-task8-journal-failure.v1","stage":"acceleration","reason":"stage_not_implemented","previous_record_sha256":records[-1]["record_sha256"],"finished_at":_now()}); write_create_only(_journal_path(root,3,"acceleration"),canonical_json_bytes(failure)); raise PipelineNotImplementedError("acceleration: stage_not_implemented")
+def verify_completed(config):
+    _,records,complete=verify_journal(config); failed=records[-1].get("schema")=="paper-task8-journal-failure.v1"
+    return {"status":"failed" if failed else "completed_prefix","completed_stages":complete,"failed_stage":"acceleration" if failed else None,"next_stage":"acceleration"}
+def evaluate_stage(*_args,**_kwargs): raise PipelineNotImplementedError("evaluate is unavailable until Task 11 and verified parity")
+__all__=["ARTIFACT_DIRECTORY","JOURNAL_DIRECTORY","PIPELINE_STAGE_ORDER","PipelineConfig","PipelineNotImplementedError","PipelineStateError","context_payload","evaluate_stage","run_pipeline","verify_completed","verify_journal"]
