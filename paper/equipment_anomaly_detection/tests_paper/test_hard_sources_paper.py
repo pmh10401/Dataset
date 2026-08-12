@@ -220,7 +220,11 @@ grid=np.linspace(0, 2*np.pi, length, dtype=np.float32); rng=np.random.default_rn
 train=np.asarray([np.sin(grid+rng.normal(0,.03))+rng.normal(0,.01,length) for _ in range(count)], dtype=np.float32)
 test=np.vstack([np.sign(np.sin(grid*5))*4, np.r_[np.zeros(length//2),np.ones(length//2)*20], np.cos(grid)]).astype(np.float32)
 record={'actual_len_median':32, 'dataset_name':'__virtual_run_dataset__', 'family':'__family_neutral__'}
-def pvalues_and_candidate(scores, query):
+def origin_pvalues_and_candidate(scores, query):
+    # Keep the frozen oracle's conformal implementation independent from paper.
+    p=np.asarray([historical.conformal_p_value(scores, score) for score in query], dtype=float)
+    return p, [np.flatnonzero(p <= alpha).tolist() for alpha in (.005,.01,.02,.05)]
+def paper_pvalues_and_candidate(scores, query):
     p=upper_tail_pvalues(scores, query)
     return p, [np.flatnonzero(p <= alpha).tolist() for alpha in (.005,.01,.02,.05)]
 for name in ('rocket_exp40','exp55_best','exp56_best','exp84'):
@@ -228,18 +232,18 @@ for name in ('rocket_exp40','exp55_best','exp56_best','exp84'):
     paper=crossfit_source_paper(name, train, test, 32)
     np.testing.assert_allclose(origin['train_oof_scores'], paper[0], rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(origin['test_scores'], paper[1], rtol=1e-5, atol=1e-5)
-    origin_p, origin_candidates=pvalues_and_candidate(origin['train_oof_scores'], origin['test_scores']); paper_p, paper_candidates=pvalues_and_candidate(paper[0], paper[1])
+    origin_p, origin_candidates=origin_pvalues_and_candidate(origin['train_oof_scores'], origin['test_scores']); paper_p, paper_candidates=paper_pvalues_and_candidate(paper[0], paper[1])
     np.testing.assert_allclose(origin_p, paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
 origin_oof=np.full(len(train),np.nan)
 for fit, query in bridge.exp152_core.fold_plan(len(train), seed=20260717):
     _, scores=bridge._block_b_score_pair(train[fit],train[query]); origin_oof[query]=scores
 _, origin_test=bridge._block_b_score_pair(train,test); paper=crossfit_confirmation_scores_paper(train, test)
 np.testing.assert_allclose(origin_oof, paper[0]); np.testing.assert_allclose(origin_test, paper[1])
-origin_p, origin_candidates=pvalues_and_candidate(origin_oof, origin_test); paper_p, paper_candidates=pvalues_and_candidate(paper[0], paper[1])
+origin_p, origin_candidates=origin_pvalues_and_candidate(origin_oof, origin_test); paper_p, paper_candidates=paper_pvalues_and_candidate(paper[0], paper[1])
 np.testing.assert_allclose(origin_p, paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
 origin=crossfit_scores(canonical_features(train), canonical_features(test), backend='knn_local_gap', seed=20260717); paper=_canonical_source_paper(train,test)
 np.testing.assert_allclose(origin[0],paper[0]); np.testing.assert_allclose(origin[1],paper[1])
-origin_p, origin_candidates=pvalues_and_candidate(origin[0],origin[1]); paper_p, paper_candidates=pvalues_and_candidate(paper[0],paper[1])
+origin_p, origin_candidates=origin_pvalues_and_candidate(origin[0],origin[1]); paper_p, paper_candidates=paper_pvalues_and_candidate(paper[0],paper[1])
 np.testing.assert_allclose(origin_p,paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
 large_count=1250; large_rng=np.random.default_rng(20260813)
 large=np.asarray([np.sin(grid+large_rng.normal(0,.03))+large_rng.normal(0,.01,length) for _ in range(large_count)],dtype=np.float32)
@@ -255,7 +259,7 @@ imaging.PCA=traced_pca
 paper=crossfit_source_paper('exp55_best',large,test,length)
 assert pca_rows == [1000,1000,1000,1000,1000,1250], pca_rows
 np.testing.assert_allclose(origin['train_oof_scores'],paper[0],rtol=1e-5,atol=1e-5); np.testing.assert_allclose(origin['test_scores'],paper[1],rtol=1e-5,atol=1e-5)
-origin_p, origin_candidates=pvalues_and_candidate(origin['train_oof_scores'],origin['test_scores']); paper_p, paper_candidates=pvalues_and_candidate(paper[0],paper[1])
+origin_p, origin_candidates=origin_pvalues_and_candidate(origin['train_oof_scores'],origin['test_scores']); paper_p, paper_candidates=paper_pvalues_and_candidate(paper[0],paper[1])
 np.testing.assert_allclose(origin_p,paper_p); assert origin_candidates == paper_candidates and origin_candidates[0]
 print('source-parity: rocket_exp40 rocket_block_b exp55_small exp55_randomized_crossfit exp56 exp84 canonical')
 '''
