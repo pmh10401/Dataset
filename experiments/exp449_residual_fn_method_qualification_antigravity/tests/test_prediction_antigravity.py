@@ -665,12 +665,14 @@ class PredictionAntigravityTests(unittest.TestCase):
         from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import capture_frozen_prediction_authority_antigravity, run_synthetic_lifecycle_antigravity
 
-        for attack in ("mlx", "source_digest", "method_audit", "method_order"):
+        for attack in ("mlx", "negative_speedup", "source_digest", "method_audit", "method_order"):
             with self.subTest(attack=attack), tempfile.TemporaryDirectory(prefix="exp449_capture_context_antigravity_") as temporary:
                 root = Path(temporary) / "run"; authority = run_synthetic_lifecycle_antigravity(root, "a" * 40)
                 context_path = root / "context_antigravity.json"; context = json.loads(context_path.read_text())
                 if attack == "mlx":
                     context["mlx"] = {}
+                elif attack == "negative_speedup":
+                    context["mlx"]["speedup"] = -1.0
                 elif attack == "source_digest":
                     context["source_identity"]["evaluation_sha256"] = "G" * 64
                 elif attack == "method_audit":
