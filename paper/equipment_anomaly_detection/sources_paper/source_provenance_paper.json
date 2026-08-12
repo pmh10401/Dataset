@@ -1,14 +1,365 @@
 {
   "schema": "paper-source-provenance.v1",
   "helpers": {
-    "sources_paper/canonical_paper.py": {"paper_sha256":"8cbc395b2dd6721bd5d8f9707efeaa306ee206d9777202eddfa7ca85cf22133f","origins":[{"module":"experiments.exp177_185.core","symbols":["_sanitize_matrix","_multiscale_stat_features","canonical_features","_fold_plan","_robust_scale_fit","_score_fit_query","crossfit_scores"],"source_sha256":"49f15e39c39a801842abca43cf67f73b79ded0a273029071e079f29100d2cc43"}]},
-    "sources_paper/hard_sources_paper.py": {"paper_sha256":"331b4179bc3376fe333992fc5d8250ed28cf5e604cd28ed16485d1ca7ff0b262","origins":[{"module":"run_experiment_149_150_virtual_run_conformal_policy","symbols":["fold_plan","source_score_pair","crossfit_source"],"source_sha256":"5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3"},{"module":"experiments.exp153_157.exp153_157_bridge","symbols":["crossfit_confirmation_scores"],"source_sha256":"8d38067291d78defeb40410f1dde8dac44e9e3bd9e2a2636eb4c33ce29932fc2"}]},
-    "sources_paper/imaging_paper.py": {"paper_sha256":"1c18b6c6e3f70c922f9bba9689d26b99d2eb6320864e9c6425727af6e95d61e2","origins":[{"module":"run_model_hard_research_experiments","symbols":["resample_rows","rp_images","spectrogram_images","glcm_image_features","pca_pair","fixed_width_features","imaging_features","score_pair_for_config","prepare_series_pair_for_scale","minmax_scale_pair"],"source_sha256":"f9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194"},{"module":"run_experiment_60_62_rocket_imaging_selector_variants","symbols":["IMAGING_CONFIGS"],"source_sha256":"4ab38ef8a0ad152ccfc18c1297c40aca31ba79ac29348b9f5da029682507b2ed"}]},
-    "sources_paper/knn_paper.py": {"paper_sha256":"0402d296a32d7b4621e509b2be3de24c92f8fa5db1a167cf4910b790d7d1813c","origins":[{"module":"run_balanced_improvement_experiment","symbols":["density_knn_score_pair"],"source_sha256":"d784f8dcc3a5f05ef7d96829acbe9b9bb206ed5f37db0a5434bd848657f48efd"},{"module":"run_model_hard_research_experiments","symbols":["scale_feature_pair"],"source_sha256":"f9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194"}]},
-    "sources_paper/multirocket_hydra_paper.py": {"paper_sha256":"d4c4a57b20c322da9f7cc80da21e24f69fb7a3c7c77ef8da9ccb236ab7dc8341","origins":[{"module":"run_model_hard_research_experiments","symbols":["aeon_collection","aeon_fit_collection","numpy_feature_matrix","aeon_multirocket_features","aeon_hydra_features","stable_tail_feature_prune","maybe_prune_features","aeon_feature_pair","score_pair_for_config"],"source_sha256":"f9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194"}]},
-    "sources_paper/preprocessing_paper.py": {"paper_sha256":"e38a4294ab12b306781c01b817561944da01cf54b15f76aae7309e60d6e14ae2","origins":[{"module":"run_rank_ensemble_calibration","symbols":["resample_series","align_series_lengths","z_normalize"],"source_sha256":"1191d05fabd85ec174b78eee537710e2748e1c89faca7ec824894831df3d6a9a"},{"module":"run_original_improvement_experiment","symbols":["target_len_for_record"],"source_sha256":"dd314580082a362a3e55b8c900c37ab84cf361716056ea0b61e4b20ed6e652c9"}]},
-    "sources_paper/rocket_paper.py": {"paper_sha256":"1eb33ebd854068b9fa4d1dce101870b1a9426eb2e1d71ebe7ad24cfa3d2675af","origins":[{"module":"run_experiment_26_rocket","symbols":["make_kernels","dilated_convolution","rocket_transform"],"source_sha256":"e11e1e7ed19d4d14112b9af9e72e36f3e1bc746b3bba5a74335bf713773b2eb6"},{"module":"run_experiment_29_train_normal_threshold_calibration","symbols":["reference_train","rocket_feature_pair"],"source_sha256":"6f7018ead920254bf00145639f9cdb8ffd39612bb2248980415bf6a6c736c3de"},{"module":"run_experiment_131_rocket_block_b_calibration","symbols":["fixed_reference","score_block_b"],"source_sha256":"32be94dc3fa015df334991a4c301106cb78a2f62cf83b38e505ccfe90544fe5d"}]},
-    "sources_paper/legacy_route_sources_paper.py": {"paper_sha256":"375e3a5eeca0943d1918e14dc2ace6ef929b5097a311632755ff51db5d435acd","origins":[{"module":"run_experiment_40_original_score_normalization_sweep","symbols":["parse_family","count_cap_threshold","score_pair_for_config"],"source_sha256":"377109789d95791bdc606c7bed08843ea1a8814cca1710af78a1178926c2c5cb"},{"module":"run_original_improvement_experiment","symbols":["target_len_for_record","rate_for_threshold"],"source_sha256":"dd314580082a362a3e55b8c900c37ab84cf361716056ea0b61e4b20ed6e652c9"},{"module":"run_balanced_improvement_experiment","symbols":["WEAK_FAMILIES"],"source_sha256":"d784f8dcc3a5f05ef7d96829acbe9b9bb206ed5f37db0a5434bd848657f48efd"},{"module":"run_experiment_131_rocket_block_b_calibration","symbols":["fixed_reference","score_block_b"],"source_sha256":"32be94dc3fa015df334991a4c301106cb78a2f62cf83b38e505ccfe90544fe5d"},{"module":"run_experiment_132_block_b_review_integration","symbols":["fixed_reference","block_scores"],"source_sha256":"358122725c41891464b85310728207bbbaeeabf7dd66a7724ed68e9d4207dbca"},{"module":"run_experiment_135_block_c_review_confirmation","symbols":["block_c_candidates"],"source_sha256":"2c3f535b27e5620ae70e6bc29ed9a753f339b452a046cf80e3bd4a799c832f16"}]},
-    "sources_paper/minirocket_paper.py": {"paper_sha256":"2b745de510e863390148e4f39efa6c1126e1fbae0980903faa74f484836ab312","origins":[{"module":"experiments.exp249_250_official_mini_multirocket.scoring","symbols":["ConfigurationScores","_reference_indices","_score_query_chunks","score_configuration"],"source_sha256":"ae86a350431d7dc5ee9013bb15d08dec25cc20919feceb17007fab6d20fee86e"},{"module":"experiments.exp249_250_official_mini_multirocket.transforms","symbols":["actual_kernel_count","expected_feature_dimension","as_aeon_collection","make_transformer"],"source_sha256":"2e9b056100be1677209f7c49f4c08bc25aa95aebf7cc483d5f5d13dc797b3ebe"},{"module":"experiments.exp249_250_official_mini_multirocket.local_gap","symbols":["LocalGapModel"],"source_sha256":"dec7183582f337129744289fdaaca8e15ce6620b7159b2918f02095598a29bf2"},{"module":"experiments.exp239_248_diverse_score_sources.foundation","symbols":["deterministic_folds","crossfit_plan"],"source_sha256":"6e0d48249a5966e7832ea46f897f03667081db5f668c0032fa8b6f20f7e0edca"}]}
+    "hard_route_paper.py": {
+      "paper_sha256": "164dc91de2fd39ebb20168df9f8cab08a2daece17035e87abeec4e5625dffb97",
+      "origins": [
+        {
+          "module": "run_experiment_60_62_rocket_imaging_selector_variants",
+          "symbols": [
+            "cap_indices",
+            "cap_indices_count",
+            "exp69_base_selection",
+            "indices_at_least",
+            "large_data_budget",
+            "rank_ensemble_indices",
+            "rank_ensemble_guarded_indices",
+            "top_score_indices",
+            "top_score_order"
+          ],
+          "source_sha256": "4ab38ef8a0ad152ccfc18c1297c40aca31ba79ac29348b9f5da029682507b2ed"
+        },
+        {
+          "module": "run_experiment_89_74d_with_exp84_candidate",
+          "symbols": [
+            "choose_rows_for_dataset",
+            "exp84_bundle_from_row"
+          ],
+          "source_sha256": "9f591ed8a17c31a15cb6edb2579379d06fa74a49bf4508e488499270ea2c8d08"
+        },
+        {
+          "module": "run_experiment_90_zero_f1_repair_selector",
+          "symbols": [
+            "first_top_index_from_bundle",
+            "choose_rows_for_dataset"
+          ],
+          "source_sha256": "c65c933587ec68a9c898fb2eb21595ab3d752685d22f69ae8f11413ecc8f3ee0"
+        },
+        {
+          "module": "run_experiment_93_nonpos_candidate_reranker",
+          "symbols": [
+            "bundle_order",
+            "exp84_order",
+            "score_candidates",
+            "sorted_candidates",
+            "weak_base_indices"
+          ],
+          "source_sha256": "5b8b4e047875b430e53a40217d71cad7a1cfdd151903ef8eb63548df882d4b89"
+        },
+        {
+          "module": "run_experiment_119a_exp93_rank_order_validation",
+          "symbols": [
+            "run_one"
+          ],
+          "source_sha256": "4089bfb9f076c2cc33e776295775ec3fc5d933fe2423751784afb4e766497335"
+        },
+        {
+          "module": "run_experiment_133_block_b_confidence_tiers",
+          "symbols": [
+            "run_one"
+          ],
+          "source_sha256": "bbdb2dd6e1441eb4356f00fcee06a9f2925861bdf388d97ee6b533fff24a530d"
+        },
+        {
+          "module": "run_experiment_134_block_b_review_tail_guard",
+          "symbols": [
+            "run_one"
+          ],
+          "source_sha256": "b30031b351cb0944cad80e5dc8e92a9f882fb1cd0c287ade79b79f87f12e1ce7"
+        },
+        {
+          "module": "run_experiment_135_block_c_review_confirmation",
+          "symbols": [
+            "block_c_candidates",
+            "run_one"
+          ],
+          "source_sha256": "2c3f535b27e5620ae70e6bc29ed9a753f339b452a046cf80e3bd4a799c832f16"
+        },
+        {
+          "module": "run_experiment_137_operational_triage",
+          "symbols": [
+            "route_tiers"
+          ],
+          "source_sha256": "5e389de7ee26063028b893d4856c9f1e24897f8fae32780ed2437bb90dd3b04c"
+        },
+        {
+          "module": "experiments.exp226_235_hard_alert_quality.exp234_precision_first_rescue",
+          "symbols": [
+            "research_rescue_candidates"
+          ],
+          "source_sha256": "0b6617db97f48f57d6510d12e3698aea3d8e816731716f65ef2a572c62ea90b0"
+        },
+        {
+          "module": "experiments.exp236_detection_coverage_expansion.core",
+          "symbols": [
+            "build_expanded_lanes"
+          ],
+          "source_sha256": "f7acf1b2d55bdc81289fa458c63f96beaab4d5097584bb27c2428285804f4e44"
+        },
+        {
+          "module": "experiments.exp290_train_raw_exact_normal_guard.prediction",
+          "symbols": [
+            "partition_hard_indices"
+          ],
+          "source_sha256": "740f461012a76eda2e1817e606362709efdd650f7675db1d3bd005e9034e3d9f"
+        }
+      ]
+    },
+    "sources_paper/canonical_paper.py": {
+      "paper_sha256": "8cbc395b2dd6721bd5d8f9707efeaa306ee206d9777202eddfa7ca85cf22133f",
+      "origins": [
+        {
+          "module": "experiments.exp177_185.core",
+          "symbols": [
+            "_sanitize_matrix",
+            "_multiscale_stat_features",
+            "canonical_features",
+            "_fold_plan",
+            "_robust_scale_fit",
+            "_score_fit_query",
+            "crossfit_scores"
+          ],
+          "source_sha256": "49f15e39c39a801842abca43cf67f73b79ded0a273029071e079f29100d2cc43"
+        }
+      ]
+    },
+    "sources_paper/hard_sources_paper.py": {
+      "paper_sha256": "331b4179bc3376fe333992fc5d8250ed28cf5e604cd28ed16485d1ca7ff0b262",
+      "origins": [
+        {
+          "module": "run_experiment_149_150_virtual_run_conformal_policy",
+          "symbols": [
+            "fold_plan",
+            "source_score_pair",
+            "crossfit_source"
+          ],
+          "source_sha256": "5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3"
+        },
+        {
+          "module": "experiments.exp153_157.exp153_157_bridge",
+          "symbols": [
+            "crossfit_confirmation_scores"
+          ],
+          "source_sha256": "8d38067291d78defeb40410f1dde8dac44e9e3bd9e2a2636eb4c33ce29932fc2"
+        }
+      ]
+    },
+    "sources_paper/imaging_paper.py": {
+      "paper_sha256": "1c18b6c6e3f70c922f9bba9689d26b99d2eb6320864e9c6425727af6e95d61e2",
+      "origins": [
+        {
+          "module": "run_model_hard_research_experiments",
+          "symbols": [
+            "resample_rows",
+            "rp_images",
+            "spectrogram_images",
+            "glcm_image_features",
+            "pca_pair",
+            "fixed_width_features",
+            "imaging_features",
+            "score_pair_for_config",
+            "prepare_series_pair_for_scale",
+            "minmax_scale_pair"
+          ],
+          "source_sha256": "f9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194"
+        },
+        {
+          "module": "run_experiment_60_62_rocket_imaging_selector_variants",
+          "symbols": [
+            "IMAGING_CONFIGS"
+          ],
+          "source_sha256": "4ab38ef8a0ad152ccfc18c1297c40aca31ba79ac29348b9f5da029682507b2ed"
+        }
+      ]
+    },
+    "sources_paper/knn_paper.py": {
+      "paper_sha256": "0402d296a32d7b4621e509b2be3de24c92f8fa5db1a167cf4910b790d7d1813c",
+      "origins": [
+        {
+          "module": "run_balanced_improvement_experiment",
+          "symbols": [
+            "density_knn_score_pair"
+          ],
+          "source_sha256": "d784f8dcc3a5f05ef7d96829acbe9b9bb206ed5f37db0a5434bd848657f48efd"
+        },
+        {
+          "module": "run_model_hard_research_experiments",
+          "symbols": [
+            "scale_feature_pair"
+          ],
+          "source_sha256": "f9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194"
+        }
+      ]
+    },
+    "sources_paper/multirocket_hydra_paper.py": {
+      "paper_sha256": "d4c4a57b20c322da9f7cc80da21e24f69fb7a3c7c77ef8da9ccb236ab7dc8341",
+      "origins": [
+        {
+          "module": "run_model_hard_research_experiments",
+          "symbols": [
+            "aeon_collection",
+            "aeon_fit_collection",
+            "numpy_feature_matrix",
+            "aeon_multirocket_features",
+            "aeon_hydra_features",
+            "stable_tail_feature_prune",
+            "maybe_prune_features",
+            "aeon_feature_pair",
+            "score_pair_for_config"
+          ],
+          "source_sha256": "f9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194"
+        }
+      ]
+    },
+    "sources_paper/preprocessing_paper.py": {
+      "paper_sha256": "e38a4294ab12b306781c01b817561944da01cf54b15f76aae7309e60d6e14ae2",
+      "origins": [
+        {
+          "module": "run_rank_ensemble_calibration",
+          "symbols": [
+            "resample_series",
+            "align_series_lengths",
+            "z_normalize"
+          ],
+          "source_sha256": "1191d05fabd85ec174b78eee537710e2748e1c89faca7ec824894831df3d6a9a"
+        },
+        {
+          "module": "run_original_improvement_experiment",
+          "symbols": [
+            "target_len_for_record"
+          ],
+          "source_sha256": "dd314580082a362a3e55b8c900c37ab84cf361716056ea0b61e4b20ed6e652c9"
+        }
+      ]
+    },
+    "sources_paper/rocket_paper.py": {
+      "paper_sha256": "1eb33ebd854068b9fa4d1dce101870b1a9426eb2e1d71ebe7ad24cfa3d2675af",
+      "origins": [
+        {
+          "module": "run_experiment_26_rocket",
+          "symbols": [
+            "make_kernels",
+            "dilated_convolution",
+            "rocket_transform"
+          ],
+          "source_sha256": "e11e1e7ed19d4d14112b9af9e72e36f3e1bc746b3bba5a74335bf713773b2eb6"
+        },
+        {
+          "module": "run_experiment_29_train_normal_threshold_calibration",
+          "symbols": [
+            "reference_train",
+            "rocket_feature_pair"
+          ],
+          "source_sha256": "6f7018ead920254bf00145639f9cdb8ffd39612bb2248980415bf6a6c736c3de"
+        },
+        {
+          "module": "run_experiment_131_rocket_block_b_calibration",
+          "symbols": [
+            "fixed_reference",
+            "score_block_b"
+          ],
+          "source_sha256": "32be94dc3fa015df334991a4c301106cb78a2f62cf83b38e505ccfe90544fe5d"
+        }
+      ]
+    },
+    "sources_paper/legacy_route_sources_paper.py": {
+      "paper_sha256": "83305f204d256ffba30214fc7f6b32b39a944de6e76c38a19fa28f26b951bd95",
+      "origins": [
+        {
+          "module": "run_experiment_40_original_score_normalization_sweep",
+          "symbols": [
+            "parse_family",
+            "count_cap_threshold",
+            "score_pair_for_config"
+          ],
+          "source_sha256": "377109789d95791bdc606c7bed08843ea1a8814cca1710af78a1178926c2c5cb"
+        },
+        {
+          "module": "run_original_improvement_experiment",
+          "symbols": [
+            "target_len_for_record",
+            "rate_for_threshold"
+          ],
+          "source_sha256": "dd314580082a362a3e55b8c900c37ab84cf361716056ea0b61e4b20ed6e652c9"
+        },
+        {
+          "module": "run_balanced_improvement_experiment",
+          "symbols": [
+            "WEAK_FAMILIES"
+          ],
+          "source_sha256": "d784f8dcc3a5f05ef7d96829acbe9b9bb206ed5f37db0a5434bd848657f48efd"
+        },
+        {
+          "module": "run_experiment_131_rocket_block_b_calibration",
+          "symbols": [
+            "fixed_reference",
+            "score_block_b"
+          ],
+          "source_sha256": "32be94dc3fa015df334991a4c301106cb78a2f62cf83b38e505ccfe90544fe5d"
+        },
+        {
+          "module": "run_experiment_132_block_b_review_integration",
+          "symbols": [
+            "fixed_reference",
+            "block_scores"
+          ],
+          "source_sha256": "358122725c41891464b85310728207bbbaeeabf7dd66a7724ed68e9d4207dbca"
+        },
+        {
+          "module": "run_experiment_135_block_c_review_confirmation",
+          "symbols": [
+            "block_c_candidates"
+          ],
+          "source_sha256": "2c3f535b27e5620ae70e6bc29ed9a753f339b452a046cf80e3bd4a799c832f16"
+        },
+        {
+          "module": "run_experiment_60_62_rocket_imaging_selector_variants",
+          "symbols": [
+            "prediction_bundle"
+          ],
+          "source_sha256": "4ab38ef8a0ad152ccfc18c1297c40aca31ba79ac29348b9f5da029682507b2ed"
+        }
+      ]
+    },
+    "sources_paper/minirocket_paper.py": {
+      "paper_sha256": "19f9fb96ccf761e054617fa95d986f4136e8d6d78ff1f929ae67de3eb9c7bbeb",
+      "origins": [
+        {
+          "module": "experiments.exp249_250_official_mini_multirocket.scoring",
+          "symbols": [
+            "ConfigurationScores",
+            "_reference_indices",
+            "_score_query_chunks",
+            "score_configuration"
+          ],
+          "source_sha256": "ae86a350431d7dc5ee9013bb15d08dec25cc20919feceb17007fab6d20fee86e"
+        },
+        {
+          "module": "experiments.exp249_250_official_mini_multirocket.transforms",
+          "symbols": [
+            "actual_kernel_count",
+            "expected_feature_dimension",
+            "as_aeon_collection",
+            "make_transformer"
+          ],
+          "source_sha256": "2e9b056100be1677209f7c49f4c08bc25aa95aebf7cc483d5f5d13dc797b3ebe"
+        },
+        {
+          "module": "experiments.exp249_250_official_mini_multirocket.local_gap",
+          "symbols": [
+            "LocalGapModel"
+          ],
+          "source_sha256": "dec7183582f337129744289fdaaca8e15ce6620b7159b2918f02095598a29bf2"
+        },
+        {
+          "module": "experiments.exp239_248_diverse_score_sources.foundation",
+          "symbols": [
+            "deterministic_folds",
+            "crossfit_plan"
+          ],
+          "source_sha256": "6e0d48249a5966e7832ea46f897f03667081db5f668c0032fa8b6f20f7e0edca"
+        }
+      ]
+    }
   }
 }

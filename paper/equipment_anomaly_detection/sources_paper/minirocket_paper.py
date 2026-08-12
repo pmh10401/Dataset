@@ -8,6 +8,8 @@ no runtime dependency on ``experiments.exp*`` or prediction artifacts.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Mapping
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -39,6 +41,10 @@ class MiniRocketConfig:
     n_features_per_kernel: int = 1
     normalise: bool = False
 
+    def __post_init__(self) -> None:
+        if self.transformer != "minirocket" or int(self.max_dilations_per_kernel) != 32 or int(self.n_features_per_kernel) != 1 or self.normalise is not False:
+            raise ValueError("MiniROCKET configuration differs from the frozen origin")
+
 
 @dataclass(frozen=True, slots=True)
 class ConfigurationScoresPaper:
@@ -46,20 +52,74 @@ class ConfigurationScoresPaper:
     test_score: np.ndarray
     feature_dimension: int
 
+    def __post_init__(self) -> None:
+        train, test = np.asarray(self.train_oof), np.asarray(self.test_score)
+        if train.ndim != 1 or test.ndim != 1 or not len(train) or not len(test) or train.dtype.kind not in "iuf" or test.dtype.kind not in "iuf":
+            raise ValueError("MiniROCKET scores must be nonempty numeric vectors")
+        train_copy, test_copy = np.array(train, dtype=np.float64, copy=True), np.array(test, dtype=np.float64, copy=True)
+        if not np.isfinite(train_copy).all() or not np.isfinite(test_copy).all() or int(self.feature_dimension) < 1:
+            raise ValueError("MiniROCKET scores and dimensions must be finite")
+        train_copy.setflags(write=False)
+        test_copy.setflags(write=False)
+        object.__setattr__(self, "train_oof", train_copy)
+        object.__setattr__(self, "test_score", test_copy)
+        object.__setattr__(self, "feature_dimension", int(self.feature_dimension))
+
 
 @dataclass(frozen=True, slots=True)
 class MiniRocketKernelResult:
     requested_kernels: int
     expected_dimension: int
-    by_seed: dict[int, ConfigurationScoresPaper]
+    by_seed: Mapping[int, ConfigurationScoresPaper]
     candidate: frozenset[int]
+
+    def __post_init__(self) -> None:
+        requested, expected = int(self.requested_kernels), int(self.expected_dimension)
+        if (requested, expected) not in ((1024, 1008), (4096, 4032)):
+            raise ValueError("MiniROCKET kernel configuration differs from the frozen origin")
+        scores = dict(self.by_seed)
+        if scores:
+            if set(scores) != set(SEEDS_PAPER) or any(not isinstance(value, ConfigurationScoresPaper) for value in scores.values()):
+                raise ValueError("MiniROCKET seed coverage differs from the frozen origin")
+            if any(value.feature_dimension != expected for value in scores.values()):
+                raise ValueError("MiniROCKET feature dimensions differ from the frozen origin")
+            n_test = next(iter(scores.values())).test_score.size
+            if any(value.train_oof.shape != next(iter(scores.values())).train_oof.shape or value.test_score.size != n_test for value in scores.values()):
+                raise ValueError("MiniROCKET seed score shapes differ")
+            expected_candidate = frozenset.intersection(*(frozenset(np.flatnonzero(upper_tail_pvalues(value.train_oof, value.test_score) <= .005).astype(int).tolist()) for value in scores.values()))
+            if frozenset(self.candidate) != expected_candidate:
+                raise ValueError("MiniROCKET candidate differs from frozen p-value intersection")
+            if any(index >= n_test for index in self.candidate):
+                raise ValueError("MiniROCKET candidate index exceeds TEST length")
+        elif self.candidate:
+            raise ValueError("empty MiniROCKET seed coverage cannot have candidates")
+        if any(type(index) is not int or index < 0 for index in self.candidate):
+            raise ValueError("MiniROCKET candidate indices are invalid")
+        object.__setattr__(self, "requested_kernels", requested)
+        object.__setattr__(self, "expected_dimension", expected)
+        object.__setattr__(self, "by_seed", MappingProxyType(scores))
+        object.__setattr__(self, "candidate", frozenset(self.candidate))
 
 
 @dataclass(frozen=True, slots=True)
 class MiniRocketResult:
     k1024: frozenset[int]
     k4096: frozenset[int]
-    by_kernel: dict[int, MiniRocketKernelResult]
+    by_kernel: Mapping[int, MiniRocketKernelResult]
+
+    def __post_init__(self) -> None:
+        kernels = dict(self.by_kernel)
+        if kernels:
+            if set(kernels) != {1024, 4096} or any(not isinstance(value, MiniRocketKernelResult) for value in kernels.values()):
+                raise ValueError("MiniROCKET kernel coverage differs from the frozen origin")
+            if kernels[1024].candidate != frozenset(self.k1024) or kernels[4096].candidate != frozenset(self.k4096):
+                raise ValueError("MiniROCKET result candidates differ from kernel evidence")
+        elif self.k1024 or self.k4096:
+            raise ValueError("empty MiniROCKET result cannot have candidates")
+        for candidate in (self.k1024, self.k4096):
+            if not isinstance(candidate, frozenset) or any(type(index) is not int or index < 0 for index in candidate):
+                raise ValueError("MiniROCKET result indices are invalid")
+        object.__setattr__(self, "by_kernel", MappingProxyType(kernels))
 
 
 class LocalGapModelPaper:

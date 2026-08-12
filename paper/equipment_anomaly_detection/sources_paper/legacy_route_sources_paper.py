@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from types import MappingProxyType
+from typing import Mapping
 
 import numpy as np
 
 from ..contracts_paper import RawDataset
 from .imaging_paper import EXP55_CONFIG_PAPER, EXP56_CONFIG_PAPER, imaging_score_pair_paper
-from .knn_paper import density_knn_score_pair_paper, scale_feature_pair_paper
+from .knn_paper import density_knn_score_pair_paper
 from .multirocket_hydra_paper import exp84_score_pair_paper
 from .preprocessing_paper import align_series_lengths_paper, z_normalize_paper
 from .rocket_paper import make_kernels_paper, reference_train_paper, rocket_feature_pair_paper, rocket_transform_paper
@@ -54,6 +56,27 @@ class FullFitScoreView:
     test_score: np.ndarray
     rate: float
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.name, str) or not self.name:
+            raise ValueError("full-fit score view requires a name")
+        train = np.asarray(self.train_score)
+        test = np.asarray(self.test_score)
+        if train.ndim != 1 or test.ndim != 1 or not len(train) or not len(test):
+            raise ValueError("full-fit score views require nonempty one-dimensional scores")
+        if train.dtype.kind not in "iuf" or test.dtype.kind not in "iuf":
+            raise ValueError("full-fit score views require numeric scores")
+        train_copy, test_copy = np.array(train, dtype=np.float64, copy=True), np.array(test, dtype=np.float64, copy=True)
+        if not np.isfinite(train_copy).all() or not np.isfinite(test_copy).all():
+            raise ValueError("full-fit score views require finite scores")
+        rate = float(self.rate)
+        if not np.isfinite(rate) or not 0.0 < rate <= 1.0:
+            raise ValueError("full-fit score view rate must be in (0, 1]")
+        train_copy.setflags(write=False)
+        test_copy.setflags(write=False)
+        object.__setattr__(self, "train_score", train_copy)
+        object.__setattr__(self, "test_score", test_copy)
+        object.__setattr__(self, "rate", rate)
+
     @property
     def threshold(self) -> float:
         return count_cap_threshold_paper(self.train_score, self.rate)[0]
@@ -83,8 +106,22 @@ class FullFitScoreView:
 @dataclass(frozen=True, slots=True)
 class ConfirmationBlocks:
     block_a: FullFitScoreView
-    block_b: FullFitScoreView
+    block_b_015: FullFitScoreView
+    block_b_01: FullFitScoreView
     block_c: FullFitScoreView
+
+    def __post_init__(self) -> None:
+        if self.block_a.rate != .015 or self.block_b_015.rate != .015 or self.block_b_01.rate != .01 or self.block_c.rate != .01:
+            raise ValueError("confirmation block rates differ from the frozen route")
+        if self.block_b_015.train_score.shape != self.block_b_01.train_score.shape or self.block_b_015.test_score.shape != self.block_b_01.test_score.shape:
+            raise ValueError("Block-B views must share score shapes")
+        if not np.array_equal(self.block_b_015.train_score, self.block_b_01.train_score) or not np.array_equal(self.block_b_015.test_score, self.block_b_01.test_score):
+            raise ValueError("Block-B thresholds must be views of the same scores")
+
+    @property
+    def block_b(self) -> FullFitScoreView:
+        """Compatibility alias for the Exp133 1.5% Block-B view."""
+        return self.block_b_015
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,12 +131,43 @@ class LegacyRouteEvidence:
     n_train: int
     n_test: int
     test_median_length: int
-    primary: dict[str, FullFitScoreView]
+    primary: Mapping[str, FullFitScoreView]
     exp84: FullFitScoreView
     confirmation_blocks: ConfirmationBlocks
     exp40_target_length: int | None = None
     transductive_target_length: int | None = None
     transductive_value_preprocessing: bool = True
+
+    def __post_init__(self) -> None:
+        required = frozenset(("rocket_exp40", "exp55_best", "exp56_best"))
+        if not isinstance(self.dataset, str) or not self.dataset or not isinstance(self.family, str) or not self.family:
+            raise ValueError("legacy evidence requires dataset and family")
+        if int(self.n_train) < 2 or int(self.n_test) < 1:
+            raise ValueError("legacy evidence requires at least two TRAIN and one TEST row")
+        if int(self.test_median_length) < 1:
+            raise ValueError("legacy evidence test median length must be positive")
+        primary = dict(self.primary)
+        if set(primary) != required or any(not isinstance(view, FullFitScoreView) for view in primary.values()):
+            raise ValueError("legacy evidence primary sources differ from the frozen route")
+        if any(view.train_score.size != int(self.n_train) or view.test_score.size != int(self.n_test) for view in primary.values()):
+            raise ValueError("legacy evidence source score shapes differ from raw rows")
+        if not isinstance(self.exp84, FullFitScoreView) or self.exp84.train_score.size != int(self.n_train) or self.exp84.test_score.size != int(self.n_test):
+            raise ValueError("legacy evidence Exp84 score shape differs from raw rows")
+        blocks = self.confirmation_blocks
+        if not isinstance(blocks, ConfirmationBlocks):
+            raise ValueError("legacy evidence requires confirmation blocks")
+        if any(view.train_score.size != int(self.n_train) or view.test_score.size != int(self.n_test) for view in (blocks.block_a, blocks.block_b_015, blocks.block_b_01, blocks.block_c)):
+            raise ValueError("confirmation score shapes differ from raw rows")
+        if self.exp40_target_length is not None and int(self.exp40_target_length) < 8:
+            raise ValueError("Exp40 target length must be at least eight")
+        if self.transductive_target_length is not None and not 8 <= int(self.transductive_target_length) <= 2048:
+            raise ValueError("transductive target length must be in [8, 2048]")
+        if self.transductive_value_preprocessing is not True:
+            raise ValueError("legacy evidence must record transductive value preprocessing")
+        object.__setattr__(self, "n_train", int(self.n_train))
+        object.__setattr__(self, "n_test", int(self.n_test))
+        object.__setattr__(self, "test_median_length", int(self.test_median_length))
+        object.__setattr__(self, "primary", MappingProxyType(primary))
 
     @property
     def exp84_family_guard(self) -> FullFitScoreView:
@@ -114,8 +182,8 @@ class LegacyRouteEvidence:
 def _fullfit_primary(name: str, train: np.ndarray, test: np.ndarray, target: int) -> FullFitScoreView:
     if name == "rocket_exp40":
         train_z, test_z = z_normalize_paper(train), z_normalize_paper(test)
+        # Exp40's origin sends raw ROCKET features directly to local-gap.
         features, query = rocket_feature_pair_paper(train_z, test_z, target, 256)
-        features, query = scale_feature_pair_paper(features, query)
         train_score, test_score = density_knn_score_pair_paper(features, query, 3, "local_gap")
     elif name == "exp55_best":
         train_score, test_score = imaging_score_pair_paper(train, test, EXP55_CONFIG_PAPER)
@@ -125,8 +193,7 @@ def _fullfit_primary(name: str, train: np.ndarray, test: np.ndarray, target: int
         train_score, test_score = exp84_score_pair_paper(z_normalize_paper(train), z_normalize_paper(test))
     else:
         raise ValueError(f"unknown full-fit primary source: {name}")
-    rate = .03 if name in {"rocket_exp40", "exp55_best"} else .02
-    return FullFitScoreView(name, np.asarray(train_score, dtype=float), np.asarray(test_score, dtype=float), rate)
+    return FullFitScoreView(name, np.asarray(train_score, dtype=float), np.asarray(test_score, dtype=float), .015)
 
 
 def _confirmation_blocks(train: np.ndarray, test: np.ndarray) -> ConfirmationBlocks:
@@ -138,7 +205,7 @@ def _confirmation_blocks(train: np.ndarray, test: np.ndarray) -> ConfirmationBlo
     b_train, b_test = density_knn_score_pair_paper(train_features[:, 512:], test_features[:, 512:], 3, "local_gap")
     kernels768 = make_kernels_paper(train_z.shape[1], num_kernels=768)[512:768]
     c_train, c_test = density_knn_score_pair_paper(rocket_transform_paper(reference, kernels768), rocket_transform_paper(test_z, kernels768), 3, "local_gap")
-    return ConfirmationBlocks(FullFitScoreView("block_a", a_train, a_test, .015), FullFitScoreView("block_b", b_train, b_test, .015), FullFitScoreView("block_c", c_train, c_test, .01))
+    return ConfirmationBlocks(FullFitScoreView("block_a", a_train, a_test, .015), FullFitScoreView("block_b", b_train, b_test, .015), FullFitScoreView("block_b", b_train, b_test, .01), FullFitScoreView("block_c", c_train, c_test, .01))
 
 
 def build_legacy_route_evidence(values: RawDataset) -> LegacyRouteEvidence:
@@ -148,13 +215,14 @@ def build_legacy_route_evidence(values: RawDataset) -> LegacyRouteEvidence:
         raise ValueError("legacy full-fit route requires finite raw values")
     exp40_target = max(8, int(values.metadata_length))
     all_lengths = [len(row) for row in (*values.train_rows, *values.test_rows)]
-    transductive_target = max(8, int(round(float(np.median(all_lengths)))))
+    transductive_target = min(max(8, int(round(float(np.median(all_lengths))))), 2048)
     exp40_train, exp40_test = align_series_lengths_paper(values.train_rows, exp40_target), align_series_lengths_paper(values.test_rows, exp40_target)
     route_train, route_test = align_series_lengths_paper(values.train_rows, transductive_target), align_series_lengths_paper(values.test_rows, transductive_target)
     primary = {"rocket_exp40": _fullfit_primary("rocket_exp40", exp40_train, exp40_test, exp40_target)}
-    for name in ("exp55_best", "exp56_best", "exp84"):
+    for name in ("exp55_best", "exp56_best"):
         primary[name] = _fullfit_primary(name, route_train, route_test, transductive_target)
-    return LegacyRouteEvidence(values.dataset, parse_family_paper(values.dataset), len(values.train_rows), len(values.test_rows), int(round(float(np.median([len(row) for row in values.test_rows])))), primary, primary["exp84"], _confirmation_blocks(exp40_train, exp40_test), exp40_target, transductive_target, True)
+    exp84 = _fullfit_primary("exp84", route_train, route_test, transductive_target)
+    return LegacyRouteEvidence(values.dataset, parse_family_paper(values.dataset), len(values.train_rows), len(values.test_rows), int(round(float(np.median([len(row) for row in values.test_rows])))), primary, exp84, _confirmation_blocks(exp40_train, exp40_test), exp40_target, transductive_target, True)
 
 
 __all__ = ["ConfirmationBlocks", "FullFitScoreView", "LegacyRouteEvidence", "WEAK_FAMILIES_PAPER", "build_legacy_route_evidence", "count_cap_threshold_paper", "parse_family_paper"]

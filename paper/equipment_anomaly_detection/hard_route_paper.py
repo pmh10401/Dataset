@@ -9,8 +9,11 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from hashlib import sha256
+import json
 import math
 from pathlib import Path
+from types import MappingProxyType
 from typing import Mapping
 
 import numpy as np
@@ -23,6 +26,7 @@ from .sources_paper.minirocket_paper import MiniRocketResult
 
 
 MAX_TOP_PAPER = 12
+CANONICAL_SMOKE_DATASET_COUNT_PAPER = 10
 EXP93_WEIGHTS_PAPER = {"rocket": .36, "exp55": .22, "exp56": .22, "exp84_fg": .12, "exp84_cap3": .08}
 EXP234_SOURCES_PAPER = ("rocket_exp40", "exp55_best", "exp56_best", "exp84", "canonical_normal_state")
 PROVENANCE_PAPER = {
@@ -48,6 +52,9 @@ class RouteLanes:
     priority: frozenset[int]
 
     def __post_init__(self) -> None:
+        for lane in (self.hard, self.standard, self.priority):
+            if not isinstance(lane, frozenset) or any(type(index) is not int or index < 0 for index in lane):
+                raise ValueError("route lanes must be non-negative frozensets")
         if self.hard & self.standard or self.hard & self.priority or self.standard & self.priority:
             raise ValueError("route lanes must be disjoint")
 
@@ -56,6 +63,10 @@ class RouteLanes:
 class SourceExpansion:
     minimum_two: frozenset[int]
     minimum_three: frozenset[int]
+
+    def __post_init__(self) -> None:
+        if not self.minimum_three <= self.minimum_two or any(type(index) is not int or index < 0 for index in self.minimum_two):
+            raise ValueError("source expansion lanes are invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +82,26 @@ class HardRouteResult:
     exp253: RouteLanes
     exact_normal_removed: frozenset[int]
     automatic_hard: frozenset[int]
+    n_test: int
+
+    def __post_init__(self) -> None:
+        if type(self.n_test) is not int or self.n_test < 1:
+            raise ValueError("hard route result requires a positive TEST size")
+        for lane in (self.exp74d, self.exp137, self.exp236, self.exp253):
+            if not isinstance(lane, RouteLanes):
+                raise ValueError("hard route stages require route lanes")
+        if not isinstance(self.exp234, SourceExpansion):
+            raise ValueError("hard route requires source expansion")
+        values = (self.exp89, self.exp90, self.exp93, self.promoted, self.exact_normal_removed, self.automatic_hard)
+        if any(not isinstance(value, frozenset) or any(type(index) is not int or index < 0 for index in value) for value in values):
+            raise ValueError("hard route result indices are invalid")
+        if self.promoted - self.exp236.standard or self.exp253.hard != self.exp236.hard | self.promoted or self.exp253.standard != self.exp236.standard - self.promoted:
+            raise ValueError("hard route promotion lanes are inconsistent")
+        if self.exact_normal_removed - self.exp253.hard or self.automatic_hard != self.exp253.hard - self.exact_normal_removed:
+            raise ValueError("exact normal guard lanes are inconsistent")
+        all_indices = set().union(self.exp74d.hard, self.exp74d.standard, self.exp74d.priority, self.exp89, self.exp90, self.exp93, self.exp137.hard, self.exp137.standard, self.exp137.priority, self.exp234.minimum_two, self.exp234.minimum_three, self.exp236.hard, self.exp236.standard, self.exp236.priority, self.promoted, self.exp253.hard, self.exp253.standard, self.exp253.priority, self.exact_normal_removed, self.automatic_hard)
+        if any(index >= self.n_test for index in all_indices):
+            raise ValueError("hard route index exceeds TEST length")
 
     @property
     def exp236_hard(self) -> frozenset[int]:
@@ -94,8 +125,9 @@ def _at_least(required: int, sets: tuple[set[int], ...]) -> set[int]:
     return {index for index, count in counts.items() if count >= required}
 
 
-def _order(view: FullFitScoreView, count: int = MAX_TOP_PAPER) -> list[int]:
-    return [int(index) for index in np.argsort(-np.asarray(view.test_score))[:max(1, min(int(count), len(view.test_score)))]]
+def _exp93_order(view: FullFitScoreView, count: int = MAX_TOP_PAPER) -> list[int]:
+    """Copy Exp93's stable descending primitive exactly."""
+    return [int(index) for index in np.argsort(-np.asarray(view.test_score), kind="stable")[:max(1, min(int(count), len(view.test_score)))]]
 
 
 def _ranked_primary(evidence: LegacyRouteEvidence, count: int) -> set[int]:
@@ -139,7 +171,7 @@ def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, f
             repair.add(rocket.order[0])
     exp90 = frozenset(set(exp89) | repair)
 
-    orders = {"rocket": _order(rocket), "exp55": _order(exp55), "exp56": _order(exp56), "exp84_fg": list(exp84_fg.order[:MAX_TOP_PAPER]) if exp84_fg.train_exceed_rate <= .015 else [], "exp84_cap3": list(exp84_cap3.order[:MAX_TOP_PAPER]) if exp84_cap3.train_exceed_rate <= .02 else []}
+    orders = {"rocket": _exp93_order(rocket), "exp55": _exp93_order(exp55), "exp56": _exp93_order(exp56), "exp84_fg": list(exp84_fg.order[:MAX_TOP_PAPER]) if exp84_fg.train_exceed_rate <= .015 else [], "exp84_cap3": list(exp84_cap3.order[:MAX_TOP_PAPER]) if exp84_cap3.train_exceed_rate <= .02 else []}
     maps = {name: {index: rank for rank, index in enumerate(order, 1)} for name, order in orders.items()}
     pool = set().union(*(set(order[:8]) for order in orders.values())) | set(exp90)
     scored: dict[int, tuple[float, int, int, float]] = {}
@@ -161,11 +193,11 @@ def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, f
 
 
 def replay_exp133_134_135_137(exp93: frozenset[int], blocks: ConfirmationBlocks) -> RouteLanes:
-    high, standard = set(exp93) & set(blocks.block_b.candidate), set(exp93) - set(blocks.block_b.candidate)
-    candidates = (set(blocks.block_a.candidate) & set(blocks.block_b.candidate)) - set(exp93)
+    high, standard = set(exp93) & set(blocks.block_b_015.candidate), set(exp93) - set(blocks.block_b_015.candidate)
+    candidates = (set(blocks.block_a.candidate) & set(blocks.block_b_01.candidate)) - set(exp93)
     review = set()
-    if len(blocks.block_b.train_score) > 10 and candidates:
-        review = {max(candidates, key=lambda index: (float(blocks.block_b.test_score[index]), -index))}
+    if len(blocks.block_b_01.train_score) > 10 and candidates:
+        review = {max(candidates, key=lambda index: (float(blocks.block_b_01.test_score[index]), -index))}
     confirmed = review & set(blocks.block_c.candidate)
     priority = confirmed if not high and bool(standard) else set()
     return RouteLanes(frozenset(high), frozenset(standard), frozenset(priority))
@@ -212,7 +244,7 @@ def replay_hard_route(values: RawDataset, sources: HardSourceBundle, mini: MiniR
     promoted = frozenset(set(exp236.standard) & (set(mini.k1024) | set(mini.k4096)))
     exp253 = RouteLanes(frozenset(set(exp236.hard) | set(promoted)), frozenset(set(exp236.standard) - set(promoted)), exp236.priority)
     automatic, removed = exact_normal_guard(exp253.hard, values.train_blobs, values.test_blobs)
-    return HardRouteResult(exp74d, exp89, exp90, exp93, exp137, exp234, exp236, promoted, exp253, removed, automatic)
+    return HardRouteResult(exp74d, exp89, exp90, exp93, exp137, exp234, exp236, promoted, exp253, removed, automatic, len(values.test_rows))
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,13 +253,36 @@ class ParityReport:
     differing: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class FrozenSmokeReport:
+    path: Path
+    sha256: str
+    datasets: tuple[str, ...]
+
+
+def freeze_canonical_smoke(new: Mapping[str, frozenset[int]], output_path: Path) -> FrozenSmokeReport:
+    """Create-only canonical new-route bytes before a separate oracle comparison."""
+    if not isinstance(new, Mapping) or len(new) != CANONICAL_SMOKE_DATASET_COUNT_PAPER:
+        raise ValueError("canonical smoke requires exactly ten dataset route outputs")
+    normalized: dict[str, list[int]] = {}
+    for dataset, indices in new.items():
+        if not isinstance(dataset, str) or not dataset or not isinstance(indices, frozenset) or any(type(index) is not int or index < 0 for index in indices):
+            raise ValueError("canonical smoke route outputs are invalid")
+        normalized[dataset] = sorted(indices)
+    payload = (json.dumps({"schema": "paper-route-smoke.v1", "routes": normalized}, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode("utf-8")
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("xb") as handle:
+        handle.write(payload)
+    return FrozenSmokeReport(path, sha256(payload).hexdigest(), tuple(sorted(normalized)))
+
+
 def compare_parity(new: Mapping[str, frozenset[int]], oracle_path: Path) -> ParityReport:
     """Parity-only seam; route/evidence construction cannot receive artifact paths."""
-    import json
     rows = [json.loads(line) for line in Path(oracle_path).read_text(encoding="utf-8").splitlines() if line.strip()]
     oracle = {str(row["dataset"]): frozenset(map(int, row["indices"])) for row in rows}
     differing = tuple(sorted(name for name, indices in new.items() if oracle.get(name) != frozenset(indices)))
     return ParityReport(not differing and set(new) == set(oracle), differing)
 
 
-__all__ = ["EXP234_SOURCES_PAPER", "HardRouteResult", "MAX_TOP_PAPER", "ParityReport", "RouteLanes", "SourceExpansion", "compare_parity", "exact_normal_guard", "minimum_source_expansion", "replay_exp133_134_135_137", "replay_exp74d_89_90_93", "replay_hard_route", "union_three_source_hard"]
+__all__ = ["CANONICAL_SMOKE_DATASET_COUNT_PAPER", "EXP234_SOURCES_PAPER", "FrozenSmokeReport", "HardRouteResult", "MAX_TOP_PAPER", "ParityReport", "RouteLanes", "SourceExpansion", "compare_parity", "exact_normal_guard", "freeze_canonical_smoke", "minimum_source_expansion", "replay_exp133_134_135_137", "replay_exp74d_89_90_93", "replay_hard_route", "union_three_source_hard"]

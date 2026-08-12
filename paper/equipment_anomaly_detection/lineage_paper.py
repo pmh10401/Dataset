@@ -149,11 +149,15 @@ def validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]:
 
 def _paper_source_helper_inventory(root: Path) -> frozenset[str]:
     source_root = root / "sources_paper"
-    return frozenset(
+    helpers = {
         path.relative_to(root).as_posix()
         for path in source_root.glob("*_paper.py")
         if "__pycache__" not in path.parts and path.name != "package_paper.py"
-    )
+    }
+    # The route is scientific copied logic too; provenance must bind its bytes
+    # and every frozen selector origin, not only scorer helpers under sources/.
+    helpers.add("hard_route_paper.py")
+    return frozenset(helpers)
 
 
 def validate_source_provenance_paper(paper_root: Path) -> dict[str, object]:
