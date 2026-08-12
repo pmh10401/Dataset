@@ -542,6 +542,23 @@ class PredictionAntigravityTests(unittest.TestCase):
             self.assertEqual(capture.authority, authority)
             self.assertEqual((len(capture.canonical_rows.splitlines()), len(capture.canonical_row_sha256), capture.authority.label_access_count), (96, 96, 0))
 
+    def test_descriptor_capture_rejects_same_byte_candidates_directory_replacement_antigravity(self) -> None:
+        """Break caught: capture accepts same-byte candidates replacement after retaining its fd."""
+        import shutil
+        from unittest.mock import patch
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as module
+        with tempfile.TemporaryDirectory(prefix="exp449_capture_swap_antigravity_") as temporary:
+            root = Path(temporary) / "run"; module.run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            original, calls, fired = module._read_pinned_antigravity, 0, False
+            def replace_after_candidates_open(fd: int) -> bytes:
+                nonlocal calls, fired
+                payload = original(fd); calls += 1
+                if calls > 6 and not fired:
+                    fired = True; retained = root / "retained_candidates_antigravity"; (root / "candidates_antigravity").rename(retained); shutil.copytree(retained, root / "candidates_antigravity")
+                return payload
+            with patch.object(module, "_read_pinned_antigravity", side_effect=replace_after_candidates_open), self.assertRaises(ValueError):
+                module.capture_frozen_prediction_authority_antigravity(root)
+
     def test_private_validator_rejects_candidate_symlink_and_root_extra_antigravity(self) -> None:
         """Break caught: traversing symlinks or accepting an unpinned prediction namespace."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415

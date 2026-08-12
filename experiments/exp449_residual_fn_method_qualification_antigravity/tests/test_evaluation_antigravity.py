@@ -92,6 +92,23 @@ class _DependenciesAntigravity:
 
 
 class EvaluationAntigravityTests(unittest.TestCase):
+    def test_postrename_failure_audit_records_phase_and_forensic_outcome_antigravity(self) -> None:
+        """Break caught: audit calls every retained-identity recovery failure precommit."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+        import json
+        with tempfile.TemporaryDirectory(prefix="exp449_audit_recovery_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original, calls = module.inspect_replay_at_fd_antigravity, 0
+            def fail_postrename(fd: int, **kwargs: object):
+                nonlocal calls; calls += 1
+                if calls == 2: raise OSError("postrename replay")
+                return original(fd, **kwargs)
+            with patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=fail_postrename), self.assertRaisesRegex(OSError, "postrename replay"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            audit = json.loads(dependencies.audit_path.read_text())
+            self.assertEqual(audit["phase"], "post_rename_replay")
+            self.assertEqual(audit["recovery"]["outcome"], "forensic_renamed")
+            self.assertFalse(dependencies.root.exists())
     def test_task6_requires_a_descriptor_captured_task5_authority_antigravity(self) -> None:
         """Break caught: Task6 mints a reduced authority from caller-projected rows."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity

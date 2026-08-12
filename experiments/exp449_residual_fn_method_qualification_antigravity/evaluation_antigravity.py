@@ -103,8 +103,9 @@ def _prediction_rows_antigravity(capture: object, authority: object) -> tuple[di
     return tuple(parsed)
 
 
-def _audit_antigravity(path: Path, error: BaseException, *, phase: str, label_opened: bool, labels_closed: bool, queries: int, rows: int) -> None:
-    payload = {"schema": "exp449.task6.failure", "phase": phase, "label_session_opened": label_opened, "label_session_closed": labels_closed, "label_queries": queries, "label_rows": rows, "error": f"{type(error).__name__}: {error}"}
+def _audit_antigravity(path: Path, error: BaseException, *, phase: str, label_opened: bool, labels_closed: bool, queries: int, rows: int, recovery: object) -> None:
+    notes = tuple(getattr(error, "__notes__", ()))
+    payload = {"schema": "exp449.task6.failure", "phase": phase, "label_session_opened": label_opened, "label_session_closed": labels_closed, "label_queries": queries, "label_rows": rows, "error": f"{type(error).__name__}: {error}", "notes": list(notes), "recovery": recovery}
     try:
         write_create_only_antigravity(path, canonical_json_bytes_antigravity(payload))
     except BaseException as audit_error:
@@ -182,6 +183,8 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
     staging_fd: int | None = None
     staging_name: str | None = None
     primary: BaseException | None = None
+    phase = "precommit"
+    recovery: dict[str, object] = {"outcome": "not_needed", "forensic_basename": None, "errors": []}
     try:
         staging_name = f".{root.name}.staging_{os.urandom(16).hex()}_antigravity"
         os.mkdir(staging_name, 0o700, dir_fd=parent_fd)
@@ -201,11 +204,14 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
         _rename_no_replace_at_antigravity(parent_fd, staging_name, root.name)
         staging_name = None
         # The canonical name is now fallible and must be verified through the retained FD.
+        phase = "post_rename_identity"
         _assert_directory_entry_identity_at_antigravity(parent_fd, root.name, retained_identity)
+        phase = "post_rename_replay"
         inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority)
         if _identity_antigravity(os.fstat(staging_fd)) != _identity_antigravity(retained_identity):
             raise ValueError("publication descriptor identity differs after rename")
         _assert_directory_entry_identity_at_antigravity(parent_fd, root.name, retained_identity)
+        phase = "post_rename_fsync"
         _fsync_directory_antigravity(staging_fd)
         _fsync_directory_antigravity(parent_fd)
     except BaseException as error:
@@ -223,8 +229,14 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
                     _rename_no_replace_at_antigravity(parent_fd, root.name, forensic)
                     _assert_directory_entry_identity_at_antigravity(parent_fd, forensic, retained)
                     _fsync_directory_antigravity(parent_fd)
+                    recovery = {"outcome": "forensic_renamed", "forensic_basename": forensic, "errors": []}
+                elif current is not None:
+                    recovery = {"outcome": "foreign_canonical_preserved", "forensic_basename": None, "errors": []}
         except BaseException as recovery_error:
             error.add_note(f"recovery_error={type(recovery_error).__name__}: {recovery_error}")
+            recovery = {"outcome": "recovery_failed", "forensic_basename": None, "errors": [f"{type(recovery_error).__name__}: {recovery_error}"]}
+        setattr(error, "_exp449_phase_antigravity", phase)
+        setattr(error, "_exp449_recovery_antigravity", recovery)
         raise
     finally:
         try:
@@ -322,7 +334,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         if session is not None and opened and not closed:
             try: session.close_antigravity(); closed = True
             except BaseException as close_error: error.add_note(f"label_close_error={type(close_error).__name__}: {close_error}")
-        _audit_antigravity(audit_path, error, phase=phase, label_opened=opened, labels_closed=closed, queries=queries, rows=label_rows)
+        _audit_antigravity(audit_path, error, phase=getattr(error, "_exp449_phase_antigravity", phase), label_opened=opened, labels_closed=closed, queries=queries, rows=label_rows, recovery=getattr(error, "_exp449_recovery_antigravity", {"outcome": "not_needed", "forensic_basename": None, "errors": []}))
         raise
 
 

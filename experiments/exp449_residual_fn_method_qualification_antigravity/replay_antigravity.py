@@ -36,6 +36,15 @@ _EXP448_TARGET_IDENTITIES_ANTIGRAVITY = (
 _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY = "0c87af592ea66e2ff479fe8a5fc1ac2222084287d6eae617530f18ec4090bf43"
 
 
+def _close_with_primary_note_antigravity(descriptor: int, primary: BaseException | None) -> None:
+    try:
+        os.close(descriptor)
+    except BaseException as close_error:
+        if primary is None:
+            raise
+        primary.add_note(f"close_error={type(close_error).__name__}: {close_error}")
+
+
 @dataclass(frozen=True, slots=True)
 class FrozenEvaluationAntigravity:
     reviewed_commit: str
@@ -84,6 +93,7 @@ def _pin_leaves_at_fd_antigravity(root_fd: int) -> dict[str, bytes]:
     identities: dict[str, tuple[int, int, int, int, int, int, int]] = {}
     for name in _LEAVES_ANTIGRAVITY:
         leaf_fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=root_fd)
+        primary: BaseException | None = None
         try:
             info = os.fstat(leaf_fd)
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
@@ -92,8 +102,11 @@ def _pin_leaves_at_fd_antigravity(root_fd: int) -> dict[str, bytes]:
             leaves[name] = b"".join(iter(lambda: os.read(leaf_fd, 1 << 20), b""))
             if _identity_antigravity(os.fstat(leaf_fd)) != identities[name]:
                 raise ValueError("publication leaf changed while pinned")
+        except BaseException as error:
+            primary = error
+            raise
         finally:
-            os.close(leaf_fd)
+            _close_with_primary_note_antigravity(leaf_fd, primary)
     if _identity_antigravity(os.fstat(root_fd)) != before:
         raise ValueError("publication directory changed while pinned")
     for name, identity in identities.items():
@@ -110,6 +123,7 @@ def _pin_leaves_antigravity(root: Path) -> dict[str, bytes]:
     if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode):
         raise ValueError("publication root is unsafe")
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    primary: BaseException | None = None
     try:
         if _identity_antigravity(root_info) != _identity_antigravity(os.fstat(root_fd)):
             raise ValueError("publication directory changed while pinned")
@@ -117,8 +131,11 @@ def _pin_leaves_antigravity(root: Path) -> dict[str, bytes]:
         if _identity_antigravity(os.lstat(root)) != _identity_antigravity(os.fstat(root_fd)):
             raise ValueError("publication directory changed while pinned")
         return leaves
+    except BaseException as error:
+        primary = error
+        raise
     finally:
-        os.close(root_fd)
+        _close_with_primary_note_antigravity(root_fd, primary)
 
 
 def _json_antigravity(leaves: Mapping[str, bytes], name: str) -> object:
@@ -240,7 +257,7 @@ def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_
     metric_rows, family_rows = _jsonl_antigravity(leaves, "candidate_metrics_antigravity.jsonl"), _jsonl_antigravity(leaves, "family_metrics_antigravity.jsonl")
     bootstrap, decision, dashboard = (_json_antigravity(leaves, name) for name in ("bootstrap_antigravity.json", "decision_antigravity.json", "dashboard_snapshot_antigravity.json"))
     expected_registry = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
-    if not isinstance(context, dict) or set(context) != {"schema", "reviewed_commit", "label_access_count", "target_datasets", "target_authority_sha256", "exp448_target_identity_sha256"} or context.get("schema") != "exp449" or context.get("reviewed_commit") != (evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None) or context.get("label_access_count") != 1 or type(context["target_datasets"]) is not list or context["target_authority_sha256"] != sha256(canonical_json_bytes_antigravity(context["target_datasets"])).hexdigest() or context["exp448_target_identity_sha256"] != _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY or tuple((row.get("dataset"), row.get("family")) for row in context["target_datasets"] if isinstance(row, dict)) != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or compatibility != {"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"} or registry != expected_registry:
+    if not isinstance(context, dict) or set(context) != {"schema", "reviewed_commit", "label_access_count", "target_datasets", "target_authority_sha256", "exp448_target_identity_sha256"} or context.get("schema") != "exp449" or context.get("reviewed_commit") != expected_prediction_authority.authority.reviewed_commit or context.get("reviewed_commit") != (evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None) or context.get("label_access_count") != 1 or type(context["target_datasets"]) is not list or context["target_authority_sha256"] != sha256(canonical_json_bytes_antigravity(context["target_datasets"])).hexdigest() or context["exp448_target_identity_sha256"] != _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY or tuple((row.get("dataset"), row.get("family")) for row in context["target_datasets"] if isinstance(row, dict)) != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or compatibility != {"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"} or registry != expected_registry:
         raise ValueError("publication context or compatibility differs")
     expected_manifest = {"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(leaves["frozen_predictions_antigravity.jsonl"]).hexdigest(), "task5_reviewed_commit": expected_prediction_authority.authority.reviewed_commit, "task5_inventory": list(expected_prediction_authority.authority.inventory), "task5_leaf_sha256": dict(expected_prediction_authority.authority.leaf_sha256), "task5_aggregate_sha256": expected_prediction_authority.authority.aggregate_sha256, "task5_context_sha256": expected_prediction_authority.context_sha256, "task5_source_identity_sha256": expected_prediction_authority.source_identity_sha256, "task5_manifest_sha256": expected_prediction_authority.manifest_sha256, "task5_label_access_count": 0}
     if not isinstance(manifest, dict) or manifest != expected_manifest:

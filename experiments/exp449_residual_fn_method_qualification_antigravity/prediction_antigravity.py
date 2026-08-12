@@ -426,61 +426,52 @@ class FrozenPredictionCaptureAntigravity:
 
 
 def capture_frozen_prediction_authority_antigravity(root: Path | None = None, authority: FrozenPredictionAuthorityAntigravity | None = None) -> FrozenPredictionCaptureAntigravity:
-    """Capture Task-5 from a descriptor-validated root without sources, labels, or aeon.
-
-    The caller supplies the actual Task-5 authority returned by its lifecycle; projected
-    Task-6 rows are derived here only after validating the full root twice.
-    """
+    """Capture Task-5 in one retained root/candidates descriptor transaction."""
     root = _OFFICIAL_ROOT_ANTIGRAVITY if root is None else root
-    if not isinstance(root, Path):
-        raise ValueError("Task5 prediction capture differs")
-    if authority is None:
-        manifest_for_authority = _read_nofollow_json_antigravity(root / "prediction_manifest_antigravity.json")
-        if (type(manifest_for_authority) is not dict or type(manifest_for_authority.get("reviewed_commit")) is not str
-                or type(manifest_for_authority.get("inventory")) is not list or type(manifest_for_authority.get("leaf_sha256")) is not dict
-                or type(manifest_for_authority.get("aggregate_sha256")) is not str):
-            raise ValueError("Task5 prediction capture differs")
-        inventory = tuple(manifest_for_authority["inventory"])
-        names: list[str] = []
-        for relative in inventory:
-            if type(relative) is not str:
-                raise ValueError("Task5 prediction capture differs")
-            leaf = _read_nofollow_json_antigravity(root / relative)
-            if type(leaf) is not dict or type(leaf.get("candidate_name")) is not str:
-                raise ValueError("Task5 prediction capture differs")
-            names.append(leaf["candidate_name"])
-        authority = FrozenPredictionAuthorityAntigravity(
-            manifest_for_authority["reviewed_commit"], 16, 96, tuple(names), inventory,
-            tuple((name, manifest_for_authority["leaf_sha256"].get(name)) for name in inventory),
-            manifest_for_authority["aggregate_sha256"], manifest_for_authority.get("label_access_count"),
-        )
-    if type(authority) is not FrozenPredictionAuthorityAntigravity:
-        raise ValueError("Task5 prediction capture differs")
-    validate_prediction_root_antigravity(root, authority)
-    context = _read_nofollow_json_antigravity(root / "context_antigravity.json")
-    manifest = _read_nofollow_json_antigravity(root / "prediction_manifest_antigravity.json")
-    if type(context) is not dict or type(manifest) is not dict:
-        raise ValueError("Task5 prediction capture differs")
-    projected: list[dict[str, object]] = []
-    for relative in authority.inventory:
-        leaf = _read_nofollow_json_antigravity(root / relative)
-        if type(leaf) is not dict:
-            raise ValueError("Task5 prediction capture differs")
-        projected.append({key: leaf[key] for key in ("sequence", "candidate_name", "dataset", "family", "method", "indices", "target_length")})
-    rows = b"".join(canonical_json_bytes_antigravity(row) for row in projected)
-    row_sha256 = tuple(hashlib.sha256(line).hexdigest() for line in rows.splitlines())
-    aggregate = hashlib.sha256("".join(row_sha256).encode("ascii")).hexdigest()
-    source = context.get("source_identity")
-    if type(source) is not dict:
-        raise ValueError("Task5 prediction capture differs")
-    # Revalidate after all reads so no returned bytes survive a namespace replacement.
-    validate_prediction_root_antigravity(root, authority)
-    return FrozenPredictionCaptureAntigravity(
-        authority, rows, row_sha256, aggregate,
-        hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(),
-        hashlib.sha256(canonical_json_bytes_antigravity(source)).hexdigest(),
-        hashlib.sha256(canonical_json_bytes_antigravity(manifest)).hexdigest(),
-    )
+    if not isinstance(root, Path): raise ValueError("Task5 prediction capture differs")
+    root_fd = candidates_fd = -1; pinned: dict[tuple[int, str], tuple[int, tuple[int, int, int, int, int, int, int], bytes]] = {}; primary: BaseException | None = None
+    try:
+        root_before = os.lstat(root); root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW); root_identity = _fd_identity_antigravity(os.fstat(root_fd))
+        expected_root = {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.txt", "progress_antigravity.jsonl", "pid_antigravity.json", "candidates_antigravity", "prediction_manifest_antigravity.json"}
+        if _fd_identity_antigravity(root_before) != root_identity or set(os.listdir(root_fd)) != expected_root: raise ValueError("Task5 prediction capture differs")
+        candidates_fd = os.open("candidates_antigravity", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=root_fd); candidates_identity = _fd_identity_antigravity(os.fstat(candidates_fd))
+        def pin(parent: int, tag: int, name: str) -> bytes:
+            before = os.stat(name, dir_fd=parent, follow_symlinks=False); fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent); identity = _fd_identity_antigravity(os.fstat(fd))
+            if not stat.S_ISREG(identity[2]) or identity[3] != 1 or identity != _fd_identity_antigravity(before): raise ValueError("Task5 prediction capture differs")
+            payload = _read_pinned_antigravity(fd); pinned[(tag, name)] = (fd, identity, payload); return payload
+        root_payloads = {name: pin(root_fd, 0, name) for name in expected_root - {"candidates_antigravity"}}
+        context, manifest = strict_json_bytes_antigravity(root_payloads["context_antigravity.json"]), strict_json_bytes_antigravity(root_payloads["prediction_manifest_antigravity.json"])
+        if not isinstance(context, dict) or not isinstance(manifest, dict): raise ValueError("Task5 prediction capture differs")
+        inventory = tuple(manifest.get("inventory", ())); leaf_map = manifest.get("leaf_sha256")
+        if type(inventory) is not tuple or len(inventory) != 96 or len(set(inventory)) != 96 or not isinstance(leaf_map, dict) or set(os.listdir(candidates_fd)) != {Path(name).name for name in inventory}: raise ValueError("Task5 prediction capture differs")
+        candidates = [strict_json_bytes_antigravity(pin(candidates_fd, 1, Path(relative).name)) for relative in inventory]
+        if any(not isinstance(row, dict) for row in candidates): raise ValueError("Task5 prediction capture differs")
+        digests = tuple((relative, hashlib.sha256(canonical_json_bytes_antigravity(row)).hexdigest()) for relative, row in zip(inventory, candidates, strict=True)); names = tuple(row.get("candidate_name") for row in candidates)
+        aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
+        reconstructed = FrozenPredictionAuthorityAntigravity(manifest.get("reviewed_commit"), 16, 96, names, inventory, digests, aggregate, manifest.get("label_access_count"))
+        if authority is not None and (type(authority) is not FrozenPredictionAuthorityAntigravity or authority != reconstructed): raise ValueError("Task5 prediction capture differs")
+        if manifest != {"schema": "exp449_prediction_manifest", "reviewed_commit": reconstructed.reviewed_commit, "inventory": list(inventory), "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(root_payloads["context_antigravity.json"]).hexdigest(), "label_access_count": 0, "dataset_units": 96} or context.get("reviewed_commit") != reconstructed.reviewed_commit or context.get("label_access_count") != 0 or type(context.get("source_identity")) is not dict: raise ValueError("Task5 prediction capture differs")
+        projected = [{key: row[key] for key in ("sequence", "candidate_name", "dataset", "family", "method", "indices", "target_length")} for row in candidates]
+        rows = b"".join(canonical_json_bytes_antigravity(row) for row in projected); row_sha256 = tuple(hashlib.sha256(line).hexdigest() for line in rows.splitlines())
+        for (tag, name), (fd, identity, _payload) in pinned.items():
+            parent = root_fd if tag == 0 else candidates_fd
+            if _fd_identity_antigravity(os.fstat(fd)) != identity or _fd_identity_antigravity(os.stat(name, dir_fd=parent, follow_symlinks=False)) != identity: raise ValueError("Task5 prediction capture differs")
+        if _fd_identity_antigravity(os.fstat(root_fd)) != root_identity or _fd_identity_antigravity(os.fstat(candidates_fd)) != candidates_identity or _fd_identity_antigravity(os.stat("candidates_antigravity", dir_fd=root_fd, follow_symlinks=False)) != candidates_identity or _fd_identity_antigravity(os.lstat(root)) != root_identity or set(os.listdir(root_fd)) != expected_root: raise ValueError("Task5 prediction capture differs")
+        return FrozenPredictionCaptureAntigravity(reconstructed, rows, row_sha256, hashlib.sha256("".join(row_sha256).encode("ascii")).hexdigest(), hashlib.sha256(root_payloads["context_antigravity.json"]).hexdigest(), hashlib.sha256(canonical_json_bytes_antigravity(context["source_identity"])).hexdigest(), hashlib.sha256(root_payloads["prediction_manifest_antigravity.json"]).hexdigest())
+    except BaseException as error:
+        primary = error; raise
+    finally:
+        for fd, _identity, _payload in pinned.values():
+            try: os.close(fd)
+            except BaseException as close_error:
+                if primary is None: raise
+                primary.add_note(f"capture_close_error={type(close_error).__name__}: {close_error}")
+        for fd in (candidates_fd, root_fd):
+            if fd >= 0:
+                try: os.close(fd)
+                except BaseException as close_error:
+                    if primary is None: raise
+                    primary.add_note(f"capture_close_error={type(close_error).__name__}: {close_error}")
 
 
 @dataclass(frozen=True, slots=True)

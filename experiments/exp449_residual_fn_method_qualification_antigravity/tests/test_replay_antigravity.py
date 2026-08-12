@@ -11,6 +11,34 @@ from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_a
 
 
 class ReplayAntigravityTests(unittest.TestCase):
+    def test_replay_rejects_rehashed_self_consistent_reviewed_commit_antigravity(self) -> None:
+        """Break caught: context/evaluation can agree on a commit different from Task5 authority."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
+        with tempfile.TemporaryDirectory(prefix="exp449_commit_provenance_antigravity_") as temporary:
+            _expected, root = self._publication_antigravity(temporary)
+            for name in ("context_antigravity.json", "evaluation_antigravity.json"):
+                path = root / name; payload = json.loads(path.read_text()); payload["reviewed_commit"] = "b" * 40; path.write_bytes(canonical_json_bytes_antigravity(payload))
+            hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text())
+            for name in ("context_antigravity.json", "evaluation_antigravity.json"):
+                hashes[name] = hashlib.sha256((root / name).read_bytes()).hexdigest()
+            (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
+            with self.assertRaises(ValueError):
+                inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
+
+    def test_replay_preserves_primary_read_error_when_leaf_close_fails_antigravity(self) -> None:
+        """Break caught: raw leaf close replaces a semantic/read primary error."""
+        from unittest.mock import patch
+        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as module
+        with tempfile.TemporaryDirectory(prefix="exp449_replay_close_antigravity_") as temporary:
+            _expected, root = self._publication_antigravity(temporary)
+            authority = self._trusted_authority_antigravity()
+            original_read, original_close = module.os.read, module.os.close
+            def fail_read(fd: int, size: int) -> bytes: raise OSError("primary read")
+            def close_then_fail(fd: int) -> None: original_close(fd); raise OSError("close failure")
+            with patch.object(module.os, "read", side_effect=fail_read), patch.object(module.os, "close", side_effect=close_then_fail):
+                with self.assertRaisesRegex(OSError, "primary read") as raised:
+                    module.inspect_replay_at_antigravity(root, expected_prediction_authority=authority)
+            self.assertIn("close_error=OSError: close failure", "\n".join(raised.exception.__notes__))
     def test_replay_rejects_rehashed_extra_candidate_evidence_key_antigravity(self) -> None:
         """Break caught: a recomputed hash map permits a third method in one family evidence map."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
