@@ -107,4 +107,59 @@ abstain이어야 freeze가 성공한다. shard가 하나라도 없거나 추가�
 - 파일 변조: 원인을 확인하고 새 root에서 전체 identity를 다시 만든다.
 
 TEST label을 여는 `evaluate` 단계는 frozen manifest 검증 기능과 함께 별도
-구현·검증한다. 그 전까지 score root를 성능 결과로 해석하지 않는다.
+구현되어 있다. 그 전까지 score root를 성능 결과로 해석하지 않는다.
+
+## 5. 평가와 보고서
+
+freeze가 성공한 뒤에만 다음 명령을 실행한다.
+
+```bash
+python3 scratch/run_paper_public_baselines.py evaluate \
+  --run-root /Users/mac/Documents/Dataset/paper_public_baselines_v1 \
+  --exp448-root /Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812
+
+python3 scratch/run_paper_public_baselines.py report \
+  --run-root /Users/mac/Documents/Dataset/paper_public_baselines_v1
+
+python3 scratch/run_paper_public_baselines.py report \
+  --run-root /Users/mac/Documents/Dataset/paper_public_baselines_v1 \
+  --verify-only
+```
+
+`evaluate`는 frozen score manifest와 모든 shard digest를 먼저 검증한 뒤
+TEST label capability를 지연 import한다. `report --verify-only`는 CSV, JSON,
+Markdown을 다시 계산해 저장된 byte와 정확히 같은지 검증한다.
+
+최종 문서는 다음 경로에 생성된다.
+
+- `report_public_baselines/PAPER_PUBLIC_BASELINE_RESULT_KO.md`
+- `report_public_baselines/public_baseline_summary.csv`
+- `report_public_baselines/public_baseline_dataset_metrics.csv`
+- `report_public_baselines/public_baseline_bootstrap.json`
+
+## 6. 2026-08-12 공식 실행 범위
+
+6개 방법의 50-epoch pilot 결과, Deep SVDD는 큰 데이터셋에서 단일 pair가
+132초까지 소요되었고 DROCC는 첫 3개만으로 평균 29.28초였다. 전체 TRAIN
+크기·길이 분포를 적용한 DROCC 예상치는 약 21시간이었다. 사전등록 파라미터를
+줄이지 않고 다음과 같이 산출물을 분리했다.
+
+- 논문 사용 가능:
+  `/Users/mac/Documents/Dataset/paper_public_baselines_classical_v1`
+  — 고전 공개 방법 4종, 1,117개 전체, freeze/evaluate/report 완료
+- partial evidence:
+  `/Users/mac/Documents/Dataset/paper_public_baselines_deep_partial_v1`
+  — Deep SVDD 50 epochs 107개 완료, freeze/evaluate하지 않음
+- superseded evidence:
+  `/Users/mac/Documents/Dataset/paper_public_baselines_v1_superseded_unbound_dispatch_20260812`
+  — 초기 source-hash inventory 누락으로 논문에서 제외
+
+고전 전용 공식 root는 다음 prepare 명령으로 method population 자체를 4종으로
+고정했다.
+
+```bash
+python3 scratch/run_paper_public_baselines.py prepare \
+  --db-path /Users/mac/Documents/Dataset/univariate_ts.db \
+  --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_v1 \
+  --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest
+```

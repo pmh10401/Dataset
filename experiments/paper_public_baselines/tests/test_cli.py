@@ -13,11 +13,18 @@ from experiments.paper_public_baselines.artifacts import (
     write_create_only_bytes,
 )
 from experiments.paper_public_baselines.cli import main as cli_main, parse_method_list
-from experiments.paper_public_baselines.config import ALPHAS, METHOD_IDS, SEED
+from experiments.paper_public_baselines.config import (
+    ALPHAS,
+    CLASSICAL_METHOD_IDS,
+    METHOD_IDS,
+    SEED,
+)
 from experiments.paper_public_baselines.tests.test_runner import _build_database
 
 
-def _write_toy_prepared(root: Path) -> Path:
+def _write_toy_prepared(
+    root: Path, methods: tuple[str, ...] = METHOD_IDS
+) -> Path:
     database = root / "toy.sqlite"
     _build_database(database)
     payload = {
@@ -29,7 +36,7 @@ def _write_toy_prepared(root: Path) -> Path:
         "full_dataset_count": 1,
         "datasets": ["toy"],
         "limited_for_smoke": True,
-        "methods": list(METHOD_IDS),
+        "methods": list(methods),
         "alphas": list(ALPHAS),
         "seed": SEED,
         "contains_test_labels": False,
@@ -81,6 +88,43 @@ class CliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(tuple(record["method_id"] for record in payload["records"]), METHOD_IDS)
         self.assertTrue(all(record["selected_backend"] == "cpu" for record in payload["records"]))
+
+    def test_classical_only_authority_assesses_only_registered_methods(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_root = _write_toy_prepared(
+                Path(directory), methods=CLASSICAL_METHOD_IDS
+            )
+
+            exit_code = cli_main(["assess-mlx", "--run-root", str(run_root)])
+            payload = json.loads(
+                run_root.joinpath("acceleration.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            tuple(record["method_id"] for record in payload["records"]),
+            CLASSICAL_METHOD_IDS,
+        )
+
+    def test_score_rejects_method_outside_prepared_subset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_root = _write_toy_prepared(
+                Path(directory), methods=CLASSICAL_METHOD_IDS
+            )
+            cli_main(["assess-mlx", "--run-root", str(run_root)])
+
+            with self.assertRaisesRegex(ValueError, "prepared method"):
+                cli_main(
+                    [
+                        "score",
+                        "--run-root",
+                        str(run_root),
+                        "--methods",
+                        "deep_svdd_1d",
+                        "--workers",
+                        "1",
+                    ]
+                )
 
     def test_score_refuses_to_start_before_mlx_assessment(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -135,6 +179,11 @@ class CliTests(unittest.TestCase):
         self.assertNotIn(
             "experiments.paper_public_baselines.label_access", sys.modules
         )
+
+    def test_report_dispatch_requires_verified_evaluation_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "evaluation artifact"):
+                cli_main(["report", "--run-root", directory])
 
 
 if __name__ == "__main__":

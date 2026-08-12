@@ -16,7 +16,7 @@ from experiments.paper_public_baselines.evaluation import (
     matched_budget_for_dataset,
     write_evaluation_bundle,
 )
-from experiments.paper_public_baselines.config import METHOD_IDS
+from experiments.paper_public_baselines.config import CLASSICAL_METHOD_IDS, METHOD_IDS
 from experiments.paper_public_baselines.runner import (
     ScoreRunConfig,
     freeze_score_root,
@@ -97,6 +97,23 @@ class EvaluationBoundaryTests(unittest.TestCase):
         self.assertEqual(rows["macro"]["average_precision"], 1.0)
         self.assertEqual(rows["continuous_dataset_count"], 1)
 
+    def test_micro_rank_metrics_use_cross_dataset_calibrated_scores(self) -> None:
+        rows = evaluate_rows(
+            predictions={"a": (), "b": ()},
+            labels={"a": (0, 1), "b": (0, 1)},
+            scores={
+                "a": np.asarray([0.1, 0.9]),
+                "b": np.asarray([100.0, 99.0]),
+            },
+            micro_scores={
+                "a": np.asarray([0.1, 0.9]),
+                "b": np.asarray([0.8, 0.2]),
+            },
+        )
+
+        self.assertAlmostEqual(rows["micro"]["average_precision"], 5.0 / 6.0)
+        self.assertAlmostEqual(rows["macro"]["average_precision"], 0.75)
+
     def test_complete_injected_evaluation_separates_proposal_and_six_baselines(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -136,6 +153,43 @@ class EvaluationBoundaryTests(unittest.TestCase):
             any(row["is_external_baseline"] is False for row in bundle.summaries)
         )
         self.assertEqual(len(artifact_sha), 64)
+
+    def test_complete_classical_subset_evaluation_is_explicit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / "toy.sqlite"
+            _build_database(database)
+            run_root = root / "run"
+            config = ScoreRunConfig(
+                db_path=database,
+                run_root=run_root,
+                datasets=("toy",),
+                methods=CLASSICAL_METHOD_IDS,
+                workers=1,
+                database_sha256=hashlib.sha256(database.read_bytes()).hexdigest(),
+            )
+            run_methods(config, scorer=CountingScorer())
+            freeze_score_root(run_root)
+            authority = ProposalAuthority(
+                dataset_order=("toy",),
+                alerts_by_dataset={"toy": frozenset({1})},
+                expected_confusion=(1, 0, 0, 1),
+                author_ablation=(),
+                reviewed_commit="a" * 40,
+                artifact_map_sha256="b" * 64,
+            )
+
+            bundle = evaluate_frozen_scores(
+                run_root,
+                root / "exp448",
+                label_loader=lambda order: {"toy": (0, 1)},
+                proposal_loader=lambda path: authority,
+            )
+
+        self.assertEqual(bundle.metadata["method_count"], 4)
+        self.assertEqual(bundle.metadata["planned_deep_methods_complete"], False)
+        self.assertEqual(len(bundle.summaries), 34)
+        self.assertEqual(len(bundle.bootstrap), 32)
 
 
 if __name__ == "__main__":

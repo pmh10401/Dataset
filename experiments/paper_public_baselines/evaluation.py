@@ -17,8 +17,8 @@ from .artifacts import (
     sha256_file,
     write_create_only_bytes,
 )
-from .calibration import matched_top_k
-from .config import ALPHAS, METHOD_IDS, SEED
+from .calibration import matched_top_k, upper_tail_p_values
+from .config import ALPHAS, DEEP_METHOD_IDS, METHOD_IDS, SEED
 from .runner import verify_score_root
 from .statistics import bootstrap_draws, paired_bootstrap
 
@@ -70,6 +70,7 @@ def evaluate_rows(
     predictions: Mapping[str, Sequence[int]],
     labels: Mapping[str, Sequence[int]],
     scores: Mapping[str, np.ndarray] | None = None,
+    micro_scores: Mapping[str, np.ndarray] | None = None,
 ) -> dict[str, object]:
     """Aggregate exact dataset-level confusion plus optional AP/AUROC."""
     if tuple(predictions) != tuple(labels):
@@ -97,8 +98,16 @@ def evaluate_rows(
             score_values = np.asarray(scores[dataset], dtype=np.float64)
             if score_values.shape != (len(label_values),) or not np.isfinite(score_values).all():
                 raise ValueError(f"scores are invalid for dataset={dataset}")
+            micro_score_values = np.asarray(
+                micro_scores[dataset]
+                if micro_scores is not None and dataset in micro_scores
+                else score_values,
+                dtype=np.float64,
+            )
+            if micro_score_values.shape != score_values.shape or not np.isfinite(micro_score_values).all():
+                raise ValueError(f"micro scores are invalid for dataset={dataset}")
             continuous_labels.append(label_values)
-            continuous_scores.append(score_values)
+            continuous_scores.append(micro_score_values)
             if len(np.unique(label_values)) == 2:
                 ap = float(average_precision_score(label_values, score_values))
                 auroc = float(roc_auc_score(label_values, score_values))
@@ -158,8 +167,8 @@ def evaluate_frozen_scores(
     run_config = read_strict_json(root / "run_config.json")
     datasets = _string_tuple(run_config.get("datasets"), "datasets")
     methods = _string_tuple(run_config.get("methods"), "methods")
-    if methods != METHOD_IDS:
-        raise ValueError("frozen score root does not cover all public methods")
+    if any(method not in METHOD_IDS for method in methods):
+        raise ValueError("frozen score root contains an unknown public method")
 
     proposal = (
         proposal_loader(Path(exp448_root))
@@ -233,6 +242,7 @@ def evaluate_frozen_scores(
             ):
                 predictions: dict[str, tuple[int, ...]] = {}
                 score_rows: dict[str, np.ndarray] = {}
+                micro_score_rows: dict[str, np.ndarray] = {}
                 status_by_dataset: dict[str, str] = {}
                 completed = abstained = 0
                 for dataset in support_datasets:
@@ -243,6 +253,10 @@ def evaluate_frozen_scores(
                         completed += 1
                         scores = np.asarray(shard["test_scores"], dtype=np.float64)
                         score_rows[dataset] = scores
+                        micro_score_rows[dataset] = 1.0 - upper_tail_p_values(
+                            np.asarray(shard["train_oof_scores"], dtype=np.float64),
+                            scores,
+                        )
                         if protocol == "conformal":
                             predictions[dataset] = tuple(
                                 int(value)
@@ -261,6 +275,7 @@ def evaluate_frozen_scores(
                     predictions,
                     {dataset: labels[dataset] for dataset in support_datasets},
                     scores=score_rows,
+                    micro_scores=micro_score_rows,
                 )
                 summary_rows.append(
                     _summary_payload(
@@ -298,7 +313,9 @@ def evaluate_frozen_scores(
         if observed != proposal.expected_confusion:
             raise ValueError("reconstructed proposal confusion differs from Exp448")
 
-    bootstrap_rows = _bootstrap_comparisons(dataset_rows, datasets, common_datasets)
+    bootstrap_rows = _bootstrap_comparisons(
+        dataset_rows, datasets, common_datasets, methods
+    )
     metadata = MappingProxyType(
         {
             "schema": "paper-public-baselines.evaluation.v1",
@@ -307,10 +324,15 @@ def evaluate_frozen_scores(
             "dataset_count": len(datasets),
             "common_support_count": len(common_datasets),
             "method_count": len(methods),
+            "planned_deep_methods_complete": all(
+                method in methods for method in DEEP_METHOD_IDS
+            ),
             "proposal_reviewed_commit": proposal.reviewed_commit,
             "proposal_artifact_map_sha256": proposal.artifact_map_sha256,
             "bootstrap_seed": SEED,
             "bootstrap_samples": 2_000,
+            "micro_rank_score": "one_minus_train_oof_upper_tail_p_value",
+            "macro_rank_score": "within_dataset_raw_anomaly_score",
             "evaluation_status": "retrospective_comparison_complete_no_promotion",
         }
     )
@@ -528,6 +550,7 @@ def _bootstrap_comparisons(
     dataset_rows: Sequence[Mapping[str, object]],
     full_datasets: tuple[str, ...],
     common_datasets: tuple[str, ...],
+    methods: tuple[str, ...],
 ) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
     for support, datasets in (
@@ -545,7 +568,7 @@ def _bootstrap_comparisons(
             if row["method"] == "proposed_equipment_anomaly_detection"
             and row["support"] == support
         }
-        for method in METHOD_IDS:
+        for method in methods:
             identities = sorted(
                 {
                     (str(row["protocol"]), row["alpha"])

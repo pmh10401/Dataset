@@ -74,6 +74,15 @@ class CountingScorer:
         )
 
 
+class FailSecondScorer(CountingScorer):
+    def __call__(
+        self, method_id: str, train: np.ndarray, test: np.ndarray, seed: int
+    ) -> ScoreResult:
+        if self.calls == 1:
+            raise RuntimeError("intentional second-pair failure")
+        return super().__call__(method_id, train, test, seed)
+
+
 class RunnerTests(unittest.TestCase):
     def _config(self, directory: str) -> ScoreRunConfig:
         root = Path(directory)
@@ -117,6 +126,7 @@ class RunnerTests(unittest.TestCase):
             "config.py",
             "contracts.py",
             "data.py",
+            "methods/__init__.py",
             "methods/classical.py",
             "methods/deep_common.py",
             "methods/deep_svdd.py",
@@ -217,6 +227,25 @@ class RunnerTests(unittest.TestCase):
 
         self.assertEqual(manifest.pair_count, 2)
         self.assertEqual(scorer.calls, 2)
+
+    def test_each_completed_shard_is_published_before_later_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = self._config(directory)
+            config = ScoreRunConfig(
+                db_path=base.db_path,
+                run_root=base.run_root,
+                datasets=base.datasets,
+                methods=("knn_distance", "lof_novelty"),
+                workers=1,
+                database_sha256=base.database_sha256,
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "second-pair"):
+                run_methods(config, scorer=FailSecondScorer())
+
+            published = tuple(config.run_root.glob("shards/**/*.json"))
+
+        self.assertEqual(len(published), 1)
 
 
 if __name__ == "__main__":

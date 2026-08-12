@@ -53,7 +53,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser.parse_args(argv)
     if arguments.command == "prepare":
         result = _prepare(
-            Path(arguments.db_path), Path(arguments.run_root), arguments.limit
+            Path(arguments.db_path),
+            Path(arguments.run_root),
+            arguments.limit,
+            parse_method_list(arguments.methods),
         )
     elif arguments.command == "assess-mlx":
         result = _assess_mlx(Path(arguments.run_root))
@@ -82,6 +85,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             "common_support_count": bundle.metadata["common_support_count"],
             "evaluation_artifact_map_sha256": artifact_sha,
         }
+    elif arguments.command == "report":
+        from .reporting import load_evaluation_bundle, write_report_artifacts
+
+        bundle = load_evaluation_bundle(Path(arguments.run_root))
+        artifact_sha = write_report_artifacts(
+            Path(arguments.run_root), bundle, verify_only=arguments.verify_only
+        )
+        result = {
+            "status": "report_verified" if arguments.verify_only else "reported",
+            "report_artifact_map_sha256": artifact_sha,
+        }
     else:  # pragma: no cover - argparse closes this branch
         raise AssertionError(arguments.command)
     print(canonical_json_bytes(result).decode("utf-8"), end="")
@@ -99,7 +113,12 @@ def parse_method_list(value: str) -> tuple[str, ...]:
     return methods
 
 
-def _prepare(db_path: Path, run_root: Path, limit: int | None) -> dict[str, object]:
+def _prepare(
+    db_path: Path,
+    run_root: Path,
+    limit: int | None,
+    methods: tuple[str, ...],
+) -> dict[str, object]:
     resolved_db = Path(db_path).resolve(strict=True)
     database_sha = sha256_file(resolved_db)
     if database_sha != EXPECTED_DB_SHA256:
@@ -121,7 +140,7 @@ def _prepare(db_path: Path, run_root: Path, limit: int | None) -> dict[str, obje
         "full_dataset_count": len(population),
         "datasets": list(selected),
         "limited_for_smoke": limit is not None,
-        "methods": list(METHOD_IDS),
+        "methods": list(methods),
         "alphas": list(ALPHAS),
         "seed": SEED,
         "contains_test_labels": False,
@@ -147,7 +166,8 @@ def _assess_mlx(run_root: Path) -> dict[str, object]:
     first_dataset = str(prepared["datasets"][0])
     values = prepare_dataset(load_dataset_values(database, first_dataset))
     smoke_input = values.train[: min(2, len(values.train))]
-    records = [_record_payload(assess_mlx(method, smoke_input)) for method in METHOD_IDS]
+    methods = tuple(str(method) for method in prepared["methods"])
+    records = [_record_payload(assess_mlx(method, smoke_input)) for method in methods]
     payload = {
         "schema": "paper-public-baselines.acceleration.v1",
         "prepared_sha256": prepared_sha,
@@ -180,13 +200,16 @@ def _score(
         raise ValueError("score database path differs from prepared authority")
     if any(method in DEEP_METHOD_IDS for method in selected_methods) and workers != 1:
         raise ValueError("deep methods require exactly one worker")
+    prepared_methods = tuple(str(method) for method in prepared["methods"])
+    if any(method not in prepared_methods for method in selected_methods):
+        raise ValueError("selected method is outside the prepared method population")
     if sha256_file(prepared_db) != prepared["database_sha256"]:
         raise ValueError("database SHA256 changed after prepare")
     config = ScoreRunConfig(
         db_path=prepared_db,
         run_root=run_root,
         datasets=tuple(str(value) for value in prepared["datasets"]),
-        methods=tuple(str(value) for value in prepared["methods"]),
+        methods=prepared_methods,
         workers=workers,
         database_sha256=str(prepared["database_sha256"]),
         seed=int(prepared["seed"]),
@@ -219,7 +242,12 @@ def _load_prepared(run_root: Path) -> tuple[dict[str, object], str]:
     methods = payload.get("methods")
     if not isinstance(datasets, list) or not datasets or len(datasets) != len(set(datasets)):
         raise ValueError("prepared dataset population is invalid")
-    if tuple(methods) != METHOD_IDS:
+    if (
+        not isinstance(methods, list)
+        or not methods
+        or len(methods) != len(set(methods))
+        or any(type(method) is not str or method not in METHOD_IDS for method in methods)
+    ):
         raise ValueError("prepared method population is invalid")
     if payload.get("alphas") != list(ALPHAS) or payload.get("seed") != SEED:
         raise ValueError("prepared scientific configuration is invalid")
@@ -246,7 +274,8 @@ def _load_acceleration(run_root: Path) -> dict[str, object]:
     ):
         raise ValueError("MLX assessment identity is invalid")
     records = payload.get("records")
-    if not isinstance(records, list) or tuple(record.get("method_id") for record in records if isinstance(record, dict)) != METHOD_IDS:
+    prepared_methods = tuple(str(method) for method in prepared["methods"])
+    if not isinstance(records, list) or tuple(record.get("method_id") for record in records if isinstance(record, dict)) != prepared_methods:
         raise ValueError("MLX assessment method coverage is invalid")
     if any(
         record.get("selected_backend") != "cpu"
@@ -286,6 +315,7 @@ def _parser() -> argparse.ArgumentParser:
     prepare.add_argument("--db-path", required=True)
     prepare.add_argument("--run-root", required=True)
     prepare.add_argument("--limit", type=int)
+    prepare.add_argument("--methods", default=",".join(METHOD_IDS))
 
     assess = subparsers.add_parser("assess-mlx")
     assess.add_argument("--run-root", required=True)
@@ -303,6 +333,10 @@ def _parser() -> argparse.ArgumentParser:
     evaluate = subparsers.add_parser("evaluate")
     evaluate.add_argument("--run-root", required=True)
     evaluate.add_argument("--exp448-root", required=True)
+
+    report = subparsers.add_parser("report")
+    report.add_argument("--run-root", required=True)
+    report.add_argument("--verify-only", action="store_true")
     return parser
 
 

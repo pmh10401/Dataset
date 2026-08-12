@@ -104,7 +104,6 @@ def run_methods(
                 reused += 1
                 abstained += int(existing["status"] == "abstain")
 
-    results: list[dict[str, object]] = []
     if pending and config.workers > 1 and scorer is None:
         if any(method not in CLASSICAL_METHOD_IDS for method, _ in pending):
             raise ValueError("multi-process scoring is allowed only for classical methods")
@@ -121,23 +120,21 @@ def run_methods(
                 for method, dataset in pending
             }
             for future in as_completed(futures):
-                results.append(future.result())
+                payload = future.result()
+                _publish_shard(config, run_config_sha, payload)
+                abstained += int(payload["status"] == "abstain")
     else:
         for method, dataset in pending:
-            results.append(
-                _score_pair(
-                    config.db_path,
-                    dataset,
-                    method,
-                    _pair_seed(config.seed, method, dataset),
-                    config.epochs,
-                    scorer=scorer,
-                )
+            payload = _score_pair(
+                config.db_path,
+                dataset,
+                method,
+                _pair_seed(config.seed, method, dataset),
+                config.epochs,
+                scorer=scorer,
             )
-
-    for payload in results:
-        _publish_shard(config, run_config_sha, payload)
-        abstained += int(payload["status"] == "abstain")
+            _publish_shard(config, run_config_sha, payload)
+            abstained += int(payload["status"] == "abstain")
     return RunSummary(
         completed=len(config.datasets) * len(active_methods),
         reused=reused,
@@ -447,7 +444,7 @@ def _source_hashes() -> dict[str, str]:
     package = Path(__file__).resolve().parent
     names = (
         "acceleration.py", "artifacts.py", "calibration.py", "config.py",
-        "contracts.py", "data.py", "methods/classical.py",
+        "contracts.py", "data.py", "methods/__init__.py", "methods/classical.py",
         "methods/deep_common.py", "methods/deep_svdd.py", "methods/drocc.py",
         "preprocessing.py", "runner.py",
     )
