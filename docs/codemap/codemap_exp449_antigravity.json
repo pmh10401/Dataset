@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-13T04:45:00+00:00",
-  "source_parent_commit": "d393ca27b94ea47298b94d64bfe40319cc8bbbae",
+  "generated_at": "2026-08-13T05:15:00+00:00",
+  "source_parent_commit": "e8a0a6b8adc752f23b7ce753d5673a67e662694b",
   "scope": [
-    "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
+    "Task 1 and Task 2 are implemented and functionally complete on recorded parent evidence; Task 3 readiness/CLI and all official lifecycle, truth, dashboard, and publication actions remain unauthorized."
   ],
   "topology_note": "The map retains 20 nodes by consolidating prediction progress into the public prediction-authority boundary while retaining its concrete import, progress tests, 96-leaf completion gate, and lifecycle flow. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
   "nodes": [
@@ -83,14 +83,14 @@
     {
       "id": "two_root_correction_plan",
       "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
-      "role": "Executable superseding plan: original Tasks 1–6 remain checked, original Tasks 7–8 remain unchecked, and prospective receipt-backed two-root work uses same-commit maps.",
+      "role": "Executable superseding plan: Task 2 is functionally complete on recorded parent evidence; Task 3 is next, while Task 5 remains unauthorized and original unsafe Tasks 7–8 remain unchecked.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
       "evidence": [
         {
           "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
-          "symbol": "Task 5: Authorized single-use lifecycle and truth/dashboard closeout"
+          "symbol": "Task 3: Closed readiness, same-commit review validation, CLI, and launcher"
         },
         {
           "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
@@ -571,7 +571,7 @@
   ],
   "flows": [
     {
-      "trigger": "Receipt-backed lifecycle",
+      "trigger": "Completed Task 2 lifecycle boundary",
       "steps": [
         "two_root_correction_design",
         "receipt_lifecycle",
@@ -579,7 +579,7 @@
         "task6_evaluation",
         "task6_replay"
       ],
-      "outcome": "Task-2 provides receipt/audit mechanics and source-free replay wrappers without authorizing any official command; prediction_authority includes its exact-prefix progress dependency and 96-leaf durable completion gate."
+      "outcome": "Task 2 provides verified receipt/audit mechanics and source-free replay wrappers without authorizing any official command; Task 3 is the next implementation boundary."
     },
     {
       "trigger": "Descriptor capture to sole label session",
@@ -604,7 +604,7 @@
     }
   ],
   "unknown_relationships": [
-    "Same-commit readiness/CLI validation, clean-candidate truth, single-use official commands, and presentation-only dashboard publication remain future plan stages."
+    "Task 3 same-commit readiness/CLI validation, clean-candidate truth, single-use official commands, and presentation-only dashboard publication remain future plan stages."
   ],
   "unknowns": [
     "Exp448 locally binds Sites source commit 500ccbe12b07475e51e8cdcbfa8619d9fbdefddb, version 6, and one-account/no-group custom owner ACL; no local dashboard URL exists, dashboard_access remains blocked, and future Task 4 must obtain it only through authenticated metadata reads."
