@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T06:32:02+00:00",
-  "generated_from_commit": "ec52b15bb6139f7283d662ece273f600a74fdec9",
+  "generated_at": "2026-08-12T06:52:47+00:00",
+  "generated_from_commit": "ec5b04981d89180d87a5d4f09a5673eddf86962b",
   "scope": [
     "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
   ],
