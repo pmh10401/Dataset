@@ -109,10 +109,10 @@ class ReceiptClassificationAntigravity:
 
 class _LifecycleTransactionAntigravity:
     """One command-wide pinned receipt namespace; it is never pathname-reopened."""
-    __slots__ = ("path", "parent_fd", "directory_fd", "directory_identity", "leaves", "owned_leaf_fds", "classification")
+    __slots__ = ("path", "parent_fd", "directory_fd", "directory_identity", "created_s0", "leaves", "owned_leaf_fds", "classification")
 
     def __init__(self, path: Path, *, create_s0: bool) -> None:
-        self.path = path; self.parent_fd = self.directory_fd = -1; self.directory_identity = None
+        self.path = path; self.parent_fd = self.directory_fd = -1; self.directory_identity = None; self.created_s0 = False
         self.leaves: list[tuple[str, int, tuple[int, int], bytes, LifecycleReceiptAntigravity]] = []
         self.owned_leaf_fds: list[int] = []
         self.classification: ReceiptClassificationAntigravity | None = None
@@ -127,6 +127,7 @@ class _LifecycleTransactionAntigravity:
                     return
                 os.mkdir(path.name, 0o700, dir_fd=self.parent_fd)
                 os.fsync(self.parent_fd)
+                self.created_s0 = True
                 info = os.stat(path.name, dir_fd=self.parent_fd, follow_symlinks=False)
             if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
                 raise ValueError("receipt directory is unsafe")
@@ -145,7 +146,9 @@ class _LifecycleTransactionAntigravity:
         names = set(os.listdir(self.directory_fd)); stopped = _STOPPED_LEAF_ANTIGRAVITY in names
         success = [name for name in _SUCCESS_LEAVES_ANTIGRAVITY if name in names]
         if not names:
-            return ReceiptClassificationAntigravity("S0", False, False, None)
+            if self.created_s0:
+                return ReceiptClassificationAntigravity("S0", False, False, None)
+            return ReceiptClassificationAntigravity("INVALID", False, True, "receipt namespace was already occupied")
         if names != set(success) | ({_STOPPED_LEAF_ANTIGRAVITY} if stopped else set()) or success != list(_SUCCESS_LEAVES_ANTIGRAVITY[:len(success)]):
             raise ValueError("receipt inventory is not a contiguous prefix")
         previous = None; reviewed = None
@@ -689,7 +692,7 @@ def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, review
             _fault_antigravity(fault_hook, "directory_create")
         transaction = _ReceiptTransactionAntigravity(receipt_dir, create_s0=True) if own_transaction else _transaction
         classification = transaction.classification
-        if classification is None or classification.stopped:
+        if classification is None or classification.invalid or classification.stopped:
             raise ValueError("receipt namespace cannot be appended")
         state_number = int(classification.state[1:])
         if event == "stopped":

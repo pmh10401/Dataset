@@ -1,20 +1,15 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "3f60be54fa551be4d2695de154477d48b522ad9c",
+  "source_parent_commit": "17e0df4f991957ac603995ab068355960fc3cd44",
   "working_tree_dirty": false,
   "represented_paths": [
     "docs/codemap/codemap_exp449_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.json",
     "docs/codemap/codemap_exp449_antigravity.lock",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/cli_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/readiness_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_cli_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py",
-    "scratch/build_codemap_exp449_antigravity.py",
-    "scratch/run_exp449_residual_fn_method_qualification_antigravity.py"
+    "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py"
   ],
-  "generated_at": "2026-08-13T06:00:00+00:00",
+  "generated_at": "2026-08-13T06:30:00+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -52,7 +47,7 @@
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
     "docs": "f441d5720ca65c1051c82b76d71f056554627c6b4cb2b7aad7b626eb4f92581c",
-    "experiments": "d0ecdc89e330829c16d5a0ed32af82a9e1cc9c3c8c6d193e69f42223992eb041",
+    "experiments": "6ae81b075bd44b3c9ec8b327645e6b53480a9b3d9f08501b0210489a96f30801",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
     "scratch": "c4670d9fb1e735678f748d437b07e8847ca8e2deefb89b98aec68c1327ded914",
@@ -1894,7 +1889,7 @@
     "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py": "0bb4f6be3f22c5b2a6c2c113300d773a14dd23ff2181f17df1c0fc768b38de27",
     "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py": "d9b00d427702ca6b12a91f621e0417f83efbca612ba7485eb801407a4ee0e0ac",
     "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py": "d79fc8e02957c2b26ab369e2068cec1a5499cf472803874cdd1deab1719bc3f5",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py": "b10c6df1ea87d1f726ac76e96f903deafc1f58c61655dd754cb15906f8fd9858",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py": "9b128aac11b6fb607607b7884a4e3fefc883f5d6ece1072c9289f5322bb75b1f",
     "experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py": "d9ad3d3ce86003346d4ec5a957cfa26195031a402ef8e77afa7f9a96120dc141",
     "experiments/exp449_residual_fn_method_qualification_antigravity/method_audit_antigravity.py": "e094ace8f49786bf59697f6f6b7592f57f7fbe19b01a2a1be5960915e2d25553",
     "experiments/exp449_residual_fn_method_qualification_antigravity/mlx_gate_antigravity.py": "342a54978a59e335a9d3f42e9c761c46c4933aa2263e6275748ef1b53cf0e480",
@@ -1913,7 +1908,7 @@
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py": "cec1ea8a7b856db36481ff646c55a6bd4b15deb7e956db333a85909706f519dc",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py": "8d6b93dda7edc3b84a87393fb079ec41a98411fea184a3d9af60891759fde848",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py": "1c42c1dfd085389cc9a64cd7df17637b363eee093ea4877693afde2bb492c73c",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py": "b310d69e0b6e9c2a6015ed85a642ab8fdf0db18d4b42e6a9dfd72e3e558c9632",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py": "541638b4901f785e4392bd01e2124d6a360d7782b001c57bffde159b4dd1262f",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_method_audit_antigravity.py": "f97ef93d47d721b42dc0c3ce3c55834fb916c870fa007fe5171e207a8eb71a7b",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_mlx_gate_antigravity.py": "7b620b0eb5d6b40a4ecdb047ec10dbc2ac5ec3d75054590cd0ab6860588c0cef",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py": "16caed4427012422833e033cbc92b3570bbf6c8bb3184203c63ec52b3cdeb9a3",
@@ -2642,7 +2637,6 @@
   },
   "changed_modules_since_source_parent": [
     "docs",
-    "experiments",
-    "scratch"
+    "experiments"
   ]
 }

@@ -93,6 +93,26 @@ class LifecycleAntigravityTests(unittest.TestCase):
             self.assertTrue(classified.invalid)
             self.assertEqual(classified.state, "INVALID")
 
+    def test_preexisting_empty_receipt_directory_is_invalid_and_preserved_antigravity(self) -> None:
+        """Break caught: an occupied empty receipt directory is treated as the absent S0 namespace."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_empty_receipt_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; receipts.mkdir()
+            before = receipts.stat().st_ino
+            classified = lifecycle.validate_receipt_inventory_antigravity(receipts)
+            self.assertTrue(classified.invalid)
+            self.assertEqual(classified.state, "INVALID")
+            with self.assertRaisesRegex(ValueError, "receipt inventory is invalid"):
+                lifecycle.run_phase_antigravity(
+                    "readiness", "a" * 40, lambda: self.fail("occupied receipt ran"),
+                    receipt_dir=receipts, audit_path=parent / "audit.json",
+                    prediction_root=parent / "prediction", evaluation_root=parent / "evaluation",
+                )
+            self.assertEqual(receipts.stat().st_ino, before)
+            self.assertEqual(tuple(receipts.iterdir()), ())
+            self.assertFalse((parent / "audit.json").exists())
+
     def test_close_attempts_every_descriptor_before_reporting_first_error_antigravity(self) -> None:
         """Break caught: one close failure leaks later retained receipt descriptors."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
@@ -486,7 +506,7 @@ class LifecycleAntigravityTests(unittest.TestCase):
                     os.rename(receipts, moved); receipts.mkdir()
             with self.assertRaisesRegex(ValueError, "rebound"):
                 lifecycle.append_receipt_antigravity(receipts, "predict", "started", "a" * 40, fault_hook=replace)
-            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S0")
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "INVALID")
             # The rebinding error occurred before the new leaf's durable point,
             # so exact-inode cleanup restores the prior S1 prefix.
             self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(moved).state, "S1")
@@ -678,15 +698,16 @@ with tempfile.TemporaryDirectory() as raw:
         from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
 
         with tempfile.TemporaryDirectory(prefix="exp449_direct_absence_pin_antigravity_") as temporary:
-            parent = Path(temporary); prediction = parent / "prediction"; receipts = parent / "receipts"
+            parent = Path(temporary)
             for kind in ("directory", "file", "symlink"):
                 with self.subTest(kind=kind):
+                    prediction = parent / f"prediction_{kind}"; receipts = parent / f"receipts_{kind}"
                     def appear(point: str) -> None:
                         if point == "before_end_validate":
                             if kind == "directory": prediction.mkdir()
                             elif kind == "file": prediction.write_bytes(b"occupied\n")
                             else:
-                                target = parent / "target_antigravity.json"; target.write_bytes(b"occupied\n"); prediction.symlink_to(target)
+                                target = parent / f"target_{kind}_antigravity.json"; target.write_bytes(b"occupied\n"); prediction.symlink_to(target)
                     with self.assertRaisesRegex(ValueError, "absent"):
                         lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "5" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation", fault_hook=appear)
                     self.assertFalse((receipts / "readiness_complete_antigravity.json").exists())

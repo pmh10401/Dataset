@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T06:00:00+00:00",
-  "source_parent_commit": "3f60be54fa551be4d2695de154477d48b522ad9c",
+  "generated_at": "2026-08-13T06:30:00+00:00",
+  "source_parent_commit": "17e0df4f991957ac603995ab068355960fc3cd44",
   "scope": [
     "Task 3 readiness/CLI/launcher is implemented-for-review; all official lifecycle, truth, dashboard, and publication actions remain unauthorized."
   ],
