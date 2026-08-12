@@ -8,6 +8,7 @@ from hashlib import sha256
 import os
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -25,6 +26,8 @@ _LEAVES_ANTIGRAVITY = (
     "candidate_metrics_antigravity.jsonl", "family_metrics_antigravity.jsonl", "bootstrap_antigravity.json",
     "decision_antigravity.json", "dashboard_snapshot_antigravity.json", "artifact_sha256_antigravity.json",
 )
+_OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_evaluation_antigravity_20260812")
+_OFFICIAL_AUDIT_PATH_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json")
 
 
 def _f1_antigravity(confusion: ConfusionAntigravity) -> float:
@@ -344,15 +347,52 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         if session is not None and opened and not closed:
             try: session.close_antigravity(); closed = True
             except BaseException as close_error: error.add_note(f"label_close_error={type(close_error).__name__}: {close_error}")
-        _audit_antigravity(audit_path, error, phase=getattr(error, "_exp449_phase_antigravity", phase), label_opened=opened, labels_closed=closed, queries=queries, rows=label_rows, recovery=getattr(error, "_exp449_recovery_antigravity", {"outcome": "not_needed", "forensic_basename": None, "errors": []}))
+        if getattr(dependencies, "audit_enabled_antigravity", True):
+            _audit_antigravity(audit_path, error, phase=getattr(error, "_exp449_phase_antigravity", phase), label_opened=opened, labels_closed=closed, queries=queries, rows=label_rows, recovery=getattr(error, "_exp449_recovery_antigravity", {"outcome": "not_needed", "forensic_basename": None, "errors": []}))
         raise
 
 
 def evaluate_antigravity(reviewed_commit: str) -> FrozenEvaluationAntigravity:
-    """Task 7 supplies the official readiness-gated dependency injection; Task 6 never opens labels itself."""
-    if type(reviewed_commit) is not str or len(reviewed_commit) != 40:
+    """Receipt-gated production evaluation with one closure-private label session."""
+    if type(reviewed_commit) is not str or len(reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in reviewed_commit):
         raise ValueError("reviewed commit is invalid")
-    raise ValueError("Task-6 evaluation requires the closed Task-7 readiness dependency injection")
+    from .lifecycle_antigravity import run_phase_antigravity
+    from .predecessor_antigravity import capture_exp448_authority_antigravity
+    from .prediction_antigravity import capture_frozen_prediction_authority_antigravity
+    from .sources_antigravity import open_test_labels_once_antigravity
+
+    def operation(captured_prediction) -> FrozenEvaluationAntigravity:
+        dependencies = SimpleNamespace(
+            root=_OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY,
+            audit_path=_OFFICIAL_AUDIT_PATH_ANTIGRAVITY,
+            audit_enabled_antigravity=False,
+            capture_exp448_antigravity=capture_exp448_authority_antigravity,
+            capture_task5_prediction_antigravity=lambda: captured_prediction,
+            open_labels_antigravity=open_test_labels_once_antigravity,
+        )
+        return _evaluate_with_dependencies_antigravity(reviewed_commit, dependencies)
+    return _evaluate_with_lifecycle_dependencies_antigravity(reviewed_commit, capture_frozen_prediction_authority_antigravity, operation, evaluation_root=_OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY)
+
+
+def _evaluate_with_lifecycle_dependencies_antigravity(reviewed_commit: str, capture_prediction, operation, *, evaluation_root: Path, receipt_dir=None, audit_path=None) -> FrozenEvaluationAntigravity:
+    """Private test seam that pins prediction before lifecycle start and never owns label access."""
+    from .lifecycle_antigravity import run_phase_antigravity
+    captured = None
+    def precondition() -> None:
+        nonlocal captured
+        if evaluation_root.exists() or evaluation_root.is_symlink():
+            raise ValueError("evaluation destination is occupied")
+        captured = capture_prediction()
+        if captured.authority.reviewed_commit != reviewed_commit:
+            raise ValueError("Task5 reviewed commit differs")
+    def run() -> FrozenEvaluationAntigravity:
+        if captured is None:
+            raise ValueError("prediction was not descriptor-captured")
+        return operation(captured)
+    keywords = {"path_precondition": precondition, "evaluation_root": evaluation_root}
+    if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
+    if audit_path is not None: keywords["audit_path"] = audit_path
+    return run_phase_antigravity("evaluate", reviewed_commit, run, **keywords)
 
 
 def inspect_antigravity() -> FrozenEvaluationAntigravity:

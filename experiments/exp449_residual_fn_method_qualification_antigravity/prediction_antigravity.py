@@ -581,8 +581,8 @@ def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAn
     return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple("candidates_antigravity/" + relative for relative in inventory), tuple(digests), aggregate, 0)
 
 
-def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigravity:
-    """Single-use fixed-root production lifecycle; its only dependencies are frozen Task 3/4 authorities."""
+def _predict_production_operation_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigravity:
+    """Production body called only after the receipt wrapper has committed start."""
     if type(reviewed_commit) is not str or len(reviewed_commit) != 40:
         raise ValueError("reviewed commit is invalid")
     from .method_audit_antigravity import audit_methods_antigravity
@@ -590,7 +590,6 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
     from .predecessor_antigravity import capture_exp448_authority_antigravity
 
     prepare_attempt_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
-    audit_path = Path("/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json")
     inventory: tuple[str, ...] = ()
     session: _CommitSessionAntigravity | None = None
     try:
@@ -639,8 +638,28 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
             raise
         return authority
     except BaseException:
-        _handle_lifecycle_failure_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, session, audit_path)
         raise
+
+
+def _predict_with_lifecycle_dependencies_antigravity(reviewed_commit: str, operation, *, prediction_root: Path, receipt_dir=None, audit_path=None) -> FrozenPredictionAuthorityAntigravity:
+    """Private test seam; only the public wrapper supplies the fixed production operation and paths."""
+    from .lifecycle_antigravity import run_phase_antigravity
+
+    def precondition() -> None:
+        if prediction_root.exists() or prediction_root.is_symlink():
+            raise ValueError("prediction destination is occupied")
+    keywords = {"path_precondition": precondition, "prediction_root": prediction_root}
+    if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
+    if audit_path is not None: keywords["audit_path"] = audit_path
+    return run_phase_antigravity("predict", reviewed_commit, operation, **keywords)
+
+
+
+def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigravity:
+    """Receipt-gated single-use, zero-label 96-unit production prediction entry point."""
+    if type(reviewed_commit) is not str or len(reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in reviewed_commit):
+        raise ValueError("reviewed commit is invalid")
+    return _predict_with_lifecycle_dependencies_antigravity(reviewed_commit, lambda: _predict_production_operation_antigravity(reviewed_commit), prediction_root=_OFFICIAL_ROOT_ANTIGRAVITY)
 
 
 def validate_frozen_prediction_authority_antigravity(authority: object) -> tuple[str, ...]:

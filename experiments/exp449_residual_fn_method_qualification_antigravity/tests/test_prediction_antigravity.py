@@ -63,13 +63,10 @@ class PredictionAntigravityTests(unittest.TestCase):
                 self.assertEqual(evidence["exact_next_sequence"], 0)
                 self.assertEqual(evidence["prefix_validation_error"], "OSError: unexpected prefix machinery failure")
 
-    def test_production_and_synthetic_failure_boundary_preserves_primary_when_prefix_and_audit_fail_antigravity(self) -> None:
-        """Break caught: either lifecycle lets prefix/audit failure replace its original raised object."""
+    def test_private_prediction_failure_boundary_preserves_primary_when_prefix_and_audit_fail_antigravity(self) -> None:
+        """Break caught: retained low-level synthetic progress audit masks its primary worker failure."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
         from experiments.exp449_residual_fn_method_qualification_antigravity import progress_antigravity as progress  # noqa: PLC0415
-        from experiments.exp449_residual_fn_method_qualification_antigravity import predecessor_antigravity as predecessor  # noqa: PLC0415
-        from experiments.exp449_residual_fn_method_qualification_antigravity import method_audit_antigravity as method_audit  # noqa: PLC0415
-        from experiments.exp449_residual_fn_method_qualification_antigravity import mlx_gate_antigravity as mlx_gate  # noqa: PLC0415
 
         def forced_prefix(_session):
             raise OSError("forced prefix validator failure")
@@ -106,52 +103,11 @@ class PredictionAntigravityTests(unittest.TestCase):
                     self.assertEqual(evidence["exact_next_sequence"], 0)
                     self.assertEqual(evidence["prefix_validation_error"], "OSError: forced prefix validator failure")
 
-        def assert_production(audit_fails: bool) -> None:
-            with tempfile.TemporaryDirectory(prefix="exp449_shared_production_antigravity_") as temporary:
-                root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"
-                families = tuple(family for family, count in zip((name for name, _ in prediction.CANDIDATE_MATRIX_ANTIGRAVITY), (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))
-                authority = SimpleNamespace(
-                    target_baseline_rows=tuple(_BaselineAntigravity(family) for family in families),
-                    target_dataset_names=tuple(f"{family}_production_{index:03d}" for index, family in enumerate(families)),
-                    artifact_map_sha256="a" * 64, evaluation_sha256="b" * 64, decision_sha256="c" * 64,
-                )
-                mlx = mlx_gate.MlxDecisionAntigravity("cpu", "test", False, None, None, None, None, None, None, False, None, None, False, None)
-                primary = RuntimeError("production primary truth")
-                class AbortPool:
-                    def __init__(self, *args, **kwargs): pass
-                    def __enter__(self): raise primary
-                    def __exit__(self, *args): return False
-                audit_calls: list[object] = []
-                active_traces: list[object] = []
-                def write_audit(destination, *args, **kwargs):
-                    audit_calls.append((destination, args, kwargs))
-                    if audit_fails:
-                        raise OSError("forced audit persistence failure")
-                    return None
-                original_handler = prediction._handle_lifecycle_failure_antigravity
-                def observe_handler(*args, **kwargs):
-                    active_traces.append(sys.exception().__traceback__)
-                    return original_handler(*args, **kwargs)
-                with patch.object(prediction, "_OFFICIAL_ROOT_ANTIGRAVITY", root), patch.object(predecessor, "capture_exp448_authority_antigravity", return_value=authority), patch.object(method_audit, "audit_methods_antigravity", return_value=()), patch.object(mlx_gate, "assess_mlx_antigravity", return_value=mlx), patch.object(prediction, "ProcessPoolExecutor", AbortPool), patch.object(progress._CommitSessionAntigravity, "validate_prefix", autospec=True, side_effect=forced_prefix), patch.object(prediction, "write_failure_audit_antigravity", side_effect=write_audit), patch.object(prediction, "_handle_lifecycle_failure_antigravity", side_effect=observe_handler):
-                    with self.assertRaisesRegex(RuntimeError, "production primary truth") as raised:
-                        prediction.predict_antigravity("p" * 40)
-                self.assertIs(raised.exception, primary)
-                self.assertIn("__enter__", tuple(frame.name for frame in traceback.extract_tb(active_traces[0])))
-                self.assertEqual(len(audit_calls), 1)
-                notes = "\n".join(getattr(raised.exception, "__notes__", ()))
-                if audit_fails:
-                    self.assertIn("failure_audit_error=OSError: forced audit persistence failure", notes)
-                else:
-                    self.assertEqual(audit_calls[0][2]["exact_next_sequence"], 0)
-                    self.assertEqual(audit_calls[0][2]["prefix_validation_error"], "OSError: forced prefix validator failure")
-
-        for lifecycle in (assert_synthetic, assert_production):
+        for lifecycle in (assert_synthetic,):
             with self.subTest(lifecycle=lifecycle.__name__, audit_fails=False):
                 lifecycle(False)
             with self.subTest(lifecycle=lifecycle.__name__, audit_fails=True):
                 lifecycle(True)
-        source = inspect.getsource(prediction)
-        self.assertEqual(source.count("_handle_lifecycle_failure_antigravity("), 3)
 
     def test_first_fstat_failure_with_official_shaped_replacement_never_advances_receipt_prefix_antigravity(self) -> None:
         """Break caught: pathname-valid next leaves advance failure evidence without a writer receipt."""

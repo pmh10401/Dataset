@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-08-12T13:55:00+00:00",
-  "source_parent_commit": "2b531d8ac05386c23e20bce6dbfff18abd7eb101",
+  "generated_at": "2026-08-12T14:06:59+00:00",
+  "source_parent_commit": "26d73146288c80a3000653069123c2fa4874c263",
   "scope": [
-    "Task-1 correction is shipped and closed. Task-2 lifecycle/progress integration, readiness CLI, official lifecycle, and dashboard publication remain unimplemented or unauthorized; official surfaces remain closed."
+    "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, and dashboard publication remain unauthorized."
   ],
-  "topology_note": "The map retains 20 nodes by consolidating champion ledger evidence into research_control and replacing the original-plan node with the correction-plan node. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths; prior map-only ancestry is historical only.",
+  "topology_note": "The map retains 20 nodes by representing receipt state and public prediction authority separately. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
   "nodes": [
     {
       "id": "research_control",
@@ -239,17 +239,32 @@
       ]
     },
     {
-      "id": "frozen_prediction_lifecycle",
+      "id": "receipt_lifecycle",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+      "role": "Task-2 implemented descriptor-safe receipt state machine, unified create-only failure audit, and reusable predict/evaluate/inspect phase boundary; official execution remains closed.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+          "symbol": "def run_phase_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "prediction_authority",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent-contiguous lifecycle-owned CommitSession commits, descriptor validator firewall, and one shared non-masking failure-audit boundary that fails closed to prefix zero if validation machinery throws.",
+      "role": "Task-2 receipt-gated public predict wrapper around the frozen label-free 96-unit, 11-worker prediction authority and immutable descriptor validator.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py"
       ],
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-          "symbol": "def _handle_lifecycle_failure_antigravity"
+          "symbol": "def predict_antigravity"
         }
       ]
     },
@@ -278,24 +293,6 @@
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
           "symbol": "def inspect_replay_at_antigravity"
-        }
-      ]
-    },
-    {
-      "id": "aggregate_result_projection",
-      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py",
-      "role": "Task-5 local status plus Task-6 aggregate-only public result projection; future presentation reads bind Exp448’s existing Sites source commit/version and owner-only ACL, never scientific execution.",
-      "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py",
-          "symbol": "def public_result_antigravity"
-        },
-        {
-          "path": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "500ccbe12b07475e51e8cdcbfa8619d9fbdefddb"
         }
       ]
     }
@@ -446,21 +443,12 @@
       }
     },
     {
-      "from": "score_sources",
-      "to": "frozen_prediction_lifecycle",
+      "from": "prediction_authority",
+      "to": "receipt_lifecycle",
       "type": "imports",
       "evidence": {
         "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-        "symbol": "empirical_candidates"
-      }
-    },
-    {
-      "from": "label_free_source",
-      "to": "frozen_prediction_lifecycle",
-      "type": "reads",
-      "evidence": {
-        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
-        "symbol": "validate_frozen_prediction_authority_antigravity"
+        "symbol": "lifecycle_antigravity import"
       }
     },
     {
@@ -474,11 +462,20 @@
     },
     {
       "from": "task6_evaluation",
-      "to": "frozen_prediction_lifecycle",
+      "to": "receipt_lifecycle",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
+        "symbol": "lifecycle_antigravity import"
+      }
+    },
+    {
+      "from": "task6_evaluation",
+      "to": "prediction_authority",
       "type": "reads",
       "evidence": {
         "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
-        "symbol": "capture_task5_prediction_antigravity"
+        "symbol": "capture_frozen_prediction_authority_antigravity"
       }
     },
     {
@@ -500,24 +497,26 @@
       }
     },
     {
-      "from": "task6_evaluation",
-      "to": "aggregate_result_projection",
+      "from": "task6_replay",
+      "to": "receipt_lifecycle",
       "type": "imports",
       "evidence": {
-        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
-        "symbol": "dashboard_export_antigravity import"
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
+        "symbol": "lifecycle_antigravity import"
       }
     }
   ],
   "flows": [
     {
-      "trigger": "Receipt-backed correction governance",
+      "trigger": "Receipt-backed lifecycle",
       "steps": [
         "two_root_correction_design",
-        "two_root_correction_plan",
-        "research_control"
+        "receipt_lifecycle",
+        "prediction_authority",
+        "task6_evaluation",
+        "task6_replay"
       ],
-      "outcome": "The shipped and closed Task-1 correction governs prospective two-root work without authorizing a command; Task 2 waits only for primary verification and fresh Sol re-review of this closeout."
+      "outcome": "Task-2 provides receipt/audit mechanics and source-free replay wrappers without authorizing any official command."
     },
     {
       "trigger": "Task-4 label-free score generation",
@@ -528,21 +527,10 @@
         "acceleration_gate"
       ],
       "outcome": "CPU aeon representations and Exp249 LocalGap return finite deterministic scores; MLX/MPS availability cannot approve acceleration without the full gate."
-    },
-    {
-      "trigger": "Task-6 synthetic evaluation and replay",
-      "steps": [
-        "exp448_authority",
-        "frozen_prediction_lifecycle",
-        "task6_evaluation",
-        "task6_replay",
-        "aggregate_result_projection"
-      ],
-      "outcome": "Synthetic one-session evaluation and source-free replay remain the current implemented boundary."
     }
   ],
   "unknown_relationships": [
-    "Receipt-backed two-root lifecycle/progress adapters, same-commit readiness/CLI validation, clean-candidate truth, single-use official commands, and presentation-only dashboard publication are future plan stages."
+    "Same-commit readiness/CLI validation, clean-candidate truth, single-use official commands, and presentation-only dashboard publication remain future plan stages."
   ],
   "unknowns": [
     "Exp448 locally binds Sites source commit 500ccbe12b07475e51e8cdcbfa8619d9fbdefddb, version 6, and one-account/no-group custom owner ACL; no local dashboard URL exists, so future Task 4 must obtain it only through authenticated metadata reads."
