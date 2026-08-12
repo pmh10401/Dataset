@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T01:21:17Z",
-  "generated_from_commit": "58323bb9c11226c3b2bb662afc647190b91b1851",
+  "generated_at": "2026-08-12T01:32:18Z",
+  "generated_from_commit": "198811ceb2e652d68fba597ad6a1a455decb0b1a",
   "scope": [
     "Exp449 verified Tasks 1–4: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, and CPU-canonical acceleration record"
   ],
@@ -88,18 +88,6 @@
       ]
     },
     {
-      "id": "exp449_report",
-      "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
-      "role": "Verified Task 1–3 progress ledger with no official execution claim; Task 4 remains next.",
-      "tests": [],
-      "evidence": [
-        {
-          "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
-          "symbol": "Verified progress ledger: Tasks 1–3 are complete"
-        }
-      ]
-    },
-    {
       "id": "project_execution_policy",
       "path": "AGENTS.md",
       "role": "Durable global rule: checked HTML-plan controls represent only completed implementation and review/verification boundaries.",
@@ -166,6 +154,20 @@
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py",
           "symbol": "class MethodAuditAntigravity"
+        }
+      ]
+    },
+    {
+      "id": "canonical_artifacts",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py",
+      "role": "Canonical JSON/JSONL and create-only no-follow artifact inventory boundary used by immutable predecessor capture.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_artifacts_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/artifacts_antigravity.py",
+          "symbol": "def artifact_map_bytes_antigravity"
         }
       ]
     },
@@ -302,15 +304,6 @@
       }
     },
     {
-      "from": "research_control",
-      "to": "exp449_report",
-      "type": "reads",
-      "evidence": {
-        "path": "RESEARCH_STATE.json",
-        "symbol": "EXP449_IMPLEMENTATION_REPORT_antigravity.html"
-      }
-    },
-    {
       "from": "experiment_catalog",
       "to": "exp449_preregistration",
       "type": "reads",
@@ -402,6 +395,15 @@
     },
     {
       "from": "exp448_authority",
+      "to": "canonical_artifacts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/predecessor_antigravity.py",
+        "symbol": "artifacts_antigravity import"
+      }
+    },
+    {
+      "from": "exp448_authority",
       "to": "candidate_registry",
       "type": "imports",
       "evidence": {
@@ -419,12 +421,12 @@
       }
     },
     {
-      "from": "representation_sources",
-      "to": "candidate_registry",
+      "from": "candidate_registry",
+      "to": "representation_sources",
       "type": "governs",
       "evidence": {
-        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py",
-        "symbol": "n_kernels=4096"
+        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py",
+        "symbol": "minirocket_requested_kernels"
       }
     },
     {
