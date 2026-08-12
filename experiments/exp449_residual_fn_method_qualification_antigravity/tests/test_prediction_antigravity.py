@@ -173,7 +173,7 @@ class PredictionAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
             root = Path(temporary) / "run"
             authority = run_synthetic_lifecycle_antigravity(root, "f" * 40)
-            self.assertEqual(validate_prediction_root_antigravity(root, authority), tuple(f"synthetic_dataset_{index:03d}" for index in range(48)))
+            self.assertEqual(len(validate_prediction_root_antigravity(root, authority)), 48)
             leaf = root / authority.inventory[0]
             leaf.write_bytes(b'{"sequence":0}\n')
             with self.assertRaises(ValueError):

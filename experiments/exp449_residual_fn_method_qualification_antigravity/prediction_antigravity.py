@@ -146,6 +146,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
     if fail_after_leaf is not None and (type(fail_after_leaf) is not int or not 0 <= fail_after_leaf < 96):
         raise ValueError("synthetic failure sequence is invalid")
     inventory = tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))
+    synthetic_families = tuple(family for family, count in zip(tuple(name for name, _ in CANDIDATE_MATRIX_ANTIGRAVITY), (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))
     try:
         context = _semantic_context_antigravity(reviewed_commit, source_identity={"kind": "synthetic"}, method_audit_sha256="0" * 64, mlx={"backend": "cpu", "reason": "synthetic"})
         initialise_attempt_antigravity(root, context)
@@ -158,9 +159,9 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         for sequence in ordered:
             _fault_antigravity(fault_hook, "predecessor_drift", sequence)
             _fault_antigravity(fault_hook, "before_commit", sequence)
-            dataset = f"synthetic_dataset_{sequence // 2:03d}"
-            method = ("method_a", "method_b")[sequence % 2]
-            digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "contains_test_labels": False, "scores": {"20260721": [0.0], "20261721": [0.0]}, "alpha": 0.005}, fault_hook=fault_hook, sequence=sequence)
+            family = synthetic_families[sequence // 2]; dataset = f"{family}_synthetic_{sequence // 2:03d}"; method = dict(CANDIDATE_MATRIX_ANTIGRAVITY)[family][sequence % 2]
+            payload = {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "dataset": dataset, "family": family, "method": method, "indices": [], "contains_test_labels": False, "target_length": 3, "train_count": 5, "test_count": 3, "seeds": [20260721, 20261721], "score_identities": [{"seed": 20260721, "feature_dimension": 1}, {"seed": 20261721, "feature_dimension": 1}], "alpha": 0.005}
+            digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], payload, fault_hook=fault_hook, sequence=sequence)
             digests.append(("candidates_antigravity/" + inventory[sequence], digest))
             _fault_antigravity(fault_hook, "after_commit", sequence)
             record_verified_progress_antigravity(root, inventory, sequence + 1, fault_hook=fault_hook)
@@ -173,7 +174,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
         commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest)
-        return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"synthetic_dataset_{sequence // 2:03d}__{('method_a', 'method_b')[sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
+        return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"{synthetic_families[sequence // 2]}_synthetic_{sequence // 2:03d}__{dict(CANDIDATE_MATRIX_ANTIGRAVITY)[synthetic_families[sequence // 2]][sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
     except BaseException as primary_error:
         cleanup_error: BaseException | None = None
         try:
@@ -281,7 +282,12 @@ def validate_prediction_root_antigravity(root: Path, authority: object) -> tuple
         for sequence, relative in enumerate(authority.inventory):
             if type(relative) is not str or not relative.startswith("candidates_antigravity/"): raise ValueError("prediction authority inventory differs")
             payload = strict_json_bytes_antigravity(candidate_bytes[Path(relative).name])
-            if type(payload) is not dict or payload.get("sequence") != sequence or payload.get("contains_test_labels") is not False or type(payload.get("candidate_name")) is not str: raise ValueError("prediction candidate leaf differs")
+            candidate_keys = {"sequence", "candidate_name", "dataset", "family", "method", "indices", "contains_test_labels", "target_length", "train_count", "test_count", "seeds", "score_identities", "alpha"}
+            invalid = (type(payload) is not dict or set(payload) != candidate_keys or type(payload.get("sequence")) is not int or payload["sequence"] != sequence or type(payload.get("candidate_name")) is not str or type(payload.get("dataset")) is not str or type(payload.get("family")) is not str or type(payload.get("method")) is not str or payload.get("candidate_name") != payload["dataset"] + "__" + payload["method"] or payload.get("contains_test_labels") is not False or type(payload.get("target_length")) is not int or type(payload.get("train_count")) is not int or type(payload.get("test_count")) is not int or min(payload["target_length"], payload["train_count"], payload["test_count"]) < 1 or payload.get("seeds") != [20260721, 20261721] or type(payload.get("alpha")) is not float or payload["alpha"] != 0.005 or type(payload.get("indices")) is not list or any(type(index) is not int or index < 0 or index >= payload["target_length"] for index in payload["indices"]) or payload["indices"] != sorted(set(payload["indices"])))
+            identities = payload.get("score_identities") if type(payload) is dict else None
+            if invalid or type(identities) is not list or len(identities) != 2 or any(type(item) is not dict or set(item) != {"seed", "feature_dimension"} or type(item["seed"]) is not int or type(item["feature_dimension"]) is not int or item["feature_dimension"] < 1 for item in identities) or [item["seed"] for item in identities] != [20260721, 20261721]: raise ValueError("prediction candidate leaf differs")
+            expected_family = next((family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY if payload["dataset"].startswith(family + "_")), None)
+            if expected_family != payload["family"] or payload["method"] not in dict(CANDIDATE_MATRIX_ANTIGRAVITY).get(payload["family"], ()): raise ValueError("prediction candidate binding differs")
             digests.append((relative, hashlib.sha256(canonical_json_bytes_antigravity(payload)).hexdigest())); names.append(payload["candidate_name"])
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         if tuple(digests) != authority.leaf_sha256 or tuple(names) != authority.candidate_names or aggregate != authority.aggregate_sha256: raise ValueError("prediction authority digest differs")
