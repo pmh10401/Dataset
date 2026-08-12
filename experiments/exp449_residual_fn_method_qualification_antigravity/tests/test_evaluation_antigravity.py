@@ -45,7 +45,7 @@ class _SessionAntigravity:
 
 class _DependenciesAntigravity:
     def __init__(self, root: Path, *, open_error: BaseException | None = None, query_error: BaseException | None = None, close_error: BaseException | None = None, drift_at: int | None = None) -> None:
-        datasets = tuple(f"{family}_synthetic_{index:02d}" for family, count in zip(_FAMILIES_ANTIGRAVITY, _COUNTS_ANTIGRAVITY, strict=True) for index in range(count))
+        datasets = ( *(f"ChlorineConcentration_normal_{i}" for i in range(1, 4)), *(f"Crop_normal_{i}" for i in (1, *range(10, 20), 2, *range(20, 25), *range(3, 10))), *(f"ECG5000_normal_{i}" for i in range(1, 6)), *(f"ElectricDevices_normal_{i}" for i in range(1, 8)), "FordA_normal_-1", "FordA_normal_1", "FordB_normal_-1", "FordB_normal_1", *(f"StarLightCurves_normal_{i}" for i in range(1, 4)), "Yoga_normal_1", "Yoga_normal_2")
         lengths = (1500,) * 47 + (1800,)
         labels = {dataset: tuple((index, 1 if index < 40 else 0) for index in range(length)) for dataset, length in zip(datasets, lengths, strict=True)}
         rows = tuple(DatasetBaselineAntigravity(order, next(family for family in _FAMILIES_ANTIGRAVITY if dataset.startswith(family + "_")), frozenset(), ConfusionAntigravity(0, 0, 40, length - 40)) for order, (dataset, length) in enumerate(zip(datasets, lengths, strict=True)))
@@ -178,21 +178,42 @@ class EvaluationAntigravityTests(unittest.TestCase):
             self.assertFalse(dependencies.root.exists())
             self.assertTrue(dependencies.audit_path.is_file())
 
-    def test_publication_has_no_fallible_postrename_replay_antigravity(self) -> None:
+    def test_postpublication_replay_failure_quarantines_canonical_root_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
 
         with tempfile.TemporaryDirectory(prefix="exp449_postpublication_replay_antigravity_") as temporary:
             dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
             original, calls = module.inspect_replay_at_antigravity, 0
-            def staging_only(root: Path):
+            def fail_after_staging(root: Path):
                 nonlocal calls
                 calls += 1
                 if calls > 1: raise OSError("post publication replay")
                 return original(root)
-            with patch.object(module, "inspect_replay_at_antigravity", side_effect=staging_only):
-                result = module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
-            self.assertEqual(calls, 1)
-            self.assertTrue(result.routing_research_eligible)
+            with patch.object(module, "inspect_replay_at_antigravity", side_effect=fail_after_staging), self.assertRaisesRegex(OSError, "post publication replay"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual(calls, 2); self.assertFalse(dependencies.root.exists())
+            self.assertTrue((Path(temporary) / ".publication_antigravity.forensic_antigravity").is_dir())
+            self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_quarantine_failure_retains_primary_error_and_never_keeps_expected_root_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+        with tempfile.TemporaryDirectory(prefix="exp449_quarantine_failure_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original_replay, original_rename = module.inspect_replay_at_antigravity, module._rename_no_replace_antigravity
+            calls = 0
+            def replay_then_fail(root: Path):
+                nonlocal calls
+                calls += 1
+                if calls == 2: raise OSError("post publication primary")
+                return original_replay(root)
+            def fail_quarantine(source: Path, destination: Path) -> None:
+                if source == dependencies.root: raise OSError("quarantine primitive")
+                original_rename(source, destination)
+            with patch.object(module, "inspect_replay_at_antigravity", side_effect=replay_then_fail), patch.object(module, "_rename_no_replace_antigravity", side_effect=fail_quarantine), self.assertRaisesRegex(OSError, "post publication primary") as raised:
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertFalse(dependencies.root.exists())
+            self.assertTrue((Path(temporary) / ".publication_antigravity.forensic_antigravity").is_dir())
+            self.assertTrue(dependencies.audit_path.is_file())
 
     def test_partial_staging_and_audit_write_failure_preserve_primary_truth_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module

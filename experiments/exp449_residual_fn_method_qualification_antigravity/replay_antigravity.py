@@ -25,6 +25,14 @@ _LEAVES_ANTIGRAVITY = (
     "decision_antigravity.json", "dashboard_snapshot_antigravity.json", "artifact_sha256_antigravity.json",
 )
 _FAMILY_DATASET_COUNTS_ANTIGRAVITY = (24, 7, 2, 2, 2, 5, 3, 3)
+_EXP448_TARGET_IDENTITIES_ANTIGRAVITY = (
+    *((f"ChlorineConcentration_normal_{i}", "ChlorineConcentration") for i in range(1, 4)),
+    *((f"Crop_normal_{i}", "Crop") for i in (1, *range(10, 20), 2, *range(20, 25), *range(3, 10))),
+    *((f"ECG5000_normal_{i}", "ECG5000") for i in range(1, 6)), *((f"ElectricDevices_normal_{i}", "ElectricDevices") for i in range(1, 8)),
+    ("FordA_normal_-1", "FordA"), ("FordA_normal_1", "FordA"), ("FordB_normal_-1", "FordB"), ("FordB_normal_1", "FordB"),
+    *((f"StarLightCurves_normal_{i}", "StarLightCurves") for i in range(1, 4)), *((f"Yoga_normal_{i}", "Yoga") for i in range(1, 3)),
+)
+_EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY = "0c87af592ea66e2ff479fe8a5fc1ac2222084287d6eae617530f18ec4090bf43"
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +126,10 @@ def _f1_antigravity(confusion: ConfusionAntigravity) -> float:
     return 0.0 if denominator == 0 else (2.0 * confusion.tp) / denominator
 
 
+def _sum_confusions_antigravity(rows: tuple[ConfusionAntigravity, ...]) -> ConfusionAntigravity:
+    return ConfusionAntigravity(sum(item.tp for item in rows), sum(item.fp for item in rows), sum(item.fn for item in rows), sum(item.tn for item in rows))
+
+
 def _qualifies_antigravity(confusion: ConfusionAntigravity, target_fn_delta: int) -> bool:
     if type(target_fn_delta) is not int:
         raise ValueError("target FN delta must be an exact integer")
@@ -137,21 +149,27 @@ def _metric_antigravity(row: object) -> CandidateMetricAntigravity:
     return CandidateMetricAntigravity(row["family"], row["method"], target, global_, row["target_fn_delta"], row["global_f1"], qualified)
 
 
-def _prediction_rows_antigravity(rows: tuple[object, ...]) -> None:
+def _prediction_rows_antigravity(rows: tuple[object, ...], datasets: tuple[dict[str, object], ...]) -> None:
     if len(rows) != 96:
         raise ValueError("frozen prediction population differs")
-    expected_families = tuple(family for (family, _methods), count in zip(CANDIDATE_MATRIX_ANTIGRAVITY, _FAMILY_DATASET_COUNTS_ANTIGRAVITY, strict=True) for _ in range(count))
     expected_methods = dict(CANDIDATE_MATRIX_ANTIGRAVITY)
-    for dataset_order, family in enumerate(expected_families):
+    if len(datasets) != 48: raise ValueError("target dataset authority differs")
+    for dataset_order, evidence in enumerate(datasets):
+        if not isinstance(evidence, dict): raise ValueError("target dataset evidence differs")
+        family = evidence.get("family")
         pair = rows[2 * dataset_order:2 * dataset_order + 2]
         if len(pair) != 2: raise ValueError("frozen prediction pair differs")
         dataset: str | None = None
         for offset, (row, method) in enumerate(zip(pair, expected_methods[family], strict=True)):
             expected = {"sequence", "candidate_name", "dataset", "family", "method", "indices", "target_length"}
-            if not isinstance(row, dict) or set(row) != expected or type(row["sequence"]) is not int or row["sequence"] != 2 * dataset_order + offset or type(row["dataset"]) is not str or not row["dataset"] or type(row["family"]) is not str or row["family"] != family or type(row["method"]) is not str or row["method"] != method or type(row["candidate_name"]) is not str or row["candidate_name"] != f"{row['dataset']}__{method}" or type(row["target_length"]) is not int or row["target_length"] <= 0 or type(row["indices"]) is not list or any(type(index) is not int or index < 0 or index >= row["target_length"] for index in row["indices"]) or len(set(row["indices"])) != len(row["indices"]):
+            if not isinstance(row, dict) or set(row) != expected or type(row["sequence"]) is not int or row["sequence"] != 2 * dataset_order + offset or row.get("dataset") != evidence.get("dataset") or type(row["family"]) is not str or row["family"] != family or type(row["method"]) is not str or row["method"] != method or type(row["candidate_name"]) is not str or row["candidate_name"] != f"{row['dataset']}__{method}" or row.get("target_length") != evidence.get("target_length") or type(row["target_length"]) is not int or row["target_length"] <= 0 or type(row["indices"]) is not list or any(type(index) is not int or index < 0 or index >= row["target_length"] for index in row["indices"]) or len(set(row["indices"])) != len(row["indices"]):
                 raise ValueError("frozen prediction row semantics differ")
             if dataset is None: dataset = row["dataset"]
             elif row["dataset"] != dataset: raise ValueError("frozen prediction dataset pairing differs")
+            candidate = evidence.get("candidates", {}).get(method)
+            if not isinstance(candidate, dict) or set(candidate) != {"indices", "confusion"} or candidate["indices"] != row["indices"]:
+                raise ValueError("frozen prediction indices differ from evidence")
+            _confusion_antigravity(candidate["confusion"])
 
 
 def _counts_matrix_antigravity(value: object) -> np.ndarray:
@@ -165,7 +183,7 @@ def _counts_matrix_antigravity(value: object) -> np.ndarray:
     return np.asarray(rows, dtype=np.int64)
 
 
-def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigravity, ...]) -> None:
+def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigravity, ...], evidence: tuple[dict[str, object], ...]) -> None:
     if not isinstance(value, dict) or set(value) != {"draw_sha256", "comparisons"} or value["draw_sha256"] != BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY or type(value["comparisons"]) is not list or len(value["comparisons"]) != 16:
         raise ValueError("bootstrap semantics differ")
     expected_pairs = tuple((item.family, item.method) for item in metrics)
@@ -174,6 +192,13 @@ def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigrav
         if not isinstance(row, dict) or set(row) != fields or (row["family"], row["method"]) != pair:
             raise ValueError("bootstrap comparison identity differs")
         baseline, candidate = _counts_matrix_antigravity(row["baseline_dataset_confusions"]), _counts_matrix_antigravity(row["candidate_dataset_confusions"])
+        expected_baseline = np.asarray([[item["baseline_confusion"][key] for key in ("tp", "fp", "fn", "tn")] for item in evidence], dtype=np.int64)
+        expected_candidate = expected_baseline.copy()
+        for index, item in enumerate(evidence):
+            candidate_payload = item["candidates"].get(pair[1]) if item["family"] == pair[0] else None
+            if candidate_payload is not None: expected_candidate[index] = [candidate_payload["confusion"][key] for key in ("tp", "fp", "fn", "tn")]
+        if not np.array_equal(baseline, expected_baseline) or not np.array_equal(candidate, expected_candidate):
+            raise ValueError("bootstrap matrices differ from per-dataset evidence")
         expected = paired_delta_antigravity(baseline, candidate)
         if {key: row[key] for key in fields - {"family", "method", "baseline_dataset_confusions", "candidate_dataset_confusions"}} != expected:
             raise ValueError("bootstrap comparison aggregate differs")
@@ -197,21 +222,26 @@ def inspect_replay_at_antigravity(root: Path) -> FrozenEvaluationAntigravity:
     metric_rows, family_rows = _jsonl_antigravity(leaves, "candidate_metrics_antigravity.jsonl"), _jsonl_antigravity(leaves, "family_metrics_antigravity.jsonl")
     bootstrap, decision, dashboard = (_json_antigravity(leaves, name) for name in ("bootstrap_antigravity.json", "decision_antigravity.json", "dashboard_snapshot_antigravity.json"))
     expected_registry = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
-    if context != {"schema": "exp449", "reviewed_commit": evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None, "label_access_count": 1} or compatibility != {"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"} or registry != expected_registry:
+    if not isinstance(context, dict) or set(context) != {"schema", "reviewed_commit", "label_access_count", "target_datasets", "target_authority_sha256", "exp448_target_identity_sha256"} or context.get("schema") != "exp449" or context.get("reviewed_commit") != (evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None) or context.get("label_access_count") != 1 or type(context["target_datasets"]) is not list or context["target_authority_sha256"] != sha256(canonical_json_bytes_antigravity(context["target_datasets"])).hexdigest() or context["exp448_target_identity_sha256"] != _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY or tuple((row.get("dataset"), row.get("family")) for row in context["target_datasets"] if isinstance(row, dict)) != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or compatibility != {"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"} or registry != expected_registry:
         raise ValueError("publication context or compatibility differs")
     if not isinstance(manifest, dict) or manifest != {"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(leaves["frozen_predictions_antigravity.jsonl"]).hexdigest()}:
         raise ValueError("frozen prediction manifest differs")
-    _prediction_rows_antigravity(predictions)
+    if not isinstance(evaluation, dict) or set(evaluation) != {"schema", "reviewed_commit", "candidate_count", "qualified_count", "label_session_count", "label_query_count", "label_row_count", "routing_research_eligible", "dataset_evidence"} or type(evaluation["dataset_evidence"]) is not list or evaluation["dataset_evidence"] != context["target_datasets"] and any(True for _ in ()):
+        raise ValueError("evaluation schema differs")
+    evidence: list[dict[str, object]] = []
+    for context_row, row in zip(context["target_datasets"], evaluation["dataset_evidence"], strict=True):
+        if not isinstance(context_row, dict) or not isinstance(row, dict) or set(context_row) != {"dataset", "family", "target_length", "baseline_confusion"} or set(row) != {"dataset", "family", "target_length", "baseline_confusion", "candidates"} or {key: row[key] for key in context_row} != context_row or not isinstance(row["candidates"], dict):
+            raise ValueError("per-dataset evidence differs")
+        _confusion_antigravity(row["baseline_confusion"]); evidence.append(row)
+    _prediction_rows_antigravity(predictions, tuple(evidence))
     metrics = tuple(_metric_antigravity(row) for row in metric_rows)
     expected_order = tuple((family, method) for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY for method in methods)
     if tuple((item.family, item.method) for item in metrics) != expected_order:
         raise ValueError("candidate metric order differs")
-    if not isinstance(evaluation, dict) or set(evaluation) != {"schema", "reviewed_commit", "candidate_count", "qualified_count", "label_session_count", "label_query_count", "label_row_count", "routing_research_eligible"}:
-        raise ValueError("evaluation schema differs")
     qualified_count = sum(item.qualified for item in metrics); routing_research_eligible = qualified_count > 0
     if not isinstance(decision, dict) or decision != {"schema": "exp449.decision", "qualified_count": qualified_count, "routing_research_eligible": routing_research_eligible, "automatic_routing": False, "automatic_promotion": False, "gates": {"global_fn_lt": 1988, "global_fp_lte": 314, "global_f1_nonregression": FROZEN_CONFIG_ANTIGRAVITY["global_f1_min"], "target_fn_delta_lt": 0}}:
         raise ValueError("decision semantics differ")
-    _bootstrap_antigravity(bootstrap, metrics)
+    _bootstrap_antigravity(bootstrap, metrics, tuple(evidence))
     if not isinstance(family_rows, tuple) or len(family_rows) != 8 or not isinstance(dashboard, dict):
         raise ValueError("family or dashboard publication differs")
     expected_families = tuple(family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY)
@@ -237,8 +267,15 @@ def inspect_replay_at_antigravity(root: Path) -> FrozenEvaluationAntigravity:
         raise ValueError("dashboard candidate aggregate differs")
     for item in metrics:
         family_base = family_baselines[item.family]
+        evidence_rows = tuple(entry for entry in evidence if entry["family"] == item.family)
+        candidate_target = _sum_confusions_antigravity(tuple(_confusion_antigravity(entry["candidates"][item.method]["confusion"]) for entry in evidence_rows))
+        baseline_target = _sum_confusions_antigravity(tuple(_confusion_antigravity(entry["baseline_confusion"]) for entry in evidence_rows))
+        if item.target_confusion != candidate_target or family_base != baseline_target:
+            raise ValueError("candidate metrics differ from per-dataset evidence")
         if (item.target_confusion.tp + item.target_confusion.fn, item.target_confusion.fp + item.target_confusion.tn) != (family_base.tp + family_base.fn, family_base.fp + family_base.tn):
             raise ValueError("candidate target confusion does not conserve its baseline")
+        if baseline_global != ConfusionAntigravity(1930, 314, 1988, 191668):
+            raise ValueError("global Exp448 baseline differs")
         expected_global = ConfusionAntigravity(baseline_global.tp - family_base.tp + item.target_confusion.tp, baseline_global.fp - family_base.fp + item.target_confusion.fp, baseline_global.fn - family_base.fn + item.target_confusion.fn, baseline_global.tn - family_base.tn + item.target_confusion.tn)
         if item.global_confusion != expected_global or item.target_fn_delta != item.target_confusion.fn - family_base.fn:
             raise ValueError("candidate global confusion or target delta differs")
