@@ -23,11 +23,14 @@ class ConfigLineageTests(unittest.TestCase):
         """Module aliases are caller edges, not attribute imports to discard."""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for name in ("data_paper.py", "contracts_paper.py"):
+            (root / "sources_paper").mkdir()
+            for name in ("data_paper.py", "contracts_paper.py", "sources_paper/hard_sources_paper.py"):
                 (root / name).write_text("", encoding="utf-8")
             (root / "caller_paper.py").write_text(
                 "from paper.equipment_anomaly_detection import data_paper\n"
-                "from paper.equipment_anomaly_detection import contracts_paper as contracts\n",
+                "from paper.equipment_anomaly_detection.sources_paper import hard_sources_paper as hard\n"
+                "import paper.equipment_anomaly_detection.contracts_paper as contracts\n"
+                "import numpy as np\n",
                 encoding="utf-8",
             )
             (root / "relative_paper.py").write_text(
@@ -36,6 +39,7 @@ class ConfigLineageTests(unittest.TestCase):
             callers = _ast_import_callers(root)
         self.assertEqual(callers["data_paper.py"], frozenset({"caller_paper.py", "relative_paper.py"}))
         self.assertEqual(callers["contracts_paper.py"], frozenset({"caller_paper.py"}))
+        self.assertEqual(callers["sources_paper/hard_sources_paper.py"], frozenset({"caller_paper.py"}))
 
     def test_artifact_parity_claim_is_hash_bound_and_precisely_scoped(self) -> None:
         """Artifact parity may claim only the frozen smoke's available historical stages."""
@@ -54,6 +58,25 @@ class ConfigLineageTests(unittest.TestCase):
             claim_path.write_text(claim_path.read_text(encoding="utf-8").replace('"exp253"', '"exp999"'), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "hash differs"):
                 validate_codemap_triplet(copied_root)
+
+    def test_artifact_parity_claim_rejects_semantic_identity_mutations_without_lock_help(self) -> None:
+        """Claim identity is semantic: hashes cannot authorize broader datasets or paths."""
+        original = json.loads((PAPER_ROOT / "artifact_parity_claim_paper.json").read_text(encoding="utf-8"))
+        mutations = (
+            ("dataset", lambda claim: claim["frozen_datasets"].__setitem__(0, "Other_normal_0")),
+            ("order", lambda claim: claim["frozen_datasets"].reverse()),
+            ("path", lambda claim: claim["artifacts"]["exp137"].__setitem__(0, "results/other.csv")),
+            ("stages", lambda claim: claim.__setitem__("available_stages", ["exp137"])),
+            ("freeze", lambda claim: claim.__setitem__("freeze_before_artifact_read", False)),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for label, mutate in mutations:
+                claim = json.loads(json.dumps(original))
+                mutate(claim)
+                (root / "artifact_parity_claim_paper.json").write_text(json.dumps(claim), encoding="utf-8")
+                with self.assertRaises(ValueError, msg=label):
+                    validate_artifact_parity_claim(root)
 
     def test_codemap_callers_are_complete_static_ast_import_edges(self) -> None:
         """Every direct paper import is represented by its callee's caller list."""

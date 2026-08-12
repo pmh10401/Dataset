@@ -37,6 +37,14 @@ _SOURCE_PROVENANCE_ORIGIN_FIELDS = frozenset({"module", "symbols", "source_sha25
 _ARTIFACT_PARITY_CLAIM_FIELDS = frozenset({"schema", "parity_kind", "frozen_datasets", "freeze_before_artifact_read", "available_stages", "unavailable_stages", "artifacts"})
 _ARTIFACT_PARITY_AVAILABLE = ("exp137", "exp236")
 _ARTIFACT_PARITY_UNAVAILABLE = ("exp74d", "exp89", "exp90", "exp93", "exp253")
+_ARTIFACT_PARITY_DATASETS = tuple(f"ACSF1_normal_{index}" for index in range(10))
+_ARTIFACT_PARITY_PATHS = {
+    "exp137": ("results/exp137/experiment_137_operational_triage_results.csv",),
+    "exp236": (
+        "outputs/exp236_detection_coverage_expansion/exp236_frozen_predictions.jsonl",
+        "/Users/mac/Documents/Dataset/experiments/exp236_direct_run_antigravity/exp236_frozen_predictions.jsonl",
+    ),
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -223,13 +231,13 @@ def validate_artifact_parity_claim(paper_root: Path) -> dict[str, object]:
     if payload["schema"] != "paper-artifact-parity-claim.v1" or payload["parity_kind"] != "historical_artifact_lanes":
         raise ValueError("paper artifact parity claim kind is invalid")
     datasets, available, unavailable, artifacts = payload["frozen_datasets"], payload["available_stages"], payload["unavailable_stages"], payload["artifacts"]
-    if not isinstance(datasets, list) or len(datasets) != 10 or any(type(name) is not str or not name for name in datasets):
+    if tuple(datasets) != _ARTIFACT_PARITY_DATASETS:
         raise ValueError("paper artifact parity claim datasets are invalid")
     if type(payload["freeze_before_artifact_read"]) is not bool or payload["freeze_before_artifact_read"] is not True:
         raise ValueError("paper artifact parity claim must require create-only freeze")
     if tuple(available) != _ARTIFACT_PARITY_AVAILABLE or tuple(unavailable) != _ARTIFACT_PARITY_UNAVAILABLE:
         raise ValueError("paper artifact parity stage boundary differs")
-    if not isinstance(artifacts, dict) or set(artifacts) != set(_ARTIFACT_PARITY_AVAILABLE) or any(not isinstance(paths, list) or not paths or any(type(item) is not str or not item for item in paths) for paths in artifacts.values()):
+    if not isinstance(artifacts, dict) or {stage: tuple(paths) for stage, paths in artifacts.items()} != _ARTIFACT_PARITY_PATHS:
         raise ValueError("paper artifact parity artifact paths are invalid")
     return {"available_stages": tuple(available), "unavailable_stages": tuple(unavailable), "freeze_before_artifact_read": payload["freeze_before_artifact_read"]}
 
@@ -267,15 +275,22 @@ def _ast_import_callers(paper_root: Path) -> dict[str, frozenset[str]]:
         package = path.relative_to(root).parts[:-1]
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if not isinstance(node, ast.ImportFrom):
+            if isinstance(node, ast.Import):
+                candidates = [
+                    alias.name.removeprefix(package_prefix).replace(".", "/") + ".py"
+                    for alias in node.names if alias.name.startswith(package_prefix)
+                ]
+            elif not isinstance(node, ast.ImportFrom):
                 continue
-            if node.level:
+            elif node.level:
                 base = package[:len(package) - (node.level - 1)]
                 candidates = ["/".join(base + tuple(node.module.split("."))) + ".py"] if node.module else ["/".join(base + (alias.name,)) + ".py" for alias in node.names]
             elif node.module == package_prefix.removesuffix("."):
                 candidates = [alias.name + ".py" for alias in node.names]
             elif node.module is not None and node.module.startswith(package_prefix):
-                candidates = [node.module.removeprefix(package_prefix).replace(".", "/") + ".py"]
+                base = node.module.removeprefix(package_prefix).replace(".", "/")
+                candidates = [base + ".py"]
+                candidates.extend(base + "/" + alias.name + ".py" for alias in node.names)
             else:
                 continue
             for imported in candidates:

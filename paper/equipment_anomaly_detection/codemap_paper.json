@@ -89,7 +89,7 @@
         "tests_paper/test_hard_route_paper.py"
       ],
       "effects": [
-        "replays full-fit Exp74d→137 and OOF-only Exp234 expansion with exact disjoint lanes, immutable route values, and a create-only ten-dataset smoke freeze",
+        "replays full-fit Exp74d\u2192137 and OOF-only Exp234 expansion with exact disjoint lanes, immutable route values, and a create-only ten-dataset smoke freeze",
         "replays frozen routes from raw evidence only; test-only historical artifact parity is create-only-freeze-gated and limited by artifact_parity_claim_paper.json to Exp137/Exp236"
       ],
       "tests": [

@@ -347,6 +347,7 @@ class HardRouteTests(unittest.TestCase):
 
     def test_executable_origin_exp134_and_exp135_cover_positive_and_negative_priority_membership(self) -> None:
         """Executable Block-B/C selectors agree with paper for eligible and rejected reviews."""
+        from paper.equipment_anomaly_detection.hard_route_paper import replay_exp134
         parse = lambda value: {int(item) for item in str(value).split()} if value else set()
         train = np.arange(200., dtype=float)
         def blocks(*, block_b_support: bool) -> ConfirmationBlocks:
@@ -377,10 +378,12 @@ class HardRouteTests(unittest.TestCase):
             exp134.__globals__["base"].block_scores = lambda _train, _test, current=current: (train, current.block_a.test_score, train, current.block_b_01.test_score, 200, 0)
             exp135.__globals__["block_c_candidates"] = lambda _train, _test, current=current: (set(current.block_c.candidate), current.block_c.test_score, 200, 0, .01, 0)
             paper = replay_exp133_134_135_137(frozenset({exp93_index}), current)
+            paper134 = replay_exp134(frozenset({exp93_index}), current)
             rows134 = exp134(("fixture", {"selected_indices": str(exp93_index)}, {}))
             origin134 = next(row["review"] for row in rows134 if row["config"] == "review_block_ba_tail_pct_1p0_top1")
-            self.assertEqual(frozenset(origin134), frozenset({review_index}))
-            rows135 = exp135(("fixture", {"selected_indices": str(exp93_index), "review_candidate_indices": str(review_index), "train_normal_count": "200", "tiny_train": "0"}, {"high_confidence_count": "1" if support else "0", "standard_confidence_count": "0" if support else "1"}))
+            self.assertEqual(frozenset(origin134), paper134.review)
+            self.assertEqual(paper134.review, frozenset({review_index}))
+            rows135 = exp135(("fixture", {"selected_indices": str(exp93_index), "review_candidate_indices": " ".join(str(index) for index in sorted(origin134)), "train_normal_count": "200", "tiny_train": "0"}, {"high_confidence_count": "1" if support else "0", "standard_confidence_count": "0" if support else "1"}))
             origin135 = next(row["review"] for row in rows135 if row["config"] == "review_tail1pct_all_standard_and_block_c")
             self.assertEqual(frozenset(origin135), paper.priority)
             self.assertEqual(paper.priority, expected)

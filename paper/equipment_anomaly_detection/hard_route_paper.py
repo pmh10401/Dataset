@@ -70,6 +70,16 @@ class SourceExpansion:
 
 
 @dataclass(frozen=True, slots=True)
+class Exp134Review:
+    candidate: frozenset[int]
+    review: frozenset[int]
+
+    def __post_init__(self) -> None:
+        if not self.review <= self.candidate or any(type(index) is not int or index < 0 for index in self.candidate):
+            raise ValueError("Exp134 review evidence is invalid")
+
+
+@dataclass(frozen=True, slots=True)
 class HardRouteResult:
     exp74d: RouteLanes
     exp89: frozenset[int]
@@ -208,13 +218,19 @@ def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, f
     return exp74d, exp89, exp90, _replay_exp93_from_exp90(evidence, exp90)
 
 
-def replay_exp133_134_135_137(exp93: frozenset[int], blocks: ConfirmationBlocks) -> RouteLanes:
-    high, standard = set(exp93) & set(blocks.block_b_015.candidate), set(exp93) - set(blocks.block_b_015.candidate)
+def replay_exp134(exp93: frozenset[int], blocks: ConfirmationBlocks) -> Exp134Review:
+    """Compute the exact label-free Exp134 Block-A/B review intermediate."""
     candidates = (set(blocks.block_a.candidate) & set(blocks.block_b_01.candidate)) - set(exp93)
     review = set()
     if len(blocks.block_b_01.train_score) > 10 and candidates:
         review = {max(candidates, key=lambda index: (float(blocks.block_b_01.test_score[index]), -index))}
-    confirmed = review & set(blocks.block_c.candidate)
+    return Exp134Review(frozenset(candidates), frozenset(review))
+
+
+def replay_exp133_134_135_137(exp93: frozenset[int], blocks: ConfirmationBlocks) -> RouteLanes:
+    high, standard = set(exp93) & set(blocks.block_b_015.candidate), set(exp93) - set(blocks.block_b_015.candidate)
+    exp134 = replay_exp134(exp93, blocks)
+    confirmed = set(exp134.review) & set(blocks.block_c.candidate)
     priority = confirmed if not high and bool(standard) else set()
     return RouteLanes(frozenset(high), frozenset(standard), frozenset(priority))
 
@@ -301,4 +317,4 @@ def compare_parity(new: Mapping[str, frozenset[int]], oracle_path: Path) -> Pari
     return ParityReport(not differing and set(new) == set(oracle), differing)
 
 
-__all__ = ["CANONICAL_SMOKE_DATASET_COUNT_PAPER", "EXP234_SOURCES_PAPER", "FrozenSmokeReport", "HardRouteResult", "MAX_TOP_PAPER", "ParityReport", "RouteLanes", "SourceExpansion", "compare_parity", "exact_normal_guard", "freeze_canonical_smoke", "minimum_source_expansion", "replay_exp133_134_135_137", "replay_exp74d_89_90_93", "replay_hard_route", "union_three_source_hard"]
+__all__ = ["CANONICAL_SMOKE_DATASET_COUNT_PAPER", "EXP234_SOURCES_PAPER", "Exp134Review", "FrozenSmokeReport", "HardRouteResult", "MAX_TOP_PAPER", "ParityReport", "RouteLanes", "SourceExpansion", "compare_parity", "exact_normal_guard", "freeze_canonical_smoke", "minimum_source_expansion", "replay_exp133_134_135_137", "replay_exp134", "replay_exp74d_89_90_93", "replay_hard_route", "union_three_source_hard"]
