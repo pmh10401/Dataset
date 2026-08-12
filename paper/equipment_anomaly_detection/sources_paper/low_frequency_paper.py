@@ -4,6 +4,10 @@ This is the values-only scientific closure for the frozen Exp440 feature,
 calibration, score, and strict two-depth decision, followed by Exp441's
 Hard-empty one-per-dataset budget-30 rule.  It intentionally has no runtime
 dependency on ``experiments.exp440...`` or on historical artifacts.
+
+This Task 6 source performs no full-dataset acceleration assessment.  Task 9
+must establish exact CPU/device numerical and candidate parity plus an
+end-to-end 1.1x speed gate before any non-CPU backend can be authorized.
 """
 from __future__ import annotations
 
@@ -46,11 +50,17 @@ PROVENANCE_PAPER = {
     "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/config_antigravity.py": (
         "FROZEN_CONFIG", "Exp440FrozenConfig",
     ),
+    "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/inputs_antigravity.py": (
+        "partition_train_rows_antigravity", "test_row_abstention_reason_antigravity",
+    ),
     "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/scoring_antigravity.py": (
         "score_test_row_antigravity",
     ),
     "experiments/exp441_hard_empty_single_shot_recovery_antigravity/selector_antigravity.py": (
         "select_hard_empty_single_shot_antigravity",
+    ),
+    "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py": (
+        "CandidateEvidenceAntigravity",
     ),
 }
 

@@ -271,7 +271,20 @@ class LowFrequencyResult:
         if any(not isinstance(candidate, LowFrequencyCandidate) or candidate.dataset not in datasets for candidate in candidates) or len({candidate.coordinate for candidate in candidates}) != len(candidates):
             raise ValueError("low-frequency provisional candidates are invalid")
         rows_by_coordinate = {(row.dataset, row.instance_index): row for row in rows}
-        if any(candidate.coordinate not in rows_by_coordinate or not rows_by_coordinate[candidate.coordinate].provisional or rows_by_coordinate[candidate.coordinate].depth_evidence != candidate.depth_evidence for candidate in candidates):
+        provisional_rows = tuple(row for row in rows if row.provisional)
+        if len({(row.dataset, row.instance_index) for row in provisional_rows}) != len(provisional_rows) or {candidate.coordinate for candidate in candidates} != {(row.dataset, row.instance_index) for row in provisional_rows}:
+            raise ValueError("low-frequency row and candidate coverage is not bijective")
+        if any(
+            candidate.coordinate not in rows_by_coordinate
+            or not rows_by_coordinate[candidate.coordinate].provisional
+            or candidate.dataset != rows_by_coordinate[candidate.coordinate].dataset
+            or candidate.instance_index != rows_by_coordinate[candidate.coordinate].instance_index
+            or candidate.raw_length != rows_by_coordinate[candidate.coordinate].raw_length
+            or candidate.depth_evidence != rows_by_coordinate[candidate.coordinate].depth_evidence
+            or candidate.second_excess_ratio != rows_by_coordinate[candidate.coordinate].second_excess_ratio
+            or candidate.second_empirical_rank != rows_by_coordinate[candidate.coordinate].second_empirical_rank
+            for candidate in candidates
+        ):
             raise ValueError("low-frequency provisional candidates do not match row evidence")
         lanes = dict(self.hard_lanes)
         if set(lanes) != set(datasets) or any(not isinstance(indices, frozenset) or any(type(index) is not int or index < 0 for index in indices) for indices in lanes.values()):

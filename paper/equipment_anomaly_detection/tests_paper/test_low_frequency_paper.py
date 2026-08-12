@@ -1,6 +1,7 @@
 """Label-free contracts for the standalone Exp440 low-frequency replay."""
 from __future__ import annotations
 
+from hashlib import sha256
 import unittest
 
 import numpy as np
@@ -8,6 +9,7 @@ import numpy as np
 from paper.equipment_anomaly_detection.contracts_paper import (
     LowFrequencyCandidate,
     LowFrequencyDepthEvidence,
+    LowFrequencyResult,
     RawDataset,
 )
 from paper.equipment_anomaly_detection.sources_paper.low_frequency_paper import (
@@ -107,6 +109,68 @@ class LowFrequencyTests(unittest.TestCase):
         self.assertEqual(len(result.selected_candidates), 2)
         with self.assertRaises(TypeError):
             result.hard_lanes["A"] = frozenset({0})  # type: ignore[index]
+
+    def test_result_rejects_candidate_omission_and_raw_length_mismatch(self) -> None:
+        result = score_low_frequency(_values(), {"fixture": frozenset()})
+        candidate = result.provisional_candidates[0]
+        with self.assertRaises(ValueError):
+            LowFrequencyResult(result.datasets, result.rows, (), (), result.excluded_train_rows, result.hard_lanes)
+        with self.assertRaises(ValueError):
+            LowFrequencyCandidate(
+                candidate.dataset, candidate.instance_index, candidate.raw_length,
+                candidate.depths, candidate.second_excess_ratio + 1.0,
+                candidate.second_empirical_rank, candidate.depth_evidence,
+            )
+        mismatched = LowFrequencyCandidate(
+            candidate.dataset, candidate.instance_index, 999, candidate.depths,
+            candidate.second_excess_ratio, candidate.second_empirical_rank,
+            candidate.depth_evidence,
+        )
+        with self.assertRaises(ValueError):
+            LowFrequencyResult(result.datasets, result.rows, (mismatched,), (mismatched,), result.excluded_train_rows, result.hard_lanes)
+        extra = LowFrequencyCandidate("fixture", 1, 64, (1, 2), .1, .9)
+        with self.assertRaises(ValueError):
+            LowFrequencyResult(result.datasets, result.rows, (candidate, extra), (candidate,), result.excluded_train_rows, result.hard_lanes)
+
+    def test_origin_missing_outcomes_map_to_paper_normalized_reasons(self) -> None:
+        """Origin state is compared independently; only nonfinite has a legacy string."""
+        from experiments.exp439_scale_aware_reconstruction_repair_antigravity.contracts_antigravity import RawValueSeries
+        from experiments.exp439_scale_aware_reconstruction_repair_antigravity.inputs_antigravity import Exp439RawDataset
+        from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.inputs_antigravity import partition_train_rows_antigravity, test_row_abstention_reason_antigravity
+        from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.runtime_antigravity import CpuDatasetTaskAntigravity, score_dataset_task_antigravity
+
+        def origin_row(split: str, index: int, row: np.ndarray) -> RawValueSeries:
+            payload = np.asarray(row, dtype="<f4").tobytes()
+            return RawValueSeries("origin", index, split, np.frombuffer(payload, dtype="<f4"), sha256(payload).hexdigest())
+
+        values = _values("origin")
+        finite_train = values.train_rows[:4]
+        excluded_train = finite_train + (np.full(64, np.nan, dtype=np.float32),)
+        origin_train = Exp439RawDataset("origin", "TRAIN", tuple(origin_row("TRAIN", index, row) for index, row in enumerate(excluded_train)))
+        origin_test = Exp439RawDataset("origin", "TEST", (origin_row("TEST", 0, values.test_rows[0]),))
+        preparation = partition_train_rows_antigravity(origin_train)
+        origin_scored = score_dataset_task_antigravity(CpuDatasetTaskAntigravity("origin", origin_train, origin_test))
+        paper_scored = score_low_frequency(RawDataset("origin", 64, tuple(range(5)), (b"x",) * 5, excluded_train, (0,), (b"y",), values.test_rows[:1]), {"origin": frozenset()})
+        self.assertEqual(len(preparation.exclusions), paper_scored.excluded_train_rows)
+        self.assertEqual(tuple(group.raw_length for group in preparation.groups), (64,))
+        self.assertEqual(origin_scored.abstention_indices, ())
+        self.assertFalse(paper_scored.rows[0].evidence_missing)
+
+        short_train = values.train_rows[:3]
+        origin_short = Exp439RawDataset("origin", "TRAIN", tuple(origin_row("TRAIN", index, row) for index, row in enumerate(short_train)))
+        origin_short_result = score_dataset_task_antigravity(CpuDatasetTaskAntigravity("origin", origin_short, origin_test))
+        paper_short = score_low_frequency(RawDataset("origin", 64, tuple(range(3)), (b"x",) * 3, short_train, (0,), (b"y",), values.test_rows[:1]), {"origin": frozenset()})
+        self.assertEqual(partition_train_rows_antigravity(origin_short).insufficient_lengths, (64,))
+        self.assertEqual(origin_short_result.abstention_indices, (0,))
+        self.assertEqual(paper_short.rows[0].missing_reason, "no_eligible_exact_length_group")
+
+        nonfinite_test = origin_row("TEST", 0, np.full(64, np.nan, dtype=np.float32))
+        origin_nonfinite_test = Exp439RawDataset("origin", "TEST", (nonfinite_test,))
+        origin_nonfinite_result = score_dataset_task_antigravity(CpuDatasetTaskAntigravity("origin", Exp439RawDataset("origin", "TRAIN", tuple(origin_row("TRAIN", index, row) for index, row in enumerate(finite_train))), origin_nonfinite_test))
+        paper_nonfinite = score_low_frequency(RawDataset("origin", 64, tuple(range(4)), (b"x",) * 4, finite_train, (0,), (b"y",), (np.full(64, np.nan, dtype=np.float32),)), {"origin": frozenset()})
+        self.assertEqual(test_row_abstention_reason_antigravity(nonfinite_test), "nonfinite_test")
+        self.assertEqual(origin_nonfinite_result.abstention_indices, (0,))
+        self.assertEqual(paper_nonfinite.rows[0].missing_reason, "nonfinite_test")
 
     def test_paper_module_has_no_legacy_exp440_runtime_import(self) -> None:
         import sys

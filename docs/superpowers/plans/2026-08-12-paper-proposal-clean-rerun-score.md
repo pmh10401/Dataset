@@ -22,7 +22,7 @@
 - 공개 비교군은 k-NN, LOF, RBF OCSVM, Isolation Forest, Deep SVDD 1D, DROCC 1D뿐이다.
 - 고전 네 기법은 전체 실행하고 심층 두 기법은 합계 48시간 예산 안에서 완주한 결과만 주 표에 허용한다.
 - PyTorch, MLX, MPS의 tensor eligibility·availability·overhead를 각각 평가한다. MLX/MPS는 CPU와 같은 input/seed, 모든 alpha candidate parity, finite score, 절대오차 `1e-5`, 전송·동기화를 포함한 1.1배 속도 조건을 모두 통과할 때만 사용한다.
-- 새 CPU score stage는 `max(1, os.cpu_count() - 1)` dataset worker를 사용하고 감지 CPU 수와 선택 worker 수를 provenance에 기록하며, worker당 수치 thread는 1개다.
+- 새 CPU score stage는 `min(max(1, os.cpu_count() - 1), 7)` dataset worker를 사용하고 감지 CPU 수와 선택 worker 수를 provenance에 기록하며, worker당 수치 thread는 1개다. 동일한 frozen worker record를 classical baseline에 적용하고, Deep SVDD와 DROCC는 순차적으로 1 worker만 사용한다.
 - 기존 experiment package와 `experiments.paper_public_baselines`의 과학 코드는 수정하지 않는다. 필요한 제안기술 로직은 원본 파일·symbol·SHA256를 기록한 뒤 paper 폴더에 복사하고 원본과의 parity test를 둔다.
 - 논문용 신규 파일은 `paper/equipment_anomaly_detection/` 아래에 두고 파일명에 `paper`를 포함한다. 이 사용자 승인 규칙은 기존 `antigravity` 신규 파일명 정책에 대한 이 논문 폴더의 명시적 예외다.
 - 논문 버전의 code map은 `codemap_paper.html`, `codemap_paper.json`, `codemap_paper.lock` 세 파일을 함께 갱신한다.
@@ -841,9 +841,9 @@ class AccelerationTests(unittest.TestCase):
                                 finite=True, candidate_parity=True, max_abs_error=0.0)
         self.assertEqual(record.selected_backend, "cpu")
 
-    def test_cpu_worker_count_is_logical_cpu_minus_one(self) -> None:
+    def test_cpu_worker_count_is_logical_cpu_minus_one_capped_at_seven(self) -> None:
         record = select_cpu_workers(detected_logical_cpus=12)
-        self.assertEqual(record.dataset_workers, 11)
+        self.assertEqual(record.dataset_workers, 7)
 
     def test_assessment_names_all_three_acceleration_families(self) -> None:
         self.assertEqual({row.backend_family for row in self.records},
@@ -858,7 +858,7 @@ Expected: FAIL because acceleration records are absent.
 
 - [ ] **Step 3: Implement exact policy checks**
 
-`AccelerationRecord`는 stage, backend family, tensor eligibility, availability, transfer/compile overhead, CPU/device seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. PyTorch, MLX, MPS 세 family 모두 record를 만들고 official aeon/scikit-learn/PyTorch transformer를 다시 작성해야 하는 backend는 `algorithm_rewrite_required` 사유로 CPU를 선택한다. `WorkerRecord`에는 감지 logical CPU와 `max(1, cpu_count - 1)` worker를 기록한다.
+`AccelerationRecord`는 stage, backend family, tensor eligibility, availability, transfer/compile overhead, CPU/device seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. PyTorch, MLX, MPS 세 family 모두 record를 만들고 official aeon/scikit-learn/PyTorch transformer를 다시 작성해야 하는 backend는 `algorithm_rewrite_required` 사유로 CPU를 선택한다. `WorkerRecord`에는 감지 logical CPU와 `min(max(1, cpu_count - 1), 7)` worker를 기록하며, 동일한 frozen record는 classical baseline에도 적용된다; Deep SVDD와 DROCC는 sequential 1 worker다.
 
 - [ ] **Step 4: Fill the pipeline acceleration gate before proposal scoring**
 

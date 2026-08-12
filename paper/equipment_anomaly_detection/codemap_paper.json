@@ -62,7 +62,7 @@
       "effects": [
         "defines frozen configuration, lineage, raw values, defensively immutable continuous leaf evidence, and codemap value contracts including database identity and excluded datasets",
         "defines SourceDatasetMetadata and RawDataset metadata_length",
-        "defines immutable validated low-frequency depth, row, provisional-candidate, and full cross-dataset result contracts"
+        "defines immutable validated low-frequency depth, row, provisional-candidate, and full cross-dataset result contracts with a bijective provisional-row/candidate invariant"
       ],
       "tests": [
         "tests_paper/test_config_lineage_paper.py",
@@ -271,7 +271,8 @@
       ],
       "effects": [
         "replays copied Exp440 exact-length finite-TRAIN grouped low-frequency evidence for every TEST row, with strict two-depth raw score thresholds/ranks and deterministic missing outcomes",
-        "accepts one RawDataset or a dataset mapping so the stateless source result exposes copied Exp441 Hard-empty one-per-dataset global 30-candidate selection without TEST-label access or historical coordinates"
+        "accepts one RawDataset or a dataset mapping so the stateless source result exposes copied Exp441 Hard-empty one-per-dataset global 30-candidate selection without TEST-label access or historical coordinates",
+        "defers CPU/device parity and speed authorization to Task 9; no Task 6 acceleration assessment or full-dataset backend claim"
       ],
       "tests": [
         "tests_paper/test_low_frequency_paper.py"
@@ -282,8 +283,10 @@
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/features_antigravity.py",
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/scoring_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/config_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/inputs_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/features_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/scoring_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/selector_antigravity.py"
       ]
     },
@@ -426,7 +429,7 @@
     "tests_paper/test_low_frequency_paper.py": {
       "callers": [],
       "effects": [
-        "exercises strict equality-not-hit, complete TEST-row missing evidence, exact-length/minimum-four grouping, nonfinite TRAIN exclusion, immutable contracts, legacy-import isolation, Exp440 feature/calibration/raw-score/rank parity, Exp441 selector parity, and mapped cross-dataset global selection"
+        "exercises strict equality-not-hit, complete TEST-row missing evidence, exact-length/minimum-four grouping, nonfinite TRAIN exclusion, immutable contracts, legacy-import isolation, Exp440 feature/calibration/raw-score/rank parity, Exp441 selector parity, mapped cross-dataset global selection, result bijection rejection, and independent Exp440 missing-state parity"
       ],
       "tests": [
         "tests_paper/test_low_frequency_paper.py"

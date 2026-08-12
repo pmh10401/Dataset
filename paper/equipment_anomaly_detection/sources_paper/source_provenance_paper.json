@@ -362,7 +362,7 @@
       ]
     },
     "sources_paper/low_frequency_paper.py": {
-      "paper_sha256": "9a2db8400b0e5cb4ce3c78dc767ea74d257c05d09d78847c43de0b39ebf97b44",
+      "paper_sha256": "20231f7a4cd65d7846477e7c041ef67d314683f602182831a0791dc2cc4bce11",
       "origins": [
         {
           "module": "experiments.exp439_scale_aware_reconstruction_repair_antigravity.aspe_antigravity",
@@ -405,6 +405,14 @@
           "source_sha256": "e664a3a2b9d7b2ae8d81b2470bd148b1352442ae7079e9f0197fb9cb13832041"
         },
         {
+          "module": "experiments.exp440_train_only_low_frequency_precision_gate_antigravity.inputs_antigravity",
+          "symbols": [
+            "partition_train_rows_antigravity",
+            "test_row_abstention_reason_antigravity"
+          ],
+          "source_sha256": "e89909997a28786d56524d1fa3f66ce906f2312c5de6125b19890e9e9e0d8455"
+        },
+        {
           "module": "experiments.exp440_train_only_low_frequency_precision_gate_antigravity.features_antigravity",
           "symbols": [
             "adjacent_depths_antigravity",
@@ -418,6 +426,13 @@
             "score_test_row_antigravity"
           ],
           "source_sha256": "ef3675e63b1cf2907cc0b3c97d204db77b2573d867590520a1e8e660a01ca976"
+        },
+        {
+          "module": "experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity",
+          "symbols": [
+            "CandidateEvidenceAntigravity"
+          ],
+          "source_sha256": "319dcba734dadc12c89210e4b576da5b6d3e14ccb5e2f26624da5377417f57e1"
         },
         {
           "module": "experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity",
