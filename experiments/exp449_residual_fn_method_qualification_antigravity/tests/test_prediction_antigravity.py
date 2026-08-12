@@ -82,6 +82,29 @@ class PredictionAntigravityTests(unittest.TestCase):
             (root / "progress_antigravity.txt").write_text("96\n")
             with self.assertRaises(ValueError):
                 validate_prediction_root_antigravity(root, authority)
+
+    def test_private_validator_rejects_rehashed_semantic_context_attack_antigravity(self) -> None:
+        """Break caught: accepting a manifest rehash after frozen candidate semantics are changed."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415
+            run_synthetic_lifecycle_antigravity,
+            validate_prediction_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "e" * 40)
+            context_path = root / "context_antigravity.json"
+            context = json.loads(context_path.read_text())
+            context["candidate_matrix"] = []
+            context_path.write_bytes(canonical_json_bytes_antigravity(context))
+            manifest_path = root / "prediction_manifest_antigravity.json"
+            manifest = json.loads(manifest_path.read_text())
+            import hashlib
+            manifest["context_sha256"] = hashlib.sha256(context_path.read_bytes()).hexdigest()
+            manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
+            with self.assertRaises(ValueError):
+                validate_prediction_root_antigravity(root, authority)
         with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
             root = Path(temporary) / "run"
             authority = run_synthetic_lifecycle_antigravity(root, "b" * 40)
@@ -126,6 +149,20 @@ class PredictionAntigravityTests(unittest.TestCase):
             self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
             self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
             self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 48)
+
+    def test_private_lifecycle_preserves_prefix_at_first_and_last_leaf_failure_antigravity(self) -> None:
+        """Break caught: deleting or advancing immutable completed leaves across terminal failures."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        for failed_sequence, expected_count in ((0, 1), (95, 96)):
+            with self.subTest(failed_sequence=failed_sequence), tempfile.TemporaryDirectory(prefix="exp449_lifecycle_antigravity_") as temporary:
+                parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+                with self.assertRaisesRegex(RuntimeError, f"exact_next_sequence={expected_count}"):
+                    run_synthetic_lifecycle_antigravity(root, "b" * 40, fail_after_leaf=failed_sequence, audit_path=audit)
+                self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), expected_count)
+                self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], expected_count)
+                self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+                self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
 
     def test_private_lifecycle_is_byte_identical_after_real_process_completion_antigravity(self) -> None:
         """Break caught: allowing out-of-order worker completion to alter durable leaf bytes."""
