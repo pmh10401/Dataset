@@ -21,7 +21,11 @@ HTML_PATH = MAP_DIR / "codemap_exp449_antigravity.html"
 SCANNED_TOP_LEVEL = (".superpowers", "docs", "experiments", "operational", "reports", "scratch", "scripts", "vercel-dashboard")
 EXCLUDED_PARTS = {".git", ".worktrees", "vendor", "node_modules", "build", "cache", "dist", "__pycache__", ".pytest_cache", ".mypy_cache", ".venv", "venv", "outputs", "results"}
 EDGE_TYPES = {"imports", "reads", "governs", "future_unknown"}
-_MAP_ONLY_PATHS_ANTIGRAVITY = {"scratch/build_codemap_exp449_antigravity.py"}
+_MAP_TRIPLET_ANTIGRAVITY = {
+    "docs/codemap/codemap_exp449_antigravity.html",
+    "docs/codemap/codemap_exp449_antigravity.json",
+    "docs/codemap/codemap_exp449_antigravity.lock",
+}
 
 
 def strict_json_antigravity(text: str) -> Any:
@@ -81,36 +85,24 @@ def _git_commit_exists_antigravity(commit: str) -> bool:
     return subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
 
 
-def _is_map_only_commit_antigravity(commit: str) -> bool:
-    """Recognize a map-only child without letting map contents fingerprint themselves."""
-    paths = [path for path in subprocess.check_output(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", commit], cwd=ROOT, text=True).splitlines() if path]
-    return bool(paths) and all(path.startswith("docs/codemap/") or path in _MAP_ONLY_PATHS_ANTIGRAVITY for path in paths)
+def _changed_paths_from_parent_antigravity(source_parent: str) -> list[str]:
+    """List represented tracked changes from the declared same-commit parent."""
+    return sorted(path for path in subprocess.check_output(["git", "diff", "--name-only", source_parent], cwd=ROOT, text=True).splitlines() if path)
 
 
-def _expected_map_parent_antigravity() -> str | None:
-    """Return the first non-map parent only when the checked-out HEAD is a map-only child."""
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    if not _is_map_only_commit_antigravity(head):
-        return None
-    parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True).strip()
-    while _is_map_only_commit_antigravity(parent):
-        parent = subprocess.check_output(["git", "rev-parse", f"{parent}^"], cwd=ROOT, text=True).strip()
-    return parent
-
-
-def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[str, object], dict[str, object], str]:
+def build_map_antigravity(source_parent: str, generated_at: str) -> tuple[dict[str, object], dict[str, object], str]:
     """Return JSON graph, lock, and self-contained HTML for the same graph."""
-    if not re.fullmatch(r"[0-9a-f]{40}", source_commit):
-        raise ValueError("source_commit must be lowercase 40-hex")
-    if not _git_commit_exists_antigravity(source_commit):
-        raise ValueError("source commit does not exist")
+    if not re.fullmatch(r"[0-9a-f]{40}", source_parent):
+        raise ValueError("source_parent must be lowercase 40-hex")
+    if not _git_commit_exists_antigravity(source_parent):
+        raise ValueError("source parent does not exist")
     nodes: list[dict[str, object]] = [
         {"id": "research_control", "path": "RESEARCH_STATE.json", "role": "Planned Exp449 state and consolidated non-promotion truth: zero label access, closed official lifecycle, and unchanged champion/pending candidate.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("RESEARCH_STATE.json", '"exp449"'), evidence_antigravity("CHAMPION_LEDGER.json", '"experiment": "Exp449"')]},
         {"id": "exp449_preregistration", "path": "docs/EXP449_PREREGISTRATION_antigravity_KO.html", "role": "Frozen candidates, settings, success gates, label boundary, CPU policy, and no-promotion contract.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("docs/EXP449_PREREGISTRATION_antigravity_KO.html", "official_label_sessions = 1")]},
         {"id": "exp449_runbook", "path": "docs/EXP449_RUNBOOK_antigravity_KO.html", "role": "Single-use future command order, seven thread variables, stop rules, and dashboard firewall.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("docs/EXP449_RUNBOOK_antigravity_KO.html", "AEON_NUM_THREADS=1")]},
         {"id": "project_execution_policy", "path": "AGENTS.md", "role": "Durable global rule: checked HTML-plan controls represent only completed implementation and review/verification boundaries.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("AGENTS.md", "In HTML implementation plans")]},
-        {"id": "two_root_correction_design", "path": "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html", "role": "Approved Exp449 correction authority that separates immutable prediction authority from evaluation publication and prohibits retrospective official execution.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html", "Exp449 two-root official lifecycle correction")]},
-        {"id": "two_root_correction_plan", "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html", "role": "Executable superseding plan: original Tasks 1–6 remain checked, original Tasks 7–8 remain unchecked, and all two-root correction work is prospective.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html", "Task 5: Single-use official lifecycle and truth/dashboard closeout"), evidence_antigravity("docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html", "Task 6: One-Session Counterfactual Evaluation and Source-Free Replay")]},
+        {"id": "two_root_correction_design", "path": "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html", "role": "Approved receipt-backed correction authority that separates immutable prediction authority from evaluation publication and makes lifecycle progress durable.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html", "Exp449 two-root lifecycle receipt correction")]},
+        {"id": "two_root_correction_plan", "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html", "role": "Executable superseding plan: original Tasks 1–6 remain checked, original Tasks 7–8 remain unchecked, and prospective receipt-backed two-root work uses same-commit maps.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html", "Task 5: Authorized single-use lifecycle and truth/dashboard closeout"), evidence_antigravity("docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html", "Task 6: One-Session Counterfactual Evaluation and Source-Free Replay")]},
         {"id": "governance_regression", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py", "role": "Structural stdlib HTML-parser regression for Exp449 plan task/step completion state and global governance constraints.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py", "class PlanCheckboxParserAntigravity")]},
         {"id": "candidate_registry", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py", "role": "Frozen eight-family, two-candidate registry and pinned environment authority.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_config_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")]},
         {"id": "immutable_contracts", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py", "role": "Frozen slots exact-type authorities for candidates, audits, bundles, baselines, and metrics.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_contracts_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py", "class MethodAuditAntigravity")]},
@@ -124,13 +116,13 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "frozen_prediction_lifecycle", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py", "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent-contiguous lifecycle-owned CommitSession commits, descriptor validator firewall, and one shared non-masking failure-audit boundary that fails closed to prefix zero if validation machinery throws.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py", "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py", "def _handle_lifecycle_failure_antigravity")]},
         {"id": "task6_evaluation", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py", "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, exact Task-5 descriptor capture, retained-FD post-rename identity/replay recovery, and phase/recovery-private audit evidence for its 12-leaf publication.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py", "def _evaluate_with_dependencies_antigravity")]},
         {"id": "task6_replay", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py", "role": "Task-6 descriptor-pinned source-free canonical semantic replay of twelve leaves against actual Task-5 authority, canonical rows, inventory, leaf/aggregate, context/source, and manifest provenance.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py", "def inspect_replay_at_antigravity")]},
-        {"id": "aggregate_result_projection", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py", "role": "Task-5 local status plus Task-6 strict aggregate-only public result projection, with recursive sensitive-value and nested-field firewall.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py", "def public_result_antigravity")]},
+        {"id": "aggregate_result_projection", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py", "role": "Task-5 local status plus Task-6 aggregate-only public result projection; future presentation reads bind Exp448’s existing Sites source commit/version and owner-only ACL, never scientific execution.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"], "evidence": [evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py", "def public_result_antigravity"), evidence_antigravity("docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md", "500ccbe12b07475e51e8cdcbfa8619d9fbdefddb")]},
     ]
     edges: list[dict[str, object]] = [
         {"from": "research_control", "to": "exp449_preregistration", "type": "reads", "evidence": evidence_antigravity("RESEARCH_STATE.json", "EXP449_PREREGISTRATION_antigravity_KO.html")},
         {"from": "research_control", "to": "exp449_runbook", "type": "reads", "evidence": evidence_antigravity("RESEARCH_STATE.json", "EXP449_RUNBOOK_antigravity_KO.html")},
         {"from": "project_execution_policy", "to": "two_root_correction_plan", "type": "governs", "evidence": evidence_antigravity("AGENTS.md", "In HTML implementation plans")},
-        {"from": "two_root_correction_design", "to": "two_root_correction_plan", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html", "The approved design has two distinct filesystem roots")},
+        {"from": "two_root_correction_design", "to": "two_root_correction_plan", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html", "The lifecycle uses three independent namespaces")},
         {"from": "governance_regression", "to": "project_execution_policy", "type": "reads", "evidence": evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py", "Path(\"AGENTS.md\")")},
         {"from": "governance_regression", "to": "two_root_correction_plan", "type": "reads", "evidence": evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py", "test_html_plan_records_only_verified_task_and_step_progress_antigravity")},
         {"from": "exp449_preregistration", "to": "candidate_registry", "type": "governs", "evidence": evidence_antigravity("docs/EXP449_PREREGISTRATION_antigravity_KO.html", "global_fp_max = 314")},
@@ -151,23 +143,35 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "task6_replay", "to": "canonical_artifacts", "type": "imports", "evidence": evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py", "artifacts_antigravity import")},
         {"from": "task6_evaluation", "to": "aggregate_result_projection", "type": "imports", "evidence": evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py", "dashboard_export_antigravity import")},
     ]
-    graph: dict[str, object] = {"generated_at": generated_at, "generated_from_commit": source_commit, "scope": ["Exp449 verified Tasks 1–6 remain implemented. The approved correction design and prospective two-root correction plan supersede only unsafe original Task 7–8 lifecycle wording; no two-root production adapter, readiness CLI, official lifecycle, or dashboard publication has been implemented by this planning commit."], "topology_note": "The map retains 20 nodes by consolidating the prior champion-ledger node into research_control and replacing the prior original-plan node with the correction-plan node; both original-plan and champion evidence remain explicit.", "nodes": nodes, "edges": edges, "flows": [{"trigger": "Correction governance", "steps": ["two_root_correction_design", "two_root_correction_plan", "research_control"], "outcome": "The approved two-root architecture governs prospective work without changing completed Tasks 1–6 or authorizing an official command."}, {"trigger": "Task-4 label-free score generation", "steps": ["label_free_source", "representation_sources", "score_sources", "acceleration_gate"], "outcome": "CPU aeon representations and Exp249 LocalGap return finite deterministic scores; MLX/MPS availability cannot approve acceleration without the full stage gate."}, {"trigger": "Task-6 synthetic evaluation and replay", "steps": ["exp448_authority", "frozen_prediction_lifecycle", "task6_evaluation", "task6_replay", "aggregate_result_projection"], "outcome": "Exactly one dependency-injected ordered synthetic label session consumes descriptor-captured Task-5 provenance, creates a private 12-leaf publication, then exclusively renames and replays through the retained descriptor; a post-rename failure quarantines only the identity it still owns and permits only aggregate result projection."}], "unknown_relationships": ["Two-root production lifecycle adapters, closed readiness/CLI, full verification truth, single-use official commands, and aggregate-only dashboard publication are future plan stages, not current product behavior."], "unknowns": ["The existing Task-6 public evaluator and inspector remain fail-closed; the correction plan names future interfaces but creates no future product-source edges."]}
-    lock: dict[str, object] = {"current_commit": source_commit, "working_tree_dirty": False, "generated_at": generated_at, "scanned_scope": ["tracked root files including AGENTS.md", *SCANNED_TOP_LEVEL], "excluded_directories": sorted(EXCLUDED_PARTS | {"docs/codemap"}), "fingerprint_algorithm": "sha256-v1: sort tracked repo-relative paths by module; append UTF-8 path, NUL, decimal byte length, NUL, current bytes, NUL; docs/codemap is excluded to prevent self-reference.", "module_fingerprints": fingerprint_modules_antigravity(), "changed_modules_since_prior_lock": ["docs", "experiments", "scratch"]}
+    represented_paths = sorted(set(_changed_paths_from_parent_antigravity(source_parent)) | _MAP_TRIPLET_ANTIGRAVITY)
+    graph: dict[str, object] = {"generated_at": generated_at, "source_parent_commit": source_parent, "scope": ["Exp449 verified Tasks 1–6 remain implemented. The approved correction design and prospective receipt-backed two-root plan supersede unsafe original Task 7–8 wording; no receipt-backed product adapter, readiness CLI, official lifecycle, or dashboard publication has been implemented by this planning commit."], "topology_note": "The map retains 20 nodes by consolidating champion ledger evidence into research_control and replacing the original-plan node with the correction-plan node. The lock uses the same-commit source-parent contract; prior map-only ancestry is historical only.", "nodes": nodes, "edges": edges, "flows": [{"trigger": "Receipt-backed correction governance", "steps": ["two_root_correction_design", "two_root_correction_plan", "research_control"], "outcome": "The correction governs prospective receipt-backed two-root work without changing completed Tasks 1–6 or authorizing a command."}, {"trigger": "Task-4 label-free score generation", "steps": ["label_free_source", "representation_sources", "score_sources", "acceleration_gate"], "outcome": "CPU aeon representations and Exp249 LocalGap return finite deterministic scores; MLX/MPS availability cannot approve acceleration without the full gate."}, {"trigger": "Task-6 synthetic evaluation and replay", "steps": ["exp448_authority", "frozen_prediction_lifecycle", "task6_evaluation", "task6_replay", "aggregate_result_projection"], "outcome": "Synthetic one-session evaluation and source-free replay remain the current implemented boundary."}], "unknown_relationships": ["Receipt-backed two-root lifecycle/progress adapters, same-commit readiness/CLI validation, clean-candidate truth, single-use official commands, and presentation-only dashboard publication are future plan stages."], "unknowns": ["Exp448 locally binds Sites source commit 500ccbe12b07475e51e8cdcbfa8619d9fbdefddb, version 6, and one-account/no-group custom owner ACL; no local dashboard URL exists, so future Task 4 must obtain it only through authenticated metadata reads."]}
+    lock: dict[str, object] = {"schema": "exp449_codemap_same_commit_v1", "source_parent_commit": source_parent, "working_tree_dirty": False, "represented_paths": represented_paths, "generated_at": generated_at, "scanned_scope": ["tracked root files including AGENTS.md", *SCANNED_TOP_LEVEL], "excluded_directories": sorted(EXCLUDED_PARTS | {"docs/codemap"}), "fingerprint_algorithm": "sha256-v1: proposed post-change tracked tree; sort non-map-triplet repo-relative paths by module; append UTF-8 path, NUL, decimal byte length, NUL, current bytes, NUL.", "module_fingerprints": fingerprint_modules_antigravity(), "changed_modules_since_source_parent": sorted({Path(path).parts[0] if len(Path(path).parts) > 1 else "root" for path in represented_paths})}
     payload = json.dumps(graph, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     html = "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Exp449 Code Map</title><style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.55 system-ui}pre{white-space:pre-wrap;overflow:auto;background:#eef2f7;padding:1rem}</style></head><body><main><h1>Exp449 two-root correction code map</h1><p>Tasks 1–6 remain implemented; the approved correction design and plan document prospective two-root Task 7–8 replacement while official surfaces remain closed.</p><script id=\"codemap-data\" type=\"application/json\">" + payload + "</script><pre id=\"graph\"></pre></main><script>const data=JSON.parse(document.getElementById('codemap-data').textContent);document.getElementById('graph').textContent=JSON.stringify(data,null,2);</script></body></html>"
     return graph, lock, html
 
 
-def validate_map_antigravity(graph: object, lock: object, html: str) -> None:
+def validate_map_antigravity(graph: object, lock: object, html: str, *, precommit: bool = False) -> None:
     """Reject missing evidence, unresolved refs, >20 primary nodes, and fingerprint drift."""
     if not isinstance(graph, dict) or not isinstance(lock, dict):
         raise ValueError("graph and lock must be objects")
-    source_commit = graph.get("generated_from_commit")
-    if source_commit != lock.get("current_commit") or not _git_commit_exists_antigravity(source_commit):
-        raise ValueError("source commit binding is invalid")
-    expected_parent = _expected_map_parent_antigravity()
-    if expected_parent is not None and source_commit != expected_parent:
-        raise ValueError("source commit differs from map parent")
+    source_parent = lock.get("source_parent_commit")
+    if lock.get("schema") != "exp449_codemap_same_commit_v1" or graph.get("source_parent_commit") != source_parent or not _git_commit_exists_antigravity(source_parent):
+        raise ValueError("same-commit source-parent binding is invalid")
+    represented_paths = lock.get("represented_paths")
+    if not isinstance(represented_paths, list) or any(not isinstance(path, str) for path in represented_paths) or set(_MAP_TRIPLET_ANTIGRAVITY) - set(represented_paths):
+        raise ValueError("same-commit represented paths are invalid")
+    actual_paths = _changed_paths_from_parent_antigravity(source_parent)
+    if sorted(represented_paths) != actual_paths:
+        raise ValueError("unrepresented or stale same-commit paths")
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    if precommit:
+        head_parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True).strip()
+        if head != source_parent and head_parent != source_parent:
+            raise ValueError("precommit generation must name checked-out parent or amendable first parent")
+    else:
+        if subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True).strip() != source_parent or subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True, check=False).stdout:
+            raise ValueError("reviewed same-commit map must be clean and parent-bound")
     nodes = graph.get("nodes")
     edges = graph.get("edges")
     flows = graph.get("flows")
@@ -199,28 +203,28 @@ def validate_map_antigravity(graph: object, lock: object, html: str) -> None:
     match = re.search(r'<script id="codemap-data" type="application/json">(.*?)</script>', html)
     if not match or strict_json_antigravity(match.group(1)) != graph:
         raise ValueError("HTML does not embed the exact JSON graph")
-    if lock.get("module_fingerprints") != fingerprint_modules_antigravity():
+    if lock.get("working_tree_dirty") is not False or lock.get("module_fingerprints") != fingerprint_modules_antigravity():
         raise ValueError("fingerprint drift")
 
 
 def main_antigravity() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source-commit")
+    parser.add_argument("--source-parent")
     parser.add_argument("--generated-at")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     if args.validate_only:
         validate_map_antigravity(strict_json_antigravity(JSON_PATH.read_text(encoding="utf-8")), strict_json_antigravity(LOCK_PATH.read_text(encoding="utf-8")), HTML_PATH.read_text(encoding="utf-8"))
         return
-    if not args.source_commit:
-        parser.error("--source-commit is required unless --validate-only is used")
+    if not args.source_parent:
+        parser.error("--source-parent is required unless --validate-only is used")
     generated_at = args.generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    graph, lock, html = build_map_antigravity(args.source_commit, generated_at)
+    graph, lock, html = build_map_antigravity(args.source_parent, generated_at)
     MAP_DIR.mkdir(parents=True, exist_ok=True)
     JSON_PATH.write_text(json.dumps(graph, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     LOCK_PATH.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     HTML_PATH.write_text(html + "\n", encoding="utf-8")
-    validate_map_antigravity(graph, lock, html)
+    validate_map_antigravity(graph, lock, html, precommit=True)
 
 
 if __name__ == "__main__":
