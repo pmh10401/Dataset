@@ -4,7 +4,7 @@
 
 **Goal:** 기존 최종 제안기술을 원본 공개 benchmark DB에서 label-free로 재실행하고, 원 경보 좌표를 보존한 연속 근거 score와 AP/AUROC·F1 비교 결과를 동결한다.
 
-**Architecture:** 새 `experiments.paper_proposal_clean_rerun` package가 기존 연구 코드를 values-only adapter로 호출하고, 과거 prediction 좌표는 새 경보 생성이 끝난 뒤 parity oracle로만 사용한다. 제안기술 score root와 공개 baseline score root를 각각 동결한 다음 하나의 lazy evaluator가 처음으로 TEST label을 열고, 같은 dataset bootstrap draw로 결과를 집계한다.
+**Architecture:** 독립된 `paper/equipment_anomaly_detection/` namespace에 기존 연구 코드 중 필요한 과학 로직을 provenance와 함께 복사하고 모든 신규 파일을 `*_paper`로 명명한다. 논문 실행 경로는 내부 Exp package를 runtime dependency로 사용하지 않으며, 과거 prediction 좌표는 새 경보 생성이 끝난 뒤 parity oracle로만 사용한다. 제안기술 score root와 공개 baseline score root를 각각 동결한 다음 하나의 lazy evaluator가 처음으로 TEST label을 열고, 같은 dataset bootstrap draw로 결과를 집계한다.
 
 **Tech Stack:** Python 3, NumPy, SciPy, scikit-learn, aeon, pycatch22, PyWavelets, PyTorch, MLX 선택적 smoke, SQLite read-only URI, `unittest`, canonical JSON/JSONL, SHA256
 
@@ -21,9 +21,11 @@
 - bootstrap은 dataset 단위 20,000회, `PCG64(20260812)`, `int64`, `endpoint=False`다.
 - 공개 비교군은 k-NN, LOF, RBF OCSVM, Isolation Forest, Deep SVDD 1D, DROCC 1D뿐이다.
 - 고전 네 기법은 전체 실행하고 심층 두 기법은 합계 48시간 예산 안에서 완주한 결과만 주 표에 허용한다.
-- MLX는 CPU와 같은 input/seed, 모든 alpha candidate parity, finite score, 절대오차 `1e-5`, 전송·동기화를 포함한 1.1배 속도 조건을 모두 통과할 때만 사용한다.
-- CPU score stage는 최대 7 dataset worker, worker당 수치 thread 1개를 사용한다.
-- 기존 experiment package와 `experiments.paper_public_baselines`의 과학 코드는 수정하지 않는다.
+- PyTorch, MLX, MPS의 tensor eligibility·availability·overhead를 각각 평가한다. MLX/MPS는 CPU와 같은 input/seed, 모든 alpha candidate parity, finite score, 절대오차 `1e-5`, 전송·동기화를 포함한 1.1배 속도 조건을 모두 통과할 때만 사용한다.
+- 새 CPU score stage는 `max(1, os.cpu_count() - 1)` dataset worker를 사용하고 감지 CPU 수와 선택 worker 수를 provenance에 기록하며, worker당 수치 thread는 1개다.
+- 기존 experiment package와 `experiments.paper_public_baselines`의 과학 코드는 수정하지 않는다. 필요한 제안기술 로직은 원본 파일·symbol·SHA256를 기록한 뒤 paper 폴더에 복사하고 원본과의 parity test를 둔다.
+- 논문용 신규 파일은 `paper/equipment_anomaly_detection/` 아래에 두고 파일명에 `paper`를 포함한다. 이 사용자 승인 규칙은 기존 `antigravity` 신규 파일명 정책에 대한 이 논문 폴더의 명시적 예외다.
+- 논문 버전의 code map은 `codemap_paper.html`, `codemap_paper.json`, `codemap_paper.lock` 세 파일을 함께 갱신한다.
 - 논문 본문에는 내부 Exp 번호와 `Stable-26`을 쓰지 않고 artifact provenance에만 남긴다.
 
 ---
@@ -31,66 +33,72 @@
 ## File Structure
 
 ```text
-experiments/paper_proposal_clean_rerun/
-  __init__.py                    package marker
-  config.py                      frozen identity, constants, paths, counts
-  contracts.py                   immutable values, score, route contracts
-  lineage.py                     raw-computable/frozen-rule/parity-oracle lock
-  lineage_lock.json              machine-readable exact dependency closure
-  data.py                        values-only SQLite and prepare population
-  label_access.py                lazy exact TEXT TEST-label loader
-  calibration.py                 p-values, margin, strength, Boolean aggregation
-  score_adapter.py               route-preserving binary/continuous score
-  source_adapters/
-    __init__.py
-    hard_sources.py              raw Exp40/55/56/84/Block-B/canonical scores
-    minirocket.py                raw 1024/4096 two-seed MiniROCKET evidence
-    low_frequency.py             full TEST Exp440 multi-depth score replay
-    stability.py                 exact 30-candidate Exp444 omission replay
-  hard_route.py                  legacy route chain through guarded Hard
-  routing.py                     four final ablation policies
-  artifacts.py                   canonical create-only shards and manifests
-  runner.py                      ordered/resumable scoring and freeze lifecycle
-  acceleration.py               per-stage CPU/MLX assessment and fallback
-  baseline_bridge.py             verified public baseline score adapter
-  evaluation.py                 post-freeze metrics only
-  statistics.py                 paired dataset bootstrap
-  independent_reaggregate.py    immutable result independent verification
-  reporting.py                  paper tables and limitation text
-  cli.py                         prepare/assess-mlx/score/freeze/parity/evaluate/report
-  tests/
-    test_config_lineage.py
-    test_data_boundary.py
-    test_calibration_adapter.py
-    test_hard_sources.py
-    test_hard_route.py
-    test_minirocket.py
-    test_low_frequency.py
-    test_stability.py
-    test_artifacts_runner.py
-    test_acceleration.py
-    test_baseline_bridge.py
-    test_evaluation_statistics.py
-    test_reporting_cli.py
-scratch/run_paper_proposal_clean_rerun.py
-docs/PAPER_PROPOSAL_CLEAN_RERUN_PREREGISTRATION_KO.md
-docs/PAPER_PROPOSAL_CLEAN_RERUN_RUNBOOK_KO.md
-docs/PAPER_PROPOSAL_CLEAN_RERUN_RESULT_KO.md
+paper/equipment_anomaly_detection/
+  package_paper.py                    namespace metadata and public identity
+  config_paper.py                      frozen identity, constants, paths, counts
+  contracts_paper.py                   immutable values, score, route contracts
+  lineage_paper.py                     raw-computable/frozen-rule/parity-oracle lock
+  lineage_lock_paper.json              machine-readable exact dependency closure
+  codemap_paper.html                   human-readable paper dependency map
+  codemap_paper.json                   machine-readable callers/effects/tests map
+  codemap_paper.lock                   hashes binding the complete paper code map
+  data_paper.py                        values-only SQLite and prepare population
+  label_access_paper.py                lazy exact TEXT TEST-label loader
+  calibration_paper.py                 p-values, margin, strength, Boolean aggregation
+  score_adapter_paper.py               route-preserving binary/continuous score
+  sources_paper/
+    package_paper.py
+    hard_sources_paper.py              raw Exp40/55/56/84/Block-B/canonical scores
+    minirocket_paper.py                raw 1024/4096 two-seed MiniROCKET evidence
+    low_frequency_paper.py             full TEST Exp440 multi-depth score replay
+    stability_paper.py                 exact 30-candidate Exp444 omission replay
+  hard_route_paper.py                  legacy route chain through guarded Hard
+  routing_paper.py                     four final ablation policies
+  artifacts_paper.py                   canonical create-only shards and manifests
+  runner_paper.py                      ordered/resumable scoring and freeze lifecycle
+  acceleration_paper.py               per-stage CPU/MLX assessment and fallback
+  baseline_bridge_paper.py             verified public baseline score adapter
+  evaluation_paper.py                 post-freeze metrics only
+  statistics_paper.py                 paired dataset bootstrap
+  independent_reaggregate_paper.py    immutable result independent verification
+  reporting_paper.py                  paper tables and limitation text
+  cli_paper.py                         prepare/assess-mlx/score/freeze/parity/evaluate/report
+  tests_paper/
+    test_config_lineage_paper.py
+    test_data_boundary_paper.py
+    test_calibration_adapter_paper.py
+    test_hard_sources_paper.py
+    test_hard_route_paper.py
+    test_minirocket_paper.py
+    test_low_frequency_paper.py
+    test_stability_paper.py
+    test_artifacts_runner_paper.py
+    test_acceleration_paper.py
+    test_baseline_bridge_paper.py
+    test_evaluation_statistics_paper.py
+    test_reporting_cli_paper.py
+paper/equipment_anomaly_detection/run_paper.py
+paper/equipment_anomaly_detection/docs_paper/preregistration_paper_ko.md
+paper/equipment_anomaly_detection/docs_paper/runbook_paper_ko.md
+paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md
 ```
 
 ### Task 1: Frozen configuration, contracts, and dependency closure
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/__init__.py`
-- Create: `experiments/paper_proposal_clean_rerun/config.py`
-- Create: `experiments/paper_proposal_clean_rerun/contracts.py`
-- Create: `experiments/paper_proposal_clean_rerun/lineage.py`
-- Create: `experiments/paper_proposal_clean_rerun/lineage_lock.json`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_config_lineage.py`
+- Create: `paper/equipment_anomaly_detection/package_paper.py`
+- Create: `paper/equipment_anomaly_detection/config_paper.py`
+- Create: `paper/equipment_anomaly_detection/contracts_paper.py`
+- Create: `paper/equipment_anomaly_detection/lineage_paper.py`
+- Create: `paper/equipment_anomaly_detection/lineage_lock_paper.json`
+- Create: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Create: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Create: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_config_lineage_paper.py`
 
 **Interfaces:**
-- Consumes: approved design and existing source module paths.
-- Produces: `FROZEN_CONFIG: FrozenPaperConfig`, `LINEAGE_NODES: tuple[LineageNode, ...]`, `validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]`.
+- Consumes: approved design and existing source module paths/SHA256.
+- Produces: `FROZEN_CONFIG: FrozenPaperConfig`, `LINEAGE_NODES: tuple[LineageNode, ...]`, `validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]`, complete paper codemap triplet.
 
 - [ ] **Step 1: Write failing identity and forbidden-input tests**
 
@@ -106,11 +114,20 @@ class ConfigLineageTests(unittest.TestCase):
         nodes = validate_lineage_lock(LINEAGE_LOCK_PATH)
         self.assertFalse(any(node.input_kind == "prediction_coordinates" for node in nodes))
         self.assertTrue(all(node.label_access is False for node in nodes))
+
+    def test_paper_codemap_triplet_is_complete_and_hash_bound(self) -> None:
+        codemap = validate_codemap_triplet(PAPER_ROOT)
+        self.assertEqual(set(codemap.required_fields),
+                         {"callers", "effects", "tests", "source_origins"})
+
+    def test_all_new_static_files_use_paper_naming(self) -> None:
+        names = tuple(path.name for path in PAPER_ROOT.rglob("*") if path.is_file())
+        self.assertTrue(all("paper" in name for name in names))
 ```
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_config_lineage -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_config_lineage_paper -v`
 
 Expected: FAIL because the package and frozen contracts do not exist.
 
@@ -124,6 +141,8 @@ class LineageNode:
     input_kind: str
     module: str
     symbols: tuple[str, ...]
+    source_sha256: str | None
+    paper_module: str | None
     label_access: bool
     parity_oracle: str | None = None
 
@@ -136,7 +155,7 @@ class FrozenPaperConfig:
     ablation_alert_counts: tuple[int, int, int, int] = (2218, 2248, 2244, 2222)
 ```
 
-`lineage_lock.json`에는 `rocket_exp40`, `exp55_best`, `exp56_best`, `exp84_family_guard`, `exp84_count_cap`, `rocket_block_b`, `canonical_normal_state`, `exp234_three_source`, `minirocket_1024_seed_intersection`, `minirocket_4096_seed_intersection`, `raw_exact_normal_guard`, `low_frequency_two_depth`, `hard_empty_budget_30`, `train_omission_stability`를 모두 넣는다. 각 scoring node의 `input_kind`는 `raw_train_test_values`, route constant는 `frozen_rule`, 기존 artifact는 `parity_oracle`로 기록한다.
+`lineage_lock_paper.json`에는 `rocket_exp40`, `exp55_best`, `exp56_best`, `exp84_family_guard`, `exp84_count_cap`, `rocket_block_b`, `canonical_normal_state`, `exp234_three_source`, `minirocket_1024_seed_intersection`, `minirocket_4096_seed_intersection`, `raw_exact_normal_guard`, `low_frequency_two_depth`, `hard_empty_budget_30`, `train_omission_stability`를 모두 넣는다. 각 scoring node의 `input_kind`는 `raw_train_test_values`, route constant는 `frozen_rule`, 기존 artifact는 `parity_oracle`로 기록한다. `module`과 `symbols`는 복사 원본, `source_sha256`는 원본 파일 hash, `paper_module`은 Task 4–7에서 만들 독립 paper 목적지를 나타낸다.
 
 - [ ] **Step 4: Add import and symbol validation**
 
@@ -150,6 +169,8 @@ def validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]:
             module = importlib.import_module(node.module)
             if any(not hasattr(module, symbol) for symbol in node.symbols):
                 raise ValueError(f"raw scorer symbol is unavailable: {node.node_id}")
+            if sha256_file(Path(module.__file__)) != node.source_sha256:
+                raise ValueError(f"raw scorer source SHA differs: {node.node_id}")
     return nodes
 ```
 
@@ -165,13 +186,14 @@ def parse_nodes(payload: object) -> tuple[LineageNode, ...]:
     if not isinstance(payload, list):
         raise ValueError("lineage lock must be a JSON list")
     expected = {"node_id", "stage", "input_kind", "module", "symbols",
-                "label_access", "parity_oracle"}
+                "source_sha256", "paper_module", "label_access", "parity_oracle"}
     if any(not isinstance(record, dict) or set(record) != expected for record in payload):
         raise ValueError("lineage node schema is invalid")
     nodes = tuple(LineageNode(
         node_id=record["node_id"], stage=record["stage"],
         input_kind=record["input_kind"], module=record["module"],
         symbols=tuple(record["symbols"]), label_access=record["label_access"],
+        source_sha256=record["source_sha256"], paper_module=record["paper_module"],
         parity_oracle=record["parity_oracle"],
     ) for record in payload)
     if not nodes or len({node.node_id for node in nodes}) != len(nodes):
@@ -179,24 +201,29 @@ def parse_nodes(payload: object) -> tuple[LineageNode, ...]:
     return nodes
 ```
 
+`codemap_paper.json`은 새 paper module 각각에 대해 `callers`, `effects`, `tests`, `source_origins`를 기록하고, HTML은 같은 전체 graph를 사람이 읽을 수 있게 렌더링한다. lock은 lineage/config와 HTML/JSON 각각의 SHA256를 strict JSON으로 고정한다. 세 파일 가운데 하나라도 누락되거나 hash가 다르면 테스트가 실패해야 한다.
+
 - [ ] **Step 5: Run tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_config_lineage -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_config_lineage_paper -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: lock clean paper rerun lineage"
 ```
 
 ### Task 2: Values-only data boundary and lazy label loader
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/data.py`
-- Create: `experiments/paper_proposal_clean_rerun/label_access.py`
-- Modify: `experiments/paper_proposal_clean_rerun/contracts.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_data_boundary.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/data_paper.py`
+- Create: `paper/equipment_anomaly_detection/label_access_paper.py`
+- Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_data_boundary_paper.py`
 
 **Interfaces:**
 - Consumes: `FROZEN_CONFIG`, read-only SQLite DB.
@@ -230,7 +257,7 @@ class DataBoundaryTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_data_boundary -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_data_boundary_paper -v`
 
 Expected: FAIL because the new data boundary is absent.
 
@@ -263,26 +290,29 @@ def _convert(raw: object) -> int:
     return 0 if raw == "0" else 1
 ```
 
-`data.py`는 `label_access.py`를 import하지 않는다. 테스트는 `sys.modules`에서 eager import가 없음을 확인한다.
+`data_paper.py`는 `label_access_paper.py`를 import하지 않는다. 테스트는 `sys.modules`에서 eager import가 없음을 확인한다.
 
 - [ ] **Step 5: Run focused and existing boundary tests, then commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_data_boundary experiments.paper_public_baselines.tests.test_data_boundary experiments.paper_public_baselines.tests.test_evaluation_boundary -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_data_boundary_paper experiments.paper_public_baselines.tests.test_data_boundary experiments.paper_public_baselines.tests.test_evaluation_boundary -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: add clean rerun data boundary"
 ```
 
 ### Task 3: Continuous evidence and route-preserving score math
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/calibration.py`
-- Create: `experiments/paper_proposal_clean_rerun/score_adapter.py`
-- Modify: `experiments/paper_proposal_clean_rerun/contracts.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_calibration_adapter.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/calibration_paper.py`
+- Create: `paper/equipment_anomaly_detection/score_adapter_paper.py`
+- Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_calibration_adapter_paper.py`
 
 **Interfaces:**
 - Consumes: TRAIN OOF score, TEST score, native boundary booleans.
@@ -307,7 +337,7 @@ class CalibrationAdapterTests(unittest.TestCase):
 
 - [ ] **Step 2: Run and verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_calibration_adapter -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_calibration_adapter_paper -v`
 
 Expected: FAIL with missing functions.
 
@@ -350,21 +380,24 @@ Missing evidence는 호출 전에 `u=0.5`와 `evidence_missing=true`로 명시�
 
 - [ ] **Step 5: Run tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_calibration_adapter -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_calibration_adapter_paper -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: add route preserving evidence score"
 ```
 
-### Task 4: Raw Hard score-source adapters
+### Task 4: Standalone paper copies of raw Hard score sources
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/source_adapters/__init__.py`
-- Create: `experiments/paper_proposal_clean_rerun/source_adapters/hard_sources.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_hard_sources.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/sources_paper/package_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py`
 
 **Interfaces:**
 - Consumes: `RawDataset`, `LineageNode`, fixed seeds and source configs.
@@ -384,58 +417,61 @@ class HardSourceTests(unittest.TestCase):
             self.assertEqual(len(first.by_name[name].test_score), len(self.values.test_indices))
 
     def test_adapter_module_never_imports_label_loader(self) -> None:
-        self.assertNotIn("experiments.paper_proposal_clean_rerun.label_access", sys.modules)
+        self.assertNotIn("paper.equipment_anomaly_detection.label_access_paper", sys.modules)
 ```
 
 - [ ] **Step 2: Run and verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_hard_sources -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_hard_sources_paper -v`
 
 Expected: FAIL because `score_hard_sources` is absent.
 
-- [ ] **Step 3: Adapt the four historical raw scorers without their CSV/label wrappers**
+- [ ] **Step 3: Copy the four historical raw scorers without their CSV/label wrappers**
 
 ```python
 RAW_PRIMARY_SOURCES = ("rocket_exp40", "exp55_best", "exp56_best", "exp84")
 EXPECTED_HARD_SOURCES = RAW_PRIMARY_SOURCES + ("rocket_block_b", "canonical_normal_state")
 
 def _historical_source(name: str, train: np.ndarray, test: np.ndarray, record: Mapping[str, object]):
-    return exp152.crossfit_source(name, train, test, record)
+    return crossfit_source_paper(name, train, test, record)
 ```
 
-`exp152.load_test_labels`, `load_candidate_predictions`, `prediction_bundle`, `row_with_metrics`는 호출하지 않는다. `RawDataset`에서 길이 정렬 metadata를 만들고 `exp152.crossfit_source`와 `source_score_pair`만 호출한다. 원 source config는 Exp40 `rocket_256_knn3_local_gap`, Exp55 `train_global_minmax_clip_spectrogram_32_pca32_knn3`, Exp56 `glcm_rp_32_pca32_knn3`, Exp84 `aeon_mrh_mr1024_hk4_g32_prune1024_stable_tail_local_gap_knn3`다.
+원본의 `crossfit_source`와 `source_score_pair` 과학 로직만 `hard_sources_paper.py`에 복사하고 provenance header에 원본 module, symbol, source SHA256를 기록한다. `load_test_labels`, `load_candidate_predictions`, `prediction_bundle`, `row_with_metrics`는 복사하거나 호출하지 않는다. `RawDataset`에서 길이 정렬 metadata를 만든다. 원 source config는 Exp40 `rocket_256_knn3_local_gap`, Exp55 `train_global_minmax_clip_spectrogram_32_pca32_knn3`, Exp56 `glcm_rp_32_pca32_knn3`, Exp84 `aeon_mrh_mr1024_hk4_g32_prune1024_stable_tail_local_gap_knn3`다. paper scientific module의 AST에는 `experiments.exp` runtime import가 없어야 한다.
 
 - [ ] **Step 4: Add Block-B and canonical normal-state sources**
 
 ```python
-block_b = exp153_bridge.crossfit_confirmation_scores(train, test)
-canonical_oof, canonical_test = exp177_core.crossfit_scores(
-    exp177_core.canonical_features(train_matrix),
-    exp177_core.canonical_features(test_matrix),
-    backend="knn_local_gap", seed=exp177_core.SEED,
+block_b = crossfit_confirmation_scores_paper(train, test)
+canonical_oof, canonical_test = crossfit_scores_paper(
+    canonical_features_paper(train_matrix),
+    canonical_features_paper(test_matrix),
+    backend="knn_local_gap", seed=PAPER_SEED,
 )
 ```
 
-각 source가 실행 불가능하면 원 eligibility 이유와 빈 score를 기록한다. 다른 detector로 대체하지 않는다.
+Block-B와 canonical feature/crossfit 함수도 같은 provenance 규칙으로 paper file에 복사한다. 각 source가 실행 불가능하면 원 eligibility 이유와 빈 score를 기록한다. 다른 detector로 대체하지 않는다. synthetic fixture에서 paper copy와 원본 함수의 score/native-pass parity를 확인한다.
 
 - [ ] **Step 5: Run source tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_hard_sources experiments.exp177_185.test_exp177_185_core -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_hard_sources_paper experiments.exp177_185.test_exp177_185_core -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: replay raw hard score sources"
 ```
 
 ### Task 5: Legacy Hard route closure and exact-normal guard
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/hard_route.py`
-- Create: `experiments/paper_proposal_clean_rerun/source_adapters/minirocket.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_hard_route.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_minirocket.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/hard_route_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py`
 
 **Interfaces:**
 - Consumes: `HardSourceBundle`, `RawDataset` blobs.
@@ -458,13 +494,13 @@ class HardRouteTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_hard_route experiments.paper_proposal_clean_rerun.tests.test_minirocket -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_hard_route_paper paper.equipment_anomaly_detection.tests_paper.test_minirocket_paper -v`
 
 Expected: FAIL because route replay is absent.
 
 - [ ] **Step 3: Implement the original set/rank chain as pure functions**
 
-`hard_route.py`는 다음 stage를 순서대로 호출하고 각 중간 coordinate identity를 기록한다.
+`hard_route_paper.py`는 다음 stage를 순서대로 호출하고 각 중간 coordinate identity를 기록한다.
 
 ```python
 def replay_hard_route(values: RawDataset, sources: HardSourceBundle) -> HardRouteResult:
@@ -478,7 +514,7 @@ def replay_hard_route(values: RawDataset, sources: HardSourceBundle) -> HardRout
     return HardRouteResult(exp137, exp236, exp253, automatic, sources.continuous_strength)
 ```
 
-Exp74d→89→90→93→119 route는 각 기존 script의 pure rank/set 함수와 고정 selector 이름을 사용한다. CSV row loader와 metric writer는 사용하지 않는다. 중간 전체 parity 목표는 Exp137 Hard `2005`, Exp236 Hard `2116`, Exp253 Hard `2253`, exact guard 이후 Hard `2218`이다.
+Exp74d→89→90→93→119 route의 pure rank/set 함수와 고정 selector constant를 provenance와 함께 `hard_route_paper.py`로 복사한다. runtime에는 해당 내부 Exp package import가 없어야 하고 원본 route 함수와 synthetic set parity를 검사한다. CSV row loader와 metric writer는 복사하지 않는다. 중간 전체 parity 목표는 Exp137 Hard `2005`, Exp236 Hard `2116`, Exp253 Hard `2253`, exact guard 이후 Hard `2218`이다.
 
 - [ ] **Step 4: Implement raw MiniROCKET two-seed intersection**
 
@@ -489,7 +525,7 @@ def score_minirocket_confirmations(values: RawDataset) -> MiniRocketResult:
     # candidate is p<=0.005 under both seeds
 ```
 
-`experiments.exp249_250_official_mini_multirocket.scoring.score_configuration`을 호출해 두 seed OOF/TEST score를 새로 만들고 `p <= 0.005` 교집합을 계산한다. 기존 Exp249 prediction JSONL은 읽지 않는다.
+원본 `score_configuration`과 필요한 pure helper를 `minirocket_paper.py`로 복사해 두 seed OOF/TEST score를 새로 만들고 `p <= 0.005` 교집합을 계산한다. runtime에는 `experiments.exp249_250...` import가 없어야 하며 synthetic fixture에서 원본과 paper copy의 score/candidate parity를 검사한다. 기존 Exp249 prediction JSONL은 읽지 않는다.
 
 - [ ] **Step 5: Add label-free parity smoke against old artifacts**
 
@@ -497,21 +533,24 @@ def score_minirocket_confirmations(values: RawDataset) -> MiniRocketResult:
 
 - [ ] **Step 6: Run route tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_hard_route experiments.paper_proposal_clean_rerun.tests.test_minirocket experiments.exp253_guarded_standard_to_hard_expansion.tests.test_prediction experiments.exp290_train_raw_exact_normal_guard.tests.test_prediction -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_hard_route_paper paper.equipment_anomaly_detection.tests_paper.test_minirocket_paper experiments.exp253_guarded_standard_to_hard_expansion.tests.test_prediction experiments.exp290_train_raw_exact_normal_guard.tests.test_prediction -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: reconstruct guarded hard route"
 ```
 
 ### Task 6: Full TEST low-frequency replay and 30-candidate selection
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/source_adapters/low_frequency.py`
-- Modify: `experiments/paper_proposal_clean_rerun/contracts.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_low_frequency.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py`
+- Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py`
 
 **Interfaces:**
 - Consumes: `RawDataset`, frozen Hard coordinates produced in Task 5.
@@ -534,15 +573,15 @@ class LowFrequencyTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_low_frequency -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_low_frequency_paper -v`
 
 Expected: FAIL because the adapter does not exist.
 
-- [ ] **Step 3: Reuse exact Exp440 numerical primitives over all TEST rows**
+- [ ] **Step 3: Copy exact low-frequency numerical primitives and run them over all TEST rows**
 
 ```python
-group = fit_group_calibration_antigravity(train_group)
-depth_scores, candidate = score_test_row_antigravity(
+group = fit_group_calibration_paper(train_group)
+depth_scores, candidate = score_test_row_paper(
     dataset, instance_index, test_row, group
 )
 
@@ -550,7 +589,7 @@ def strict_two_depth_pass(scores: np.ndarray, thresholds: np.ndarray) -> bool:
     return bool(np.count_nonzero(np.asarray(scores) > np.asarray(thresholds)) >= 2)
 ```
 
-정상 TRAIN은 raw length별 exact group, whole-row nonfinite 제외, 최소 4행을 유지한다. scoreable하지 않은 TEST 행도 row record를 만들고 `evidence_missing=true`, `missing_reason`을 저장한다. 원 depth score, threshold, strict pass, empirical rank와 second excess/rank를 보존한다.
+Exp440의 feature/calibration/scoring/budget pure 함수와 frozen constants를 `low_frequency_paper.py`에 provenance와 함께 복사한다. runtime에는 `experiments.exp440...` import가 없어야 하며 inherited fixture에서 원본과 paper copy의 score/candidate parity를 확인한다. 정상 TRAIN은 raw length별 exact group, whole-row nonfinite 제외, 최소 4행을 유지한다. scoreable하지 않은 TEST 행도 row record를 만들고 `evidence_missing=true`, `missing_reason`을 저장한다. 원 depth score, threshold, strict pass, empirical rank와 second excess/rank를 보존한다.
 
 - [ ] **Step 4: Implement original Hard-empty and budget ordering**
 
@@ -558,21 +597,24 @@ dataset별 key는 `(-second_excess_ratio, second_empirical_rank, instance_index)
 
 - [ ] **Step 5: Run focused and inherited Exp440 tests, then commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_low_frequency experiments.exp440_train_only_low_frequency_precision_gate_antigravity.tests.test_features_antigravity experiments.exp440_train_only_low_frequency_precision_gate_antigravity.tests.test_scoring_antigravity experiments.exp440_train_only_low_frequency_precision_gate_antigravity.tests.test_budget_antigravity -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_low_frequency_paper experiments.exp440_train_only_low_frequency_precision_gate_antigravity.tests.test_features_antigravity experiments.exp440_train_only_low_frequency_precision_gate_antigravity.tests.test_scoring_antigravity experiments.exp440_train_only_low_frequency_precision_gate_antigravity.tests.test_budget_antigravity -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: replay full low frequency evidence"
 ```
 
 ### Task 7: Stability replay and final four policy routes
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/source_adapters/stability.py`
-- Create: `experiments/paper_proposal_clean_rerun/routing.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_stability.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/sources_paper/stability_paper.py`
+- Create: `paper/equipment_anomaly_detection/routing_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py`
 
 **Interfaces:**
 - Consumes: selected 30 low-frequency candidates and raw normal TRAIN groups.
@@ -595,19 +637,19 @@ class StabilityTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_stability -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_stability_paper -v`
 
 Expected: FAIL because stability adapter and policy bundle are absent.
 
-- [ ] **Step 3: Reuse Exp444 omission masks and candidate replay**
+- [ ] **Step 3: Copy Exp444 omission masks and candidate replay into the paper module**
 
 ```python
-masks = generate_omission_masks_antigravity(dataset, raw_length, train_indices)
-required = required_survival_count_antigravity(len(masks))
+masks = generate_omission_masks_paper(dataset, raw_length, train_indices)
+required = required_survival_count_paper(len(masks))
 stable = sum(view.survived for view in views) >= required
 ```
 
-각 view는 retained TRAIN만으로 `fit_group_calibration_antigravity`를 새로 만들고 원 candidate 한 행만 점수화한다. 원 30개 외 행에 stability를 확장하지 않는다.
+Exp444의 omission mask, survival threshold, candidate replay pure 함수를 `stability_paper.py`에 provenance와 함께 복사한다. runtime에는 `experiments.exp444...` import가 없어야 하며 원본 fixture parity를 검사한다. 각 view는 retained TRAIN만으로 paper low-frequency calibration을 새로 만들고 원 candidate 한 행만 점수화한다. 원 30개 외 행에 stability를 확장하지 않는다.
 
 - [ ] **Step 4: Build exact four policies and route-preserving scores**
 
@@ -620,23 +662,26 @@ Hard와 low-frequency continuous strength의 elementwise max를 evidence strengt
 
 - [ ] **Step 5: Run focused and inherited stability tests, then commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_stability experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_masks_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_stability_antigravity -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_stability_paper experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_masks_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_stability_antigravity -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: build stable proposal policy routes"
 ```
 
 ### Task 8: Create-only artifacts, resume, CLI, and parity gate
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/artifacts.py`
-- Create: `experiments/paper_proposal_clean_rerun/runner.py`
-- Create: `experiments/paper_proposal_clean_rerun/cli.py`
-- Create: `scratch/run_paper_proposal_clean_rerun.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_artifacts_runner.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/artifacts_paper.py`
+- Create: `paper/equipment_anomaly_detection/runner_paper.py`
+- Create: `paper/equipment_anomaly_detection/cli_paper.py`
+- Create: `paper/equipment_anomaly_detection/run_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py`
 
 **Interfaces:**
 - Consumes: tasks 1–7.
@@ -653,12 +698,12 @@ class ArtifactRunnerTests(unittest.TestCase):
     def test_parity_failure_does_not_open_labels(self) -> None:
         with self.assertRaisesRegex(ValueError, "parity"):
             verify_parity(self.root)
-        self.assertNotIn("experiments.paper_proposal_clean_rerun.label_access", sys.modules)
+        self.assertNotIn("paper.equipment_anomaly_detection.label_access_paper", sys.modules)
 ```
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_artifacts_runner -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v`
 
 Expected: FAIL because lifecycle code is absent.
 
@@ -688,7 +733,8 @@ def verify_parity(root: Path) -> ParityReport:
 
 ```text
 prepare --db-path DB --run-root ROOT [--limit N]
-score --run-root ROOT --workers 1..7
+assess-acceleration --run-root ROOT
+score --run-root ROOT --workers auto
 freeze --run-root ROOT
 parity --run-root ROOT
 ```
@@ -697,25 +743,28 @@ parity --run-root ROOT
 
 - [ ] **Step 6: Run tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_artifacts_runner -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun scratch/run_paper_proposal_clean_rerun.py
+git add paper/equipment_anomaly_detection paper/equipment_anomaly_detection/run_paper.py
 git commit -m "feat: freeze clean proposal score lifecycle"
 ```
 
-### Task 9: MLX assessment and truthful CPU fallback
+### Task 9: PyTorch/MLX/MPS assessment and truthful CPU fallback
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/acceleration.py`
-- Modify: `experiments/paper_proposal_clean_rerun/cli.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_acceleration.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/acceleration_paper.py`
+- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_acceleration_paper.py`
 
 **Interfaces:**
 - Consumes: exact dense-distance stages from hard source and low-frequency adapters.
-- Produces: `assess_stage(stage_id, cpu, mlx, smoke_input) -> AccelerationRecord`, CLI `assess-mlx`.
+- Produces: `assess_stage(stage_id, cpu, candidates, smoke_input) -> tuple[AccelerationRecord, ...]`, `select_cpu_workers() -> WorkerRecord`, CLI `assess-acceleration`.
 
 - [ ] **Step 1: Write RED tests for every MLX gate**
 
@@ -730,39 +779,50 @@ class AccelerationTests(unittest.TestCase):
         record = decide_backend(cpu_seconds=1.0, mlx_seconds=0.95,
                                 finite=True, candidate_parity=True, max_abs_error=0.0)
         self.assertEqual(record.selected_backend, "cpu")
+
+    def test_cpu_worker_count_is_logical_cpu_minus_one(self) -> None:
+        record = select_cpu_workers(detected_logical_cpus=12)
+        self.assertEqual(record.dataset_workers, 11)
+
+    def test_assessment_names_all_three_acceleration_families(self) -> None:
+        self.assertEqual({row.backend_family for row in self.records},
+                         {"pytorch", "mlx", "mps"})
 ```
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_acceleration -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_acceleration_paper -v`
 
 Expected: FAIL because acceleration records are absent.
 
 - [ ] **Step 3: Implement exact policy checks**
 
-`AccelerationRecord`는 stage, CPU/MLX seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. official aeon/scikit-learn/PyTorch transformer는 `algorithm_rewrite_required` 사유로 CPU를 선택한다.
+`AccelerationRecord`는 stage, backend family, tensor eligibility, availability, transfer/compile overhead, CPU/device seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. PyTorch, MLX, MPS 세 family 모두 record를 만들고 official aeon/scikit-learn/PyTorch transformer를 다시 작성해야 하는 backend는 `algorithm_rewrite_required` 사유로 CPU를 선택한다. `WorkerRecord`에는 감지 logical CPU와 `max(1, cpu_count - 1)` worker를 기록한다.
 
-- [ ] **Step 4: Add `assess-mlx` gate before score**
+- [ ] **Step 4: Add `assess-acceleration` gate before score**
 
-`score`는 `acceleration.json`과 SHA256가 없거나 lineage/config hash가 다르면 실행을 거절한다. MLX/MPS heavy process는 worker 1을 강제한다.
+`score`는 `acceleration_paper.json`과 SHA256가 없거나 lineage/config hash가 다르면 실행을 거절한다. official run의 `--workers auto`는 frozen `WorkerRecord`와 일치해야 하며 임의 worker override를 거절한다. MLX/MPS heavy process는 worker 1을 강제한다.
 
 - [ ] **Step 5: Run tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_acceleration experiments.paper_public_baselines.tests.test_acceleration -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_acceleration_paper experiments.paper_public_baselines.tests.test_acceleration -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: gate clean rerun acceleration"
 ```
 
 ### Task 10: Public baseline bridge and fresh score rerun
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/baseline_bridge.py`
-- Modify: `experiments/paper_proposal_clean_rerun/cli.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_baseline_bridge.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/baseline_bridge_paper.py`
+- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_baseline_bridge_paper.py`
 - Do not modify: `experiments/paper_public_baselines/`
 
 **Interfaces:**
@@ -792,7 +852,7 @@ class BaselineBridgeTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_baseline_bridge -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_baseline_bridge_paper -v`
 
 Expected: FAIL because the bridge is absent.
 
@@ -802,14 +862,15 @@ Expected: FAIL because the bridge is absent.
 
 고전 네 방법은 하나의 root에, 딥 방법은 방법별 root에 준비한다. `run_deep_budgeted`는 `time.monotonic()`의 단일 시작시각과 `172800`초 deadline을 공유하고, 각 public CLI subprocess에 남은 시간만 `timeout`으로 준다. 완주한 딥 root만 즉시 freeze하며 timeout/실패/미시작 root는 bridge 입력에서 제외한다. 과학 코드는 호출만 하고 수정하지 않는다.
 
-`cli.py`에 반복 가능한 `--baseline-root`를 받는 `bridge-baselines`, 그리고 `run-deep-budget --deep-svdd-root ROOT --drocc-root ROOT --budget-seconds 172800 --epochs 50 --report-path PATH`를 추가한다. bridge는 모든 입력 root의 frozen manifest와 method 집합이 중복되지 않는지 확인한 뒤 output을 create-only로 동결한다. budget report에는 시작/종료 monotonic elapsed, method별 subprocess exit/timeout, frozen manifest SHA, 포함/제외 사유를 기록한다.
+`cli_paper.py`에 반복 가능한 `--baseline-root`를 받는 `bridge-baselines`, 그리고 `run-deep-budget --deep-svdd-root ROOT --drocc-root ROOT --budget-seconds 172800 --epochs 50 --report-path PATH`를 추가한다. bridge는 모든 입력 root의 frozen manifest와 method 집합이 중복되지 않는지 확인한 뒤 output을 create-only로 동결한다. budget report에는 시작/종료 monotonic elapsed, method별 subprocess exit/timeout, frozen manifest SHA, 포함/제외 사유를 기록한다.
 
 - [ ] **Step 4: Run a fresh public baseline smoke root**
 
 ```bash
 python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --limit 10 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest,deep_svdd_1d,drocc_1d
 python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke
-python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest --workers 7
+PAPER_CPU_WORKERS=$(python3 -c 'import os; print(max(1, (os.cpu_count() or 1) - 1))')
+python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest --workers "$PAPER_CPU_WORKERS"
 python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --methods deep_svdd_1d,drocc_1d --workers 1 --epochs 50
 python3 -m experiments.paper_public_baselines.cli freeze --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke
 ```
@@ -818,23 +879,26 @@ Expected: frozen 60-pair smoke manifest with zero label access.
 
 - [ ] **Step 5: Run tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_baseline_bridge -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_baseline_bridge_paper -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: bridge fresh public baseline scores"
 ```
 
 ### Task 11: Post-freeze evaluation and paired statistics
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/evaluation.py`
-- Create: `experiments/paper_proposal_clean_rerun/statistics.py`
-- Create: `experiments/paper_proposal_clean_rerun/independent_reaggregate.py`
-- Modify: `experiments/paper_proposal_clean_rerun/cli.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_evaluation_statistics.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/evaluation_paper.py`
+- Create: `paper/equipment_anomaly_detection/statistics_paper.py`
+- Create: `paper/equipment_anomaly_detection/independent_reaggregate_paper.py`
+- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_evaluation_statistics_paper.py`
 
 **Interfaces:**
 - Consumes: verified proposal manifest, parity success, verified baseline-policy manifest.
@@ -865,7 +929,7 @@ class EvaluationStatisticsTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_evaluation_statistics -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_evaluation_statistics_paper -v`
 
 Expected: FAIL because evaluator and bootstrap are absent.
 
@@ -886,32 +950,35 @@ draw bytes SHA256를 저장하고 모든 제안기술-minus-baseline 차이에 �
 
 - [ ] **Step 5: Add lazy `evaluate` command and run tests**
 
-`cli.py`의 evaluate branch 안에서만 `evaluation`과 `label_access`를 import한다.
+`cli_paper.py`의 evaluate branch 안에서만 `evaluation`과 `label_access`를 import한다.
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_evaluation_statistics experiments.paper_public_baselines.tests.test_statistics -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_evaluation_statistics_paper experiments.paper_public_baselines.tests.test_statistics -v`
 
 Expected: PASS.
 
 - [ ] **Step 6: Implement source-independent reaggregation**
 
-`independent_reaggregate.py`는 score source module과 SQLite를 import하지 않고 `score_label_rows.jsonl`, dataset/bootstrap JSONL, bootstrap config와 artifact map만 읽는다. row-level label/score에서 pooled AP/AUROC와 confusion을, dataset row에서 macro 지표를 다시 계산한다. `PCG64(20260812)` draw도 재생성해 bytes SHA와 interval을 확인하고 불일치 시 nonzero exit를 낸다. CLI는 `main(argv: Sequence[str] | None = None) -> int`와 `--run-root`만 노출한다.
+`independent_reaggregate_paper.py`는 score source module과 SQLite를 import하지 않고 `score_label_rows.jsonl`, dataset/bootstrap JSONL, bootstrap config와 artifact map만 읽는다. row-level label/score에서 pooled AP/AUROC와 confusion을, dataset row에서 macro 지표를 다시 계산한다. `PCG64(20260812)` draw도 재생성해 bytes SHA와 interval을 확인하고 불일치 시 nonzero exit를 낸다. CLI는 `main(argv: Sequence[str] | None = None) -> int`와 `--run-root`만 노출한다.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add experiments/paper_proposal_clean_rerun
+git add paper/equipment_anomaly_detection
 git commit -m "feat: evaluate frozen paper rerun scores"
 ```
 
 ### Task 12: Paper reporting, preregistration, and runbook
 
 **Files:**
-- Create: `experiments/paper_proposal_clean_rerun/reporting.py`
-- Create: `docs/PAPER_PROPOSAL_CLEAN_RERUN_PREREGISTRATION_KO.md`
-- Create: `docs/PAPER_PROPOSAL_CLEAN_RERUN_RUNBOOK_KO.md`
-- Create: `docs/PAPER_PROPOSAL_CLEAN_RERUN_RESULT_KO.md`
-- Modify: `experiments/paper_proposal_clean_rerun/cli.py`
-- Test: `experiments/paper_proposal_clean_rerun/tests/test_reporting_cli.py`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
+- Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
+- Create: `paper/equipment_anomaly_detection/reporting_paper.py`
+- Create: `paper/equipment_anomaly_detection/docs_paper/preregistration_paper_ko.md`
+- Create: `paper/equipment_anomaly_detection/docs_paper/runbook_paper_ko.md`
+- Create: `paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md`
+- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_reporting_cli_paper.py`
 
 **Interfaces:**
 - Consumes: immutable evaluation bundle.
@@ -936,7 +1003,7 @@ class ReportingCliTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_reporting_cli -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_reporting_cli_paper -v`
 
 Expected: FAIL because reporting is absent.
 
@@ -958,19 +1025,19 @@ runbook에는 root absent 확인, prepare, assess-mlx, score, freeze, parity, ba
 
 - [ ] **Step 5: Run tests and commit**
 
-Run: `python3 -m unittest experiments.paper_proposal_clean_rerun.tests.test_reporting_cli -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_reporting_cli_paper -v`
 
 Expected: PASS.
 
 ```bash
-git add experiments/paper_proposal_clean_rerun docs/PAPER_PROPOSAL_CLEAN_RERUN_PREREGISTRATION_KO.md docs/PAPER_PROPOSAL_CLEAN_RERUN_RUNBOOK_KO.md docs/PAPER_PROPOSAL_CLEAN_RERUN_RESULT_KO.md
+git add paper/equipment_anomaly_detection paper/equipment_anomaly_detection/docs_paper/preregistration_paper_ko.md paper/equipment_anomaly_detection/docs_paper/runbook_paper_ko.md paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md
 git commit -m "docs: add clean paper rerun lifecycle"
 ```
 
 ### Task 13: End-to-end verification and official fresh execution
 
 **Files:**
-- Modify only if generated summary hashes need recording: `docs/PAPER_PROPOSAL_CLEAN_RERUN_RESULT_KO.md`
+- Modify only if generated summary hashes need recording: `paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md`
 - No large runtime artifact is added to Git.
 
 **Interfaces:**
@@ -979,7 +1046,7 @@ git commit -m "docs: add clean paper rerun lifecycle"
 
 - [ ] **Step 1: Run the full new package test suite**
 
-Run: `python3 -m unittest discover -s experiments/paper_proposal_clean_rerun/tests -v`
+Run: `python3 -m unittest discover -s paper/equipment_anomaly_detection/tests_paper -p 'test_*_paper.py' -v`
 
 Expected: all tests PASS with zero failures.
 
@@ -996,11 +1063,11 @@ Expected: all tests PASS.
 먼저 `test ! -e /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke`가 exit 0인지 확인한다.
 
 ```bash
-python3 scratch/run_paper_proposal_clean_rerun.py prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --limit 10
-python3 scratch/run_paper_proposal_clean_rerun.py assess-mlx --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
-python3 scratch/run_paper_proposal_clean_rerun.py score --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --workers 7
-python3 scratch/run_paper_proposal_clean_rerun.py freeze --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
-python3 scratch/run_paper_proposal_clean_rerun.py parity --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
+python3 paper/equipment_anomaly_detection/run_paper.py prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --limit 10
+python3 paper/equipment_anomaly_detection/run_paper.py assess-acceleration --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
+python3 paper/equipment_anomaly_detection/run_paper.py score --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --workers auto
+python3 paper/equipment_anomaly_detection/run_paper.py freeze --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
+python3 paper/equipment_anomaly_detection/run_paper.py parity --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
 ```
 
 Expected: 10/10 shards frozen, no label access, exact smoke parity.
@@ -1010,11 +1077,11 @@ Expected: 10/10 shards frozen, no label access, exact smoke parity.
 먼저 `test ! -e /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812`가 exit 0인지 확인한다.
 
 ```bash
-python3 scratch/run_paper_proposal_clean_rerun.py prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 scratch/run_paper_proposal_clean_rerun.py assess-mlx --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 scratch/run_paper_proposal_clean_rerun.py score --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --workers 7
-python3 scratch/run_paper_proposal_clean_rerun.py freeze --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 scratch/run_paper_proposal_clean_rerun.py parity --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
+python3 paper/equipment_anomaly_detection/run_paper.py prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
+python3 paper/equipment_anomaly_detection/run_paper.py assess-acceleration --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
+python3 paper/equipment_anomaly_detection/run_paper.py score --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --workers auto
+python3 paper/equipment_anomaly_detection/run_paper.py freeze --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
+python3 paper/equipment_anomaly_detection/run_paper.py parity --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
 ```
 
 Expected: 1,117 shards, 195,900 TEST rows, policy counts `2218/2248/2244/2222`, exact coordinate parity, TEST-label access 0.
@@ -1035,41 +1102,42 @@ test ! -e /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_202608
 ```bash
 python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest
 python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812
-python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest --workers 7
+PAPER_CPU_WORKERS=$(python3 -c 'import os; print(max(1, (os.cpu_count() or 1) - 1))')
+python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest --workers "$PAPER_CPU_WORKERS"
 python3 -m experiments.paper_public_baselines.cli freeze --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812
 python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812 --methods deep_svdd_1d
 python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812
 python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812 --methods drocc_1d
 python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812
-python3 scratch/run_paper_proposal_clean_rerun.py run-deep-budget --deep-svdd-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812 --drocc-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812 --budget-seconds 172800 --epochs 50 --report-path /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
+python3 paper/equipment_anomaly_detection/run_paper.py run-deep-budget --deep-svdd-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812 --drocc-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812 --budget-seconds 172800 --epochs 50 --report-path /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
 ```
 
 - [ ] **Step 6: Freeze baseline policy scores, evaluate once, and report**
 
 ```bash
-python3 scratch/run_paper_proposal_clean_rerun.py bridge-baselines --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --baseline-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --include-completed-deep-from /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
-python3 scratch/run_paper_proposal_clean_rerun.py evaluate --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --baseline-policy-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812/baseline_policy_scores
-python3 scratch/run_paper_proposal_clean_rerun.py report --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 scratch/run_paper_proposal_clean_rerun.py report --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --verify-only
+python3 paper/equipment_anomaly_detection/run_paper.py bridge-baselines --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --baseline-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --include-completed-deep-from /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
+python3 paper/equipment_anomaly_detection/run_paper.py evaluate --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --baseline-policy-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812/baseline_policy_scores
+python3 paper/equipment_anomaly_detection/run_paper.py report --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
+python3 paper/equipment_anomaly_detection/run_paper.py report --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --verify-only
 ```
 
 Expected: one immutable evaluation, identical verify-only report hash, AP/AUROC score types and coverage explicitly separated.
 
 - [ ] **Step 7: Independently reaggregate and record small hashes**
 
-Run: `python3 -m experiments.paper_proposal_clean_rerun.independent_reaggregate --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812`
+Run: `python3 -m paper.equipment_anomaly_detection.independent_reaggregate_paper --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812`
 
-Expected: every confusion matrix, AP/AUROC row, bootstrap draw SHA and report artifact map verifies from immutable result files only. Add only the final manifest hashes and headline tables to `docs/PAPER_PROPOSAL_CLEAN_RERUN_RESULT_KO.md`.
+Expected: every confusion matrix, AP/AUROC row, bootstrap draw SHA and report artifact map verifies from immutable result files only. Add only the final manifest hashes and headline tables to `paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md`.
 
 - [ ] **Step 8: Run fresh completion verification and commit the small report**
 
-Run: `python3 -m unittest discover -s experiments/paper_proposal_clean_rerun/tests -v`
+Run: `python3 -m unittest discover -s paper/equipment_anomaly_detection/tests_paper -p 'test_*_paper.py' -v`
 
 Run: `git diff --check`
 
 Expected: zero test failures and no whitespace errors.
 
 ```bash
-git add docs/PAPER_PROPOSAL_CLEAN_RERUN_RESULT_KO.md
+git add paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md
 git commit -m "docs: report clean proposal paper rerun"
 ```

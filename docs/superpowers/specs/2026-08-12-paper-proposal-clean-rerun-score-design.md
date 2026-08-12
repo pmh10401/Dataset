@@ -283,24 +283,31 @@ paired 95% percentile interval로 계산한다. bootstrap 단위는 dataset이�
 
 ## 9. 실행 lifecycle과 artifact
 
-새 package는 기존 실험 package와 공개 baseline package를 수정하지 않는 orchestrator
-경계로 둔다.
+사용자 승인에 따라 논문 코드는 최상위 독립 `paper/equipment_anomaly_detection/`
+namespace에 둔다. 필요한 제안기술의 과학 로직은 원본 module·symbol·SHA256를 기록한
+뒤 paper 파일로 복사하며, 논문 실행 경로는 내부 Exp package를 runtime dependency로
+사용하지 않는다. 기존 실험 package와 공개 baseline package는 수정하지 않는다.
+이 논문 폴더의 신규 파일은 기존 `antigravity` 명명 대신 `paper`를 파일명에 포함한다.
 
 ```text
-experiments/paper_proposal_clean_rerun/
-  config.py
-  lineage.py
-  data.py
-  source_adapters/
-  scoring.py
-  routing.py
-  score_adapter.py
-  artifacts.py
-  evaluation.py
-  statistics.py
-  reporting.py
-  cli.py
-  tests/
+paper/equipment_anomaly_detection/
+  package_paper.py
+  config_paper.py
+  lineage_paper.py
+  lineage_lock_paper.json
+  codemap_paper.{html,json,lock}
+  data_paper.py
+  sources_paper/
+  calibration_paper.py
+  hard_route_paper.py
+  routing_paper.py
+  score_adapter_paper.py
+  artifacts_paper.py
+  evaluation_paper.py
+  statistics_paper.py
+  reporting_paper.py
+  cli_paper.py
+  tests_paper/
 ```
 
 실행 단계는 다음 순서를 강제한다.
@@ -340,9 +347,10 @@ no-clobber, exact-prefix resume, progress·heartbeat·ETA와 failure evidence를
 identity와 새 manifest를 사용한다. 특정 dataset 실패를 조용히 제외하지 않고 전체
 population과 common support를 모두 보고한다.
 
-## 11. MLX와 자원 정책
+## 11. PyTorch·MLX·MPS와 자원 정책
 
-모든 새 score stage는 전체 실행 전에 AGENTS.md의 MLX gate를 평가한다.
+모든 새 score stage는 전체 실행 전에 PyTorch, MLX, MPS 각각의 tensor eligibility,
+availability, transfer/compile overhead와 canonical CPU fallback을 평가한다.
 
 - 원 알고리즘, feature, score, threshold와 route가 바뀌면 MLX를 사용하지 않는다.
 - 동일 input/seed CPU-MLX smoke에서 모든 alpha의 candidate index가 같아야 한다.
@@ -351,8 +359,9 @@ population과 common support를 모두 보고한다.
 - MLX/mlx-metal 버전, device, timing, parity와 fallback 이유를 manifest에 기록한다.
 
 공식 scikit-learn·aeon·PyTorch 구현을 MLX로 다시 작성해 수치 경계를 바꾸지 않는다.
-MLX 조건을 만족하지 못하면 CPU를 사용하며 가능한 단계는 최대 7 dataset worker와
-worker당 수치 thread 1개로 실행한다. MLX/MPS heavy process는 한 번에 하나만 실행한다.
+가속 조건을 만족하지 못하면 CPU를 사용한다. 새 공식 CPU stage는 감지 logical CPU
+수에서 1을 뺀 값(최소 1)을 dataset worker로 사용하고 감지값과 선택값을 provenance에
+기록하며, worker당 수치 thread는 1개다. MLX/MPS heavy process는 한 번에 하나만 실행한다.
 
 ## 12. 테스트와 완료 조건
 
@@ -367,7 +376,7 @@ worker당 수치 thread 1개로 실행한다. MLX/MPS heavy process는 한 번�
 - 네 ablation partition, 예상 수와 exact coordinate parity
 - AP 정의, AUROC undefined 처리, pooled/macro 집계
 - dataset-paired bootstrap 결정성 및 draw hash
-- CPU/MLX parity·속도 gate와 CPU fallback manifest
+- PyTorch/MLX/MPS parity·속도 gate, CPU fallback과 CPU worker provenance
 - atomic shard, resume, no-clobber, hash 변조 거절
 - 전체 실행 뒤 저장 confusion과 재집계 confusion의 exact 일치
 
