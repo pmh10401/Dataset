@@ -227,62 +227,81 @@ def _read_nofollow_bytes_antigravity(path: Path) -> bytes:
     return payload
 
 
+def _fd_identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _read_pinned_antigravity(fd: int) -> bytes:
+    os.lseek(fd, 0, os.SEEK_SET)
+    return b"".join(iter(lambda: os.read(fd, 1 << 20), b""))
+
+
 def validate_prediction_root_antigravity(root: Path, authority: object) -> tuple[str, ...]:
-    """Private descriptor/canonical reconstruction seam; it has no source, database, or label dependency."""
+    """Validate every leaf under one retained no-follow root/candidates descriptor transaction."""
     if not isinstance(root, Path) or type(authority) is not FrozenPredictionAuthorityAntigravity:
         raise ValueError("prediction root authority is invalid")
-    root_info = os.lstat(root)
-    if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode) or set(os.listdir(root)) != {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.jsonl", "progress_antigravity.txt", "pid_antigravity.json", "candidates_antigravity", "prediction_manifest_antigravity.json"}:
-        raise ValueError("prediction root inventory differs")
-    candidates_info = os.lstat(root / "candidates_antigravity")
-    if stat.S_ISLNK(candidates_info.st_mode) or not stat.S_ISDIR(candidates_info.st_mode):
-        raise ValueError("prediction candidates directory is unsafe")
-    context = _read_nofollow_json_antigravity(root / "context_antigravity.json")
-    progress = _read_nofollow_json_antigravity(root / "progress_antigravity.json")
-    pid = _read_nofollow_json_antigravity(root / "pid_antigravity.json")
-    manifest = _read_nofollow_json_antigravity(root / "prediction_manifest_antigravity.json")
-    if not all(type(value) is dict for value in (context, progress, pid, manifest)):
-        raise ValueError("prediction root JSON schema differs")
-    expected_matrix = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
-    if (context.get("schema") != "exp449" or context.get("reviewed_commit") != authority.reviewed_commit or type(context.get("reviewed_commit")) is not str or len(context["reviewed_commit"]) != 40 or context.get("label_access_count") != 0 or context.get("logical_cpus") != 12 or context.get("workers") != 11 or context.get("candidate_matrix") != expected_matrix or context.get("seeds") != [20260721, 20261721] or context.get("alpha") != 0.005 or type(context.get("method_audit_sha256")) is not str or len(context["method_audit_sha256"]) != 64 or type(context.get("source_identity")) is not dict or type(context.get("mlx")) is not dict or progress != {"dataset_unit_completed": 96, "next_sequence": 96, "terminal": True} or pid != {"active": False}):
-        raise ValueError("prediction root terminal channels differ")
-    event_records = tuple(strict_json_bytes_antigravity(line + b"\n") for line in _read_nofollow_bytes_antigravity(root / "progress_antigravity.jsonl").splitlines())
-    text_records = _read_nofollow_bytes_antigravity(root / "progress_antigravity.txt").splitlines()
-    if (len(event_records) != 96 or any(type(record) is not dict or record != {"dataset_unit_completed": index} for index, record in enumerate(event_records, 1))
-            or text_records != [str(index).encode() for index in range(1, 97)]):
-        raise ValueError("prediction event or text channel differs")
-    if set(os.listdir(root / "candidates_antigravity")) != {Path(name).name for name in authority.inventory}:
-        raise ValueError("prediction candidate inventory differs")
-    digests: list[tuple[str, str]] = []
-    names: list[str] = []
-    for sequence, relative in enumerate(authority.inventory):
-        if not relative.startswith("candidates_antigravity/"):
-            raise ValueError("prediction authority inventory differs")
-        payload = _read_nofollow_json_antigravity(root / relative)
-        if type(payload) is not dict or payload.get("sequence") != sequence or payload.get("contains_test_labels") is not False or type(payload.get("candidate_name")) is not str:
-            raise ValueError("prediction candidate leaf differs")
-        encoded = canonical_json_bytes_antigravity(payload)
-        digests.append((relative, hashlib.sha256(encoded).hexdigest()))
-        names.append(payload["candidate_name"])
-    aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
-    if tuple(digests) != authority.leaf_sha256 or tuple(names) != authority.candidate_names or aggregate != authority.aggregate_sha256:
-        raise ValueError("prediction authority digest differs")
-    if manifest != {"schema": "exp449_prediction_manifest", "reviewed_commit": authority.reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}:
-        raise ValueError("prediction manifest differs")
-    datasets = tuple(name.split("__", 1)[0] for name in names[::2])
-    candidate_pairs = dict(CANDIDATE_MATRIX_ANTIGRAVITY)
-    def expected_pair(index: int, dataset: str) -> list[str]:
-        if dataset.startswith("synthetic_dataset_"):
-            return [dataset + "__method_a", dataset + "__method_b"]
-        family = next((candidate_family for candidate_family in candidate_pairs if dataset.startswith(candidate_family + "_")), None)
-        return [] if family is None else [dataset + "__" + method for method in candidate_pairs[family]]
-    if len(datasets) != 48 or len(set(datasets)) != 48 or any(names[index:index + 2] != expected_pair(index, dataset) for index, dataset in zip(range(0, 96, 2), datasets, strict=True)):
-        raise ValueError("prediction dataset order differs")
-    root_after = os.lstat(root)
-    candidates_after = os.lstat(root / "candidates_antigravity")
-    if (root_after.st_dev, root_after.st_ino) != (root_info.st_dev, root_info.st_ino) or (candidates_after.st_dev, candidates_after.st_ino) != (candidates_info.st_dev, candidates_info.st_ino):
-        raise ValueError("prediction directory namespace changed")
-    return datasets
+    if (type(authority.reviewed_commit) is not str or type(authority.family_method_pairs) is not int or type(authority.dataset_units) is not int
+            or type(authority.candidate_names) is not tuple or type(authority.inventory) is not tuple or type(authority.leaf_sha256) is not tuple
+            or type(authority.aggregate_sha256) is not str or type(authority.label_access_count) is not int):
+        raise ValueError("prediction authority field type differs")
+    root_fd = candidates_fd = -1
+    pinned: dict[str, tuple[int, tuple[int, int, int, int, int, int, int], int]] = {}
+    expected_root = {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.txt", "progress_antigravity.jsonl", "pid_antigravity.json", "prediction_manifest_antigravity.json", "candidates_antigravity"}
+    expected_candidates = tuple(Path(relative).name for relative in authority.inventory)
+    try:
+        root_fd = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        root_identity = _fd_identity_antigravity(os.fstat(root_fd))
+        if not stat.S_ISDIR(root_identity[2]) or set(os.listdir(root_fd)) != expected_root:
+            raise ValueError("prediction root inventory differs")
+        candidates_fd = os.open("candidates_antigravity", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=root_fd)
+        candidates_identity = _fd_identity_antigravity(os.fstat(candidates_fd))
+        if not stat.S_ISDIR(candidates_identity[2]) or len(expected_candidates) != 96 or len(set(expected_candidates)) != 96 or set(os.listdir(candidates_fd)) != set(expected_candidates):
+            raise ValueError("prediction candidate inventory differs")
+        def pin(name: str, parent_fd: int, parent_tag: int) -> bytes:
+            before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+            fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+            opened = os.fstat(fd); identity = _fd_identity_antigravity(opened)
+            if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or _fd_identity_antigravity(before) != identity:
+                os.close(fd); raise ValueError("prediction leaf namespace is unsafe")
+            key = f"{parent_tag}:{name}"; pinned[key] = (fd, identity, parent_tag)
+            return _read_pinned_antigravity(fd)
+        leaves = {name: pin(name, root_fd, 0) for name in expected_root - {"candidates_antigravity"}}
+        candidate_bytes = {name: pin(name, candidates_fd, 1) for name in expected_candidates}
+        context = strict_json_bytes_antigravity(leaves["context_antigravity.json"])
+        progress = strict_json_bytes_antigravity(leaves["progress_antigravity.json"])
+        pid = strict_json_bytes_antigravity(leaves["pid_antigravity.json"])
+        manifest = strict_json_bytes_antigravity(leaves["prediction_manifest_antigravity.json"])
+        if not all(type(value) is dict for value in (context, progress, pid, manifest)): raise ValueError("prediction root JSON schema differs")
+        expected_matrix = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
+        if (context.get("schema") != "exp449" or context.get("reviewed_commit") != authority.reviewed_commit or type(context.get("reviewed_commit")) is not str or len(context["reviewed_commit"]) != 40 or context.get("label_access_count") != 0 or context.get("logical_cpus") != 12 or context.get("workers") != 11 or context.get("candidate_matrix") != expected_matrix or context.get("seeds") != [20260721, 20261721] or context.get("alpha") != 0.005 or type(context.get("method_audit_sha256")) is not str or len(context["method_audit_sha256"]) != 64 or type(context.get("source_identity")) is not dict or type(context.get("mlx")) is not dict or progress != {"dataset_unit_completed": 96, "next_sequence": 96, "terminal": True} or pid != {"active": False}): raise ValueError("prediction root terminal channels differ")
+        event_records = tuple(strict_json_bytes_antigravity(line + b"\n") for line in leaves["progress_antigravity.jsonl"].splitlines())
+        text_records = leaves["progress_antigravity.txt"].splitlines()
+        if len(event_records) != 96 or any(type(record) is not dict or record != {"dataset_unit_completed": index} for index, record in enumerate(event_records, 1)) or text_records != [str(index).encode() for index in range(1, 97)]: raise ValueError("prediction event or text channel differs")
+        digests: list[tuple[str, str]] = []; names: list[str] = []
+        for sequence, relative in enumerate(authority.inventory):
+            if type(relative) is not str or not relative.startswith("candidates_antigravity/"): raise ValueError("prediction authority inventory differs")
+            payload = strict_json_bytes_antigravity(candidate_bytes[Path(relative).name])
+            if type(payload) is not dict or payload.get("sequence") != sequence or payload.get("contains_test_labels") is not False or type(payload.get("candidate_name")) is not str: raise ValueError("prediction candidate leaf differs")
+            digests.append((relative, hashlib.sha256(canonical_json_bytes_antigravity(payload)).hexdigest())); names.append(payload["candidate_name"])
+        aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
+        if tuple(digests) != authority.leaf_sha256 or tuple(names) != authority.candidate_names or aggregate != authority.aggregate_sha256: raise ValueError("prediction authority digest differs")
+        if manifest != {"schema": "exp449_prediction_manifest", "reviewed_commit": authority.reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}: raise ValueError("prediction manifest differs")
+        datasets = tuple(name.split("__", 1)[0] for name in names[::2]); candidate_pairs = dict(CANDIDATE_MATRIX_ANTIGRAVITY)
+        def expected_pair(dataset: str) -> list[str]:
+            if dataset.startswith("synthetic_dataset_"): return [dataset + "__method_a", dataset + "__method_b"]
+            family = next((candidate_family for candidate_family in candidate_pairs if dataset.startswith(candidate_family + "_")), None)
+            return [] if family is None else [dataset + "__" + method for method in candidate_pairs[family]]
+        if len(datasets) != 48 or len(set(datasets)) != 48 or any(names[index:index + 2] != expected_pair(dataset) for index, dataset in zip(range(0, 96, 2), datasets, strict=True)): raise ValueError("prediction dataset order differs")
+        for key, (fd, identity, parent_tag) in pinned.items():
+            name = key.split(":", 1)[1]; parent_fd = root_fd if parent_tag == 0 else candidates_fd
+            if _fd_identity_antigravity(os.fstat(fd)) != identity or _fd_identity_antigravity(os.stat(name, dir_fd=parent_fd, follow_symlinks=False)) != identity: raise ValueError("prediction leaf namespace changed")
+        if _fd_identity_antigravity(os.fstat(root_fd)) != root_identity or _fd_identity_antigravity(os.fstat(candidates_fd)) != candidates_identity or set(os.listdir(root_fd)) != expected_root or set(os.listdir(candidates_fd)) != set(expected_candidates): raise ValueError("prediction directory namespace changed")
+        if _fd_identity_antigravity(os.stat(root, follow_symlinks=False)) != root_identity: raise ValueError("prediction root namespace changed")
+        return datasets
+    finally:
+        for fd, _identity, _parent in pinned.values(): os.close(fd)
+        if candidates_fd >= 0: os.close(candidates_fd)
+        if root_fd >= 0: os.close(root_fd)
 
 
 @dataclass(frozen=True, slots=True)

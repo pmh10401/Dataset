@@ -25,6 +25,20 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_descriptor_validator_rejects_same_size_leaf_replacement_during_capture_antigravity(self) -> None:
+        """Break caught: trusting bytes from a pinned descriptor after its namespace leaf is replaced."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_descriptor_race_antigravity_") as temporary:
+            root = Path(temporary) / "run"; authority = prediction.run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            original = prediction._read_pinned_antigravity; fired = False
+            def replace(fd):
+                nonlocal fired
+                result = original(fd)
+                if not fired:
+                    fired = True; target = root / authority.inventory[0]; replacement = root / "replacement_antigravity.json"; replacement.write_bytes(target.read_bytes()); os.replace(replacement, target)
+                return result
+            with patch.object(prediction, "_read_pinned_antigravity", side_effect=replace), self.assertRaises(ValueError):
+                prediction.validate_prediction_root_antigravity(root, authority)
     def test_production_precommit_revalidation_rejects_drift_at_0_47_95_antigravity(self) -> None:
         """Break caught: production commits a candidate after fresh Exp448 authority differs."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _revalidate_predecessor_before_commit_antigravity  # noqa: PLC0415
