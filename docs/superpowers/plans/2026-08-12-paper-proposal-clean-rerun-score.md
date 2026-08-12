@@ -56,6 +56,7 @@ paper/equipment_anomaly_detection/
     multirocket_hydra_paper.py         exact Exp84 official aeon closure
     canonical_paper.py                 canonical features and crossfit closure
     hard_sources_paper.py              six-source orchestration only
+    source_provenance_paper.json       exact copied origin/symbol/SHA closure
     minirocket_paper.py                raw 1024/4096 two-seed MiniROCKET evidence
     low_frequency_paper.py             full TEST Exp440 multi-depth score replay
     stability_paper.py                 exact 30-candidate Exp444 omission replay
@@ -435,6 +436,7 @@ git commit -m "feat: add route preserving evidence score"
 - Create: `paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py`
 - Create: `paper/equipment_anomaly_detection/sources_paper/canonical_paper.py`
 - Create: `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`
+- Create: `paper/equipment_anomaly_detection/sources_paper/source_provenance_paper.json`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_data_boundary_paper.py`
 
@@ -490,7 +492,11 @@ canonical_oof, canonical_test = crossfit_scores_paper(
 )
 ```
 
-Block-B와 canonical feature/crossfit 함수도 같은 provenance 규칙으로 복사한다. 각 source가 실행 불가능하면 원 eligibility 이유와 빈 score를 기록한다. 다른 detector로 대체하지 않는다. synthetic fixture에서 paper copy와 원본 함수의 score/native-pass parity를 확인한다. Exp84 aeon parity는 frozen `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python`이 존재하고 환경 검증을 통과할 때만 그 interpreter를 oracle로 사용하며, default interpreter에서 aeon이 없으면 `dependency_unavailable`로 명시한다. 환경을 새로 설치하거나 full dataset을 실행하지 않는다.
+Block-B와 canonical feature/crossfit 함수도 같은 provenance 규칙으로 복사한다. 각 source가 실행 불가능하면 원 eligibility 이유와 빈 score를 기록한다. 다른 detector로 대체하지 않는다. synthetic fixture에서 paper copy와 원본 함수의 score/native-pass parity를 확인한다. Exp84/canonical parity는 아래 고정된 capable interpreter가 환경 검증을 통과할 때 test oracle로 사용하며, default interpreter의 optional dependency 부재는 typed `dependency_unavailable`로 명시한다. 환경을 새로 설치하거나 full dataset을 실행하지 않는다.
+
+Machine provenance는 `source_provenance_paper.json`에 각 helper의 모든 copied origin path/module, symbol과 exact SHA256를 기록한다. strict validator는 provenance JSON, 모든 paper scientific helper bytes와 origin bytes를 확인하고 codemap lock이 그 전체 hash map을 bind하는지 검사한다. parity matrix는 rocket_exp40, rocket_block_b, Exp55 small/randomized-large, Exp56, Exp84, canonical 각각에 대해 OOF/TEST score와 preregistered alpha candidate identity를 비교한다. Exp84/canonical oracle은 Python 3.14.6, aeon 1.5.0, NumPy 2.3.5, scikit-learn 1.8.0과 pycatch22를 갖춘 기존 read-only interpreter `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python`을 exact version 검증 뒤 사용한다.
+
+Exp55는 origin의 `n_train * width >= 1_000_000` seeded randomized PCA 분기를 그대로 복사한다. Exp84는 tensor/DataFrame/sparse conversion과 `kind`, `feature_prune`, `score_mode`, `normalise`, `output_type`을 포함한 전체 frozen config를 보존한다. canonical crossfit은 `PAPER_SEED=20260717`을 명시한다. source orchestration은 typed `DependencyUnavailablePaper`만 abstention으로 변환하고 다른 RuntimeError/implementation failure는 전파한다. forbidden-import test는 모든 paper scientific module의 `ast.Import`와 `ast.ImportFrom`을 모두 검사한다.
 
 - [ ] **Step 5: Run source tests and commit**
 
