@@ -25,6 +25,14 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_production_precommit_revalidation_rejects_drift_at_0_47_95_antigravity(self) -> None:
+        """Break caught: production commits a candidate after fresh Exp448 authority differs."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _revalidate_predecessor_before_commit_antigravity  # noqa: PLC0415
+        for sequence in (0, 47, 95):
+            with self.subTest(sequence=sequence):
+                original = ("authority", sequence)
+                with self.assertRaisesRegex(ValueError, "predecessor drift"):
+                    _revalidate_predecessor_before_commit_antigravity(original, lambda: ("authority", sequence + 1))
     def test_table_driven_pre_and_post_commit_faults_preserve_exact_prefix_antigravity(self) -> None:
         """Break caught: deriving failure progress from scheduled work instead of durable leaves."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity, validate_prediction_root_antigravity  # noqa: PLC0415

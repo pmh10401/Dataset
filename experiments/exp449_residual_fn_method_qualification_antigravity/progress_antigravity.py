@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
 from pathlib import Path
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, strict_json_bytes_antigravity, write_create_only_antigravity
@@ -83,31 +84,44 @@ def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object,
     directory.mkdir(mode=0o700, exist_ok=True)
     payload = canonical_json_bytes_antigravity(value)
     destination = directory / name
-    created = False
+    parent_fd = -1
+    created_identity: tuple[int, int] | None = None
     try:
-        if fault_hook is not None: fault_hook("cache_create", sequence)
-        write_create_only_antigravity(destination, payload); created = True
         parent_fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        if fault_hook is not None: fault_hook("cache_create", sequence)
+        fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=parent_fd)
         try:
-            if fault_hook is not None: fault_hook("cache_fsync", sequence)
-            os.fsync(parent_fd)
-            fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
-            try:
-                if fault_hook is not None: fault_hook("cache_reread", sequence)
-                chunks: list[bytes] = []
-                while chunk := os.read(fd, 1 << 20): chunks.append(chunk)
-                reread = b"".join(chunks)
-                if fault_hook is not None: fault_hook("cache_sha_mismatch", sequence)
-                if reread != payload or canonical_json_bytes_antigravity(strict_json_bytes_antigravity(reread)) != reread: raise ValueError("candidate leaf reread is not canonical")
-                return hashlib.sha256(reread).hexdigest()
-            finally: os.close(fd)
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1: raise ValueError("candidate leaf is unsafe")
+            created_identity = (info.st_dev, info.st_ino)
+            view = memoryview(payload)
+            while view: view = view[os.write(fd, view):]
+            os.fsync(fd)
         finally:
-            os.close(parent_fd)
+            os.close(fd)
+        if fault_hook is not None: fault_hook("cache_fsync", sequence)
+        os.fsync(parent_fd)
+        fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+        try:
+            if fault_hook is not None: fault_hook("cache_reread", sequence)
+            reread = b"".join(iter(lambda: os.read(fd, 1 << 20), b""))
+            if fault_hook is not None: fault_hook("cache_sha_mismatch", sequence)
+            if reread != payload or canonical_json_bytes_antigravity(strict_json_bytes_antigravity(reread)) != reread: raise ValueError("candidate leaf reread is not canonical")
+            opened = os.fstat(fd)
+            current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+            if (opened.st_dev, opened.st_ino) != created_identity or (current.st_dev, current.st_ino) != created_identity: raise ValueError("candidate leaf identity changed")
+            return hashlib.sha256(reread).hexdigest()
+        finally: os.close(fd)
     except BaseException:
-        if created:
-            try: destination.unlink(); parent = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)); os.fsync(parent); os.close(parent)
+        if created_identity is not None and parent_fd >= 0:
+            try:
+                current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+                if (current.st_dev, current.st_ino) == created_identity:
+                    os.unlink(name, dir_fd=parent_fd); os.fsync(parent_fd)
             except OSError: pass
         raise
+    finally:
+        if parent_fd >= 0: os.close(parent_fd)
 
 
 def verified_prefix_antigravity(directory: Path, inventory: tuple[str, ...]) -> int:

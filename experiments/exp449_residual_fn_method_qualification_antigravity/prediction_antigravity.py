@@ -125,6 +125,20 @@ def _set_pid_inactive_antigravity(root: Path) -> None:
         os.close(descriptor)
 
 
+def _assert_terminal_channels_antigravity(root: Path, inventory: tuple[str, ...]) -> None:
+    """Gate manifest creation on leaf-derived terminal progress and a durably inactive PID."""
+    if verified_prefix_antigravity(root / "candidates_antigravity", inventory) != len(inventory):
+        raise ValueError("terminal candidate prefix differs")
+    if strict_json_bytes_antigravity((root / "progress_antigravity.json").read_bytes()) != {"dataset_unit_completed": len(inventory), "next_sequence": len(inventory), "terminal": True}:
+        raise ValueError("terminal progress differs")
+    if strict_json_bytes_antigravity((root / "pid_antigravity.json").read_bytes()) != {"active": False}:
+        raise ValueError("terminal PID differs")
+    events = (root / "progress_antigravity.jsonl").read_bytes().splitlines()
+    text = (root / "progress_antigravity.txt").read_bytes().splitlines()
+    if len(events) != len(inventory) or len(text) != len(inventory) or any(strict_json_bytes_antigravity(line + b"\n") != {"dataset_unit_completed": index} for index, line in enumerate(events, 1)) or text != [str(index).encode() for index in range(1, len(inventory) + 1)]:
+        raise ValueError("terminal event or text differs")
+
+
 def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fail_after_leaf: int | None = None, audit_path: Path | None = None, fault_hook: Callable[[str, int], None] | None = None) -> "FrozenPredictionAuthorityAntigravity":
     """Private test lifecycle with real fixed workers and parent-only ordered durable commits."""
     if not isinstance(root, Path) or type(reviewed_commit) is not str or len(reviewed_commit) != 40:
@@ -155,11 +169,10 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         _fault_antigravity(fault_hook, "pid_close", 96)
         _fault_antigravity(fault_hook, "pid", 96)
         _set_pid_inactive_antigravity(root)
-        if verified_prefix_antigravity(leaves, inventory) != 96:
-            raise RuntimeError("terminal candidate prefix is incomplete")
+        _assert_terminal_channels_antigravity(root, inventory)
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
-        write_create_only_antigravity(root / "prediction_manifest_antigravity.json", canonical_json_bytes_antigravity(manifest))
+        commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest)
         return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"synthetic_dataset_{sequence // 2:03d}__{('method_a', 'method_b')[sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
     except BaseException as primary_error:
         cleanup_error: BaseException | None = None
@@ -306,6 +319,13 @@ def _families_antigravity(authority: object) -> tuple[str, ...]:
     return families
 
 
+def _revalidate_predecessor_before_commit_antigravity(original: object, capture: Callable[[], object]) -> None:
+    """Require a fresh descriptor authority equal to the pre-scheduling Exp448 capture before every leaf."""
+    fresh = capture()
+    if type(fresh) is not type(original) or fresh != original:
+        raise ValueError("Exp448 predecessor drift before candidate commit")
+
+
 def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAntigravity, *, reviewed_commit: str = "synthetic") -> FrozenPredictionAuthorityAntigravity:
     """Run synthetic/test dependencies in frozen sequence, committing only canonical leaves."""
     if type(dependencies) is not PredictionDependenciesAntigravity or type(reviewed_commit) is not str or not reviewed_commit:
@@ -375,6 +395,7 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
                 pending[sequence] = (name, payload)
                 while next_sequence in pending:
                     item_name, item_payload = pending.pop(next_sequence)
+                    _revalidate_predecessor_before_commit_antigravity(predecessor, capture_exp448_authority_antigravity)
                     digest = commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory[next_sequence], item_payload)
                     names.append(item_name); digests.append(("candidates_antigravity/" + inventory[next_sequence], digest))
                     next_sequence += 1
@@ -382,9 +403,10 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
         if next_sequence != 96:
             raise RuntimeError("production worker completion did not reach the frozen inventory")
         _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
+        _assert_terminal_channels_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory)
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
-        write_create_only_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "prediction_manifest_antigravity.json", canonical_json_bytes_antigravity(manifest))
+        commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, "prediction_manifest_antigravity.json", manifest)
         authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
         return authority
@@ -396,8 +418,11 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
         except BaseException as error:
             cleanup_error = error
         prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory) if inventory and (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").is_dir() else 0
-        write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
-        raise
+        try:
+            write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
+        except BaseException as audit_error:
+            primary_error.add_note(f"failure_audit_error={type(audit_error).__name__}: {audit_error}")
+        raise primary_error
 
 
 def validate_frozen_prediction_authority_antigravity(authority: object) -> tuple[str, ...]:

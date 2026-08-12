@@ -8,6 +8,16 @@ from pathlib import Path
 
 
 class ProgressAntigravityTests(unittest.TestCase):
+    def test_verified_leaf_writer_removes_exact_created_inode_on_reread_fault_antigravity(self) -> None:
+        """Break caught: leaving an unverified or orphaned candidate after a post-create failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_leaf_antigravity_") as temporary:
+            directory = Path(temporary)
+            def fault(tag, _sequence):
+                if tag == "cache_reread": raise OSError("reread injected")
+            with self.assertRaisesRegex(OSError, "reread injected"):
+                commit_candidate_leaf_antigravity(directory, "000_leaf_antigravity.json", {"sequence": 0}, fault_hook=fault)
+            self.assertFalse((directory / "000_leaf_antigravity.json").exists())
     def test_failure_audit_is_independent_create_only_fallback_antigravity(self) -> None:
         """Break caught: losing the primary failure when run-root channels cannot be written."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import write_failure_audit_antigravity  # noqa: PLC0415
