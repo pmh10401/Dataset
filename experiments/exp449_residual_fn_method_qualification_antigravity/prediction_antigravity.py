@@ -429,14 +429,14 @@ def capture_frozen_prediction_authority_antigravity(root: Path | None = None, au
     """Capture Task-5 in one retained root/candidates descriptor transaction."""
     root = _OFFICIAL_ROOT_ANTIGRAVITY if root is None else root
     if not isinstance(root, Path): raise ValueError("Task5 prediction capture differs")
-    root_fd = candidates_fd = -1; pinned: dict[tuple[int, str], tuple[int, tuple[int, int, int, int, int, int, int], bytes]] = {}; primary: BaseException | None = None
+    root_fd = candidates_fd = -1; pinned: dict[tuple[int, str], tuple[int, tuple[int, int, int, int, int, int, int] | None, bytes | None]] = {}; primary: BaseException | None = None
     try:
         root_before = os.lstat(root); root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW); root_identity = _fd_identity_antigravity(os.fstat(root_fd))
         expected_root = {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.txt", "progress_antigravity.jsonl", "pid_antigravity.json", "candidates_antigravity", "prediction_manifest_antigravity.json"}
         if _fd_identity_antigravity(root_before) != root_identity or set(os.listdir(root_fd)) != expected_root: raise ValueError("Task5 prediction capture differs")
         candidates_fd = os.open("candidates_antigravity", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=root_fd); candidates_identity = _fd_identity_antigravity(os.fstat(candidates_fd))
         def pin(parent: int, tag: int, name: str) -> bytes:
-            before = os.stat(name, dir_fd=parent, follow_symlinks=False); fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent); identity = _fd_identity_antigravity(os.fstat(fd))
+            before = os.stat(name, dir_fd=parent, follow_symlinks=False); fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent); pinned[(tag, name)] = (fd, None, None); identity = _fd_identity_antigravity(os.fstat(fd))
             if not stat.S_ISREG(identity[2]) or identity[3] != 1 or identity != _fd_identity_antigravity(before): raise ValueError("Task5 prediction capture differs")
             payload = _read_pinned_antigravity(fd); pinned[(tag, name)] = (fd, identity, payload); return payload
         root_payloads = {name: pin(root_fd, 0, name) for name in expected_root - {"candidates_antigravity"}}
@@ -466,23 +466,24 @@ def capture_frozen_prediction_authority_antigravity(root: Path | None = None, au
         rows = b"".join(canonical_json_bytes_antigravity(row) for row in projected); row_sha256 = tuple(hashlib.sha256(line).hexdigest() for line in rows.splitlines())
         for (tag, name), (fd, identity, _payload) in pinned.items():
             parent = root_fd if tag == 0 else candidates_fd
-            if _fd_identity_antigravity(os.fstat(fd)) != identity or _fd_identity_antigravity(os.stat(name, dir_fd=parent, follow_symlinks=False)) != identity: raise ValueError("Task5 prediction capture differs")
+            if identity is None or _fd_identity_antigravity(os.fstat(fd)) != identity or _fd_identity_antigravity(os.stat(name, dir_fd=parent, follow_symlinks=False)) != identity: raise ValueError("Task5 prediction capture differs")
         if _fd_identity_antigravity(os.fstat(root_fd)) != root_identity or _fd_identity_antigravity(os.fstat(candidates_fd)) != candidates_identity or _fd_identity_antigravity(os.stat("candidates_antigravity", dir_fd=root_fd, follow_symlinks=False)) != candidates_identity or _fd_identity_antigravity(os.lstat(root)) != root_identity or set(os.listdir(root_fd)) != expected_root: raise ValueError("Task5 prediction capture differs")
         return FrozenPredictionCaptureAntigravity(reconstructed, rows, row_sha256, hashlib.sha256("".join(row_sha256).encode("ascii")).hexdigest(), hashlib.sha256(root_payloads["context_antigravity.json"]).hexdigest(), hashlib.sha256(canonical_json_bytes_antigravity(context["source_identity"])).hexdigest(), hashlib.sha256(root_payloads["prediction_manifest_antigravity.json"]).hexdigest())
     except BaseException as error:
         primary = error; raise
     finally:
+        close_errors: list[BaseException] = []
         for fd, _identity, _payload in pinned.values():
             try: os.close(fd)
-            except BaseException as close_error:
-                if primary is None: raise
-                primary.add_note(f"capture_close_error={type(close_error).__name__}: {close_error}")
+            except BaseException as close_error: close_errors.append(close_error)
         for fd in (candidates_fd, root_fd):
             if fd >= 0:
                 try: os.close(fd)
-                except BaseException as close_error:
-                    if primary is None: raise
-                    primary.add_note(f"capture_close_error={type(close_error).__name__}: {close_error}")
+                except BaseException as close_error: close_errors.append(close_error)
+        if close_errors:
+            target = primary if primary is not None else close_errors[0]
+            for close_error in close_errors if primary is not None else close_errors[1:]: target.add_note(f"capture_close_error={type(close_error).__name__}: {close_error}")
+            if primary is None: raise close_errors[0]
 
 
 @dataclass(frozen=True, slots=True)
