@@ -1,7 +1,7 @@
 {
-  "current_commit": "b731a60b38726d910db19ea9ac34f49ab375201a",
+  "current_commit": "5f6c6bf8ced0cd7e79b9c3768be87571ef086d69",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-12T10:30:00+00:00",
+  "generated_at": "2026-08-12T11:10:00+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -34,8 +34,8 @@
   "module_fingerprints": {
     "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "828fadaad683367062e9a76c25889c2571a8ad2df41eb52226bc49e6089b0f22",
-    "experiments": "38c5f015fd8f6a3c98cf5b63af566fa305ad8054b5c9ecbeff0d69da75a9b3a8",
+    "docs": "e2ed15d3771a9657c0a6d22eab1f99880fd673f634254e6c205e7af244be3efd",
+    "experiments": "7cdc98641fba33c59ae98657282dbd262c9f25bce893583425c88a4711fcbe10",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
     "scratch": "51c5a74072a2c614d1e3c5b502dd101c03dd354813cf4fcbc8263dddd06c8f4c",
