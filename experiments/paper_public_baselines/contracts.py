@@ -72,6 +72,11 @@ class ScoreResult:
         object.__setattr__(self, "oof_scores", oof)
         object.__setattr__(self, "test_scores", test)
 
+    @property
+    def fit_rows(self) -> int:
+        """Number of normal TRAIN rows represented by the OOF calibration."""
+        return len(self.oof_scores) if self.status == "complete" else 0
+
 
 def _validate_split(
     indices: tuple[int, ...], rows: tuple[np.ndarray, ...], split: str

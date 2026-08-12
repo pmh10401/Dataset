@@ -112,16 +112,34 @@ class RunnerTests(unittest.TestCase):
 
         for relative in (
             "artifacts.py",
+            "acceleration.py",
             "calibration.py",
             "config.py",
             "contracts.py",
             "data.py",
             "methods/classical.py",
+            "methods/deep_common.py",
+            "methods/deep_svdd.py",
+            "methods/drocc.py",
             "preprocessing.py",
             "runner.py",
         ):
             with self.subTest(relative=relative):
                 self.assertIn(f'"{relative}":', run_config)
+
+    def test_run_config_rejects_nonpositive_epochs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            config = self._config(directory)
+            with self.assertRaisesRegex(ValueError, "epochs"):
+                ScoreRunConfig(
+                    db_path=config.db_path,
+                    run_root=config.run_root,
+                    datasets=config.datasets,
+                    methods=config.methods,
+                    workers=1,
+                    database_sha256=config.database_sha256,
+                    epochs=0,
+                )
 
     def test_tampered_shard_blocks_frozen_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

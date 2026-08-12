@@ -25,7 +25,7 @@ from .calibration import conformal_alerts
 from .config import ALPHAS, CLASSICAL_METHOD_IDS, METHOD_IDS, SEED
 from .contracts import ScoreResult
 from .data import load_dataset_values
-from .methods.classical import crossfit_scores
+from .methods import score_published_method
 from .preprocessing import prepare_dataset
 
 
@@ -41,6 +41,7 @@ class ScoreRunConfig:
     workers: int
     database_sha256: str
     seed: int = SEED
+    epochs: int = 50
 
     def __post_init__(self) -> None:
         if not self.datasets or len(self.datasets) != len(set(self.datasets)):
@@ -53,6 +54,8 @@ class ScoreRunConfig:
             raise ValueError("workers must be between one and seven")
         if len(self.database_sha256) != 64:
             raise ValueError("database SHA256 is invalid")
+        if type(self.epochs) is not int or self.epochs < 1:
+            raise ValueError("epochs must be a positive integer")
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,13 +108,13 @@ def run_methods(
                     dataset,
                     method,
                     _pair_seed(config.seed, method, dataset),
+                    config.epochs,
                 ): (method, dataset)
                 for method, dataset in pending
             }
             for future in as_completed(futures):
                 results.append(future.result())
     else:
-        active_scorer = scorer or crossfit_scores
         for method, dataset in pending:
             results.append(
                 _score_pair(
@@ -119,7 +122,8 @@ def run_methods(
                     dataset,
                     method,
                     _pair_seed(config.seed, method, dataset),
-                    scorer=active_scorer,
+                    config.epochs,
+                    scorer=scorer,
                 )
             )
 
@@ -276,12 +280,14 @@ def _run_config_payload(config: ScoreRunConfig) -> dict[str, object]:
         "methods": list(config.methods),
         "alphas": list(ALPHAS),
         "seed": config.seed,
+        "epochs": config.epochs,
         "workers": config.workers,
         "versions": {
             "python": platform.python_version(),
             "numpy": np.__version__,
             "scipy": _version("scipy"),
             "scikit_learn": _version("scikit-learn"),
+            "torch": _version("torch"),
         },
         "source_sha256": _source_hashes(),
         "contains_test_labels": False,
@@ -294,11 +300,18 @@ def _score_pair(
     dataset: str,
     method: str,
     seed: int,
-    scorer: Scorer = crossfit_scores,
+    epochs: int,
+    scorer: Scorer | None = None,
 ) -> dict[str, object]:
     started = time.perf_counter()
     prepared = prepare_dataset(load_dataset_values(db_path, dataset))
-    result = scorer(method, prepared.train, prepared.test, seed)
+    result = (
+        scorer(method, prepared.train, prepared.test, seed)
+        if scorer is not None
+        else score_published_method(
+            method, prepared.train, prepared.test, seed, epochs=epochs
+        )
+    )
     if result.method_id != method:
         raise ValueError("scorer returned a different method identity")
     alerts = {
@@ -425,8 +438,10 @@ def _pair_seed(seed: int, method: str, dataset: str) -> int:
 def _source_hashes() -> dict[str, str]:
     package = Path(__file__).resolve().parent
     names = (
-        "artifacts.py", "calibration.py", "config.py", "contracts.py",
-        "data.py", "methods/classical.py", "preprocessing.py", "runner.py",
+        "acceleration.py", "artifacts.py", "calibration.py", "config.py",
+        "contracts.py", "data.py", "methods/classical.py",
+        "methods/deep_common.py", "methods/deep_svdd.py", "methods/drocc.py",
+        "preprocessing.py", "runner.py",
     )
     return {name: sha256_file(package / name) for name in names}
 
