@@ -151,4 +151,17 @@ class Task9AccelerationTests(unittest.TestCase):
         self.assertEqual(slow["selected_backend"], "cpu")
         self.assertEqual(slow["reason"], "speedup_below_1_1x")
 
+    def test_historical_acceleration_manifest_does_not_reprobe_another_interpreter(self):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest, verify_acceleration_manifest
+        manifest = build_acceleration_manifest("b" * 64, logical_cpu_count=12)
+        self.assertEqual(verify_acceleration_manifest(manifest, "b" * 64), manifest)
+
+    def test_acceleration_resume_reports_interpreter_identity_mismatch(self):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest, verify_acceleration_manifest
+        manifest = build_acceleration_manifest("c" * 64, logical_cpu_count=12)
+        runtime = dict(manifest["runtime"])
+        runtime["executable"] = "/different/python"
+        with self.assertRaisesRegex(ValueError, "interpreter_identity_mismatch"):
+            verify_acceleration_manifest(manifest, "c" * 64, current_runtime=runtime)
+
 if __name__=="__main__":unittest.main()

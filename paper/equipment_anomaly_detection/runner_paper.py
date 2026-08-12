@@ -98,7 +98,7 @@ def _artifact_record(root,stage,context):
     path=_artifact_path(root,stage); raw=path.read_bytes(); value=read_canonical(path)
     if stage=="preflight": expected={"schema":"paper-task8-preflight.v1","stage":stage,"context_sha256":context["context_sha256"]}
     elif stage=="prepare": expected={"schema":"paper-task8-prepare.v1","stage":stage,"context_sha256":context["context_sha256"],"catalog":_catalog_from_context(context),"parity_authority":context["parity_authority"]}
-    elif stage=="acceleration": expected=build_acceleration_manifest(context["context_sha256"])
+    elif stage=="acceleration": expected=verify_acceleration_manifest(value,context["context_sha256"])
     elif stage=="proposal_score": expected=_proposal_artifact(root,context)
     else: raise PipelineStateError("unregistered pipeline stage")
     if value!=expected: raise PipelineStateError("stage semantic verifier failed")

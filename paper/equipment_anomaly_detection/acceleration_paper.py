@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from hashlib import sha256
 import importlib.metadata
+import json
 import os
+from pathlib import Path
+import platform
+import sys
 from typing import Iterable
 
 import numpy as np
@@ -60,6 +65,23 @@ def _backends() -> list[dict[str, object]]:
     ]
 
 
+def current_runtime_identity() -> dict[str, str]:
+    """Capture interpreter provenance in the exact process that observes backends."""
+    return {
+        "executable": str(Path(sys.executable).resolve()),
+        "python_version": platform.python_version(),
+        "python_build": ".".join(platform.python_build()),
+        "python_implementation": platform.python_implementation(),
+        "prefix": str(Path(sys.prefix).resolve()),
+        "base_prefix": str(Path(sys.base_prefix).resolve()),
+        "platform": platform.platform(),
+    }
+
+
+def _canonical_sha256(value: object) -> str:
+    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode() + b"\n").hexdigest()
+
+
 def decide_dense_mlx_gate(
     cpu_values: object,
     mlx_values: object,
@@ -100,9 +122,10 @@ def build_acceleration_manifest(context_sha256: str, *, logical_cpu_count: int |
         {"stage": "stability", "tensor_eligible": True, "decision": "cpu", "reason": "implementation_unavailable"},
         {"stage": "proposal_routes", "tensor_eligible": True, "decision": "cpu", "reason": "implementation_unavailable"},
     ]
-    return {
+    base = {
         "schema": ACCELERATION_SCHEMA,
         "context_sha256": context_sha256,
+        "runtime": current_runtime_identity(),
         "selected_backend": "cpu",
         "workers": asdict(workers),
         "backends": _backends(),
@@ -110,15 +133,23 @@ def build_acceleration_manifest(context_sha256: str, *, logical_cpu_count: int |
         "benchmark_requirement": "same_input_seed_finite_outputs_identical_candidates_at_all_alphas_numeric_tolerance_and_at_least_1_1x_including_transfer_and_synchronization",
         "fallback_reason": "no_exact_mlx_dense_implementation_has_been_benchmarked",
     }
+    return {**base, "assessment_sha256": _canonical_sha256(base)}
 
 
-def verify_acceleration_manifest(value: object, context_sha256: str) -> dict[str, object]:
-    if not isinstance(value, dict):
+def verify_acceleration_manifest(value: object, context_sha256: str, *, current_runtime: dict[str, str] | None = None) -> dict[str, object]:
+    required = {"schema", "context_sha256", "runtime", "selected_backend", "workers", "backends", "stages", "benchmark_requirement", "fallback_reason", "assessment_sha256"}
+    if not isinstance(value, dict) or set(value) != required or value.get("schema") != ACCELERATION_SCHEMA or value.get("context_sha256") != context_sha256:
         raise ValueError("acceleration artifact is invalid")
-    expected = build_acceleration_manifest(context_sha256, logical_cpu_count=value.get("workers", {}).get("logical_cpu_count"))
-    if value != expected:
-        raise ValueError("acceleration artifact differs from current semantic assessment")
-    return expected
+    base = {key: child for key, child in value.items() if key != "assessment_sha256"}
+    if not isinstance(value["assessment_sha256"], str) or value["assessment_sha256"] != _canonical_sha256(base):
+        raise ValueError("acceleration artifact assessment hash differs")
+    runtime = value["runtime"]
+    if not isinstance(runtime, dict) or set(runtime) != set(current_runtime_identity()) or any(type(item) is not str or not item for item in runtime.values()):
+        raise ValueError("acceleration artifact runtime identity is invalid")
+    observed = current_runtime_identity() if current_runtime is None else current_runtime
+    if observed != runtime:
+        raise ValueError("interpreter_identity_mismatch")
+    return value
 
 
-__all__ = ["ACCELERATION_SCHEMA", "WorkerRecord", "build_acceleration_manifest", "decide_dense_mlx_gate", "verify_acceleration_manifest"]
+__all__ = ["ACCELERATION_SCHEMA", "WorkerRecord", "build_acceleration_manifest", "current_runtime_identity", "decide_dense_mlx_gate", "verify_acceleration_manifest"]
