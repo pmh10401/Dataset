@@ -24,6 +24,7 @@ TEST_VALUES_SQL = """SELECT i.instance_index, i.values_blob
 FROM instances i JOIN datasets d ON d.id=i.dataset_id
 WHERE d.name=? AND i.split='TEST' ORDER BY i.instance_index"""
 POPULATION_SQL = "SELECT name FROM datasets ORDER BY name"
+METADATA_LENGTH_SQL = "SELECT series_length FROM datasets WHERE name=?"
 
 
 def _regular_identity(path: Path) -> tuple[int, int, int, int]:
@@ -142,6 +143,9 @@ def load_dataset_values(
     if type(dataset) is not str or not dataset:
         raise ValueError("dataset name is invalid")
     with _open_verified_read_only(db_path, config=FROZEN_CONFIG) as connection:
+        metadata_row = connection.execute(METADATA_LENGTH_SQL, (dataset,)).fetchone()
+        if metadata_row is None or type(metadata_row[0]) is not int or metadata_row[0] <= 0:
+            raise ValueError("dataset metadata_length must be a positive integer")
         train_indices, train_blobs, train_rows = _load_values(
             connection, dataset=dataset, split="TRAIN", query=TRAIN_VALUES_SQL,
             sql_observer=sql_observer,
@@ -152,6 +156,7 @@ def load_dataset_values(
         )
     return RawDataset(
         dataset=dataset,
+        metadata_length=metadata_row[0],
         train_indices=train_indices,
         train_blobs=train_blobs,
         train_rows=train_rows,

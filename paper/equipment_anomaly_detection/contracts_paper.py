@@ -58,12 +58,27 @@ class RawDataset:
     """Detached, index-aligned raw value rows used by the label-free score stages."""
 
     dataset: str
+    metadata_length: int
     train_indices: tuple[int, ...]
     train_blobs: tuple[bytes, ...]
     train_rows: tuple[np.ndarray, ...]
     test_indices: tuple[int, ...]
     test_blobs: tuple[bytes, ...]
     test_rows: tuple[np.ndarray, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SourceDatasetMetadata:
+    """TRAIN-derived source configuration metadata with no label capability."""
+
+    dataset: str
+    dataset_name: str
+    family: str
+    metadata_length: int
+    actual_len_median: int
+    actual_len_max: int
+    train_target_len: int
+    test_actual_len_median: int
 
 
 @dataclass(frozen=True, slots=True)

@@ -27,7 +27,8 @@ def _build_database(path: Path) -> None:
             """
             CREATE TABLE datasets (
                 id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE
+                name TEXT NOT NULL UNIQUE,
+                series_length INTEGER NOT NULL
             );
             CREATE TABLE instances (
                 id INTEGER PRIMARY KEY,
@@ -41,8 +42,8 @@ def _build_database(path: Path) -> None:
             """
         )
         connection.executemany(
-            "INSERT INTO datasets(id, name) VALUES(?, ?)",
-            ((1, "toy"), (2, "removed")),
+            "INSERT INTO datasets(id, name, series_length) VALUES(?, ?, ?)",
+            ((1, "toy", 2), (2, "removed", 2)),
         )
         connection.executemany(
             """
@@ -103,6 +104,7 @@ class DataBoundaryTests(unittest.TestCase):
             )
 
         self.assertEqual(values.dataset, "toy")
+        self.assertEqual(values.metadata_length, 2)
         self.assertEqual(values.train_indices, (0, 1))
         self.assertEqual(values.test_indices, (0, 1))
         self.assertEqual(values.test_blobs, (_blob((2.0, 3.0)), _blob((8.0, 8.0))))
