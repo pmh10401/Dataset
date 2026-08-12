@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-08-12T15:40:00+00:00",
-  "source_parent_commit": "e93dc892dfa723296b86b1ceda049726457be066",
+  "generated_at": "2026-08-12T16:00:00+00:00",
+  "source_parent_commit": "1495cca335a7be4a583b2a63565cb1b7ddfccb34",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
   ],
-  "topology_note": "The map retains 21 nodes by representing receipt state, prediction progress, and public prediction authority separately. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
+  "topology_note": "The map retains 20 nodes by consolidating prediction progress into the public prediction-authority boundary while retaining its concrete import, progress tests, 96-leaf completion gate, and lifecycle flow. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
   "nodes": [
     {
       "id": "research_control",
@@ -239,21 +239,6 @@
       ]
     },
     {
-      "id": "prediction_progress",
-      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
-      "role": "Prediction-owned exact-prefix candidate commit and durable progress channels; its 96 committed leaves gate immutable prediction completion.",
-      "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
-          "symbol": "def commit_candidate_leaf_antigravity"
-        }
-      ]
-    },
-    {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
       "role": "Task-2 implemented descriptor-safe receipt state machine, unified create-only failure audit, and reusable predict/evaluate/inspect phase boundary; official execution remains closed.",
@@ -271,15 +256,24 @@
     {
       "id": "prediction_authority",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Task-2 receipt-gated public predict wrapper around the frozen label-free 96-unit, 11-worker prediction authority and immutable descriptor validator.",
+      "role": "Task-2 receipt-gated public predict wrapper around the frozen label-free 96-unit, 11-worker prediction authority and immutable descriptor validator; it imports prediction-owned exact-prefix progress commits whose 96 durable leaves gate completion.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py"
       ],
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
           "symbol": "def predict_antigravity"
+        },
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
+          "symbol": "progress_antigravity import"
+        },
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/progress_antigravity.py",
+          "symbol": "def commit_candidate_leaf_antigravity"
         }
       ]
     },
@@ -494,15 +488,6 @@
       }
     },
     {
-      "from": "prediction_authority",
-      "to": "prediction_progress",
-      "type": "imports",
-      "evidence": {
-        "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-        "symbol": "progress_antigravity import"
-      }
-    },
-    {
       "from": "task6_evaluation",
       "to": "exp448_authority",
       "type": "reads",
@@ -582,11 +567,10 @@
         "two_root_correction_design",
         "receipt_lifecycle",
         "prediction_authority",
-        "prediction_progress",
         "task6_evaluation",
         "task6_replay"
       ],
-      "outcome": "Task-2 provides receipt/audit mechanics and source-free replay wrappers without authorizing any official command."
+      "outcome": "Task-2 provides receipt/audit mechanics and source-free replay wrappers without authorizing any official command; prediction_authority includes its exact-prefix progress dependency and 96-leaf durable completion gate."
     },
     {
       "trigger": "Descriptor capture to sole label session",
