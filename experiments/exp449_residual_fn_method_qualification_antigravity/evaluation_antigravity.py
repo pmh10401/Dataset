@@ -169,7 +169,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
             phase = "label_query"; labels = _exact_labels_antigravity(dataset, session.labels_for_dataset_antigravity(dataset)); queries += 1; label_rows += len(labels); labels_by_dataset[dataset] = labels
         if (queries, label_rows) != (48, 72300): raise ValueError("TEST label population differs")
         phase = "label_close"; session.close_antigravity(); closed = True
-        phase = "post_close"; 
+        phase = "post_close"
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift after close")
         by_pair: dict[tuple[str, str], list[tuple[str, frozenset[int]]]] = {(family, method): [] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY for method in methods}
         for row in predictions: by_pair[(row["family"], row["method"])].append((row["dataset"], frozenset(row["indices"])))
@@ -188,7 +188,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
                 all_base = tuple(item.confusion for item in baselines); all_candidate = list(all_base)
                 for position, row in zip(family_positions, candidate_rows, strict=True): all_candidate[position] = row
                 bootstrap = paired_delta_antigravity(np.asarray([list(_payload_antigravity(row).values()) for row in all_base], dtype=np.int64), np.asarray([list(_payload_antigravity(row).values()) for row in all_candidate], dtype=np.int64)); bootstrap_rows.append({"family": family, "method": method, **bootstrap})
-        phase = "post_compute"; 
+        phase = "post_compute"
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift after compute")
         metric_payloads = tuple({"family": item.family, "method": item.method, "target_confusion": _payload_antigravity(item.target_confusion), "global_confusion": _payload_antigravity(item.global_confusion), "target_fn_delta": item.target_fn_delta, "global_f1": item.global_f1, "qualified": item.qualified} for item in metrics)
         family_payloads = tuple({"family": family, "candidate_count": 2, "qualified_count": sum(item.qualified for item in metrics if item.family == family), "baseline_target_confusion": _payload_antigravity(_sum_antigravity(tuple(baseline.confusion for baseline in baselines if baseline.family == family)))} for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY)
@@ -199,7 +199,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         from .dashboard_export_antigravity import public_result_antigravity
         public_result_antigravity(dashboard)
         payloads = {"context_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449", "reviewed_commit": reviewed_commit, "label_access_count": 1}), "compatibility_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"}), "candidate_registry_antigravity.json": canonical_json_bytes_antigravity([[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]), "frozen_predictions_antigravity.jsonl": frozen_bytes, "prediction_manifest_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(frozen_bytes).hexdigest()}), "evaluation_antigravity.json": canonical_json_bytes_antigravity(evaluation), "candidate_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(metric_payloads), "family_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(family_payloads), "bootstrap_antigravity.json": canonical_json_bytes_antigravity({"draw_sha256": BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, "comparisons": bootstrap_rows}), "decision_antigravity.json": canonical_json_bytes_antigravity(decision), "dashboard_snapshot_antigravity.json": canonical_json_bytes_antigravity(dashboard)}
-        phase = "precommit"; 
+        phase = "precommit"
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift before commit")
         _publish_antigravity(root, payloads)
         observed = inspect_replay_at_antigravity(root)
