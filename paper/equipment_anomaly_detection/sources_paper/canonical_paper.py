@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .preprocessing_paper import DependencyUnavailablePaper
+
 
 CANONICAL_SEED_PAPER = 20260718
 PROVENANCE_PAPER = {"experiments/exp177_185/core.py": ("canonical_features", "_multiscale_stat_features", "_fold_plan", "_score_fit_query", "crossfit_scores")}
@@ -33,7 +35,7 @@ def _multiscale_stat_features_paper(matrix: np.ndarray) -> np.ndarray:
 
 def canonical_features_paper(matrix: np.ndarray) -> np.ndarray:
     try: from pycatch22 import catch22_all
-    except ImportError as exc: raise RuntimeError("dependency_unavailable:pycatch22") from exc
+    except ImportError as exc: raise DependencyUnavailablePaper("dependency_unavailable:pycatch22") from exc
     values = _sanitize_matrix_paper(matrix); catch = [np.asarray(catch22_all(row.tolist(), catch24=True)["values"], dtype=float) for row in values]
     return np.nan_to_num(np.hstack((np.vstack(catch), _multiscale_stat_features_paper(values))), nan=0., posinf=0., neginf=0.)
 

@@ -10,14 +10,17 @@ run_experiment_60_62_rocket_imaging_selector_variants.py SHA256
 """
 from __future__ import annotations
 
+import logging
 import numpy as np
+from sklearn.decomposition import PCA
 
 from .knn_paper import scale_feature_pair_paper
 from .preprocessing_paper import resample_series_paper
 
 
-EXP55_CONFIG_PAPER = {"name": "train_global_minmax_clip_spectrogram_32_pca32_knn3", "image": "spectrogram", "series_scale": "train_global_minmax_clip", "size": 32, "pca": 32, "neighbors": 3}
-EXP56_CONFIG_PAPER = {"name": "glcm_rp_32_pca32_knn3", "image": "rp", "series_scale": "per_series_z", "feature_extractor": "glcm", "size": 32, "pca": 32, "neighbors": 3}
+EXP55_CONFIG_PAPER = {"name": "train_global_minmax_clip_spectrogram_32_pca32_knn3", "kind": "imaging_knn", "image": "spectrogram", "series_scale": "train_global_minmax_clip", "size": 32, "pca": 32, "neighbors": 3}
+EXP56_CONFIG_PAPER = {"name": "glcm_rp_32_pca32_knn3", "kind": "imaging_knn", "image": "rp", "series_scale": "per_series_z", "feature_extractor": "glcm", "size": 32, "pca": 32, "neighbors": 3}
+RNG_SEED_PAPER = 20260707
 PROVENANCE_PAPER = {"run_model_hard_research_experiments.py": ("resample_rows", "rp_images", "spectrogram_images", "glcm_image_features", "pca_pair", "fixed_width_features", "imaging_features", "score_pair_for_config"), "run_experiment_60_62_rocket_imaging_selector_variants.py": ("IMAGING_CONFIGS",)}
 
 
@@ -74,8 +77,16 @@ def _fixed_width_paper(features: np.ndarray, width: int) -> np.ndarray:
 
 
 def _pca_pair_paper(train: np.ndarray, test: np.ndarray, components: int) -> tuple[np.ndarray, np.ndarray]:
+    train, test = np.asarray(train, dtype=np.float32), np.asarray(test, dtype=np.float32)
     center = train.mean(axis=0, keepdims=True); centered, test_centered = train - center, test - center
     count = max(1, min(int(components), centered.shape[0], centered.shape[1]))
+    large_matrix = centered.shape[0] * centered.shape[1] >= 1_000_000
+    if large_matrix and count < min(centered.shape):
+        try:
+            pca = PCA(n_components=count, svd_solver="randomized", random_state=RNG_SEED_PAPER)
+            return _fixed_width_paper(pca.fit_transform(centered), components), _fixed_width_paper(pca.transform(test_centered), components)
+        except Exception:
+            logging.getLogger("model_hard_research").exception("Randomized PCA failed; falling back to SVD.")
     try: _, _, vt = np.linalg.svd(centered, full_matrices=False); basis = vt[:count].T
     except np.linalg.LinAlgError: basis = np.eye(centered.shape[1], count, dtype=np.float32)
     return _fixed_width_paper(centered @ basis, components), _fixed_width_paper(test_centered @ basis, components)

@@ -9,4 +9,5 @@ from .contracts_paper import FrozenPaperConfig
 PAPER_ROOT = Path(__file__).resolve().parent
 REPOSITORY_ROOT = PAPER_ROOT.parents[1]
 LINEAGE_LOCK_PATH = PAPER_ROOT / "lineage_lock_paper.json"
+SOURCE_PROVENANCE_PATH = PAPER_ROOT / "sources_paper" / "source_provenance_paper.json"
 FROZEN_CONFIG = FrozenPaperConfig()

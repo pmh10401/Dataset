@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import re
 
-from .config_paper import LINEAGE_LOCK_PATH, REPOSITORY_ROOT
+from .config_paper import LINEAGE_LOCK_PATH, REPOSITORY_ROOT, SOURCE_PROVENANCE_PATH
 from .contracts_paper import LineageNode, PaperCodemap
 
 
@@ -19,6 +19,9 @@ _NODE_FIELDS = frozenset({
 })
 _CODEMAP_FIELDS = ("callers", "effects", "tests", "source_origins")
 _LOCK_FIELDS = frozenset({"schema", "hashes"})
+_SOURCE_PROVENANCE_FIELDS = frozenset({"schema", "helpers"})
+_SOURCE_PROVENANCE_HELPER_FIELDS = frozenset({"paper_sha256", "origins"})
+_SOURCE_PROVENANCE_ORIGIN_FIELDS = frozenset({"module", "symbols", "source_sha256"})
 
 
 def sha256_file(path: Path) -> str:
@@ -144,6 +147,53 @@ def validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]:
     return nodes
 
 
+def _paper_source_helper_inventory(root: Path) -> frozenset[str]:
+    source_root = root / "sources_paper"
+    return frozenset(
+        path.relative_to(root).as_posix()
+        for path in source_root.glob("*_paper.py")
+        if "__pycache__" not in path.parts and path.name != "package_paper.py"
+    )
+
+
+def validate_source_provenance_paper(paper_root: Path) -> dict[str, object]:
+    """Hash-bind every copied scientific helper and every unexecuted origin."""
+    root = Path(paper_root)
+    provenance = root / "sources_paper" / "source_provenance_paper.json"
+    if not provenance.is_file():
+        raise ValueError("paper source provenance is unavailable")
+    payload = read_strict_json(provenance)
+    if not isinstance(payload, dict) or set(payload) != _SOURCE_PROVENANCE_FIELDS or payload.get("schema") != "paper-source-provenance.v1":
+        raise ValueError("paper source provenance schema is invalid")
+    helpers = payload.get("helpers")
+    expected_helpers = _paper_source_helper_inventory(root)
+    if not isinstance(helpers, dict) or set(helpers) != expected_helpers:
+        raise ValueError("paper source provenance helper inventory differs")
+    for helper, record in helpers.items():
+        if not isinstance(record, dict) or set(record) != _SOURCE_PROVENANCE_HELPER_FIELDS:
+            raise ValueError("paper source provenance helper schema is invalid")
+        if type(record["paper_sha256"]) is not str or not re.fullmatch(r"[0-9a-f]{64}", record["paper_sha256"]):
+            raise ValueError("paper source provenance helper hash is invalid")
+        if sha256_file(root / helper) != record["paper_sha256"]:
+            raise ValueError(f"paper source helper SHA differs: {helper}")
+        origins = record["origins"]
+        if not isinstance(origins, list) or not origins:
+            raise ValueError("paper source provenance origins are invalid")
+        for origin in origins:
+            if not isinstance(origin, dict) or set(origin) != _SOURCE_PROVENANCE_ORIGIN_FIELDS:
+                raise ValueError("paper source provenance origin schema is invalid")
+            module, symbols, expected = origin["module"], origin["symbols"], origin["source_sha256"]
+            if type(module) is not str or not _DOTTED_IDENTIFIER.fullmatch(module) or not isinstance(symbols, list) or not symbols or any(type(symbol) is not str or not symbol for symbol in symbols) or type(expected) is not str or not re.fullmatch(r"[0-9a-f]{64}", expected):
+                raise ValueError("paper source provenance origin values are invalid")
+            source = resolve_repo_module_source(module)
+            if sha256_file(source) != expected:
+                raise ValueError(f"paper source origin SHA differs: {module}")
+            exported = static_top_level_names(ast.parse(source.read_text(encoding="utf-8"), filename=str(source)))
+            if any(symbol not in exported for symbol in symbols):
+                raise ValueError(f"paper source origin symbol is unavailable: {module}")
+    return helpers
+
+
 def _parse_codemap(payload: object) -> PaperCodemap:
     if not isinstance(payload, dict) or set(payload) != {"schema", "required_fields", "modules"}:
         raise ValueError("paper codemap schema is invalid")
@@ -206,7 +256,8 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     root = Path(paper_root)
     html, codemap, lock = (root / "codemap_paper.html", root / "codemap_paper.json", root / "codemap_paper.lock")
     config, contracts, lineage = root / "config_paper.py", root / "contracts_paper.py", root / "lineage_lock_paper.json"
-    required_paths = (html, codemap, lock, config, contracts, lineage)
+    provenance = root / "sources_paper" / "source_provenance_paper.json"
+    required_paths = (html, codemap, lock, config, contracts, lineage, provenance)
     if any(not item.is_file() for item in required_paths):
         raise ValueError("paper codemap triplet is incomplete")
     lock_payload = read_strict_json(lock)
@@ -215,14 +266,15 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
     hashes = lock_payload.get("hashes")
     expected_names = {
         "config_paper.py", "contracts_paper.py", "lineage_lock_paper.json",
-        "codemap_paper.html", "codemap_paper.json",
-    }
+        "codemap_paper.html", "codemap_paper.json", "sources_paper/source_provenance_paper.json",
+    } | _paper_source_helper_inventory(root)
     if not isinstance(hashes, dict) or set(hashes) != expected_names or any(type(value) is not str or not re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values()):
         raise ValueError("paper codemap lock hashes are invalid")
     for name, expected in hashes.items():
         if sha256_file(root / name) != expected:
             raise ValueError(f"paper codemap hash differs: {name}")
     parsed = _parse_codemap(read_strict_json(codemap))
+    validate_source_provenance_paper(root)
     if set(parsed.modules) != _paper_module_inventory(root):
         raise ValueError("paper codemap module inventory differs")
     if html.read_text(encoding="utf-8") != _render_codemap_html(parsed):
@@ -233,7 +285,7 @@ def validate_codemap_triplet(paper_root: Path) -> PaperCodemap:
 __all__ = [
     "LINEAGE_NODES", "parse_nodes", "read_strict_json", "reject_duplicate_object_keys",
     "resolve_repo_module_source", "sha256_file", "static_top_level_names",
-    "validate_codemap_triplet", "validate_lineage_lock",
+    "validate_codemap_triplet", "validate_lineage_lock", "validate_source_provenance_paper",
 ]
 
 

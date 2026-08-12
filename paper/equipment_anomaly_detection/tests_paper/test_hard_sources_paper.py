@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -106,6 +107,37 @@ class HardSourceTests(unittest.TestCase):
         self.assertEqual(first.train_target_len, second.train_target_len)
         self.assertEqual(first.test_actual_len_median, first.train_target_len)
 
+    def test_canonical_orchestration_passes_the_frozen_paper_seed(self) -> None:
+        """A changed canonical fold seed changes OOF positions and native candidates."""
+        from paper.equipment_anomaly_detection.sources_paper import hard_sources_paper
+
+        with patch.object(hard_sources_paper, "canonical_features_paper", side_effect=lambda x: x), \
+             patch.object(hard_sources_paper, "crossfit_scores_paper", return_value=(np.ones(5), np.ones(3))) as scored:
+            hard_sources_paper._canonical_source_paper(np.ones((5, 8)), np.ones((3, 8)))
+        self.assertEqual(scored.call_args.kwargs["seed"], hard_sources_paper.PAPER_SEED)
+
+    def test_randomized_pca_branch_is_seeded_and_matches_sklearn(self) -> None:
+        """Replacing the frozen large-matrix PCA branch must change the exact score source."""
+        from sklearn.decomposition import PCA
+        from paper.equipment_anomaly_detection.sources_paper.imaging_paper import _pca_pair_paper
+
+        rng = np.random.default_rng(44)
+        train = rng.normal(size=(1000, 1000)).astype(np.float32)
+        test = rng.normal(size=(2, 1000)).astype(np.float32)
+        actual_train, actual_test = _pca_pair_paper(train, test, 32)
+        center = train.mean(axis=0, keepdims=True)
+        expected = PCA(n_components=32, svd_solver="randomized", random_state=20260707)
+        np.testing.assert_allclose(actual_train, expected.fit_transform(train - center), rtol=1e-5, atol=1e-6)
+        np.testing.assert_allclose(actual_test, expected.transform(test - center), rtol=1e-5, atol=1e-6)
+
+    def test_source_provenance_binds_every_scientific_helper(self) -> None:
+        """An unbound helper or copied origin would make scientific provenance mutable."""
+        from paper.equipment_anomaly_detection.lineage_paper import validate_source_provenance_paper
+        from paper.equipment_anomaly_detection.config_paper import PAPER_ROOT
+
+        registry = validate_source_provenance_paper(PAPER_ROOT)
+        self.assertIn("sources_paper/hard_sources_paper.py", registry)
+
     def test_paper_source_runtime_graph_has_no_legacy_or_label_capability(self) -> None:
         """A legacy runtime import or label dependency violates standalone score execution."""
         module = importlib.import_module(
@@ -126,9 +158,21 @@ class HardSourceTests(unittest.TestCase):
         source_root = Path(root).parent
         for source in source_root.glob("*_paper.py"):
             parsed = ast.parse(source.read_text(encoding="utf-8"))
-            names = [node.module for node in ast.walk(parsed)
-                     if isinstance(node, ast.ImportFrom) and node.module]
+            names = []
+            for node in ast.walk(parsed):
+                if isinstance(node, ast.Import):
+                    names.extend(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    names.append(node.module)
             self.assertFalse(any(name.startswith("experiments.exp") for name in names), source.name)
+
+    def test_implementation_runtime_error_is_not_converted_to_abstention(self) -> None:
+        """Only the typed missing-dependency signal may become a source abstention."""
+        from paper.equipment_anomaly_detection.sources_paper import hard_sources_paper
+
+        with patch.object(hard_sources_paper, "crossfit_confirmation_scores_paper", side_effect=RuntimeError("broken scorer")):
+            with self.assertRaisesRegex(RuntimeError, "broken scorer"):
+                hard_sources_paper.score_hard_sources(self.values)
 
     def test_rocket_primitive_matches_isolated_frozen_origin(self) -> None:
         """Changing frozen ROCKET kernels or transform semantics must break score parity."""
@@ -152,6 +196,53 @@ print(json.dumps(origin.rocket_transform(x, origin.make_kernels(32,4)).tolist())
         completed = subprocess.run([sys.executable, "-c", code], cwd=Path.cwd(),
                                    check=True, capture_output=True, text=True, timeout=30)
         np.testing.assert_allclose(expected, np.asarray(json.loads(completed.stdout)))
+
+    def test_capable_oracle_matches_every_source_scores_and_candidates(self) -> None:
+        """Any source-level drift in crossfit, preprocessing, or native candidates fails parity."""
+        oracle = Path("/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python")
+        if not oracle.is_file():
+            self.skipTest("capable frozen oracle interpreter is unavailable")
+        code = r'''
+import logging, numpy as np, sys
+logging.FileHandler=lambda *args, **kwargs: logging.StreamHandler()
+import aeon, pycatch22, sklearn
+assert sys.version_info[:3] == (3, 14, 6)
+assert aeon.__version__ == '1.5.0' and sklearn.__version__ == '1.8.0'
+import run_experiment_149_150_virtual_run_conformal_policy as historical
+import run_model_hard_research_experiments as model_hard
+from experiments.exp153_157.exp153_157_bridge import crossfit_confirmation_scores
+from experiments.exp177_185.core import canonical_features, crossfit_scores
+from paper.equipment_anomaly_detection.calibration_paper import upper_tail_pvalues
+from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import crossfit_confirmation_scores_paper, crossfit_source_paper, _canonical_source_paper
+from paper.equipment_anomaly_detection.sources_paper.imaging_paper import EXP55_CONFIG_PAPER, imaging_score_pair_paper
+train=np.asarray([np.sin(np.linspace(0, 6.28, 32)+i/10)+i/100 for i in range(5)], dtype=np.float32)
+test=np.asarray([np.cos(np.linspace(0, 6.28, 32)+i/7) for i in range(3)], dtype=np.float32)
+record={'actual_len_median':32, 'dataset_name':'__virtual_run_dataset__', 'family':'__family_neutral__'}
+def candidate(scores, query):
+    p=upper_tail_pvalues(scores, query)
+    return [np.flatnonzero(p <= alpha).tolist() for alpha in (.005,.01,.02,.05)]
+for name in ('rocket_exp40','exp55_best','exp56_best','exp84'):
+    origin=historical.crossfit_source(name, train, test, record)
+    paper=crossfit_source_paper(name, train, test, 32)
+    np.testing.assert_allclose(origin['train_oof_scores'], paper[0], rtol=1e-5, atol=1e-2)
+    np.testing.assert_allclose(origin['test_scores'], paper[1], rtol=1e-5, atol=1e-5)
+    assert candidate(origin['train_oof_scores'], origin['test_scores']) == candidate(paper[0], paper[1])
+origin=crossfit_confirmation_scores(train, test); paper=crossfit_confirmation_scores_paper(train, test)
+np.testing.assert_allclose(origin['block_b_train_oof'], paper[0]); np.testing.assert_allclose(origin['block_b_test'], paper[1])
+assert candidate(origin['block_b_train_oof'], origin['block_b_test']) == candidate(paper[0], paper[1])
+origin=crossfit_scores(canonical_features(train), canonical_features(test), backend='knn_local_gap', seed=20260717); paper=_canonical_source_paper(train,test)
+np.testing.assert_allclose(origin[0],paper[0]); np.testing.assert_allclose(origin[1],paper[1])
+assert candidate(origin[0],origin[1]) == candidate(paper[0],paper[1])
+large=np.sin(np.linspace(0,6.28,32)[None,:]+np.arange(1000)[:,None]/10).astype(np.float32); probe=test
+prepared=model_hard.prepare_series_pair_for_scale('train_global_minmax_clip',large,probe,large,probe)
+origin=model_hard.score_pair_for_config(prepared[0],prepared[1],32,EXP55_CONFIG_PAPER,{},{}); paper=imaging_score_pair_paper(large,probe,EXP55_CONFIG_PAPER)
+np.testing.assert_allclose(origin[0],paper[0],rtol=1e-5,atol=1e-5); np.testing.assert_allclose(origin[1],paper[1],rtol=1e-5,atol=1e-5)
+assert candidate(origin[0],origin[1]) == candidate(paper[0],paper[1])
+print('source-parity: rocket_exp40 rocket_block_b exp55_small exp55_randomized exp56 exp84 canonical')
+'''
+        completed = subprocess.run([str(oracle), "-c", code], cwd=Path.cwd(),
+                                   check=True, capture_output=True, text=True, timeout=90)
+        self.assertIn("source-parity:", completed.stdout)
 
 
 if __name__ == "__main__":

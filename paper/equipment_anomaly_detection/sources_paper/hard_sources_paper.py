@@ -8,8 +8,6 @@ artifacts.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
-
 import numpy as np
 from sklearn.model_selection import KFold
 
@@ -20,7 +18,7 @@ from .canonical_paper import canonical_features_paper, crossfit_scores_paper
 from .imaging_paper import EXP55_CONFIG_PAPER, EXP56_CONFIG_PAPER, imaging_score_pair_paper
 from .knn_paper import density_knn_score_pair_paper, scale_feature_pair_paper
 from .multirocket_hydra_paper import exp84_score_pair_paper
-from .preprocessing_paper import PAPER_SEED, align_series_lengths_paper, has_only_finite_values_paper, source_metadata_paper, z_normalize_paper
+from .preprocessing_paper import DependencyUnavailablePaper, PAPER_SEED, align_series_lengths_paper, has_only_finite_values_paper, source_metadata_paper, z_normalize_paper
 from .rocket_paper import block_b_feature_pair_paper, rocket_feature_pair_paper
 
 
@@ -88,7 +86,7 @@ def crossfit_confirmation_scores_paper(train: np.ndarray, test: np.ndarray) -> t
 
 
 def _canonical_source_paper(train: np.ndarray, test: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    return crossfit_scores_paper(canonical_features_paper(train), canonical_features_paper(test), backend="knn_local_gap")
+    return crossfit_scores_paper(canonical_features_paper(train), canonical_features_paper(test), backend="knn_local_gap", seed=PAPER_SEED)
 
 
 def _origin_paper(name: str) -> LineageNode:
@@ -115,15 +113,14 @@ def score_hard_sources(values: RawDataset) -> HardSourceBundle:
     metadata = source_metadata_paper(values); train = align_series_lengths_paper(values.train_rows, metadata.train_target_len); test = align_series_lengths_paper(values.test_rows, metadata.train_target_len); results = {}
     for name in RAW_PRIMARY_SOURCES:
         try: results[name] = _completed_paper(name, *crossfit_source_paper(name, train, test, metadata.train_target_len))
-        except RuntimeError as exc:
-            if str(exc).startswith("dependency_unavailable:"): results[name] = _abstain_paper(name, len(test), str(exc))
-            else: raise
+        except DependencyUnavailablePaper as exc:
+            results[name] = _abstain_paper(name, len(test), str(exc))
     try: results["rocket_block_b"] = _completed_paper("rocket_block_b", *crossfit_confirmation_scores_paper(train, test))
-    except RuntimeError as exc: results["rocket_block_b"] = _abstain_paper("rocket_block_b", len(test), str(exc))
+    except DependencyUnavailablePaper as exc:
+        results["rocket_block_b"] = _abstain_paper("rocket_block_b", len(test), str(exc))
     try: results["canonical_normal_state"] = _completed_paper("canonical_normal_state", *_canonical_source_paper(train, test))
-    except RuntimeError as exc:
-        if str(exc).startswith("dependency_unavailable:"): results["canonical_normal_state"] = _abstain_paper("canonical_normal_state", len(test), str(exc))
-        else: raise
+    except DependencyUnavailablePaper as exc:
+        results["canonical_normal_state"] = _abstain_paper("canonical_normal_state", len(test), str(exc))
     return HardSourceBundle(EXPECTED_HARD_SOURCES, results)
 
 

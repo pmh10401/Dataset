@@ -23,6 +23,10 @@ PROVENANCE_PAPER = {
 }
 
 
+class DependencyUnavailablePaper(RuntimeError):
+    """Raised only when a frozen optional scientific dependency is unavailable."""
+
+
 def resample_series_paper(values: np.ndarray, target_len: int) -> np.ndarray:
     row = np.asarray(values, dtype=np.float32).reshape(-1)
     if target_len <= 0:
