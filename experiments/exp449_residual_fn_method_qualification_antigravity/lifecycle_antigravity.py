@@ -426,6 +426,105 @@ class _RootIdentityTransactionAntigravity:
             raise first
 
 
+class _AbsentRootPinAntigravity:
+    """Pin a root's parent and prove the governed root name stays absent."""
+    __slots__ = ("root", "parent_fd", "parent_identity")
+
+    def __init__(self, root: Path) -> None:
+        self.root = root; self.parent_fd = os.open(root.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        parent = os.fstat(self.parent_fd)
+        self.parent_identity = (parent.st_dev, parent.st_ino, parent.st_mode)
+        try:
+            os.stat(root.name, dir_fd=self.parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return
+        error = ValueError("absent root destination is occupied")
+        self.close(error)
+        raise error
+
+    def end_validate(self) -> None:
+        if self.parent_fd < 0:
+            return
+        self.validate_parent()
+        try:
+            os.stat(self.root.name, dir_fd=self.parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return
+        raise ValueError("absent root appeared during command")
+
+    def validate_parent(self) -> None:
+        if self.parent_fd < 0:
+            return
+        parent = os.fstat(self.parent_fd)
+        if (parent.st_dev, parent.st_ino, parent.st_mode) != self.parent_identity:
+            raise ValueError("absent root parent was replaced")
+
+    def close(self, primary: BaseException | None) -> None:
+        if self.parent_fd < 0:
+            return
+        descriptor, self.parent_fd = self.parent_fd, -1
+        try:
+            os.close(descriptor)
+        except BaseException as error:
+            if primary is not None:
+                primary.add_note(f"absent_root_parent_close_error={type(error).__name__}: {error}")
+            else:
+                raise
+
+
+class _CommandRootAuthorityAntigravity:
+    """Command-wide root authority retained from precondition through final receipt commit."""
+    __slots__ = ("phase", "prediction_root", "evaluation_root", "prediction", "evaluation", "prediction_absent", "evaluation_absent", "identities")
+
+    def __init__(self, phase: str, prediction_root: Path, evaluation_root: Path) -> None:
+        self.phase, self.prediction_root, self.evaluation_root = phase, prediction_root, evaluation_root
+        self.prediction = self.evaluation = self.prediction_absent = self.evaluation_absent = None
+        require_prediction, require_evaluation = {"readiness": (False, False), "predict": (False, False), "evaluate": (True, False), "inspect": (True, True)}[phase]
+        try:
+            self.prediction = _RootIdentityTransactionAntigravity(prediction_root) if require_prediction else None
+            self.evaluation = _RootIdentityTransactionAntigravity(evaluation_root) if require_evaluation else None
+            self.prediction_absent = None if require_prediction else _AbsentRootPinAntigravity(prediction_root)
+            self.evaluation_absent = None if require_evaluation else _AbsentRootPinAntigravity(evaluation_root)
+        except BaseException as error:
+            self.close(error)
+            raise
+        self.identities = (self.prediction.identity if self.prediction is not None else None, self.evaluation.identity if self.evaluation is not None else None)
+
+    def verify_receipts(self, transaction: _LifecycleTransactionAntigravity) -> None:
+        for _name, _fd, _identity, _payload, receipt in transaction.leaves:
+            if receipt.prediction_root_identity is not None and receipt.prediction_root_identity != self.identities[0]:
+                raise ValueError("prediction root identity differs from receipt chain")
+            if receipt.evaluation_root_identity is not None and receipt.evaluation_root_identity != self.identities[1]:
+                raise ValueError("evaluation root identity differs from receipt chain")
+
+    def capture_produced(self) -> None:
+        if self.phase == "predict":
+            self.prediction_absent.validate_parent(); self.prediction_absent.close(None); self.prediction_absent = None
+            self.prediction = _RootIdentityTransactionAntigravity(self.prediction_root)
+        elif self.phase == "evaluate":
+            self.evaluation_absent.validate_parent(); self.evaluation_absent.close(None); self.evaluation_absent = None
+            self.evaluation = _RootIdentityTransactionAntigravity(self.evaluation_root)
+        self.identities = (self.prediction.identity if self.prediction is not None else None, self.evaluation.identity if self.evaluation is not None else None)
+
+    def end_validate(self) -> None:
+        if self.prediction is not None: self.prediction.end_validate()
+        if self.evaluation is not None: self.evaluation.end_validate()
+        if self.prediction_absent is not None: self.prediction_absent.end_validate()
+        if self.evaluation_absent is not None: self.evaluation_absent.end_validate()
+
+    def close(self, primary: BaseException | None) -> None:
+        first: BaseException | None = None
+        for item in (self.evaluation, self.prediction, self.evaluation_absent, self.prediction_absent):
+            if item is None:
+                continue
+            try: item.close(primary)
+            except BaseException as error:
+                if primary is not None: primary.add_note(f"command_root_close_error={type(error).__name__}: {error}")
+                elif first is None: first = error
+        if primary is None and first is not None:
+            raise first
+
+
 def _fault_antigravity(fault_hook, point: str) -> None:
     if fault_hook is not None:
         fault_hook(point)
@@ -487,7 +586,7 @@ def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, n
                 raise
 
 
-def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, reviewed_commit: str, *, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), fault_hook=None, _transaction=None) -> LifecycleReceiptAntigravity:
+def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, reviewed_commit: str, *, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), root_identities: tuple[str | None, str | None] | None = None, fault_hook=None, _transaction=None) -> LifecycleReceiptAntigravity:
     """Append the one next governed receipt leaf and revalidate the complete prefix."""
     if not isinstance(receipt_dir, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path) or phase not in _PREDECESSOR_ANTIGRAVITY or event not in ("started", "complete", "stopped") or not _is_lower_hex_antigravity(reviewed_commit, 40):
         raise ValueError("receipt append inputs are invalid")
@@ -509,9 +608,14 @@ def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, review
     if state_number:
         if classification.reviewed_commit != reviewed_commit or previous is None:
             raise ValueError("receipt reviewed commit differs")
-    prediction_transaction = _RootIdentityTransactionAntigravity(prediction_root, fault_hook)
-    evaluation_transaction = _RootIdentityTransactionAntigravity(evaluation_root, fault_hook)
-    prediction_identity, evaluation_identity = _stage_root_fields_antigravity(phase, event, prediction_transaction.identity, evaluation_transaction.identity)
+    prediction_transaction = evaluation_transaction = None
+    if root_identities is None:
+        prediction_transaction = _RootIdentityTransactionAntigravity(prediction_root, fault_hook)
+        evaluation_transaction = _RootIdentityTransactionAntigravity(evaluation_root, fault_hook)
+        root_identities = (prediction_transaction.identity, evaluation_transaction.identity)
+    if type(root_identities) is not tuple or len(root_identities) != 2:
+        raise ValueError("receipt root identities are invalid")
+    prediction_identity, evaluation_identity = _stage_root_fields_antigravity(phase, event, root_identities[0], root_identities[1])
     receipt = LifecycleReceiptAntigravity(_SCHEMA_ANTIGRAVITY, _EXPERIMENT_ID_ANTIGRAVITY, _RUN_IDENTITY_ANTIGRAVITY, reviewed_commit, phase, event, state_number, previous, prediction_identity, evaluation_identity, event == "stopped")
     primary: BaseException | None = None
     try:
@@ -519,12 +623,14 @@ def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, review
         # descriptor closed before the final receipt durability sequence starts.
         _fault_antigravity(fault_hook, "before_end_validate")
         transaction.end_validate()
-        prediction_transaction.end_validate(); evaluation_transaction.end_validate()
+        if prediction_transaction is not None: prediction_transaction.end_validate()
+        if evaluation_transaction is not None: evaluation_transaction.end_validate()
     except BaseException as error:
         primary = error
         raise
     finally:
-        prediction_transaction.close(primary); evaluation_transaction.close(primary)
+        if prediction_transaction is not None: prediction_transaction.close(primary)
+        if evaluation_transaction is not None: evaluation_transaction.close(primary)
     try:
         _append_leaf_at_descriptor_antigravity(receipt_dir, transaction.directory_fd, name, canonical_json_bytes_antigravity(receipt.payload_antigravity()), fault_hook)
         leaf_fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=transaction.directory_fd)
@@ -576,10 +682,10 @@ def _root_destinations_antigravity(phase: str) -> tuple[str, ...]:
     return (_PREDICTION_ROOT_ANTIGRAVITY, _EVALUATION_ROOT_ANTIGRAVITY)
 
 
-def _stop_and_audit_antigravity(receipt_dir: Path, audit_path: Path, phase: str, reviewed_commit: str, primary: BaseException, prediction_root: Path, evaluation_root: Path, *, transaction: _LifecycleTransactionAntigravity | None = None) -> None:
+def _stop_and_audit_antigravity(receipt_dir: Path, audit_path: Path, phase: str, reviewed_commit: str, primary: BaseException, prediction_root: Path, evaluation_root: Path, *, transaction: _LifecycleTransactionAntigravity | None = None, root_identities: tuple[str | None, str | None] = (None, None)) -> None:
     notes: list[str] = []
     try:
-        append_receipt_antigravity(receipt_dir, phase, "stopped", reviewed_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, _transaction=transaction)
+        append_receipt_antigravity(receipt_dir, phase, "stopped", reviewed_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, root_identities=root_identities, _transaction=transaction)
     except BaseException as secondary:
         primary.add_note(f"stopped_receipt_error={type(secondary).__name__}: {secondary}")
         notes.append(f"stopped_receipt_error={type(secondary).__name__}: {secondary}")
@@ -601,7 +707,6 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
         transaction = _LifecycleTransactionAntigravity(receipt_dir, create_s0=True)
         classification = transaction.classification
         transaction.end_validate()
-        _validate_bound_root_identities_antigravity(transaction, prediction_root, evaluation_root)
     except BaseException as error:
         if 'transaction' in locals():
             try: transaction.close(error)
@@ -624,31 +729,49 @@ def run_phase_antigravity(phase: str, reviewed_commit: str, operation: Callable[
         primary = ValueError("failure audit destination is occupied")
     else:
         try:
+            roots = _CommandRootAuthorityAntigravity(phase, prediction_root, evaluation_root)
+            roots.verify_receipts(transaction)
             if path_precondition is not None:
                 path_precondition()
         except BaseException as error:
             primary = error
+    if 'roots' not in locals():
+        roots = None
     if primary is not None:
+        if roots is not None:
+            try: roots.close(primary)
+            except BaseException as close_error: primary.add_note(f"command_root_close_error={type(close_error).__name__}: {close_error}")
         _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, primary, prediction_root, evaluation_root, transaction=transaction)
         transaction.close(primary)
         raise primary
     try:
         if phase != "readiness":
-            append_receipt_antigravity(receipt_dir, phase, "started", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, _transaction=transaction)
+            append_receipt_antigravity(receipt_dir, phase, "started", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, root_identities=roots.identities, _transaction=transaction)
         result = operation()
+        roots.capture_produced()
+        roots.end_validate()
+        transaction.end_validate()
+        # All command-root validation and fallible root closes precede the
+        # complete leaf's parent fsync, which is the final durable commit.
+        roots.close(None)
     except BaseException as error:
+        try: roots.close(error)
+        except BaseException as close_error: error.add_note(f"command_root_close_error={type(close_error).__name__}: {close_error}")
         _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root, transaction=transaction)
         transaction.close(error)
         raise
     try:
         # A complete receipt is a durable commit point only after the complete
         # append function has returned from its own descriptor revalidation.
-        append_receipt_antigravity(receipt_dir, phase, "complete", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, _transaction=transaction)
+        append_receipt_antigravity(receipt_dir, phase, "complete", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, root_identities=roots.identities, _transaction=transaction)
     except BaseException as error:
         _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root, transaction=transaction)
         transaction.close(error)
         raise
-    transaction.close(None)
+    # Receipt close is deliberately post-commit: all descriptors are attempted,
+    # but a late close cannot reclassify an already durable complete leaf.
+    try: transaction.close(None)
+    except BaseException: pass
     return result
 
 

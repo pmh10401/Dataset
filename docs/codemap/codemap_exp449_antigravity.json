@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T16:00:00+00:00",
-  "source_parent_commit": "1495cca335a7be4a583b2a63565cb1b7ddfccb34",
+  "generated_at": "2026-08-13T00:20:00+00:00",
+  "source_parent_commit": "24bd05e4c0b531a5c338be34e99a4c310affa468",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
   ],
@@ -241,12 +241,16 @@
     {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-      "role": "Task-2 implemented descriptor-safe receipt state machine, unified create-only failure audit, and reusable predict/evaluate/inspect phase boundary; official execution remains closed.",
+      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Its command-wide root authority pins existing roots or absence parents through started/operation/complete, binds receipt hashes only after exact-predecessor root preconditions, and treats complete-parent fsync as final durable commit; official execution remains closed.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
       ],
       "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
+          "symbol": "class _CommandRootAuthorityAntigravity"
+        },
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
           "symbol": "def run_phase_antigravity"
