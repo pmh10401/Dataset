@@ -1077,7 +1077,7 @@
     {
       "id": "Exp449",
       "kind": "residual_fn_method_qualification",
-      "status": "planned_not_started",
+      "status": "implementation_verified_awaiting_official_readiness",
       "documents": [
         "docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html",
         "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
@@ -1098,6 +1098,9 @@
       "prediction_sha256": null,
       "evaluation_sha256": null,
       "decision_sha256": null,
+      "reviewed_implementation_candidate": "7815382ee8a155651286946951d30e0539bfc8ed",
+      "verification_test_counts": {"Exp449": [213, 213], "Exp249_250": 13, "Exp444": 206, "Exp445": 39, "Exp446": 50, "Exp447": 66, "Exp448": 62},
+      "descriptor_authority": {"database_inode": 1048138, "database_nlink": 1, "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c", "exp448_population": 1117, "exp448_target_datasets": 48, "sqlite_loaded": false},
       "label_access_count": 0,
       "test_labels_opened": false,
       "official_readiness_started": false,
@@ -1108,8 +1111,8 @@
       "cpu_workers": 11,
       "promotion_allowed": false,
       "routing_allowed": false,
-      "dashboard_presentation": "future_aggregate_only_owner_only_not_a_scientific_gate",
-      "notes": "Governance-only planned record. No official lifecycle command, database access, TEST-label access, dashboard publication, champion change, pending-candidate change, promotion, or routing has occurred."
+      "dashboard_presentation": {"dashboard_access": "blocked", "scope": "presentation_only_not_a_scientific_gate", "authenticated_metadata": "future_only_not_accessed", "exp448_site_source_commit": "500ccbe12b07475e51e8cdcbfa8619d9fbdefddb", "exp448_site_version": 6, "exp448_access": "custom_owner_only_one_account_no_groups"},
+      "notes": "Clean candidate 7815382ee8a155651286946951d30e0539bfc8ed passed retained serial regressions (Exp449 213 twice; Exp249_250 13; Exp444/445/446/447/448 206/39/50/66/62) and descriptor-only authority. No official lifecycle command, database SQL, TEST-label access, dashboard access or publication, champion change, pending-candidate change, promotion, or routing has occurred."
     },
     {
       "id": "Exp448",

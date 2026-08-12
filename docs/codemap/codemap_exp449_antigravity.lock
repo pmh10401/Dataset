@@ -1,13 +1,19 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "93ce84d8e4c8196f389bf1dfdd6ae765e78caa2a",
+  "source_parent_commit": "7815382ee8a155651286946951d30e0539bfc8ed",
   "working_tree_dirty": false,
   "represented_paths": [
+    "CHAMPION_LEDGER.json",
+    "EXPERIMENT_CATALOG.json",
+    "RESEARCH_STATE.json",
+    "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.json",
-    "docs/codemap/codemap_exp449_antigravity.lock"
+    "docs/codemap/codemap_exp449_antigravity.lock",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py",
+    "scratch/build_codemap_exp449_antigravity.py"
   ],
-  "generated_at": "2026-08-12T22:32:58+00:00",
+  "generated_at": "2026-08-12T23:11:18Z",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -42,13 +48,13 @@
   ],
   "fingerprint_algorithm": "sha256-v1: proposed post-change tracked tree; hash every exact tracked path except the exact Exp449 map triplet.",
   "module_fingerprints": {
-    "root": "bd7b2f521c541eee45f8f94b48f93e8f3c6b6d8aa673365966f9a97b697cb041",
+    "root": "7e1b993d70336f151219cee88dc09229f1c02f193449b65b879e4761796ec256",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "75ff09a6e40910cf8b5b24ad02e96f3aa67c4d70a4d10040ff3c94431e7dac15",
-    "experiments": "6ae81b075bd44b3c9ec8b327645e6b53480a9b3d9f08501b0210489a96f30801",
+    "docs": "d883342f0c796cdaec69ba9f9dd9a93248e2d6342ba8fc95f7a196240cca6992",
+    "experiments": "abf53499d546a00140b555bd20faea97729f820872b577d85698b906cfe9fcad",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "c4670d9fb1e735678f748d437b07e8847ca8e2deefb89b98aec68c1327ded914",
+    "scratch": "a8606387eff9a6e03e35f25100ebb09e1bad2041eeff4f9fa82187f1572476ee",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
@@ -101,11 +107,11 @@
     ".superpowers/sdd/task-8-report.md": "50f8847248bb45372827631ce81e64af000fe450c94127cf3f458aa207490161",
     "AGENTS.md": "db189f06c51a12c5715e6071420964a1ce385fb99c66cf4a4d56c2d4dd12f832",
     "AUTONOMOUS_RESEARCH_LOOP.md": "643555624a7c3b6a57c7e94ec848c8286b23e88b47409157d05b045f922ff68f",
-    "CHAMPION_LEDGER.json": "134f6e1b0f7e9a69d3f71dd4341f9ca0c1c8cdec2ac40ff46c353eb609a9d169",
-    "EXPERIMENT_CATALOG.json": "bf01b4fae24347137d3c0c881876b2dc77b201fdb412e37994374e6048096a1f",
+    "CHAMPION_LEDGER.json": "9cd76b4a9ad869693ccc5d405d0f19958a9881293bdc0aa2b71f83cfe33f6d28",
+    "EXPERIMENT_CATALOG.json": "a6085dac9154a6a9ba063923c05ceb1c2fc7c449db8967a0529380f4c00c090e",
     "FAILURE_LEDGER.json": "88d909db0617ee6a72f25131ae5be2f758c7fd52ad8163fa624f1fd296792def",
     "README.md": "cdf3c2283cb97b980155d21da192ad1a509261bf234c4f63e4adf825300199b5",
-    "RESEARCH_STATE.json": "420bbc14eccd84df1fc32e641e90ef61a8d034bdc6f5c3db86f1a925badc9820",
+    "RESEARCH_STATE.json": "3e24b9c2522d796defa693ecda7642d0227b8253a721c05e329049db28d932f7",
     "SOURCE_MANIFEST.json": "21f6a2cc2dc12d3a8798d58ab5c1497ebb684343f13ed46f731d1b76ba9df655",
     "add_anomaly_datasets.py": "300dc4b2646d346afe0959f09b79f08639236c2d3778a09e69c84414632c2eb9",
     "convert_to_sqlite.py": "b7d9473ece2d94e3e731302763e40bafded5397e25709500f01a886663561628",
@@ -241,7 +247,7 @@
     "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md": "3b07329d4f4a8bec6629fa28ff2a57843b7551d83c1577653fbb542fbbe44dc5",
     "docs/EXP448_PREREGISTRATION_antigravity_KO.md": "af2b8b10ff25ea4e6e54a4af4757bc5e0432c8d76d17c69612fd10f3933c612f",
     "docs/EXP448_RUNBOOK_antigravity_KO.md": "869cc8b417510365944867f6fdc6ec8f0215432a726d9b108dced26ebe249b48",
-    "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html": "4495473cc3c094e7bfb13f7fe3e54409a346ed9686387e2aa513ec71a9405576",
+    "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html": "724874f15dd3fd4250121b57980287814af9f315111e4b748fac06c4fb9f49a9",
     "docs/EXP449_PREREGISTRATION_antigravity_KO.html": "c30ece9886524a523ee7cfdc5c89f2462e5704c048c71c7264bd146fe27f767c",
     "docs/EXP449_RUNBOOK_antigravity_KO.html": "106ca7b633ff11763aa4d70c5b17f8c71074790efc46f8b357ef10144f9492d7",
     "docs/EXPERIMENT_ENTRYPOINT_CONTRACT.md": "f0834e607e309e56283d63c142fb4a823d6fe8419fd66d5942d5e0944602ea85",
@@ -1912,7 +1918,7 @@
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_predecessor_antigravity.py": "16caed4427012422833e033cbc92b3570bbf6c8bb3184203c63ec52b3cdeb9a3",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py": "2b3a955b55f217dc0acb54c9acecdf41384135fc8e2406e106e0fc5d8d6b034a",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py": "9aa89b55fe1891b0a13863502811a90209787606d920034b0d0a7154ca9654ed",
-    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py": "822c2c8a38dcc5338a810756dab8a88507a6dbd65fc77cab6a70d27ee43cd705",
+    "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py": "182740f436c9be968edec2f96b9175bef109b28399a1f30110980b3273a2dea8",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py": "dbf428e8f0ffcbe221d86ed444f9eca88f964a15fc0f8f71254ba0e442cf2cd1",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_representations_antigravity.py": "80e3e96155fcee8b862f694ed8c683558f0bcc332f86ea825fd3618998cc6d52",
     "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py": "670dfd126a2294673f064aa5140dc0c35fca97741c29ef952eb9f84163a869c1",
@@ -2393,7 +2399,7 @@
     "scratch/analyze_failures.py": "d0ef4a7a3a1d4f438e5a96d2f0ae4ee6e6e830257bfe3542ae23fe11e28bbb8d",
     "scratch/benchmark_exp403_408_mps_parity.py": "98cc0d8cb2c9cfed270ea2eceeb7ebc4d348a71ddf09b0bdcd97cf104a12b6e7",
     "scratch/benchmark_exp419_deterministic_cpu_parallel.py": "0a113cb75d1e31897f0b4c77b215cfdca908a5d2b59f4377affff9f080cd1ff5",
-    "scratch/build_codemap_exp449_antigravity.py": "fdf581505ad9e921f2330ec6ee0fef99ba933800f416b8368fc00a813264ddb5",
+    "scratch/build_codemap_exp449_antigravity.py": "9d18b3bb639c22c4bcea93299a0c9250f2b26b7bb8c52d992ac4eb4e02c00009",
     "scratch/build_exp265_replay_dataset.py": "1664c212d89303c3303511e44a365ce2574a687c4acc107eb22ecf148cc24b9c",
     "scratch/dry_run_cross_domain.py": "4d3fdd36c4529f9e9b4ecbf293e5973c11304faa8bf9f8141a9cef3a152b7289",
     "scratch/dry_run_density_weighted.py": "a043e4333022dadfc96359941d39f3b67ab4eaa288fa9e542e5b6afebb26fbf2",
@@ -2634,6 +2640,9 @@
     "verify_sqlite.py": "11701a84b3ac5d487c72aeee8730b0992d5c77d5599cff0c39424d4ce8249e0e"
   },
   "changed_modules_since_source_parent": [
-    "docs"
+    "docs",
+    "experiments",
+    "root",
+    "scratch"
   ]
 }

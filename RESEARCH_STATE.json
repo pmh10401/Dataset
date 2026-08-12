@@ -1,13 +1,13 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-12T05:15:11+09:00",
+  "updated_at": "2026-08-13T00:00:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp444-train-only-stability-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
   "last_verified_commit": "2f5229ccd471bba907562b3131d293b46b0b3afc",
   "active_experiment": "Exp449",
-  "active_phase": "planned_not_started",
-  "status": "planned_not_started",
+  "active_phase": "implementation_verified_awaiting_official_readiness",
+  "status": "implementation_verified_awaiting_official_readiness",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html",
@@ -25,7 +25,7 @@
   "exp449": {
     "experiment": "Exp449",
     "kind": "residual_fn_method_qualification",
-    "status": "planned_not_started",
+    "status": "implementation_verified_awaiting_official_readiness",
     "reviewed_design_sha256": "72fcfe799cedd8f3dfea730cb3d5d4fd38ac90c190849c3c4482565fd2936ae3",
     "preregistration_sha256": "c30ece9886524a523ee7cfdc5c89f2462e5704c048c71c7264bd146fe27f767c",
     "runbook_sha256": "106ca7b633ff11763aa4d70c5b17f8c71074790efc46f8b357ef10144f9492d7",
@@ -38,6 +38,23 @@
     "prediction_sha256": null,
     "evaluation_sha256": null,
     "decision_sha256": null,
+    "reviewed_implementation_candidate": "7815382ee8a155651286946951d30e0539bfc8ed",
+    "verification_tests": {
+      "exp449": [213, 213],
+      "exp249_250": 13,
+      "predecessors": {"Exp444": 206, "Exp445": 39, "Exp446": 50, "Exp447": 66, "Exp448": 62}
+    },
+    "descriptor_authority": {
+      "database_inode": 1048138,
+      "database_nlink": 1,
+      "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+      "exp448_artifact_sha256": "ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05",
+      "exp448_evaluation_sha256": "a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c",
+      "exp448_decision_sha256": "54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5",
+      "exp448_population": 1117,
+      "exp448_target_datasets": 48,
+      "sqlite_loaded": false
+    },
     "label_access_count": 0,
     "official_readiness_started": false,
     "official_predict_started": false,
@@ -56,7 +73,14 @@
     "cpu_worker_rule": "max(1, logical CPU - 1)",
     "promotion_allowed": false,
     "routing_allowed": false,
-    "dashboard_presentation": "future_aggregate_only_owner_only_not_a_scientific_gate"
+    "dashboard_presentation": {
+      "dashboard_access": "blocked",
+      "scope": "presentation_only_not_a_scientific_gate",
+      "authenticated_metadata": "future_only_not_accessed",
+      "exp448_site_source_commit": "500ccbe12b07475e51e8cdcbfa8619d9fbdefddb",
+      "exp448_site_version": 6,
+      "exp448_access": "custom_owner_only_one_account_no_groups"
+    }
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",
