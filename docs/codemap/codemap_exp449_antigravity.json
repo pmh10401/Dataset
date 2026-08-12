@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-12T06:52:47+00:00",
-  "generated_from_commit": "ec5b04981d89180d87a5d4f09a5673eddf86962b",
+  "generated_at": "2026-08-12T07:18:12+00:00",
+  "generated_from_commit": "63f31618c67d14b723bdf472e1ecad258df21d4f",
   "scope": [
     "Exp449 verified Tasks 1–6: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic CPU score sources, frozen label-free prediction lifecycle, and synthetic one-session counterfactual evaluation with source-free replay."
   ],
@@ -247,7 +247,7 @@
     {
       "id": "task6_evaluation",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/evaluation_antigravity.py",
-      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, exact 12-leaf staging publication, semantic replay-before-rename, and immutable aggregate authority.",
+      "role": "Task-6 one-session synthetic counterfactual evaluator with fixed PCG64 paired bootstrap, exact 12-leaf staging publication, pre-label trusted Task-5 prediction capture, and retained-descriptor no-replace/quarantine boundary.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_evaluation_antigravity.py"
       ],
@@ -261,7 +261,7 @@
     {
       "id": "task6_replay",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/replay_antigravity.py",
-      "role": "Task-6 descriptor-pinned source-free canonical semantic replay of the final twelve leaves.",
+      "role": "Task-6 descriptor-pinned source-free canonical semantic replay of twelve leaves against independently captured Task-5 prediction bytes, digests, aggregate, and manifest.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_replay_antigravity.py"
       ],
