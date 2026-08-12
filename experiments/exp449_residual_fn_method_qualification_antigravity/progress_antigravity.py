@@ -81,47 +81,51 @@ def _syscall_fault_antigravity(hook, operation: str, sequence: int) -> None:
     if hook is not None: hook(operation, sequence)
 
 
-def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0) -> str:
+def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0, fault_prefix: str = "") -> str:
     """Commit a candidate only after file and parent fsync plus canonical no-follow reread."""
     if not isinstance(directory, Path) or type(name) is not str or "/" in name or not name.endswith(".json"):
         raise ValueError("candidate destination is invalid")
+    if type(fault_prefix) is not str:
+        raise ValueError("candidate fault prefix is invalid")
     directory.mkdir(mode=0o700, exist_ok=True)
     payload = canonical_json_bytes_antigravity(value)
     destination = directory / name
     parent_fd = -1
     created_identity: tuple[int, int] | None = None
     try:
-        _syscall_fault_antigravity(fault_hook, "open_parent", sequence)
+        _syscall_fault_antigravity(fault_hook, fault_prefix + "open_parent", sequence)
         parent_fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
-        _syscall_fault_antigravity(fault_hook, "cache_create", sequence); _syscall_fault_antigravity(fault_hook, "open_create", sequence)
+        _syscall_fault_antigravity(fault_hook, fault_prefix + "cache_create", sequence); _syscall_fault_antigravity(fault_hook, fault_prefix + "open_create", sequence)
         fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=parent_fd)
         try:
-            _syscall_fault_antigravity(fault_hook, "fstat_create", sequence)
             info = os.fstat(fd)
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1: raise ValueError("candidate leaf is unsafe")
             created_identity = (info.st_dev, info.st_ino)
+            # The injected failure is deliberately after the real fstat: cleanup now
+            # has the exact inode and cannot erase a namespace replacement.
+            _syscall_fault_antigravity(fault_hook, fault_prefix + "fstat_create", sequence)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1: raise ValueError("candidate leaf is unsafe")
             view = memoryview(payload)
             while view:
-                _syscall_fault_antigravity(fault_hook, "write", sequence); view = view[os.write(fd, view):]
-            _syscall_fault_antigravity(fault_hook, "fsync_leaf", sequence)
+                _syscall_fault_antigravity(fault_hook, fault_prefix + "write", sequence); view = view[os.write(fd, view):]
+            _syscall_fault_antigravity(fault_hook, fault_prefix + "fsync_leaf", sequence)
             os.fsync(fd)
         finally:
             os.close(fd)
-        _syscall_fault_antigravity(fault_hook, "cache_fsync", sequence); _syscall_fault_antigravity(fault_hook, "fsync_parent", sequence)
+        _syscall_fault_antigravity(fault_hook, fault_prefix + "cache_fsync", sequence); _syscall_fault_antigravity(fault_hook, fault_prefix + "fsync_parent", sequence)
         os.fsync(parent_fd)
-        _syscall_fault_antigravity(fault_hook, "open_read", sequence); fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+        _syscall_fault_antigravity(fault_hook, fault_prefix + "open_read", sequence); fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
         try:
-            _syscall_fault_antigravity(fault_hook, "cache_reread", sequence)
+            _syscall_fault_antigravity(fault_hook, fault_prefix + "cache_reread", sequence)
             chunks=[]
             while True:
-                _syscall_fault_antigravity(fault_hook, "read", sequence); chunk=os.read(fd, 1 << 20)
+                _syscall_fault_antigravity(fault_hook, fault_prefix + "read", sequence); chunk=os.read(fd, 1 << 20)
                 if not chunk: break
                 chunks.append(chunk)
             reread = b"".join(chunks)
-            if fault_hook is not None: fault_hook("cache_sha_mismatch", sequence)
+            if fault_hook is not None: fault_hook(fault_prefix + "cache_sha_mismatch", sequence)
             if reread != payload or canonical_json_bytes_antigravity(strict_json_bytes_antigravity(reread)) != reread: raise ValueError("candidate leaf reread is not canonical")
-            _syscall_fault_antigravity(fault_hook, "fstat_read", sequence); opened = os.fstat(fd)
-            _syscall_fault_antigravity(fault_hook, "stat_name", sequence)
+            _syscall_fault_antigravity(fault_hook, fault_prefix + "fstat_read", sequence); opened = os.fstat(fd)
+            _syscall_fault_antigravity(fault_hook, fault_prefix + "stat_name", sequence)
             current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
             if (opened.st_dev, opened.st_ino) != created_identity or (current.st_dev, current.st_ino) != created_identity: raise ValueError("candidate leaf identity changed")
             return hashlib.sha256(reread).hexdigest()

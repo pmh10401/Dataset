@@ -25,6 +25,38 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_manifest_durable_boundary_fault_matrix_leaves_no_manifest_or_authority_antigravity(self) -> None:
+        """Break caught: treating a manifest syscall failure as a successful terminal authority."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+        for tag in ("manifest_cache_create", "manifest_write", "manifest_fsync_leaf", "manifest_cache_fsync", "manifest_cache_reread", "manifest_cache_sha_mismatch", "manifest_fstat_read", "manifest_stat_name"):
+            with self.subTest(tag=tag), tempfile.TemporaryDirectory(prefix="exp449_manifest_fault_antigravity_") as temporary:
+                root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"
+                def fault(current, sequence):
+                    if current == tag and sequence == 96:
+                        raise OSError(tag)
+                with self.assertRaisesRegex(OSError, tag):
+                    run_synthetic_lifecycle_antigravity(root, "a" * 40, audit_path=audit, fault_hook=fault)
+                self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+                self.assertEqual(len(tuple((root / "candidates_antigravity").iterdir())), 96)
+                self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], 96)
+
+    def test_validator_rejects_exact_context_source_mlx_type_and_rehash_attacks_antigravity(self) -> None:
+        """Break caught: accepting rehashed semantic context aliases, bool-as-int, or source order drift."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity, validate_prediction_root_antigravity  # noqa: PLC0415
+        import hashlib
+        for mutate in ("extra", "bool", "source_order", "mlx_extra"):
+            with self.subTest(mutate=mutate), tempfile.TemporaryDirectory(prefix="exp449_schema_antigravity_") as temporary:
+                root = Path(temporary) / "run"; authority = run_synthetic_lifecycle_antigravity(root, "b" * 40)
+                context_path = root / "context_antigravity.json"; context = json.loads(context_path.read_text())
+                if mutate == "extra": context["unexpected"] = 1
+                elif mutate == "bool": context["workers"] = True
+                elif mutate == "source_order": context["source_identity"]["target_dataset_names"] = list(reversed(context["source_identity"]["target_dataset_names"]))
+                else: context["mlx"]["unexpected"] = False
+                context_path.write_bytes(canonical_json_bytes_antigravity(context))
+                manifest_path = root / "prediction_manifest_antigravity.json"; manifest = json.loads(manifest_path.read_text())
+                manifest["context_sha256"] = hashlib.sha256(context_path.read_bytes()).hexdigest(); manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
+                with self.assertRaises(ValueError): validate_prediction_root_antigravity(root, authority)
     def test_dependency_lifecycle_revalidates_predecessor_before_commit_antigravity(self) -> None:
         """Break caught: the injectable production-loop seam writes the first leaf after predecessor drift."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import PredictionDependenciesAntigravity, predict_with_dependencies_antigravity  # noqa: PLC0415
@@ -36,6 +68,24 @@ class PredictionAntigravityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "predecessor drift"):
                 predict_with_dependencies_antigravity(dependencies, reviewed_commit="a" * 40)
             self.assertFalse((Path(temporary) / "candidates_antigravity").exists())
+    def test_dependency_pending_commit_loop_rejects_drift_at_0_47_95_antigravity(self) -> None:
+        """Break caught: the real dependency lifecycle commits its exact next unit after a fresh predecessor drift."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import PredictionDependenciesAntigravity, predict_with_dependencies_antigravity  # noqa: PLC0415
+        families = ("Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves")
+        rows = tuple(_BaselineAntigravity(family) for family, count in zip(families, (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))
+        original = _Exp448Antigravity(rows); changed = _Exp448Antigravity(rows + (_BaselineAntigravity("Crop"),))
+        for drift_at in (0, 47, 95):
+            with self.subTest(drift_at=drift_at), tempfile.TemporaryDirectory(prefix="exp449_dependency_drift_antigravity_") as temporary:
+                captures = 0
+                def capture():
+                    nonlocal captures
+                    captures += 1
+                    return changed if captures == drift_at + 1 else original
+                dependencies = PredictionDependenciesAntigravity(Path(temporary), original, lambda sequence, family: (f"{family}_{sequence}", np.ones((5, 2)), np.ones((3, 2))), lambda train, test, method, seed: (np.arange(5.0), np.arange(3.0)), lambda: (), lambda: {}, None, capture)
+                with self.assertRaisesRegex(ValueError, "predecessor drift"):
+                    predict_with_dependencies_antigravity(dependencies, reviewed_commit="a" * 40)
+                directory = Path(temporary) / "candidates_antigravity"
+                self.assertEqual(0 if not directory.exists() else len(tuple(directory.iterdir())), drift_at)
     def test_descriptor_validator_rejects_same_size_leaf_replacement_during_capture_antigravity(self) -> None:
         """Break caught: trusting bytes from a pinned descriptor after its namespace leaf is replaced."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
@@ -50,6 +100,20 @@ class PredictionAntigravityTests(unittest.TestCase):
                 return result
             with patch.object(prediction, "_read_pinned_antigravity", side_effect=replace), self.assertRaises(ValueError):
                 prediction.validate_prediction_root_antigravity(root, authority)
+    def test_descriptor_validator_fstat_fault_does_not_leak_retained_descriptor_antigravity(self) -> None:
+        """Break caught: a pin fstat exception leaks the descriptor opened before identity validation."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_fd_antigravity_") as temporary:
+            root = Path(temporary) / "run"; authority = prediction.run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            before = len(os.listdir("/dev/fd")); original = prediction.os.fstat; calls = 0
+            def fail_once(fd):
+                nonlocal calls
+                calls += 1
+                if calls == 3: raise OSError("fstat injected")
+                return original(fd)
+            with patch.object(prediction.os, "fstat", side_effect=fail_once), self.assertRaisesRegex(OSError, "fstat injected"):
+                prediction.validate_prediction_root_antigravity(root, authority)
+            self.assertEqual(len(os.listdir("/dev/fd")), before)
     def test_production_precommit_revalidation_rejects_drift_at_0_47_95_antigravity(self) -> None:
         """Break caught: production commits a candidate after fresh Exp448 authority differs."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import _revalidate_predecessor_before_commit_antigravity  # noqa: PLC0415
@@ -163,6 +227,24 @@ class PredictionAntigravityTests(unittest.TestCase):
                     prediction.run_synthetic_lifecycle_antigravity(root, "2" * 40, fail_after_leaf=0)
             self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 1)
             self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+    def test_lifecycle_catch_preserves_primary_pid_cleanup_and_audit_failures_antigravity(self) -> None:
+        """Break caught: terminal cleanup or audit persistence masks the original production-path failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_catch_antigravity_") as temporary:
+            root = Path(temporary) / "run"; audit = Path(temporary) / "audit_antigravity.json"; original_pid = prediction._set_pid_inactive_antigravity; calls = 0
+            def fault(tag, sequence):
+                if tag == "cache_create" and sequence == 0: raise RuntimeError("primary cache failure")
+            def bad_pid(path):
+                nonlocal calls
+                calls += 1
+                if calls == 1: raise OSError("pid cleanup failure")
+                return original_pid(path)
+            with patch.object(prediction, "_set_pid_inactive_antigravity", side_effect=bad_pid), patch.object(prediction, "write_failure_audit_antigravity", side_effect=OSError("audit persistence failure")):
+                with self.assertRaisesRegex(RuntimeError, "primary cache failure") as raised:
+                    prediction.run_synthetic_lifecycle_antigravity(root, "c" * 40, audit_path=audit, fault_hook=fault)
+            notes = "\n".join(getattr(raised.exception, "__notes__", ()))
+            self.assertIn("pid_cleanup_error=OSError: pid cleanup failure", notes)
+            self.assertIn("failure_audit_error=OSError: audit persistence failure", notes)
     def test_private_validator_reconstructs_exact_dataset_order_and_rejects_tampered_leaf_antigravity(self) -> None:
         """Break caught: accepting a rehashed/tampered manifest or deriving order without canonical leaves."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415

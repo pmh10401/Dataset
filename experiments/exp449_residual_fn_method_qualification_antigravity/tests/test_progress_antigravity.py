@@ -2,12 +2,38 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
 class ProgressAntigravityTests(unittest.TestCase):
+    def test_writer_actual_syscall_faults_leave_no_unverified_orphan_antigravity(self) -> None:
+        """Break caught: a create/write/fsync/read/stat syscall failure leaves a candidate namespace artifact."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415
+        for tag in ("open_create", "fstat_create", "write", "fsync_leaf", "open_read", "read", "fstat_read", "stat_name"):
+            with self.subTest(tag=tag), tempfile.TemporaryDirectory(prefix="exp449_syscall_antigravity_") as temporary:
+                directory = Path(temporary)
+                def fault(current, _sequence):
+                    if current == tag: raise OSError(tag)
+                with self.assertRaisesRegex(OSError, tag):
+                    commit_candidate_leaf_antigravity(directory, "000_leaf_antigravity.json", {"sequence": 0}, fault_hook=fault)
+                self.assertFalse((directory / "000_leaf_antigravity.json").exists())
+
+    def test_writer_does_not_unlink_namespace_replacement_after_verification_fault_antigravity(self) -> None:
+        """Break caught: cleanup deleting a replacement object that was not the created inode."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415
+        with tempfile.TemporaryDirectory(prefix="exp449_replace_antigravity_") as temporary:
+            directory = Path(temporary); destination = directory / "000_leaf_antigravity.json"
+            def fault(tag, _sequence):
+                if tag == "cache_reread":
+                    replacement = directory / "replacement_antigravity.json"; replacement.write_text('{"replacement":true}\n')
+                    os.replace(replacement, destination); raise OSError("reread replacement")
+            with self.assertRaisesRegex(OSError, "reread replacement"):
+                commit_candidate_leaf_antigravity(directory, destination.name, {"sequence": 0}, fault_hook=fault)
+            self.assertEqual(json.loads(destination.read_text()), {"replacement": True})
     def test_verified_leaf_writer_removes_exact_created_inode_on_reread_fault_antigravity(self) -> None:
         """Break caught: leaving an unverified or orphaned candidate after a post-create failure."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import commit_candidate_leaf_antigravity  # noqa: PLC0415

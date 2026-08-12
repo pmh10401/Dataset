@@ -147,8 +147,21 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         raise ValueError("synthetic failure sequence is invalid")
     inventory = tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))
     synthetic_families = tuple(family for family, count in zip(tuple(name for name, _ in CANDIDATE_MATRIX_ANTIGRAVITY), (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))
+    synthetic_names = tuple(f"{family}_synthetic_{index:03d}" for index, family in enumerate(synthetic_families))
     try:
-        context = _semantic_context_antigravity(reviewed_commit, source_identity={"kind": "synthetic"}, method_audit_sha256="0" * 64, mlx={"backend": "cpu", "reason": "synthetic"})
+        # Synthetic data use the production descriptor shape; their fixed digests are
+        # opaque identities, never a source/database escape hatch.
+        context = _semantic_context_antigravity(
+            reviewed_commit,
+            source_identity={"artifact_map_sha256": "1" * 64, "evaluation_sha256": "2" * 64,
+                             "decision_sha256": "3" * 64, "target_dataset_names": list(synthetic_names)},
+            method_audit_sha256="0" * 64,
+            mlx={"backend": "cpu", "reason": "synthetic_cpu", "tensor_eligible": False,
+                 "mlx_version": None, "mlx_metal_version": None, "torch_version": None,
+                 "mps_built": None, "mps_available": None, "device": None, "parity_run": False,
+                 "candidate_indices_identical": None, "numerical_tolerance_met": None,
+                 "benchmark_includes_transfer_sync_warmup_compile": False, "speedup": None},
+        )
         initialise_attempt_antigravity(root, context)
         _fault_antigravity(fault_hook, "worker_exception", 0)
         _fault_antigravity(fault_hook, "scorer_exception", 0)
@@ -175,7 +188,7 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"{synthetic_families[sequence // 2]}_synthetic_{sequence // 2:03d}__{dict(CANDIDATE_MATRIX_ANTIGRAVITY)[synthetic_families[sequence // 2]][sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(root, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
-        commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest)
+        commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest, fault_hook=fault_hook, sequence=96, fault_prefix="manifest_")
         validate_prediction_root_antigravity(root, authority)
         return authority
     except BaseException as primary_error:
@@ -185,14 +198,17 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
                 _set_pid_inactive_antigravity(root)
         except BaseException as error:
             cleanup_error = error
+        if cleanup_error is not None:
+            primary_error.add_note(f"pid_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
         target_audit = audit_path if audit_path is not None else root.parent / "exp449_failure_audit_antigravity.json"
         try:
             prefix = verified_prefix_antigravity(root / "candidates_antigravity", tuple(f"{sequence:03d}_synthetic_{sequence:03d}.json" for sequence in range(96))) if (root / "candidates_antigravity").is_dir() else 0
             _fault_antigravity(fault_hook, "failure_audit", prefix)
             write_failure_audit_antigravity(target_audit, primary_error, cleanup_error, exact_next_sequence=prefix)
         except BaseException as audit_error:
-            raise RuntimeError(f"{primary_error}; failure_audit_error={audit_error}") from primary_error
-        raise
+            # Audit persistence is evidence, never a replacement for the run's cause.
+            primary_error.add_note(f"failure_audit_error={type(audit_error).__name__}: {audit_error}")
+        raise primary_error
 
 
 def _read_nofollow_json_antigravity(path: Path) -> object:
@@ -248,6 +264,11 @@ def validate_prediction_root_antigravity(root: Path, authority: object, *, requi
             or type(authority.candidate_names) is not tuple or type(authority.inventory) is not tuple or type(authority.leaf_sha256) is not tuple
             or type(authority.aggregate_sha256) is not str or type(authority.label_access_count) is not int):
         raise ValueError("prediction authority field type differs")
+    if (authority.family_method_pairs != 16 or authority.dataset_units != 96 or authority.label_access_count != 0
+            or len(authority.reviewed_commit) != 40 or authority.reviewed_commit.lower() != authority.reviewed_commit
+            or len(authority.inventory) != 96 or len(authority.candidate_names) != 96 or len(authority.leaf_sha256) != 96
+            or len(authority.aggregate_sha256) != 64):
+        raise ValueError("prediction authority field value differs")
     root_fd = candidates_fd = -1
     pinned: dict[str, tuple[int, tuple[int, int, int, int, int, int, int], int]] = {}
     expected_root = {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.txt", "progress_antigravity.jsonl", "pid_antigravity.json", "candidates_antigravity"} | ({"prediction_manifest_antigravity.json"} if require_manifest else set())
@@ -278,7 +299,14 @@ def validate_prediction_root_antigravity(root: Path, authority: object, *, requi
         manifest = strict_json_bytes_antigravity(leaves["prediction_manifest_antigravity.json"]) if require_manifest else None
         if not all(type(value) is dict for value in (context, progress, pid)) or (require_manifest and type(manifest) is not dict): raise ValueError("prediction root JSON schema differs")
         expected_matrix = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
-        if (context.get("schema") != "exp449" or context.get("reviewed_commit") != authority.reviewed_commit or type(context.get("reviewed_commit")) is not str or len(context["reviewed_commit"]) != 40 or context.get("label_access_count") != 0 or context.get("logical_cpus") != 12 or context.get("workers") != 11 or context.get("candidate_matrix") != expected_matrix or context.get("seeds") != [20260721, 20261721] or context.get("alpha") != 0.005 or type(context.get("method_audit_sha256")) is not str or len(context["method_audit_sha256"]) != 64 or type(context.get("source_identity")) is not dict or type(context.get("mlx")) is not dict or progress != {"dataset_unit_completed": 96, "next_sequence": 96, "terminal": True} or pid != {"active": False}): raise ValueError("prediction root terminal channels differ")
+        context_keys = {"schema", "reviewed_commit", "logical_cpus", "workers", "label_access_count", "source_identity", "candidate_matrix", "seeds", "alpha", "method_audit_sha256", "mlx"}
+        source_keys = {"artifact_map_sha256", "evaluation_sha256", "decision_sha256", "target_dataset_names"}
+        mlx_keys = {"backend", "reason", "tensor_eligible", "mlx_version", "mlx_metal_version", "torch_version", "mps_built", "mps_available", "device", "parity_run", "candidate_indices_identical", "numerical_tolerance_met", "benchmark_includes_transfer_sync_warmup_compile", "speedup"}
+        source = context.get("source_identity")
+        mlx = context.get("mlx")
+        source_invalid = (type(source) is not dict or set(source) != source_keys or any(type(source.get(key)) is not str or len(source[key]) != 64 or any(character not in "0123456789abcdef" for character in source[key]) for key in ("artifact_map_sha256", "evaluation_sha256", "decision_sha256")) or type(source.get("target_dataset_names")) is not list or any(type(name) is not str or not name for name in source["target_dataset_names"]))
+        mlx_invalid = (type(mlx) is not dict or set(mlx) != mlx_keys or mlx.get("backend") not in ("cpu", "mlx", "mps") or type(mlx.get("reason")) is not str or not mlx["reason"] or type(mlx.get("tensor_eligible")) is not bool or type(mlx.get("parity_run")) is not bool or type(mlx.get("benchmark_includes_transfer_sync_warmup_compile")) is not bool or any(mlx.get(key) is not None and type(mlx.get(key)) is not str for key in ("mlx_version", "mlx_metal_version", "torch_version", "device")) or any(mlx.get(key) is not None and type(mlx.get(key)) is not bool for key in ("mps_built", "mps_available", "candidate_indices_identical", "numerical_tolerance_met")) or (mlx.get("speedup") is not None and type(mlx.get("speedup")) is not float))
+        if (set(context) != context_keys or context.get("schema") != "exp449" or context.get("reviewed_commit") != authority.reviewed_commit or type(context.get("reviewed_commit")) is not str or len(context["reviewed_commit"]) != 40 or type(context.get("label_access_count")) is not int or context.get("label_access_count") != 0 or type(context.get("logical_cpus")) is not int or context.get("logical_cpus") != 12 or type(context.get("workers")) is not int or context.get("workers") != 11 or context.get("candidate_matrix") != expected_matrix or context.get("seeds") != [20260721, 20261721] or type(context.get("alpha")) is not float or context.get("alpha") != 0.005 or type(context.get("method_audit_sha256")) is not str or len(context["method_audit_sha256"]) != 64 or source_invalid or mlx_invalid or progress != {"dataset_unit_completed": 96, "next_sequence": 96, "terminal": True} or pid != {"active": False}): raise ValueError("prediction root terminal channels differ")
         event_records = tuple(strict_json_bytes_antigravity(line + b"\n") for line in leaves["progress_antigravity.jsonl"].splitlines())
         text_records = leaves["progress_antigravity.txt"].splitlines()
         if len(event_records) != 96 or any(type(record) is not dict or record != {"dataset_unit_completed": index} for index, record in enumerate(event_records, 1)) or text_records != [str(index).encode() for index in range(1, 97)]: raise ValueError("prediction event or text channel differs")
@@ -302,6 +330,8 @@ def validate_prediction_root_antigravity(root: Path, authority: object, *, requi
             family = next((candidate_family for candidate_family in candidate_pairs if dataset.startswith(candidate_family + "_")), None)
             return [] if family is None else [dataset + "__" + method for method in candidate_pairs[family]]
         if len(datasets) != 48 or len(set(datasets)) != 48 or any(names[index:index + 2] != expected_pair(dataset) for index, dataset in zip(range(0, 96, 2), datasets, strict=True)): raise ValueError("prediction dataset order differs")
+        if source["target_dataset_names"] != list(datasets):
+            raise ValueError("prediction source target order differs")
         for key, (fd, identity, parent_tag) in pinned.items():
             name = key.split(":", 1)[1]; parent_fd = root_fd if parent_tag == 0 else candidates_fd
             if _fd_identity_antigravity(os.fstat(fd)) != identity or _fd_identity_antigravity(os.stat(name, dir_fd=parent_fd, follow_symlinks=False)) != identity: raise ValueError("prediction leaf namespace changed")
@@ -367,24 +397,26 @@ def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAn
     names: list[str] = []
     inventory: list[str] = []
     digests: list[tuple[str, str]] = []
-    for sequence, family in enumerate(families):
-        dataset, train, test = dependencies.load_bundle(sequence, family)
+    unit_sequence = 0
+    for dataset_sequence, family in enumerate(families):
+        dataset, train, test = dependencies.load_bundle(dataset_sequence, family)
         for method in candidates[family]:
             if dependencies.predecessor_capture is not None:
                 _revalidate_predecessor_before_commit_antigravity(dependencies.exp448_authority, dependencies.predecessor_capture)
             name = f"{dataset}__{method}"
-            relative = f"{sequence:03d}_{name}.json"
+            relative = f"{unit_sequence:03d}_{name}.json"
             score_rows = [dependencies.score(train, test, method, seed) for seed in FROZEN_CONFIG_ANTIGRAVITY["seeds"]]
             train_median = np.median(np.stack([item[0] for item in score_rows]), axis=0)
             test_median = np.median(np.stack([item[1] for item in score_rows]), axis=0)
             if not np.isfinite(train_median).all() or not np.isfinite(test_median).all():
                 raise ValueError("non-finite score")
             indices = tuple(int(item) for item in empirical_candidates(train_median, test_median, 0.005).indices)
-            payload = {"sequence": sequence, "candidate_name": name, "family": family, "method": method, "indices": indices, "contains_test_labels": False, "target_length": int(len(test)), "train_count": int(len(train)), "test_count": int(len(test)), "seeds": list(FROZEN_CONFIG_ANTIGRAVITY["seeds"]), "alpha": 0.005}
+            payload = {"sequence": unit_sequence, "candidate_name": name, "dataset": dataset, "family": family, "method": method, "indices": list(indices), "contains_test_labels": False, "target_length": int(len(test)), "train_count": int(len(train)), "test_count": int(len(test)), "seeds": list(FROZEN_CONFIG_ANTIGRAVITY["seeds"]), "score_identities": [{"seed": seed, "feature_dimension": int(train.shape[1])} for seed in FROZEN_CONFIG_ANTIGRAVITY["seeds"]], "alpha": 0.005}
             digest = commit_candidate_leaf_antigravity(leaves, relative, payload)
             names.append(name)
             inventory.append("candidates_antigravity/" + relative)
             digests.append(("candidates_antigravity/" + relative, digest))
+            unit_sequence += 1
     aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
     return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(inventory), tuple(digests), aggregate, 0)
 
@@ -450,6 +482,8 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
                 _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
         except BaseException as error:
             cleanup_error = error
+        if cleanup_error is not None:
+            primary_error.add_note(f"pid_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
         prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory) if inventory and (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").is_dir() else 0
         try:
             write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
