@@ -93,6 +93,29 @@ class PredecessorAntigravityTests(unittest.TestCase):
             with patch.object(predecessor, "_validate_antigravity", side_effect=replace), self.assertRaisesRegex(ValueError, "directory changed"):
                 predecessor.capture_exp448_authority_antigravity(root=root)
 
+    def test_leaf_symlink_extra_and_namespace_replacement_are_rejected_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import predecessor_antigravity as predecessor
+
+        with tempfile.TemporaryDirectory(prefix="exp449_leaf_namespace_antigravity_") as temporary:
+            root = self._copy_exp448_antigravity(temporary, predecessor)
+            leaf = root / "bootstrap_antigravity.json"
+            leaf.unlink(); leaf.symlink_to(predecessor._EXP448_ROOT_ANTIGRAVITY / "bootstrap_antigravity.json")
+            with self.assertRaises(ValueError): predecessor.capture_exp448_authority_antigravity(root=root)
+        with tempfile.TemporaryDirectory(prefix="exp449_extra_antigravity_") as temporary:
+            root = self._copy_exp448_antigravity(temporary, predecessor)
+            (root / "extra_antigravity.json").write_bytes(b"{}\n")
+            with self.assertRaisesRegex(ValueError, "inventory"): predecessor.capture_exp448_authority_antigravity(root=root)
+        with tempfile.TemporaryDirectory(prefix="exp449_leaf_replace_antigravity_") as temporary:
+            root = self._copy_exp448_antigravity(temporary, predecessor)
+            leaf, replacement = root / "bootstrap_antigravity.json", Path(temporary) / "replacement_antigravity.json"
+            replacement.write_bytes(leaf.read_bytes())
+            original = predecessor._validate_antigravity
+            def replace(*args):  # type: ignore[no-untyped-def]
+                os.replace(replacement, leaf)
+                return original(*args)
+            with patch.object(predecessor, "_validate_antigravity", side_effect=replace), self.assertRaisesRegex(ValueError, "leaf changed"):
+                predecessor.capture_exp448_authority_antigravity(root=root)
+
     def test_rebound_artifact_map_reaches_dataset_order_prefix_and_conservation_guards_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import predecessor_antigravity as predecessor
         from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity, canonical_jsonl_bytes_antigravity

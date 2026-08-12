@@ -254,7 +254,11 @@ def open_test_labels_once_antigravity(prediction_authority: object, *, connectio
                     terminalize_antigravity(None, close_error)
                     raise
                 _assert_database_unchanged_antigravity(descriptor, identity)
-                release_descriptor_antigravity()
+                try:
+                    release_descriptor_antigravity()
+                except BaseException as release_error:
+                    terminalize_antigravity(None, release_error)
+                    raise
                 state = "closed"
             except BaseException as error:
                 terminalize_antigravity(error)

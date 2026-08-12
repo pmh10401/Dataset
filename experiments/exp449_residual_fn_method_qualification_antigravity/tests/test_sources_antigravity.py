@@ -8,6 +8,7 @@ import types
 import hashlib
 from pathlib import Path
 import tempfile
+import sqlite3
 from unittest.mock import patch
 
 import numpy as np
@@ -98,6 +99,38 @@ class SourcesAntigravityTests(unittest.TestCase):
                         sources._assert_database_unchanged_antigravity(descriptor, identity)
                 finally:
                     os.close(descriptor)
+
+    def test_database_inode_replacement_and_public_value_drift_are_rejected_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        with tempfile.TemporaryDirectory(prefix="exp449_public_db_antigravity_") as temporary:
+            path = Path(temporary) / "source_antigravity.db"
+            path.write_bytes(b"synthetic database bytes\n")
+            path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
+            with path_patch, sha_patch, inode_patch:
+                descriptor, identity = sources._verify_database_antigravity()
+                replacement = Path(temporary) / "replacement_antigravity.db"
+                replacement.write_bytes(path.read_bytes())
+                os.replace(replacement, path)
+                try:
+                    with self.assertRaisesRegex(ValueError, "changed during read"):
+                        sources._assert_database_unchanged_antigravity(descriptor, identity)
+                finally:
+                    os.close(descriptor)
+            path.unlink()
+            connection = sqlite3.connect(path)
+            connection.executescript("CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT); CREATE TABLE instances (dataset_id INTEGER, split TEXT, instance_index INTEGER, values_blob BLOB);")
+            blob = np.asarray([1.0, 2.0], dtype="<f4").tobytes(); blob2 = np.asarray([2.0, 4.0], dtype="<f4").tobytes(); blob3 = np.asarray([3.0, 6.0], dtype="<f4").tobytes()
+            connection.execute("INSERT INTO datasets VALUES (1, 'Crop_normal_1')")
+            connection.executemany("INSERT INTO instances VALUES (?,?,?,?)", [(1, "TRAIN", 0, blob), (1, "TRAIN", 1, blob2), (1, "TEST", 0, blob3)])
+            connection.commit(); connection.close()
+            path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
+            original_normalise = sources._normalise_antigravity
+            def drift(rows):  # type: ignore[no-untyped-def]
+                connection = sqlite3.connect(path); connection.execute("PRAGMA user_version=1"); connection.commit(); connection.close()
+                return original_normalise(rows)
+            with path_patch, sha_patch, inode_patch, patch.object(sources, "_normalise_antigravity", side_effect=drift), self.assertRaisesRegex(ValueError, "changed during read"):
+                sources.load_target_bundle_antigravity("Crop_normal_1")
             path.write_bytes(b"synthetic database bytEs\n")
             path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
             with path_patch, sha_patch, inode_patch:
@@ -325,6 +358,81 @@ class SourcesAntigravityTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "row count"): session.labels_for_dataset_antigravity(order[-1])
                     self.assertEqual(session.close_state_antigravity(), "terminal")
                     self.assertEqual(connection.close_calls, 1)
+
+    def test_descriptor_release_failure_is_cleanup_failure_not_terminal_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        order = tuple(f"release_target_{index}_antigravity" for index in range(48))
+        _, authority = self._install_prediction_module_antigravity(order)
+        class CompleteConnectionAntigravity:
+            def __init__(self): self.calls = 0; self.close_calls = 0
+            def execute(self, sql, parameters=()):
+                self.calls += 1
+                size = 1518 if self.calls == 48 else 1506
+                return tuple((index, "0") for index in range(size))
+            def close(self): self.close_calls += 1
+        connection = CompleteConnectionAntigravity(); descriptor = os.open("/dev/null", os.O_RDONLY)
+        original_close = sources.os.close
+        def failing_close(fd: int) -> None:
+            if fd == descriptor: raise OSError("descriptor release boom")
+            original_close(fd)
+        with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))), patch.object(sources, "_assert_database_unchanged_antigravity"), patch.object(sources.os, "close", side_effect=failing_close):
+            session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+            for dataset in order: session.labels_for_dataset_antigravity(dataset)
+            with self.assertRaisesRegex(OSError, "descriptor release boom"): session.close_antigravity()
+            self.assertEqual(session.close_state_antigravity(), "close_failed")
+            self.assertIsNone(session.terminal_error_antigravity())
+            self.assertIsInstance(session.close_error_antigravity(), OSError)
+            with self.assertRaisesRegex(OSError, "descriptor release boom"): session.labels_for_dataset_antigravity(order[0])
+            self.assertEqual(connection.close_calls, 1)
+
+    def test_public_label_session_postverify_drift_is_terminal_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        order = tuple(f"session_target_{index}_antigravity" for index in range(48))
+        _, authority = self._install_prediction_module_antigravity(order)
+        with tempfile.TemporaryDirectory(prefix="exp449_label_drift_antigravity_") as temporary:
+            path = Path(temporary) / "labels_antigravity.db"
+            connection = sqlite3.connect(path)
+            connection.executescript("CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT); CREATE TABLE instances (dataset_id INTEGER, split TEXT, instance_index INTEGER, label TEXT, values_blob BLOB);")
+            connection.executemany("INSERT INTO datasets VALUES (?,?)", tuple((index + 1, name) for index, name in enumerate(order)))
+            rows = []
+            for dataset_index in range(48):
+                count = 1518 if dataset_index == 47 else 1506
+                rows.extend((dataset_index + 1, "TEST", index, "0", b"x") for index in range(count))
+            connection.executemany("INSERT INTO instances VALUES (?,?,?,?,?)", rows)
+            connection.commit(); connection.close()
+            path_patch, sha_patch, inode_patch = self._database_constants_antigravity(sources, path)
+            with path_patch, sha_patch, inode_patch:
+                session = sources.open_test_labels_once_antigravity(authority)
+                for dataset in order: session.labels_for_dataset_antigravity(dataset)
+                connection = sqlite3.connect(path); connection.execute("PRAGMA user_version=2"); connection.commit(); connection.close()
+                with self.assertRaisesRegex(ValueError, "changed during read"): session.close_antigravity()
+                self.assertEqual(session.close_state_antigravity(), "terminal")
+                self.assertIsInstance(session.terminal_error_antigravity(), ValueError)
+
+    def test_clean_48_query_session_closes_and_blocks_reuse_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        order = tuple(f"clean_target_{index}_antigravity" for index in range(48))
+        _, authority = self._install_prediction_module_antigravity(order)
+        class CompleteConnectionAntigravity:
+            def __init__(self): self.calls = 0; self.close_calls = 0
+            def execute(self, sql, parameters=()):
+                self.calls += 1
+                size = 1518 if self.calls == 48 else 1506
+                return tuple((index, "0") for index in range(size))
+            def close(self): self.close_calls += 1
+        connection = CompleteConnectionAntigravity(); descriptor = os.open("/dev/null", os.O_RDONLY)
+        with patch.object(sources, "_verify_database_antigravity", return_value=(descriptor, (0, 0, 0, 1, 0, 0, 0))), patch.object(sources, "_assert_database_unchanged_antigravity"):
+            session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+            for dataset in order: session.labels_for_dataset_antigravity(dataset)
+            session.close_antigravity()
+            self.assertEqual(session.close_state_antigravity(), "closed")
+            self.assertEqual(connection.close_calls, 1)
+            with self.assertRaisesRegex(ValueError, "closed"): session.labels_for_dataset_antigravity(order[0])
+            session.close_antigravity()
+            self.assertEqual(connection.close_calls, 1)
 
 
 if __name__ == "__main__":
