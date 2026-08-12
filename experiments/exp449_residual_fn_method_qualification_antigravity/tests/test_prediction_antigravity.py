@@ -25,6 +25,17 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_dependency_lifecycle_revalidates_predecessor_before_commit_antigravity(self) -> None:
+        """Break caught: the injectable production-loop seam writes the first leaf after predecessor drift."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import PredictionDependenciesAntigravity, predict_with_dependencies_antigravity  # noqa: PLC0415
+        families = ("Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves")
+        rows = tuple(_BaselineAntigravity(family) for family, count in zip(families, (24, 7, 2, 2, 2, 5, 3, 3), strict=True) for _ in range(count))
+        authority = _Exp448Antigravity(rows)
+        with tempfile.TemporaryDirectory(prefix="exp449_dep_drift_antigravity_") as temporary:
+            dependencies = PredictionDependenciesAntigravity(Path(temporary), authority, lambda sequence, family: (f"{family}_{sequence}", np.ones((5, 2)), np.ones((3, 2))), lambda train, test, method, seed: (np.arange(5.0), np.arange(3.0)), lambda: (), lambda: {}, None, lambda: _Exp448Antigravity(rows + (_BaselineAntigravity("Crop"),)))
+            with self.assertRaisesRegex(ValueError, "predecessor drift"):
+                predict_with_dependencies_antigravity(dependencies, reviewed_commit="a" * 40)
+            self.assertFalse((Path(temporary) / "candidates_antigravity").exists())
     def test_descriptor_validator_rejects_same_size_leaf_replacement_during_capture_antigravity(self) -> None:
         """Break caught: trusting bytes from a pinned descriptor after its namespace leaf is replaced."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415

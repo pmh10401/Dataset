@@ -325,6 +325,7 @@ class PredictionDependenciesAntigravity:
     method_audit: Callable[[], object]
     mlx_decision: Callable[[], object]
     executor_factory: object | None = None
+    predecessor_capture: Callable[[], object] | None = None
 
 
 def _families_antigravity(authority: object) -> tuple[str, ...]:
@@ -359,6 +360,8 @@ def predict_with_dependencies_antigravity(dependencies: PredictionDependenciesAn
     for sequence, family in enumerate(families):
         dataset, train, test = dependencies.load_bundle(sequence, family)
         for method in candidates[family]:
+            if dependencies.predecessor_capture is not None:
+                _revalidate_predecessor_before_commit_antigravity(dependencies.exp448_authority, dependencies.predecessor_capture)
             name = f"{dataset}__{method}"
             relative = f"{sequence:03d}_{name}.json"
             score_rows = [dependencies.score(train, test, method, seed) for seed in FROZEN_CONFIG_ANTIGRAVITY["seeds"]]
