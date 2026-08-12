@@ -270,6 +270,7 @@ def validate_receipt_inventory_antigravity(receipt_dir: Path = _RECEIPT_DIR_ANTI
     """Classify the complete receipt namespace without treating pathname shape as authority."""
     if not isinstance(receipt_dir, Path):
         raise ValueError("receipt directory must be a Path")
+    transaction = None; result = None; primary: BaseException | None = None
     try:
         transaction = _LifecycleTransactionAntigravity(receipt_dir, create_s0=False)
         result = transaction.classification
@@ -278,11 +279,20 @@ def validate_receipt_inventory_antigravity(receipt_dir: Path = _RECEIPT_DIR_ANTI
             raise ValueError("root identity validation requires both roots")
         if prediction_root is not None and evaluation_root is not None:
             _validate_bound_root_identities_antigravity(transaction, prediction_root, evaluation_root)
-        transaction.close(None)
         if result is None: raise ValueError("receipt transaction did not classify")
-        return result
     except BaseException as error:
-        return ReceiptClassificationAntigravity("INVALID", False, True, f"{type(error).__name__}: {error}")
+        primary = error
+    finally:
+        if transaction is not None:
+            try: transaction.close(primary)
+            except BaseException as close_error:
+                if primary is None: primary = close_error
+                else: primary.add_note(f"receipt_inventory_close_error={type(close_error).__name__}: {close_error}")
+    if primary is not None:
+        return ReceiptClassificationAntigravity("INVALID", False, True, f"{type(primary).__name__}: {primary}")
+    if result is None:
+        return ReceiptClassificationAntigravity("INVALID", False, True, "ValueError: receipt transaction did not classify")
+    return result
 def receipt_reviewed_commit_antigravity(receipt_dir: Path = _RECEIPT_DIR_ANTIGRAVITY) -> str:
     """Return the descriptor-validated run commit for the bare inspect command."""
     classification = validate_receipt_inventory_antigravity(receipt_dir)
@@ -356,10 +366,10 @@ def _root_identity_antigravity(root: Path) -> str | None:
 
 class _RootIdentityTransactionAntigravity:
     """Retain every descriptor used for a root identity until a receipt commits."""
-    __slots__ = ("root", "root_name", "parent_fd", "root_fd", "descriptors", "records", "identity", "absence")
+    __slots__ = ("root", "root_name", "parent_fd", "root_fd", "descriptors", "records", "raw_fds", "identity", "absence")
 
     def __init__(self, root: Path, fault_hook=None) -> None:
-        self.root = root; self.root_name = root.name; self.parent_fd = self.root_fd = -1; self.descriptors: list[tuple[int, tuple[int, int, int, int], tuple[str, ...]]] = []; self.records: list[tuple[int, tuple[int, int, int, int], int, str, bytes]] = []; self.identity = None; self.absence = None
+        self.root = root; self.root_name = root.name; self.parent_fd = self.root_fd = -1; self.descriptors: list[tuple[int, tuple[int, int, int, int], tuple[str, ...]]] = []; self.records: list[tuple[int, tuple[int, int, int, int], int, str, bytes]] = []; self.raw_fds: list[int] = []; self.identity = None; self.absence = None
         self.parent_fd = os.open(root.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
         try:
             # Everything after parent open is owned by this constructor; any
@@ -372,25 +382,25 @@ class _RootIdentityTransactionAntigravity:
                 return
             if stat.S_ISLNK(path_info.st_mode) or not stat.S_ISDIR(path_info.st_mode):
                 raise ValueError("root identity path is unsafe")
-            self.root_fd = os.open(self.root_name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=self.parent_fd)
+            self.root_fd = os.open(self.root_name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=self.parent_fd); self.raw_fds.append(self.root_fd)
             root_info = os.fstat(self.root_fd)
             if _namespace_identity_antigravity(root_info) != _namespace_identity_antigravity(path_info):
                 raise ValueError("root identity path was replaced")
             digest = hashlib.sha256()
             def walk(fd: int, prefix: tuple[str, ...]) -> None:
-                info = os.fstat(fd); self.descriptors.append((fd, _namespace_identity_antigravity(info), prefix))
+                info = os.fstat(fd); self.raw_fds.remove(fd); self.descriptors.append((fd, _namespace_identity_antigravity(info), prefix))
                 for name in sorted(os.listdir(fd)):
                     item = os.stat(name, dir_fd=fd, follow_symlinks=False); relative = "/".join(prefix + (name,))
                     if stat.S_ISDIR(item.st_mode):
                         digest.update(b"D\0" + relative.encode() + b"\0")
-                        child = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd)
+                        child = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd); self.raw_fds.append(child)
                         if _namespace_identity_antigravity(os.fstat(child)) != _namespace_identity_antigravity(item): raise ValueError("root directory was replaced")
                         walk(child, prefix + (name,)); _fault_antigravity(fault_hook, "after_child_capture")
                     elif stat.S_ISREG(item.st_mode) and item.st_nlink == 1:
-                        child = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd); child_info = os.fstat(child)
+                        child = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd); self.raw_fds.append(child); child_info = os.fstat(child)
                         if _namespace_identity_antigravity(child_info) != _namespace_identity_antigravity(item): raise ValueError("root leaf was replaced")
                         payload = b"".join(iter(lambda: os.read(child, 1 << 20), b"")); digest.update(b"F\0" + relative.encode() + b"\0" + payload)
-                        self.records.append((child, _namespace_identity_antigravity(child_info), fd, name, payload)); _fault_antigravity(fault_hook, "after_leaf_read")
+                        self.raw_fds.remove(child); self.records.append((child, _namespace_identity_antigravity(child_info), fd, name, payload)); _fault_antigravity(fault_hook, "after_leaf_read")
                     else: raise ValueError("root identity inventory is unsafe")
             walk(self.root_fd, ())
         except BaseException as error:
@@ -435,6 +445,12 @@ class _RootIdentityTransactionAntigravity:
                 if primary is not None: primary.add_note(f"root_directory_close_error={type(error).__name__}: {error}")
                 elif first is None: first = error
         self.records.clear(); self.descriptors.clear()
+        for fd in reversed(self.raw_fds):
+            try: os.close(fd)
+            except BaseException as error:
+                if primary is not None: primary.add_note(f"root_raw_close_error={type(error).__name__}: {error}")
+                elif first is None: first = error
+        self.raw_fds.clear()
         if self.absence is not None:
             try: self.absence.close(primary)
             except BaseException as error:
@@ -456,18 +472,21 @@ class _AbsentPathPinAntigravity:
     __slots__ = ("path", "name", "parent_fd", "parent_identity", "parent_inventory", "permitted_names")
 
     def __init__(self, path: Path, *, permitted_names: tuple[str, ...] = ()) -> None:
-        self.path = path; self.name = path.name; self.parent_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
-        parent = os.fstat(self.parent_fd)
-        self.parent_identity = (parent.st_dev, parent.st_ino, parent.st_mode)
-        self.parent_inventory = frozenset(os.listdir(self.parent_fd))
-        self.permitted_names = frozenset(permitted_names)
+        self.path = path; self.name = path.name; self.parent_fd = -1; self.parent_identity = None; self.parent_inventory = frozenset(); self.permitted_names = frozenset()
         try:
-            os.stat(self.name, dir_fd=self.parent_fd, follow_symlinks=False)
-        except FileNotFoundError:
-            return
-        error = ValueError("absent root path destination is occupied")
-        self.close(error)
-        raise error
+            self.parent_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+            parent = os.fstat(self.parent_fd)
+            self.parent_identity = (parent.st_dev, parent.st_ino, parent.st_mode)
+            self.parent_inventory = frozenset(os.listdir(self.parent_fd))
+            self.permitted_names = frozenset(permitted_names)
+            try:
+                os.stat(self.name, dir_fd=self.parent_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                return
+            raise ValueError("absent root path destination is occupied")
+        except BaseException as error:
+            self.close(error)
+            raise
 
     def end_validate(self) -> None:
         if self.parent_fd < 0:

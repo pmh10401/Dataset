@@ -890,3 +890,57 @@ with tempfile.TemporaryDirectory() as raw:
                         lifecycle.run_phase_antigravity("readiness", "e" * 40, lambda: "ready", receipt_dir=space / "receipts", audit_path=audit, prediction_root=space / "prediction", evaluation_root=space / "evaluation")
             self.assertEqual(len(audit_closes), 10)
             self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_inventory_validation_end_failure_closes_receipt_transaction_antigravity(self) -> None:
+        """Break caught: inventory validation returns INVALID before closing its retained descriptor transaction."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_inventory_end_fd_antigravity_") as temporary:
+            parent = Path(temporary); receipts_list = [parent / f"receipts_{index}" for index in range(12)]
+            for receipts in receipts_list:
+                lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "f" * 40)
+            before = len(os.listdir("/dev/fd")); original_end = lifecycle._LifecycleTransactionAntigravity.end_validate
+            def fail_end(transaction):
+                original_end(transaction); raise OSError("forced end validation")
+            with patch.object(lifecycle._LifecycleTransactionAntigravity, "end_validate", fail_end):
+                for receipts in receipts_list:
+                    self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_root_walk_postopen_identity_failures_close_raw_child_descriptors_antigravity(self) -> None:
+        """Break caught: child directory or leaf fd fails fstat before becoming a validated ownership record."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_raw_fd_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            for kind in ("directory", "leaf"):
+                with self.subTest(kind=kind):
+                    root = parent / kind; root.mkdir()
+                    if kind == "directory": (root / "child").mkdir()
+                    else: (root / "leaf_antigravity.json").write_bytes(b"payload\n")
+                    original_open, original_fstat = lifecycle.os.open, lifecycle.os.fstat
+                    opened: list[int] = []
+                    def capture_open(path, *args, **kwargs):
+                        fd = original_open(path, *args, **kwargs)
+                        if path == ("child" if kind == "directory" else "leaf_antigravity.json"): opened.append(fd)
+                        return fd
+                    def fail_child_fstat(fd):
+                        if fd in opened: raise OSError("post-open identity")
+                        return original_fstat(fd)
+                    with patch.object(lifecycle.os, "open", side_effect=capture_open), patch.object(lifecycle.os, "fstat", side_effect=fail_child_fstat):
+                        for _ in range(12):
+                            with self.assertRaisesRegex(OSError, "post-open identity"):
+                                lifecycle._RootIdentityTransactionAntigravity(root)
+                    self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_absent_pin_inventory_failure_closes_parent_descriptor_antigravity(self) -> None:
+        """Break caught: absent-pin inventory capture fails after parent open and leaks its parent descriptor."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_absent_pin_fd_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            with patch.object(lifecycle.os, "listdir", side_effect=OSError("inventory failure")):
+                for index in range(12):
+                    with self.assertRaisesRegex(OSError, "inventory failure"):
+                        lifecycle._AbsentPathPinAntigravity(parent / f"absent_{index}")
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
