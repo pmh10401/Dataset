@@ -306,19 +306,30 @@ paper/equipment_anomaly_detection/
   evaluation_paper.py
   statistics_paper.py
   reporting_paper.py
-  cli_paper.py
+  pipeline_paper.py
   tests_paper/
 ```
 
-실행 단계는 다음 순서를 강제한다.
+사용자가 실행하는 공식 진입점은 `pipeline_paper.py run` 하나다. 내부 과학 함수는
+테스트 가능하게 분리하지만 stage별 CLI는 제공하지 않는다. 하나의 pipeline state가
+다음 순서를 강제한다.
 
-1. `prepare`: DB·population·코드·환경·lineage·metric 정의 동결
-2. `score`: raw DB에서 source별 TRAIN OOF와 모든 TEST score 계산, label 접근 금지
-3. `route`: 동결 규칙으로 네 경보 구성과 연속 근거 score 생성
-4. `freeze`: dataset/index/score/route/config hash와 create-only manifest 생성
-5. `parity`: 기존 label-free 좌표와 수·identity를 비교
-6. `evaluate`: freeze와 parity 성공 후 처음으로 TEST label 접근
-7. `report`: immutable 평가 artifact에서 표, CI와 그림 재집계
+1. `preflight`: root·DB·code map·환경 identity 검증
+2. `prepare`: DB·population·코드·환경·lineage·metric 정의 동결
+3. `acceleration`: PyTorch·MLX·MPS 평가와 CPU worker 동결
+4. `proposal_score`: raw DB score와 네 route 생성, label 접근 금지
+5. `proposal_freeze`: dataset/index/score/route/config hash manifest 생성
+6. `proposal_parity`: 기존 label-free 좌표와 수·identity 비교
+7. `public_baselines`: 공개 기법 score와 frozen sub-root 생성
+8. `baseline_bridge`: 공통 정책 score 동결
+9. `evaluate`: 모든 선행 freeze/parity 성공 후 처음으로 TEST label 접근
+10. `report`: immutable 평가 artifact에서 표, CI와 그림 재집계
+11. `independent_verify`: 원 score module·SQLite 없이 결과 재집계
+
+`pipeline_state_paper.json`은 이 exact-prefix 상태와 각 artifact SHA를 기록하고 최종
+`pipeline_manifest_paper.json`이 전 단계를 묶는다. 동일 config/hash의 완료 prefix만
+resume하며 failed root, 중간 누락 또는 순서 역전은 재사용하지 않는다. read-only
+`status`와 `verify` 외 public command는 없다.
 
 `score`, `route`, `freeze`, `parity` 모듈은 label loader를 import할 수 없다. score
 artifact에는 dataset, instance index, source score, OOF p-value, margin, strength,

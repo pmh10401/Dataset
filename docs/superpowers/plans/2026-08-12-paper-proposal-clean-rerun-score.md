@@ -4,7 +4,7 @@
 
 **Goal:** 기존 최종 제안기술을 원본 공개 benchmark DB에서 label-free로 재실행하고, 원 경보 좌표를 보존한 연속 근거 score와 AP/AUROC·F1 비교 결과를 동결한다.
 
-**Architecture:** 독립된 `paper/equipment_anomaly_detection/` namespace에 기존 연구 코드 중 필요한 과학 로직을 provenance와 함께 복사하고 모든 신규 파일을 `*_paper`로 명명한다. 논문 실행 경로는 내부 Exp package를 runtime dependency로 사용하지 않으며, 과거 prediction 좌표는 새 경보 생성이 끝난 뒤 parity oracle로만 사용한다. 제안기술 score root와 공개 baseline score root를 각각 동결한 다음 하나의 lazy evaluator가 처음으로 TEST label을 열고, 같은 dataset bootstrap draw로 결과를 집계한다.
+**Architecture:** 독립된 `paper/equipment_anomaly_detection/` namespace에 기존 연구 코드 중 필요한 과학 로직을 provenance와 함께 복사하고 모든 신규 파일을 `*_paper`로 명명한다. 사용자가 실행하는 유일한 진입점은 `pipeline_paper.py run`이며, 하나의 상태 머신이 preflight→prepare→acceleration→proposal score→freeze→parity→public baseline→bridge→evaluate→report→independent verify를 순서대로 수행한다. 내부 과학 함수는 테스트 가능하게 분리하지만 별도 실험 CLI로 노출하지 않는다. 논문 실행 경로는 내부 Exp package를 runtime dependency로 사용하지 않으며, 과거 prediction 좌표는 새 경보 생성이 끝난 뒤 parity oracle로만 사용한다. evaluator는 proposal freeze/parity와 baseline freeze가 성공한 뒤 처음으로 TEST label을 열고, 같은 dataset bootstrap draw로 결과를 집계한다.
 
 **Tech Stack:** Python 3, NumPy, SciPy, scikit-learn, aeon, pycatch22, PyWavelets, PyTorch, MLX 선택적 smoke, SQLite read-only URI, `unittest`, canonical JSON/JSONL, SHA256
 
@@ -26,6 +26,7 @@
 - 기존 experiment package와 `experiments.paper_public_baselines`의 과학 코드는 수정하지 않는다. 필요한 제안기술 로직은 원본 파일·symbol·SHA256를 기록한 뒤 paper 폴더에 복사하고 원본과의 parity test를 둔다.
 - 논문용 신규 파일은 `paper/equipment_anomaly_detection/` 아래에 두고 파일명에 `paper`를 포함한다. 이 사용자 승인 규칙은 기존 `antigravity` 신규 파일명 정책에 대한 이 논문 폴더의 명시적 예외다.
 - 논문 버전의 code map은 `codemap_paper.html`, `codemap_paper.json`, `codemap_paper.lock` 세 파일을 함께 갱신한다.
+- 공식 실행은 `pipeline_paper.py run` 한 명령만 허용한다. 모든 stage는 하나의 create-only `pipeline_state_paper.json`과 최종 `pipeline_manifest_paper.json`에 연결되고, resume은 같은 config/hash의 완료된 exact prefix만 재사용한다.
 - 논문 본문에는 내부 Exp 번호와 `Stable-26`을 쓰지 않고 artifact provenance에만 남긴다.
 
 ---
@@ -55,14 +56,14 @@ paper/equipment_anomaly_detection/
   hard_route_paper.py                  legacy route chain through guarded Hard
   routing_paper.py                     four final ablation policies
   artifacts_paper.py                   canonical create-only shards and manifests
-  runner_paper.py                      ordered/resumable scoring and freeze lifecycle
+  runner_paper.py                      ordered/resumable internal stage functions
   acceleration_paper.py               per-stage CPU/MLX assessment and fallback
   baseline_bridge_paper.py             verified public baseline score adapter
   evaluation_paper.py                 post-freeze metrics only
   statistics_paper.py                 paired dataset bootstrap
   independent_reaggregate_paper.py    immutable result independent verification
   reporting_paper.py                  paper tables and limitation text
-  cli_paper.py                         prepare/assess-mlx/score/freeze/parity/evaluate/report
+  pipeline_paper.py                    sole public run/status/verify entrypoint and state machine
   tests_paper/
     test_config_lineage_paper.py
     test_data_boundary_paper.py
@@ -76,8 +77,7 @@ paper/equipment_anomaly_detection/
     test_acceleration_paper.py
     test_baseline_bridge_paper.py
     test_evaluation_statistics_paper.py
-    test_reporting_cli_paper.py
-paper/equipment_anomaly_detection/run_paper.py
+    test_reporting_pipeline_paper.py
 paper/equipment_anomaly_detection/docs_paper/preregistration_paper_ko.md
 paper/equipment_anomaly_detection/docs_paper/runbook_paper_ko.md
 paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md
@@ -149,6 +149,9 @@ class LineageNode:
 @dataclass(frozen=True, slots=True)
 class FrozenPaperConfig:
     run_identity: str = "paper-proposal-clean-rerun-20260812"
+    database_path: str = "/Users/mac/Documents/Dataset/univariate_ts.db"
+    database_sha256: str = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+    excluded_datasets: tuple[str, str] = ("CornellWhaleChallenge", "Wafer_normal_1")
     dataset_count: int = 1117
     test_row_count: int = 195900
     seed: int = 20260812
@@ -157,7 +160,7 @@ class FrozenPaperConfig:
 
 `lineage_lock_paper.json`에는 `rocket_exp40`, `exp55_best`, `exp56_best`, `exp84_family_guard`, `exp84_count_cap`, `rocket_block_b`, `canonical_normal_state`, `exp234_three_source`, `minirocket_1024_seed_intersection`, `minirocket_4096_seed_intersection`, `raw_exact_normal_guard`, `low_frequency_two_depth`, `hard_empty_budget_30`, `train_omission_stability`를 모두 넣는다. 각 scoring node의 `input_kind`는 `raw_train_test_values`, route constant는 `frozen_rule`, 기존 artifact는 `parity_oracle`로 기록한다. `module`과 `symbols`는 복사 원본, `source_sha256`는 원본 파일 hash, `paper_module`은 Task 4–7에서 만들 독립 paper 목적지를 나타낸다.
 
-- [ ] **Step 4: Add import and symbol validation**
+- [ ] **Step 4: Add side-effect-free static origin and symbol validation**
 
 ```python
 def validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]:
@@ -166,19 +169,30 @@ def validate_lineage_lock(path: Path) -> tuple[LineageNode, ...]:
         raise ValueError("old prediction coordinates are forbidden inputs")
     for node in nodes:
         if node.input_kind == "raw_train_test_values":
-            module = importlib.import_module(node.module)
-            if any(not hasattr(module, symbol) for symbol in node.symbols):
+            source = resolve_repo_module_source(node.module)
+            exported = static_top_level_names(ast.parse(source.read_text(encoding="utf-8")))
+            if any(symbol not in exported for symbol in node.symbols):
                 raise ValueError(f"raw scorer symbol is unavailable: {node.node_id}")
-            if sha256_file(Path(module.__file__)) != node.source_sha256:
+            if sha256_file(source) != node.source_sha256:
                 raise ValueError(f"raw scorer source SHA differs: {node.node_id}")
     return nodes
 ```
+
+`resolve_repo_module_source`는 dotted identifier만 받아 repository root 아래의 exact
+`.py` 파일로 strict-resolve하고 path escape·누락·비-Python source를 거절한다.
+`static_top_level_names`는 top-level function/class/assignment/import alias만 수집한다.
+원본 module은 import하거나 실행하지 않는다. 일부 frozen origin은 import 시 legacy
+절대경로 log file을 열거나 별도 aeon 환경을 요구하므로, provenance 검증의 canonical
+mode는 `static_ast_sha256`다. 테스트는 validation 뒤 origin module이 `sys.modules`에
+추가되지 않고 import-time side effect가 일어나지 않았음을 확인한다. 실제 실행 parity는
+과학 로직을 paper module로 복사하는 Task 4–7에서 검증한다.
 
 같은 module에서 strict JSON loader와 dataclass 변환도 정의해 숨은 helper를 남기지 않는다.
 
 ```python
 def read_strict_json(path: Path) -> object:
     return json.loads(path.read_text(encoding="utf-8"),
+                      object_pairs_hook=reject_duplicate_object_keys,
                       parse_constant=lambda value: (_ for _ in ()).throw(
                           ValueError(f"non-finite JSON constant: {value}")))
 
@@ -202,6 +216,8 @@ def parse_nodes(payload: object) -> tuple[LineageNode, ...]:
 ```
 
 `codemap_paper.json`은 새 paper module 각각에 대해 `callers`, `effects`, `tests`, `source_origins`를 기록하고, HTML은 같은 전체 graph를 사람이 읽을 수 있게 렌더링한다. lock은 lineage/config와 HTML/JSON 각각의 SHA256를 strict JSON으로 고정한다. 세 파일 가운데 하나라도 누락되거나 hash가 다르면 테스트가 실패해야 한다.
+
+`LINEAGE_NODES`는 import 시 `validate_lineage_lock(LINEAGE_LOCK_PATH)`의 immutable tuple로 공개한다. codemap lock은 `config_paper.py`뿐 아니라 frozen default가 실제 정의된 `contracts_paper.py`도 hash-bind한다. JSON의 module inventory는 현재 paper source/test 파일 전체와 정확히 같아야 하며, HTML은 각 module의 `callers`, `effects`, `tests`, `source_origins` edge를 JSON과 동일하게 렌더링한다. validator는 duplicate JSON key, inventory 누락/초과, HTML/JSON edge 불일치를 거절한다.
 
 - [ ] **Step 5: Run tests and commit**
 
@@ -671,7 +687,7 @@ git add paper/equipment_anomaly_detection
 git commit -m "feat: build stable proposal policy routes"
 ```
 
-### Task 8: Create-only artifacts, resume, CLI, and parity gate
+### Task 8: Create-only artifacts, unified pipeline state, resume, and parity gate
 
 **Files:**
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.html`
@@ -679,13 +695,12 @@ git commit -m "feat: build stable proposal policy routes"
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
 - Create: `paper/equipment_anomaly_detection/artifacts_paper.py`
 - Create: `paper/equipment_anomaly_detection/runner_paper.py`
-- Create: `paper/equipment_anomaly_detection/cli_paper.py`
-- Create: `paper/equipment_anomaly_detection/run_paper.py`
+- Create: `paper/equipment_anomaly_detection/pipeline_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py`
 
 **Interfaces:**
 - Consumes: tasks 1–7.
-- Produces: CLI `prepare`, `score`, `freeze`, `parity`; `verify_score_root(root: Path) -> FrozenProposalManifest`.
+- Produces: `run_pipeline(config: PipelineConfig) -> FrozenPipelineManifest`, public CLI `run`, `status`, `verify`; internal stages `prepare_stage`, `score_stage`, `freeze_stage`, `parity_stage`; `verify_score_root(root: Path) -> FrozenProposalManifest`.
 
 - [ ] **Step 1: Write RED tests for no-clobber, resume, tamper rejection, and label firewall**
 
@@ -707,9 +722,11 @@ Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_art
 
 Expected: FAIL because lifecycle code is absent.
 
-- [ ] **Step 3: Implement atomic dataset shards and exact-prefix resume**
+- [ ] **Step 3: Implement atomic dataset shards and single-state exact-prefix resume**
 
-Shard schema에는 dataset, TRAIN/TEST identity, every-source score/p/strength/native pass, Hard route stages, low-frequency evidence, stability result, four policies, backend decision만 허용한다. `label`, `tp`, `fp`, `fn`, `precision`, `recall`, `f1`, `auroc`, `average_precision` field가 있으면 publication을 거절한다.
+`PIPELINE_STAGE_ORDER = ("preflight", "prepare", "acceleration", "proposal_score", "proposal_freeze", "proposal_parity", "public_baselines", "baseline_bridge", "evaluate", "report", "independent_verify")`를 고정한다. `pipeline_state_paper.json`은 config/lineage/code/environment hash, 각 stage status·started/finished·artifact SHA·failure evidence와 `last_complete_stage`를 갖는다. exact-prefix 완료만 재사용하고 중간 누락, 순서 역전, hash 변경, failed root 재시작을 거절한다.
+
+Dataset shard schema에는 dataset, TRAIN/TEST identity, every-source score/p/strength/native pass, Hard route stages, low-frequency evidence, stability result, four policies, backend decision만 허용한다. `label`, `tp`, `fp`, `fn`, `precision`, `recall`, `f1`, `auroc`, `average_precision` field가 있으면 proposal freeze를 거절한다.
 
 - [ ] **Step 4: Implement freeze-before-parity lifecycle**
 
@@ -729,17 +746,15 @@ def verify_parity(root: Path) -> ParityReport:
     return write_create_only_parity(root, report)
 ```
 
-- [ ] **Step 5: Add closed CLI and launcher**
+- [ ] **Step 5: Add the sole public pipeline entrypoint**
 
 ```text
-prepare --db-path DB --run-root ROOT [--limit N]
-assess-acceleration --run-root ROOT
-score --run-root ROOT --workers auto
-freeze --run-root ROOT
-parity --run-root ROOT
+pipeline_paper.py run --db-path DB --run-root ROOT --mode smoke|full
+pipeline_paper.py status --run-root ROOT
+pipeline_paper.py verify --run-root ROOT
 ```
 
-`evaluate`는 Task 11, `report`는 Task 12에서 lazy import로 추가한다.
+`run`은 내부 stage 함수를 고정 순서로만 호출한다. `--from-stage`, 개별 score/freeze/evaluate subcommand와 stage 순서 변경 option은 제공하지 않는다. `status`는 read-only snapshot, `verify`는 immutable artifact 재검증만 수행한다. Task 10–12는 `run_pipeline`의 미구현 stage handler를 채우며 새 public command를 추가하지 않는다. `evaluate` handler 안에서만 Task 11 label capability를 lazy import한다.
 
 - [ ] **Step 6: Run tests and commit**
 
@@ -748,7 +763,7 @@ Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_art
 Expected: PASS.
 
 ```bash
-git add paper/equipment_anomaly_detection paper/equipment_anomaly_detection/run_paper.py
+git add paper/equipment_anomaly_detection
 git commit -m "feat: freeze clean proposal score lifecycle"
 ```
 
@@ -759,12 +774,12 @@ git commit -m "feat: freeze clean proposal score lifecycle"
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
 - Create: `paper/equipment_anomaly_detection/acceleration_paper.py`
-- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Modify: `paper/equipment_anomaly_detection/pipeline_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_acceleration_paper.py`
 
 **Interfaces:**
 - Consumes: exact dense-distance stages from hard source and low-frequency adapters.
-- Produces: `assess_stage(stage_id, cpu, candidates, smoke_input) -> tuple[AccelerationRecord, ...]`, `select_cpu_workers() -> WorkerRecord`, CLI `assess-acceleration`.
+- Produces: `assess_stage(stage_id, cpu, candidates, smoke_input) -> tuple[AccelerationRecord, ...]`, `select_cpu_workers() -> WorkerRecord`, internal `acceleration` pipeline handler.
 
 - [ ] **Step 1: Write RED tests for every MLX gate**
 
@@ -799,9 +814,9 @@ Expected: FAIL because acceleration records are absent.
 
 `AccelerationRecord`는 stage, backend family, tensor eligibility, availability, transfer/compile overhead, CPU/device seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. PyTorch, MLX, MPS 세 family 모두 record를 만들고 official aeon/scikit-learn/PyTorch transformer를 다시 작성해야 하는 backend는 `algorithm_rewrite_required` 사유로 CPU를 선택한다. `WorkerRecord`에는 감지 logical CPU와 `max(1, cpu_count - 1)` worker를 기록한다.
 
-- [ ] **Step 4: Add `assess-acceleration` gate before score**
+- [ ] **Step 4: Fill the pipeline acceleration gate before proposal scoring**
 
-`score`는 `acceleration_paper.json`과 SHA256가 없거나 lineage/config hash가 다르면 실행을 거절한다. official run의 `--workers auto`는 frozen `WorkerRecord`와 일치해야 하며 임의 worker override를 거절한다. MLX/MPS heavy process는 worker 1을 강제한다.
+`pipeline_paper.py run`은 proposal score handler 전에 acceleration handler를 반드시 실행한다. score handler는 `acceleration_paper.json`과 SHA256가 없거나 lineage/config hash가 다르면 실행을 거절한다. official run은 frozen `WorkerRecord`의 auto worker만 사용하며 임의 worker override가 없다. MLX/MPS heavy process는 worker 1을 강제한다.
 
 - [ ] **Step 5: Run tests and commit**
 
@@ -821,13 +836,13 @@ git commit -m "feat: gate clean rerun acceleration"
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.json`
 - Modify: `paper/equipment_anomaly_detection/codemap_paper.lock`
 - Create: `paper/equipment_anomaly_detection/baseline_bridge_paper.py`
-- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Modify: `paper/equipment_anomaly_detection/pipeline_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_baseline_bridge_paper.py`
 - Do not modify: `experiments/paper_public_baselines/`
 
 **Interfaces:**
 - Consumes: verified proposal score root and one or more verified fresh public baseline score roots.
-- Produces: `freeze_baseline_policy_scores(proposal_root, baseline_roots, output_root) -> FrozenBaselinePolicyManifest`, `run_deep_budgeted(jobs, budget_seconds, epochs) -> DeepBudgetReport`.
+- Produces: `freeze_baseline_policy_scores(proposal_root, baseline_roots, output_root) -> FrozenBaselinePolicyManifest`, `run_deep_budgeted(jobs, budget_seconds, epochs) -> DeepBudgetReport`, internal `public_baselines` and `baseline_bridge` pipeline handlers.
 
 - [ ] **Step 1: Write RED tests proving counts-only matched budget and common adapter**
 
@@ -862,20 +877,15 @@ Expected: FAIL because the bridge is absent.
 
 고전 네 방법은 하나의 root에, 딥 방법은 방법별 root에 준비한다. `run_deep_budgeted`는 `time.monotonic()`의 단일 시작시각과 `172800`초 deadline을 공유하고, 각 public CLI subprocess에 남은 시간만 `timeout`으로 준다. 완주한 딥 root만 즉시 freeze하며 timeout/실패/미시작 root는 bridge 입력에서 제외한다. 과학 코드는 호출만 하고 수정하지 않는다.
 
-`cli_paper.py`에 반복 가능한 `--baseline-root`를 받는 `bridge-baselines`, 그리고 `run-deep-budget --deep-svdd-root ROOT --drocc-root ROOT --budget-seconds 172800 --epochs 50 --report-path PATH`를 추가한다. bridge는 모든 입력 root의 frozen manifest와 method 집합이 중복되지 않는지 확인한 뒤 output을 create-only로 동결한다. budget report에는 시작/종료 monotonic elapsed, method별 subprocess exit/timeout, frozen manifest SHA, 포함/제외 사유를 기록한다.
+두 pipeline handler가 main run root 아래의 고전/딥/baseline-policy 하위 root를 결정하고 public baseline package를 subprocess로 호출한다. 별도 root 인자나 공개 subcommand는 추가하지 않는다. bridge는 모든 입력 root의 frozen manifest와 method 집합이 중복되지 않는지 확인한 뒤 output을 create-only로 동결한다. budget report에는 시작/종료 monotonic elapsed, method별 subprocess exit/timeout, frozen manifest SHA, 포함/제외 사유를 기록한다.
 
-- [ ] **Step 4: Run a fresh public baseline smoke root**
+- [ ] **Step 4: Run the internal baseline handlers on the pipeline smoke fixture**
 
 ```bash
-python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --limit 10 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest,deep_svdd_1d,drocc_1d
-python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke
-PAPER_CPU_WORKERS=$(python3 -c 'import os; print(max(1, (os.cpu_count() or 1) - 1))')
-python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest --workers "$PAPER_CPU_WORKERS"
-python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke --methods deep_svdd_1d,drocc_1d --workers 1 --epochs 50
-python3 -m experiments.paper_public_baselines.cli freeze --run-root /Users/mac/Documents/Dataset/paper_public_baselines_clean_20260812_smoke
+python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_baseline_bridge_paper.BaselineBridgeTests.test_pipeline_handlers_use_one_root_and_advance_exact_stages -v
 ```
 
-Expected: frozen 60-pair smoke manifest with zero label access.
+Expected: synthetic smoke root advances `public_baselines` then `baseline_bridge`, binds its frozen sub-root manifests, and records zero label access without exposing another CLI.
 
 - [ ] **Step 5: Run tests and commit**
 
@@ -897,7 +907,7 @@ git commit -m "feat: bridge fresh public baseline scores"
 - Create: `paper/equipment_anomaly_detection/evaluation_paper.py`
 - Create: `paper/equipment_anomaly_detection/statistics_paper.py`
 - Create: `paper/equipment_anomaly_detection/independent_reaggregate_paper.py`
-- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
+- Modify: `paper/equipment_anomaly_detection/pipeline_paper.py`
 - Test: `paper/equipment_anomaly_detection/tests_paper/test_evaluation_statistics_paper.py`
 
 **Interfaces:**
@@ -948,9 +958,9 @@ draws = rng.integers(0, 1117, size=(20000, 1117), dtype=np.int64, endpoint=False
 
 draw bytes SHA256를 저장하고 모든 제안기술-minus-baseline 차이에 같은 draw matrix를 사용한다. source별 native score 중 최고 TEST 값을 대표값으로 선택하는 함수는 만들지 않는다.
 
-- [ ] **Step 5: Add lazy `evaluate` command and run tests**
+- [ ] **Step 5: Fill the lazy pipeline evaluate handler and run tests**
 
-`cli_paper.py`의 evaluate branch 안에서만 `evaluation`과 `label_access`를 import한다.
+`pipeline_paper.py`의 `evaluate` handler 안에서만 `evaluation_paper`와 `label_access_paper`를 import한다. public `run` 외 evaluate command는 만들지 않는다.
 
 Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_evaluation_statistics_paper experiments.paper_public_baselines.tests.test_statistics -v`
 
@@ -958,7 +968,7 @@ Expected: PASS.
 
 - [ ] **Step 6: Implement source-independent reaggregation**
 
-`independent_reaggregate_paper.py`는 score source module과 SQLite를 import하지 않고 `score_label_rows.jsonl`, dataset/bootstrap JSONL, bootstrap config와 artifact map만 읽는다. row-level label/score에서 pooled AP/AUROC와 confusion을, dataset row에서 macro 지표를 다시 계산한다. `PCG64(20260812)` draw도 재생성해 bytes SHA와 interval을 확인하고 불일치 시 nonzero exit를 낸다. CLI는 `main(argv: Sequence[str] | None = None) -> int`와 `--run-root`만 노출한다.
+`independent_reaggregate_paper.py`는 score source module과 SQLite를 import하지 않고 `score_label_rows.jsonl`, dataset/bootstrap JSONL, bootstrap config와 artifact map만 읽는다. row-level label/score에서 pooled AP/AUROC와 confusion을, dataset row에서 macro 지표를 다시 계산한다. `PCG64(20260812)` draw도 재생성해 bytes SHA와 interval을 확인하고 불일치 시 nonzero exit를 낸다. `independent_verify` pipeline handler가 이를 함수로 호출하며 별도 CLI를 노출하지 않는다.
 
 - [ ] **Step 7: Commit**
 
@@ -977,8 +987,8 @@ git commit -m "feat: evaluate frozen paper rerun scores"
 - Create: `paper/equipment_anomaly_detection/docs_paper/preregistration_paper_ko.md`
 - Create: `paper/equipment_anomaly_detection/docs_paper/runbook_paper_ko.md`
 - Create: `paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md`
-- Modify: `paper/equipment_anomaly_detection/cli_paper.py`
-- Test: `paper/equipment_anomaly_detection/tests_paper/test_reporting_cli_paper.py`
+- Modify: `paper/equipment_anomaly_detection/pipeline_paper.py`
+- Test: `paper/equipment_anomaly_detection/tests_paper/test_reporting_pipeline_paper.py`
 
 **Interfaces:**
 - Consumes: immutable evaluation bundle.
@@ -987,7 +997,7 @@ git commit -m "feat: evaluate frozen paper rerun scores"
 - [ ] **Step 1: Write RED tests for public names and mandatory limitations**
 
 ```python
-class ReportingCliTests(unittest.TestCase):
+class ReportingPipelineTests(unittest.TestCase):
     def test_main_table_has_no_internal_experiment_names(self) -> None:
         text = render_main_report(self.bundle)
         self.assertNotIn("Exp448", text)
@@ -1003,7 +1013,7 @@ class ReportingCliTests(unittest.TestCase):
 
 - [ ] **Step 2: Verify RED**
 
-Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_reporting_cli_paper -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_reporting_pipeline_paper -v`
 
 Expected: FAIL because reporting is absent.
 
@@ -1021,11 +1031,11 @@ Expected: FAIL because reporting is absent.
 
 - [ ] **Step 4: Write exact operator commands and stop conditions**
 
-runbook에는 root absent 확인, prepare, assess-mlx, score, freeze, parity, baseline bridge, evaluate, report, verify-only 순서를 적는다. parity 실패, deep partial, TEST-label pre-access와 source coverage failure의 중단 행동을 명시한다.
+runbook에는 root absent 확인 뒤 `pipeline_paper.py run` 한 명령과 read-only `status`, `verify`만 적는다. 내부 stage order와 각 stop condition은 설명하되 사용자가 단계별 command를 조합하지 않게 한다. parity 실패, deep partial, TEST-label pre-access와 source coverage failure의 중단 행동을 명시한다.
 
 - [ ] **Step 5: Run tests and commit**
 
-Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_reporting_cli_paper -v`
+Run: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_reporting_pipeline_paper -v`
 
 Expected: PASS.
 
@@ -1042,7 +1052,7 @@ git commit -m "docs: add clean paper rerun lifecycle"
 
 **Interfaces:**
 - Consumes: all prior tasks.
-- Produces: complete proposal root, frozen classical root, zero to two frozen completed-deep roots, post-freeze evaluation and paper-ready result hashes.
+- Produces: one complete paper pipeline root whose final manifest binds proposal, frozen classical, zero to two completed-deep, evaluation, report and independent-verification artifacts.
 
 - [ ] **Step 1: Run the full new package test suite**
 
@@ -1060,72 +1070,45 @@ Expected: all tests PASS.
 
 - [ ] **Step 3: Create and verify the proposal smoke run**
 
-먼저 `test ! -e /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke`가 exit 0인지 확인한다.
+먼저 `test ! -e /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke`가 exit 0인지 확인한 뒤 하나의 pipeline command를 실행한다.
 
 ```bash
-python3 paper/equipment_anomaly_detection/run_paper.py prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --limit 10
-python3 paper/equipment_anomaly_detection/run_paper.py assess-acceleration --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
-python3 paper/equipment_anomaly_detection/run_paper.py score --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --workers auto
-python3 paper/equipment_anomaly_detection/run_paper.py freeze --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
-python3 paper/equipment_anomaly_detection/run_paper.py parity --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
+python3 paper/equipment_anomaly_detection/pipeline_paper.py run --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke --mode smoke
+python3 paper/equipment_anomaly_detection/pipeline_paper.py status --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
+python3 paper/equipment_anomaly_detection/pipeline_paper.py verify --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812_smoke
 ```
 
-Expected: 10/10 shards frozen, no label access, exact smoke parity.
+Expected: one final pipeline manifest, 10/10 proposal shards, all eleven stages complete in fixed order, exact smoke parity, and verify reproduces every artifact hash.
 
 - [ ] **Step 4: Run and freeze the official 1,117-dataset proposal root**
 
 먼저 `test ! -e /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812`가 exit 0인지 확인한다.
 
 ```bash
-python3 paper/equipment_anomaly_detection/run_paper.py prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 paper/equipment_anomaly_detection/run_paper.py assess-acceleration --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 paper/equipment_anomaly_detection/run_paper.py score --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --workers auto
-python3 paper/equipment_anomaly_detection/run_paper.py freeze --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 paper/equipment_anomaly_detection/run_paper.py parity --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
+python3 paper/equipment_anomaly_detection/pipeline_paper.py run --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --mode full
 ```
 
-Expected: 1,117 shards, 195,900 TEST rows, policy counts `2218/2248/2244/2222`, exact coordinate parity, TEST-label access 0.
+Expected: proposal stages produce 1,117 shards, 195,900 TEST rows, policy counts `2218/2248/2244/2222`, exact coordinate parity and TEST-label access 0 before evaluate; the same command then completes eligible baselines, evaluation, reporting and independent verification.
 
-- [ ] **Step 5: Run fresh public baselines**
+- [ ] **Step 5: Verify pipeline-owned fresh public baseline stages**
 
-Use classical root `/Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812`, Deep SVDD root `/Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812`, and DROCC root `/Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812`. Classical methods run with 7 workers. Deep SVDD and DROCC run sequentially with 1 worker and the preregistered 50 epochs under one controller-enforced 48-hour deadline. Only roots completed and frozen inside that deadline are eligible for the main comparison; excluded methods are listed with their reason.
+The pipeline owns `baselines/classical_paper`, `baselines/deep_svdd_paper`, and `baselines/drocc_paper` beneath the single official root. Classical methods use the frozen CPU worker record. Deep SVDD and DROCC run sequentially with 1 worker and 50 epochs under one controller-enforced 48-hour deadline. Only sub-roots completed and frozen inside that deadline are eligible for the main comparison; excluded methods are listed with their reason.
 
-먼저 세 root와 budget report가 모두 없는지 확인한다.
+Read-only check: `python3 paper/equipment_anomaly_detection/pipeline_paper.py status --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812`
+
+Expected: `public_baselines` and `baseline_bridge` are complete; classical manifest covers four methods; deep budget report records every completed/excluded deep method and binds all included sub-root hashes.
+
+- [ ] **Step 6: Verify post-parity evaluation and reporting in the same pipeline**
 
 ```bash
-test ! -e /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812
-test ! -e /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812
-test ! -e /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812
-test ! -e /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
+python3 paper/equipment_anomaly_detection/pipeline_paper.py verify --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
 ```
 
-```bash
-python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest
-python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812
-PAPER_CPU_WORKERS=$(python3 -c 'import os; print(max(1, (os.cpu_count() or 1) - 1))')
-python3 -m experiments.paper_public_baselines.cli score --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest --workers "$PAPER_CPU_WORKERS"
-python3 -m experiments.paper_public_baselines.cli freeze --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812
-python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812 --methods deep_svdd_1d
-python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812
-python3 -m experiments.paper_public_baselines.cli prepare --db-path /Users/mac/Documents/Dataset/univariate_ts.db --run-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812 --methods drocc_1d
-python3 -m experiments.paper_public_baselines.cli assess-mlx --run-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812
-python3 paper/equipment_anomaly_detection/run_paper.py run-deep-budget --deep-svdd-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_20260812 --drocc-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_20260812 --budget-seconds 172800 --epochs 50 --report-path /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
-```
-
-- [ ] **Step 6: Freeze baseline policy scores, evaluate once, and report**
-
-```bash
-python3 paper/equipment_anomaly_detection/run_paper.py bridge-baselines --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --baseline-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_20260812 --include-completed-deep-from /Users/mac/Documents/Dataset/paper_public_baselines_deep_budget_20260812.json
-python3 paper/equipment_anomaly_detection/run_paper.py evaluate --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --baseline-policy-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812/baseline_policy_scores
-python3 paper/equipment_anomaly_detection/run_paper.py report --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812
-python3 paper/equipment_anomaly_detection/run_paper.py report --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812 --verify-only
-```
-
-Expected: one immutable evaluation, identical verify-only report hash, AP/AUROC score types and coverage explicitly separated.
+Expected: one immutable evaluation created only after proposal parity and baseline bridge, identical report hash, AP/AUROC score types and coverage explicitly separated, final pipeline manifest valid.
 
 - [ ] **Step 7: Independently reaggregate and record small hashes**
 
-Run: `python3 -m paper.equipment_anomaly_detection.independent_reaggregate_paper --run-root /Users/mac/Documents/Dataset/paper_proposal_clean_rerun_20260812`
+Independent reaggregation is the pipeline's final required stage. Inspect its result through the same `verify` command; do not invoke another executable.
 
 Expected: every confusion matrix, AP/AUROC row, bootstrap draw SHA and report artifact map verifies from immutable result files only. Add only the final manifest hashes and headline tables to `paper/equipment_anomaly_detection/docs_paper/result_paper_ko.md`.
 
