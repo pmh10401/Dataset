@@ -166,45 +166,60 @@ def open_test_labels_once_antigravity(prediction_authority: object, *, connectio
         raise
     state = "open"
     terminal_error: BaseException | None = None
+    cleanup_error: BaseException | None = None
     descriptor_released = False
+    descriptor_release_attempted = False
     connection_close_attempted = False
     next_dataset = 0
     label_rows = 0
 
     def release_descriptor_antigravity() -> None:
-        nonlocal descriptor_released
-        if not descriptor_released:
+        nonlocal descriptor_released, descriptor_release_attempted
+        if not descriptor_release_attempted:
+            descriptor_release_attempted = True
             os.close(descriptor)
             descriptor_released = True
 
-    def terminalize_antigravity(error: BaseException) -> None:
-        """Close each resource at most once and preserve the first scientific error."""
-        nonlocal state, terminal_error, connection_close_attempted
-        if terminal_error is not None:
+    def terminalize_antigravity(error: BaseException | None, initial_cleanup_error: BaseException | None = None) -> None:
+        """Close each resource once; state reflects cleanup, never the primary error type."""
+        nonlocal state, terminal_error, cleanup_error, connection_close_attempted
+        if state != "open":
             return
         terminal_error = error
+        cleanup_error = initial_cleanup_error
         try:
             if not connection_close_attempted:
                 connection_close_attempted = True
                 connection.close()
-        except BaseException:
-            pass
+        except BaseException as close_error:
+            if cleanup_error is None:
+                cleanup_error = close_error
         try:
             release_descriptor_antigravity()
-        except OSError:
-            pass
-        state = "close_failed" if isinstance(error, OSError) else "terminal"
+        except BaseException as release_error:
+            if cleanup_error is None:
+                cleanup_error = release_error
+        state = "close_failed" if cleanup_error is not None else "terminal"
+
+    def stored_error_antigravity() -> BaseException:
+        if terminal_error is not None:
+            return terminal_error
+        if cleanup_error is not None:
+            return cleanup_error
+        return ValueError("TEST label session is closed")
 
     class LabelSessionAntigravity:
         __slots__ = ()
         def close_state_antigravity(self) -> str:
             return state
         def close_error_antigravity(self) -> BaseException | None:
+            return cleanup_error
+        def terminal_error_antigravity(self) -> BaseException | None:
             return terminal_error
         def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
             nonlocal next_dataset, label_rows
-            if terminal_error is not None:
-                raise terminal_error
+            if state != "open":
+                raise stored_error_antigravity()
             if state != "open" or type(dataset) is not str or next_dataset >= len(order) or dataset != order[next_dataset]:
                 error = ValueError("TEST labels must be read once in frozen dataset order")
                 terminalize_antigravity(error)
@@ -223,15 +238,21 @@ def open_test_labels_once_antigravity(prediction_authority: object, *, connectio
                 raise
         def close_antigravity(self) -> None:
             nonlocal state, connection_close_attempted
-            if terminal_error is not None:
-                raise terminal_error
+            if state != "open":
+                if state == "closed":
+                    return
+                raise stored_error_antigravity()
             if state == "closed":
                 return
             try:
                 if next_dataset != len(order) or label_rows != _TARGET_LABEL_ROWS_ANTIGRAVITY:
                     raise ValueError("TEST label session did not complete the frozen dataset order")
                 connection_close_attempted = True
-                connection.close()
+                try:
+                    connection.close()
+                except BaseException as close_error:
+                    terminalize_antigravity(None, close_error)
+                    raise
                 _assert_database_unchanged_antigravity(descriptor, identity)
                 release_descriptor_antigravity()
                 state = "closed"

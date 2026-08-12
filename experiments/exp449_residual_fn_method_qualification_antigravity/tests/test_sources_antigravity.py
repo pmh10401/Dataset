@@ -154,6 +154,54 @@ class SourcesAntigravityTests(unittest.TestCase):
         finally:
             sources._verify_database_antigravity = original  # type: ignore[assignment]
 
+    def test_query_oserror_with_clean_cleanup_is_terminal_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        _, authority = self._install_prediction_module_antigravity()
+        class QueryOSErrorConnectionAntigravity:
+            def __init__(self) -> None: self.close_calls = 0
+            def execute(self, sql: str, parameters: tuple[object, ...] = ()): raise OSError("query io")  # type: ignore[no-untyped-def]
+            def close(self) -> None: self.close_calls += 1
+        connection = QueryOSErrorConnectionAntigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        original = sources._verify_database_antigravity
+        try:
+            sources._verify_database_antigravity = lambda: (descriptor, (0, 0, 0, 1, 0, 0, 0))  # type: ignore[assignment]
+            session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+            with self.assertRaisesRegex(OSError, "query io"): session.labels_for_dataset_antigravity("Crop_normal_1")
+            self.assertEqual(session.close_state_antigravity(), "terminal")
+            self.assertIsNone(session.close_error_antigravity())
+            self.assertIsInstance(session.terminal_error_antigravity(), OSError)
+            with self.assertRaisesRegex(OSError, "query io"): session.close_antigravity()
+            self.assertEqual(connection.close_calls, 1)
+        finally:
+            sources._verify_database_antigravity = original  # type: ignore[assignment]
+
+    def test_row_failure_and_cleanup_failure_are_recorded_separately_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import sources_antigravity as sources
+
+        _, authority = self._install_prediction_module_antigravity()
+        class BadRowCloseFailingConnectionAntigravity:
+            def __init__(self) -> None: self.close_calls = 0
+            def execute(self, sql: str, parameters: tuple[object, ...] = ()): return ((0, "bad"),)  # type: ignore[no-untyped-def]
+            def close(self) -> None:
+                self.close_calls += 1
+                raise OSError("cleanup io")
+        connection = BadRowCloseFailingConnectionAntigravity()
+        descriptor = os.open("/dev/null", os.O_RDONLY)
+        original = sources._verify_database_antigravity
+        try:
+            sources._verify_database_antigravity = lambda: (descriptor, (0, 0, 0, 1, 0, 0, 0))  # type: ignore[assignment]
+            session = sources.open_test_labels_once_antigravity(authority, connection_factory=lambda _: connection)
+            with self.assertRaisesRegex(ValueError, "TEST label row is invalid"): session.labels_for_dataset_antigravity("Crop_normal_1")
+            self.assertEqual(session.close_state_antigravity(), "close_failed")
+            self.assertIsInstance(session.terminal_error_antigravity(), ValueError)
+            self.assertIsInstance(session.close_error_antigravity(), OSError)
+            with self.assertRaisesRegex(ValueError, "TEST label row is invalid"): session.close_antigravity()
+            self.assertEqual(connection.close_calls, 1)
+        finally:
+            sources._verify_database_antigravity = original  # type: ignore[assignment]
+
 
 if __name__ == "__main__":
     unittest.main()
