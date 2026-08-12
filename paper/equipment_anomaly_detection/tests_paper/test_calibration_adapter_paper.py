@@ -5,6 +5,7 @@ import unittest
 
 import numpy as np
 
+from paper.equipment_anomaly_detection.contracts_paper import LeafEvidence
 from paper.equipment_anomaly_detection.calibration_paper import (
     leaf_evidence,
     mark_missing_evidence,
@@ -45,11 +46,71 @@ class CalibrationAdapterTests(unittest.TestCase):
         pvalue = upper_tail_pvalues(np.asarray([1.0, 2.0, 3.0]), np.asarray([2.0, 4.0]))
         np.testing.assert_array_equal(pvalue, np.asarray([0.75, 0.25]))
 
+    def test_upper_tail_preserves_integer_ordering_above_float64_precision(self) -> None:
+        largest_exact_float = 2**53
+        pvalue = upper_tail_pvalues(
+            np.asarray([float(largest_exact_float)]),
+            np.asarray([largest_exact_float + 1], dtype=np.int64),
+        )
+        np.testing.assert_array_equal(pvalue, np.asarray([0.5]))
+
+    def test_strict_native_pass_preserves_integer_ordering_above_float64_precision(self) -> None:
+        largest_exact_float = 2**53
+        actual = strict_native_pass(
+            np.asarray([largest_exact_float + 1], dtype=np.int64),
+            np.asarray([float(largest_exact_float)]),
+        )
+        np.testing.assert_array_equal(actual, np.asarray([True]))
+
     def test_leaf_evidence_is_immutable_and_has_a_false_missing_sentinel(self) -> None:
         leaf = leaf_evidence(np.asarray([1.0, 2.0]), np.asarray([3.0]), alpha=1.0)
         self.assertEqual(leaf.evidence_missing.tolist(), [False])
         with self.assertRaises(ValueError):
             leaf.strength[0] = 0.0
+
+    def test_direct_leaf_evidence_construction_is_defensive_and_read_only(self) -> None:
+        pvalue = np.asarray([0.25])
+        margin = np.asarray([0.0])
+        strength = np.asarray([0.75])
+        native_pass = np.asarray([True])
+        evidence_missing = np.asarray([False])
+        leaf = LeafEvidence(pvalue, margin, strength, native_pass, evidence_missing)
+
+        pvalue[0] = 0.5
+        margin[0] = 1.0
+        strength[0] = 0.5
+        native_pass[0] = False
+        evidence_missing[0] = True
+        self.assertEqual(leaf.pvalue.tolist(), [0.25])
+        self.assertEqual(leaf.margin.tolist(), [0.0])
+        self.assertEqual(leaf.strength.tolist(), [0.75])
+        self.assertEqual(leaf.native_pass.tolist(), [True])
+        self.assertEqual(leaf.evidence_missing.tolist(), [False])
+        for values in (leaf.pvalue, leaf.margin, leaf.strength, leaf.native_pass, leaf.evidence_missing):
+            with self.assertRaises(ValueError):
+                values[0] = values[0]
+
+    def test_direct_leaf_evidence_construction_validates_all_fields(self) -> None:
+        with self.assertRaisesRegex(ValueError, "aligned"):
+            LeafEvidence(
+                np.asarray([0.25]), np.asarray([0.0, 0.0]), np.asarray([0.75]),
+                np.asarray([True]), np.asarray([False]),
+            )
+        with self.assertRaisesRegex(ValueError, "pvalue"):
+            LeafEvidence(
+                np.asarray([0.0]), np.asarray([0.0]), np.asarray([0.75]),
+                np.asarray([True]), np.asarray([False]),
+            )
+        with self.assertRaisesRegex(ValueError, "strength"):
+            LeafEvidence(
+                np.asarray([0.25]), np.asarray([0.0]), np.asarray([1.0]),
+                np.asarray([True]), np.asarray([False]),
+            )
+        with self.assertRaisesRegex(ValueError, "native_pass"):
+            LeafEvidence(
+                np.asarray([0.25]), np.asarray([0.0]), np.asarray([0.75]),
+                np.asarray([1]), np.asarray([False]),
+            )
 
     def test_empty_query_produces_aligned_empty_evidence(self) -> None:
         leaf = leaf_evidence(np.asarray([1.0]), np.asarray([], dtype=np.float64), alpha=0.5)

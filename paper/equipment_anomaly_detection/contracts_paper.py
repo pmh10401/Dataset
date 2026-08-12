@@ -6,6 +6,28 @@ from dataclasses import dataclass
 import numpy as np
 
 
+def _evidence_float_vector(values: object, name: str) -> np.ndarray:
+    array = np.asarray(values)
+    if array.ndim != 1 or array.dtype.kind not in "iuf":
+        raise ValueError(f"{name} must be a finite numeric vector")
+    result = np.array(array, dtype=np.float64, copy=True)
+    if not np.all(np.isfinite(result)):
+        raise ValueError(f"{name} must be a finite numeric vector")
+    return result
+
+
+def _evidence_bool_vector(values: object, name: str) -> np.ndarray:
+    array = np.asarray(values)
+    if array.ndim != 1 or array.dtype != np.dtype(bool):
+        raise ValueError(f"{name} must be a bool vector")
+    return np.array(array, dtype=bool, copy=True)
+
+
+def _readonly(values: np.ndarray) -> np.ndarray:
+    values.setflags(write=False)
+    return values
+
+
 @dataclass(frozen=True, slots=True)
 class LineageNode:
     node_id: str
@@ -53,6 +75,26 @@ class LeafEvidence:
     strength: np.ndarray
     native_pass: np.ndarray
     evidence_missing: np.ndarray
+
+    def __post_init__(self) -> None:
+        """Defensively bind validated, read-only evidence arrays at the public boundary."""
+        pvalue = _evidence_float_vector(self.pvalue, "pvalue")
+        margin = _evidence_float_vector(self.margin, "margin")
+        strength = _evidence_float_vector(self.strength, "strength")
+        native_pass = _evidence_bool_vector(self.native_pass, "native_pass")
+        evidence_missing = _evidence_bool_vector(self.evidence_missing, "evidence_missing")
+        fields = (margin, strength, native_pass, evidence_missing)
+        if any(field.shape != pvalue.shape for field in fields):
+            raise ValueError("LeafEvidence fields must be aligned")
+        if np.any((pvalue <= 0.0) | (pvalue > 1.0)):
+            raise ValueError("pvalue must be in (0, 1]")
+        if np.any((strength < 0.0) | (strength >= 1.0)):
+            raise ValueError("strength must be in [0, 1)")
+        object.__setattr__(self, "pvalue", _readonly(pvalue))
+        object.__setattr__(self, "margin", _readonly(margin))
+        object.__setattr__(self, "strength", _readonly(strength))
+        object.__setattr__(self, "native_pass", _readonly(native_pass))
+        object.__setattr__(self, "evidence_missing", _readonly(evidence_missing))
 
 
 @dataclass(frozen=True, slots=True)

@@ -16,10 +16,9 @@ def _numeric_vector(values: object, name: str, *, nonempty: bool = False) -> np.
         or array.dtype.kind not in "iuf"
     ):
         raise ValueError(f"{name} must be a {'nonempty ' if nonempty else ''}finite numeric vector")
-    result = np.asarray(array, dtype=np.float64)
-    if not np.all(np.isfinite(result)):
+    if not np.all(np.isfinite(array)):
         raise ValueError(f"{name} must be a finite numeric vector")
-    return result
+    return array
 
 
 def _boolean_mask(values: object, size: int, name: str = "mask") -> np.ndarray:
@@ -27,12 +26,6 @@ def _boolean_mask(values: object, size: int, name: str = "mask") -> np.ndarray:
     if array.ndim != 1 or array.shape[0] != size or array.dtype != np.dtype(bool):
         raise ValueError(f"{name} must be an aligned bool mask")
     return array
-
-
-def _immutable(values: np.ndarray, *, dtype: np.dtype) -> np.ndarray:
-    result = np.array(values, dtype=dtype, copy=True)
-    result.setflags(write=False)
-    return result
 
 
 def _validated_alpha(alpha: object) -> float:
@@ -50,7 +43,8 @@ def upper_tail_pvalues(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
     query_values = _numeric_vector(query, "query")
     return np.asarray(
         [
-            (1 + np.count_nonzero(reference_values >= value)) / (reference_values.size + 1)
+            (1 + sum(item.item() >= value.item() for item in reference_values))
+            / (reference_values.size + 1)
             for value in query_values
         ],
         dtype=np.float64,
@@ -62,11 +56,11 @@ def leaf_evidence(reference: np.ndarray, query: np.ndarray, alpha: float) -> Lea
     alpha_value = _validated_alpha(alpha)
     pvalue = upper_tail_pvalues(reference, query)
     return LeafEvidence(
-        pvalue=_immutable(pvalue, dtype=np.dtype(np.float64)),
-        margin=_immutable(np.log10(alpha_value / pvalue), dtype=np.dtype(np.float64)),
-        strength=_immutable(1.0 - pvalue, dtype=np.dtype(np.float64)),
-        native_pass=_immutable(pvalue <= alpha_value, dtype=np.dtype(bool)),
-        evidence_missing=_immutable(np.zeros(pvalue.shape, dtype=bool), dtype=np.dtype(bool)),
+        pvalue=pvalue,
+        margin=np.log10(alpha_value / pvalue),
+        strength=1.0 - pvalue,
+        native_pass=pvalue <= alpha_value,
+        evidence_missing=np.zeros(pvalue.shape, dtype=bool),
     )
 
 
@@ -86,11 +80,11 @@ def mark_missing_evidence(evidence: LeafEvidence, missing_mask: np.ndarray) -> L
     missing = _boolean_mask(missing_mask, pvalue.size)
     combined_missing = existing_missing | missing
     return LeafEvidence(
-        pvalue=_immutable(np.where(combined_missing, 0.5, pvalue), dtype=np.dtype(np.float64)),
-        margin=_immutable(np.where(combined_missing, 0.0, margin), dtype=np.dtype(np.float64)),
-        strength=_immutable(np.where(combined_missing, 0.5, strength), dtype=np.dtype(np.float64)),
-        native_pass=_immutable(np.where(combined_missing, False, native_pass), dtype=np.dtype(bool)),
-        evidence_missing=_immutable(combined_missing, dtype=np.dtype(bool)),
+        pvalue=np.where(combined_missing, 0.5, pvalue),
+        margin=np.where(combined_missing, 0.0, margin),
+        strength=np.where(combined_missing, 0.5, strength),
+        native_pass=np.where(combined_missing, False, native_pass),
+        evidence_missing=combined_missing,
     )
 
 

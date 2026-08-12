@@ -10,10 +10,9 @@ def _finite_vector(values: object, name: str) -> np.ndarray:
     array = np.asarray(values)
     if array.ndim != 1 or array.dtype.kind not in "iuf":
         raise ValueError(f"{name} must be a finite numeric vector")
-    result = np.asarray(array, dtype=np.float64)
-    if not np.all(np.isfinite(result)):
+    if not np.all(np.isfinite(array)):
         raise ValueError(f"{name} must be a finite numeric vector")
-    return result
+    return array
 
 
 def _strength_vector(values: object) -> np.ndarray:
@@ -36,7 +35,11 @@ def strict_native_pass(raw_scores: np.ndarray, thresholds: np.ndarray) -> np.nda
     boundary = _finite_vector(thresholds, "thresholds")
     if scores.shape != boundary.shape:
         raise ValueError("raw_scores and thresholds must be aligned")
-    return scores > boundary
+    return np.fromiter(
+        (score.item() > threshold.item() for score, threshold in zip(scores, boundary, strict=True)),
+        dtype=bool,
+        count=scores.size,
+    )
 
 
 def combine_evidence(values: Sequence[np.ndarray], mode: str, k: int = 1) -> np.ndarray:
