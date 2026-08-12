@@ -117,6 +117,25 @@ class CliTests(unittest.TestCase):
                     ]
                 )
 
+    def test_evaluate_dispatch_verifies_manifest_before_label_import(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            sys.modules.pop("experiments.paper_public_baselines.label_access", None)
+
+            with self.assertRaisesRegex(ValueError, "manifest"):
+                cli_main(
+                    [
+                        "evaluate",
+                        "--run-root",
+                        directory,
+                        "--exp448-root",
+                        str(Path(directory) / "exp448"),
+                    ]
+                )
+
+        self.assertNotIn(
+            "experiments.paper_public_baselines.label_access", sys.modules
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

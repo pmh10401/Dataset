@@ -69,6 +69,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         _load_acceleration(Path(arguments.run_root))
         manifest = freeze_score_root(Path(arguments.run_root))
         result = {"pair_count": manifest.pair_count, "status": "frozen"}
+    elif arguments.command == "evaluate":
+        from .evaluation import evaluate_frozen_scores, write_evaluation_bundle
+
+        bundle = evaluate_frozen_scores(
+            Path(arguments.run_root), Path(arguments.exp448_root)
+        )
+        artifact_sha = write_evaluation_bundle(Path(arguments.run_root), bundle)
+        result = {
+            "status": "evaluated",
+            "dataset_count": bundle.metadata["dataset_count"],
+            "common_support_count": bundle.metadata["common_support_count"],
+            "evaluation_artifact_map_sha256": artifact_sha,
+        }
     else:  # pragma: no cover - argparse closes this branch
         raise AssertionError(arguments.command)
     print(canonical_json_bytes(result).decode("utf-8"), end="")
@@ -286,6 +299,10 @@ def _parser() -> argparse.ArgumentParser:
 
     freeze = subparsers.add_parser("freeze")
     freeze.add_argument("--run-root", required=True)
+
+    evaluate = subparsers.add_parser("evaluate")
+    evaluate.add_argument("--run-root", required=True)
+    evaluate.add_argument("--exp448-root", required=True)
     return parser
 
 
