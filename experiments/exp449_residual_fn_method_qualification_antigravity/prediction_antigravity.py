@@ -172,9 +172,12 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         _set_pid_inactive_antigravity(root)
         _assert_terminal_channels_antigravity(root, inventory)
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
+        authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"{synthetic_families[sequence // 2]}_synthetic_{sequence // 2:03d}__{dict(CANDIDATE_MATRIX_ANTIGRAVITY)[synthetic_families[sequence // 2]][sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
+        validate_prediction_root_antigravity(root, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
         commit_candidate_leaf_antigravity(root, "prediction_manifest_antigravity.json", manifest)
-        return FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(f"{synthetic_families[sequence // 2]}_synthetic_{sequence // 2:03d}__{dict(CANDIDATE_MATRIX_ANTIGRAVITY)[synthetic_families[sequence // 2]][sequence % 2]}" for sequence in range(96)), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
+        validate_prediction_root_antigravity(root, authority)
+        return authority
     except BaseException as primary_error:
         cleanup_error: BaseException | None = None
         try:
@@ -237,7 +240,7 @@ def _read_pinned_antigravity(fd: int) -> bytes:
     return b"".join(iter(lambda: os.read(fd, 1 << 20), b""))
 
 
-def validate_prediction_root_antigravity(root: Path, authority: object) -> tuple[str, ...]:
+def validate_prediction_root_antigravity(root: Path, authority: object, *, require_manifest: bool = True) -> tuple[str, ...]:
     """Validate every leaf under one retained no-follow root/candidates descriptor transaction."""
     if not isinstance(root, Path) or type(authority) is not FrozenPredictionAuthorityAntigravity:
         raise ValueError("prediction root authority is invalid")
@@ -247,7 +250,7 @@ def validate_prediction_root_antigravity(root: Path, authority: object) -> tuple
         raise ValueError("prediction authority field type differs")
     root_fd = candidates_fd = -1
     pinned: dict[str, tuple[int, tuple[int, int, int, int, int, int, int], int]] = {}
-    expected_root = {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.txt", "progress_antigravity.jsonl", "pid_antigravity.json", "prediction_manifest_antigravity.json", "candidates_antigravity"}
+    expected_root = {"context_antigravity.json", "progress_antigravity.json", "progress_antigravity.txt", "progress_antigravity.jsonl", "pid_antigravity.json", "candidates_antigravity"} | ({"prediction_manifest_antigravity.json"} if require_manifest else set())
     expected_candidates = tuple(Path(relative).name for relative in authority.inventory)
     try:
         root_fd = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
@@ -261,18 +264,19 @@ def validate_prediction_root_antigravity(root: Path, authority: object) -> tuple
         def pin(name: str, parent_fd: int, parent_tag: int) -> bytes:
             before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
             fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+            key = f"{parent_tag}:{name}"; pinned[key] = (fd, (), parent_tag)
             opened = os.fstat(fd); identity = _fd_identity_antigravity(opened)
             if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or _fd_identity_antigravity(before) != identity:
-                os.close(fd); raise ValueError("prediction leaf namespace is unsafe")
-            key = f"{parent_tag}:{name}"; pinned[key] = (fd, identity, parent_tag)
+                raise ValueError("prediction leaf namespace is unsafe")
+            pinned[key] = (fd, identity, parent_tag)
             return _read_pinned_antigravity(fd)
         leaves = {name: pin(name, root_fd, 0) for name in expected_root - {"candidates_antigravity"}}
         candidate_bytes = {name: pin(name, candidates_fd, 1) for name in expected_candidates}
         context = strict_json_bytes_antigravity(leaves["context_antigravity.json"])
         progress = strict_json_bytes_antigravity(leaves["progress_antigravity.json"])
         pid = strict_json_bytes_antigravity(leaves["pid_antigravity.json"])
-        manifest = strict_json_bytes_antigravity(leaves["prediction_manifest_antigravity.json"])
-        if not all(type(value) is dict for value in (context, progress, pid, manifest)): raise ValueError("prediction root JSON schema differs")
+        manifest = strict_json_bytes_antigravity(leaves["prediction_manifest_antigravity.json"]) if require_manifest else None
+        if not all(type(value) is dict for value in (context, progress, pid)) or (require_manifest and type(manifest) is not dict): raise ValueError("prediction root JSON schema differs")
         expected_matrix = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
         if (context.get("schema") != "exp449" or context.get("reviewed_commit") != authority.reviewed_commit or type(context.get("reviewed_commit")) is not str or len(context["reviewed_commit"]) != 40 or context.get("label_access_count") != 0 or context.get("logical_cpus") != 12 or context.get("workers") != 11 or context.get("candidate_matrix") != expected_matrix or context.get("seeds") != [20260721, 20261721] or context.get("alpha") != 0.005 or type(context.get("method_audit_sha256")) is not str or len(context["method_audit_sha256"]) != 64 or type(context.get("source_identity")) is not dict or type(context.get("mlx")) is not dict or progress != {"dataset_unit_completed": 96, "next_sequence": 96, "terminal": True} or pid != {"active": False}): raise ValueError("prediction root terminal channels differ")
         event_records = tuple(strict_json_bytes_antigravity(line + b"\n") for line in leaves["progress_antigravity.jsonl"].splitlines())
@@ -291,7 +295,7 @@ def validate_prediction_root_antigravity(root: Path, authority: object) -> tuple
             digests.append((relative, hashlib.sha256(canonical_json_bytes_antigravity(payload)).hexdigest())); names.append(payload["candidate_name"])
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
         if tuple(digests) != authority.leaf_sha256 or tuple(names) != authority.candidate_names or aggregate != authority.aggregate_sha256: raise ValueError("prediction authority digest differs")
-        if manifest != {"schema": "exp449_prediction_manifest", "reviewed_commit": authority.reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}: raise ValueError("prediction manifest differs")
+        if require_manifest and manifest != {"schema": "exp449_prediction_manifest", "reviewed_commit": authority.reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}: raise ValueError("prediction manifest differs")
         datasets = tuple(name.split("__", 1)[0] for name in names[::2]); candidate_pairs = dict(CANDIDATE_MATRIX_ANTIGRAVITY)
         def expected_pair(dataset: str) -> list[str]:
             if dataset.startswith("synthetic_dataset_"): return [dataset + "__method_a", dataset + "__method_b"]
@@ -433,9 +437,10 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
         _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
         _assert_terminal_channels_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, inventory)
         aggregate = hashlib.sha256("".join(digest for _, digest in digests).encode()).hexdigest()
+        authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
+        validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority, require_manifest=False)
         manifest = {"schema": "exp449_prediction_manifest", "reviewed_commit": reviewed_commit, "inventory": [name for name, _ in digests], "leaf_sha256": dict(digests), "aggregate_sha256": aggregate, "context_sha256": hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(), "label_access_count": 0, "dataset_units": 96}
         commit_candidate_leaf_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, "prediction_manifest_antigravity.json", manifest)
-        authority = FrozenPredictionAuthorityAntigravity(reviewed_commit, 16, 96, tuple(names), tuple(name for name, _ in digests), tuple(digests), aggregate, 0)
         validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
         return authority
     except BaseException as primary_error:
