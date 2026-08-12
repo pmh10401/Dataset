@@ -44,6 +44,35 @@ class PreparedDataset:
             raise ValueError("prepared arrays must be finite")
 
 
+@dataclass(frozen=True, slots=True)
+class ScoreResult:
+    method_id: str
+    status: str
+    reason: str | None
+    oof_scores: np.ndarray
+    test_scores: np.ndarray
+
+    def __post_init__(self) -> None:
+        if not self.method_id:
+            raise ValueError("method_id must not be empty")
+        oof = np.asarray(self.oof_scores, dtype=np.float64).reshape(-1).copy()
+        test = np.asarray(self.test_scores, dtype=np.float64).reshape(-1).copy()
+        if self.status == "complete":
+            if self.reason is not None or not len(oof) or not len(test):
+                raise ValueError("complete score result is inconsistent")
+            if not np.isfinite(oof).all() or not np.isfinite(test).all():
+                raise ValueError("complete scores must be finite")
+        elif self.status == "abstain":
+            if not self.reason or len(oof) or len(test):
+                raise ValueError("abstaining score result is inconsistent")
+        else:
+            raise ValueError("score status must be complete or abstain")
+        oof.setflags(write=False)
+        test.setflags(write=False)
+        object.__setattr__(self, "oof_scores", oof)
+        object.__setattr__(self, "test_scores", test)
+
+
 def _validate_split(
     indices: tuple[int, ...], rows: tuple[np.ndarray, ...], split: str
 ) -> None:
@@ -55,4 +84,3 @@ def _validate_split(
         values = np.asarray(row).reshape(-1)
         if not len(values):
             raise ValueError(f"{split} rows must not be empty")
-
