@@ -284,7 +284,12 @@ def _ast_import_callers(paper_root: Path) -> dict[str, frozenset[str]]:
                 continue
             elif node.level:
                 base = package[:len(package) - (node.level - 1)]
-                candidates = ["/".join(base + tuple(node.module.split("."))) + ".py"] if node.module else ["/".join(base + (alias.name,)) + ".py" for alias in node.names]
+                if node.module:
+                    module_base = base + tuple(node.module.split("."))
+                    candidates = ["/".join(module_base) + ".py"]
+                    candidates.extend("/".join(module_base + (alias.name,)) + ".py" for alias in node.names)
+                else:
+                    candidates = ["/".join(base + (alias.name,)) + ".py" for alias in node.names]
             elif node.module == package_prefix.removesuffix("."):
                 candidates = [alias.name + ".py" for alias in node.names]
             elif node.module is not None and node.module.startswith(package_prefix):

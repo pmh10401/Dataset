@@ -41,6 +41,18 @@ class ConfigLineageTests(unittest.TestCase):
         self.assertEqual(callers["contracts_paper.py"], frozenset({"caller_paper.py"}))
         self.assertEqual(callers["sources_paper/hard_sources_paper.py"], frozenset({"caller_paper.py"}))
 
+    def test_ast_caller_scanner_resolves_relative_nested_module_form(self) -> None:
+        """A relative package import names the nested child module, not its package."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "sources_paper").mkdir()
+            (root / "sources_paper" / "hard_sources_paper.py").write_text("", encoding="utf-8")
+            (root / "relative_nested_paper.py").write_text(
+                "from .sources_paper import hard_sources_paper as hard\n", encoding="utf-8"
+            )
+            callers = _ast_import_callers(root)
+        self.assertEqual(callers["sources_paper/hard_sources_paper.py"], frozenset({"relative_nested_paper.py"}))
+
     def test_artifact_parity_claim_is_hash_bound_and_precisely_scoped(self) -> None:
         """Artifact parity may claim only the frozen smoke's available historical stages."""
         claim = validate_artifact_parity_claim(PAPER_ROOT)
