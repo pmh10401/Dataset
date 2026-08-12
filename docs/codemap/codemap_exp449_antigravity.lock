@@ -1,13 +1,13 @@
 {
   "schema": "exp449_codemap_same_commit_v1",
-  "source_parent_commit": "aec8d0d28f20bfc86ef7dfc33aef2878d2e0446d",
+  "source_parent_commit": "7c1aecd62ed0bf94c7784b262789997a18b5c40b",
   "working_tree_dirty": false,
   "represented_paths": [
     "docs/codemap/codemap_exp449_antigravity.html",
     "docs/codemap/codemap_exp449_antigravity.json",
     "docs/codemap/codemap_exp449_antigravity.lock"
   ],
-  "generated_at": "2026-08-12T23:26:39+00:00",
+  "generated_at": "2026-08-12T23:44:47+00:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -44,7 +44,7 @@
   "module_fingerprints": {
     "root": "7e1b993d70336f151219cee88dc09229f1c02f193449b65b879e4761796ec256",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "6b4054c97e4549b2fd142b659f3d63a0a93e03d4849f3fc71a9c7f785f846254",
+    "docs": "7a03c21ef8558b8baa6ddbeb5361190769b4a6cb63b7a1a253682921da599942",
     "experiments": "abf53499d546a00140b555bd20faea97729f820872b577d85698b906cfe9fcad",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
@@ -420,6 +420,7 @@
     "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html": "de61210e0727d6804922a2594a54938f2038e93b759a7e30b0c5ded65c18ec00",
     "docs/superpowers/plans/2026-08-12-exp449-task5-commit-session-authority-antigravity.html": "56fafba5b6102f6f1a1550ab40467872dcf2761ca0437cde8e62483c1db8e987",
     "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html": "274f84c52a456a874e07fec2f10d404e0dfaccde541e4f51421b46dab55578cb",
+    "docs/superpowers/plans/2026-08-13-exp451-rdst-local-gap-qualification-antigravity.html": "ab1e05b7ea87d4ae52324006965502810a197cf83ab69e68cfe04de7c50dd0f9",
     "docs/superpowers/specs/2026-07-12-exp137-operational-triage-design.md": "3304d6228a76c667dc87013cfbc572def8dfe5417035e7eb8f8c96a0ab032d74",
     "docs/superpowers/specs/2026-07-14-exp162-full-coverage-alternative-score-cache-design.md": "58c71e9914225aadbd4f7504cd8ead0ab0c8618e7b03b59937313d4017c8ac03",
     "docs/superpowers/specs/2026-07-14-exp163-alternative-source-tail-agreement-review-design.md": "e89fc7c91b0d04fd8eda4f7208badee472e3388834a2879acd4450894d54ee91",
@@ -524,6 +525,7 @@
     "docs/superpowers/specs/2026-08-12-exp449-residual-fn-method-qualification-antigravity-design.html": "72fcfe799cedd8f3dfea730cb3d5d4fd38ac90c190849c3c4482565fd2936ae3",
     "docs/superpowers/specs/2026-08-12-exp449-task5-commit-session-authority-antigravity-design.html": "abd3c0509d9044029c5065e32c71c16272583fec2326e20d8c362b67b127386c",
     "docs/superpowers/specs/2026-08-12-exp449-two-root-lifecycle-correction-antigravity-design.html": "b557bee2910e7a132eb60b7a10dca55d1d28dc8ce0bf3cda75a1a77174461ecc",
+    "docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
     "docs/task.md": "5fc3af665b13a3b0d60ad799cb1206bc94dc2b0e7ba7f9bed94e267502d6110d",
     "docs/time_series_imaging_research_20260707.md": "b617c11a5618b21c51582f2ddbcb2ea14eff899dda2ba8fe4dd6523194947f86",
     "docs/walkthrough.md": "8b378d250e64655218269dc3200cf4fa5bab9f7fcb0a8e8d6b05f7d1eb3b4f62",
