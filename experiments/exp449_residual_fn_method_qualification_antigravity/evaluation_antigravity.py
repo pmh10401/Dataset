@@ -15,7 +15,8 @@ from .artifacts_antigravity import canonical_json_bytes_antigravity, canonical_j
 from .bootstrap_antigravity import BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, paired_delta_antigravity
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY, FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import CandidateMetricAntigravity, ConfusionAntigravity, DatasetBaselineAntigravity
-from .replay_antigravity import FrozenEvaluationAntigravity, PredictionAuthorityAntigravity, capture_prediction_authority_antigravity, inspect_replay_at_fd_antigravity
+from .prediction_antigravity import FrozenPredictionAuthorityAntigravity, FrozenPredictionCaptureAntigravity
+from .replay_antigravity import FrozenEvaluationAntigravity, inspect_replay_at_fd_antigravity
 
 
 _LEAVES_ANTIGRAVITY = (
@@ -74,9 +75,14 @@ def _exact_labels_antigravity(dataset: str, labels: object) -> tuple[tuple[int, 
     return tuple(normalized)
 
 
-def _prediction_rows_antigravity(dependencies: object, authority: object) -> tuple[dict[str, object], ...]:
-    rows = getattr(dependencies, "frozen_predictions_antigravity")()
-    if type(rows) is not tuple or len(rows) != 96:
+def _prediction_rows_antigravity(capture: object, authority: object) -> tuple[dict[str, object], ...]:
+    if type(capture) is not FrozenPredictionCaptureAntigravity:
+        raise ValueError("Task5 prediction capture differs")
+    try:
+        rows = tuple(__import__("json").loads(line) for line in capture.canonical_rows.splitlines())
+    except (TypeError, ValueError) as error:
+        raise ValueError("Task5 prediction capture differs") from error
+    if len(rows) != 96:
         raise ValueError("frozen prediction inventory differs")
     datasets = getattr(authority, "target_dataset_names", None)
     baselines = getattr(authority, "target_baseline_rows", None)
@@ -160,49 +166,84 @@ def _assert_directory_entry_identity_at_antigravity(parent_fd: int, name: str, r
         raise ValueError("sealed publication namespace identity differs")
 
 
-def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_prediction_authority: PredictionAuthorityAntigravity) -> None:
-    """Seal every fallible publication step before the one-way canonical commit."""
+def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink)
+
+
+def _forensic_name_antigravity(root: Path) -> str:
+    return f".{root.name}.forensic_{os.urandom(16).hex()}_antigravity"
+
+
+def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> None:
+    """Publish with post-rename retained-FD verification and bounded identity recovery."""
     if root.exists() or root.is_symlink() or set(payloads) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("publication destination is invalid or already exists")
     parent_fd = os.open(root.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     staging_fd: int | None = None
-    committed = False
+    staging_name: str | None = None
+    primary: BaseException | None = None
     try:
         staging_name = f".{root.name}.staging_{os.urandom(16).hex()}_antigravity"
-        sealed_name = f".{root.name}.sealed_{os.urandom(16).hex()}_antigravity"
         os.mkdir(staging_name, 0o700, dir_fd=parent_fd)
         staging_fd = os.open(staging_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
         for name in _LEAVES_ANTIGRAVITY[:-1]: _write_leaf_at_antigravity(staging_fd, name, payloads[name])
         hashes = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
         _write_leaf_at_antigravity(staging_fd, _LEAVES_ANTIGRAVITY[-1], canonical_json_bytes_antigravity(hashes))
         _fsync_directory_antigravity(staging_fd)
-        _rename_no_replace_at_antigravity(parent_fd, staging_name, sealed_name)
-        _fsync_directory_antigravity(parent_fd)
-        sealed_identity = os.fstat(staging_fd)
-        _assert_directory_entry_identity_at_antigravity(parent_fd, sealed_name, sealed_identity)
+        retained_identity = os.fstat(staging_fd)
+        _assert_directory_entry_identity_at_antigravity(parent_fd, staging_name, retained_identity)
         inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority)
-        if (os.fstat(staging_fd).st_dev, os.fstat(staging_fd).st_ino, os.fstat(staging_fd).st_mode, os.fstat(staging_fd).st_nlink) != (sealed_identity.st_dev, sealed_identity.st_ino, sealed_identity.st_mode, sealed_identity.st_nlink):
-            raise ValueError("sealed publication directory changed while retained")
+        if _identity_antigravity(os.fstat(staging_fd)) != _identity_antigravity(retained_identity):
+            raise ValueError("publication directory changed while retained")
         _fsync_directory_antigravity(staging_fd)
         _fsync_directory_antigravity(parent_fd)
-        _assert_directory_entry_identity_at_antigravity(parent_fd, sealed_name, sealed_identity)
-        _close_descriptor_antigravity(staging_fd)
-        staging_fd = None
-        _rename_no_replace_at_antigravity(parent_fd, sealed_name, root.name)
-        committed = True
+        _assert_directory_entry_identity_at_antigravity(parent_fd, staging_name, retained_identity)
+        _rename_no_replace_at_antigravity(parent_fd, staging_name, root.name)
+        staging_name = None
+        # The canonical name is now fallible and must be verified through the retained FD.
+        _assert_directory_entry_identity_at_antigravity(parent_fd, root.name, retained_identity)
+        inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority)
+        if _identity_antigravity(os.fstat(staging_fd)) != _identity_antigravity(retained_identity):
+            raise ValueError("publication descriptor identity differs after rename")
+        _assert_directory_entry_identity_at_antigravity(parent_fd, root.name, retained_identity)
+        _fsync_directory_antigravity(staging_fd)
+        _fsync_directory_antigravity(parent_fd)
+    except BaseException as error:
+        primary = error
+        # Never touch a foreign object: only rename canonical when it still is retained identity.
+        try:
+            retained = os.fstat(staging_fd) if staging_fd is not None else None
+            if retained is not None:
+                try:
+                    current = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
+                except FileNotFoundError:
+                    current = None
+                if current is not None and _identity_antigravity(current) == _identity_antigravity(retained):
+                    forensic = _forensic_name_antigravity(root)
+                    _rename_no_replace_at_antigravity(parent_fd, root.name, forensic)
+                    _assert_directory_entry_identity_at_antigravity(parent_fd, forensic, retained)
+                    _fsync_directory_antigravity(parent_fd)
+        except BaseException as recovery_error:
+            error.add_note(f"recovery_error={type(recovery_error).__name__}: {recovery_error}")
+        raise
     finally:
         try:
             if staging_fd is not None:
-                _close_descriptor_antigravity(staging_fd)
-        finally:
-            if committed:
-                # The canonical rename is already visible: close failure cannot alter success.
                 try:
-                    _close_descriptor_antigravity(parent_fd)
-                except BaseException:
-                    pass
-            else:
+                    _close_descriptor_antigravity(staging_fd)
+                except BaseException as close_error:
+                    if primary is not None:
+                        primary.add_note(f"descriptor_close_error={type(close_error).__name__}: {close_error}")
+                    else:
+                        raise
+        finally:
+            try:
                 _close_descriptor_antigravity(parent_fd)
+            except BaseException as close_error:
+                if primary is not None:
+                    primary.add_note(f"parent_descriptor_close_error={type(close_error).__name__}: {close_error}")
+                else:
+                    raise
 
 
 def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencies: object) -> FrozenEvaluationAntigravity:
@@ -215,14 +256,18 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
     try:
         if root.exists() or root.is_symlink(): raise ValueError("publication destination already exists")
         authority = getattr(dependencies, "capture_exp448_antigravity")()
-        predictions = _prediction_rows_antigravity(dependencies, authority)
-        expected_prediction_authority = capture_prediction_authority_antigravity(predictions, authority)
+        expected_prediction_authority = getattr(dependencies, "capture_task5_prediction_antigravity")()
+        if type(expected_prediction_authority) is not FrozenPredictionCaptureAntigravity:
+            raise ValueError("Task5 prediction capture differs")
+        if expected_prediction_authority.authority.reviewed_commit != reviewed_commit:
+            raise ValueError("Task5 reviewed commit differs")
+        predictions = _prediction_rows_antigravity(expected_prediction_authority, authority)
         baseline_global = getattr(authority, "baseline_confusion", None)
         baselines = getattr(authority, "target_baseline_rows", None)
         datasets = getattr(authority, "target_dataset_names", None)
         if type(baseline_global) is not ConfusionAntigravity or type(baselines) is not tuple or type(datasets) is not tuple or len(baselines) != 48 or len(datasets) != 48:
             raise ValueError("Exp448 baseline authority differs")
-        phase = "label_open"; session = getattr(dependencies, "open_labels_antigravity")(authority); opened = True
+        phase = "label_open"; session = getattr(dependencies, "open_labels_antigravity")(expected_prediction_authority.authority); opened = True
         labels_by_dataset: dict[str, tuple[tuple[int, int], ...]] = {}
         for dataset in datasets:
             phase = "label_query"; labels = _exact_labels_antigravity(dataset, session.labels_for_dataset_antigravity(dataset)); queries += 1; label_rows += len(labels); labels_by_dataset[dataset] = labels
@@ -261,11 +306,12 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         target_datasets = [{"dataset": item["dataset"], "family": item["family"], "target_length": item["target_length"], "baseline_confusion": item["baseline_confusion"]} for item in dataset_evidence]
         target_authority_sha256 = sha256(canonical_json_bytes_antigravity(target_datasets)).hexdigest()
         evaluation = {"schema": "exp449", "reviewed_commit": reviewed_commit, "candidate_count": 16, "qualified_count": qualified_count, "label_session_count": 1, "label_query_count": 48, "label_row_count": 72300, "routing_research_eligible": routing_research_eligible, "dataset_evidence": dataset_evidence}
-        frozen_bytes = canonical_jsonl_bytes_antigravity(predictions)
+        frozen_bytes = expected_prediction_authority.canonical_rows
         dashboard = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {**_payload_antigravity(baseline_global), "f1": _f1_antigravity(baseline_global)}, "candidates": [{"family": item.family, "method": item.method, "target_fn_delta": item.target_fn_delta, "gates": _gates_antigravity(item.global_confusion, item.target_fn_delta), "qualified": item.qualified, "global": {**_payload_antigravity(item.global_confusion), "f1": item.global_f1}} for item in metrics], "families": [family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY], "status": "synthetic_complete", "repeatable": True, "qualified_candidate_count": qualified_count, "routing_research_eligible": routing_research_eligible, "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
         from .dashboard_export_antigravity import public_result_antigravity
         public_result_antigravity(dashboard)
-        payloads = {"context_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449", "reviewed_commit": reviewed_commit, "label_access_count": 1, "target_datasets": target_datasets, "target_authority_sha256": target_authority_sha256, "exp448_target_identity_sha256": "0c87af592ea66e2ff479fe8a5fc1ac2222084287d6eae617530f18ec4090bf43"}), "compatibility_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"}), "candidate_registry_antigravity.json": canonical_json_bytes_antigravity([[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]), "frozen_predictions_antigravity.jsonl": frozen_bytes, "prediction_manifest_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(frozen_bytes).hexdigest()}), "evaluation_antigravity.json": canonical_json_bytes_antigravity(evaluation), "candidate_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(metric_payloads), "family_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(family_payloads), "bootstrap_antigravity.json": canonical_json_bytes_antigravity({"draw_sha256": BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, "comparisons": bootstrap_rows}), "decision_antigravity.json": canonical_json_bytes_antigravity(decision), "dashboard_snapshot_antigravity.json": canonical_json_bytes_antigravity(dashboard)}
+        prediction_manifest = {"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(frozen_bytes).hexdigest(), "task5_reviewed_commit": expected_prediction_authority.authority.reviewed_commit, "task5_inventory": list(expected_prediction_authority.authority.inventory), "task5_leaf_sha256": dict(expected_prediction_authority.authority.leaf_sha256), "task5_aggregate_sha256": expected_prediction_authority.authority.aggregate_sha256, "task5_context_sha256": expected_prediction_authority.context_sha256, "task5_source_identity_sha256": expected_prediction_authority.source_identity_sha256, "task5_manifest_sha256": expected_prediction_authority.manifest_sha256, "task5_label_access_count": 0}
+        payloads = {"context_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449", "reviewed_commit": reviewed_commit, "label_access_count": 1, "target_datasets": target_datasets, "target_authority_sha256": target_authority_sha256, "exp448_target_identity_sha256": "0c87af592ea66e2ff479fe8a5fc1ac2222084287d6eae617530f18ec4090bf43"}), "compatibility_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"}), "candidate_registry_antigravity.json": canonical_json_bytes_antigravity([[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]), "frozen_predictions_antigravity.jsonl": frozen_bytes, "prediction_manifest_antigravity.json": canonical_json_bytes_antigravity(prediction_manifest), "evaluation_antigravity.json": canonical_json_bytes_antigravity(evaluation), "candidate_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(metric_payloads), "family_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(family_payloads), "bootstrap_antigravity.json": canonical_json_bytes_antigravity({"draw_sha256": BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, "comparisons": bootstrap_rows}), "decision_antigravity.json": canonical_json_bytes_antigravity(decision), "dashboard_snapshot_antigravity.json": canonical_json_bytes_antigravity(dashboard)}
         phase = "precommit"
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift before commit")
         artifact_map = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}

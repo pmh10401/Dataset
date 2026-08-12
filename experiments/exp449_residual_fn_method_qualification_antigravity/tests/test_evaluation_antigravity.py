@@ -71,6 +71,18 @@ class _DependenciesAntigravity:
                 rows.append({"sequence": len(rows), "candidate_name": f"{dataset}__{method}", "dataset": dataset, "family": family, "method": method, "indices": [0, 1], "target_length": len(self.labels[dataset])})
         return tuple(rows)
 
+    def capture_task5_prediction_antigravity(self):
+        """Synthetic fixture stands in for the source-free Task-5 descriptor capture."""
+        import hashlib
+        from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import FrozenPredictionAuthorityAntigravity, FrozenPredictionCaptureAntigravity
+        rows = self.frozen_predictions_antigravity()
+        payload = b"".join(canonical_json_bytes_antigravity(row) for row in rows)
+        row_sha256 = tuple(hashlib.sha256(line).hexdigest() for line in payload.splitlines())
+        inventory = tuple(f"candidates_antigravity/{index:03d}_antigravity.json" for index in range(96))
+        authority = FrozenPredictionAuthorityAntigravity("a" * 40, 16, 96, tuple(row["candidate_name"] for row in rows), inventory, tuple((name, "0" * 64) for name in inventory), "0" * 64, 0)
+        return FrozenPredictionCaptureAntigravity(authority, payload, row_sha256, hashlib.sha256("".join(row_sha256).encode("ascii")).hexdigest(), "1" * 64, "2" * 64, "3" * 64)
+
     def open_labels_antigravity(self, prediction_authority: object) -> _SessionAntigravity:
         self.open_labels_calls += 1
         if self.open_error is not None:
@@ -80,6 +92,62 @@ class _DependenciesAntigravity:
 
 
 class EvaluationAntigravityTests(unittest.TestCase):
+    def test_task6_requires_a_descriptor_captured_task5_authority_antigravity(self) -> None:
+        """Break caught: Task6 mints a reduced authority from caller-projected rows."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp449_task5_capture_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            dependencies.capture_task5_prediction_antigravity = dependencies.frozen_predictions_antigravity
+            with self.assertRaisesRegex(ValueError, "Task5 prediction capture"):
+                _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual(dependencies.open_labels_calls, 0)
+
+    def test_postrename_replay_failure_recovers_only_the_retained_publication_antigravity(self) -> None:
+        """Break caught: a canonical post-rename semantic failure can be reported as success."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_postrename_recovery_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original = module.inspect_replay_at_fd_antigravity
+            calls = 0
+            def fail_only_postrename(descriptor: int, **kwargs: object):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("postrename semantic failure")
+                return original(descriptor, **kwargs)
+            with patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=fail_only_postrename), self.assertRaisesRegex(OSError, "postrename semantic failure"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertFalse(dependencies.root.exists())
+            self.assertEqual(len(list(Path(temporary).glob(".publication_antigravity.forensic_*_antigravity"))), 1)
+
+    def test_postrename_close_failure_is_a_note_not_a_primary_replacement_antigravity(self) -> None:
+        """Break caught: retained-descriptor close masks an active recovery primary error."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_close_primary_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original_replay, original_close = module.inspect_replay_at_fd_antigravity, module._close_descriptor_antigravity
+            calls = 0
+            def fail_only_postrename(descriptor: int, **kwargs: object):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("primary postrename replay")
+                return original_replay(descriptor, **kwargs)
+            close_calls = 0
+            def close_then_fail(descriptor: int) -> None:
+                nonlocal close_calls
+                close_calls += 1
+                original_close(descriptor)
+                if close_calls == 13:
+                    raise OSError("descriptor close")
+            with patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=fail_only_postrename), patch.object(module, "_close_descriptor_antigravity", side_effect=close_then_fail):
+                with self.assertRaisesRegex(OSError, "primary postrename replay") as raised:
+                    module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertIn("descriptor_close_error=OSError: descriptor close", "\n".join(raised.exception.__notes__))
+
     def test_qualification_edges_are_exact_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import qualifies_antigravity
 
@@ -166,59 +234,6 @@ class EvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual({path.name for path in dependencies.root.iterdir()}, {"attacker_antigravity"})
             self.assertTrue(dependencies.audit_path.is_file())
 
-    def test_all_precommit_failure_seams_leave_a_sealed_forensic_object_antigravity(self) -> None:
-        """Former post-commit fsync/replay/read seams must now fail before the canonical commit."""
-        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
-        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay
-        import json
-
-        for seam in ("parent_fsync", "semantic_replay", "descriptor_read"):
-            with self.subTest(seam=seam), tempfile.TemporaryDirectory(prefix="exp449_precommit_seam_antigravity_") as temporary:
-                dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
-                if seam == "parent_fsync":
-                    original, calls = module._fsync_directory_antigravity, 0
-                    def fail_parent_fsync(path: Path) -> None:
-                        nonlocal calls
-                        calls += 1
-                        if calls == 2: raise OSError("sealed parent fsync")
-                        original(path)
-                    patches = (patch.object(module, "_fsync_directory_antigravity", side_effect=fail_parent_fsync),)
-                elif seam == "semantic_replay":
-                    patches = (patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=OSError("sealed semantic replay")),)
-                else:
-                    original, calls = replay.os.read, 0
-                    def fail_private_descriptor_read(fd: int, size: int) -> bytes:
-                        nonlocal calls
-                        calls += 1
-                        if calls == 1: raise OSError("sealed descriptor read")
-                        return original(fd, size)
-                    patches = (patch.object(replay.os, "read", side_effect=fail_private_descriptor_read),)
-                with patches[0], self.assertRaisesRegex(OSError, "sealed"):
-                    module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
-                self.assertFalse(dependencies.root.exists())
-                sealed = list(Path(temporary).glob(".publication_antigravity.sealed_*_antigravity"))
-                self.assertEqual(len(sealed), 1)
-                audit = json.loads(dependencies.audit_path.read_text())
-                self.assertEqual(audit["phase"], "precommit")
-                self.assertIn("sealed", audit["error"])
-
-    def test_final_exclusive_rename_failure_keeps_sealed_object_and_audits_antigravity(self) -> None:
-        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
-        import json
-
-        with tempfile.TemporaryDirectory(prefix="exp449_final_rename_failure_antigravity_") as temporary:
-            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
-            original = module._rename_no_replace_at_antigravity
-            def fail_only_final(parent_fd: int, source: str, destination: str) -> None:
-                if destination == dependencies.root.name:
-                    raise OSError("final exclusive rename")
-                original(parent_fd, source, destination)
-            with patch.object(module, "_rename_no_replace_at_antigravity", side_effect=fail_only_final), self.assertRaisesRegex(OSError, "final exclusive rename"):
-                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
-            self.assertFalse(dependencies.root.exists())
-            self.assertEqual(len(list(Path(temporary).glob(".publication_antigravity.sealed_*_antigravity"))), 1)
-            self.assertIn("final exclusive rename", json.loads(dependencies.audit_path.read_text())["error"])
-
     def test_private_leaf_write_rejects_a_zero_byte_os_write_antigravity(self) -> None:
         """A zero-byte write must fail rather than spin while publication is private."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
@@ -258,65 +273,6 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 self.assertGreaterEqual(len(opened), 1)
                 with self.assertRaises(OSError):
                     os.fstat(opened[0])
-
-    def test_staging_sealed_and_canonical_name_swaps_never_commit_an_attacker_object_antigravity(self) -> None:
-        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
-
-        for boundary in ("staging", "sealed", "canonical"):
-            with self.subTest(boundary=boundary), tempfile.TemporaryDirectory(prefix="exp449_name_swap_commit_antigravity_") as temporary:
-                dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
-                retained = Path(temporary) / f"retained_{boundary}_antigravity"
-                original_rename, original_replay = module._rename_no_replace_at_antigravity, module.inspect_replay_at_fd_antigravity
-                def swap_at_rename(parent_fd: int, source: str, destination: str) -> None:
-                    if boundary == "staging" and ".staging_" in source:
-                        os.rename(source, retained.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
-                        os.mkdir(source, dir_fd=parent_fd)
-                        (Path(temporary) / source / "attacker_antigravity").write_text("attacker")
-                    elif boundary == "canonical" and destination == dependencies.root.name:
-                        dependencies.root.mkdir(); (dependencies.root / "attacker_antigravity").write_text("attacker")
-                    return original_rename(parent_fd, source, destination)
-                def swap_after_private_replay(descriptor: int, **kwargs: object):
-                    result = original_replay(descriptor, **kwargs)
-                    if boundary == "sealed":
-                        sealed = next(Path(temporary).glob(".publication_antigravity.sealed_*_antigravity"))
-                        sealed.rename(retained)
-                        sealed.mkdir(); (sealed / "attacker_antigravity").write_text("attacker")
-                    return result
-                with patch.object(module, "_rename_no_replace_at_antigravity", side_effect=swap_at_rename), patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=swap_after_private_replay), self.assertRaises((OSError, ValueError)):
-                    module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
-                if boundary == "canonical":
-                    self.assertEqual({path.name for path in dependencies.root.iterdir()}, {"attacker_antigravity"})
-                else:
-                    self.assertFalse(dependencies.root.exists())
-                self.assertTrue(retained.exists() or dependencies.audit_path.is_file())
-
-    def test_successful_final_rename_has_no_publisher_follow_up_and_public_replay_is_external_antigravity(self) -> None:
-        """Commit returns immediately; source-free pathname replay is a caller action, not publisher work."""
-        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
-        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import capture_prediction_authority_antigravity, inspect_replay_at_antigravity
-
-        with tempfile.TemporaryDirectory(prefix="exp449_final_return_antigravity_") as temporary:
-            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
-            authority = capture_prediction_authority_antigravity(dependencies.frozen_predictions_antigravity(), dependencies.authority)
-            committed = False
-            original_rename, original_fsync, original_replay, original_close = module._rename_no_replace_at_antigravity, module._fsync_directory_antigravity, module.inspect_replay_at_fd_antigravity, module._close_descriptor_antigravity
-            def rename_then_mark(parent_fd: int, source: str, destination: str) -> None:
-                nonlocal committed
-                original_rename(parent_fd, source, destination)
-                if destination == dependencies.root.name:
-                    committed = True
-            def fail_if_follow_up(descriptor: int) -> None:
-                if committed: raise AssertionError("post-commit fsync")
-                original_fsync(descriptor)
-            def replay_before_only(descriptor: int, **kwargs: object):
-                if committed: raise AssertionError("post-commit replay")
-                return original_replay(descriptor, **kwargs)
-            def close_then_fail_after_commit(descriptor: int) -> None:
-                original_close(descriptor)
-                if committed: raise OSError("post-commit descriptor release")
-            with patch.object(module, "_rename_no_replace_at_antigravity", side_effect=rename_then_mark), patch.object(module, "_fsync_directory_antigravity", side_effect=fail_if_follow_up), patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=replay_before_only), patch.object(module, "_close_descriptor_antigravity", side_effect=close_then_fail_after_commit):
-                result = module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
-            self.assertEqual(inspect_replay_at_antigravity(dependencies.root, expected_prediction_authority=authority), result)
 
     def test_publish_releases_retained_directory_descriptors_on_success_and_precommit_failure_antigravity(self) -> None:
         """Both retained directory FDs must be closed; a successful commit cannot report close failure."""

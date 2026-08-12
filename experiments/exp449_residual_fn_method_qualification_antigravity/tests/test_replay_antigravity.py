@@ -11,12 +11,27 @@ from experiments.exp449_residual_fn_method_qualification_antigravity.artifacts_a
 
 
 class ReplayAntigravityTests(unittest.TestCase):
+    def test_replay_rejects_rehashed_extra_candidate_evidence_key_antigravity(self) -> None:
+        """Break caught: a recomputed hash map permits a third method in one family evidence map."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp449_extra_evidence_antigravity_") as temporary:
+            _expected, root = self._publication_antigravity(temporary)
+            path = root / "evaluation_antigravity.json"
+            payload = json.loads(path.read_text())
+            payload["dataset_evidence"][0]["candidates"]["forged_method_antigravity"] = {"indices": [], "confusion": {"tp": 0, "fp": 0, "fn": 40, "tn": 1460}}
+            path.write_bytes(canonical_json_bytes_antigravity(payload))
+            hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text())
+            hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+            (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
+            with self.assertRaises(ValueError):
+                inspect_replay_at_antigravity(root, expected_prediction_authority=self._trusted_authority_antigravity())
+
     def _trusted_authority_antigravity(self):
-        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import capture_prediction_authority_antigravity
         from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
         with tempfile.TemporaryDirectory(prefix="exp449_trusted_authority_antigravity_") as temporary:
             dependencies = _DependenciesAntigravity(Path(temporary) / "unused_antigravity")
-            return capture_prediction_authority_antigravity(dependencies.frozen_predictions_antigravity(), dependencies.authority)
+            return dependencies.capture_task5_prediction_antigravity()
 
     def _publication_antigravity(self, directory: str):
         from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
@@ -27,7 +42,7 @@ class ReplayAntigravityTests(unittest.TestCase):
     def test_replay_requires_independent_prediction_authority_for_fully_propagated_alternative_antigravity(self) -> None:
         """Changing the trusted Task-5 rows must reject even a new internally coherent publication."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
-        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import capture_prediction_authority_antigravity, inspect_replay_at_antigravity
+        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
         from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
 
         class AlternatePredictionsAntigravity(_DependenciesAntigravity):
@@ -39,13 +54,9 @@ class ReplayAntigravityTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="exp449_replay_independent_authority_antigravity_") as temporary:
             trusted = _DependenciesAntigravity(Path(temporary) / "trusted_publication_antigravity")
-            expected_authority = capture_prediction_authority_antigravity(
-                trusted.frozen_predictions_antigravity(), trusted.authority,
-            )
+            expected_authority = trusted.capture_task5_prediction_antigravity()
             alternate = AlternatePredictionsAntigravity(Path(temporary) / "alternate_publication_antigravity")
-            alternate_authority = capture_prediction_authority_antigravity(
-                alternate.frozen_predictions_antigravity(), alternate.authority,
-            )
+            alternate_authority = alternate.capture_task5_prediction_antigravity()
             alternate_result = _evaluate_with_dependencies_antigravity("a" * 40, alternate)
             # This is what the former publication-self-trusting replay accepted.
             self.assertEqual(inspect_replay_at_antigravity(alternate.root, expected_prediction_authority=alternate_authority), alternate_result)

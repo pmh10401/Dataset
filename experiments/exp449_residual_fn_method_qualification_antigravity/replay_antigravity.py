@@ -16,6 +16,7 @@ import numpy as np
 from .bootstrap_antigravity import BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, paired_delta_antigravity
 from .config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY, FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import CandidateMetricAntigravity, ConfusionAntigravity
+from .prediction_antigravity import FrozenPredictionCaptureAntigravity
 
 
 _LEAVES_ANTIGRAVITY = (
@@ -65,40 +66,7 @@ class FrozenEvaluationAntigravity:
                 raise ValueError("evaluation hash differs")
 
 
-@dataclass(frozen=True, slots=True)
-class PredictionAuthorityAntigravity:
-    """The independently captured Task-5 prediction authority used by private replay."""
-    dataset_identity: tuple[tuple[str, str], ...]
-    prediction_rows: bytes
-    prediction_row_sha256: tuple[str, ...]
-    prediction_aggregate_sha256: str
-    prediction_manifest: bytes
-    prediction_manifest_sha256: str
-
-    def __post_init__(self) -> None:
-        if (type(self.dataset_identity) is not tuple or self.dataset_identity != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY
-                or type(self.prediction_rows) is not bytes or type(self.prediction_row_sha256) is not tuple
-                or len(self.prediction_row_sha256) != 96 or any(type(value) is not str or len(value) != 64 for value in self.prediction_row_sha256)
-                or any(type(value) is not str or len(value) != 64 for value in (self.prediction_aggregate_sha256, self.prediction_manifest_sha256))
-                or type(self.prediction_manifest) is not bytes):
-            raise ValueError("trusted prediction authority differs")
-
-
-def capture_prediction_authority_antigravity(rows: object, exp448_authority: object) -> PredictionAuthorityAntigravity:
-    """Capture trusted Task-5 rows before the one synthetic label session opens."""
-    datasets = getattr(exp448_authority, "target_dataset_names", None)
-    baselines = getattr(exp448_authority, "target_baseline_rows", None)
-    identity = tuple((dataset, getattr(baseline, "family", None)) for dataset, baseline in zip(datasets, baselines, strict=True)) if type(datasets) is tuple and type(baselines) is tuple and len(datasets) == len(baselines) else ()
-    if identity != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or type(rows) is not tuple or len(rows) != 96:
-        raise ValueError("trusted prediction authority differs")
-    try:
-        row_bytes = tuple(canonical_json_bytes_antigravity(row) for row in rows)
-    except (TypeError, ValueError) as error:
-        raise ValueError("trusted prediction authority differs") from error
-    prediction_rows = b"".join(row_bytes)
-    row_sha256 = tuple(sha256(row.rstrip(b"\n")).hexdigest() for row in row_bytes)
-    manifest = canonical_json_bytes_antigravity({"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(prediction_rows).hexdigest()})
-    return PredictionAuthorityAntigravity(identity, prediction_rows, row_sha256, sha256("".join(row_sha256).encode("ascii")).hexdigest(), manifest, sha256(manifest).hexdigest())
+PredictionAuthorityAntigravity = FrozenPredictionCaptureAntigravity
 
 
 def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
@@ -256,9 +224,9 @@ def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigrav
                 raise ValueError("bootstrap interval differs")
 
 
-def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> FrozenEvaluationAntigravity:
     """Reconstruct semantics only after a caller has pinned the complete leaf set."""
-    if type(expected_prediction_authority) is not PredictionAuthorityAntigravity:
+    if type(expected_prediction_authority) is not FrozenPredictionCaptureAntigravity:
         raise ValueError("trusted prediction authority differs")
     artifact_map = _json_antigravity(leaves, "artifact_sha256_antigravity.json")
     if not isinstance(artifact_map, dict) or set(artifact_map) != set(_LEAVES_ANTIGRAVITY[:-1]):
@@ -274,20 +242,24 @@ def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_
     expected_registry = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
     if not isinstance(context, dict) or set(context) != {"schema", "reviewed_commit", "label_access_count", "target_datasets", "target_authority_sha256", "exp448_target_identity_sha256"} or context.get("schema") != "exp449" or context.get("reviewed_commit") != (evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None) or context.get("label_access_count") != 1 or type(context["target_datasets"]) is not list or context["target_authority_sha256"] != sha256(canonical_json_bytes_antigravity(context["target_datasets"])).hexdigest() or context["exp448_target_identity_sha256"] != _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY or tuple((row.get("dataset"), row.get("family")) for row in context["target_datasets"] if isinstance(row, dict)) != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or compatibility != {"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"} or registry != expected_registry:
         raise ValueError("publication context or compatibility differs")
-    if not isinstance(manifest, dict) or manifest != {"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(leaves["frozen_predictions_antigravity.jsonl"]).hexdigest()}:
+    expected_manifest = {"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(leaves["frozen_predictions_antigravity.jsonl"]).hexdigest(), "task5_reviewed_commit": expected_prediction_authority.authority.reviewed_commit, "task5_inventory": list(expected_prediction_authority.authority.inventory), "task5_leaf_sha256": dict(expected_prediction_authority.authority.leaf_sha256), "task5_aggregate_sha256": expected_prediction_authority.authority.aggregate_sha256, "task5_context_sha256": expected_prediction_authority.context_sha256, "task5_source_identity_sha256": expected_prediction_authority.source_identity_sha256, "task5_manifest_sha256": expected_prediction_authority.manifest_sha256, "task5_label_access_count": 0}
+    if not isinstance(manifest, dict) or manifest != expected_manifest:
         raise ValueError("frozen prediction manifest differs")
     row_sha256 = tuple(sha256(line).hexdigest() for line in leaves["frozen_predictions_antigravity.jsonl"].splitlines())
-    if (leaves["frozen_predictions_antigravity.jsonl"] != expected_prediction_authority.prediction_rows
-            or row_sha256 != expected_prediction_authority.prediction_row_sha256
-            or sha256("".join(row_sha256).encode("ascii")).hexdigest() != expected_prediction_authority.prediction_aggregate_sha256
-            or leaves["prediction_manifest_antigravity.json"] != expected_prediction_authority.prediction_manifest
-            or sha256(leaves["prediction_manifest_antigravity.json"]).hexdigest() != expected_prediction_authority.prediction_manifest_sha256):
+    if (leaves["frozen_predictions_antigravity.jsonl"] != expected_prediction_authority.canonical_rows
+            or row_sha256 != expected_prediction_authority.canonical_row_sha256
+            or sha256("".join(row_sha256).encode("ascii")).hexdigest() != expected_prediction_authority.canonical_aggregate_sha256):
         raise ValueError("trusted prediction authority differs")
     if not isinstance(evaluation, dict) or set(evaluation) != {"schema", "reviewed_commit", "candidate_count", "qualified_count", "label_session_count", "label_query_count", "label_row_count", "routing_research_eligible", "dataset_evidence"} or type(evaluation["dataset_evidence"]) is not list or evaluation["dataset_evidence"] != context["target_datasets"] and any(True for _ in ()):
         raise ValueError("evaluation schema differs")
     evidence: list[dict[str, object]] = []
     for context_row, row in zip(context["target_datasets"], evaluation["dataset_evidence"], strict=True):
-        if not isinstance(context_row, dict) or not isinstance(row, dict) or set(context_row) != {"dataset", "family", "target_length", "baseline_confusion"} or set(row) != {"dataset", "family", "target_length", "baseline_confusion", "candidates"} or {key: row[key] for key in context_row} != context_row or not isinstance(row["candidates"], dict):
+        if (not isinstance(context_row, dict) or not isinstance(row, dict)
+                or set(context_row) != {"dataset", "family", "target_length", "baseline_confusion"}
+                or set(row) != {"dataset", "family", "target_length", "baseline_confusion", "candidates"}
+                or {key: row[key] for key in context_row} != context_row
+                or not isinstance(row["candidates"], dict)
+                or set(row["candidates"]) != set(dict(CANDIDATE_MATRIX_ANTIGRAVITY).get(row["family"], ()) )):
             raise ValueError("per-dataset evidence differs")
         _confusion_antigravity(row["baseline_confusion"]); evidence.append(row)
     _prediction_rows_antigravity(predictions, tuple(evidence))
@@ -342,12 +314,12 @@ def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_
     return result
 
 
-def inspect_replay_at_fd_antigravity(root_fd: int, *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+def inspect_replay_at_fd_antigravity(root_fd: int, *, expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> FrozenEvaluationAntigravity:
     """Private retained-descriptor transaction used before canonical publication."""
     return _inspect_replay_leaves_antigravity(_pin_leaves_at_fd_antigravity(root_fd), expected_prediction_authority=expected_prediction_authority)
 
 
-def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: PredictionAuthorityAntigravity) -> FrozenEvaluationAntigravity:
+def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> FrozenEvaluationAntigravity:
     """Source-free public replay that pins its pathname before semantic validation."""
     return _inspect_replay_leaves_antigravity(_pin_leaves_antigravity(root), expected_prediction_authority=expected_prediction_authority)
 
@@ -357,4 +329,4 @@ def inspect_antigravity() -> FrozenEvaluationAntigravity:
     raise ValueError("Task-6 inspection requires the closed Task-7 reviewed publication root")
 
 
-__all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "capture_prediction_authority_antigravity", "inspect_antigravity", "inspect_replay_at_antigravity", "inspect_replay_at_fd_antigravity"]
+__all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "inspect_antigravity", "inspect_replay_at_antigravity", "inspect_replay_at_fd_antigravity"]

@@ -531,6 +531,17 @@ class PredictionAntigravityTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_prediction_root_antigravity(root, authority)
 
+    def test_descriptor_capture_returns_actual_task5_authority_and_canonical_rows_antigravity(self) -> None:
+        """Break caught: Task6 accepts a caller-projected row tuple instead of a validated Task5 capture."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import capture_frozen_prediction_authority_antigravity, run_synthetic_lifecycle_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp449_task5_capture_antigravity_") as temporary:
+            root = Path(temporary) / "run"
+            authority = run_synthetic_lifecycle_antigravity(root, "a" * 40)
+            capture = capture_frozen_prediction_authority_antigravity(root)
+            self.assertEqual(capture.authority, authority)
+            self.assertEqual((len(capture.canonical_rows.splitlines()), len(capture.canonical_row_sha256), capture.authority.label_access_count), (96, 96, 0))
+
     def test_private_validator_rejects_candidate_symlink_and_root_extra_antigravity(self) -> None:
         """Break caught: traversing symlinks or accepting an unpinned prediction namespace."""
         from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import (  # noqa: PLC0415

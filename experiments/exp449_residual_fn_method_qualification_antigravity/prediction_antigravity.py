@@ -407,6 +407,83 @@ class FrozenPredictionAuthorityAntigravity:
 
 
 @dataclass(frozen=True, slots=True)
+class FrozenPredictionCaptureAntigravity:
+    """Descriptor-validated Task-5 provenance and the canonical Task-6 row projection."""
+    authority: FrozenPredictionAuthorityAntigravity
+    canonical_rows: bytes
+    canonical_row_sha256: tuple[str, ...]
+    canonical_aggregate_sha256: str
+    context_sha256: str
+    source_identity_sha256: str
+    manifest_sha256: str
+
+    def __post_init__(self) -> None:
+        if (type(self.authority) is not FrozenPredictionAuthorityAntigravity or type(self.canonical_rows) is not bytes
+                or type(self.canonical_row_sha256) is not tuple or len(self.canonical_row_sha256) != 96
+                or any(type(value) is not str or len(value) != 64 for value in self.canonical_row_sha256)
+                or any(type(value) is not str or len(value) != 64 for value in (self.canonical_aggregate_sha256, self.context_sha256, self.source_identity_sha256, self.manifest_sha256))):
+            raise ValueError("Task5 prediction capture differs")
+
+
+def capture_frozen_prediction_authority_antigravity(root: Path | None = None, authority: FrozenPredictionAuthorityAntigravity | None = None) -> FrozenPredictionCaptureAntigravity:
+    """Capture Task-5 from a descriptor-validated root without sources, labels, or aeon.
+
+    The caller supplies the actual Task-5 authority returned by its lifecycle; projected
+    Task-6 rows are derived here only after validating the full root twice.
+    """
+    root = _OFFICIAL_ROOT_ANTIGRAVITY if root is None else root
+    if not isinstance(root, Path):
+        raise ValueError("Task5 prediction capture differs")
+    if authority is None:
+        manifest_for_authority = _read_nofollow_json_antigravity(root / "prediction_manifest_antigravity.json")
+        if (type(manifest_for_authority) is not dict or type(manifest_for_authority.get("reviewed_commit")) is not str
+                or type(manifest_for_authority.get("inventory")) is not list or type(manifest_for_authority.get("leaf_sha256")) is not dict
+                or type(manifest_for_authority.get("aggregate_sha256")) is not str):
+            raise ValueError("Task5 prediction capture differs")
+        inventory = tuple(manifest_for_authority["inventory"])
+        names: list[str] = []
+        for relative in inventory:
+            if type(relative) is not str:
+                raise ValueError("Task5 prediction capture differs")
+            leaf = _read_nofollow_json_antigravity(root / relative)
+            if type(leaf) is not dict or type(leaf.get("candidate_name")) is not str:
+                raise ValueError("Task5 prediction capture differs")
+            names.append(leaf["candidate_name"])
+        authority = FrozenPredictionAuthorityAntigravity(
+            manifest_for_authority["reviewed_commit"], 16, 96, tuple(names), inventory,
+            tuple((name, manifest_for_authority["leaf_sha256"].get(name)) for name in inventory),
+            manifest_for_authority["aggregate_sha256"], manifest_for_authority.get("label_access_count"),
+        )
+    if type(authority) is not FrozenPredictionAuthorityAntigravity:
+        raise ValueError("Task5 prediction capture differs")
+    validate_prediction_root_antigravity(root, authority)
+    context = _read_nofollow_json_antigravity(root / "context_antigravity.json")
+    manifest = _read_nofollow_json_antigravity(root / "prediction_manifest_antigravity.json")
+    if type(context) is not dict or type(manifest) is not dict:
+        raise ValueError("Task5 prediction capture differs")
+    projected: list[dict[str, object]] = []
+    for relative in authority.inventory:
+        leaf = _read_nofollow_json_antigravity(root / relative)
+        if type(leaf) is not dict:
+            raise ValueError("Task5 prediction capture differs")
+        projected.append({key: leaf[key] for key in ("sequence", "candidate_name", "dataset", "family", "method", "indices", "target_length")})
+    rows = b"".join(canonical_json_bytes_antigravity(row) for row in projected)
+    row_sha256 = tuple(hashlib.sha256(line).hexdigest() for line in rows.splitlines())
+    aggregate = hashlib.sha256("".join(row_sha256).encode("ascii")).hexdigest()
+    source = context.get("source_identity")
+    if type(source) is not dict:
+        raise ValueError("Task5 prediction capture differs")
+    # Revalidate after all reads so no returned bytes survive a namespace replacement.
+    validate_prediction_root_antigravity(root, authority)
+    return FrozenPredictionCaptureAntigravity(
+        authority, rows, row_sha256, aggregate,
+        hashlib.sha256(canonical_json_bytes_antigravity(context)).hexdigest(),
+        hashlib.sha256(canonical_json_bytes_antigravity(source)).hexdigest(),
+        hashlib.sha256(canonical_json_bytes_antigravity(manifest)).hexdigest(),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class PredictionDependenciesAntigravity:
     root: Path
     exp448_authority: object
@@ -562,4 +639,4 @@ def validate_frozen_prediction_authority_antigravity(authority: object) -> tuple
     return validate_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
 
 
-__all__ = ["FrozenPredictionAuthorityAntigravity", "PredictionDependenciesAntigravity", "predict_antigravity", "predict_with_dependencies_antigravity", "schedule_synthetic_units_antigravity", "validate_frozen_prediction_authority_antigravity"]
+__all__ = ["FrozenPredictionAuthorityAntigravity", "FrozenPredictionCaptureAntigravity", "PredictionDependenciesAntigravity", "capture_frozen_prediction_authority_antigravity", "predict_antigravity", "predict_with_dependencies_antigravity", "schedule_synthetic_units_antigravity", "validate_frozen_prediction_authority_antigravity"]
