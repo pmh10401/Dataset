@@ -208,6 +208,34 @@ class StabilityPaperTests(unittest.TestCase):
             max(.01, 1.0 - stable_candidate.second_empirical_rank),
         )
 
+    def test_hard_evidence_surface_is_the_five_leaf_second_order_statistic(self) -> None:
+        """Task5 lanes mask an exact five-source continuous surface; they do not rewrite it."""
+        from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
+        from paper.equipment_anomaly_detection.lineage_paper import LINEAGE_NODES
+        from paper.equipment_anomaly_detection.routing_paper import build_hard_evidence_surface
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
+
+        raw = _raw("Hard_normal_1")
+        pvalues = {
+            "rocket_exp40": (.1, .9), "exp55_best": (.2, .8), "exp56_best": (.3, .7),
+            "exp84": (.4, .6), "canonical_normal_state": (.5, .6), "rocket_block_b": (.25, .25),
+        }
+        sources = HardSourceBundle(
+            EXPECTED_HARD_SOURCES,
+            {
+                name: HardSourceResult(name, LINEAGE_NODES[0], np.asarray([.1, .2]), np.asarray([.3, .4]), np.asarray(pvalues[name]), .03, np.asarray([False, False]), name != "exp84", "eligible" if name != "exp84" else "dependency_unavailable:aeon")
+                for name in EXPECTED_HARD_SOURCES
+            },
+        )
+        lanes = RouteLanes(frozenset({1}), frozenset(), frozenset())
+        route = HardRouteResult(lanes, frozenset({1}), frozenset({1}), frozenset({1}), lanes, SourceExpansion(frozenset(), frozenset()), lanes, frozenset(), lanes, frozenset(), frozenset({1}), 2)
+        surface = build_hard_evidence_surface({raw.dataset: sources}, {raw.dataset: route}, {raw.dataset: raw})
+        # exp84 is ineligible and contributes zero support.  The second-largest
+        # values are 0.8 and 0.3 for the two TEST rows, respectively.
+        np.testing.assert_allclose(surface.strength[raw.dataset], np.asarray([.8, .3]), rtol=0.0, atol=1e-15)
+        np.testing.assert_array_equal(surface.evidence_missing[raw.dataset], np.asarray([False, False]))
+        self.assertEqual(surface.alerts[raw.dataset], frozenset({1}))
+
     def test_mixed_length_and_nonfinite_train_rows_match_origin_filtered_masks(self) -> None:
         """Only finite TRAIN rows of the candidate's exact raw length enter Exp444 views."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity.contracts_antigravity import (

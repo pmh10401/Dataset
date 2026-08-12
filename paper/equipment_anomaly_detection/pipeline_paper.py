@@ -7,7 +7,7 @@ def _config(args): return PipelineConfig(args.db_path,args.run_root,args.mode,tu
 def build_parser():
     parser=argparse.ArgumentParser(prog="pipeline_paper.py"); commands=parser.add_subparsers(dest="command",required=True)
     for command in ("run","status","verify"):
-        child=commands.add_parser(command); child.add_argument("--db-path",required=True,type=Path); child.add_argument("--run-root",required=True,type=Path); child.add_argument("--mode",required=True,choices=("smoke","full")); child.add_argument("--smoke-dataset",action="append",default=[]); child.add_argument("--acceptance-path",required=True,type=Path)
+        child=commands.add_parser(command); child.add_argument("--db-path",required=True,type=Path); child.add_argument("--run-root",required=True,type=Path); child.add_argument("--mode",required=True,choices=("smoke","full")); child.add_argument("--smoke-dataset",action="append",default=[]); child.add_argument("--acceptance-path",type=Path)
     return parser
 def main(argv=None):
     args=build_parser().parse_args(argv); value=run_pipeline(_config(args)) if args.command=="run" else verify_completed(_config(args))

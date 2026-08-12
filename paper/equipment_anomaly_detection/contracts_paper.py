@@ -75,9 +75,10 @@ class Task8FrozenManifest:
     datasets: tuple[str, ...]
     test_row_count: int
     shard_hashes: Mapping[str, str]
-    acceptance_path: str
-    acceptance_sha256: str
-    acceptance_file_sha256: str
+    parity_status: str
+    acceptance_path: str | None
+    acceptance_sha256: str | None
+    acceptance_file_sha256: str | None
 
     def __post_init__(self) -> None:
         hashes = dict(self.shard_hashes)
@@ -85,8 +86,16 @@ class Task8FrozenManifest:
             raise ValueError("Task 8 proposal manifest inventory is invalid")
         if set(hashes) != set(self.datasets) or type(self.test_row_count) is not int or self.test_row_count < 0:
             raise ValueError("Task 8 proposal manifest coverage is invalid")
-        if type(self.acceptance_path) is not str or not self.acceptance_path or any(type(item) is not str or len(item) != 64 for item in (self.catalog_sha256, self.acceptance_sha256, self.acceptance_file_sha256, *hashes.values())):
+        if type(self.catalog_sha256) is not str or len(self.catalog_sha256) != 64 or any(type(item) is not str or len(item) != 64 for item in hashes.values()):
             raise ValueError("Task 8 proposal manifest hashes are invalid")
+        if self.parity_status == "not_available":
+            if any(value is not None for value in (self.acceptance_path, self.acceptance_sha256, self.acceptance_file_sha256)):
+                raise ValueError("Task 8 unavailable parity manifest has acceptance authority")
+        elif self.parity_status == "available_not_run":
+            if type(self.acceptance_path) is not str or not self.acceptance_path or any(type(item) is not str or len(item) != 64 for item in (self.acceptance_sha256, self.acceptance_file_sha256)):
+                raise ValueError("Task 8 available parity manifest lacks acceptance authority")
+        else:
+            raise ValueError("Task 8 proposal parity status is invalid")
         object.__setattr__(self, "shard_hashes", MappingProxyType(hashes))
 
 

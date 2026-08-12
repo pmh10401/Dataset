@@ -5,6 +5,7 @@ from hashlib import sha256
 import json, sqlite3, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace
+import sys
 
 import numpy as np
 
@@ -53,14 +54,35 @@ class Task8LifecycleTests(unittest.TestCase):
         return raw,sources,route,low,stability,policies,FrozenTask8BackendDecision()
     def _freeze(self):
         from paper.equipment_anomaly_detection.artifacts_paper import freeze_score_root, write_typed_proposal_shard
-        from paper.equipment_anomaly_detection.runner_paper import PipelineNotImplementedError, run_pipeline
-        with self.assertRaises(PipelineNotImplementedError): run_pipeline(self.config())
         for dataset in ("alpha","beta"): write_typed_proposal_shard(self.root,self.catalog,*self._typed(dataset))
         return freeze_score_root(self.root,self.catalog,self.acceptance)
-    def test_lifecycle_only_completes_real_prefix_then_fails_acceleration(self):
-        from paper.equipment_anomaly_detection.runner_paper import PipelineNotImplementedError,run_pipeline,verify_completed
-        with self.assertRaisesRegex(PipelineNotImplementedError,"stage_not_implemented"):run_pipeline(self.config())
-        self.assertEqual(verify_completed(self.config()),{"status":"failed","completed_stages":["preflight","prepare"],"failed_stage":"acceleration","next_stage":"acceleration"})
+    def test_production_score_stage_rejects_nonfrozen_fixture_database(self):
+        from paper.equipment_anomaly_detection.runner_paper import run_pipeline
+        with self.assertRaisesRegex(ValueError,"frozen authority"):
+            run_pipeline(self.config())
+    def test_score_freeze_without_acceptance_is_verifiable_but_cannot_claim_parity(self):
+        """A score freeze binds typed shards/catalog only; an oracle remains optional post-freeze evidence."""
+        from paper.equipment_anomaly_detection.artifacts_paper import freeze_score_root, verify_parity, verify_score_root, write_typed_proposal_shard
+        for dataset in ("alpha", "beta"):
+            write_typed_proposal_shard(self.root, self.catalog, *self._typed(dataset))
+        manifest = freeze_score_root(self.root, self.catalog)
+        self.assertEqual(manifest.parity_status, "not_available")
+        self.assertEqual(verify_score_root(self.root, self.catalog).parity_status, "not_available")
+        with self.assertRaisesRegex(ValueError, "parity"):
+            verify_parity(self.root, self.catalog)
+    def test_global_task6_task7_typed_values_serialize_dataset_shards_without_labels(self):
+        """A mapping-wide Task6/7 result is projected into each typed Task8 shard, never recomputed locally."""
+        from paper.equipment_anomaly_detection.artifacts_paper import freeze_score_root, write_typed_proposal_shard
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        first, second = self._typed("alpha"), self._typed("beta")
+        raw = {"alpha": first[0], "beta": second[0]}
+        low = LowFrequencyResult(("alpha", "beta"), tuple(row for values in (first[3], second[3]) for row in values.rows), (), (), 0, {"alpha": frozenset(), "beta": frozenset()})
+        policies = PolicyBundle(tuple(PolicyRoute(name, {dataset: frozenset() for dataset in raw}, {dataset: np.zeros(2) for dataset in raw}, {dataset: np.zeros(2) for dataset in raw}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
+        for values in (first, second):
+            write_typed_proposal_shard(self.root, self.catalog, values[0], values[1], values[2], low, first[4], policies, values[6])
+        self.assertEqual(freeze_score_root(self.root, self.catalog).datasets, ("alpha", "beta"))
+        self.assertNotIn("paper.equipment_anomaly_detection.label_access_paper", sys.modules)
     def test_catalog_recomputes_gapped_and_fabricated_identities(self):
         from paper.equipment_anomaly_detection.catalog_paper import verify_catalog
         forged=json.loads(_canonical(self.catalog)); forged["datasets"][0]["test"]["row_digest"]="0"*64
@@ -91,7 +113,7 @@ class Task8LifecycleTests(unittest.TestCase):
         """Trusting stored totals, acceptance dicts, or undeclared namespaces fails here."""
         from paper.equipment_anomaly_detection.artifacts_paper import MANIFEST_NAME,verify_parity,verify_score_root
         from paper.equipment_anomaly_detection.runner_paper import PipelineStateError,verify_completed
-        self._freeze(); self.assertEqual(verify_parity(self.root,self.catalog)["result"],"exact"); self.assertEqual(verify_completed(self.config())["completed_stages"],["preflight","prepare"])
+        self._freeze(); self.assertEqual(verify_parity(self.root,self.catalog)["result"],"exact")
         manifest=self.root/"stage_artifacts_paper"/"proposal_freeze"/MANIFEST_NAME; value=json.loads(manifest.read_bytes()); value["test_row_count"]=999; manifest.write_bytes(_canonical(value))
         with self.assertRaises(ValueError):verify_score_root(self.root,self.catalog)
         with self.assertRaises(PipelineStateError):verify_completed(self.config())
@@ -107,5 +129,26 @@ class Task8LifecycleTests(unittest.TestCase):
         with self.assertRaises(ValueError):verify_score_root(self.root,self.catalog)
         self.root=self.base/"extra_antigravity"; self._freeze(); (self.root/"stage_artifacts_paper"/"proposal_freeze"/"extra_paper.json").write_text("{}\n")
         with self.assertRaises(ValueError):verify_score_root(self.root,self.catalog)
+
+
+class Task9AccelerationTests(unittest.TestCase):
+    def test_worker_cap_and_unavailable_exact_implementations_are_recorded_truthfully(self):
+        from paper.equipment_anomaly_detection.acceleration_paper import WorkerRecord, build_acceleration_manifest
+        workers = WorkerRecord.from_logical_cpu_count(12)
+        self.assertEqual((workers.logical_cpu_count, workers.dataset_workers, workers.deep_method_workers), (12, 7, 1))
+        manifest = build_acceleration_manifest("a" * 64, logical_cpu_count=12)
+        self.assertEqual(manifest["selected_backend"], "cpu")
+        self.assertEqual({entry["family"] for entry in manifest["backends"]}, {"pytorch", "mlx", "mps"})
+        self.assertTrue(all(entry["decision"] == "cpu" for entry in manifest["stages"]))
+        self.assertIn("implementation_unavailable", {entry["reason"] for entry in manifest["stages"]})
+
+    def test_mlx_gate_rejects_candidate_mismatch_and_insufficient_speedup(self):
+        from paper.equipment_anomaly_detection.acceleration_paper import decide_dense_mlx_gate
+        mismatch = decide_dense_mlx_gate(np.asarray([.1, .2]), np.asarray([.1, .2]), (1,), (2,), cpu_seconds=1.0, mlx_seconds=.1, tolerance=1e-12)
+        self.assertEqual(mismatch["selected_backend"], "cpu")
+        self.assertEqual(mismatch["reason"], "candidate_indices_differ")
+        slow = decide_dense_mlx_gate(np.asarray([.1, .2]), np.asarray([.1, .2]), (1,), (1,), cpu_seconds=1.0, mlx_seconds=.95, tolerance=1e-12)
+        self.assertEqual(slow["selected_backend"], "cpu")
+        self.assertEqual(slow["reason"], "speedup_below_1_1x")
 
 if __name__=="__main__":unittest.main()

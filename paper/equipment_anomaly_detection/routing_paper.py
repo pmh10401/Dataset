@@ -8,8 +8,11 @@ from typing import Mapping
 import numpy as np
 
 from .contracts_paper import LowFrequencyResult, RawDataset
+from .hard_route_paper import EXP234_SOURCES_PAPER, HardRouteResult
 from .score_adapter_paper import route_preserving_scores
+from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
 from .sources_paper.stability_paper import StabilityPartition
+from .score_adapter_paper import combine_evidence
 
 
 POLICY_ORDER = ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
@@ -123,6 +126,48 @@ class PolicyBundle:
         return MappingProxyType({policy.name: policy for policy in self.policies})
 
 
+def build_hard_evidence_surface(
+    sources: Mapping[str, HardSourceBundle],
+    routes: Mapping[str, HardRouteResult],
+    raw: Mapping[str, RawDataset],
+) -> EvidenceSurface:
+    """Build Task5's exact five-leaf continuous counterpart without changing its lanes."""
+    if not isinstance(sources, Mapping) or not isinstance(routes, Mapping) or not isinstance(raw, Mapping):
+        raise ValueError("hard evidence inputs are invalid")
+    source_by_dataset, route_by_dataset, raw_by_dataset = dict(sources), dict(routes), dict(raw)
+    if not source_by_dataset or set(source_by_dataset) != set(route_by_dataset) or set(source_by_dataset) != set(raw_by_dataset):
+        raise ValueError("hard evidence dataset identities differ")
+    alerts: dict[str, frozenset[int]] = {}
+    strength: dict[str, np.ndarray] = {}
+    missing: dict[str, np.ndarray] = {}
+    for dataset in sorted(raw_by_dataset):
+        values, bundle, route = raw_by_dataset[dataset], source_by_dataset[dataset], route_by_dataset[dataset]
+        if not isinstance(values, RawDataset) or values.dataset != dataset or not isinstance(bundle, HardSourceBundle) or not isinstance(route, HardRouteResult):
+            raise ValueError("hard evidence typed inputs differ")
+        if tuple(bundle.source_names) != EXPECTED_HARD_SOURCES or tuple(bundle.by_name) != EXPECTED_HARD_SOURCES or set(bundle.by_name) != set(EXPECTED_HARD_SOURCES):
+            raise ValueError("hard evidence source order differs")
+        n_test = len(values.test_rows)
+        if tuple(values.test_indices) != tuple(range(n_test)) or route.n_test != n_test:
+            raise ValueError("hard evidence TEST identity differs")
+        leaves: list[np.ndarray] = []
+        eligible: list[bool] = []
+        for name in EXP234_SOURCES_PAPER:
+            result = bundle.by_name[name]
+            if not isinstance(result, HardSourceResult) or result.name != name or type(result.eligible) is not bool:
+                raise ValueError("hard evidence source result differs")
+            pvalue = np.asarray(result.test_pvalue)
+            if pvalue.ndim != 1 or pvalue.size != n_test or pvalue.dtype.kind not in "iuf" or not np.all(np.isfinite(pvalue)) or np.any((pvalue <= 0.0) | (pvalue > 1.0)):
+                raise ValueError("hard evidence p-value differs")
+            if result.eligible and (np.asarray(result.test_score).ndim != 1 or np.asarray(result.test_score).size != n_test):
+                raise ValueError("hard evidence eligible score differs")
+            leaves.append(np.asarray(1.0 - pvalue if result.eligible else np.zeros(n_test), dtype=np.float64))
+            eligible.append(result.eligible)
+        alerts[dataset] = frozenset(route.automatic_hard)
+        strength[dataset] = combine_evidence(leaves, "k_of_n", k=2)
+        missing[dataset] = np.full(n_test, not any(eligible), dtype=bool)
+    return EvidenceSurface(alerts, strength, missing)
+
+
 def _source_surface(low_frequency: LowFrequencyResult, raw_datasets: Mapping[str, RawDataset]) -> EvidenceSurface:
     if not isinstance(low_frequency, LowFrequencyResult) or not isinstance(raw_datasets, Mapping):
         raise ValueError("source policy inputs are invalid")
@@ -225,5 +270,5 @@ def build_policies(
 
 
 __all__ = [
-    "EXPECTED_COUNTS", "POLICY_ORDER", "EvidenceSurface", "PolicyBundle", "PolicyRoute", "build_policies",
+    "EXPECTED_COUNTS", "POLICY_ORDER", "EvidenceSurface", "PolicyBundle", "PolicyRoute", "build_hard_evidence_surface", "build_policies",
 ]

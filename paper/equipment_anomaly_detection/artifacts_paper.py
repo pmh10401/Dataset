@@ -109,15 +109,16 @@ def _typed_payload(raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,
         source_rows.append({"source_id":name,"order":order,"test_score":_array(result.test_score,n,"source score"),"pvalue":_array(result.test_pvalue,n,"source pvalue"),"native_pass":_bools(result.test_native_pass,n,"source pass"),"eligible":result.eligible,"reason":result.eligibility_reason})
     if not isinstance(hard,HardRouteResult) or hard.n_test!=n:raise TypeError("typed Task5 route result is invalid")
     hard_stages=[{"stage_id":"exp74d","order":0,"lanes":_lanes(hard.exp74d,n)},{"stage_id":"exp89","order":1,"indices":_indices(hard.exp89,n,"exp89")},{"stage_id":"exp90","order":2,"indices":_indices(hard.exp90,n,"exp90")},{"stage_id":"exp93","order":3,"indices":_indices(hard.exp93,n,"exp93")},{"stage_id":"exp137","order":4,"lanes":_lanes(hard.exp137,n)},{"stage_id":"exp234","order":5,"minimum_two":_indices(hard.exp234.minimum_two,n,"exp234"),"minimum_three":_indices(hard.exp234.minimum_three,n,"exp234")},{"stage_id":"exp236","order":6,"lanes":_lanes(hard.exp236,n)},{"stage_id":"exp253","order":7,"lanes":_lanes(hard.exp253,n)}]
-    if not isinstance(low,LowFrequencyResult) or low.datasets!=(raw.dataset,) or tuple(row.instance_index for row in low.rows)!=tuple(range(n)) or low.hard_lanes.get(raw.dataset)!=hard.exp253.hard:raise TypeError("typed Task6 result is invalid")
-    low_rows=[{"index":row.instance_index,"evidence_missing":row.evidence_missing,"strict_pass":row.strict_pass,"provisional":row.provisional,"depths":[{"depth":item.depth,"score":item.score,"threshold":item.threshold,"strict_pass":item.strict_pass,"excess_ratio":item.excess_ratio,"empirical_rank":item.empirical_rank} for item in row.depth_evidence]} for row in low.rows]
+    dataset_rows=tuple(row for row in low.rows if row.dataset==raw.dataset) if isinstance(low,LowFrequencyResult) else ()
+    if not isinstance(low,LowFrequencyResult) or raw.dataset not in low.datasets or tuple(row.instance_index for row in dataset_rows)!=tuple(range(n)) or low.hard_lanes.get(raw.dataset)!=hard.exp253.hard:raise TypeError("typed Task6 result is invalid")
+    low_rows=[{"index":row.instance_index,"evidence_missing":row.evidence_missing,"strict_pass":row.strict_pass,"provisional":row.provisional,"depths":[{"depth":item.depth,"score":item.score,"threshold":item.threshold,"strict_pass":item.strict_pass,"excess_ratio":item.excess_ratio,"empirical_rank":item.empirical_rank} for item in row.depth_evidence]} for row in dataset_rows]
     if not isinstance(stability,StabilityPartition) or tuple(stability.selected_coordinates)!=tuple(candidate.coordinate for candidate in low.selected_candidates):raise TypeError("typed Task7 stability differs")
-    stability_record={"selected":[list(item) for item in stability.selected_coordinates],"stable":[list(item) for item in stability.stable_coordinates],"unstable":[list(item) for item in stability.unstable_coordinates]}
+    stability_record={"selected":[list(item) for item in stability.selected_coordinates if item[0]==raw.dataset],"stable":[list(item) for item in stability.stable_coordinates if item[0]==raw.dataset],"unstable":[list(item) for item in stability.unstable_coordinates if item[0]==raw.dataset]}
     if not isinstance(policies,PolicyBundle):raise TypeError("typed Task7 policy bundle is invalid")
     expected=(hard.automatic_hard,hard.automatic_hard|{index for dataset,index in stability.selected_coordinates if dataset==raw.dataset},hard.automatic_hard|{index for dataset,index in stability.stable_coordinates if dataset==raw.dataset},hard.automatic_hard|{index for dataset,index in stability.unstable_coordinates if dataset==raw.dataset})
     policy_rows=[]
     for order,(route,want) in enumerate(zip(policies.policies,expected,strict=True)):
-        if route.name!=POLICIES[order] or set(route.alerts)!={raw.dataset} or route.alerts[raw.dataset]!=want:raise ValueError("typed Task7 policy route differs")
+        if route.name!=POLICIES[order] or set(route.alerts)!=set(low.datasets) or route.alerts[raw.dataset]!=want:raise ValueError("typed Task7 policy route differs")
         scores=_array(route.scores[raw.dataset],n,"policy scores"); policy_rows.append({"policy_id":route.name,"order":order,"alerts":sorted(want),"scores":scores,"score_mask":[score>=.5 for score in scores]})
     if not isinstance(backend,FrozenTask8BackendDecision):raise TypeError("typed backend decision is invalid")
     return {"schema":SHARD_SCHEMA,"dataset":raw.dataset,"train_identity":entry["train"],"test_identity":entry["test"],"source_rows":source_rows,"hard_stages":hard_stages,"low_frequency_rows":low_rows,"stability":stability_record,"policies":policy_rows,"backend":{"selected_backend":backend.selected_backend,"reason":backend.reason,"verdict":backend.verdict}}
@@ -149,18 +150,27 @@ def write_typed_proposal_shard(root:Path,catalog:dict[str,object],raw:RawDataset
 def _acceptance(path:Path,catalog:dict[str,object]):
     from .catalog_paper import load_acceptance
     accepted=load_acceptance(Path(path),catalog); raw=Path(path).read_bytes(); return accepted,raw
-def freeze_score_root(root:Path,catalog:dict[str,object],acceptance_path:Path)->Task8FrozenManifest:
-    root=safe_root(root); accepted,raw=_acceptance(acceptance_path,catalog); names=[entry["dataset"] for entry in catalog["datasets"]]; hashes={}; total=0
+def freeze_score_root(root:Path,catalog:dict[str,object],acceptance_path:Path|None=None)->Task8FrozenManifest:
+    """Freeze typed score shards before, and independently from, historical parity."""
+    root=safe_root(root); names=[entry["dataset"] for entry in catalog["datasets"]]; hashes={}; total=0
     for entry in catalog["datasets"]:
         path=_shard_path(root,entry["dataset"]);_validate_shard(read_canonical(path),entry);hashes[entry["dataset"]]=sha256_bytes(path.read_bytes());total+=entry["test"]["count"]
     shard_dir=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,SHARD_DIRECTORY)
     if {path.name for path in shard_dir.iterdir()}!={f"{name}_paper.json" for name in names}:raise ValueError("proposal shard namespace differs")
     if catalog["mode"]=="full" and (len(names)!=1117 or total!=195900):raise ValueError("full proposal inventory differs")
-    payload={"schema":MANIFEST_SCHEMA,"catalog_sha256":catalog["catalog_sha256"],"datasets":names,"test_row_count":total,"shard_hashes":hashes,"acceptance_path":str(Path(acceptance_path)),"acceptance_sha256":accepted["acceptance_sha256"],"acceptance_file_sha256":sha256_bytes(raw)};write_create_only(safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME),canonical_json_bytes(payload));return Task8FrozenManifest(**{**payload,"datasets":tuple(names)})
+    payload={"schema":MANIFEST_SCHEMA,"catalog_sha256":catalog["catalog_sha256"],"datasets":names,"test_row_count":total,"shard_hashes":hashes}
+    if acceptance_path is None:
+        payload.update({"parity_status":"not_available","acceptance_path":None,"acceptance_sha256":None,"acceptance_file_sha256":None})
+    else:
+        accepted,raw=_acceptance(acceptance_path,catalog)
+        payload.update({"parity_status":"available_not_run","acceptance_path":str(Path(acceptance_path)),"acceptance_sha256":accepted["acceptance_sha256"],"acceptance_file_sha256":sha256_bytes(raw)})
+    write_create_only(safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME),canonical_json_bytes(payload));return Task8FrozenManifest(**{**payload,"datasets":tuple(names)})
 def verify_score_root(root:Path,catalog:dict[str,object])->Task8FrozenManifest:
     root=safe_root(root); path=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME); value=read_canonical(path); manifest=Task8FrozenManifest(**{**value,"datasets":tuple(value["datasets"])})
-    accepted,raw=_acceptance(Path(manifest.acceptance_path),catalog)
-    if manifest.catalog_sha256!=catalog["catalog_sha256"] or manifest.acceptance_sha256!=accepted["acceptance_sha256"] or manifest.acceptance_file_sha256!=sha256_bytes(raw):raise ValueError("proposal manifest authority differs")
+    if manifest.catalog_sha256!=catalog["catalog_sha256"]:raise ValueError("proposal manifest authority differs")
+    if manifest.parity_status == "available_not_run":
+        accepted,raw=_acceptance(Path(manifest.acceptance_path),catalog)
+        if manifest.acceptance_sha256!=accepted["acceptance_sha256"] or manifest.acceptance_file_sha256!=sha256_bytes(raw):raise ValueError("proposal manifest authority differs")
     names=[entry["dataset"] for entry in catalog["datasets"]]; total=0
     for entry in catalog["datasets"]:
         shard_path=_shard_path(root,entry["dataset"]);_validate_shard(read_canonical(shard_path),entry)
@@ -171,7 +181,9 @@ def verify_score_root(root:Path,catalog:dict[str,object])->Task8FrozenManifest:
     if {item.name for item in directory.iterdir()}!={MANIFEST_NAME,SHARD_DIRECTORY} or {item.name for item in shards.iterdir()}!={f"{name}_paper.json" for name in names}:raise ValueError("proposal freeze namespace differs")
     return manifest
 def verify_parity(root:Path,catalog:dict[str,object])->dict[str,object]:
-    manifest=verify_score_root(root,catalog); accepted,raw=_acceptance(Path(manifest.acceptance_path),catalog)
+    manifest=verify_score_root(root,catalog)
+    if manifest.parity_status != "available_not_run":raise ValueError("parity unavailable without an authenticated acceptance oracle")
+    accepted,raw=_acceptance(Path(manifest.acceptance_path),catalog)
     if sha256_bytes(raw)!=manifest.acceptance_file_sha256:raise ValueError("parity acceptance hash differs")
     oracle=safe_child(Path(manifest.acceptance_path).parent,accepted["oracle"]["relative_path"])
     if sha256_bytes(oracle.read_bytes())!=accepted["oracle"]["sha256"]:raise ValueError("parity oracle hash differs")
