@@ -40,7 +40,27 @@ def initialise_attempt_antigravity(root: Path, context: object) -> None:
     write_create_only_antigravity(root / "pid_antigravity.json", canonical_json_bytes_antigravity({"active": True}))
 
 
-def record_verified_progress_antigravity(root: Path, inventory: tuple[str, ...], completed: int) -> None:
+def _write_progress_json_antigravity(progress: Path, payload: bytes, fault_hook, sequence: int) -> None:
+    if fault_hook is not None: fault_hook("progress_json", sequence)
+    fd = os.open(progress, os.O_WRONLY | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        os.write(fd, payload); os.fsync(fd)
+    finally: os.close(fd)
+
+
+def _append_progress_jsonl_antigravity(path: Path, payload: bytes, fault_hook, sequence: int) -> None:
+    if fault_hook is not None: fault_hook("progress_jsonl", sequence)
+    with path.open("ab") as handle:
+        handle.write(payload); handle.flush(); os.fsync(handle.fileno())
+
+
+def _append_progress_text_antigravity(path: Path, payload: bytes, fault_hook, sequence: int) -> None:
+    if fault_hook is not None: fault_hook("progress_text", sequence)
+    with path.open("ab") as handle:
+        handle.write(payload); handle.flush(); os.fsync(handle.fileno())
+
+
+def record_verified_progress_antigravity(root: Path, inventory: tuple[str, ...], completed: int, *, fault_hook=None) -> None:
     """Advance mutable observability only after the independently verified prefix reaches it."""
     if type(completed) is not int or completed < 0 or completed > len(inventory):
         raise ValueError("progress count is invalid")
@@ -51,50 +71,51 @@ def record_verified_progress_antigravity(root: Path, inventory: tuple[str, ...],
     if type(current) is not dict or current.get("dataset_unit_completed") is None or current["dataset_unit_completed"] > completed:
         raise ValueError("progress state is invalid")
     payload = canonical_json_bytes_antigravity({"dataset_unit_completed": completed, "next_sequence": completed, "terminal": completed == len(inventory)})
-    fd = os.open(progress, os.O_WRONLY | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0))
-    try:
-        os.write(fd, payload)
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-    with (root / "progress_antigravity.jsonl").open("ab") as handle:
-        handle.write(canonical_json_bytes_antigravity({"dataset_unit_completed": completed}))
-        handle.flush(); os.fsync(handle.fileno())
-    with (root / "progress_antigravity.txt").open("ab") as handle:
-        handle.write(f"{completed}\n".encode())
-        handle.flush(); os.fsync(handle.fileno())
+    _write_progress_json_antigravity(progress, payload, fault_hook, completed - 1)
+    _append_progress_jsonl_antigravity(root / "progress_antigravity.jsonl", canonical_json_bytes_antigravity({"dataset_unit_completed": completed}), fault_hook, completed - 1)
+    _append_progress_text_antigravity(root / "progress_antigravity.txt", f"{completed}\n".encode(), fault_hook, completed - 1)
 
 
-def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object) -> str:
+def commit_candidate_leaf_antigravity(directory: Path, name: str, value: object, *, fault_hook=None, sequence: int = 0) -> str:
     """Commit a candidate only after file and parent fsync plus canonical no-follow reread."""
     if not isinstance(directory, Path) or type(name) is not str or "/" in name or not name.endswith(".json"):
         raise ValueError("candidate destination is invalid")
     directory.mkdir(mode=0o700, exist_ok=True)
     payload = canonical_json_bytes_antigravity(value)
     destination = directory / name
-    write_create_only_antigravity(destination, payload)
-    parent_fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+    created = False
     try:
-        os.fsync(parent_fd)
-        fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+        if fault_hook is not None: fault_hook("cache_create", sequence)
+        write_create_only_antigravity(destination, payload); created = True
+        parent_fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
         try:
-            chunks: list[bytes] = []
-            while chunk := os.read(fd, 1 << 20):
-                chunks.append(chunk)
-            reread = b"".join(chunks)
-            if reread != payload or canonical_json_bytes_antigravity(strict_json_bytes_antigravity(reread)) != reread:
-                raise ValueError("candidate leaf reread is not canonical")
-            return hashlib.sha256(reread).hexdigest()
+            if fault_hook is not None: fault_hook("cache_fsync", sequence)
+            os.fsync(parent_fd)
+            fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+            try:
+                if fault_hook is not None: fault_hook("cache_reread", sequence)
+                chunks: list[bytes] = []
+                while chunk := os.read(fd, 1 << 20): chunks.append(chunk)
+                reread = b"".join(chunks)
+                if fault_hook is not None: fault_hook("cache_sha_mismatch", sequence)
+                if reread != payload or canonical_json_bytes_antigravity(strict_json_bytes_antigravity(reread)) != reread: raise ValueError("candidate leaf reread is not canonical")
+                return hashlib.sha256(reread).hexdigest()
+            finally: os.close(fd)
         finally:
-            os.close(fd)
-    finally:
-        os.close(parent_fd)
+            os.close(parent_fd)
+    except BaseException:
+        if created:
+            try: destination.unlink(); parent = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)); os.fsync(parent); os.close(parent)
+            except OSError: pass
+        raise
 
 
 def verified_prefix_antigravity(directory: Path, inventory: tuple[str, ...]) -> int:
     """Derive the completed count exclusively from present canonical candidate leaves."""
     if not isinstance(directory, Path) or type(inventory) is not tuple:
         raise ValueError("prefix inputs are invalid")
+    if directory.exists() and set(os.listdir(directory)) - set(inventory):
+        raise ValueError("candidate directory has unexpected leaf")
     completed = 0
     for name in inventory:
         path = directory / name

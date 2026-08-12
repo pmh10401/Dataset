@@ -142,21 +142,14 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         leaves = root / "candidates_antigravity"
         digests: list[tuple[str, str]] = []
         for sequence in ordered:
-            _fault_antigravity(fault_hook, "cache_create", sequence)
-            _fault_antigravity(fault_hook, "cache_fsync", sequence)
-            _fault_antigravity(fault_hook, "cache_reread", sequence)
-            _fault_antigravity(fault_hook, "cache_sha_mismatch", sequence)
             _fault_antigravity(fault_hook, "predecessor_drift", sequence)
             _fault_antigravity(fault_hook, "before_commit", sequence)
             dataset = f"synthetic_dataset_{sequence // 2:03d}"
             method = ("method_a", "method_b")[sequence % 2]
-            digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "contains_test_labels": False, "scores": {"20260721": [0.0], "20261721": [0.0]}, "alpha": 0.005})
+            digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "contains_test_labels": False, "scores": {"20260721": [0.0], "20261721": [0.0]}, "alpha": 0.005}, fault_hook=fault_hook, sequence=sequence)
             digests.append(("candidates_antigravity/" + inventory[sequence], digest))
             _fault_antigravity(fault_hook, "after_commit", sequence)
-            _fault_antigravity(fault_hook, "progress_json", sequence)
-            _fault_antigravity(fault_hook, "progress_jsonl", sequence)
-            _fault_antigravity(fault_hook, "progress_text", sequence)
-            record_verified_progress_antigravity(root, inventory, sequence + 1)
+            record_verified_progress_antigravity(root, inventory, sequence + 1, fault_hook=fault_hook)
             if sequence == fail_after_leaf:
                 raise RuntimeError(f"synthetic post-leaf failure exact_next_sequence={sequence + 1}")
         _fault_antigravity(fault_hook, "pid_close", 96)
@@ -354,6 +347,7 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
 
     prepare_attempt_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
     audit_path = Path("/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json")
+    inventory: tuple[str, ...] = ()
     try:
         predecessor = capture_exp448_authority_antigravity()
         families = _families_antigravity(predecessor)
@@ -401,7 +395,7 @@ def predict_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigr
                 _set_pid_inactive_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY)
         except BaseException as error:
             cleanup_error = error
-        prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", tuple(item.name for item in (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").glob("*.json"))) if (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").is_dir() else 0
+        prefix = verified_prefix_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity", inventory) if inventory and (_OFFICIAL_ROOT_ANTIGRAVITY / "candidates_antigravity").is_dir() else 0
         write_failure_audit_antigravity(audit_path, primary_error, cleanup_error, exact_next_sequence=prefix)
         raise
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -25,7 +27,7 @@ class _Exp448Antigravity:
 class PredictionAntigravityTests(unittest.TestCase):
     def test_table_driven_pre_and_post_commit_faults_preserve_exact_prefix_antigravity(self) -> None:
         """Break caught: deriving failure progress from scheduled work instead of durable leaves."""
-        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity, validate_prediction_root_antigravity  # noqa: PLC0415
 
         for stage, sequence, expected_prefix in (("before_commit", 0, 0), ("before_commit", 47, 47), ("before_commit", 95, 95), ("after_commit", 0, 1), ("after_commit", 47, 48), ("after_commit", 95, 96)):
             with self.subTest(stage=stage, sequence=sequence), tempfile.TemporaryDirectory(prefix="exp449_fault_antigravity_") as temporary:
@@ -56,7 +58,8 @@ class PredictionAntigravityTests(unittest.TestCase):
                         raise RuntimeError(f"{tag} injected")
                 with self.assertRaisesRegex(RuntimeError, f"{tag} injected"):
                     run_synthetic_lifecycle_antigravity(root, "4" * 40, audit_path=audit, fault_hook=fault)
-                self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), expected_prefix)
+                from experiments.exp449_residual_fn_method_qualification_antigravity.progress_antigravity import verified_prefix_antigravity  # noqa: PLC0415
+                self.assertEqual(verified_prefix_antigravity(root / "candidates_antigravity", tuple(f"{item:03d}_synthetic_{item:03d}.json" for item in range(96))), expected_prefix)
                 evidence = json.loads(audit.read_text())
                 self.assertEqual(evidence["exact_next_sequence"], expected_prefix)
                 self.assertIn(tag, evidence["primary_error"])
@@ -106,10 +109,10 @@ class PredictionAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp449_failure_antigravity_") as temporary:
             parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
             original = prediction.record_verified_progress_antigravity
-            def fail_at_48(path, inventory, completed):
+            def fail_at_48(path, inventory, completed, **_kwargs):
                 if completed == 48:
                     raise OSError("persistent progress channel failure")
-                return original(path, inventory, completed)
+                return original(path, inventory, completed, **_kwargs)
             with patch.object(prediction, "record_verified_progress_antigravity", side_effect=fail_at_48), self.assertRaisesRegex(OSError, "persistent progress"):
                 prediction.run_synthetic_lifecycle_antigravity(root, "1" * 40, audit_path=audit)
             self.assertEqual(len(tuple((root / "candidates_antigravity").glob("*.json"))), 48)
@@ -210,12 +213,45 @@ class PredictionAntigravityTests(unittest.TestCase):
             manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
             with self.assertRaises(ValueError):
                 validate_prediction_root_antigravity(root, authority)
+
+    def test_private_validator_subprocess_firewall_never_imports_source_or_sqlite_antigravity(self) -> None:
+        """Break caught: validator importing a DB-capable Task-3 source or sqlite module."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity, validate_prediction_root_antigravity  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_firewall_antigravity_") as temporary:
+            root = Path(temporary) / "run"; authority = run_synthetic_lifecycle_antigravity(root, "8" * 40)
+            program = """import builtins,sys
+orig=builtins.__import__
+def deny(name,*a,**k):
+    if name == 'sqlite3' or name.endswith('.sources_antigravity'): raise AssertionError(name)
+    return orig(name,*a,**k)
+builtins.__import__=deny
+from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import FrozenPredictionAuthorityAntigravity,validate_prediction_root_antigravity
+v=__import__('json').loads(sys.argv[2]); a=FrozenPredictionAuthorityAntigravity(v[0],v[1],v[2],tuple(v[3]),tuple(v[4]),tuple(tuple(p) for p in v[5]),v[6],v[7])
+print(len(validate_prediction_root_antigravity(__import__('pathlib').Path(sys.argv[1]),a)))
+"""
+            encoded = json.dumps([authority.reviewed_commit, authority.family_method_pairs, authority.dataset_units, list(authority.candidate_names), list(authority.inventory), [list(pair) for pair in authority.leaf_sha256], authority.aggregate_sha256, authority.label_access_count])
+            result = subprocess.run([sys.executable, "-c", program, str(root), encoded], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "48")
         with tempfile.TemporaryDirectory(prefix="exp449_validator_antigravity_") as temporary:
             root = Path(temporary) / "run"
             authority = run_synthetic_lifecycle_antigravity(root, "b" * 40)
             (root / "extra_antigravity.json").write_text("{}\n")
             with self.assertRaises(ValueError):
                 validate_prediction_root_antigravity(root, authority)
+
+    def test_private_validator_rejects_candidates_extra_gap_and_directory_replacement_antigravity(self) -> None:
+        """Break caught: accepting extra, missing, or replaced candidates namespaces."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity, validate_prediction_root_antigravity  # noqa: PLC0415
+        for mode in ("extra", "gap", "replace"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix="exp449_candidates_antigravity_") as temporary:
+                root = Path(temporary) / "run"; authority = run_synthetic_lifecycle_antigravity(root, "9" * 40); candidates = root / "candidates_antigravity"
+                if mode == "extra": (candidates / "extra_antigravity.json").write_text("{}\n")
+                elif mode == "gap": (candidates / Path(authority.inventory[0]).name).unlink()
+                else:
+                    replacement = Path(temporary) / "replacement_antigravity"; replacement.mkdir(); os.replace(candidates, replacement); candidates.mkdir()
+                with self.assertRaises(ValueError): validate_prediction_root_antigravity(root, authority)
 
     def test_attempt_preflight_rejects_existing_partial_and_symlink_roots_antigravity(self) -> None:
         """Break caught: beginning work in a preexisting, partial, or symlinked attempt root."""
