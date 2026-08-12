@@ -55,6 +55,29 @@ class ReplayAntigravityTests(unittest.TestCase):
             _expected, root = self._publication_antigravity(temporary)
             (root / "extra_antigravity.json").write_bytes(b"{}\n")
             with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
+
+    def test_replay_rejects_rehashed_prediction_and_bootstrap_content_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity.replay_antigravity import inspect_replay_at_antigravity
+
+        for leaf, mutate in (("frozen_predictions_antigravity.jsonl", "prediction"), ("bootstrap_antigravity.json", "bootstrap")):
+            with self.subTest(leaf=leaf), tempfile.TemporaryDirectory(prefix="exp449_replay_bound_content_antigravity_") as temporary:
+                _expected, root = self._publication_antigravity(temporary)
+                path = root / leaf
+                if mutate == "prediction":
+                    rows = [json.loads(line) for line in path.read_text().splitlines()]
+                    rows[0]["candidate_name"] = "forged_antigravity"
+                    path.write_bytes(canonical_jsonl_bytes_antigravity(rows))
+                    manifest_path = root / "prediction_manifest_antigravity.json"
+                    manifest = json.loads(manifest_path.read_text()); manifest["frozen_prediction_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+                    manifest_path.write_bytes(canonical_json_bytes_antigravity(manifest))
+                else:
+                    bootstrap = json.loads(path.read_text()); bootstrap["comparisons"][0]["fn_delta"] = 999
+                    path.write_bytes(canonical_json_bytes_antigravity(bootstrap))
+                hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text())
+                for changed in (path, *( (root / "prediction_manifest_antigravity.json",) if mutate == "prediction" else ())):
+                    hashes[changed.name] = hashlib.sha256(changed.read_bytes()).hexdigest()
+                (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
+                with self.assertRaises(ValueError): inspect_replay_at_antigravity(root)
         with tempfile.TemporaryDirectory(prefix="exp449_replay_symlink_antigravity_") as temporary:
             _expected, root = self._publication_antigravity(temporary)
             target = root / "context_antigravity.json"; replacement = root / "replacement_antigravity.json"

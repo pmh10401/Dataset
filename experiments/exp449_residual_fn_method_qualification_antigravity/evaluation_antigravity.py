@@ -60,6 +60,10 @@ def _payload_antigravity(confusion: ConfusionAntigravity) -> dict[str, int]:
     return {"tp": confusion.tp, "fp": confusion.fp, "fn": confusion.fn, "tn": confusion.tn}
 
 
+def _gates_antigravity(confusion: ConfusionAntigravity, target_fn_delta: int) -> dict[str, bool]:
+    return {"global_fn": confusion.fn < 1988, "global_fp": confusion.fp <= 314, "global_f1": _f1_antigravity(confusion) >= FROZEN_CONFIG_ANTIGRAVITY["global_f1_min"], "target_fn_delta": target_fn_delta < 0}
+
+
 def _exact_labels_antigravity(dataset: str, labels: object) -> tuple[tuple[int, int], ...]:
     if type(labels) is not tuple or not labels:
         raise ValueError("TEST labels are invalid")
@@ -131,6 +135,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes]) -> None:
     if staging.exists() or staging.is_symlink():
         raise ValueError("publication staging destination already exists")
     staging.mkdir(mode=0o700)
+    renamed = False
     try:
         for name in _LEAVES_ANTIGRAVITY[:-1]: write_create_only_antigravity(staging / name, payloads[name])
         hashes = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
@@ -141,8 +146,14 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes]) -> None:
         _fsync_directory_antigravity(root.parent)
         if root.exists() or root.is_symlink(): raise ValueError("publication destination appeared before commit")
         _rename_no_replace_antigravity(staging, root)
+        renamed = True
         _fsync_directory_antigravity(root.parent)
-    except BaseException:
+    except BaseException as error:
+        if renamed:
+            try:
+                _rename_no_replace_antigravity(root, staging)
+            except BaseException as rollback_error:
+                error.add_note(f"publication_rollback_error={type(rollback_error).__name__}: {rollback_error}")
         # A failed staging namespace is never a valid public root and is kept for forensic preservation.
         raise
 
@@ -187,24 +198,26 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
                 delta = target.fn - base_target.fn; metric = CandidateMetricAntigravity(family, method, target, global_, delta, _f1_antigravity(global_), qualifies_antigravity(global_, target_fn_delta=delta)); metrics.append(metric)
                 all_base = tuple(item.confusion for item in baselines); all_candidate = list(all_base)
                 for position, row in zip(family_positions, candidate_rows, strict=True): all_candidate[position] = row
-                bootstrap = paired_delta_antigravity(np.asarray([list(_payload_antigravity(row).values()) for row in all_base], dtype=np.int64), np.asarray([list(_payload_antigravity(row).values()) for row in all_candidate], dtype=np.int64)); bootstrap_rows.append({"family": family, "method": method, **bootstrap})
+                base_counts = [[row.tp, row.fp, row.fn, row.tn] for row in all_base]
+                candidate_counts = [[row.tp, row.fp, row.fn, row.tn] for row in all_candidate]
+                bootstrap = paired_delta_antigravity(np.asarray(base_counts, dtype=np.int64), np.asarray(candidate_counts, dtype=np.int64)); bootstrap_rows.append({"family": family, "method": method, "baseline_dataset_confusions": base_counts, "candidate_dataset_confusions": candidate_counts, **bootstrap})
         phase = "post_compute"
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift after compute")
         metric_payloads = tuple({"family": item.family, "method": item.method, "target_confusion": _payload_antigravity(item.target_confusion), "global_confusion": _payload_antigravity(item.global_confusion), "target_fn_delta": item.target_fn_delta, "global_f1": item.global_f1, "qualified": item.qualified} for item in metrics)
         family_payloads = tuple({"family": family, "candidate_count": 2, "qualified_count": sum(item.qualified for item in metrics if item.family == family), "baseline_target_confusion": _payload_antigravity(_sum_antigravity(tuple(baseline.confusion for baseline in baselines if baseline.family == family)))} for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY)
-        decision = {"schema": "exp449.decision", "qualified_count": sum(item.qualified for item in metrics), "routing_research_eligible": False, "gates": {"global_fn_lt": 1988, "global_fp_lte": 314, "global_f1_nonregression": FROZEN_CONFIG_ANTIGRAVITY["global_f1_min"], "target_fn_delta_lt": 0}}
-        evaluation = {"schema": "exp449", "reviewed_commit": reviewed_commit, "candidate_count": 16, "qualified_count": sum(item.qualified for item in metrics), "label_session_count": 1, "label_query_count": 48, "label_row_count": 72300, "routing_research_eligible": False}
+        qualified_count = sum(item.qualified for item in metrics); routing_research_eligible = qualified_count > 0
+        decision = {"schema": "exp449.decision", "qualified_count": qualified_count, "routing_research_eligible": routing_research_eligible, "automatic_routing": False, "automatic_promotion": False, "gates": {"global_fn_lt": 1988, "global_fp_lte": 314, "global_f1_nonregression": FROZEN_CONFIG_ANTIGRAVITY["global_f1_min"], "target_fn_delta_lt": 0}}
+        evaluation = {"schema": "exp449", "reviewed_commit": reviewed_commit, "candidate_count": 16, "qualified_count": qualified_count, "label_session_count": 1, "label_query_count": 48, "label_row_count": 72300, "routing_research_eligible": routing_research_eligible}
         frozen_bytes = canonical_jsonl_bytes_antigravity(predictions)
-        dashboard = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {**_payload_antigravity(baseline_global), "f1": _f1_antigravity(baseline_global)}, "candidates": [{"family": item.family, "method": item.method, "qualified": item.qualified, "global": {**_payload_antigravity(item.global_confusion), "f1": item.global_f1}} for item in metrics], "families": [family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY], "status": "synthetic_complete", "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
+        dashboard = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {**_payload_antigravity(baseline_global), "f1": _f1_antigravity(baseline_global)}, "candidates": [{"family": item.family, "method": item.method, "target_fn_delta": item.target_fn_delta, "gates": _gates_antigravity(item.global_confusion, item.target_fn_delta), "qualified": item.qualified, "global": {**_payload_antigravity(item.global_confusion), "f1": item.global_f1}} for item in metrics], "families": [family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY], "status": "synthetic_complete", "repeatable": True, "qualified_candidate_count": qualified_count, "routing_research_eligible": routing_research_eligible, "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
         from .dashboard_export_antigravity import public_result_antigravity
         public_result_antigravity(dashboard)
         payloads = {"context_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449", "reviewed_commit": reviewed_commit, "label_access_count": 1}), "compatibility_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449.task6", "predecessor": "exp448", "prediction_authority": "task5"}), "candidate_registry_antigravity.json": canonical_json_bytes_antigravity([[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]), "frozen_predictions_antigravity.jsonl": frozen_bytes, "prediction_manifest_antigravity.json": canonical_json_bytes_antigravity({"schema": "exp449_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(frozen_bytes).hexdigest()}), "evaluation_antigravity.json": canonical_json_bytes_antigravity(evaluation), "candidate_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(metric_payloads), "family_metrics_antigravity.jsonl": canonical_jsonl_bytes_antigravity(family_payloads), "bootstrap_antigravity.json": canonical_json_bytes_antigravity({"draw_sha256": BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, "comparisons": bootstrap_rows}), "decision_antigravity.json": canonical_json_bytes_antigravity(decision), "dashboard_snapshot_antigravity.json": canonical_json_bytes_antigravity(dashboard)}
         phase = "precommit"
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift before commit")
+        artifact_map = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
+        expected = FrozenEvaluationAntigravity(reviewed_commit, 16, qualified_count, 1, 48, 72300, tuple(metrics), sha256(canonical_json_bytes_antigravity(artifact_map)).hexdigest(), sha256(canonical_json_bytes_antigravity(decision)).hexdigest(), routing_research_eligible)
         _publish_antigravity(root, payloads)
-        observed = inspect_replay_at_antigravity(root)
-        expected = FrozenEvaluationAntigravity(reviewed_commit, 16, sum(item.qualified for item in metrics), 1, 48, 72300, tuple(metrics), sha256((root / "artifact_sha256_antigravity.json").read_bytes()).hexdigest(), sha256(canonical_json_bytes_antigravity(decision)).hexdigest(), False)
-        if observed != expected: raise ValueError("semantic replay differs from evaluation")
         return expected
     except BaseException as error:
         if session is not None and opened and not closed:

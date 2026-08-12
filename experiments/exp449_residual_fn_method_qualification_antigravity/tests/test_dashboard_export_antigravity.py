@@ -5,10 +5,20 @@ import unittest
 
 
 class DashboardExportAntigravityTests(unittest.TestCase):
+    def test_public_result_requires_complete_deterministic_qualification_projection_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity.config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY
+        from experiments.exp449_residual_fn_method_qualification_antigravity.dashboard_export_antigravity import public_result_antigravity
+
+        global_f1 = (2.0 * 1931) / (2 * 1931 + 314 + 1987)
+        candidates = [{"family": family, "method": method, "target_fn_delta": -1, "gates": {"global_fn": True, "global_fp": True, "global_f1": True, "target_fn_delta": True}, "qualified": True, "global": {"tp": 1931, "fp": 314, "fn": 1987, "tn": 191668, "f1": global_f1}} for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY for method in methods]
+        payload = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935086011}, "candidates": candidates, "families": [family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY], "status": "synthetic_complete", "repeatable": True, "qualified_candidate_count": 16, "routing_research_eligible": True, "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
+        self.assertEqual(public_result_antigravity(payload), payload)
     def test_public_result_exposes_aggregate_only_allowlist_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.dashboard_export_antigravity import public_result_antigravity
 
-        payload = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935}, "candidates": [{"family": "Crop", "method": "minirocket_local_gap", "qualified": True, "global": {"tp": 1978, "fp": 314, "fn": 1940, "tn": 191668, "f1": 0.6409062885}}], "families": ["Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves"], "status": "synthetic_complete", "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
+        from experiments.exp449_residual_fn_method_qualification_antigravity.config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY
+        global_f1 = (2.0 * 1931) / (2 * 1931 + 314 + 1987)
+        payload = {"schema": "exp449.public-method-qualification.v1", "experiment": "Exp449", "baseline": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935086011}, "candidates": [{"family": family, "method": method, "target_fn_delta": -1, "gates": {"global_fn": True, "global_fp": True, "global_f1": True, "target_fn_delta": True}, "qualified": True, "global": {"tp": 1931, "fp": 314, "fn": 1987, "tn": 191668, "f1": global_f1}} for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY for method in methods], "families": [family for family, _methods in CANDIDATE_MATRIX_ANTIGRAVITY], "status": "synthetic_complete", "repeatable": True, "qualified_candidate_count": 16, "routing_research_eligible": True, "runtime": {"label_sessions": 1, "label_queries": 48, "label_rows": 72300}}
         self.assertEqual(public_result_antigravity(payload), payload)
 
     def test_public_result_rejects_forbidden_or_unallowlisted_nested_fields_antigravity(self) -> None:

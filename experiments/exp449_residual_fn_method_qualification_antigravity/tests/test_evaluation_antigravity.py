@@ -101,6 +101,22 @@ class EvaluationAntigravityTests(unittest.TestCase):
             crop = result.candidate_metrics[0]
             self.assertEqual((crop.family, crop.method, crop.target_confusion, crop.global_confusion, crop.target_fn_delta, crop.qualified), ("Crop", "minirocket_local_gap", ConfusionAntigravity(48, 0, 912, 35040), ConfusionAntigravity(1978, 314, 1940, 191668), -48, True))
 
+    def test_qualification_truth_drives_research_routing_only_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        import json
+
+        with tempfile.TemporaryDirectory(prefix="exp449_routing_truth_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            result = _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertGreater(result.qualified_count, 0)
+            self.assertTrue(result.routing_research_eligible)
+            decision = json.loads((dependencies.root / "decision_antigravity.json").read_text())
+            dashboard = json.loads((dependencies.root / "dashboard_snapshot_antigravity.json").read_text())
+            self.assertTrue(decision["routing_research_eligible"])
+            self.assertTrue(dashboard["routing_research_eligible"])
+            self.assertFalse(decision["automatic_routing"])
+            self.assertFalse(decision["automatic_promotion"])
+
     def test_bootstrap_draw_is_frozen_from_independently_derived_literal_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.bootstrap_antigravity import BOOTSTRAP_DRAW_SHA256_ANTIGRAVITY, bootstrap_draws_antigravity
 
@@ -145,6 +161,38 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             self.assertEqual({path.name for path in dependencies.root.iterdir()}, {"attacker_antigravity"})
             self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_post_rename_fsync_failure_never_leaves_valid_publication_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_postrename_fsync_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original, calls = module._fsync_directory_antigravity, 0
+            def fail_after_rename(path: Path) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 3: raise OSError("post rename fsync")
+                original(path)
+            with patch.object(module, "_fsync_directory_antigravity", side_effect=fail_after_rename), self.assertRaisesRegex(OSError, "post rename fsync"):
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertFalse(dependencies.root.exists())
+            self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_publication_has_no_fallible_postrename_replay_antigravity(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
+
+        with tempfile.TemporaryDirectory(prefix="exp449_postpublication_replay_antigravity_") as temporary:
+            dependencies = _DependenciesAntigravity(Path(temporary) / "publication_antigravity")
+            original, calls = module.inspect_replay_at_antigravity, 0
+            def staging_only(root: Path):
+                nonlocal calls
+                calls += 1
+                if calls > 1: raise OSError("post publication replay")
+                return original(root)
+            with patch.object(module, "inspect_replay_at_antigravity", side_effect=staging_only):
+                result = module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertEqual(calls, 1)
+            self.assertTrue(result.routing_research_eligible)
 
     def test_partial_staging_and_audit_write_failure_preserve_primary_truth_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as module
