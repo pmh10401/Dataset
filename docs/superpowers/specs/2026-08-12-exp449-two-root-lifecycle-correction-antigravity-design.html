@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp449 two-root lifecycle correction design</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.5; }
+    body { max-width: 1040px; margin: 2rem auto; padding: 0 1.25rem; }
+    h1, h2, h3 { line-height: 1.2; }
+    code { overflow-wrap: anywhere; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #888; padding: .55rem; text-align: left; vertical-align: top; }
+    .rule { font-weight: 700; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Exp449 two-root official lifecycle correction</h1>
+    <p>Design status: approved correction design. Scope: documentation of the prospective lifecycle only. This document does not implement a command, execute an official command, alter an audit, or authorize a run.</p>
+    <p>Purpose: make the Exp449 <em>predict → evaluate → inspect</em> lifecycle structurally possible and safe. The previous single-root topology is invalid because a completed predict phase necessarily occupies the root that evaluate had to require absent. This correction separates immutable prediction authority from final evaluation publication.</p>
+  </header>
+
+  <nav aria-label="Contents">
+    <ol>
+      <li><a href="#decision">Decision and rejected alternatives</a></li>
+      <li><a href="#architecture">Architecture and namespace ownership</a></li>
+      <li><a href="#flow">Lifecycle and data flow</a></li>
+      <li><a href="#failure">Failure handling and audit truth</a></li>
+      <li><a href="#invariants">Descriptor and namespace invariants</a></li>
+      <li><a href="#verification">TDD and adversarial verification matrix</a></li>
+      <li><a href="#governance">Governance and hash migration</a></li>
+      <li><a href="#tasks">Task decomposition</a></li>
+      <li><a href="#scope">Excluded scope and acceptance criteria</a></li>
+    </ol>
+  </nav>
+
+  <section id="decision">
+    <h2>1. Decision and rejected alternatives</h2>
+    <p>The approved design has two distinct filesystem roots. Predict owns an immutable prediction-authority root. Evaluate reads that root by descriptor and owns a separate evaluation-publication root. Inspect reads both roots by descriptor. This is the smallest change that removes the impossible absent-root precondition while preserving an exact, inspectable prediction authority.</p>
+    <table>
+      <thead><tr><th>Option</th><th>Disposition</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>Two-root lifecycle</td><td>Selected</td><td>Separates authority from publication, keeps predict evidence immutable, and lets evaluate require a genuinely absent destination.</td></tr>
+        <tr><td>Single-root atomic transition</td><td>Rejected</td><td>It requires a complex transition from partial prediction evidence to evaluation publication, creating destructive-risk and making interruption recovery harder to prove.</td></tr>
+        <tr><td>Stop Task7</td><td>Rejected</td><td>It does not meet the user goal of a safe predict → evaluate → inspect lifecycle with Task7 inspection and authenticated read-only dashboard verification.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="architecture">
+    <h2>2. Architecture and namespace ownership</h2>
+    <p>The lifecycle has three command phases and one fixed audit. Each phase has one namespace responsibility; no phase gains write authority over a namespace owned by an earlier phase.</p>
+    <table>
+      <thead><tr><th>Item</th><th>Exact identity</th><th>Owner and permitted state</th></tr></thead>
+      <tbody>
+        <tr><td>Prediction authority root</td><td><code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812</code></td><td>Predict creates this root only. After successful predict it is immutable exact Task5 authority containing the exact 96 candidates. Evaluate and inspect read it by descriptor; neither mutates it.</td></tr>
+        <tr><td>Evaluation publication root</td><td><code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_evaluation_antigravity_20260812</code></td><td>Evaluate creates this root only after descriptor capture and publishes the final exact 12-leaf Task6 publication there. Inspect reads it by descriptor. Predict never creates or writes it.</td></tr>
+        <tr><td>Failure audit</td><td><code>/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json</code></td><td>All phase failures record truthful phase, root destination, and recovery state. Audit recording never overwrites a primary error.</td></tr>
+      </tbody>
+    </table>
+    <p class="rule">Readiness requires both roots and the audit to be absent and non-symlink at entry and at its successful exit. A nonzero readiness outcome is terminal rather than a successful exit; its audit treatment follows the primary-error rule below. Readiness also requires a clean reviewed commit first and last, standard-library-only work before any external capture, and zero label-capable imports before the approved evaluation label session.</p>
+    <p>Symlinks are never accepted as substitutes for absent, owned, or immutable paths. Every root check resolves the path identity without following a link into a different namespace. The fixed audit is an audit object, not a root-state repair mechanism.</p>
+  </section>
+
+  <section id="flow">
+    <h2>3. Lifecycle and data flow</h2>
+    <ol>
+      <li><strong>Readiness:</strong> verify the clean reviewed commit, absent/non-symlink state of both roots and the audit, standard-library-only pre-capture state, and the disallowed-import boundary. It performs no prediction, evaluation, label access, dashboard access, or publication.</li>
+      <li><strong>Predict:</strong> create only the prediction authority root. Run the frozen Task5 prediction procedure with label access equal to zero, produce and freeze exactly 96 candidates, and retain its immutable authority evidence. The bootstrap remains <code>PCG64(44920260812)</code>, with 20,000 × 48 draws and SHA-256 <code>264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a</code>. The exact worker budget is 11 workers from 12−1, with <code>n_jobs=1</code>; no package installation occurs.</li>
+      <li><strong>Evaluate:</strong> descriptor-capture the immutable prediction authority root before any evaluation work. Require the evaluation publication root to be absent and non-symlink. Open the sole exact label session of 48 queries and 72,300 rows, evaluate against the captured exact 96-candidate authority, and publish exactly 12 final leaves only under the evaluation root. It never changes any byte in the prediction root.</li>
+      <li><strong>Inspect:</strong> a bare inspect descriptor-captures both roots and replays evaluation semantics against the exact prediction authority. It imports no SQLite module, source module, evaluator module, aeon module, network module, or dashboard module. Inspect is permitted only after complete evaluate success.</li>
+    </ol>
+    <p>The data flow is one-way: frozen Task5 prediction evidence → immutable descriptor capture → sole label session and Task6 computation → 12-leaf evaluation publication → descriptor-only semantic replay. The reverse direction is prohibited: labels, evaluation values, dashboard information, and inspection may not alter candidate authority.</p>
+  </section>
+
+  <section id="failure">
+    <h2>4. Failure handling and audit truth</h2>
+    <p>Any nonzero official phase command permanently stops Exp449. There is no retry, resume, override, rerun, root reuse, or recovery command. A stopped experiment remains stopped even when a subsequent condition appears repairable.</p>
+    <table>
+      <thead><tr><th>Failure point</th><th>Required preserved evidence</th><th>Audit truth</th></tr></thead>
+      <tbody>
+        <tr><td>Readiness failure</td><td>Both roots and audit remain absent/non-symlink when the failure happened before creation; no phase proceeds.</td><td>Phase is readiness; root destination identifies no publication; recovery truth states permanently stopped.</td></tr>
+        <tr><td>Predict failure</td><td>Prediction partial evidence is preserved in the prediction root; evaluation root remains absent/non-symlink.</td><td>Phase is predict; root destination is the prediction authority root; recovery truth states no retry or resume. The original failure remains the primary error.</td></tr>
+        <tr><td>Evaluate failure before publication-root creation</td><td>Prediction-root bytes remain unchanged; evaluation root remains absent/non-symlink.</td><td>Phase is evaluate; root destination is the evaluation publication root; recovery truth states no retry or resume. The original failure remains the primary error.</td></tr>
+        <tr><td>Evaluate failure after publication-root creation</td><td>Prediction-root bytes remain unchanged; evaluation root is retained only as identity-bound forensic evidence and is never promoted to final publication.</td><td>Phase is evaluate; root destination is the evaluation publication root; recovery truth describes the forensic root state and permanent stop. The original failure remains the primary error.</td></tr>
+        <tr><td>Inspect failure</td><td>Both prior roots remain byte-preserved; no publication is altered.</td><td>Phase is inspect; root destinations identify both descriptor inputs; recovery truth states permanently stopped. The original failure remains the primary error.</td></tr>
+      </tbody>
+    </table>
+    <p>The audit writer is secondary error handling. If audit creation or serialization fails, it reports that secondary failure without masking, replacing, or reclassifying the primary phase failure.</p>
+  </section>
+
+  <section id="invariants">
+    <h2>5. Descriptor and namespace invariants</h2>
+    <ul>
+      <li>A descriptor binds a root’s canonical identity, expected role, and immutable-content identity before the dependent phase consumes it.</li>
+      <li>Evaluate’s prediction descriptor is captured before it opens the sole label session. Its destination descriptor is the evaluation root and must describe an absent, non-symlink namespace until publication begins.</li>
+      <li>Inspect captures descriptors for both completed roots before semantic replay. Its import boundary prevents it from acquiring labels or re-evaluating through SQLite, source, evaluator, aeon, network, or dashboard code.</li>
+      <li>Only a complete evaluate success may designate the evaluation root as final Task6 publication, and that publication has exactly 12 leaves.</li>
+      <li>Prediction-root identity and bytes are invariant across every evaluate and inspect outcome. Evaluation-root identity, once created, identifies either final complete publication or forensic evidence; it is never reused.</li>
+      <li>There is exactly one label-capable session: the evaluation session with exactly 48 queries and 72,300 rows. Predict and inspect have no label-capable imports or access.</li>
+    </ul>
+  </section>
+
+  <section id="verification">
+    <h2>6. Test-driven and adversarial verification matrix</h2>
+    <p>Implementation begins with failing contract tests for each row, then introduces the minimum source, launcher, and test changes needed to pass. Tests use local synthetic Exp449 payload only; they do not contact a service or use production labels.</p>
+    <table>
+      <thead><tr><th>Case</th><th>Expected assertion</th></tr></thead>
+      <tbody>
+        <tr><td>Fresh readiness</td><td>Both exact roots and the fixed audit are absent/non-symlink at entry and exit; reviewed commit requirements and standard-library/import boundaries pass.</td></tr>
+        <tr><td>Occupied or symlinked prediction root</td><td>Readiness and predict reject it without evaluating or creating the other root.</td></tr>
+        <tr><td>Successful predict</td><td>Only the prediction root is created; it contains frozen exact 96-candidate Task5 authority; label access is zero; bootstrap and worker assertions match the exact values.</td></tr>
+        <tr><td>Predict nonzero outcome</td><td>Partial prediction evidence remains, evaluation root is absent/non-symlink, audit preserves predict as the primary failure, and a second invocation is refused.</td></tr>
+        <tr><td>Evaluate with missing, changed, or wrong-role prediction descriptor</td><td>Evaluation fails before labels or evaluation publication; prediction bytes remain unchanged.</td></tr>
+        <tr><td>Evaluate with occupied or symlinked evaluation root</td><td>Evaluation fails before the label session and does not mutate prediction authority.</td></tr>
+        <tr><td>Successful evaluate</td><td>Exactly one 48-query/72,300-row label session occurs; prediction bytes are identical before and after; exactly 12 final leaves occur only in the evaluation root.</td></tr>
+        <tr><td>Evaluate nonzero outcome after root creation</td><td>Prediction bytes remain unchanged; evaluation-root evidence is identity-bound forensic state; audit retains the evaluation primary error and permanent-stop truth.</td></tr>
+        <tr><td>Bare inspect before complete evaluation</td><td>Inspect is refused.</td></tr>
+        <tr><td>Bare inspect after complete evaluation</td><td>Both descriptors are captured and replay agrees with evaluation semantics while prohibited module imports and label access remain absent.</td></tr>
+        <tr><td>Dashboard verification</td><td>Task7 makes authenticated read-only verification attempts only. It performs no build, edit, publish, or redeploy. Unavailable access is recorded as blocked and is never inferred.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="governance">
+    <h2>7. Governance and hash migration</h2>
+    <p>The implementation history is ordered and non-self-referential:</p>
+    <ol>
+      <li>Correction design commit: this design document.</li>
+      <li>Governance/hash rebind commit: rebind the affected governance and hash contracts to the corrected lifecycle.</li>
+      <li>Functional source/tests/launcher commit: implement two-root behavior through test-driven work.</li>
+      <li>Truth/report/ledgers commit: record the functional candidate without self-reference.</li>
+      <li>Final map-only child: update only the code map, bound to the clean truth/report/ledgers parent.</li>
+    </ol>
+    <p>The official reviewed commit is the final clean map-only child. Readiness validates the lock-parent convention—namely that the map lock names its clean truth parent—rather than requiring the lock to equal <code>HEAD</code>. This prevents a generated map child from creating a self-referential governance requirement. Every listed commit must be clean at the indicated boundary.</p>
+  </section>
+
+  <section id="tasks">
+    <h2>8. Implementation task decomposition</h2>
+    <ol>
+      <li><strong>Governance and hash rebind:</strong> define the two exact roots, audit phase/destination/recovery fields, cleanliness checks, descriptor contracts, and the lock-parent validation rule.</li>
+      <li><strong>Predict contract:</strong> add failing and passing tests for absent/non-symlink entry, zero label access, exact bootstrap, 11-worker constraint, immutable 96-candidate Task5 authority, and preserved partial failure evidence.</li>
+      <li><strong>Evaluate contract:</strong> add failing and passing tests for prediction descriptor capture, absent/non-symlink evaluation destination, sole 48-query/72,300-row label session, byte-invariant prediction root, exact 12-leaf publication, and forensic evaluation failures.</li>
+      <li><strong>Inspect contract:</strong> add failing and passing tests for both descriptors, complete-evaluation gate, semantic replay, and the prohibited-import boundary.</li>
+      <li><strong>Task7 evidence contract:</strong> add tests and reporting rules for authenticated read-only dashboard verification and explicitly blocked unavailable access, using only local synthetic Exp449 payload.</li>
+      <li><strong>Truth, reports, ledgers, and map:</strong> record the functional candidate without self-reference, then generate the final map-only child whose lock identifies its clean truth parent.</li>
+    </ol>
+  </section>
+
+  <section id="scope">
+    <h2>9. Excluded scope and acceptance criteria</h2>
+    <h3>Excluded scope</h3>
+    <ul>
+      <li>No product source, launcher, test, official root, audit, dashboard/site, runbook, preregistration, ledger, code map, or Task7 implementation is changed by this design correction.</li>
+      <li>No official command is run, no package is installed, and no external capture is opened by this design correction.</li>
+      <li>No MLX acceleration experiment is introduced. The frozen algorithm and the existing CPU comparability posture remain unchanged.</li>
+      <li>No dashboard build, edit, publish, redeploy, or unauthenticated inference is authorized.</li>
+    </ul>
+    <h3>Acceptance criteria</h3>
+    <ol>
+      <li>The implementation has the exact prediction root <code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812</code> and exact evaluation root <code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_evaluation_antigravity_20260812</code>, with exclusive phase ownership stated in this design.</li>
+      <li>The structural sequence is readiness → predict → evaluate → inspect; predict creates only the prediction root, evaluate creates only the evaluation root, and inspect reads both completed roots by descriptor.</li>
+      <li>Predict freezes exact 96 candidates with zero label access; evaluate uses the sole exact 48-query/72,300-row label session and publishes exactly 12 final leaves only under the evaluation root.</li>
+      <li>The bootstrap is PCG64(44920260812), 20,000 × 48, SHA-256 <code>264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a</code>; execution uses 11 workers from 12−1 and <code>n_jobs=1</code>.</li>
+      <li>Every nonzero official phase command permanently stops Exp449, preserves the specified evidence, and records truthful audit phase/root destination/recovery state without overwriting the primary error.</li>
+      <li>Bare inspect imports none of SQLite, source, evaluator, aeon, network, or dashboard modules and cannot run before complete evaluate success.</li>
+      <li>Task7 dashboard verification is authenticated and read-only; unavailable access is recorded blocked and never inferred; synthetic Exp449 payload remains local.</li>
+      <li>The governance chain is correction design, governance/hash rebind, functional source/tests/launcher, truth/report/ledgers, then a clean final map-only child bound to the clean truth parent. Readiness validates the lock-parent convention rather than lock == HEAD.</li>
+    </ol>
+  </section>
+</body>
+</html>
