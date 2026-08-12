@@ -59,19 +59,29 @@ def assess_mlx_antigravity(*, package_probe: Callable[[str], str | None] | None 
     mlx_metal_version = packages("mlx-metal")
     torch_version = packages("torch")
     mps_built, mps_available = (torch_probe or _torch_probe_antigravity)()
-    if mlx_version is None and mlx_metal_version is None:
-        return MlxDecisionAntigravity("cpu", "mlx_and_mlx_metal_absent_in_fixed_environment", False, None, None, torch_version, mps_built, mps_available, None, False, None, None, False, None)
     stage = stage_probe() if stage_probe is not None else {"tensor_eligible": False}
+    if type(stage) is not dict:
+        stage = {}
+    requested_backend = stage.get("backend", "mlx")
+    if requested_backend not in ("mlx", "mps"):
+        return MlxDecisionAntigravity("cpu", "invalid_acceleration_backend", False, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, None, False, None, None, False, None)
     tensor_eligible = stage.get("tensor_eligible") is True
     if not tensor_eligible:
+        if requested_backend == "mlx" and mlx_version is None and mlx_metal_version is None:
+            return MlxDecisionAntigravity("cpu", "mlx_and_mlx_metal_absent_in_fixed_environment", False, None, None, torch_version, mps_built, mps_available, None, False, None, None, False, None)
         return MlxDecisionAntigravity("cpu", "tensor_stage_ineligible_cpu_canonical", False, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, None, False, None, None, False, None)
+    if requested_backend == "mlx" and (mlx_version is None or mlx_metal_version is None):
+        return MlxDecisionAntigravity("cpu", "mlx_runtime_incomplete", True, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, None, False, None, None, False, None)
+    if requested_backend == "mps" and (mps_built is not True or mps_available is not True):
+        return MlxDecisionAntigravity("cpu", "mps_unavailable", True, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, None, False, None, None, False, None)
     finite = stage.get("finite") is True
     identical = stage.get("candidate_indices_identical")
     tolerance = stage.get("numerical_tolerance_met")
     inclusive = stage.get("benchmark_includes_transfer_sync_warmup_compile") is True
     raw_speedup = stage.get("speedup")
     speedup = float(raw_speedup) if type(raw_speedup) in (int, float) and type(raw_speedup) is not bool else None
-    common = ("cpu", True, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, None, True, identical if type(identical) is bool else None, tolerance if type(tolerance) is bool else None, inclusive, speedup)
+    valid_speedup = speedup is not None and math.isfinite(speedup) and speedup >= 0.0
+    common = ("cpu", True, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, None, True, identical if type(identical) is bool else None, tolerance if type(tolerance) is bool else None, inclusive, speedup if valid_speedup else None)
     if not inclusive:
         return MlxDecisionAntigravity(*common[:1], "benchmark_not_inclusive", *common[1:])
     if not finite:
@@ -80,6 +90,8 @@ def assess_mlx_antigravity(*, package_probe: Callable[[str], str | None] | None 
         return MlxDecisionAntigravity(*common[:1], "candidate_indices_not_identical", *common[1:])
     if tolerance is not True:
         return MlxDecisionAntigravity(*common[:1], "numerical_tolerance_not_met", *common[1:])
-    if speedup is None or speedup < 1.1:
+    if not valid_speedup:
+        return MlxDecisionAntigravity(*common[:1], "invalid_speedup", *common[1:])
+    if speedup < 1.1:
         return MlxDecisionAntigravity(*common[:1], "speedup_below_1_1", *common[1:])
-    return MlxDecisionAntigravity("mlx", "complete_mlx_gate_passed", True, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, "mlx", True, True, True, True, speedup)
+    return MlxDecisionAntigravity(requested_backend, f"complete_{requested_backend}_gate_passed", True, mlx_version, mlx_metal_version, torch_version, mps_built, mps_available, requested_backend, True, True, True, True, speedup)

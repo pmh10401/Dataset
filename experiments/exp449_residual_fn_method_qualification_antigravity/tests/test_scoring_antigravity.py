@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -74,6 +75,74 @@ class LocalGapAndScoringAntigravityTests(unittest.TestCase):
             score_candidate_antigravity(self.train, self.test, candidate, seed=True)
         with self.assertRaisesRegex(ValueError, "shape"):
             score_candidate_antigravity(self.train, self.test[:, :-1], candidate, seed=20260721)
+
+    def test_score_requires_a_candidate_declared_seed_antigravity(self) -> None:
+        """Catches scoring with an undeclared seed that cannot be part of the frozen candidate."""
+        with self.assertRaisesRegex(ValueError, "candidate.seeds"):
+            score_candidate_antigravity(self.train, self.test, _candidate_antigravity("minirocket_local_gap"), seed=20261721)
+
+    def test_capped_reference_sampling_uses_requested_kernel_salts_antigravity(self) -> None:
+        """Catches Exp249 sampling drift: fold salt and full-reference salt must include requested kernels exactly once."""
+        class RecordingRepresentationAntigravity:
+            def __init__(self, records: list[np.ndarray]) -> None:
+                self.records = records
+
+            def fit_transform(self, rows: np.ndarray) -> np.ndarray:
+                self.records.append(np.asarray(rows)[:, 0].astype(int))
+                return np.column_stack((rows[:, 0], rows[:, 1]))
+
+            def transform(self, rows: np.ndarray) -> np.ndarray:
+                return np.column_stack((rows[:, 0], rows[:, 1]))
+
+        train = np.column_stack((np.arange(1255, dtype=float), np.arange(1255, dtype=float) % 13, np.ones((1255, 7))))
+        test = train[:3]
+        records: list[np.ndarray] = []
+        candidate = _candidate_antigravity("minirocket_local_gap")
+        with patch(
+            "experiments.exp449_residual_fn_method_qualification_antigravity.scoring_antigravity.make_representation_antigravity",
+            side_effect=lambda *_: RecordingRepresentationAntigravity(records),
+        ):
+            score_candidate_antigravity(train, test, candidate, seed=20260721)
+        folds = crossfit_plan_antigravity(1255, seed=20260721)
+        expected = [
+            np.sort(np.random.default_rng(20260721 + 1009 * (fold + 1) + 4096).choice(fit, size=1000, replace=False))
+            for fold, (fit, _) in enumerate(folds)
+        ]
+        expected.append(np.sort(np.random.default_rng(20260721 + 7919 + 4096).choice(np.arange(1255), size=1000, replace=False)))
+        self.assertEqual(len(records), 6)
+        for actual, wanted in zip(records, expected, strict=True):
+            np.testing.assert_array_equal(actual, wanted)
+
+    def test_representation_nonfinite_and_dimension_drift_fail_before_scoring_antigravity(self) -> None:
+        """Catches external transformer non-finite outputs and fold/full feature dimensions drifting unnoticed."""
+        class NonfiniteRepresentationAntigravity:
+            def fit_transform(self, rows: np.ndarray) -> np.ndarray:
+                return np.full((len(rows), 2), np.nan)
+
+            def transform(self, rows: np.ndarray) -> np.ndarray:
+                return np.full((len(rows), 2), np.nan)
+
+        candidate = _candidate_antigravity("minirocket_local_gap")
+        with patch(
+            "experiments.exp449_residual_fn_method_qualification_antigravity.scoring_antigravity.make_representation_antigravity",
+            return_value=NonfiniteRepresentationAntigravity(),
+        ), self.assertRaisesRegex(ValueError, "non-finite representation"):
+            score_candidate_antigravity(self.train, self.test, candidate, seed=20260721)
+
+        dimensions = iter((2, 2, 2, 2, 2, 3))
+
+        class DriftingRepresentationAntigravity:
+            def fit_transform(self, rows: np.ndarray) -> np.ndarray:
+                return np.ones((len(rows), next(dimensions)), dtype=float)
+
+            def transform(self, rows: np.ndarray) -> np.ndarray:
+                return np.ones((len(rows), 2), dtype=float)
+
+        with patch(
+            "experiments.exp449_residual_fn_method_qualification_antigravity.scoring_antigravity.make_representation_antigravity",
+            side_effect=lambda *_: DriftingRepresentationAntigravity(),
+        ), self.assertRaisesRegex(ValueError, "inconsistent feature dimensions"):
+            score_candidate_antigravity(self.train, self.test, candidate, seed=20260721)
 
 
 if __name__ == "__main__":
