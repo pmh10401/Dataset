@@ -366,9 +366,17 @@ class LeafEvidence:
     margin: np.ndarray
     strength: np.ndarray
     native_pass: np.ndarray
+    evidence_missing: np.ndarray
+
+    def __post_init__(self) -> None:
+        # validate aligned shapes and exact bool fields, make defensive copies,
+        # then set every stored ndarray writeable=False at this public boundary
+        ...
 
 def upper_tail_pvalues(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
-    return np.asarray([(1 + np.count_nonzero(reference >= value)) / (len(reference) + 1)
+    # Preserve the accepted input numeric domain for comparisons; do not
+    # coerce int64 values above 2**53 to float64 before ordering.
+    return np.asarray([(1 + sum(item >= value for item in reference)) / (len(reference) + 1)
                        for value in query], dtype=np.float64)
 
 def leaf_evidence(reference: np.ndarray, query: np.ndarray, alpha: float) -> LeafEvidence:
@@ -392,7 +400,7 @@ def route_preserving_scores(strength: np.ndarray, alerts: np.ndarray) -> np.ndar
     return np.where(a, 0.5 + 0.5 * u, 0.5 * u)
 ```
 
-Missing evidence는 호출 전에 `u=0.5`와 `evidence_missing=true`로 명시하고 임의 perturbation을 금지한다.
+`strict_native_pass`도 accepted score/threshold dtype을 비교 전에 float64로 강제 변환하지 않는다. 큰 정수와 mixed real scalar는 Python/NumPy scalar의 정확한 순서 의미로 elementwise 비교한다. Missing evidence는 별도 helper가 `p=0.5`, `margin=0`, `u=0.5`, `native_pass=false`, `evidence_missing=true`로 표시하고 임의 perturbation을 금지한다. `LeafEvidence` factory뿐 아니라 직접 생성도 같은 정렬·범위·read-only 불변조건을 강제한다. 유효 strength domain은 `0 <= u < 1`이다.
 
 - [ ] **Step 5: Run tests and commit**
 
