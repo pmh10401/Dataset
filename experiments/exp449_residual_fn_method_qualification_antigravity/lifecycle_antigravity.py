@@ -28,6 +28,7 @@ _SUCCESS_LEAVES_ANTIGRAVITY = (
     "inspect_complete_antigravity.json",
 )
 _STOPPED_LEAF_ANTIGRAVITY = "stopped_antigravity.json"
+_NO_CHAIN_INSPECT_COMMIT_ANTIGRAVITY = "0" * 40
 _LEAF_EVENTS_ANTIGRAVITY = (
     ("readiness", "complete"), ("predict", "started"), ("predict", "complete"),
     ("evaluate", "started"), ("evaluate", "complete"), ("inspect", "started"), ("inspect", "complete"),
@@ -574,14 +575,15 @@ def _fault_antigravity(fault_hook, point: str) -> None:
         fault_hook(point)
 
 
-def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, name: str, payload: bytes, fault_hook) -> None:
-    """Create, fsync, reread, and namespace-revalidate a receipt leaf beneath one retained fd."""
+def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, name: str, payload: bytes, fault_hook, created_holder: list[tuple[int, int, int, int]] | None = None) -> tuple[int, int, int, int]:
+    """Create and authenticate a leaf; caller owns all final durability barriers."""
     _fault_antigravity(fault_hook, "leaf_create")
     leaf = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=directory_fd)
     created: tuple[int, int] | None = None
     primary: BaseException | None = None
     try:
         info = os.fstat(leaf); created = _namespace_identity_antigravity(info)
+        if created_holder is not None: created_holder.append(created)
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
             raise ValueError("receipt leaf is unsafe")
         view = memoryview(payload)
@@ -596,15 +598,15 @@ def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, n
         primary = error
         raise
     finally:
-        try:
-            _fault_antigravity(fault_hook, "leaf_close")
-            os.close(leaf)
+        close_error = None
+        try: _fault_antigravity(fault_hook, "leaf_close")
+        except BaseException as error: close_error = error
+        try: os.close(leaf)
         except BaseException as error:
-            if primary is not None:
-                primary.add_note(f"leaf_close_error={type(error).__name__}: {error}")
-            else:
-                raise
-    _fault_antigravity(fault_hook, "parent_fsync"); os.fsync(directory_fd)
+            if close_error is None: close_error = error
+        if close_error is not None:
+            if primary is not None: primary.add_note(f"leaf_close_error={type(close_error).__name__}: {close_error}")
+            else: raise close_error
     _fault_antigravity(fault_hook, "leaf_reread")
     reader = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory_fd)
     primary = None
@@ -620,89 +622,122 @@ def _append_leaf_at_descriptor_antigravity(directory: Path, directory_fd: int, n
         primary = error
         raise
     finally:
-        try:
-            _fault_antigravity(fault_hook, "reread_close")
-            os.close(reader)
+        close_error = None
+        try: _fault_antigravity(fault_hook, "reread_close")
+        except BaseException as error: close_error = error
+        try: os.close(reader)
         except BaseException as error:
-            if primary is not None:
-                primary.add_note(f"reread_close_error={type(error).__name__}: {error}")
-            else:
-                raise
+            if close_error is None: close_error = error
+        if close_error is not None:
+            if primary is not None: primary.add_note(f"reread_close_error={type(close_error).__name__}: {close_error}")
+            else: raise close_error
+    if created is None:
+        raise ValueError("receipt leaf creation identity is unavailable")
+    return created
 
 
-def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, reviewed_commit: str, *, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), root_identities: tuple[str | None, str | None] | None = None, fault_hook=None, _transaction=None) -> LifecycleReceiptAntigravity:
-    """Append the one next governed receipt leaf and revalidate the complete prefix."""
-    if not isinstance(receipt_dir, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path) or phase not in _PREDECESSOR_ANTIGRAVITY or event not in ("started", "complete", "stopped") or not _is_lower_hex_antigravity(reviewed_commit, 40):
+def _remove_created_leaf_antigravity(directory_fd: int, name: str, created: tuple[int, int, int, int]) -> None:
+    """Remove only the exact precommit leaf inode, then durably publish its removal."""
+    current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+    if _namespace_identity_antigravity(current) != created:
+        raise ValueError("created receipt leaf cleanup is unsafe")
+    os.unlink(name, dir_fd=directory_fd)
+    os.fsync(directory_fd)
+
+
+def append_receipt_antigravity(receipt_dir: Path, phase: str, event: str, reviewed_commit: str, *, prediction_root: Path = Path(_PREDICTION_ROOT_ANTIGRAVITY), evaluation_root: Path = Path(_EVALUATION_ROOT_ANTIGRAVITY), root_identities: tuple[str | None, str | None] | None = None, fault_hook=None, _transaction=None, _precommit=None) -> LifecycleReceiptAntigravity:
+    """Append one receipt, with parent fsync as its only final durable operation.
+
+    ``_precommit`` is command-private authority validation/close work.  It runs
+    after the new leaf is reread but before receipt directory and parent fsync.
+    """
+    if (not isinstance(receipt_dir, Path) or not isinstance(prediction_root, Path) or not isinstance(evaluation_root, Path)
+            or phase not in _PREDECESSOR_ANTIGRAVITY or event not in ("started", "complete", "stopped")
+            or not _is_lower_hex_antigravity(reviewed_commit, 40) or (_precommit is not None and not callable(_precommit))):
         raise ValueError("receipt append inputs are invalid")
-    if not receipt_dir.exists() and not receipt_dir.is_symlink() and _transaction is None:
-        _fault_antigravity(fault_hook, "directory_create")
-    transaction = _ReceiptTransactionAntigravity(receipt_dir, create_s0=True) if _transaction is None else _transaction
-    classification = transaction.classification
-    if classification is None or classification.stopped:
-        if _transaction is None: transaction.close(None)
-        raise ValueError("receipt namespace cannot be appended")
-    state_number = int(classification.state[1:])
-    if event == "stopped":
-        name = _STOPPED_LEAF_ANTIGRAVITY
-    else:
-        if state_number >= len(_SUCCESS_LEAVES_ANTIGRAVITY) or _LEAF_EVENTS_ANTIGRAVITY[state_number] != (phase, event):
-            raise ValueError("receipt transition is not the next governed leaf")
-        name = _SUCCESS_LEAVES_ANTIGRAVITY[state_number]
-    previous = classification.previous_leaf_sha256
-    if state_number:
-        if classification.reviewed_commit != reviewed_commit or previous is None:
-            raise ValueError("receipt reviewed commit differs")
-    prediction_transaction = evaluation_transaction = None
-    if root_identities is None:
-        prediction_transaction = _RootIdentityTransactionAntigravity(prediction_root, fault_hook)
-        evaluation_transaction = _RootIdentityTransactionAntigravity(evaluation_root, fault_hook)
-        root_identities = (prediction_transaction.identity, evaluation_transaction.identity)
-    if type(root_identities) is not tuple or len(root_identities) != 2:
-        raise ValueError("receipt root identities are invalid")
-    prediction_identity, evaluation_identity = _stage_root_fields_antigravity(phase, event, root_identities[0], root_identities[1])
-    receipt = LifecycleReceiptAntigravity(_SCHEMA_ANTIGRAVITY, _EXPERIMENT_ID_ANTIGRAVITY, _RUN_IDENTITY_ANTIGRAVITY, reviewed_commit, phase, event, state_number, previous, prediction_identity, evaluation_identity, event == "stopped")
-    primary: BaseException | None = None
+    own_transaction = _transaction is None
+    transaction = None; prediction_transaction = evaluation_transaction = None
+    primary: BaseException | None = None; created = None; appended_leaf = None; created_holder: list[tuple[int, int, int, int]] = []
     try:
-        # Receipt and root evidence must be fully revalidated and every root
-        # descriptor closed before the final receipt durability sequence starts.
+        if not receipt_dir.exists() and not receipt_dir.is_symlink() and own_transaction:
+            _fault_antigravity(fault_hook, "directory_create")
+        transaction = _ReceiptTransactionAntigravity(receipt_dir, create_s0=True) if own_transaction else _transaction
+        classification = transaction.classification
+        if classification is None or classification.stopped:
+            raise ValueError("receipt namespace cannot be appended")
+        state_number = int(classification.state[1:])
+        if event == "stopped":
+            name = _STOPPED_LEAF_ANTIGRAVITY
+        else:
+            if state_number >= len(_SUCCESS_LEAVES_ANTIGRAVITY) or _LEAF_EVENTS_ANTIGRAVITY[state_number] != (phase, event):
+                raise ValueError("receipt transition is not the next governed leaf")
+            name = _SUCCESS_LEAVES_ANTIGRAVITY[state_number]
+        previous = classification.previous_leaf_sha256
+        if state_number and (classification.reviewed_commit != reviewed_commit or previous is None):
+            raise ValueError("receipt reviewed commit differs")
+        if root_identities is None:
+            prediction_transaction = _RootIdentityTransactionAntigravity(prediction_root, fault_hook)
+            evaluation_transaction = _RootIdentityTransactionAntigravity(evaluation_root, fault_hook)
+            root_identities = (prediction_transaction.identity, evaluation_transaction.identity)
+        if type(root_identities) is not tuple or len(root_identities) != 2:
+            raise ValueError("receipt root identities are invalid")
+        prediction_identity, evaluation_identity = _stage_root_fields_antigravity(phase, event, root_identities[0], root_identities[1])
+        receipt = LifecycleReceiptAntigravity(_SCHEMA_ANTIGRAVITY, _EXPERIMENT_ID_ANTIGRAVITY, _RUN_IDENTITY_ANTIGRAVITY, reviewed_commit, phase, event, state_number, previous, prediction_identity, evaluation_identity, event == "stopped")
         _fault_antigravity(fault_hook, "before_end_validate")
         transaction.end_validate()
         if prediction_transaction is not None: prediction_transaction.end_validate()
         if evaluation_transaction is not None: evaluation_transaction.end_validate()
-    except BaseException as error:
-        primary = error
-        raise
-    finally:
-        if prediction_transaction is not None: prediction_transaction.close(primary)
-        if evaluation_transaction is not None: evaluation_transaction.close(primary)
-    try:
-        _append_leaf_at_descriptor_antigravity(receipt_dir, transaction.directory_fd, name, canonical_json_bytes_antigravity(receipt.payload_antigravity()), fault_hook)
+        payload = canonical_json_bytes_antigravity(receipt.payload_antigravity())
+        created = _append_leaf_at_descriptor_antigravity(receipt_dir, transaction.directory_fd, name, payload, fault_hook, created_holder)
         leaf_fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=transaction.directory_fd)
         leaf_info = os.fstat(leaf_fd); leaf_payload = b"".join(iter(lambda: os.read(leaf_fd, 1 << 20), b""))
-        transaction.leaves.append((name, leaf_fd, _namespace_identity_antigravity(leaf_info), leaf_payload, receipt))
-        # Darwin increments a directory link count for a newly created leaf;
-        # capture that governed mutation before checking for hostile rebinding.
+        appended_leaf = (name, leaf_fd, _namespace_identity_antigravity(leaf_info), leaf_payload, receipt)
+        transaction.leaves.append(appended_leaf)
         transaction.directory_identity = _namespace_identity_antigravity(os.fstat(transaction.directory_fd))
-        transaction.end_validate(); os.fsync(transaction.directory_fd)
+        transaction.end_validate()
+        _fault_antigravity(fault_hook, "before_precommit")
+        if _precommit is not None: _precommit()
+        # Direct append owns the two root/absence transactions.  Their close
+        # failures remain precommit failures, not post-durable cleanup.
+        for root_transaction in (prediction_transaction, evaluation_transaction):
+            if root_transaction is not None:
+                root_transaction.close(None)
+        prediction_transaction = evaluation_transaction = None
+        _fault_antigravity(fault_hook, "directory_close")
+        _fault_antigravity(fault_hook, "before_directory_fsync"); os.fsync(transaction.directory_fd)
+        _fault_antigravity(fault_hook, "before_parent_fsync"); _fault_antigravity(fault_hook, "parent_fsync"); os.fsync(transaction.parent_fd)
+        expected_state = "STOPPED" if event == "stopped" else f"S{state_number + 1}"
+        transaction.classification = ReceiptClassificationAntigravity(expected_state, event == "stopped", False, None, reviewed_commit, hashlib.sha256(payload).hexdigest())
+        if own_transaction:
+            try: transaction.close(None)
+            except BaseException: pass
+        return receipt
     except BaseException as error:
         primary = error
+        if created is None and created_holder: created = created_holder[0]
+        if appended_leaf is not None and transaction is not None:
+            try: os.close(appended_leaf[1])
+            except BaseException as close_error: error.add_note(f"created_leaf_close_error={type(close_error).__name__}: {close_error}")
+            if transaction.leaves and transaction.leaves[-1] is appended_leaf: transaction.leaves.pop()
+        if created is not None and transaction is not None:
+            try:
+                _remove_created_leaf_antigravity(transaction.directory_fd, name, created)
+                transaction.directory_identity = _namespace_identity_antigravity(os.fstat(transaction.directory_fd))
+            except BaseException as cleanup_error:
+                error.add_note(f"created_leaf_cleanup_error={type(cleanup_error).__name__}: {cleanup_error}")
         raise
     finally:
-        close_error: BaseException | None = None
-        try:
-            _fault_antigravity(fault_hook, "directory_close")
-        except BaseException as error:
-            if primary is not None: primary.add_note(f"directory_close_error={type(error).__name__}: {error}")
-            else: close_error = error
-        if _transaction is None: transaction.close(primary)
-        if close_error is not None:
-            raise close_error
-    expected_state = "STOPPED" if event == "stopped" else f"S{state_number + 1}"
-    transaction.classification = ReceiptClassificationAntigravity(expected_state, event == "stopped", False, None, reviewed_commit, hashlib.sha256(canonical_json_bytes_antigravity(receipt.payload_antigravity())).hexdigest())
-    if _transaction is None:
-        result = validate_receipt_inventory_antigravity(receipt_dir)
-        if result.state != expected_state: raise ValueError("receipt append failed revalidation")
-    return receipt
+        for root_transaction in (evaluation_transaction, prediction_transaction):
+            if root_transaction is not None:
+                try: root_transaction.close(primary)
+                except BaseException as close_error:
+                    if primary is not None: primary.add_note(f"root_transaction_close_error={type(close_error).__name__}: {close_error}")
+                    else: raise
+        if own_transaction and transaction is not None:
+            try: transaction.close(primary)
+            except BaseException as close_error:
+                if primary is not None: primary.add_note(f"receipt_transaction_close_error={type(close_error).__name__}: {close_error}")
+                else: raise
 
 
 def write_failure_audit_antigravity(destination: Path, phase: str, root_destinations: tuple[str, ...], primary_error: BaseException, *, recovery_state: str = "stopped", cleanup_notes: tuple[str, ...] = ()) -> None:
@@ -765,10 +800,10 @@ def run_phase_antigravity(phase: str, reviewed_commit: str | None, operation: Ca
         raise ValueError("receipt lifecycle is permanently stopped")
     audit_occupied = audit_path.exists() or audit_path.is_symlink()
     primary: BaseException | None = None; audit_pin = None
-    chain_commit = classification.reviewed_commit or reviewed_commit
-    if chain_commit is None:
-        transaction.close(None)
-        raise ValueError("receipt run identity is unavailable")
+    # S0 bare inspect has no chain to derive.  Bind its required terminal
+    # receipt to this deterministic sentinel so it follows the same direct
+    # out-of-order stop/audit rule without inventing a caller-supplied review.
+    chain_commit = classification.reviewed_commit or reviewed_commit or _NO_CHAIN_INSPECT_COMMIT_ANTIGRAVITY
     if classification.state != _PREDECESSOR_ANTIGRAVITY[phase]:
         primary = ValueError("command does not have the exact predecessor")
     elif not bare_inspect and classification.reviewed_commit is not None and classification.reviewed_commit != reviewed_commit:
@@ -804,16 +839,6 @@ def run_phase_antigravity(phase: str, reviewed_commit: str | None, operation: Ca
         audit_pin.end_validate()
         result = operation(chain_commit) if bare_inspect else operation()
         roots.capture_produced()
-        roots.end_validate()
-        transaction.end_validate()
-        audit_pin.end_validate()
-        # The audit pin's last fallible close is also pre-commit.  On failure
-        # the durable complete point has not yet been reached and stop/audit
-        # recovery remains available.
-        audit_pin.close(None); audit_pin = None
-        # All command-root validation and fallible root closes precede the
-        # complete leaf's parent fsync, which is the final durable commit.
-        roots.close(None)
     except BaseException as error:
         if audit_pin is not None:
             try: audit_pin.close(error)
@@ -824,9 +849,14 @@ def run_phase_antigravity(phase: str, reviewed_commit: str | None, operation: Ca
         transaction.close(error)
         raise
     try:
-        # A complete receipt is a durable commit point only after the complete
-        # append function has returned from its own descriptor revalidation.
-        append_receipt_antigravity(receipt_dir, phase, "complete", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, root_identities=roots.identities, _transaction=transaction)
+        def complete_precommit() -> None:
+            nonlocal audit_pin
+            # The leaf is now written and reread.  Retained root and audit
+            # authority remains live through this final validation and every
+            # fallible authority close, all before receipt durability fsync.
+            roots.end_validate(); audit_pin.end_validate()
+            roots.close(None); audit_pin.close(None); audit_pin = None
+        append_receipt_antigravity(receipt_dir, phase, "complete", chain_commit, prediction_root=prediction_root, evaluation_root=evaluation_root, root_identities=roots.identities, _transaction=transaction, _precommit=complete_precommit)
     except BaseException as error:
         _stop_and_audit_antigravity(receipt_dir, audit_path, phase, chain_commit, error, prediction_root, evaluation_root, transaction=transaction)
         transaction.close(error)

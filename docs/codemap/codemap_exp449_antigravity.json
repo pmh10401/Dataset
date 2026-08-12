@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T02:00:00+00:00",
-  "source_parent_commit": "9057706d10390b5699d952efa31205a14680cd5e",
+  "generated_at": "2026-08-13T03:10:00+00:00",
+  "source_parent_commit": "d7fcf94f03b02678c9ad0c12b76275cd0f518863",
   "scope": [
     "Task-1 correction is complete and Task-2 receipt lifecycle is implemented for review; readiness/CLI, official lifecycle execution, truth closeout, dashboard access, and publication remain unauthorized."
   ],
@@ -241,7 +241,7 @@
     {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Command authority retains root leaf parent-relative identities, exact absent-path pins, and audit absence through precommit; bare inspect derives its review commit from the already-open receipt transaction, while complete-parent fsync remains final durable commit. Official execution remains closed.",
+      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit. Command root and audit authority stays live through complete leaf reread and precommit validation; exact-inode cleanup removes an undurable leaf before recovery; only receipt directory then parent fsync create success. Bare inspect derives its review commit from the already-open transaction, using fixed zero40 only for its S0 terminal stop. Official execution remains closed.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py"
@@ -249,11 +249,11 @@
       "evidence": [
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "class _CommandRootAuthorityAntigravity"
+          "symbol": "def _remove_created_leaf_antigravity"
         },
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-          "symbol": "class _AbsentPathPinAntigravity"
+          "symbol": "def append_receipt_antigravity"
         },
         {
           "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
