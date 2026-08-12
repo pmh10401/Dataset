@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-12T00:00:00+00:00",
-  "generated_from_commit": "a16d7b2ba72122c1cd687ed349dd58b232ba0996",
+  "generated_from_commit": "0c3899e803b29f97d0fb8316fdcc7c0bd9d8133f",
   "scope": [
     "Exp449 verified Tasks 1–5: governance, immutable contracts, descriptor-pinned values-only source boundary, deterministic aeon score sources, CPU-canonical acceleration record, and frozen label-free prediction lifecycle."
   ],
@@ -16,20 +16,6 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"exp449\""
-        }
-      ]
-    },
-    {
-      "id": "experiment_catalog",
-      "path": "EXPERIMENT_CATALOG.json",
-      "role": "Registered planned Exp449 identity and immutable predecessor relationship.",
-      "tests": [
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
-      ],
-      "evidence": [
-        {
-          "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"id\": \"Exp449\""
         }
       ]
     },
@@ -92,7 +78,7 @@
     {
       "id": "html_implementation_plan",
       "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
-      "role": "Self-contained Exp449 implementation plan whose visible disabled controls record verified Tasks 1–4; Task 5 is next and remains unimplemented.",
+      "role": "Self-contained Exp449 implementation plan; Task 5 implementation is mapped while its disabled plan controls remain unchanged pending final review.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
@@ -190,7 +176,7 @@
     {
       "id": "label_free_source",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/sources_antigravity.py",
-      "role": "Read-only descriptor-pinned value loader and Task-6-only closure-private TEST-label session boundary. It dynamically requires the future Task-5 module's exact authority class and descriptor-backed 96-leaf validator before DB reachability; no current caller exists.",
+      "role": "Read-only descriptor-pinned value loader and Task-6-only closure-private TEST-label session boundary. It consumes Task-5's exact authority validator before DB reachability.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_sources_antigravity.py"
       ],
@@ -260,11 +246,10 @@
     {
       "id": "frozen_prediction_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/prediction_antigravity.py",
-      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent contiguous durable commits, descriptor validator firewall, failure audit boundary, and local-only dashboard status projection.",
+      "role": "Task-5 fixed-root label-free 96-unit prediction authority: non-injectable 11-worker production route, parent contiguous durable commits, descriptor validator firewall, and failure audit boundary.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_progress_antigravity.py"
       ],
       "evidence": [
         {
@@ -287,6 +272,20 @@
           "symbol": "def commit_candidate_leaf_antigravity"
         }
       ]
+    },
+    {
+      "id": "local_status_projection",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py",
+      "role": "Task-5 local-only exact-twelve-field dashboard status boundary with recursive sensitive-value/type firewall and no scientific-module import.",
+      "tests": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_dashboard_export_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_residual_fn_method_qualification_antigravity/dashboard_export_antigravity.py",
+          "symbol": "def public_status_antigravity"
+        }
+      ]
     }
   ],
   "edges": [
@@ -306,15 +305,6 @@
       "evidence": {
         "path": "RESEARCH_STATE.json",
         "symbol": "EXP449_RUNBOOK_antigravity_KO.html"
-      }
-    },
-    {
-      "from": "experiment_catalog",
-      "to": "exp449_preregistration",
-      "type": "reads",
-      "evidence": {
-        "path": "EXPERIMENT_CATALOG.json",
-        "symbol": "EXP449_PREREGISTRATION_antigravity_KO.html"
       }
     },
     {
