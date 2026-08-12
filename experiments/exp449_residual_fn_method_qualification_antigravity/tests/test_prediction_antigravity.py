@@ -23,6 +23,23 @@ class _Exp448Antigravity:
 
 
 class PredictionAntigravityTests(unittest.TestCase):
+    def test_table_driven_pre_and_post_commit_faults_preserve_exact_prefix_antigravity(self) -> None:
+        """Break caught: deriving failure progress from scheduled work instead of durable leaves."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.prediction_antigravity import run_synthetic_lifecycle_antigravity  # noqa: PLC0415
+
+        for stage, sequence, expected_prefix in (("before_commit", 0, 0), ("before_commit", 47, 47), ("before_commit", 95, 95), ("after_commit", 0, 1), ("after_commit", 47, 48), ("after_commit", 95, 96)):
+            with self.subTest(stage=stage, sequence=sequence), tempfile.TemporaryDirectory(prefix="exp449_fault_antigravity_") as temporary:
+                parent = Path(temporary); root = parent / "run"; audit = parent / "audit_antigravity.json"
+                def fault(current_stage, current_sequence):
+                    if (current_stage, current_sequence) == (stage, sequence):
+                        raise RuntimeError(f"{stage} fault")
+                with self.assertRaisesRegex(RuntimeError, f"{stage} fault"):
+                    run_synthetic_lifecycle_antigravity(root, "3" * 40, audit_path=audit, fault_hook=fault)
+                leaves = tuple(sorted((root / "candidates_antigravity").glob("*.json")))
+                self.assertEqual(len(leaves), expected_prefix)
+                self.assertEqual(json.loads(audit.read_text())["exact_next_sequence"], expected_prefix)
+                self.assertFalse((root / "prediction_manifest_antigravity.json").exists())
+                self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
     def test_progress_channel_failure_preserves_committed_leaf_and_audits_exact_next_antigravity(self) -> None:
         """Break caught: discarding a committed candidate or trusting failed progress after a channel error."""
         from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415

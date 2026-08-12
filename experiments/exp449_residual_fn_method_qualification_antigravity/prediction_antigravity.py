@@ -119,7 +119,7 @@ def _set_pid_inactive_antigravity(root: Path) -> None:
         os.close(descriptor)
 
 
-def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fail_after_leaf: int | None = None, audit_path: Path | None = None) -> "FrozenPredictionAuthorityAntigravity":
+def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fail_after_leaf: int | None = None, audit_path: Path | None = None, fault_hook: Callable[[str, int], None] | None = None) -> "FrozenPredictionAuthorityAntigravity":
     """Private test lifecycle with real fixed workers and parent-only ordered durable commits."""
     if not isinstance(root, Path) or type(reviewed_commit) is not str or len(reviewed_commit) != 40:
         raise ValueError("synthetic lifecycle inputs are invalid")
@@ -133,13 +133,19 @@ def run_synthetic_lifecycle_antigravity(root: Path, reviewed_commit: str, *, fai
         leaves = root / "candidates_antigravity"
         digests: list[tuple[str, str]] = []
         for sequence in ordered:
+            if fault_hook is not None:
+                fault_hook("before_commit", sequence)
             dataset = f"synthetic_dataset_{sequence // 2:03d}"
             method = ("method_a", "method_b")[sequence % 2]
             digest = commit_candidate_leaf_antigravity(leaves, inventory[sequence], {"sequence": sequence, "candidate_name": f"{dataset}__{method}", "contains_test_labels": False, "scores": {"20260721": [0.0], "20261721": [0.0]}, "alpha": 0.005})
             digests.append(("candidates_antigravity/" + inventory[sequence], digest))
+            if fault_hook is not None:
+                fault_hook("after_commit", sequence)
             record_verified_progress_antigravity(root, inventory, sequence + 1)
             if sequence == fail_after_leaf:
                 raise RuntimeError(f"synthetic post-leaf failure exact_next_sequence={sequence + 1}")
+        if fault_hook is not None:
+            fault_hook("pid", 96)
         _set_pid_inactive_antigravity(root)
         if verified_prefix_antigravity(leaves, inventory) != 96:
             raise RuntimeError("terminal candidate prefix is incomplete")
