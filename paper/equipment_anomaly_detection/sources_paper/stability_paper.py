@@ -21,6 +21,10 @@ from .low_frequency_paper import fit_group_calibration_paper, score_test_row_pap
 
 
 PROVENANCE_PAPER = {
+    "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py": {
+        "symbols": ("_prepare_candidate_input_antigravity",),
+        "source_sha256": "f6b6f61b6517c46b3e63ef008d79f77f488348ba1e63b5980519aef8c9216e6a",
+    },
     "experiments/exp444_train_only_stability_precision_gate_antigravity/masks_antigravity.py": {
         "symbols": (
             "canonical_mask_identity_sha256_antigravity", "omission_count_antigravity",
@@ -266,11 +270,24 @@ def _candidate_views(candidate: LowFrequencyCandidate, values: RawDataset, repla
         raise ValueError("raw candidate TEST identity is unavailable")
     if values.test_rows[candidate.instance_index].size != candidate.raw_length:
         raise ValueError("raw candidate length differs from selected coordinate")
-    train_indices = _exact_indices(values.train_indices, "raw train_indices", nonempty=True)
-    if len(values.train_rows) != len(train_indices):
+    raw_indices = _exact_indices(values.train_indices, "raw train_indices", nonempty=True)
+    if len(values.train_rows) != len(raw_indices):
         raise ValueError("raw TRAIN rows do not match indices")
+    # This is the exact source reconstruction boundary: rows of a different
+    # raw length and whole-row nonfinite values never enter this candidate's
+    # omission population, but retain their original database identities.
+    eligible = tuple(
+        (index, np.asarray(row, dtype="<f4"))
+        for index, row in zip(raw_indices, values.train_rows, strict=True)
+        if np.asarray(row).ndim == 1
+        and np.asarray(row).size == candidate.raw_length
+        and np.isfinite(np.asarray(row)).all()
+    )
+    train_indices = tuple(index for index, _ in eligible)
+    if len(train_indices) < _MINIMUM_TRAIN_ROWS_PAPER:
+        raise ValueError("candidate exact-length TRAIN group is too small")
     masks = generate_omission_masks_paper(candidate.dataset, candidate.raw_length, train_indices)
-    train = np.ascontiguousarray(np.stack(values.train_rows), dtype="<f4")
+    train = np.ascontiguousarray(np.stack(tuple(row for _, row in eligible)), dtype="<f4")
     views: list[StabilityViewPaper] = []
     for mask in masks:
         excluded = set(mask.excluded_train_indices)

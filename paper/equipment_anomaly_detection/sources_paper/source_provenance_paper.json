@@ -444,8 +444,15 @@
       ]
     },
     "sources_paper/stability_paper.py": {
-      "paper_sha256": "93221c4f9be044fa23940d90b6f3c11c433396eb705a089ca71c37f95f96ad49",
+      "paper_sha256": "0d869666749ec1aaaa9c6f37013451b38b553fa357bf547251126dbe104a81c3",
       "origins": [
+        {
+          "module": "experiments.exp444_train_only_stability_precision_gate_antigravity.sources_antigravity",
+          "symbols": [
+            "_prepare_candidate_input_antigravity"
+          ],
+          "source_sha256": "f6b6f61b6517c46b3e63ef008d79f77f488348ba1e63b5980519aef8c9216e6a"
+        },
         {
           "module": "experiments.exp444_train_only_stability_precision_gate_antigravity.config_antigravity",
           "symbols": [
@@ -476,7 +483,7 @@
       ]
     },
     "routing_paper.py": {
-      "paper_sha256": "5ee5e2453492153ddb7919d12bccd2bd5322fa9195737b58390b3584d71b87a9",
+      "paper_sha256": "91209e418feee1d881148837c1eb8091b7adc4b2a3dd3e26c3038a442f88c524",
       "origins": [
         {
           "module": "paper.equipment_anomaly_detection.score_adapter_paper",

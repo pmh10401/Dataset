@@ -170,8 +170,8 @@
         "tests_paper/test_stability_paper.py"
       ],
       "effects": [
-        "constructs the frozen hard-only, source, stable-source, and unstable-source ablations with coordinate conservation and deep immutable route contracts",
-        "takes the elementwise maximum of Hard and low-frequency continuous evidence while producing separate route-preserving continuous scores for every policy mask"
+        "constructs the frozen hard-only, source, stable-source, and unstable-source ablations with Task 6 Hard-lane identity binding, coordinate conservation, and deep immutable route contracts",
+        "maps every scoreable Task 6 low-frequency row to its second-strongest empirical upper-tail strength, then takes the elementwise maximum with Hard evidence while producing separate route-preserving continuous scores for every policy mask"
       ],
       "tests": [
         "tests_paper/test_stability_paper.py"
@@ -402,13 +402,14 @@
         "tests_paper/test_stability_paper.py"
       ],
       "effects": [
-        "copies deterministic Exp444 omission-mask identity, retained-TRAIN-only low-frequency refit, required survival count, and exact selected-only stable/unstable partition without legacy runtime imports",
+        "copies deterministic Exp444 exact-length finite normal-TRAIN reconstruction, omission-mask identity, retained-TRAIN-only low-frequency refit, required survival count, and exact selected-only stable/unstable partition without legacy runtime imports",
         "records every view mask identity, retained indices, raw depth evidence, missing candidate reason, survival, and frozen threshold"
       ],
       "tests": [
         "tests_paper/test_stability_paper.py"
       ],
       "source_origins": [
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/config_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/masks_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py"
@@ -488,7 +489,7 @@
     "tests_paper/test_stability_paper.py": {
       "callers": [],
       "effects": [
-        "exercises deterministic omission masks, 14/16 threshold, retained-TRAIN-only replay, selected-only partition, immutable policy routes, endpoint/missing score bands, Exp444 runtime isolation, and executable-origin parity"
+        "exercises deterministic omission masks, finite exact-length retained-TRAIN reconstruction, 14/16 threshold, selected-only replay/partition, all-row continuous source evidence, Hard-lane identity binding, immutable policy routes, endpoint/missing score bands, Exp444 runtime isolation, and executable-origin parity"
       ],
       "tests": [
         "tests_paper/test_stability_paper.py"

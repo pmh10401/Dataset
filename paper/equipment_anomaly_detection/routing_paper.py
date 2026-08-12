@@ -132,17 +132,34 @@ def _source_surface(low_frequency: LowFrequencyResult, raw_datasets: Mapping[str
     selected = tuple(low_frequency.selected_candidates)
     if len(selected) > 30 or len({candidate.coordinate for candidate in selected}) != len(selected) or len({candidate.dataset for candidate in selected}) != len(selected):
         raise ValueError("source policy candidates violate the frozen budget")
+    rows_by_coordinate = {(row.dataset, row.instance_index): row for row in low_frequency.rows}
+    expected_coordinates = {
+        (dataset, index)
+        for dataset, values in raw.items()
+        for index in values.test_indices
+    }
+    if set(rows_by_coordinate) != expected_coordinates:
+        raise ValueError("low-frequency rows do not cover the raw TEST population")
     alerts = {dataset: frozenset() for dataset in low_frequency.datasets}
     strength = {dataset: np.zeros(len(raw[dataset].test_rows), dtype=np.float64) for dataset in low_frequency.datasets}
     missing = {dataset: np.ones(len(raw[dataset].test_rows), dtype=bool) for dataset in low_frequency.datasets}
+    for row in low_frequency.rows:
+        if row.instance_index >= strength[row.dataset].size:
+            raise ValueError("low-frequency row is outside the raw TEST population")
+        if row.evidence_missing:
+            continue
+        ranks = tuple(item.empirical_rank for item in row.depth_evidence)
+        if len(ranks) < 2:
+            raise ValueError("scoreable low-frequency row has fewer than two depth ranks")
+        # The frozen two-depth route receives its continuous counterpart from
+        # the second strongest finite empirical upper-tail leaf, never from
+        # selected-list rank or an evaluation label.
+        strength[row.dataset][row.instance_index] = sorted((1.0 - rank for rank in ranks), reverse=True)[1]
+        missing[row.dataset][row.instance_index] = False
     for candidate in selected:
         if candidate.instance_index >= strength[candidate.dataset].size:
             raise ValueError("selected source coordinate is outside the raw TEST population")
         alerts[candidate.dataset] = frozenset({candidate.instance_index})
-        # Exp440's empirical rank is finite-sample TRAIN-only evidence; its
-        # complement is the bounded continuous source strength.
-        strength[candidate.dataset][candidate.instance_index] = 1.0 - candidate.second_empirical_rank
-        missing[candidate.dataset][candidate.instance_index] = False
     return EvidenceSurface(alerts, strength, missing)
 
 
@@ -181,6 +198,11 @@ def build_policies(
     """Construct hard-only/source/stable/unstable routes in the frozen order."""
     if not isinstance(hard, EvidenceSurface) or not isinstance(stability, StabilityPartition):
         raise ValueError("policy inputs are invalid")
+    if set(hard.alerts) != set(low_frequency.hard_lanes) or any(
+        hard.alerts[dataset] != low_frequency.hard_lanes[dataset]
+        for dataset in hard.alerts
+    ):
+        raise ValueError("Hard route identities differ from the Task 6 eligibility lanes")
     source = _source_surface(low_frequency, raw_datasets)
     if set(hard.alerts) != set(source.alerts) or any(hard.strength[dataset].size != source.strength[dataset].size for dataset in hard.alerts):
         raise ValueError("Hard and source evidence populations are mismatched")
