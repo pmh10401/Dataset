@@ -14,22 +14,22 @@ from typing import Iterable
 import numpy as np
 
 
-ACCELERATION_SCHEMA = "paper-task9-acceleration.v1"
+ACCELERATION_SCHEMA = "paper-task9-acceleration.v2"
 
 
 @dataclass(frozen=True, slots=True)
 class WorkerRecord:
     logical_cpu_count: int
     dataset_workers: int
-    deep_method_workers: int
-    outer_parallelism: str
+    inner_numerical_threads: int
+    outer_execution_mode: str
 
     @classmethod
     def from_logical_cpu_count(cls, logical_cpu_count: int | None = None) -> "WorkerRecord":
         count = os.cpu_count() if logical_cpu_count is None else logical_cpu_count
         if type(count) is not int or count < 1:
             raise ValueError("logical CPU count is invalid")
-        return cls(count, min(max(1, count - 1), 7), 1, "sequential_until_safe_outer_worker_benchmark")
+        return cls(count, max(1, count - 1), 1, "parallel_task4_task5" if count > 1 else "sequential_task4_task5")
 
 
 def _version(name: str) -> str | None:
@@ -128,6 +128,7 @@ def build_acceleration_manifest(context_sha256: str, *, logical_cpu_count: int |
         "runtime": current_runtime_identity(),
         "selected_backend": "cpu",
         "workers": asdict(workers),
+        "deep_method_orchestration": "sequential_non_cpu_parallel_stage; future_cpu_parallel_deep_stage_uses_dataset_workers",
         "backends": _backends(),
         "stages": stages,
         "benchmark_requirement": "same_input_seed_finite_outputs_identical_candidates_at_all_alphas_numeric_tolerance_and_at_least_1_1x_including_transfer_and_synchronization",
@@ -137,7 +138,7 @@ def build_acceleration_manifest(context_sha256: str, *, logical_cpu_count: int |
 
 
 def verify_acceleration_manifest(value: object, context_sha256: str, *, current_runtime: dict[str, str] | None = None) -> dict[str, object]:
-    required = {"schema", "context_sha256", "runtime", "selected_backend", "workers", "backends", "stages", "benchmark_requirement", "fallback_reason", "assessment_sha256"}
+    required = {"schema", "context_sha256", "runtime", "selected_backend", "workers", "deep_method_orchestration", "backends", "stages", "benchmark_requirement", "fallback_reason", "assessment_sha256"}
     if not isinstance(value, dict) or set(value) != required or value.get("schema") != ACCELERATION_SCHEMA or value.get("context_sha256") != context_sha256:
         raise ValueError("acceleration artifact is invalid")
     base = {key: child for key, child in value.items() if key != "assessment_sha256"}
@@ -149,6 +150,21 @@ def verify_acceleration_manifest(value: object, context_sha256: str, *, current_
     observed = current_runtime_identity() if current_runtime is None else current_runtime
     if observed != runtime:
         raise ValueError("interpreter_identity_mismatch")
+    workers = value["workers"]
+    if not isinstance(workers, dict) or set(workers) != {"logical_cpu_count", "dataset_workers", "inner_numerical_threads", "outer_execution_mode"}:
+        raise ValueError("acceleration worker record is invalid")
+    count = workers["logical_cpu_count"]
+    if type(count) is not int or count < 1 or workers["dataset_workers"] != max(1, count - 1) or workers["inner_numerical_threads"] != 1 or workers["outer_execution_mode"] != ("parallel_task4_task5" if count > 1 else "sequential_task4_task5"):
+        raise ValueError("acceleration worker policy differs")
+    if value["selected_backend"] != "cpu" or type(value["fallback_reason"]) is not str or not value["fallback_reason"]:
+        raise ValueError("acceleration CPU fallback differs")
+    if value["deep_method_orchestration"] != "sequential_non_cpu_parallel_stage; future_cpu_parallel_deep_stage_uses_dataset_workers":
+        raise ValueError("acceleration deep orchestration differs")
+    backends = value["backends"]
+    if not isinstance(backends, list) or {entry.get("family") for entry in backends if isinstance(entry, dict)} != {"pytorch", "mlx", "mps"}:
+        raise ValueError("acceleration backend assessment differs")
+    if not isinstance(value["stages"], list) or not value["stages"] or any(not isinstance(stage, dict) or stage.get("decision") != "cpu" or type(stage.get("tensor_eligible")) is not bool or type(stage.get("reason")) is not str for stage in value["stages"]):
+        raise ValueError("acceleration stage assessment differs")
     return value
 
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
-import json, sqlite3, tempfile, unittest
+import contextlib, io, json, sqlite3, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace
 import sys
@@ -52,7 +52,8 @@ class Task8LifecycleTests(unittest.TestCase):
         lanes=RouteLanes(frozenset(),frozenset(),frozenset()); route=HardRouteResult(lanes,frozenset(),frozenset(),frozenset(),lanes,SourceExpansion(frozenset(),frozenset()),lanes,frozenset(),lanes,frozenset(),frozenset(),2)
         low=LowFrequencyResult((dataset,),(LowFrequencyRow(dataset,0,2,(),False,None,None,False,True,"no_group"),LowFrequencyRow(dataset,1,2,(),False,None,None,False,True,"no_group")),(),(),0,{dataset:frozenset()})
         stability=StabilityPartition((),(),(),{}); policies=PolicyBundle(tuple(PolicyRoute(name,{dataset:frozenset()},{dataset:np.zeros(2)},{dataset:np.zeros(2)}) for name in ("hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable")))
-        return raw,sources,route,low,stability,policies,FrozenTask8BackendDecision()
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        return raw,sources,route,low,stability,policies,FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest("f" * 64, logical_cpu_count=3))
     def _freeze(self):
         from paper.equipment_anomaly_detection.artifacts_paper import freeze_score_root, write_typed_proposal_shard
         for dataset in ("alpha","beta"): write_typed_proposal_shard(self.root,self.catalog,*self._typed(dataset))
@@ -131,13 +132,26 @@ class Task8LifecycleTests(unittest.TestCase):
         self.root=self.base/"extra_antigravity"; self._freeze(); (self.root/"stage_artifacts_paper"/"proposal_freeze"/"extra_paper.json").write_text("{}\n")
         with self.assertRaises(ValueError):verify_score_root(self.root,self.catalog)
 
+    def test_reader_rejects_a_shard_backend_that_differs_from_the_verified_assessment(self):
+        """A syntactically valid CPU record is insufficient when it is not the acceleration record for this run."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import verify_score_root
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        self._freeze()
+        expected = FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest("c" * 64, logical_cpu_count=12))
+        with self.assertRaisesRegex(ValueError, "backend"):
+            verify_score_root(self.root, self.catalog, expected)
+
 
 class Task9AccelerationTests(unittest.TestCase):
-    def test_worker_cap_and_unavailable_exact_implementations_are_recorded_truthfully(self):
+    def test_worker_policy_uses_all_but_one_logical_cpu_and_records_parallel_mode(self):
+        """Capping a 12-core CPU stage at seven would silently violate the official policy."""
         from paper.equipment_anomaly_detection.acceleration_paper import WorkerRecord, build_acceleration_manifest
         workers = WorkerRecord.from_logical_cpu_count(12)
-        self.assertEqual((workers.logical_cpu_count, workers.dataset_workers, workers.deep_method_workers), (12, 7, 1))
+        self.assertEqual((workers.logical_cpu_count, workers.dataset_workers, workers.inner_numerical_threads), (12, 11, 1))
+        self.assertEqual(workers.outer_execution_mode, "parallel_task4_task5")
         manifest = build_acceleration_manifest("a" * 64, logical_cpu_count=12)
+        self.assertEqual(manifest["workers"], {"logical_cpu_count": 12, "dataset_workers": 11, "inner_numerical_threads": 1, "outer_execution_mode": "parallel_task4_task5"})
         self.assertEqual(manifest["selected_backend"], "cpu")
         self.assertEqual({entry["family"] for entry in manifest["backends"]}, {"pytorch", "mlx", "mps"})
         self.assertTrue(all(entry["decision"] == "cpu" for entry in manifest["stages"]))
@@ -173,5 +187,106 @@ class Task9AccelerationTests(unittest.TestCase):
         runtime["executable"] = "/different/python"
         with self.assertRaisesRegex(ValueError, "interpreter_identity_mismatch"):
             verify_acceleration_manifest(manifest, "c" * 64, current_runtime=runtime)
+
+    def test_frozen_shard_backend_is_derived_from_the_verified_acceleration_assessment(self):
+        """A stale task9_pending marker would discard the CPU assessment that authorized scoring."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        manifest = build_acceleration_manifest("e" * 64, logical_cpu_count=12)
+        decision = FrozenTask8BackendDecision.from_acceleration_manifest(manifest)
+        self.assertEqual(decision.selected_backend, "cpu")
+        self.assertEqual(decision.fallback_reason, manifest["fallback_reason"])
+        self.assertEqual(decision.assessment_sha256, manifest["assessment_sha256"])
+        self.assertEqual((decision.logical_cpu_count, decision.dataset_workers, decision.inner_numerical_threads, decision.outer_execution_mode), (12, 11, 1, "parallel_task4_task5"))
+
+    def test_public_cli_has_no_dataset_worker_override(self):
+        """Worker selection belongs to the verified artifact, not an operator-provided score switch."""
+        from paper.equipment_anomaly_detection.pipeline_paper import build_parser
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                build_parser().parse_args(("run", "--db-path", "fixture.sqlite", "--run-root", "new_root_antigravity", "--mode", "smoke", "--smoke-dataset", "alpha", "--dataset-workers", "2"))
+
+
+class Task9ParallelCompositionTests(unittest.TestCase):
+    """Bounded Task4/5 doubles keep the parallel ordering test independent of expensive transforms."""
+
+    def setUp(self) -> None:
+        self.fixture = Task8LifecycleTests("run")
+        self.fixture.setUp()
+        first, second = self.fixture._typed("alpha"), self.fixture._typed("beta")
+        self.raw = {"alpha": first[0], "beta": second[0]}
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        self.per_dataset = {"alpha": (first[1], first[2]), "beta": (second[1], second[2])}
+        self.low = LowFrequencyResult(("alpha", "beta"), first[3].rows + second[3].rows, (), (), 0, {"alpha": frozenset(), "beta": frozenset()})
+        self.stability = first[4]
+        self.policies = PolicyBundle(tuple(PolicyRoute(name, {dataset: frozenset() for dataset in self.raw}, {dataset: np.zeros(2) for dataset in self.raw}, {dataset: np.zeros(2) for dataset in self.raw}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
+
+    def tearDown(self) -> None:
+        self.fixture.tearDown()
+
+    def _acceleration(self, logical_cpu_count: int):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        return build_acceleration_manifest("9" * 64, logical_cpu_count=logical_cpu_count)
+
+    def _patched_composition(self, manifest, *, fail_dataset=None):
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        events = []
+        def hard(raw):
+            events.append(("task4", raw.dataset))
+            if raw.dataset == fail_dataset:
+                raise RuntimeError("bounded worker failure")
+            return self.per_dataset[raw.dataset][0]
+        def mini(raw): return object()
+        def route(raw, _sources, _mini):
+            events.append(("task5", raw.dataset))
+            return self.per_dataset[raw.dataset][1]
+        def low(raw, lanes):
+            self.assertEqual(events, [("task4", "alpha"), ("task5", "alpha"), ("task4", "beta"), ("task5", "beta")])
+            self.assertEqual(lanes, {"alpha": frozenset(), "beta": frozenset()})
+            events.append(("task6", "global")); return self.low
+        class Future:
+            def __init__(self, fn, args):
+                try: self.value, self.error = fn(*args), None
+                except Exception as error: self.value, self.error = None, error
+            def result(self):
+                if self.error is not None: raise self.error
+                return self.value
+        class InlineExecutor:
+            observed_workers = []
+            def __init__(self, *, max_workers): self.observed_workers.append(max_workers)
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def submit(self, fn, *args): return Future(fn, args)
+        patches = (
+            patch.object(score, "score_hard_sources", side_effect=hard),
+            patch.object(score, "score_minirocket_confirmations", side_effect=mini),
+            patch.object(score, "replay_hard_route", side_effect=route),
+            patch.object(score, "score_low_frequency", side_effect=low),
+            patch.object(score, "classify_stability", return_value=self.stability),
+            patch.object(score, "build_hard_evidence_surface", return_value=object()),
+            patch.object(score, "build_policies", return_value=self.policies),
+            patch.object(score, "ProcessPoolExecutor", InlineExecutor),
+        )
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
+            return score.compose_proposal_score(self.raw, manifest), events, InlineExecutor.observed_workers
+
+    def test_two_worker_collection_matches_sequential_before_one_global_task6(self):
+        """Moving Task6 into a dataset worker changes the population-wide low-frequency decision."""
+        sequential, sequential_events, sequential_workers = self._patched_composition(self._acceleration(1))
+        parallel, parallel_events, parallel_workers = self._patched_composition(self._acceleration(3))
+        self.assertEqual(tuple(sequential.sources), tuple(parallel.sources))
+        self.assertEqual(tuple(sequential.routes), tuple(parallel.routes))
+        self.assertEqual(sequential.low_frequency, parallel.low_frequency)
+        self.assertEqual(tuple(route.alerts for route in sequential.policies.policies), tuple(route.alerts for route in parallel.policies.policies))
+        self.assertEqual(sequential_events[-1], ("task6", "global"))
+        self.assertEqual(parallel_events[-1], ("task6", "global"))
+        self.assertEqual(sequential_workers, [])
+        self.assertEqual(parallel_workers, [2])
+
+    def test_parallel_worker_failure_names_its_dataset(self):
+        """Dropping a failed dataset would produce a plausible but scientifically incomplete global population."""
+        with self.assertRaisesRegex(RuntimeError, "alpha.*bounded worker failure"):
+            self._patched_composition(self._acceleration(3), fail_dataset="alpha")
 
 if __name__=="__main__":unittest.main()

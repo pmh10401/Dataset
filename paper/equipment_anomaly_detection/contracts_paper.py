@@ -101,15 +101,41 @@ class Task8FrozenManifest:
 
 @dataclass(frozen=True, slots=True)
 class FrozenTask8BackendDecision:
-    """The only Task 8 backend declaration until Task 9 owns acceleration."""
+    """Typed CPU decision copied from the verified Task 9 acceleration assessment."""
 
-    selected_backend: str = "cpu"
-    reason: str = "task9_pending"
-    verdict: str = "cpu_fallback"
+    selected_backend: str
+    fallback_reason: str
+    assessment_sha256: str
+    logical_cpu_count: int
+    dataset_workers: int
+    inner_numerical_threads: int
+    outer_execution_mode: str
 
     def __post_init__(self) -> None:
-        if (self.selected_backend, self.reason, self.verdict) != ("cpu", "task9_pending", "cpu_fallback"):
+        if self.selected_backend != "cpu" or type(self.fallback_reason) is not str or not self.fallback_reason or type(self.assessment_sha256) is not str or len(self.assessment_sha256) != 64:
             raise ValueError("Task 8 backend decision is invalid")
+        if type(self.logical_cpu_count) is not int or self.logical_cpu_count < 1 or self.dataset_workers != max(1, self.logical_cpu_count - 1) or self.inner_numerical_threads != 1 or self.outer_execution_mode != ("parallel_task4_task5" if self.logical_cpu_count > 1 else "sequential_task4_task5"):
+            raise ValueError("Task 8 backend decision is invalid")
+
+    @classmethod
+    def from_acceleration_manifest(cls, manifest: object) -> "FrozenTask8BackendDecision":
+        if not isinstance(manifest, dict):
+            raise ValueError("Task 8 acceleration manifest is invalid")
+        workers = manifest.get("workers")
+        required_workers = {"logical_cpu_count", "dataset_workers", "inner_numerical_threads", "outer_execution_mode"}
+        if manifest.get("selected_backend") != "cpu" or not isinstance(workers, dict) or set(workers) != required_workers:
+            raise ValueError("Task 8 acceleration manifest is invalid")
+        return cls("cpu", manifest.get("fallback_reason"), manifest.get("assessment_sha256"), workers["logical_cpu_count"], workers["dataset_workers"], workers["inner_numerical_threads"], workers["outer_execution_mode"])
+
+    def artifact_record(self) -> dict[str, object]:
+        return {"selected_backend": self.selected_backend, "fallback_reason": self.fallback_reason, "assessment_sha256": self.assessment_sha256, "logical_cpu_count": self.logical_cpu_count, "dataset_workers": self.dataset_workers, "inner_numerical_threads": self.inner_numerical_threads, "outer_execution_mode": self.outer_execution_mode}
+
+    @classmethod
+    def from_artifact_record(cls, value: object) -> "FrozenTask8BackendDecision":
+        required = {"selected_backend", "fallback_reason", "assessment_sha256", "logical_cpu_count", "dataset_workers", "inner_numerical_threads", "outer_execution_mode"}
+        if not isinstance(value, dict) or set(value) != required:
+            raise ValueError("Task 8 backend record is invalid")
+        return cls(**value)
 
 
 @dataclass(frozen=True, slots=True)

@@ -841,9 +841,9 @@ class AccelerationTests(unittest.TestCase):
                                 finite=True, candidate_parity=True, max_abs_error=0.0)
         self.assertEqual(record.selected_backend, "cpu")
 
-    def test_cpu_worker_count_is_logical_cpu_minus_one_capped_at_seven(self) -> None:
+    def test_cpu_worker_count_is_logical_cpu_minus_one(self) -> None:
         record = select_cpu_workers(detected_logical_cpus=12)
-        self.assertEqual(record.dataset_workers, 7)
+        self.assertEqual(record.dataset_workers, 11)
 
     def test_assessment_names_all_three_acceleration_families(self) -> None:
         self.assertEqual({row.backend_family for row in self.records},
@@ -858,7 +858,7 @@ Expected: FAIL because acceleration records are absent.
 
 - [ ] **Step 3: Implement exact policy checks**
 
-`AccelerationRecord`는 stage, backend family, tensor eligibility, availability, transfer/compile overhead, CPU/device seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. PyTorch, MLX, MPS 세 family 모두 record를 만들고 official aeon/scikit-learn/PyTorch transformer를 다시 작성해야 하는 backend는 `algorithm_rewrite_required` 사유로 CPU를 선택한다. `WorkerRecord`에는 감지 logical CPU와 `min(max(1, cpu_count - 1), 7)` worker를 기록하며, 동일한 frozen record는 classical baseline에도 적용된다; Deep SVDD와 DROCC는 sequential 1 worker다.
+`AccelerationRecord`는 stage, backend family, tensor eligibility, availability, transfer/compile overhead, CPU/device seconds, speedup, finite, max abs error, alpha별 candidate SHA, versions, device, selected backend와 fallback reason을 갖는다. PyTorch, MLX, MPS 세 family 모두 record를 만들고 official aeon/scikit-learn/PyTorch transformer를 다시 작성해야 하는 backend는 `algorithm_rewrite_required` 사유로 CPU를 선택한다. `WorkerRecord`에는 감지 logical CPU와 `max(1, cpu_count - 1)` worker, `inner_numerical_threads=1`, outer execution mode를 기록하며, 동일한 frozen record는 classical baseline에도 적용된다; Deep SVDD와 DROCC는 CPU-parallel stage가 아니므로 sequential one process를 유지할 수 있고, 미래 CPU-parallel deep stage는 이 worker policy를 사용한다.
 
 - [ ] **Step 4: Fill the pipeline acceleration gate before proposal scoring**
 

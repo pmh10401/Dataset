@@ -14,7 +14,7 @@ from .routing_paper import PolicyBundle
 from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
 from .sources_paper.stability_paper import StabilityPartition
 
-SHARD_SCHEMA="paper-task8-proposal-shard.v1"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
+SHARD_SCHEMA="paper-task8-proposal-shard.v2"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
 ARTIFACT_DIRECTORY="stage_artifacts_paper"; FREEZE_STAGE="proposal_freeze"; SHARD_DIRECTORY="shards"; MANIFEST_NAME="proposal_manifest_paper.json"
 POLICIES=("hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable")
 
@@ -121,7 +121,7 @@ def _typed_payload(raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,
         if route.name!=POLICIES[order] or set(route.alerts)!=set(low.datasets) or route.alerts[raw.dataset]!=want:raise ValueError("typed Task7 policy route differs")
         scores=_array(route.scores[raw.dataset],n,"policy scores"); policy_rows.append({"policy_id":route.name,"order":order,"alerts":sorted(want),"scores":scores,"score_mask":[score>=.5 for score in scores]})
     if not isinstance(backend,FrozenTask8BackendDecision):raise TypeError("typed backend decision is invalid")
-    return {"schema":SHARD_SCHEMA,"dataset":raw.dataset,"train_identity":entry["train"],"test_identity":entry["test"],"source_rows":source_rows,"hard_stages":hard_stages,"low_frequency_rows":low_rows,"stability":stability_record,"policies":policy_rows,"backend":{"selected_backend":backend.selected_backend,"reason":backend.reason,"verdict":backend.verdict}}
+    return {"schema":SHARD_SCHEMA,"dataset":raw.dataset,"train_identity":entry["train"],"test_identity":entry["test"],"source_rows":source_rows,"hard_stages":hard_stages,"low_frequency_rows":low_rows,"stability":stability_record,"policies":policy_rows,"backend":backend.artifact_record()}
 def _validate_shard(value:object,entry:dict[str,object])->dict[str,object]:
     _finite(value)
     required={"schema","dataset","train_identity","test_identity","source_rows","hard_stages","low_frequency_rows","stability","policies","backend"}
@@ -142,7 +142,8 @@ def _validate_shard(value:object,entry:dict[str,object])->dict[str,object]:
     automatic=set(hard_rows[-1]["lanes"]["hard"]); expected=(automatic,automatic|{index for _,index in selected},automatic|{index for _,index in stable},automatic|{index for _,index in unstable})
     for order,(row,want) in enumerate(zip(value["policies"],expected,strict=True)):
         if set(row)!={"policy_id","order","alerts","scores","score_mask"} or row["order"]!=order or row["alerts"]!=sorted(want) or row["score_mask"]!=[score>=.5 for score in _array(row["scores"],n,"policy scores")]:raise ValueError("proposal policy relation differs")
-    if value["backend"]!={"selected_backend":"cpu","reason":"task9_pending","verdict":"cpu_fallback"}:raise ValueError("proposal backend differs")
+    try: FrozenTask8BackendDecision.from_artifact_record(value["backend"])
+    except ValueError as error: raise ValueError("proposal backend differs") from error
     return value
 def write_typed_proposal_shard(root:Path,catalog:dict[str,object],raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,low:LowFrequencyResult,stability:StabilityPartition,policies:PolicyBundle,backend:FrozenTask8BackendDecision)->Path:
     if not isinstance(raw,RawDataset):raise TypeError("typed RawDataset is required")
@@ -165,7 +166,7 @@ def freeze_score_root(root:Path,catalog:dict[str,object],acceptance_path:Path|No
         accepted,raw=_acceptance(acceptance_path,catalog)
         payload.update({"parity_status":"available_not_run","acceptance_path":str(Path(acceptance_path)),"acceptance_sha256":accepted["acceptance_sha256"],"acceptance_file_sha256":sha256_bytes(raw)})
     write_create_only(safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME),canonical_json_bytes(payload));return Task8FrozenManifest(**{**payload,"datasets":tuple(names)})
-def verify_score_root(root:Path,catalog:dict[str,object])->Task8FrozenManifest:
+def verify_score_root(root:Path,catalog:dict[str,object], expected_backend:FrozenTask8BackendDecision|None=None)->Task8FrozenManifest:
     root=safe_root(root); path=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME); value=read_canonical(path); manifest=Task8FrozenManifest(**{**value,"datasets":tuple(value["datasets"])})
     if manifest.catalog_sha256!=catalog["catalog_sha256"]:raise ValueError("proposal manifest authority differs")
     if manifest.parity_status == "available_not_run":
@@ -173,7 +174,8 @@ def verify_score_root(root:Path,catalog:dict[str,object])->Task8FrozenManifest:
         if manifest.acceptance_sha256!=accepted["acceptance_sha256"] or manifest.acceptance_file_sha256!=sha256_bytes(raw):raise ValueError("proposal manifest authority differs")
     names=[entry["dataset"] for entry in catalog["datasets"]]; total=0
     for entry in catalog["datasets"]:
-        shard_path=_shard_path(root,entry["dataset"]);_validate_shard(read_canonical(shard_path),entry)
+        shard_path=_shard_path(root,entry["dataset"]); shard=_validate_shard(read_canonical(shard_path),entry)
+        if expected_backend is not None and shard["backend"] != expected_backend.artifact_record():raise ValueError("proposal backend differs from verified acceleration assessment")
         if manifest.shard_hashes[entry["dataset"]]!=sha256_bytes(shard_path.read_bytes()):raise ValueError("proposal shard hash differs")
         total+=entry["test"]["count"]
     if manifest.datasets!=tuple(names) or manifest.test_row_count!=total:raise ValueError("proposal manifest total differs")

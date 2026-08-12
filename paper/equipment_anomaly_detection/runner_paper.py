@@ -11,6 +11,7 @@ from .acceleration_paper import build_acceleration_manifest, verify_acceleration
 from .artifacts_paper import canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, write_create_only
 from .catalog_paper import build_catalog, load_acceptance
 from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
+from .contracts_paper import FrozenTask8BackendDecision
 from .data_paper import load_dataset_values
 from .lineage_paper import read_strict_json, sha256_file
 from .proposal_score_paper import compose_proposal_score, write_and_freeze_proposal_score
@@ -90,8 +91,9 @@ def _catalog_from_context(context):
     return build_catalog(Path(context["paths"]["db_path"]["unresolved_path"]),mode=context["mode"],smoke_datasets=tuple(context["smoke_datasets"]))
 
 def _proposal_artifact(root,context):
-    catalog=_catalog_from_context(context); manifest=verify_score_root(root,catalog)
     acceleration_path=_artifact_path(root,"acceleration")
+    acceleration=verify_acceleration_manifest(read_canonical(acceleration_path),context["context_sha256"])
+    catalog=_catalog_from_context(context); manifest=verify_score_root(root,catalog,FrozenTask8BackendDecision.from_acceleration_manifest(acceleration))
     return {"schema":"paper-task9-proposal-score.v1","stage":"proposal_score","context_sha256":context["context_sha256"],"acceleration_sha256":sha256_bytes(acceleration_path.read_bytes()),"catalog_sha256":catalog["catalog_sha256"],"proposal_manifest_sha256":sha256_bytes(safe_child(root,ARTIFACT_DIRECTORY,"proposal_freeze","proposal_manifest_paper.json").read_bytes()),"parity_status":manifest.parity_status}
 
 def _artifact_record(root,stage,context):
@@ -128,7 +130,8 @@ def _write_complete(root,stage,context,prior):
     elif stage=="acceleration": payload=build_acceleration_manifest(context["context_sha256"])
     elif stage=="proposal_score":
         catalog=_catalog_from_context(context); raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
-        proposal=compose_proposal_score(raw); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
+        acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
+        proposal=compose_proposal_score(raw,acceleration); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
     else: raise PipelineStateError("unregistered pipeline stage")
     path=_artifact_path(root,stage); write_create_only(path,canonical_json_bytes(payload)); artifact=_artifact_record(root,stage,context)
     index=("preflight","prepare","acceleration","proposal_score").index(stage)+1

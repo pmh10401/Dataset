@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T06:43:51+0900",
-  "generated_from_commit": "4509bfabd24f892ba747e67b2557dbbacfae6f0e",
+  "generated_at": "2026-08-13T06:59:09+0900",
+  "generated_from_commit": "313d83a7442cbfcc01023621cb4266274326a997",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
     "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
@@ -387,7 +387,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "runs and semantically re-verifies the closed preflight, prepare, acceleration, and proposal-score stages; proposal score freezes typed shards without claiming historical parity"
+        "runs and semantically re-verifies the closed preflight, prepare, acceleration, and proposal-score stages; passes the verified acceleration manifest into proposal scoring and independently checks each shard backend against that manifest before freezing typed shards without claiming historical parity"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -415,7 +415,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "records CPU worker caps and actual PyTorch, MLX, and MPS availability; rejects unbenchmarked or non-parity MLX acceleration"
+        "records logical CPU minus one dataset workers, inner numerical threads=1, sequential deep-method orchestration, and actual PyTorch, MLX, and MPS availability; rejects unbenchmarked or non-parity MLX acceleration"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -442,7 +442,7 @@
         "runner_paper.py"
       ],
       "effects": [
-        "composes exact Task4--7 values-only scoring over one mapping, performs Task6 global selection before selected-only Task7 stability, and freezes only typed Task8 shards"
+        "parallelizes only independent Task4+Task5 scoring with deterministic collection and restored parent numerical-thread environment, then performs exactly one population-global Task6 before selected-only Task7 and typed Task8 shard freeze"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -706,7 +706,7 @@
         "paper_acceleration",
         "paper_proposal_score"
       ],
-      "outcome": "The paper Task8/Task9 preflight-to-proposal-score pipeline records CPU/accelerator evidence and freezes typed values-only proposal shards; it neither executes nor authorizes Exp448 readiness, evaluation, inspection, promotion, or dashboard activity."
+      "outcome": "The paper Task8/Task9 preflight-to-proposal-score pipeline records CPU/accelerator evidence, derives 11 workers from 12 logical CPUs, parallelizes only independent Task4+Task5 values-only scoring, and freezes typed proposal shards; it neither executes nor authorizes Exp448 readiness, evaluation, inspection, promotion, or dashboard activity."
     }
   ],
   "unknown_relationships": [],
