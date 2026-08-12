@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass(frozen=True, slots=True)
 class LineageNode:
@@ -27,6 +29,19 @@ class FrozenPaperConfig:
     test_row_count: int = 195900
     seed: int = 20260812
     ablation_alert_counts: tuple[int, int, int, int] = (2218, 2248, 2244, 2222)
+
+
+@dataclass(frozen=True, slots=True)
+class RawDataset:
+    """Detached, index-aligned raw value rows used by the label-free score stages."""
+
+    dataset: str
+    train_indices: tuple[int, ...]
+    train_blobs: tuple[bytes, ...]
+    train_rows: tuple[np.ndarray, ...]
+    test_indices: tuple[int, ...]
+    test_blobs: tuple[bytes, ...]
+    test_rows: tuple[np.ndarray, ...]
 
 
 @dataclass(frozen=True, slots=True)
