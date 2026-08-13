@@ -15,7 +15,7 @@ FIXED_INTERPRETER_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-co
 class FrozenConfigAuthorityAntigravity:
     experiment: str; schema: str; kind: str; run_id: str; fixed_interpreter: str
     python_version: str; aeon_version: str; numpy_version: str; sklearn_version: str
-    rdst_class_path: str; source_sha256: str; max_shapelets: int; seeds: tuple[int, int]
+    rdst_public_class_path: str; rdst_implementation_class_path: str; source_sha256: str; max_shapelets: int; seeds: tuple[int, int]
     alpha: float; rdst_n_jobs: int; fit_label_policy: str; seed_aggregation: str
     crossfit_folds: int; knn_neighbors: int; max_train_reference: int; query_chunk_size: int
     target_family_count: int; target_dataset_count: int; target_test_rows: int
@@ -27,6 +27,7 @@ class FrozenConfigAuthorityAntigravity:
 FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY = FrozenConfigAuthorityAntigravity(
     "Exp451", "exp451", "rdst_local_gap_qualification", "exp451-rdst-local-gap-qualification-antigravity-20260813",
     FIXED_INTERPRETER_ANTIGRAVITY, "3.14.6", "1.4.0", "2.3.5", "1.7.2",
+    "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform",
     "aeon.transformations.collection.shapelet_based._dilated_shapelet_transform.RandomDilatedShapeletTransform",
     "900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2", 1024,
     (20260721, 20261721), 0.005, 1, "y_none_only", "elementwise_median", 5, 3, 1000, 128,
@@ -58,7 +59,7 @@ def decode_frozen_config_antigravity(value: object) -> FrozenConfigAuthorityAnti
     names = {field.name for field in fields(FrozenConfigAuthorityAntigravity)}
     if type(value) is not dict or set(value) != names:
         raise ValueError("frozen config keys differ")
-    for field in ("experiment", "schema", "kind", "run_id", "fixed_interpreter", "python_version", "aeon_version", "numpy_version", "sklearn_version", "rdst_class_path", "source_sha256", "fit_label_policy", "seed_aggregation", "worker_rule", "rdst_thread_rule", "prediction_root", "evaluation_root"):
+    for field in ("experiment", "schema", "kind", "run_id", "fixed_interpreter", "python_version", "aeon_version", "numpy_version", "sklearn_version", "rdst_public_class_path", "rdst_implementation_class_path", "source_sha256", "fit_label_policy", "seed_aggregation", "worker_rule", "rdst_thread_rule", "prediction_root", "evaluation_root"):
         _exact_str_antigravity(value[field], field)
     for field in ("max_shapelets", "rdst_n_jobs", "crossfit_folds", "knn_neighbors", "max_train_reference", "query_chunk_size", "target_family_count", "target_dataset_count", "target_test_rows", "reuse_dataset_count", "baseline_tp", "baseline_fp", "baseline_fn", "baseline_tn"):
         _exact_int_antigravity(value[field], field, minimum=1 if field not in {"baseline_tp", "baseline_fp", "baseline_fn", "baseline_tn"} else 0)

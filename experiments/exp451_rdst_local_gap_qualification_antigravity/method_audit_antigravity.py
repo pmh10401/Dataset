@@ -88,7 +88,8 @@ if retained[0] != retained[1] or outputs[0] != outputs[1]:
 response = {
     "schema": "exp451.rdst_audit.response.v1",
     "aeon_version": importlib.metadata.version("aeon"),
-    "class_path": RandomDilatedShapeletTransform.__module__ + "." + RandomDilatedShapeletTransform.__qualname__,
+    "public_class_path": "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform",
+    "implementation_class_path": RandomDilatedShapeletTransform.__module__ + "." + RandomDilatedShapeletTransform.__qualname__,
     "constructor_signature": str(inspect.signature(RandomDilatedShapeletTransform)),
     "fit_signature": str(inspect.signature(RandomDilatedShapeletTransform.fit)),
     "fit_transform_signature": str(inspect.signature(RandomDilatedShapeletTransform.fit_transform)),
@@ -123,7 +124,8 @@ def _strict_json_antigravity(payload: str) -> object:
 @dataclass(frozen=True, slots=True)
 class RdstAuditResultAntigravity:
     aeon_version: str
-    class_path: str
+    public_class_path: str
+    implementation_class_path: str
     constructor_signature: str
     fit_signature: str
     fit_transform_signature: str
@@ -141,7 +143,7 @@ class RdstAuditResultAntigravity:
     second_output_sha256: str
 
     def __post_init__(self) -> None:
-        for field in ("aeon_version", "class_path", "constructor_signature", "fit_signature", "fit_transform_signature"):
+        for field in ("aeon_version", "public_class_path", "implementation_class_path", "constructor_signature", "fit_signature", "fit_transform_signature"):
             if type(getattr(self, field)) is not str or not getattr(self, field):
                 raise ValueError(f"{field} must be an exact non-empty string")
         for field in ("source_sha256", "first_output_sha256", "second_output_sha256"):
@@ -171,7 +173,7 @@ def audit_rdst_antigravity() -> RdstAuditResultAntigravity:
         raise RuntimeError(f"fixed RDST audit subprocess failed: {completed.stderr.strip()}")
     decoded = _strict_json_antigravity(completed.stdout)
     expected_keys = {
-        "schema", "aeon_version", "class_path", "constructor_signature", "fit_signature", "fit_transform_signature",
+        "schema", "aeon_version", "public_class_path", "implementation_class_path", "constructor_signature", "fit_signature", "fit_transform_signature",
         "source_sha256", "seed", "max_shapelets", "n_jobs", "y_is_none", "two_dimensional", "finite",
         "deterministic", "retained_shapelets", "feature_dimension", "first_output_sha256", "second_output_sha256",
     }
@@ -182,7 +184,7 @@ def audit_rdst_antigravity() -> RdstAuditResultAntigravity:
     values = {key: value for key, value in decoded.items() if key != "schema"}
     result = RdstAuditResultAntigravity(**values)
     authority = FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY
-    if result.aeon_version != authority.aeon_version or result.class_path != authority.rdst_class_path or result.source_sha256 != authority.source_sha256:
+    if result.aeon_version != authority.aeon_version or result.public_class_path != authority.rdst_public_class_path or result.implementation_class_path != authority.rdst_implementation_class_path or result.source_sha256 != authority.source_sha256:
         raise ValueError("fixed RDST binding differs")
     if result.constructor_signature != _EXPECTED_CONSTRUCTOR_SIGNATURE_ANTIGRAVITY or result.fit_signature != "(self, X, y=None)" or result.fit_transform_signature != "(self, X, y=None)":
         raise ValueError("fixed RDST signature differs")

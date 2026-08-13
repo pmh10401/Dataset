@@ -20,7 +20,8 @@ class MethodAuditAntigravityTest(unittest.TestCase):
     def valid_response_antigravity(self) -> dict[str, object]:
         return {
             "schema": "exp451.rdst_audit.response.v1", "aeon_version": "1.4.0",
-            "class_path": "aeon.transformations.collection.shapelet_based._dilated_shapelet_transform.RandomDilatedShapeletTransform",
+            "public_class_path": "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform",
+            "implementation_class_path": "aeon.transformations.collection.shapelet_based._dilated_shapelet_transform.RandomDilatedShapeletTransform",
             "constructor_signature": "(max_shapelets: int = 10000, shapelet_lengths: List[int] | numpy.ndarray | None = None, proba_normalization: float = 0.8, threshold_percentiles: List[float] | numpy.ndarray | None = None, alpha_similarity: float = 0.5, use_prime_dilations: bool = False, random_state: int | None = None, n_jobs: int = 1)",
             "fit_signature": "(self, X, y=None)", "fit_transform_signature": "(self, X, y=None)",
             "source_sha256": "900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2",
@@ -38,7 +39,8 @@ class MethodAuditAntigravityTest(unittest.TestCase):
         result = audit_rdst_antigravity()
         self.assertIs(type(result), RdstAuditResultAntigravity)
         self.assertEqual(result.aeon_version, "1.4.0")
-        self.assertEqual(result.class_path, "aeon.transformations.collection.shapelet_based._dilated_shapelet_transform.RandomDilatedShapeletTransform")
+        self.assertEqual(result.public_class_path, "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform")
+        self.assertEqual(result.implementation_class_path, "aeon.transformations.collection.shapelet_based._dilated_shapelet_transform.RandomDilatedShapeletTransform")
         self.assertEqual(result.source_sha256, "900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2")
         self.assertEqual(result.constructor_signature, "(max_shapelets: int = 10000, shapelet_lengths: List[int] | numpy.ndarray | None = None, proba_normalization: float = 0.8, threshold_percentiles: List[float] | numpy.ndarray | None = None, alpha_similarity: float = 0.5, use_prime_dilations: bool = False, random_state: int | None = None, n_jobs: int = 1)")
         self.assertEqual(result.seed, 20260721)
@@ -58,7 +60,7 @@ class MethodAuditAntigravityTest(unittest.TestCase):
             ("extra", {**valid, "extra": 1}, "", 0),
             ("missing", {key: value for key, value in valid.items() if key != "finite"}, "", 0),
             ("wrong_type", {**valid, "seed": True}, "", 0),
-            ("wrong_path", {**valid, "class_path": "wrong.path"}, "", 0),
+            ("wrong_public_path", {**valid, "public_class_path": "wrong.path"}, "", 0),
             ("wrong_signature", {**valid, "fit_signature": "wrong"}, "", 0),
             ("false_boolean", {**valid, "finite": False}, "", 0),
         ]
@@ -78,7 +80,7 @@ class MethodAuditAntigravityTest(unittest.TestCase):
 
     def test_audit_binding_uses_observed_class_path_antigravity(self) -> None:
         changed = self.valid_response_antigravity()
-        changed["class_path"] = "aeon.transformations.collection.shapelet_based.changed.RandomDilatedShapeletTransform"
+        changed["implementation_class_path"] = "aeon.transformations.collection.shapelet_based.changed.RandomDilatedShapeletTransform"
         with patch.object(audit_module.subprocess, "run", return_value=self.completed_antigravity(changed)), self.assertRaisesRegex(ValueError, "binding"):
             audit_rdst_antigravity()
 

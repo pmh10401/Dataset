@@ -18,6 +18,8 @@ class ConfigAntigravityTest(unittest.TestCase):
         config = FROZEN_CONFIG_ANTIGRAVITY
         self.assertEqual(config["experiment"], "Exp451")
         self.assertEqual(config["schema"], "exp451")
+        self.assertEqual(config["rdst_public_class_path"], "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform")
+        self.assertEqual(config["rdst_implementation_class_path"], "aeon.transformations.collection.shapelet_based._dilated_shapelet_transform.RandomDilatedShapeletTransform")
         self.assertEqual(config["prediction_root"], "/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_antigravity_20260813")
         self.assertEqual(config["evaluation_root"], "/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813")
         self.assertEqual(config["max_shapelets"], 1024)
@@ -33,6 +35,12 @@ class ConfigAntigravityTest(unittest.TestCase):
         self.assertEqual(config["rdst_n_jobs"], 1)
         with self.assertRaises(TypeError):
             config["alpha"] = 1.0  # type: ignore[index]
+
+    def test_public_class_path_is_frozen_separately_from_observed_implementation_antigravity(self) -> None:
+        raw = dict(FROZEN_CONFIG_ANTIGRAVITY)
+        raw["rdst_public_class_path"] = raw["rdst_implementation_class_path"]
+        with self.assertRaises(ValueError):
+            decode_frozen_config_antigravity(raw)
 
     def test_typed_config_decode_rejects_nonexact_shape_and_bool_integers_antigravity(self) -> None:
         raw = dict(FROZEN_CONFIG_ANTIGRAVITY)
