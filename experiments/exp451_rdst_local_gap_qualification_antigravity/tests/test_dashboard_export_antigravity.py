@@ -17,7 +17,7 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             flattened=str(public).lower()
             for forbidden in ("dataset", "indices", "label", "sha", "path", "database", "sql", "audit", "checkpoint", "log"):
                 self.assertNotIn(forbidden, flattened)
-            self.assertEqual(public["runtime"], {"sessions":1,"queries":48,"rows":72300})
+            self.assertEqual(public["runtime"], {"sessions":2,"queries":96,"rows":144600,"successful_sessions":1,"invalid_attempts":1})
             for key in ("raw_labels", "dataset_names", "local_path", "sha256", "sql_log", "candidate_indices"):
                 with self.assertRaises(ValueError): validate_public_result_antigravity({**public, key: []},expected_result=result)
             malformed=[]

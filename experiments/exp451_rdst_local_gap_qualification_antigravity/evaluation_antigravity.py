@@ -21,7 +21,7 @@ from .evaluation_codec_antigravity import DatasetEvaluationAntigravity, FrozenEv
 OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813")
 BASELINE_GLOBAL_ANTIGRAVITY = ConfusionAntigravity(1930, 314, 1988, 191668)
 EXP448_HASHES_ANTIGRAVITY=("ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05","a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c","54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5")
-EXP448_BASELINE_AUTHORITY_SHA256_ANTIGRAVITY="3bb629ca696c6231fb0f6741f5df7e642ac1b0a63e23788436a24bc7eda44232"
+EXP448_BASELINE_AUTHORITY_SHA256_ANTIGRAVITY="9ffaf217e0df9407bf20f2e2fc3a3d0e557fa5d5e4b6db6562a140216c2c7ee8"
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,11 +112,11 @@ def _evaluate_with_dependencies_antigravity(authority: FrozenPredictionAuthority
     if type(snapshot) is not LabelSnapshotAntigravity or snapshot.dataset_order != tuple(x[2] for x in identities) or snapshot.lengths != authority.target_lengths or snapshot.row_count != 72300 or snapshot.session_count != 1 or len(snapshot.labels) != 48:
         raise ValueError("label snapshot differs")
     rows=[]
-    for i,(identity,length,labels,indices,baseline) in enumerate(zip(identities,authority.target_lengths,snapshot.labels,authority.candidate_indices,predecessor.target_baseline_rows,strict=True)):
+    for i,(identity,length,labels,indices,baseline,baseline_candidates) in enumerate(zip(identities,authority.target_lengths,snapshot.labels,authority.candidate_indices,predecessor.target_baseline_rows,predecessor.target_full_baseline_candidates,strict=True)):
         if type(baseline) is not DatasetBaselineAntigravity or len(labels)!=length: raise ValueError("baseline or label row differs")
-        candidate=_confusion_antigravity(labels,indices); stable=baseline.stable_candidates; chosen=frozenset(indices); positives=frozenset(int(x) for x in np.flatnonzero(labels))
-        stable_sha=hashlib.sha256(canonical_json_bytes_antigravity(sorted(stable))).hexdigest()
-        rows.append(DatasetEvaluationAntigravity(i,identity,length,baseline.confusion,candidate,len((chosen-stable)&positives),len((chosen-stable)-positives),len((stable-chosen)&positives),len((stable-chosen)-positives),len(stable),stable_sha))
+        candidate=_confusion_antigravity(labels,indices); chosen=frozenset(indices); positives=frozenset(int(x) for x in np.flatnonzero(labels))
+        stable_sha=hashlib.sha256(canonical_json_bytes_antigravity(sorted(baseline_candidates))).hexdigest()
+        rows.append(DatasetEvaluationAntigravity(i,identity,length,baseline.confusion,candidate,len((chosen-baseline_candidates)&positives),len((chosen-baseline_candidates)-positives),len((baseline_candidates-chosen)&positives),len((baseline_candidates-chosen)-positives),len(baseline_candidates),stable_sha))
     dataset_rows=tuple(rows)
     result=derive_evaluation_antigravity(dataset_rows,reviewed_commit,authority.canonical_sha256_antigravity,(predecessor.artifact_map_sha256,predecessor.evaluation_sha256,predecessor.decision_sha256))
     _publish_antigravity(dependencies.evaluation_root,result,authority,predecessor); return result

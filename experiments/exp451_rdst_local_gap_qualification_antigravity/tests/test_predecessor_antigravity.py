@@ -8,6 +8,14 @@ from unittest.mock import patch
 
 
 class PredecessorAntigravityTest(unittest.TestCase):
+    def test_full_hard_union_stable_baseline_is_label_free_and_exact_antigravity(self):
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.predecessor_antigravity import verify_exp448_predecessor_antigravity
+        value=verify_exp448_predecessor_antigravity()
+        self.assertEqual(len(value.target_full_baseline_candidates),48)
+        self.assertEqual(sum(map(len,value.target_full_baseline_candidates)),675)
+        self.assertTrue(all(all(type(index) is int and 0<=index<length for index in indices) for indices,length in zip(value.target_full_baseline_candidates,value.target_test_lengths,strict=True)))
+        self.assertEqual(value.full_baseline_authority_sha256,"ff01bc863b1b61850646fabfb96c906d5874efd240c1fae8fe715d59e23cfefe")
+        self.assertEqual(value.label_access_count,0)
     def test_converts_descriptor_pinned_exp448_authority_without_alias_antigravity(self) -> None:
         from experiments.exp449_residual_fn_method_qualification_antigravity.predecessor_antigravity import capture_exp448_authority_antigravity
         from experiments.exp451_rdst_local_gap_qualification_antigravity.predecessor_antigravity import verify_exp448_predecessor_antigravity

@@ -25,7 +25,7 @@ def _validate_shape_antigravity(value):
         elif type(item) not in (str,int,float,bool) or type(item) is float and not math.isfinite(item): raise ValueError("public value type differs")
         elif type(item) is str and any(word in item.lower() for word in FORBIDDEN): raise ValueError("sensitive public value")
     walk(value)
-    if value["identity"]!="Exp451" or value["status"] not in {"qualified","not_qualified"} or value["runtime"]!={"sessions":1,"queries":48,"rows":72300} or any(type(x) is not int for x in value["runtime"].values()) or value["counts"]!={"replaced":48,"reused":1069,"global":1117} or any(type(x) is not int for x in value["counts"].values()): raise ValueError("public constants differ")
+    if value["identity"]!="Exp451" or value["status"] not in {"qualified","not_qualified"} or value["runtime"]!={"sessions":2,"queries":96,"rows":144600,"successful_sessions":1,"invalid_attempts":1} or any(type(x) is not int for x in value["runtime"].values()) or value["counts"]!={"replaced":48,"reused":1069,"global":1117} or any(type(x) is not int for x in value["counts"].values()): raise ValueError("public constants differ")
     if type(value["global"]) is not dict or set(value["global"])!={"baseline","candidate"}: raise ValueError("global schema differs")
     for name,confusion in value["global"].items():
         if type(confusion) is not dict or set(confusion)!={"tp","fp","fn","tn","f1"} or any(type(confusion[k]) is not int or confusion[k]<0 for k in ("tp","fp","fn","tn")) or type(confusion["f1"]) is not float: raise ValueError("confusion schema differs")

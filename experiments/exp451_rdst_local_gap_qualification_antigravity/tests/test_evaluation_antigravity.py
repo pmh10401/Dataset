@@ -22,7 +22,8 @@ IDENTITIES = tuple((i+1, FAMILIES[i % 8], f"{FAMILIES[i % 8]}_dataset{i}") for i
 def fixture_antigravity(root: Path):
     from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import EvaluationDependenciesAntigravity, EvaluationEvidenceRowAntigravity
     rows = tuple(DatasetBaselineAntigravity(i+1, IDENTITIES[i][1], frozenset(), ConfusionAntigravity(0, 0, 1, LENGTHS[i] - 1)) for i in range(48))
-    predecessor = Exp448PredecessorAuthorityAntigravity((1,2,3,4,5,6,7), "ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05", "a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c", "54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5", 1117, 48, tuple(range(1,49)), tuple(x[2] for x in IDENTITIES), rows, (1930,314,1988,191668), (6,6,6,6,6,6,6,6), 72300, LENGTHS, 0)
+    full=tuple(frozenset() for _ in range(48))
+    predecessor = Exp448PredecessorAuthorityAntigravity((1,2,3,4,5,6,7), "ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05", "a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c", "54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5", 1117, 48, tuple(range(1,49)), tuple(x[2] for x in IDENTITIES), rows, (1930,314,1988,191668), (6,6,6,6,6,6,6,6), 72300, LENGTHS, 0, full, "0"*64)
     authority = FrozenPredictionAuthorityAntigravity(SHA, IDENTITIES, LENGTHS, tuple((0,) for _ in range(48)))
     evidence = tuple(EvaluationEvidenceRowAntigravity(i, IDENTITIES[i], LENGTHS[i], (0,)) for i in range(48))
     counters = {"constructed": 0, "called": 0}
@@ -43,7 +44,7 @@ class EvaluationAntigravityTest(unittest.TestCase):
         from experiments.exp451_rdst_local_gap_qualification_antigravity import evaluation_antigravity as module
         from experiments.exp451_rdst_local_gap_qualification_antigravity.predecessor_antigravity import verify_exp448_predecessor_antigravity
         predecessor=verify_exp448_predecessor_antigravity()
-        self.assertEqual(module._baseline_authority_sha256_antigravity(predecessor),"3bb629ca696c6231fb0f6741f5df7e642ac1b0a63e23788436a24bc7eda44232")
+        self.assertEqual(module._baseline_authority_sha256_antigravity(predecessor),"9ffaf217e0df9407bf20f2e2fc3a3d0e557fa5d5e4b6db6562a140216c2c7ee8")
         self.assertEqual(predecessor.target_dataset_order[:4],(101,102,103,148)); self.assertEqual(predecessor.label_access_count,0)
         identities=tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True)); authority=FrozenPredictionAuthorityAntigravity(SHA,identities,predecessor.target_test_lengths,tuple(() for _ in identities)); captured=[]
         def private(value,reviewed,deps): captured.append(deps.predecessor_loader()); return "sentinel"
@@ -77,13 +78,23 @@ class EvaluationAntigravityTest(unittest.TestCase):
             result = _evaluate_with_dependencies_antigravity(authority, SHA, deps)
             self.assertEqual(counters, {"constructed": 1, "called": 1})
             self.assertEqual((result.replaced_dataset_count,result.reused_dataset_count,result.global_dataset_count), (48,1069,1117))
-            self.assertEqual((result.label_session_count,result.label_query_count,result.label_row_count), (1,48,72300))
+            self.assertEqual((result.label_session_count,result.label_query_count,result.label_row_count), (2,96,144600))
             self.assertEqual(result.bootstrap_dataset_pairs, 48)
             self.assertEqual(result.target_order, IDENTITIES)
             self.assertEqual(result.candidate_global, ConfusionAntigravity(1978,314,1940,191668))
             self.assertEqual(result.bootstrap["draw_sha256"], "264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a")
             self.assertEqual(len(result.dataset_rows), 48)
             self.assertTrue(all(sum(dataclasses.astuple(row.candidate)) == row.target_length for row in result.dataset_rows))
+
+    def test_full_baseline_coordinates_drive_all_four_transitions_antigravity(self):
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            authority,deps,_=fixture_antigravity(Path(directory)/"evaluation_antigravity"); indices=list(authority.candidate_indices); indices[2]=(1,); authority=dataclasses.replace(authority,candidate_indices=tuple(indices)); evidence=list(deps.evidence_rows); evidence[2]=dataclasses.replace(evidence[2],indices=(1,)); deps=dataclasses.replace(deps,evidence_rows=tuple(evidence)); predecessor=deps.predecessor_loader(); full=list(predecessor.target_full_baseline_candidates); full[0]=frozenset((0,1)); full[1]=frozenset((1,)); full[2]=frozenset((0,)); full[3]=frozenset()
+            rows=list(predecessor.target_baseline_rows)
+            rows[0]=dataclasses.replace(rows[0],confusion=ConfusionAntigravity(1,1,0,LENGTHS[0]-2)); rows[1]=dataclasses.replace(rows[1],confusion=ConfusionAntigravity(0,1,1,LENGTHS[1]-2)); rows[2]=dataclasses.replace(rows[2],confusion=ConfusionAntigravity(1,0,0,LENGTHS[2]-1)); rows[3]=dataclasses.replace(rows[3],confusion=ConfusionAntigravity(0,0,1,LENGTHS[3]-1))
+            predecessor=dataclasses.replace(predecessor,target_baseline_rows=tuple(rows),target_full_baseline_candidates=tuple(full)); deps=dataclasses.replace(deps,predecessor_loader=lambda:predecessor)
+            result=_evaluate_with_dependencies_antigravity(authority,SHA,deps)
+            self.assertEqual(tuple((row.new_detections,row.new_false_alarms,row.detection_losses,row.false_alarm_losses) for row in result.dataset_rows[:4]),((0,0,0,1),(1,0,0,1),(0,1,1,0),(1,0,0,0)))
 
 
 if __name__ == "__main__": unittest.main()
