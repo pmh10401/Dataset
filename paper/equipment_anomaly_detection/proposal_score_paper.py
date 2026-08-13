@@ -128,15 +128,22 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
     return dict(sorted(sources.items())), dict(sorted(routes.items()))
 
 
-def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_manifest: object) -> ProposalScore:
+def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_manifest: object, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None) -> ProposalScore:
     """Execute Task4+5 independently, then exactly one population-global Task6 and selected-only Task7."""
     _label_firewall()
     raw = dict(raw_datasets)
     if not raw or tuple(raw) != tuple(sorted(raw)) or any(not isinstance(values, RawDataset) or values.dataset != dataset for dataset, values in raw.items()):
         raise ValueError("proposal raw dataset mapping is invalid")
     backend = FrozenTask8BackendDecision.from_acceleration_manifest(acceleration_manifest)
+    supplied = (root is not None, context is not None, catalog is not None)
+    if any(supplied) and not all(supplied):
+        raise ValueError("proposal success publication inputs are incomplete")
+    publisher = None
+    if all(supplied):
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, catalog, acceleration_manifest)
+        publisher = task4_task5_success_publisher(root, catalog, authority)
     started = monotonic()
-    sources, routes = _collect_task4_task5(raw, backend)
+    sources, routes = _collect_task4_task5(raw, backend, publish_success=publisher)
     hard_seconds = float(monotonic() - started)
     _label_firewall()
     print("Task6 start", file=sys.stderr, flush=True)

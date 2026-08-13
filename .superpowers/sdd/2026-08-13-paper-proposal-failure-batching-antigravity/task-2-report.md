@@ -53,3 +53,21 @@ VERIFIED:
 LIMITATION:
 
 - A record whose TEST score, p-values, native-pass flags, and payload hash are all forged consistently can satisfy serialization-local checks. The cache is authenticated computation output, not an independent model recomputation oracle; the context-bound, create-only parent publication after worker return is the trust anchor. Rerunning the frozen source models is required to independently disprove such a fully self-consistent forgery.
+
+## Fix round 2/5
+
+CHANGES:
+
+- Production `runner_paper._write_complete` now passes the verified root, context, catalog, and acceleration manifest into `compose_proposal_score`; composition derives one authority and always supplies the parent-only publisher. In-memory composition remains available only when those production inputs are omitted.
+- Empty abstained TRAIN/TEST arrays must be float64 before canonical serialization and reconstruct as float64.
+- Task8 final shard schema is now `paper-task8-proposal-shard.v3`: eligible source scores remain finite TEST-length arrays; ineligible sources carry their honest empty TEST-score array. The v3 reader rejects old schema or malformed shapes.
+- The byte-equivalence fixture now combines an abstained source, nonempty Task5 route stages, consistent Task6/7 policy evidence, full v3 freeze/verify, and manifest-byte equality.
+
+VERIFIED:
+
+- Parent independently ran `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -q`: `Ran 28 tests ... OK` in 1.753 seconds.
+- `git diff --check` exited 0 immediately before the final commit.
+
+JUDGMENT CALL:
+
+- The synchronized codemap triplets remain structurally current; semantic finalization of their descriptions is deferred to the dedicated Task 5 ownership, per parent direction.

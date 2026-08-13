@@ -131,7 +131,7 @@ def _write_complete(root,stage,context,prior):
     elif stage=="proposal_score":
         catalog=_catalog_from_context(context); raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
         acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
-        proposal=compose_proposal_score(raw,acceleration); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
+        proposal=compose_proposal_score(raw,acceleration,root=root,context=context,catalog=catalog); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
     else: raise PipelineStateError("unregistered pipeline stage")
     path=_artifact_path(root,stage); write_create_only(path,canonical_json_bytes(payload)); artifact=_artifact_record(root,stage,context)
     index=("preflight","prepare","acceleration","proposal_score").index(stage)+1

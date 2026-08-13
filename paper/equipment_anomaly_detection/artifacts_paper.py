@@ -16,7 +16,7 @@ from .routing_paper import PolicyBundle
 from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, SOURCE_ALPHA_PAPER, HardSourceBundle, HardSourceResult
 from .sources_paper.stability_paper import StabilityPartition
 
-SHARD_SCHEMA="paper-task8-proposal-shard.v2"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
+SHARD_SCHEMA="paper-task8-proposal-shard.v3"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
 ARTIFACT_DIRECTORY="stage_artifacts_paper"; FREEZE_STAGE="proposal_freeze"; SHARD_DIRECTORY="shards"; MANIFEST_NAME="proposal_manifest_paper.json"
 TASK4_TASK5_SUCCESS_SCHEMA="paper-task4-task5-success.v1"; PROPOSAL_WORK_DIRECTORY="proposal_work"; TASK4_TASK5_SUCCESS_DIRECTORY="task4_task5_success"; TASK4_TASK5_SUCCESS_NAME="task4_task5_success_antigravity.json"
 TASK4_TASK5_SOURCE_ORIGIN_IDS={"rocket_exp40":"rocket_exp40","exp55_best":"exp55_best","exp56_best":"exp56_best","exp84":"exp84_family_guard","rocket_block_b":"rocket_block_b","canonical_normal_state":"canonical_normal_state"}
@@ -221,6 +221,8 @@ def _task4_task5_source_payload(sources: HardSourceBundle, n_train: int, n_test:
             if result.eligibility_reason != "eligible" or native != [value <= threshold for value in pvalue] or not np.array_equal(np.asarray(pvalue), upper_tail_pvalues(np.asarray(train_oof), np.asarray(test_score))):
                 raise ValueError("typed Task4 eligible source relation differs")
         else:
+            _task4_task5_float_array(result.train_oof_score, 0, "source abstained TRAIN OOF score")
+            _task4_task5_float_array(result.test_score, 0, "source abstained TEST score")
             if np.asarray(result.train_oof_score).size or np.asarray(result.test_score).size or pvalue != [1.0] * n_test or any(native):
                 raise ValueError("typed Task4 abstained source relation differs")
             train_oof, test_score = [], []
@@ -412,7 +414,8 @@ def _validate_shard(value:object,entry:dict[str,object])->dict[str,object]:
     for order,row in enumerate(value["source_rows"]):
         if set(row)!={"source_id","order","test_score","pvalue","native_pass","eligible","reason"} or row["order"]!=order:_raise=ValueError("proposal source schema differs");raise _raise
         if row["eligible"] is True:_array(row["test_score"],n,"source score")
-        elif row["eligible"] is False and row["test_score"] != []:raise ValueError("proposal abstained source score differs")
+        elif row["eligible"] is False:
+            if row["test_score"] != []:raise ValueError("proposal abstained source score differs")
         else:raise ValueError("proposal source eligibility differs")
         _array(row["pvalue"],n,"source pvalue");_bools(row["native_pass"],n,"source pass")
     if not isinstance(value["low_frequency_rows"],list) or [row.get("index") if isinstance(row,dict) else None for row in value["low_frequency_rows"]]!=list(range(n)):raise ValueError("proposal Task6 rows differ")

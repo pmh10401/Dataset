@@ -77,6 +77,7 @@ class Task8LifecycleTests(unittest.TestCase):
         from paper.equipment_anomaly_detection.artifacts_paper import freeze_score_root, write_typed_proposal_shard
         from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
         from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
         first, second = self._typed("alpha"), self._typed("beta")
         raw = {"alpha": first[0], "beta": second[0]}
         low = LowFrequencyResult(("alpha", "beta"), tuple(row for values in (first[3], second[3]) for row in values.rows), (), (), 0, {"alpha": frozenset(), "beta": frozenset()})
@@ -182,7 +183,7 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
             RouteLanes(frozenset({0}), frozenset({1}), frozenset()), frozenset({0}), frozenset({1}), frozenset({0}),
             RouteLanes(frozenset(), frozenset(), frozenset({1})), SourceExpansion(frozenset({0}), frozenset({0})),
             RouteLanes(frozenset(), frozenset({1}), frozenset()), frozenset({1}), RouteLanes(frozenset({1}), frozenset(), frozenset()),
-            frozenset({1}), frozenset(), 2,
+            frozenset(), frozenset({1}), 2,
         )
 
     def test_authority_is_derived_from_context_catalog_and_verified_acceleration(self):
@@ -281,8 +282,9 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
 
     def test_reread_sources_and_route_project_to_byte_identical_existing_task8_shard(self):
         """A serialization conversion that changes the downstream Task8 bytes is not a scientifically safe reuse seam."""
-        from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, write_task4_task5_success_record, write_typed_proposal_shard
+        from paper.equipment_anomaly_detection.artifacts_paper import MANIFEST_NAME, freeze_score_root, read_task4_task5_success_record, verify_score_root, write_task4_task5_success_record, write_typed_proposal_shard
         from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
         from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
         raw, sources, _route, low, stability, policies, backend = self._task4_task5_values()
         changed = dict(sources.by_name); source = changed["rocket_exp40"]
@@ -290,6 +292,7 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         sources = HardSourceBundle(sources.source_names, changed)
         route = self._nonempty_route()
         low = LowFrequencyResult((raw.dataset,), low.rows, (), (), 0, {raw.dataset: route.exp253.hard})
+        policies = PolicyBundle(tuple(PolicyRoute(name, {raw.dataset: route.automatic_hard}, {raw.dataset: np.asarray((0.0, 0.9))}, {raw.dataset: np.asarray((0.0, 0.6))}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
         authority = self._authority(backend)
         write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
         reread = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
@@ -297,7 +300,14 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         reread_root = self.fixture.base / "reread_projection_antigravity"
         memory_path = write_typed_proposal_shard(memory_root, self.catalog, raw, sources, route, low, stability, policies, backend)
         reread_path = write_typed_proposal_shard(reread_root, self.catalog, raw, reread.sources, reread.route, low, stability, policies, backend)
+        # Complete both smoke inventories with the untouched beta fixture, then freeze/verify v3 manifests.
+        beta = self.fixture._typed("beta")
+        write_typed_proposal_shard(memory_root, self.catalog, *beta)
+        write_typed_proposal_shard(reread_root, self.catalog, *beta)
+        freeze_score_root(memory_root, self.catalog); freeze_score_root(reread_root, self.catalog)
+        verify_score_root(memory_root, self.catalog); verify_score_root(reread_root, self.catalog)
         self.assertEqual(memory_path.read_bytes(), reread_path.read_bytes())
+        self.assertEqual((memory_root / "stage_artifacts_paper" / "proposal_freeze" / MANIFEST_NAME).read_bytes(), (reread_root / "stage_artifacts_paper" / "proposal_freeze" / MANIFEST_NAME).read_bytes())
 
     def test_writer_rejects_non_float64_source_arrays(self):
         """Casting float32 or integer source evidence on write would make the cache a lossy scientific transform."""
@@ -306,6 +316,9 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
         changed = dict(sources.by_name); source = changed["rocket_exp40"]
         changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, source.train_oof_score.astype(np.float32), source.test_score.astype(np.float32), source.test_pvalue.astype(np.float32), source.threshold, source.test_native_pass, source.eligible, source.eligibility_reason)
+        with self.assertRaisesRegex(ValueError, "float64"):
+            write_task4_task5_success_record(self.root, self.catalog, self._authority(backend), raw, HardSourceBundle(sources.source_names, changed), route)
+        changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, np.empty(0, dtype=np.float32), np.empty(0, dtype=np.float32), np.ones(2, dtype=np.float64), source.threshold, np.zeros(2, dtype=bool), False, "dependency_unavailable")
         with self.assertRaisesRegex(ValueError, "float64"):
             write_task4_task5_success_record(self.root, self.catalog, self._authority(backend), raw, HardSourceBundle(sources.source_names, changed), route)
 
@@ -501,6 +514,27 @@ class Task9ParallelCompositionTests(unittest.TestCase):
                 observed_sources, observed_routes = score._collect_task4_task5({raw.dataset: raw}, FrozenTask8BackendDecision.from_acceleration_manifest(acceleration), publish_success=publisher)
             self.assertEqual(observed_sources[raw.dataset], sources)
             self.assertEqual(observed_routes[raw.dataset], route)
+            self.assertEqual(read_task4_task5_success_record(record_fixture.root, record_fixture.catalog, authority, raw).route, route)
+        finally:
+            record_fixture.tearDown()
+
+    def test_composition_with_runner_inputs_always_publishes_success(self):
+        """A production compose call that skips the parent publisher leaves successful worker work unrecoverable."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, read_task4_task5_success_record
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        record_fixture = Task4Task5SuccessRecordTests("run")
+        record_fixture.setUp()
+        try:
+            raw, sources, route, low, stability, policies, _backend = record_fixture._task4_task5_values()
+            context = context_payload(record_fixture.fixture.config()); acceleration = build_acceleration_manifest(context["context_sha256"], logical_cpu_count=1)
+            authority = Task4Task5SuccessAuthority.from_verified_context(context, record_fixture.catalog, acceleration)
+            def collect(_raw, _backend, *, publish_success):
+                publish_success(raw, sources, route)
+                return {raw.dataset: sources}, {raw.dataset: route}
+            with patch.object(score, "_collect_task4_task5", side_effect=collect), patch.object(score, "score_low_frequency", return_value=low), patch.object(score, "classify_stability", return_value=stability), patch.object(score, "build_hard_evidence_surface", return_value=object()), patch.object(score, "build_policies", return_value=policies):
+                score.compose_proposal_score({raw.dataset: raw}, acceleration, root=record_fixture.root, context=context, catalog=record_fixture.catalog)
             self.assertEqual(read_task4_task5_success_record(record_fixture.root, record_fixture.catalog, authority, raw).route, route)
         finally:
             record_fixture.tearDown()
