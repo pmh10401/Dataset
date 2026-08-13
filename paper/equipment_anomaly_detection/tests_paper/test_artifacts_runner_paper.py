@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
-import contextlib, io, json, sqlite3, tempfile, unittest
+import contextlib, io, json, shutil, sqlite3, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace
 import sys
@@ -832,6 +832,49 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
         self.assertEqual((calculated, task6.call_count, task7.call_count), (["alpha", "beta", "beta"], 1, 1))
         self.assertTrue((root / "stage_artifacts_paper" / "proposal_freeze" / "proposal_manifest_paper.json").is_file())
         self.assertTrue((root / "pipeline_journal_paper" / "000004_proposal_score_paper.json").is_file())
+
+    def test_interrupted_resume_matches_uninterrupted_authoritative_final_artifacts(self):
+        """Changing a retry wave must not change final Task4--7 shards, hashes, or scientific stage evidence."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection import runner_paper as runner
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        root = self.fixture.fixture.base / "resume_equivalence_antigravity"
+        config = runner.PipelineConfig(self.fixture.fixture.db, root, "smoke", ("alpha", "beta"))
+        alpha = self.fixture._task4_task5_values()
+        beta = self.fixture._task4_task5_values()
+        raw = {"alpha": alpha[0], "beta": self.fixture.fixture._typed("beta")[0]}
+        values = {"alpha": (alpha[1], alpha[2]), "beta": (beta[1], beta[2])}
+        low = LowFrequencyResult(("alpha", "beta"), self.fixture.fixture._typed("alpha")[3].rows + self.fixture.fixture._typed("beta")[3].rows, (), (), 0, {"alpha": frozenset(), "beta": frozenset()})
+        policies = PolicyBundle(tuple(PolicyRoute(name, {dataset: frozenset() for dataset in raw}, {dataset: np.zeros(2) for dataset in raw}, {dataset: np.zeros(2) for dataset in raw}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
+        original_acceleration = runner.build_acceleration_manifest
+
+        def run(fail_beta_once):
+            failed = [fail_beta_once]
+            def calculate(values_for_dataset):
+                if values_for_dataset.dataset == "beta" and failed[0]:
+                    failed[0] = False
+                    raise RuntimeError("interruption fixture beta failure")
+                return values[values_for_dataset.dataset]
+            def acceleration(context_sha256):
+                return original_acceleration(context_sha256, logical_cpu_count=1)
+            with patch.object(runner, "build_catalog", return_value=self.fixture.catalog), patch.object(runner, "load_dataset_values", side_effect=lambda _path, dataset: raw[dataset]), patch.object(runner, "build_acceleration_manifest", side_effect=acceleration), patch.object(score, "_score_dataset_task4_task5", side_effect=calculate), patch.object(score, "score_low_frequency", return_value=low), patch.object(score, "classify_stability", return_value=alpha[4]), patch.object(score, "build_hard_evidence_surface", return_value=object()), patch.object(score, "build_policies", return_value=policies):
+                first = runner.run_pipeline(config)
+                return first if first["status"] == "completed" else runner.run_pipeline(config)
+
+        self.assertEqual(run(False)["status"], "completed")
+        freeze = root / "stage_artifacts_paper" / "proposal_freeze"
+        baseline = {path.name: path.read_bytes() for path in sorted((freeze / "shards").iterdir())}
+        baseline["proposal_manifest_paper.json"] = (freeze / "proposal_manifest_paper.json").read_bytes()
+        baseline_score = (root / "stage_artifacts_paper" / "proposal_score" / "proposal_score_paper.json").read_bytes()
+        shutil.rmtree(root)
+        self.assertEqual(run(True)["status"], "completed")
+        resumed_freeze = root / "stage_artifacts_paper" / "proposal_freeze"
+        resumed = {path.name: path.read_bytes() for path in sorted((resumed_freeze / "shards").iterdir())}
+        resumed["proposal_manifest_paper.json"] = (resumed_freeze / "proposal_manifest_paper.json").read_bytes()
+        self.assertEqual(resumed, baseline)
+        self.assertEqual((root / "stage_artifacts_paper" / "proposal_score" / "proposal_score_paper.json").read_bytes(), baseline_score)
+
 
 
 if __name__=="__main__":unittest.main()
