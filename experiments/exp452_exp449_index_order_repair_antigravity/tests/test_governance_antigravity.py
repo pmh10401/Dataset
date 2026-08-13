@@ -46,7 +46,7 @@ def map_builder_antigravity() -> object:
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
-    def test_governance_artifacts_exist_as_html_and_plan_is_unchecked_antigravity(self) -> None:
+    def test_governance_artifacts_exist_as_html_and_plan_tracks_completed_task_antigravity(self) -> None:
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             with self.subTest(relative=relative):
                 self.assertIn("antigravity", Path(relative).name)
@@ -57,9 +57,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(path.with_suffix(".md").exists())
             self.assertIn("<!doctype html>", path.read_text(encoding="utf-8").lower())
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html").read_text(encoding="utf-8")
-        tags = re.findall(r"<input\b[^>]*>", plan, flags=re.IGNORECASE)
-        self.assertTrue(tags)
-        for tag in tags:
+        task_one = re.search(r"<section><h2><input\b[^>]*> Task 1:.*?</section>", plan, flags=re.IGNORECASE | re.DOTALL)
+        self.assertIsNotNone(task_one)
+        assert task_one is not None
+        completed_tags = re.findall(r"<input\b[^>]*>", task_one.group(0), flags=re.IGNORECASE)
+        self.assertEqual(len(completed_tags), 7)
+        for tag in completed_tags:
+            self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+        remaining_plan = plan[: task_one.start()] + plan[task_one.end() :]
+        pending_tags = re.findall(r"<input\b[^>]*>", remaining_plan, flags=re.IGNORECASE)
+        self.assertTrue(pending_tags)
+        for tag in pending_tags:
             self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
 
     def test_checked_plan_input_fixture_is_detected_antigravity(self) -> None:
