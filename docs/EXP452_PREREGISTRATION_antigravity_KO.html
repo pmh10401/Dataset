@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp452 사전등록</title><style>body{max-width:900px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}table{border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.5rem;text-align:left}</style></head><body><main>
+<h1>Exp452: Exp449 index 순서 복구 사전등록</h1>
+<p>Exp452는 Exp449의 고정된 96개 prediction을 바꾸지 않고, evaluation evidence에 기록되는 index list를 오름차순으로 고정하는 engineering-only 복구다. 새 후보, score, threshold, routing rule, bootstrap, seed 또는 FN/FP/F1 기준을 만들지 않는다.</p>
+<h2>고정 범위</h2><table><tr><th>항목</th><th>값</th></tr><tr><td>datasets / predictions / family-method pairs</td><td>48 / 96 / 16</td></tr><tr><td>alpha</td><td>0.005</td></tr><tr><td>predecessor prediction SHA-256</td><td><code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code></td></tr><tr><td>의미 있는 코드 변경</td><td><code>sorted(indices)</code>로 evidence list를 canonicalize하는 한 곳</td></tr></table>
+<h2>Exp449 경계</h2><p>Exp449의 qualified-2 staging 결과는 final replay 실패 때문에 공식 과학 결과가 아니다. 그것은 Exp452의 선택, threshold, routing, candidate removal 또는 promotion을 <strong>cannot guide</strong> 한다. Exp452는 모든 frozen prediction을 그대로 평가하며 결과를 본 뒤 재선택하지 않는다.</p>
+<h2>label·실행 경계</h2><p>현재 상태는 <code>planned_not_started</code>다. Task 1은 TEST label을 읽지 않고 official root, receipt 또는 dashboard artifact를 만들지 않는다. 별도 승인과 fresh review 뒤에만 readiness, evaluate, bare inspect를 각각 정확히 한 번 실행할 수 있으며, 실패하면 재시도하지 않는다.</p>
+<h2>CPU·가속 판단</h2><p>96개의 짧은 Python integer list 정렬은 tensor-eligible 하지 않다. PyTorch/MLX/mlx-metal/MPS 상태는 미래 readiness가 기록하되, 전송·동기화 비용과 exact integer-order parity 요구 때문에 canonical backend는 CPU single-process다. 장래 tensor stage는 동일 index, finite output, preregistered tolerance, end-to-end 1.1x speedup을 입증할 때만 가속할 수 있다.</p>
+<h2>비승격</h2><p>champion, pending candidate, promotion, routing 및 dashboard publication은 변하지 않는다.</p>
+</main></body></html>

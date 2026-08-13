@@ -383,6 +383,30 @@
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "next_action": "remain_planned_until_separate_review_and_execution_approval"
+    },
+    {
+      "experiment": "Exp452",
+      "status": "planned_not_started",
+      "reason": "Exp452 is an engineering-only canonical index-order repair over immutable Exp449 predictions. Exp449 qualified-2 staging results cannot guide Exp452 selection, thresholds, routing, candidate removal, champion, or promotion. No Exp452 readiness, evaluation, inspect, TEST-label access, champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert has occurred.",
+      "reviewed_design_sha256": "59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075",
+      "document_sha256": {"preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2", "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754", "implementation_report": "39f6a9f5544ad77b76122de4d7651f60f687de698efa9f274020fab93496d585"},
+      "run_identity": "exp452-exp449-index-order-repair-antigravity-20260813",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "label_access_count": 0,
+      "test_labels_opened": false,
+      "official_readiness_started": false,
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_lifecycle": {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0},
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "promotion_allowed": false,
+      "routing_allowed": false,
+      "pending_candidate_changed": false,
+      "next_action": "remain_planned_until_task5_review_and_separate_execution_approval"
     }
   ]
 }

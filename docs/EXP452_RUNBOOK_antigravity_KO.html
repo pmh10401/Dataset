@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp452 실행 규칙</title><style>body{max-width:900px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}li{margin:.4rem 0}</style></head><body><main>
+<h1>Exp452 운영 runbook</h1>
+<p><strong>현재는 실행 금지:</strong> Task 1은 governance와 code map만 만든다. TEST label, Exp452 evaluation root, lifecycle receipt, dashboard/site repository에는 접근하지 않는다.</p>
+<h2>불변 predecessor</h2><p>Exp449 prediction aggregate와 artifact는 read-only다. Exp449의 qualified-2 결과는 replay failure가 난 staging 사실일 뿐이고, Exp452의 decision을 <strong>cannot guide</strong> 한다. 두 결과를 selection, threshold, routing, candidate removal 또는 promotion에 사용하지 않는다.</p>
+<h2>향후 허가된 lifecycle</h2><ol><li>fresh Sol이 승인한 동일한 clean commit으로 <code>readiness --reviewed-commit LOWER40HEX</code>를 한 번 실행한다.</li><li>성공한 경우에만 <code>evaluate --reviewed-commit LOWER40HEX</code>를 한 번 실행한다.</li><li>성공한 immutable evaluation root가 있을 때만 bare <code>inspect</code>를 한 번 실행한다.</li></ol>
+<p>각 단계가 nonzero이면 뒤 단계와 retry를 영구 금지하고 새 experiment number를 사용한다. Exp452에는 predict command가 없다.</p>
+<h2>향후 label boundary</h2><p>evaluate만 하나의 read-only TEST-label session을 열 수 있다. 기준은 48 ordered queries와 72,300 label rows이며, readiness와 inspect는 source-free다.</p>
+<h2>CPU·publication</h2><p>CPU single-process가 canonical이다. MLX/MPS path는 tensor 부적합이고 parity 및 1.1x end-to-end speed gate를 아직 충족하지 않았으므로 사용하지 않는다. inspect와 closeout이 모두 성공하기 전에는 dashboard publication을 하지 않는다.</p>
+</main></body></html>
