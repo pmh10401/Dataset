@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T00:00:00Z",
-  "source_parent_commit": "581fd7320d2dd8e19375a87c6b046b149001a8ad",
+  "generated_at": "2026-08-13T00:48:43+00:00",
+  "source_parent_commit": "dcfc544688b543610accc54c8e99c4e5d2e113ad",
   "scope": [
     "Task 5 official outcome is implemented and immutable: readiness and zero-label predict succeeded once; evaluation opened one 48-query/72,300-row label session and retained staging evidence before replay failed permanently; inspect/retry are prohibited and dashboard_access=blocked remains presentation-only."
   ],
