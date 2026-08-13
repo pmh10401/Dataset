@@ -38,6 +38,19 @@ def fixture_antigravity(root: Path):
 
 
 class EvaluationAntigravityTest(unittest.TestCase):
+    def test_public_evaluate_binds_current_external_identity_baseline_authority_before_labels_antigravity(self):
+        from unittest.mock import patch
+        from experiments.exp451_rdst_local_gap_qualification_antigravity import evaluation_antigravity as module
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.predecessor_antigravity import verify_exp448_predecessor_antigravity
+        predecessor=verify_exp448_predecessor_antigravity()
+        self.assertEqual(module._baseline_authority_sha256_antigravity(predecessor),"3bb629ca696c6231fb0f6741f5df7e642ac1b0a63e23788436a24bc7eda44232")
+        self.assertEqual(predecessor.target_dataset_order[:4],(101,102,103,148)); self.assertEqual(predecessor.label_access_count,0)
+        identities=tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True)); authority=FrozenPredictionAuthorityAntigravity(SHA,identities,predecessor.target_test_lengths,tuple(() for _ in identities)); captured=[]
+        def private(value,reviewed,deps): captured.append(deps.predecessor_loader()); return "sentinel"
+        with patch.object(module,"verify_exp448_predecessor_antigravity",return_value=predecessor), patch.object(module,"_evaluate_with_dependencies_antigravity",side_effect=private):
+            self.assertEqual(module.evaluate_antigravity(authority,SHA),"sentinel")
+        self.assertEqual(captured,[predecessor])
+
     def test_qualification_boundaries_and_exact_types_antigravity(self):
         from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import qualifies_antigravity
         self.assertTrue(qualifies_antigravity(ConfusionAntigravity(1931,314,1987,191668), -1))

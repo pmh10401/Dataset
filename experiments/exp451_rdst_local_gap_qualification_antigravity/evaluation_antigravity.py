@@ -21,7 +21,7 @@ from .evaluation_codec_antigravity import DatasetEvaluationAntigravity, FrozenEv
 OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813")
 BASELINE_GLOBAL_ANTIGRAVITY = ConfusionAntigravity(1930, 314, 1988, 191668)
 EXP448_HASHES_ANTIGRAVITY=("ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05","a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c","54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5")
-EXP448_BASELINE_AUTHORITY_SHA256_ANTIGRAVITY="19cbc7f6c52087c71a1637d8ea20d52cb9c332b2439f3338727c186c0f5d5160"
+EXP448_BASELINE_AUTHORITY_SHA256_ANTIGRAVITY="3bb629ca696c6231fb0f6741f5df7e642ac1b0a63e23788436a24bc7eda44232"
 
 
 @dataclass(frozen=True, slots=True)
