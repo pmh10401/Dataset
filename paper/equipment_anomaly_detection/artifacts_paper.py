@@ -1,6 +1,7 @@
 """Create-only Task 8 artifacts with one typed Task1--7 shard writer."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from hashlib import sha256
 import json, math, os, stat
 from pathlib import Path
@@ -8,15 +9,36 @@ from pathlib import Path
 import numpy as np
 
 from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, RawDataset, Task8FrozenManifest
-from .hard_route_paper import HardRouteResult
-from .lineage_paper import read_strict_json
+from .hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
+from .lineage_paper import LINEAGE_NODES, read_strict_json
 from .routing_paper import PolicyBundle
-from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
+from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, SOURCE_ALPHA_PAPER, HardSourceBundle, HardSourceResult
 from .sources_paper.stability_paper import StabilityPartition
 
 SHARD_SCHEMA="paper-task8-proposal-shard.v2"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
 ARTIFACT_DIRECTORY="stage_artifacts_paper"; FREEZE_STAGE="proposal_freeze"; SHARD_DIRECTORY="shards"; MANIFEST_NAME="proposal_manifest_paper.json"
+TASK4_TASK5_SUCCESS_SCHEMA="paper-task4-task5-success.v1"; PROPOSAL_WORK_DIRECTORY="proposal_work"; TASK4_TASK5_SUCCESS_DIRECTORY="task4_task5_success"; TASK4_TASK5_SUCCESS_NAME="task4_task5_success_antigravity.json"
+TASK4_TASK5_SOURCE_ORIGIN_IDS={"rocket_exp40":"rocket_exp40","exp55_best":"exp55_best","exp56_best":"exp56_best","exp84":"exp84_family_guard","rocket_block_b":"rocket_block_b","canonical_normal_state":"canonical_normal_state"}
 POLICIES=("hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable")
+
+@dataclass(frozen=True, slots=True)
+class Task4Task5SuccessAuthority:
+    """Run-bound identities required to reuse one Task4+5 success record."""
+    context_sha256: str
+    catalog_sha256: str
+    backend: FrozenTask8BackendDecision
+    scientific_config_sha256: str
+    code_closure_sha256: str
+
+    def __post_init__(self) -> None:
+        if any(type(value) is not str or len(value) != 64 or any(character not in "0123456789abcdef" for character in value) for value in (self.context_sha256, self.catalog_sha256, self.scientific_config_sha256, self.code_closure_sha256)) or not isinstance(self.backend, FrozenTask8BackendDecision):
+            raise ValueError("Task4+5 success authority is invalid")
+
+@dataclass(frozen=True, slots=True)
+class Task4Task5SuccessRecord:
+    """Allowlisted typed reconstruction of one cached per-dataset Task4+5 result."""
+    sources: HardSourceBundle
+    route: HardRouteResult
 
 def canonical_json_bytes(value: object) -> bytes:
     try:return json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()+b"\n"
@@ -98,6 +120,224 @@ def _indices(values:object,n:int,name:str)->list[int]:
     if not isinstance(values,frozenset) or any(type(item)is not int or item<0 or item>=n for item in values):raise ValueError(f"{name} differs")
     return sorted(values)
 def _lanes(value,n):return {"hard":_indices(value.hard,n,"hard lanes"),"standard":_indices(value.standard,n,"standard lanes"),"priority":_indices(value.priority,n,"priority lanes")}
+
+def _task4_task5_dataset_directory(root: Path, dataset: str) -> Path:
+    if type(dataset) is not str or not dataset:
+        raise ValueError("Task4+5 success dataset is invalid")
+    token = sha256(dataset.encode("utf-8")).hexdigest()
+    return safe_child(root, ARTIFACT_DIRECTORY, PROPOSAL_WORK_DIRECTORY, TASK4_TASK5_SUCCESS_DIRECTORY, f"{token}_antigravity")
+
+
+def _task4_task5_success_path(root: Path, dataset: str) -> Path:
+    return safe_child(_task4_task5_dataset_directory(root, dataset), TASK4_TASK5_SUCCESS_NAME)
+
+
+def _lineage_record(origin: object) -> dict[str, object]:
+    if origin not in LINEAGE_NODES:
+        raise ValueError("Task4+5 source origin is not allowlisted")
+    return {"node_id": origin.node_id, "stage": origin.stage, "input_kind": origin.input_kind, "module": origin.module,
+            "symbols": list(origin.symbols), "source_sha256": origin.source_sha256, "paper_module": origin.paper_module,
+            "label_access": origin.label_access, "parity_oracle": origin.parity_oracle}
+
+
+def _lineage_from_record(value: object):
+    required = {"node_id", "stage", "input_kind", "module", "symbols", "source_sha256", "paper_module", "label_access", "parity_oracle"}
+    if not isinstance(value, dict) or set(value) != required:
+        raise ValueError("Task4+5 source origin schema differs")
+    for origin in LINEAGE_NODES:
+        if value == _lineage_record(origin):
+            return origin
+    raise ValueError("Task4+5 source origin is not allowlisted")
+
+
+def _task4_task5_float_array(values: object, n: int, name: str, *, unit_interval: bool = False) -> list[float]:
+    result = _array(values, n, name)
+    if unit_interval and any(value <= 0.0 or value > 1.0 for value in result):
+        raise ValueError(f"Task4+5 {name} domain differs")
+    return result
+
+
+def _task4_task5_readonly_float(values: object, n: int, name: str, *, unit_interval: bool = False) -> np.ndarray:
+    result = np.array(_task4_task5_float_array(values, n, name, unit_interval=unit_interval), dtype=np.float64)
+    result.setflags(write=False)
+    return result
+
+
+def _task4_task5_readonly_bool(values: object, n: int, name: str) -> np.ndarray:
+    result = np.array(_bools(values, n, name), dtype=bool)
+    result.setflags(write=False)
+    return result
+
+
+def _task4_task5_source_payload(sources: HardSourceBundle, n_train: int, n_test: int) -> list[dict[str, object]]:
+    if not isinstance(sources, HardSourceBundle) or tuple(sources.source_names) != EXPECTED_HARD_SOURCES or set(sources.by_name) != set(EXPECTED_HARD_SOURCES):
+        raise TypeError("typed Task4 source bundle is invalid")
+    rows: list[dict[str, object]] = []
+    for order, name in enumerate(EXPECTED_HARD_SOURCES):
+        result = sources.by_name[name]
+        if not isinstance(result, HardSourceResult) or result.name != name or result.origin.node_id != TASK4_TASK5_SOURCE_ORIGIN_IDS[name] or type(result.eligible) is not bool or type(result.eligibility_reason) is not str or not result.eligibility_reason:
+            raise ValueError("typed Task4 source result differs")
+        threshold = float(result.threshold)
+        if type(result.threshold) not in (int, float) or not math.isfinite(threshold) or threshold != SOURCE_ALPHA_PAPER[name]:
+            raise ValueError("typed Task4 source threshold differs")
+        pvalue = _task4_task5_float_array(result.test_pvalue, n_test, "source pvalue", unit_interval=True)
+        native = _bools(result.test_native_pass, n_test, "source pass")
+        if result.eligible:
+            train_oof = _task4_task5_float_array(result.train_oof_score, n_train, "source TRAIN OOF score")
+            test_score = _task4_task5_float_array(result.test_score, n_test, "source TEST score")
+            if result.eligibility_reason != "eligible" or native != [value <= threshold for value in pvalue]:
+                raise ValueError("typed Task4 eligible source relation differs")
+        else:
+            if np.asarray(result.train_oof_score).size or np.asarray(result.test_score).size or pvalue != [1.0] * n_test or any(native):
+                raise ValueError("typed Task4 abstained source relation differs")
+            train_oof, test_score = [], []
+        rows.append({"source_id": name, "order": order, "origin": _lineage_record(result.origin), "train_oof_score": train_oof,
+                     "test_score": test_score, "test_pvalue": pvalue, "threshold": threshold, "test_native_pass": native,
+                     "eligible": result.eligible, "eligibility_reason": result.eligibility_reason})
+    return rows
+
+
+def _task4_task5_sources_from_payload(value: object, n_train: int, n_test: int) -> HardSourceBundle:
+    if not isinstance(value, list) or [row.get("source_id") if isinstance(row, dict) else None for row in value] != list(EXPECTED_HARD_SOURCES):
+        raise ValueError("Task4+5 source order differs")
+    results: dict[str, HardSourceResult] = {}
+    required = {"source_id", "order", "origin", "train_oof_score", "test_score", "test_pvalue", "threshold", "test_native_pass", "eligible", "eligibility_reason"}
+    for order, row in enumerate(value):
+        if not isinstance(row, dict) or set(row) != required or row["order"] != order or type(row["eligible"]) is not bool or type(row["eligibility_reason"]) is not str or not row["eligibility_reason"]:
+            raise ValueError("Task4+5 source schema differs")
+        threshold = row["threshold"]
+        if type(threshold) not in (int, float) or not math.isfinite(float(threshold)) or float(threshold) != SOURCE_ALPHA_PAPER[row["source_id"]]:
+            raise ValueError("Task4+5 source threshold differs")
+        pvalue = _task4_task5_readonly_float(row["test_pvalue"], n_test, "source pvalue", unit_interval=True)
+        native = _task4_task5_readonly_bool(row["test_native_pass"], n_test, "source pass")
+        if row["eligible"]:
+            train_oof = _task4_task5_readonly_float(row["train_oof_score"], n_train, "source TRAIN OOF score")
+            test_score = _task4_task5_readonly_float(row["test_score"], n_test, "source TEST score")
+            if row["eligibility_reason"] != "eligible" or not np.array_equal(native, pvalue <= float(threshold)):
+                raise ValueError("Task4+5 eligible source relation differs")
+        else:
+            if row["train_oof_score"] != [] or row["test_score"] != [] or not np.array_equal(pvalue, np.ones(n_test)) or np.any(native):
+                raise ValueError("Task4+5 abstained source relation differs")
+            train_oof = np.empty(0, dtype=np.float64); test_score = np.empty(0, dtype=np.float64)
+            train_oof.setflags(write=False); test_score.setflags(write=False)
+        origin = _lineage_from_record(row["origin"])
+        if origin.node_id != TASK4_TASK5_SOURCE_ORIGIN_IDS[row["source_id"]]:
+            raise ValueError("Task4+5 source origin differs")
+        results[row["source_id"]] = HardSourceResult(row["source_id"], origin, train_oof, test_score, pvalue, float(threshold), native, row["eligible"], row["eligibility_reason"])
+    return HardSourceBundle(EXPECTED_HARD_SOURCES, results)
+
+
+def _task4_task5_lanes(value: object, n: int, name: str) -> dict[str, list[int]]:
+    if not isinstance(value, RouteLanes):
+        raise TypeError(f"Task4+5 {name} lanes are invalid")
+    return _lanes(value, n)
+
+
+def _task4_task5_route_payload(route: HardRouteResult, n_test: int) -> dict[str, object]:
+    if not isinstance(route, HardRouteResult) or route.n_test != n_test:
+        raise TypeError("typed Task5 route result is invalid")
+    return {"n_test": route.n_test, "exp74d": _task4_task5_lanes(route.exp74d, n_test, "exp74d"), "exp89": _indices(route.exp89, n_test, "exp89"),
+            "exp90": _indices(route.exp90, n_test, "exp90"), "exp93": _indices(route.exp93, n_test, "exp93"), "exp137": _task4_task5_lanes(route.exp137, n_test, "exp137"),
+            "exp234": {"minimum_two": _indices(route.exp234.minimum_two, n_test, "exp234"), "minimum_three": _indices(route.exp234.minimum_three, n_test, "exp234")},
+            "exp236": _task4_task5_lanes(route.exp236, n_test, "exp236"), "promoted": _indices(route.promoted, n_test, "promoted"),
+            "exp253": _task4_task5_lanes(route.exp253, n_test, "exp253"), "exact_normal_removed": _indices(route.exact_normal_removed, n_test, "exact normal removed"),
+            "automatic_hard": _indices(route.automatic_hard, n_test, "automatic hard")}
+
+
+def _task4_task5_indices_from_payload(value: object, n: int, name: str) -> frozenset[int]:
+    if not isinstance(value, list) or value != sorted(set(value)) or any(type(item) is not int or item < 0 or item >= n for item in value):
+        raise ValueError(f"Task4+5 {name} differs")
+    return frozenset(value)
+
+
+def _task4_task5_lanes_from_payload(value: object, n: int, name: str) -> RouteLanes:
+    if not isinstance(value, dict) or set(value) != {"hard", "standard", "priority"}:
+        raise ValueError(f"Task4+5 {name} schema differs")
+    return RouteLanes(_task4_task5_indices_from_payload(value["hard"], n, name), _task4_task5_indices_from_payload(value["standard"], n, name), _task4_task5_indices_from_payload(value["priority"], n, name))
+
+
+def _task4_task5_route_from_payload(value: object, n_test: int) -> HardRouteResult:
+    required = {"n_test", "exp74d", "exp89", "exp90", "exp93", "exp137", "exp234", "exp236", "promoted", "exp253", "exact_normal_removed", "automatic_hard"}
+    if not isinstance(value, dict) or set(value) != required or value["n_test"] != n_test:
+        raise ValueError("Task4+5 route schema differs")
+    exp234 = value["exp234"]
+    if not isinstance(exp234, dict) or set(exp234) != {"minimum_two", "minimum_three"}:
+        raise ValueError("Task4+5 exp234 schema differs")
+    return HardRouteResult(_task4_task5_lanes_from_payload(value["exp74d"], n_test, "exp74d"), _task4_task5_indices_from_payload(value["exp89"], n_test, "exp89"),
+                           _task4_task5_indices_from_payload(value["exp90"], n_test, "exp90"), _task4_task5_indices_from_payload(value["exp93"], n_test, "exp93"),
+                           _task4_task5_lanes_from_payload(value["exp137"], n_test, "exp137"), SourceExpansion(_task4_task5_indices_from_payload(exp234["minimum_two"], n_test, "exp234"), _task4_task5_indices_from_payload(exp234["minimum_three"], n_test, "exp234")),
+                           _task4_task5_lanes_from_payload(value["exp236"], n_test, "exp236"), _task4_task5_indices_from_payload(value["promoted"], n_test, "promoted"),
+                           _task4_task5_lanes_from_payload(value["exp253"], n_test, "exp253"), _task4_task5_indices_from_payload(value["exact_normal_removed"], n_test, "exact normal removed"),
+                           _task4_task5_indices_from_payload(value["automatic_hard"], n_test, "automatic hard"), n_test)
+
+
+def _task4_task5_payload(raw: RawDataset, sources: HardSourceBundle, route: HardRouteResult, entry: dict[str, object]) -> dict[str, object]:
+    _raw_identity(raw, entry)
+    return {"sources": _task4_task5_source_payload(sources, entry["train"]["count"], entry["test"]["count"]), "route": _task4_task5_route_payload(route, entry["test"]["count"])}
+
+
+def _task4_task5_success_envelope(catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw: RawDataset, sources: HardSourceBundle, route: HardRouteResult) -> dict[str, object]:
+    if not isinstance(catalog, dict) or catalog.get("catalog_sha256") != authority.catalog_sha256 or not isinstance(raw, RawDataset):
+        raise ValueError("Task4+5 record catalog authority differs")
+    entry = _catalog_entry(catalog, raw.dataset)
+    payload = _task4_task5_payload(raw, sources, route, entry)
+    return {"schema": TASK4_TASK5_SUCCESS_SCHEMA, "context_sha256": authority.context_sha256, "catalog_sha256": authority.catalog_sha256, "raw_identity": entry,
+            "backend": authority.backend.artifact_record(), "scientific_config_sha256": authority.scientific_config_sha256, "code_closure_sha256": authority.code_closure_sha256,
+            "dataset": raw.dataset, "payload": payload, "payload_sha256": sha256_bytes(canonical_json_bytes(payload))}
+
+
+def _task4_task5_namespace(path: Path) -> None:
+    details = _lstat(path.parent)
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode) or {item.name for item in path.parent.iterdir()} != {TASK4_TASK5_SUCCESS_NAME}:
+        raise ValueError("Task4+5 success namespace differs")
+
+
+def write_task4_task5_success_record(root: Path, catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw: RawDataset, sources: HardSourceBundle, route: HardRouteResult) -> Path:
+    """Create one context-bound, canonical Task4+5 success record after typed round-trip validation."""
+    if not isinstance(authority, Task4Task5SuccessAuthority):
+        raise TypeError("Task4+5 success authority is required")
+    envelope = _task4_task5_success_envelope(catalog, authority, raw, sources, route)
+    entry = _catalog_entry(catalog, raw.dataset)
+    reread_sources = _task4_task5_sources_from_payload(envelope["payload"]["sources"], entry["train"]["count"], entry["test"]["count"])
+    reread_route = _task4_task5_route_from_payload(envelope["payload"]["route"], entry["test"]["count"])
+    if canonical_json_bytes(_task4_task5_payload(raw, reread_sources, reread_route, entry)) != canonical_json_bytes(envelope["payload"]):
+        raise ValueError("Task4+5 success typed round-trip differs")
+    path = _task4_task5_success_path(root, raw.dataset)
+    write_create_only(path, canonical_json_bytes(envelope))
+    return path
+
+
+def read_task4_task5_success_record(root: Path, catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw: RawDataset) -> Task4Task5SuccessRecord:
+    """Read exactly one allowlisted Task4+5 success record under the supplied run authority."""
+    if not isinstance(authority, Task4Task5SuccessAuthority) or not isinstance(raw, RawDataset) or not isinstance(catalog, dict) or catalog.get("catalog_sha256") != authority.catalog_sha256:
+        raise ValueError("Task4+5 record authority differs")
+    entry = _catalog_entry(catalog, raw.dataset)
+    _raw_identity(raw, entry)
+    path = _task4_task5_success_path(root, raw.dataset)
+    _task4_task5_namespace(path)
+    value = read_canonical(path)
+    _finite(value)
+    required = {"schema", "context_sha256", "catalog_sha256", "raw_identity", "backend", "scientific_config_sha256", "code_closure_sha256", "dataset", "payload", "payload_sha256"}
+    if not isinstance(value, dict) or set(value) != required or value["schema"] != TASK4_TASK5_SUCCESS_SCHEMA or value["dataset"] != raw.dataset:
+        raise ValueError("Task4+5 success record schema differs")
+    if value["context_sha256"] != authority.context_sha256 or value["catalog_sha256"] != authority.catalog_sha256 or value["scientific_config_sha256"] != authority.scientific_config_sha256 or value["code_closure_sha256"] != authority.code_closure_sha256:
+        raise ValueError("Task4+5 success record authority differs")
+    if value["raw_identity"] != entry:
+        raise ValueError("Task4+5 success raw identity differs")
+    try:
+        backend = FrozenTask8BackendDecision.from_artifact_record(value["backend"])
+    except ValueError as error:
+        raise ValueError("Task4+5 success backend differs") from error
+    if backend != authority.backend:
+        raise ValueError("Task4+5 success backend differs")
+    if type(value["payload_sha256"]) is not str or value["payload_sha256"] != sha256_bytes(canonical_json_bytes(value["payload"])):
+        raise ValueError("Task4+5 success payload hash differs")
+    sources = _task4_task5_sources_from_payload(value["payload"].get("sources") if isinstance(value["payload"], dict) else None, entry["train"]["count"], entry["test"]["count"])
+    route = _task4_task5_route_from_payload(value["payload"].get("route") if isinstance(value["payload"], dict) else None, entry["test"]["count"])
+    if set(value["payload"]) != {"sources", "route"} or canonical_json_bytes(_task4_task5_payload(raw, sources, route, entry)) != canonical_json_bytes(value["payload"]):
+        raise ValueError("Task4+5 success typed round-trip differs")
+    return Task4Task5SuccessRecord(sources, route)
+
 def _typed_payload(raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,low:LowFrequencyResult,stability:StabilityPartition,policies:PolicyBundle,backend:FrozenTask8BackendDecision,entry:dict[str,object])->dict[str,object]:
     _raw_identity(raw,entry); n=entry["test"]["count"]
     if not isinstance(sources,HardSourceBundle) or tuple(sources.source_names)!=EXPECTED_HARD_SOURCES or set(sources.by_name)!=set(EXPECTED_HARD_SOURCES):raise TypeError("typed Task4 source bundle is invalid")
