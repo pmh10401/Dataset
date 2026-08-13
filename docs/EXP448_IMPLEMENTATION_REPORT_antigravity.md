@@ -46,7 +46,7 @@ evaluate, inspect 또는 root allocation이 허용되지 않는다.
 
 - Python/NumPy are `3.14.6` / `2.4.6`; design, plan, preregistration, and runbook SHA256 values
   remain respectively `ed2b6e5e...3ce4`, `b79b3b7f...fe934`, `af2b8b10...c612f`, and
-  `474d4133...c51ca`.
+  `3a6fa326...c595`.
 - The DB SHA256 is `8458e678...ef3c`, inode `1048138`, nlink `1`. The immutable Exp447 audit
   SHA256 is `9f8f7d3d...2b97`, inode `19812443`, nlink `1`.
 - Descriptor-pinned Exp446 identity remains `1117` datasets with manifest
@@ -104,15 +104,24 @@ only. It does not authorize smoke-root or official r4-root creation.
 - `_worker` authenticates the inherited lock fd (regular-file `fstat`,
   canonical non-symlink `lstat`, `st_dev`/`st_ino` equality, and
   `LOCK_EX|LOCK_NB` acquire/confirm) and requires a pre-published exact
-  authority rather than creating one. Resume accepts only an empty r4 root or
-  a root whose only child is an empty canonical journal directory, then lets
-  the runner initialize; every other partial or polluted shape is rejected.
+  authority rather than creating one. Until both canonical flock ownership and
+  the exact stored authority are validated, `_worker` does not mutate state,
+  pid, progress log, or events; pre-auth diagnostics go only to stderr and a
+  rejected inherited fd is closed. After authentication, ordinary failure
+  state/log behavior remains. Resume accepts only an empty r4 root or a root
+  whose only child is an empty canonical journal directory, then lets the
+  runner initialize; every other partial or polluted shape is rejected.
 - CLI `smoke` exits 0 only for top-level `smoke_verified`.
   `smoke_confirmation_required` and `smoke_incomplete` are nonzero.
-- Paper `write_create_only` used by Task4+5 success checkpoints now uses a
-  complete write loop, fsync, same-directory exclusive no-follow temp, atomic
-  no-clobber install, and directory fsync. Exact existing bytes are reusable;
-  a mismatch is rejected. Scientific payloads and schemas are unchanged.
+- Paper `write_create_only` remains a complete write loop, fsync, same-directory
+  exclusive no-follow temp, atomic no-clobber install, and directory fsync.
+  Journals, stages, shards, and attempts are strict create-only and raise
+  `FileExistsError` even when existing bytes match. Only
+  `write_task4_task5_success_record` passes `reuse_identical=True`. That path
+  recovers one matching same-directory `.tmp_antigravity` leftover after a
+  successful `os.link` before temp unlink, then fsyncs the directory; symlink,
+  nonregular, mismatched, and ambiguous temps fail closed. Scientific payloads
+  and schemas are unchanged.
 - Ops confinement is shared: `check` rejects a symlinked smoke-ops root;
   every existing ops/smoke-ops path component must be a real directory; every
   present authority/hash/PID/state/progress/lock/result/marker artifact must
@@ -122,8 +131,10 @@ only. It does not authorize smoke-root or official r4-root creation.
   exclusive flock, stale PID recovery, exact argv-grammar stop identity,
   SIGTERM revalidation, the two-invocation smoke gate, inventory mutation,
   atomic no-clobber publication, ops/smoke-ops symlink confinement, status
-  fixtures, inherited lock-fd authentication, pre-genesis resume windows,
-  nonzero CLI smoke statuses, and a small typed Task4+Task5 smoke
+  fixtures, inherited lock-fd authentication, pre-auth non-mutation of seeded
+  sentinel state/log/events, rejected-fd close, pre-genesis resume windows,
+  nonzero CLI smoke statuses, Task4+5 post-link leftover recovery, strict
+  journal/stage/shard/attempt create-only, and a small typed Task4+Task5 smoke
   resume-equivalence fixture. They write only temporary Git/DB/path fixtures.
 - Implementation verification does not create
   `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`,

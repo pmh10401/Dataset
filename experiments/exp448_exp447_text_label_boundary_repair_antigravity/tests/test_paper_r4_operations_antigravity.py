@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import contextlib
+import errno
 import fcntl
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -1580,20 +1583,50 @@ class PaperR4OperationsTests(unittest.TestCase):
         ), mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
             return module._worker(commit, digest, lock_fd, "full")
 
+    def _seed_worker_sentinels(self, paths) -> dict[str, bytes]:
+        paths.root.mkdir(parents=True, exist_ok=True)
+        sentinels = {
+            "pid": b"4242\n",
+            "state": b'{"schema":"sentinel-state-antigravity.v1","status":"exited"}\n',
+            "log": b"SENTINEL_LOG_ANTIGRAVITY\n",
+            "events": b'{"schema":"sentinel-event-antigravity.v1"}\n',
+        }
+        paths.pid.write_bytes(sentinels["pid"])
+        paths.state.write_bytes(sentinels["state"])
+        paths.progress_log.write_bytes(sentinels["log"])
+        paths.progress_events.write_bytes(sentinels["events"])
+        return {key: path.read_bytes() for key, path in (
+            ("pid", paths.pid),
+            ("state", paths.state),
+            ("log", paths.progress_log),
+            ("events", paths.progress_events),
+        )}
+
+    def _assert_preauth_rejection(self, paths, before: dict[str, bytes], worker_fd: int, stderr: str) -> None:
+        self.assertEqual(paths.pid.read_bytes(), before["pid"])
+        self.assertEqual(paths.state.read_bytes(), before["state"])
+        self.assertEqual(paths.progress_log.read_bytes(), before["log"])
+        self.assertEqual(paths.progress_events.read_bytes(), before["events"])
+        with self.assertRaises(OSError) as raised:
+            os.fstat(worker_fd)
+        self.assertEqual(raised.exception.errno, errno.EBADF)
+        self.assertRegex(stderr, r"preauth|lock|fd|canonical|regular|authority|contend")
+
     def test_worker_rejects_unrelated_lock_fd_antigravity(self) -> None:
         module = self.load_launcher()
         _repo, commit, dataset = self._prepare_fixture(module)
         launch_authority, digest, paths, _smoke = self._publish_launch_authority(module, commit)
+        before = self._seed_worker_sentinels(paths)
         unrelated = dataset / "unrelated_fd_antigravity.bin"
         unrelated.write_bytes(b"not-the-canonical-lock")
         leftover = unrelated.open("a+b")
         self.addCleanup(leftover.close)
-        code = self._run_worker(module, commit, digest, os.dup(leftover.fileno()))
+        worker_fd = os.dup(leftover.fileno())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = self._run_worker(module, commit, digest, worker_fd)
         self.assertEqual(code, 1)
-        self.assertFalse(paths.pid.exists())
-        state = json.loads(paths.state.read_text(encoding="utf-8"))
-        self.assertEqual(state["status"], "failed")
-        self.assertRegex(state["last_error"], r"lock|fd|canonical|regular")
+        self._assert_preauth_rejection(paths, before, worker_fd, stderr.getvalue())
         self.assertEqual(paths.authority.read_bytes(), module.canonical_json_bytes(launch_authority))
 
     def test_worker_acquires_canonical_unlocked_lock_fd_antigravity(self) -> None:
@@ -1626,18 +1659,19 @@ class PaperR4OperationsTests(unittest.TestCase):
         module = self.load_launcher()
         _repo, commit, _dataset = self._prepare_fixture(module)
         launch_authority, digest, paths, _smoke = self._publish_launch_authority(module, commit)
+        before = self._seed_worker_sentinels(paths)
         holder = paths.worker_lock.open("a+b")
         self.addCleanup(holder.close)
         fcntl.flock(holder.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         contender = paths.worker_lock.open("a+b")
         self.addCleanup(contender.close)
         self.assertNotEqual(holder.fileno(), contender.fileno())
-        code = self._run_worker(module, commit, digest, os.dup(contender.fileno()))
+        worker_fd = os.dup(contender.fileno())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = self._run_worker(module, commit, digest, worker_fd)
         self.assertEqual(code, 1)
-        self.assertFalse(paths.pid.exists())
-        state = json.loads(paths.state.read_text(encoding="utf-8"))
-        self.assertEqual(state["status"], "failed")
-        self.assertRegex(state["last_error"], r"contend|lock|already")
+        self._assert_preauth_rejection(paths, before, worker_fd, stderr.getvalue())
         self.assertEqual(paths.authority.read_bytes(), module.canonical_json_bytes(launch_authority))
 
     def test_worker_requires_prepublished_exact_authority_antigravity(self) -> None:
@@ -1649,18 +1683,38 @@ class PaperR4OperationsTests(unittest.TestCase):
         sha = sha256(module.canonical_json_bytes(launch_authority)).hexdigest()
         paths = module.ops_paths()
         paths.root.mkdir(parents=True)
+        before = self._seed_worker_sentinels(paths)
         lock_stream = paths.worker_lock.open("a+b")
         self.addCleanup(lock_stream.close)
         fcntl.flock(lock_stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         self.assertFalse(paths.authority.exists())
         self.assertFalse(paths.authority_sha256.exists())
-        code = self._run_worker(module, commit, sha, os.dup(lock_stream.fileno()))
+        worker_fd = os.dup(lock_stream.fileno())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = self._run_worker(module, commit, sha, worker_fd)
         self.assertEqual(code, 1)
         self.assertFalse(paths.authority.exists())
         self.assertFalse(paths.authority_sha256.exists())
-        state = json.loads(paths.state.read_text(encoding="utf-8"))
-        self.assertEqual(state["status"], "failed")
-        self.assertRegex(state["last_error"], r"authority|absent|incomplete|published")
+        self._assert_preauth_rejection(paths, before, worker_fd, stderr.getvalue())
+
+    def test_worker_rejects_wrong_prepublished_authority_without_mutation_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        launch_authority, digest, paths, _smoke = self._publish_launch_authority(module, commit)
+        before = self._seed_worker_sentinels(paths)
+        authority_bytes = paths.authority.read_bytes()
+        lock_stream = paths.worker_lock.open("a+b")
+        self.addCleanup(lock_stream.close)
+        fcntl.flock(lock_stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        worker_fd = os.dup(lock_stream.fileno())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = self._run_worker(module, commit, "0" * 64, worker_fd)
+        self.assertEqual(code, 1)
+        self._assert_preauth_rejection(paths, before, worker_fd, stderr.getvalue())
+        self.assertEqual(paths.authority.read_bytes(), authority_bytes)
+        self.assertEqual(paths.authority.read_bytes(), module.canonical_json_bytes(launch_authority))
 
     def test_resume_accepts_empty_root_and_empty_journal_pre_genesis_antigravity(self) -> None:
         module = self.load_launcher()

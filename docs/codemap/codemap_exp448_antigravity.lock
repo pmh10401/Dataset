@@ -1,7 +1,7 @@
 {
-  "current_commit": "c184efa8e585c9d4439ff0a817ee20752000a8fb",
-  "working_tree_dirty": false,
-  "generated_at": "2026-08-13T19:13:31+0900",
+  "current_commit": "6b011d000163c7aef8acf92944bd278186e8d9ab",
+  "working_tree_dirty": true,
+  "generated_at": "2026-08-13T19:32:13+0900",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -33,16 +33,22 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    "root": "e77f58d0d636762f356a0b5dcab2111959d82bf8ada5d9654fd36c571ae06667",
+    "root": "cf991687047e6a6544ce82be493bda44265d6fdbc0112dbe5321291a91d445d0",
     ".superpowers": "a7e4ca2c671dde5eb461e27a66439a175a8ddc47f5cbc930724b807a509ea65c",
-    "docs": "b938ef978ce51571c4563443b3e2fbcf18f014a34ae1727347974b147fa086a1",
-    "experiments": "3bb5e68e1b8ea529e8f11f2d08fe1ca823338fd3daf0e90321aa406e8401153a",
+    "docs": "6d319d796148e58c73a7d09c470f83df5577e99fb63a4c6699b22d75873c490b",
+    "experiments": "d114abc42b09625b257f850c9b560b1e034a5d9b0a5a72ecc75dd5c428e5f869",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
-    "paper": "b3125b607dce4886981c4396ae685140f70b2488d1ba0745b65a5b82eda2dbf6",
+    "paper": "ddd502c4a18e6bdcf363596fb6a9199976f3924f72de7b7fa9e4122759066bb4",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "5d69692f8c882cc2f78a3526316c6f022b22c862daa96c7400b7e29e934fd069",
+    "scratch": "9fa48a8f67a30204410c892771a1b3d0c08f06ac334021be23362d2e662e57e0",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
-  "changed_modules_since_prior_lock": []
+  "changed_modules_since_prior_lock": [
+    "root",
+    "docs",
+    "experiments",
+    "paper",
+    "scratch"
+  ]
 }

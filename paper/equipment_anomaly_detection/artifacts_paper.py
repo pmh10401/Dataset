@@ -103,13 +103,26 @@ def _fsync_directory(path:Path)->None:
     descriptor=os.open(path,os.O_RDONLY|os.O_DIRECTORY|getattr(os,"O_CLOEXEC",0))
     try:os.fsync(descriptor)
     finally:os.close(descriptor)
-def write_create_only(path:Path,data:bytes)->None:
+def _stale_tmp_candidates(destination:Path)->list[Path]:
+    parent=destination.parent; prefix=f".{destination.name}."; suffix=".tmp_antigravity"
+    if _lstat(parent) is None:return []
+    return [item for item in parent.iterdir() if item.name.startswith(prefix) and item.name.endswith(suffix)]
+def _recover_matching_stale_tmp(destination:Path,data:bytes)->None:
+    candidates=_stale_tmp_candidates(destination)
+    if not candidates:return
+    if len(candidates)>1:raise ValueError("stale create-only temp is ambiguous")
+    temporary=candidates[0]; details=_lstat(temporary)
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("stale create-only temp is not a regular file")
+    if temporary.read_bytes()!=data:raise ValueError("stale create-only temp differs")
+    temporary.unlink(); _fsync_directory(destination.parent)
+def write_create_only(path:Path,data:bytes,*,reuse_identical:bool=False)->None:
     destination=Path(path)
     details=_lstat(destination)
     if details is not None:
         if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("create-only destination is not a regular file")
-        if destination.read_bytes()==data:return
-        raise ValueError("existing destination differs")
+        if not reuse_identical:raise FileExistsError(f"create-only artifact already exists: {destination}")
+        if destination.read_bytes()!=data:raise ValueError("existing destination differs")
+        _recover_matching_stale_tmp(destination,data);return
     _mkdirs(destination.parent)
     temporary=destination.with_name(f".{destination.name}.{os.getpid()}.{time.time_ns()}.tmp_antigravity")
     descriptor=os.open(temporary,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,"O_CLOEXEC",0)|getattr(os,"O_NOFOLLOW",0),0o600)
@@ -128,8 +141,13 @@ def write_create_only(path:Path,data:bytes)->None:
         existing=_lstat(destination)
         if existing is None or stat.S_ISLNK(existing.st_mode) or not stat.S_ISREG(existing.st_mode):raise ValueError("create-only destination is not a regular file") from error
         if destination.read_bytes()!=data:raise ValueError("existing destination differs") from error
-    finally:
-        _fsync_directory(destination.parent); temporary.unlink(missing_ok=True)
+        temporary.unlink(missing_ok=True); _fsync_directory(destination.parent)
+        if not reuse_identical:raise FileExistsError(f"create-only artifact already exists: {destination}") from error
+        _recover_matching_stale_tmp(destination,data);return
+    except BaseException:
+        if _lstat(destination) is None:temporary.unlink(missing_ok=True)
+        raise
+    temporary.unlink(missing_ok=True); _fsync_directory(destination.parent)
 def read_canonical(path:Path)->object:
     details=_lstat(path)
     if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("artifact missing or symlinked")
@@ -379,7 +397,7 @@ def write_task4_task5_success_record(root: Path, catalog: dict[str, object], aut
     if canonical_json_bytes(_task4_task5_payload(raw, reread_sources, reread_route, entry)) != canonical_json_bytes(envelope["payload"]):
         raise ValueError("Task4+5 success typed round-trip differs")
     path = _task4_task5_success_path(root, raw.dataset)
-    write_create_only(path, canonical_json_bytes(envelope))
+    write_create_only(path, canonical_json_bytes(envelope), reuse_identical=True)
     return path
 
 

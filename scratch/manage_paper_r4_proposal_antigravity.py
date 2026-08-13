@@ -929,23 +929,34 @@ def _publish_smoke_result(authority: Mapping[str, object], pipeline: Mapping[str
 
 
 def _authenticate_inherited_lock_fd(lock_fd: int, lock_path: Path):
-    if type(lock_fd) is not int or lock_fd < 0:
-        raise ValueError("inherited lock fd is invalid")
+    owned = False
     try:
-        info = os.fstat(lock_fd)
-    except OSError as error:
-        raise ValueError("inherited lock fd is invalid") from error
-    if not stat.S_ISREG(info.st_mode):
-        raise ValueError("inherited lock fd is not a regular file")
-    _require_regular_file(lock_path, "canonical lock")
-    lock_info = Path(lock_path).lstat()
-    if (info.st_dev, info.st_ino) != (lock_info.st_dev, lock_info.st_ino):
-        raise ValueError("inherited lock fd does not match canonical lock")
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError as error:
-        raise ValueError("inherited lock fd is contended") from error
-    return os.fdopen(lock_fd, "a+b", closefd=True)
+        if type(lock_fd) is not int or lock_fd < 0:
+            raise ValueError("inherited lock fd is invalid")
+        try:
+            info = os.fstat(lock_fd)
+        except OSError as error:
+            raise ValueError("inherited lock fd is invalid") from error
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("inherited lock fd is not a regular file")
+        _require_regular_file(lock_path, "canonical lock")
+        lock_info = Path(lock_path).lstat()
+        if (info.st_dev, info.st_ino) != (lock_info.st_dev, lock_info.st_ino):
+            raise ValueError("inherited lock fd does not match canonical lock")
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise ValueError("inherited lock fd is contended") from error
+        stream = os.fdopen(lock_fd, "a+b", closefd=True)
+        owned = True
+        return stream
+    except BaseException:
+        if not owned:
+            try:
+                os.close(lock_fd)
+            except Exception:
+                pass
+        raise
 
 
 def _acquire_lock(paths: OpsPaths):
@@ -1482,6 +1493,7 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
     child = None
     restore = _install_child_signal_handlers(lambda: child)
     started = time.time()
+    authenticated = False
     try:
         lock_stream = _authenticate_inherited_lock_fd(lock_fd, paths.worker_lock)
         stored = _load_authority(paths)
@@ -1494,6 +1506,7 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
             raise ValueError("worker authority differs from launch authority")
         if canonical_json_bytes(stored) != canonical_json_bytes(authority):
             raise ValueError("worker authority differs from stored launch identity")
+        authenticated = True
         _atomic_replace(paths.pid, f"{os.getpid()}\n".encode("ascii"))
         _atomic_replace(
             paths.state,
@@ -1570,6 +1583,9 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
             except subprocess.TimeoutExpired:
                 child.kill()
                 child.wait()
+        if not authenticated:
+            print(f"worker_preauth_failed {type(error).__name__}: {error}", file=sys.stderr)
+            return 1
         _atomic_replace(
             paths.state,
             canonical_json_bytes(

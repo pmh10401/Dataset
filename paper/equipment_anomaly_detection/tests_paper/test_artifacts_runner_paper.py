@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
-import contextlib, io, json, shutil, sqlite3, tempfile, unittest
+import contextlib, io, json, os, shutil, sqlite3, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace
 import sys
@@ -273,6 +273,118 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         self.assertFalse(reread.sources.by_name["rocket_exp40"].eligible)
         self.assertEqual(reread.sources.by_name["rocket_exp40"].eligibility_reason, "dependency_unavailable")
         self.assertEqual(path.name, "task4_task5_success_antigravity.json")
+
+    def test_success_record_recovers_stale_tmp_after_link_before_unlink(self):
+        """A leftover same-directory temp after successful link must not permanently block the namespace."""
+        from paper.equipment_anomaly_detection import artifacts_paper as artifacts
+        from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, verify_task4_task5_success_namespace, write_task4_task5_success_record
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
+        raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
+        changed = dict(sources.by_name)
+        source = changed["rocket_exp40"]
+        changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, np.empty(0), np.empty(0), np.ones(2), source.threshold, np.zeros(2, dtype=bool), False, "dependency_unavailable")
+        sources = HardSourceBundle(sources.source_names, changed)
+        route = self._nonempty_route()
+        authority = self._authority(backend)
+        path = artifacts._task4_task5_success_path(self.root, raw.dataset)
+        original_link = artifacts.os.link
+
+        def interrupt_after_link(source_path, destination_path):
+            original_link(source_path, destination_path)
+            raise OSError("injected post-link interruption")
+
+        with self.assertRaisesRegex(OSError, "injected post-link interruption"):
+            with patch.object(artifacts.os, "link", side_effect=interrupt_after_link):
+                write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        self.assertTrue(path.is_file())
+        self.assertFalse(path.is_symlink())
+        leftovers = [item for item in path.parent.iterdir() if item.name.endswith(".tmp_antigravity")]
+        self.assertEqual(len(leftovers), 1)
+        self.assertTrue(leftovers[0].is_file())
+        self.assertFalse(leftovers[0].is_symlink())
+        self.assertEqual(leftovers[0].read_bytes(), path.read_bytes())
+        write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        self.assertEqual([item for item in path.parent.iterdir() if item.name.endswith(".tmp_antigravity")], [])
+        self.assertEqual({item.name for item in path.parent.iterdir()}, {path.name})
+        beta = self.fixture._typed("beta")[0]
+        verified = verify_task4_task5_success_namespace(self.root, self.catalog, authority, {raw.dataset: raw, beta.dataset: beta})
+        self.assertEqual(verified, (raw.dataset,))
+        reread = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
+        self.assertEqual(reread.route, route)
+        self.assertFalse(reread.sources.by_name["rocket_exp40"].eligible)
+
+    def test_success_record_rejects_symlink_nonregular_mismatched_and_ambiguous_temps(self):
+        """Unsafe leftover temps beside a valid final must fail closed instead of being cleaned."""
+        from paper.equipment_anomaly_detection import artifacts_paper as artifacts
+        from paper.equipment_anomaly_detection.artifacts_paper import write_task4_task5_success_record
+        raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
+        route = self._nonempty_route()
+        authority = self._authority(backend)
+        path = write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        original = path.read_bytes()
+        inode = path.stat().st_ino
+
+        def retry():
+            return write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+
+        symlink_tmp = path.parent / f".{path.name}.1.1.tmp_antigravity"
+        target = path.parent / "tmp_target_antigravity.bin"
+        target.write_bytes(original)
+        symlink_tmp.symlink_to(target)
+        with self.assertRaisesRegex(ValueError, "temp|symlink|regular"):
+            retry()
+        self.assertTrue(symlink_tmp.is_symlink())
+        symlink_tmp.unlink()
+        target.unlink()
+
+        fifo_tmp = path.parent / f".{path.name}.2.2.tmp_antigravity"
+        os.mkfifo(fifo_tmp)
+        with self.assertRaisesRegex(ValueError, "temp|regular"):
+            retry()
+        fifo_tmp.unlink()
+
+        mismatched = path.parent / f".{path.name}.3.3.tmp_antigravity"
+        mismatched.write_bytes(original + b"x")
+        with self.assertRaisesRegex(ValueError, "temp|differ"):
+            retry()
+        mismatched.unlink()
+
+        first = path.parent / f".{path.name}.4.4.tmp_antigravity"
+        second = path.parent / f".{path.name}.5.5.tmp_antigravity"
+        first.write_bytes(original)
+        second.write_bytes(original)
+        with self.assertRaisesRegex(ValueError, "temp|ambiguous"):
+            retry()
+        first.unlink()
+        second.unlink()
+        self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(path.stat().st_ino, inode)
+
+    def test_journals_stages_shards_and_attempts_reject_identical_destination(self):
+        """Only the Task4+5 success helper may reuse identical bytes; other create-only writes stay exclusive."""
+        from paper.equipment_anomaly_detection.artifacts_paper import append_task4_task5_attempt_record, canonical_json_bytes, write_create_only, write_typed_proposal_shard
+        from paper.equipment_anomaly_detection import runner_paper as runner
+        payload = canonical_json_bytes({"schema": "paper-create-only-strict-antigravity.v1", "body": "same"})
+        journal = runner._journal_path(self.root, 0, "context")
+        write_create_only(journal, payload)
+        with self.assertRaises(FileExistsError):
+            write_create_only(journal, payload)
+        stage = runner._artifact_path(self.root, "acceleration")
+        write_create_only(stage, payload)
+        with self.assertRaises(FileExistsError):
+            write_create_only(stage, payload)
+        raw, sources, route, low, stability, policies, backend = self._task4_task5_values()
+        shard = write_typed_proposal_shard(self.root, self.catalog, raw, sources, route, low, stability, policies, backend)
+        with self.assertRaises(FileExistsError):
+            write_typed_proposal_shard(self.root, self.catalog, raw, sources, route, low, stability, policies, backend)
+        authority = self._authority(backend)
+        attempt = append_task4_task5_attempt_record(self.root, self.catalog, authority, raw, 1, RuntimeError("fixture failure"))
+        with self.assertRaises(FileExistsError):
+            write_create_only(attempt, attempt.read_bytes())
+        self.assertTrue(journal.is_file())
+        self.assertTrue(stage.is_file())
+        self.assertTrue(shard.is_file())
+        self.assertTrue(attempt.is_file())
 
     def test_success_record_concurrent_no_clobber_preserves_winner_payload(self):
         """Concurrent Task4+5 publication must not replace a different winner payload."""
