@@ -33,19 +33,19 @@
 <tr><td><code>cli_antigravity.py</code></td><td>정확히 readiness/evaluate/inspect 세 명령</td></tr>
 </tbody></table>
 
-<section><h2><input disabled type="checkbox"> Task 1: HTML governance와 Exp453 code map</h2>
+<section><h2><input disabled type="checkbox" checked> Task 1: HTML governance와 Exp453 code map</h2>
 <p><strong>Files:</strong> Create preregistration, runbook, implementation report, governance test, map builder and Exp453 map triplet. Modify only Exp453 records in <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>.</p>
 <p><strong>Produces:</strong> planned/non-promoted Exp453 truth, final document hashes, and a map that marks product relations as future.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1 — RED governance:</strong> 새 human docs가 HTML이고 모든 Task checkbox가 unchecked인지 검사한다.<pre><code>python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_governance_antigravity -v
+<li><input disabled type="checkbox" checked> <strong>Step 1 — RED governance:</strong> 새 human docs가 HTML이고 모든 Task checkbox가 unchecked인지 검사한다.<pre><code>python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_governance_antigravity -v
 # Expected: import or missing-file failure.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 2 — 문서:</strong> <code>docs/EXP453_PREREGISTRATION_antigravity_KO.html</code>, <code>docs/EXP453_RUNBOOK_antigravity_KO.html</code>, <code>docs/EXP453_IMPLEMENTATION_REPORT_antigravity.html</code>을 작성한다. 사전등록은 정확한 interpreter·prefix·네 버전과 과학 불변값을 기록한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 3 — truth:</strong> status <code>planned_not_started</code>, official counts 0, labels0, result hashes null, no routing/promotion, champion/pending unchanged를 기록한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 4 — map:</strong> <code>scratch/build_codemap_exp453_antigravity.py</code>와 HTML/JSON/lock을 함께 만들고 20 nodes 이하로 제한한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 5 — GREEN:</strong><pre><code>python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_governance_antigravity -v
+<li><input disabled type="checkbox" checked> <strong>Step 2 — 문서:</strong> <code>docs/EXP453_PREREGISTRATION_antigravity_KO.html</code>, <code>docs/EXP453_RUNBOOK_antigravity_KO.html</code>, <code>docs/EXP453_IMPLEMENTATION_REPORT_antigravity.html</code>을 작성한다. 사전등록은 정확한 interpreter·prefix·네 버전과 과학 불변값을 기록한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 3 — truth:</strong> status <code>planned_not_started</code>, official counts 0, labels0, result hashes null, no routing/promotion, champion/pending unchanged를 기록한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4 — map:</strong> <code>scratch/build_codemap_exp453_antigravity.py</code>와 HTML/JSON/lock을 함께 만들고 20 nodes 이하로 제한한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 5 — GREEN:</strong><pre><code>python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_governance_antigravity -v
 python3 scratch/build_codemap_exp453_antigravity.py --validate-only
 git diff --check
 # Expected: all exit 0.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 6 — 검토와 commit:</strong> Grok read-only 계획/문서 검토 후 Codex가 판단·수정·검증하고 governance commit과 map-only child를 만든다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — 검토와 commit:</strong> Grok read-only 계획/문서 검토 후 Codex가 판단·수정·검증하고 governance commit과 map-only child를 만든다.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 2: Controlled-fork 과학 불변 계약</h2>

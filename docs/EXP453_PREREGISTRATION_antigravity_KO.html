@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp453 사전등록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left;vertical-align:top}.note{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
+<h1>Exp453: 고정 Python 실행 경로 복구 사전등록</h1>
+<p>Exp453는 새로운 성능 기법을 시험하는 실험이 아니다. Exp452가 잘못된 Python 가상환경에서 시작되어 평가 전에 멈춘 문제만 고친다. Exp449가 만든 96개 예측과 모든 계산 규칙은 그대로 사용한다.</p>
+<div class="note"><strong>핵심 원인:</strong> 공식 Exp452 명령은 NumPy 2.4.6 환경에서 시작됐다. 원래 고정된 환경은 NumPy 2.3.5다. 두 환경은 같은 기본 Python 파일을 가리킬 수 있으므로 <code>resolve()</code>만 비교하면 서로 다른 가상환경을 구분하지 못한다.</div>
+<h2>고정 실행 환경</h2><table><tr><th>항목</th><th>고정값</th></tr>
+<tr><td>Python 실행 파일</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></td></tr>
+<tr><td>Python prefix</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314</code></td></tr>
+<tr><td>버전</td><td>Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2</td></tr></table>
+<h2>바꾸지 않는 과학 계산</h2><ul>
+<li>48개 데이터셋, 96개 예측, 16개 family-method 조합</li>
+<li>seed <code>20260721</code>, <code>20261721</code>와 alpha <code>0.005</code></li>
+<li>Exp449 prediction SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code></li>
+<li>정렬된 index 목록, confusion, FN, FP, F1, bootstrap, decision과 12개 결과 파일</li>
+</ul>
+<h2>두 선행 실험의 역할</h2><p>Exp452의 stopped receipt와 failure audit는 “왜 다시 고쳐야 하는가”를 증명한다. 실제 예측값은 Exp449의 고정된 96개 prediction에서만 가져온다. Exp452는 다시 실행하지 않는다.</p>
+<h2>현재 상태</h2><p>상태는 <code>planned_not_started</code>다. Task 1은 문서와 code map만 만든다. TEST label을 읽지 않고 readiness, evaluate, inspect를 실행하지 않는다. 결과 SHA는 모두 null이며 routing, champion, pending candidate, promotion은 바꾸지 않는다.</p>
+</main></body></html>

@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""Build and validate the bounded Exp453 Task 1 code map."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import html as html_module
+import json
+import re
+import subprocess
+from pathlib import Path
+
+
+ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[1]
+MAP_DIR_ANTIGRAVITY = ROOT_ANTIGRAVITY / "docs" / "codemap"
+JSON_PATH_ANTIGRAVITY = MAP_DIR_ANTIGRAVITY / "codemap_exp453_antigravity.json"
+LOCK_PATH_ANTIGRAVITY = MAP_DIR_ANTIGRAVITY / "codemap_exp453_antigravity.lock"
+HTML_PATH_ANTIGRAVITY = MAP_DIR_ANTIGRAVITY / "codemap_exp453_antigravity.html"
+TRIPLET_ANTIGRAVITY = {
+    "docs/codemap/codemap_exp453_antigravity.html",
+    "docs/codemap/codemap_exp453_antigravity.json",
+    "docs/codemap/codemap_exp453_antigravity.lock",
+}
+ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "reads", "tests", "future_unknown"}
+
+
+def _canonical_bytes_antigravity(value: object) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _strict_json_antigravity(text: str) -> object:
+    def reject_duplicates_antigravity(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    return json.loads(text, object_pairs_hook=reject_duplicates_antigravity)
+
+
+def _git_output_antigravity(*args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+
+
+def _tracked_paths_antigravity() -> list[Path]:
+    raw = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT_ANTIGRAVITY)
+    paths = [Path(item.decode("utf-8")) for item in raw.split(b"\0") if item]
+    return sorted(path for path in paths if path.as_posix() not in TRIPLET_ANTIGRAVITY)
+
+
+def _tracked_fingerprints_antigravity() -> dict[str, str]:
+    return {
+        path.as_posix(): hashlib.sha256((ROOT_ANTIGRAVITY / path).read_bytes()).hexdigest()
+        for path in _tracked_paths_antigravity()
+    }
+
+
+def _module_fingerprints_antigravity() -> dict[str, str]:
+    groups: dict[str, list[Path]] = {"root": []}
+    for path in _tracked_paths_antigravity():
+        groups.setdefault("root" if len(path.parts) == 1 else path.parts[0], []).append(path)
+    result: dict[str, str] = {}
+    for group, paths in sorted(groups.items()):
+        digest = hashlib.sha256()
+        for path in sorted(paths):
+            data = (ROOT_ANTIGRAVITY / path).read_bytes()
+            digest.update(path.as_posix().encode() + b"\0" + str(len(data)).encode() + b"\0" + data + b"\0")
+        result[group] = digest.hexdigest()
+    return result
+
+
+def _evidence_antigravity(path: str, symbol: str) -> dict[str, str]:
+    return {"path": path, "symbol": symbol}
+
+
+def _html_antigravity(graph: dict[str, object]) -> str:
+    payload = html_module.escape(_canonical_bytes_antigravity(graph).decode())
+    items = "".join(
+        f'<li><code>{html_module.escape(str(node["path"]))}</code> — {html_module.escape(str(node["role"]))}</li>'
+        for node in graph["nodes"]
+    )
+    return f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp453 코드맵</title><style>body{{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp453 Task 1 코드맵</h1><p>현재 구현된 범위는 HTML governance, 세 ledger record, governance regression과 이 map builder뿐이다. Task 2–5 제품 관계는 아직 future unknown이다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
+
+
+def _allowed_source_parent_antigravity(source_parent: str) -> bool:
+    head = _git_output_antigravity("rev-parse", "HEAD")
+    if source_parent == head:
+        return True
+    if source_parent != _git_output_antigravity("rev-parse", "HEAD^"):
+        return False
+    changed = set(_git_output_antigravity("diff", "--name-only", "HEAD^", "HEAD").splitlines())
+    return changed == TRIPLET_ANTIGRAVITY
+
+
+def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[str, object], dict[str, object], str]:
+    if not re.fullmatch(r"[0-9a-f]{40}", source_commit):
+        raise ValueError("source_commit must be lowercase 40-hex")
+    if subprocess.run(["git", "cat-file", "-e", f"{source_commit}^{{commit}}"], cwd=ROOT_ANTIGRAVITY, check=False).returncode:
+        raise ValueError("source_commit does not resolve to a commit")
+    if not generated_at.endswith("Z"):
+        raise ValueError("generated_at must end in Z")
+
+    test = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_governance_antigravity.py"
+    plan = "docs/superpowers/plans/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity.html"
+    future_path = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity"
+    nodes: list[dict[str, object]] = [
+        {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity-design.html", "role": "승인된 exact-runtime repair 경계.", "tests": [test], "evidence": [_evidence_antigravity("docs/superpowers/specs/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity-design.html", "Exp453")]},
+        {"id": "implementation_plan", "path": plan, "role": "Task 1–6의 순차 TDD와 공식 실행 경계.", "tests": [test], "evidence": [_evidence_antigravity(plan, "Task 1: HTML governance")]},
+        {"id": "preregistration", "path": "docs/EXP453_PREREGISTRATION_antigravity_KO.html", "role": "고정 runtime과 과학 불변값.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP453_PREREGISTRATION_antigravity_KO.html", "NumPy 2.3.5")]},
+        {"id": "runbook", "path": "docs/EXP453_RUNBOOK_antigravity_KO.html", "role": "미래 one-shot 명령 순서.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP453_RUNBOOK_antigravity_KO.html", "readiness --reviewed-commit")]},
+        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp453 planned, zero-label, null-result truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"exp453"')]},
+        {"id": "governance_regression", "path": test, "role": "HTML, ledger, hash, future-map regression.", "tests": [test], "evidence": [_evidence_antigravity(test, "class GovernanceAntigravityTest")]},
+        {"id": "map_builder", "path": "scratch/build_codemap_exp453_antigravity.py", "role": "bounded HTML/JSON/lock generator.", "tests": [test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp453_antigravity.py", "def validate_map_antigravity")]},
+        {"id": "task2_foundations", "path": future_path, "role": "Future config/contracts/artifacts/bootstrap/dashboard.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "task3_runtime_predecessors", "path": future_path, "role": "Future runtime binding, dual predecessor, labels, lifecycle, readiness.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "task4_evaluation_replay", "path": future_path, "role": "Future evaluator and exact replay.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "task5_cli", "path": future_path, "role": "Future closed CLI and clean candidate.", "status": "future_unknown", "tests": [], "evidence": []},
+    ]
+    future_pairs = [
+        ("implementation_plan", "task2_foundations"),
+        ("implementation_plan", "task3_runtime_predecessors"),
+        ("implementation_plan", "task4_evaluation_replay"),
+        ("implementation_plan", "task5_cli"),
+    ]
+    edges = [
+        {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP453_PREREGISTRATION_antigravity_KO.html", "고정 Python 실행 경로")},
+        {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": _evidence_antigravity(plan, "build_codemap_exp453_antigravity.py")},
+        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_planned_truth_preserves_science_and_champion_antigravity")},
+        {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": _evidence_antigravity(test, "builder.validate_map_antigravity")},
+        *[
+            {"from": left, "to": right, "type": "future_unknown", "evidence": _evidence_antigravity(plan, f"Task {index}")}
+            for index, (left, right) in enumerate(future_pairs, start=2)
+        ],
+    ]
+    unknowns = [{"from": left, "to": right, "reason": "Task 1 has no product implementation yet."} for left, right in future_pairs]
+    graph: dict[str, object] = {"schema": "exp453_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
+    lock: dict[str, object] = {"schema": "exp453_codemap_map_child_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
+    return graph, lock, _html_antigravity(graph)
+
+
+def _validate_evidence_antigravity(item: object) -> None:
+    if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not isinstance(item.get("symbol"), str):
+        raise ValueError("missing evidence")
+    path = ROOT_ANTIGRAVITY / item["path"]
+    if not path.is_file() or item["symbol"] not in path.read_text(encoding="utf-8"):
+        raise ValueError("invalid evidence")
+
+
+def validate_map_antigravity(graph: object, lock: object, rendered_html: str) -> None:
+    if not isinstance(graph, dict) or not isinstance(lock, dict):
+        raise ValueError("graph and lock must be objects")
+    nodes, edges, unknowns = graph.get("nodes"), graph.get("edges"), graph.get("unknown_relationships")
+    if not isinstance(nodes, list) or not isinstance(edges, list) or not isinstance(unknowns, list) or len(nodes) > 20:
+        raise ValueError("invalid bounded topology")
+    ids: set[str] = set()
+    future_ids: set[str] = set()
+    for node in nodes:
+        if not isinstance(node, dict) or not isinstance(node.get("id"), str) or node["id"] in ids:
+            raise ValueError("invalid node")
+        ids.add(node["id"])
+        if node.get("status") == "future_unknown":
+            future_ids.add(node["id"])
+            if node.get("evidence") != []:
+                raise ValueError("future node claimed evidence")
+        else:
+            if not (ROOT_ANTIGRAVITY / node["path"]).is_file() or not node.get("evidence"):
+                raise ValueError("missing node evidence")
+            for evidence in node["evidence"]:
+                _validate_evidence_antigravity(evidence)
+    pairs = {(item.get("from"), item.get("to")) for item in unknowns if isinstance(item, dict) and isinstance(item.get("reason"), str)}
+    future_edges: set[tuple[object, object]] = set()
+    for edge in edges:
+        if not isinstance(edge, dict) or edge.get("from") not in ids or edge.get("to") not in ids or edge.get("type") not in ALLOWED_EDGE_TYPES_ANTIGRAVITY:
+            raise ValueError("invalid edge")
+        _validate_evidence_antigravity(edge.get("evidence"))
+        pair = (edge["from"], edge["to"])
+        if edge["from"] in future_ids or edge["to"] in future_ids:
+            if edge["type"] != "future_unknown" or pair not in pairs:
+                raise ValueError("unmarked future relationship")
+            future_edges.add(pair)
+        elif edge["type"] == "future_unknown":
+            raise ValueError("known edge marked future")
+    if pairs != future_edges:
+        raise ValueError("unknown relationship mismatch")
+    source = lock.get("source_parent_commit")
+    if source != graph.get("source_parent_commit") or not isinstance(source, str) or not _allowed_source_parent_antigravity(source):
+        raise ValueError("invalid source parent")
+    if lock.get("working_tree_dirty") is not False or lock.get("represented_paths") != sorted(TRIPLET_ANTIGRAVITY):
+        raise ValueError("invalid lock")
+    if lock.get("tracked_fingerprints") != _tracked_fingerprints_antigravity() or lock.get("module_fingerprints") != _module_fingerprints_antigravity():
+        raise ValueError("fingerprint drift")
+    match = re.search(r'<pre id="codemap-json-antigravity" type="application/json">(.*?)</pre>', rendered_html, flags=re.DOTALL)
+    if not match or _canonical_bytes_antigravity(_strict_json_antigravity(html_module.unescape(match.group(1)))) != _canonical_bytes_antigravity(graph):
+        raise ValueError("HTML/JSON mismatch")
+
+
+def main_antigravity() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source-commit")
+    parser.add_argument("--generated-at", default="2026-08-13T07:00:00Z")
+    parser.add_argument("--validate-only", action="store_true")
+    args = parser.parse_args()
+    if args.validate_only:
+        validate_map_antigravity(_strict_json_antigravity(JSON_PATH_ANTIGRAVITY.read_text()), _strict_json_antigravity(LOCK_PATH_ANTIGRAVITY.read_text()), HTML_PATH_ANTIGRAVITY.read_text())
+        return
+    if not args.source_commit:
+        parser.error("--source-commit is required")
+    if set(_git_output_antigravity("diff", "--name-only").splitlines()) - TRIPLET_ANTIGRAVITY:
+        raise ValueError("map generation requires a clean functional commit")
+    graph, lock, rendered = build_map_antigravity(args.source_commit, args.generated_at)
+    JSON_PATH_ANTIGRAVITY.write_bytes(_canonical_bytes_antigravity(graph) + b"\n")
+    LOCK_PATH_ANTIGRAVITY.write_bytes(_canonical_bytes_antigravity(lock) + b"\n")
+    HTML_PATH_ANTIGRAVITY.write_text(rendered, encoding="utf-8")
+    validate_map_antigravity(graph, lock, rendered)
+
+
+if __name__ == "__main__":
+    main_antigravity()
