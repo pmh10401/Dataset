@@ -215,7 +215,11 @@ def _prediction_rows_antigravity(rows: tuple[object, ...], datasets: tuple[dict[
             if dataset is None: dataset = row["dataset"]
             elif row["dataset"] != dataset: raise ValueError("frozen prediction dataset pairing differs")
             candidate = evidence.get("candidates", {}).get(method)
-            if not isinstance(candidate, dict) or set(candidate) != {"indices", "confusion"} or candidate["indices"] != row["indices"]:
+            if (not isinstance(candidate, dict) or set(candidate) != {"indices", "confusion"}
+                    or type(candidate["indices"]) is not list
+                    or any(type(index) is not int or index < 0 or index >= row["target_length"] for index in candidate["indices"])
+                    or len(set(candidate["indices"])) != len(candidate["indices"])
+                    or candidate["indices"] != row["indices"]):
                 raise ValueError("frozen prediction indices differ from evidence")
             _confusion_antigravity(candidate["confusion"])
 

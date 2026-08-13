@@ -53,7 +53,7 @@ class ReplayAntigravityTests(unittest.TestCase):
         from experiments.exp452_exp449_index_order_repair_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
         from experiments.exp452_exp449_index_order_repair_antigravity.replay_antigravity import inspect_replay_at_antigravity
 
-        for case in ("missing", "extra", "duplicate", "reordered", "bool", "wrong_type", "out_of_range"):
+        for case in ("missing", "extra", "duplicate", "reordered", "bool", "bool_expected", "float_expected", "wrong_type", "out_of_range"):
             with self.subTest(case=case), tempfile.TemporaryDirectory(prefix="exp452_rehashed_indices_antigravity_") as temporary:
                 _expected, root, dependencies = self._publication_antigravity(temporary)
                 path = root / "evaluation_antigravity.json"
@@ -65,6 +65,8 @@ class ReplayAntigravityTests(unittest.TestCase):
                 elif case == "duplicate": candidate["indices"] = [indices[0], indices[0]]
                 elif case == "reordered": candidate["indices"] = list(reversed(indices))
                 elif case == "bool": candidate["indices"] = [True, indices[1]]
+                elif case == "bool_expected": candidate["indices"] = [indices[0], True]
+                elif case == "float_expected": candidate["indices"] = [indices[0], 1.0]
                 elif case == "wrong_type": candidate["indices"] = ["0", indices[1]]
                 else: candidate["indices"] = [payload["dataset_evidence"][0]["target_length"], indices[1]]
                 path.write_bytes(canonical_json_bytes_antigravity(payload))
