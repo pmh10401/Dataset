@@ -12,7 +12,10 @@ official r4 root, or change the frozen anomaly-detection mathematics.
   effort `high` in an isolated Git worktree.
 - Codex reviews the diff, runs the focused verification, and integrates only a
   result-equivalent implementation.
-- Grok may modify only the files named by the approved implementation plan. It
+- Grok may modify only the files named by the approved implementation plan. The
+  readiness gate lives in the active Exp448 package and imports the standalone
+  paper score path read-only; it does not add a file to the paper namespace,
+  whose approved naming contract forbids `antigravity`. It
   must not write to the database, the immutable r3 root, or any proposed r4
   root.
 - The active experiment remains Exp448. Before changing a module, the Exp448
@@ -51,7 +54,7 @@ not an official 1,117-dataset run and produces no evaluation metrics.
 
 ## Result and failure handling
 
-The readiness command returns one canonical result containing inventory counts,
+The Exp448 readiness command returns one canonical result containing inventory counts,
 the ordered affected dataset identities, parity summaries, environment identity,
 and SHA-256 bindings for the database, code closure, and relevant provenance.
 It reports one of two terminal states:

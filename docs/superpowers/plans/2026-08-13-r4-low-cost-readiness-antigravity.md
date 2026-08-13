@@ -4,7 +4,7 @@
 
 **Goal:** Build a label-free, fail-closed command that verifies the exact 1,117-dataset nonfinite inventory and reproduces the frozen MiniRocket scores for only the 19 affected datasets before an official r4 run is allowed.
 
-**Architecture:** Add one focused paper readiness module that reuses Exp443's immutable source snapshot and database pinning authority, then executes the current paper repair/alignment/MiniRocket scorer for the 19 affected datasets. It emits deterministic canonical JSON to stdout and progress to stderr; it never creates a run root or reads TEST labels. Unit tests inject tiny frozen snapshots and scorer outputs, while one opt-in bounded test exercises the real 19-dataset capable environment.
+**Architecture:** Add one focused readiness module to the active Exp448 package that reuses Exp443's immutable source snapshot and database pinning authority, then imports and executes the current standalone paper repair/alignment/MiniRocket scorer for the 19 affected datasets. The module remains outside the paper namespace because that reviewed namespace forbids `antigravity` filenames while the repository requires them for every new file. It emits deterministic canonical JSON to stdout and progress to stderr; it never creates a run root or reads TEST labels. Unit tests inject tiny frozen snapshots and scorer outputs, while one opt-in bounded test exercises the real 19-dataset capable environment.
 
 **Tech Stack:** Python 3.14.6, NumPy 2.3.5, aeon 1.5.0, scikit-learn 1.8.0, canonical JSON/SHA-256, `unittest`, SQLite read-only pinning.
 
@@ -12,7 +12,7 @@
 
 - Grok CLI implements with `--model grok-4.6 --reasoning-effort high` in an isolated Git worktree.
 - Codex performs the independent diff review, focused verification, and integration.
-- Active experiment is Exp448. Inspect `docs/codemap/codemap_exp448_antigravity.json` before edits; update the complete Exp448 and paper triplets together when the new module boundary is added.
+- Active experiment is Exp448. Inspect `docs/codemap/codemap_exp448_antigravity.json` before edits; update the complete Exp448 triplet when the new module boundary is added. The paper triplet stays byte-unchanged because paper files are read-only dependencies.
 - Every new filename contains `antigravity`.
 - Do not modify the frozen detector, preprocessing formula, thresholds, seeds, folds, route rules, database, r3 root, or any proposed r4 root.
 - Do not read TEST labels or evaluation artifacts. TEST access is limited to value blobs or row identities already permitted by the frozen label-free boundaries.
@@ -24,16 +24,16 @@
 
 ## File structure
 
-- Create `paper/equipment_anomaly_detection/r4_readiness_antigravity.py`: immutable result contracts, inventory verification, paper-versus-archive MiniRocket parity, canonical CLI, and stderr progress.
-- Create `paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py`: tiny fail-closed unit tests and one opt-in real 19-dataset capable gate.
-- Modify `paper/equipment_anomaly_detection/codemap_paper.{html,json,lock}` together: callers, effects, tests, source authorities, and exact hashes for the new boundary.
+- Create `experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py`: immutable result contracts, inventory verification, paper-versus-archive MiniRocket parity, canonical CLI, and stderr progress.
+- Create `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py`: tiny fail-closed unit tests and one opt-in real 19-dataset capable gate.
+- Leave `paper/equipment_anomaly_detection/codemap_paper.{html,json,lock}` unchanged because no paper module changes.
 - Modify `docs/codemap/codemap_exp448_antigravity.{html,json,lock}` together: Exp448 repository-level callers, effects, tests, and result flow.
 
 ### Task 1: Implement the values-only inventory contract
 
 **Files:**
-- Create: `paper/equipment_anomaly_detection/r4_readiness_antigravity.py`
-- Create: `paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py`
+- Create: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py`
+- Create: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py`
 
 **Interfaces:**
 - Consumes: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`, `pin_database_snapshot_antigravity(...)`, `load_raw_dataset_antigravity(...)`, and `repair_linear_edge_nearest_paper(np.ndarray) -> np.ndarray`.
@@ -68,10 +68,10 @@ Run:
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_r4_readiness_antigravity.R4ReadinessContractTests -v
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_readiness_antigravity.R4ReadinessContractTests -v
 ```
 
-Expected: import failure because `r4_readiness_antigravity.py` does not exist.
+Expected: import failure because `paper_r4_readiness_antigravity.py` does not exist.
 
 - [ ] **Step 3: Implement strict inventory types and validation**
 
@@ -146,16 +146,16 @@ Run the contract and inventory test classes only. Expected: PASS in under five s
 Commit:
 
 ```bash
-git add paper/equipment_anomaly_detection/r4_readiness_antigravity.py \
-  paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py
+git add experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py \
+  experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py
 git commit -m "feat: add r4 values-only readiness inventory"
 ```
 
 ### Task 2: Add paper MiniRocket parity and deterministic CLI output
 
 **Files:**
-- Modify: `paper/equipment_anomaly_detection/r4_readiness_antigravity.py`
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py`
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py`
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py`
 
 **Interfaces:**
 - Consumes: the exact snapshot returned by Task 1, `prepare_dataset_antigravity`, paper repair/alignment/z-normalization, `score_configuration_paper`, `upper_tail_pvalues`, and frozen archive arrays in `snapshot.cache_inventory`.
@@ -223,7 +223,7 @@ The canonical payload must contain no timestamp, PID, duration, temporary path, 
 
 - [ ] **Step 5: Implement CLI and progress**
 
-`python -m paper.equipment_anomaly_detection.r4_readiness_antigravity` must:
+`python -m experiments.exp448_exp447_text_label_boundary_repair_antigravity.paper_r4_readiness_antigravity` must:
 
 - write progress such as `inventory start`, `inventory ready`, and `parity 7/19 <dataset>` to stderr with flushing;
 - write exactly one canonical JSON object to stdout;
@@ -241,21 +241,18 @@ Run the new test module only. Expected: all non-capable tests pass in under ten 
 Commit:
 
 ```bash
-git add paper/equipment_anomaly_detection/r4_readiness_antigravity.py \
-  paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py
+git add experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py \
+  experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py
 git commit -m "feat: verify bounded r4 MiniRocket readiness"
 ```
 
 ### Task 3: Synchronize maps and run the bounded capable gate
 
 **Files:**
-- Modify together: `paper/equipment_anomaly_detection/codemap_paper.html`
-- Modify together: `paper/equipment_anomaly_detection/codemap_paper.json`
-- Modify together: `paper/equipment_anomaly_detection/codemap_paper.lock`
 - Modify together: `docs/codemap/codemap_exp448_antigravity.html`
 - Modify together: `docs/codemap/codemap_exp448_antigravity.json`
 - Modify together: `docs/codemap/codemap_exp448_antigravity.lock`
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py`
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py`
 
 **Interfaces:**
 - Consumes: the completed readiness command from Task 2 and the pinned capable interpreter.
@@ -279,11 +276,11 @@ self.assertTrue(all(item.candidate_equal for item in result.parity))
 
 Also require zero label access and confirm that the immutable r3 path hash/tree and the proposed r4 absence are unchanged before and after the bounded run.
 
-- [ ] **Step 2: Update both complete code-map triplets**
+- [ ] **Step 2: Update the complete Exp448 code-map triplet**
 
 The new module's map entry must state:
 
-- callers: module CLI and `tests_paper/test_r4_readiness_antigravity.py`;
+- callers: module CLI and `tests/test_paper_r4_readiness_antigravity.py`;
 - effects: values-only 1,117 inventory gate, 19-dataset paper MiniRocket parity, canonical readiness output, no official run creation;
 - tests: the new test module;
 - source authorities: Exp443 config/database/sources/preprocessing/MiniRocket/control plus paper preprocessing/MiniRocket/calibration.
@@ -295,7 +292,7 @@ Update every changed/new module hash. Ensure embedded HTML JSON is semantically 
 Run:
 
 ```bash
-python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_r4_readiness_antigravity -v
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_readiness_antigravity -v
 python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_config_lineage_paper -v
 git diff --check
 ```
@@ -310,7 +307,7 @@ Run only after the non-capable suite passes:
 PAPER_R4_READINESS_REAL_ANTIGRAVITY=1 \
   /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
   -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_r4_readiness_antigravity.R4ReadinessRealTests.test_real_19_dataset_r4_readiness_antigravity \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_readiness_antigravity.R4ReadinessRealTests.test_real_19_dataset_r4_readiness_antigravity \
   -v
 ```
 
@@ -323,11 +320,8 @@ Confirm the Grok branch contains only the two new files and the two synchronized
 Commit:
 
 ```bash
-git add paper/equipment_anomaly_detection/r4_readiness_antigravity.py \
-  paper/equipment_anomaly_detection/tests_paper/test_r4_readiness_antigravity.py \
-  paper/equipment_anomaly_detection/codemap_paper.html \
-  paper/equipment_anomaly_detection/codemap_paper.json \
-  paper/equipment_anomaly_detection/codemap_paper.lock \
+git add experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py \
+  experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py \
   docs/codemap/codemap_exp448_antigravity.html \
   docs/codemap/codemap_exp448_antigravity.json \
   docs/codemap/codemap_exp448_antigravity.lock
