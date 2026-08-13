@@ -75,7 +75,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             for tag in tags:
-                if task_number in (1, 2):
+                if task_number in (1, 2, 3):
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
                 else:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
@@ -134,7 +134,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict)
         self.assertLessEqual(len(graph["nodes"]), 20)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("task3_runtime_predecessors", "task4_evaluation_replay", "task5_cli"):
+        for node_id in ("task4_evaluation_replay", "task5_cli"):
             self.assertEqual(node_by_id[node_id]["status"], "future_unknown")
             self.assertEqual(node_by_id[node_id]["evidence"], [])
         self.assertTrue(graph["unknown_relationships"])
@@ -166,6 +166,27 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertTrue(any(path.endswith(test_leaf) for path in node_by_id[node_id]["tests"]))
                 self.assertTrue(any(path.endswith("test_controlled_fork_differential_antigravity.py") for path in node_by_id[node_id]["tests"]))
                 self.assertTrue(any(edge["from"] == "task2_regressions" and edge["to"] == node_id and edge["type"] == "tests" for edge in graph["edges"]))
+
+    def test_map_answers_task_three_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: Task 3 runtime/predecessor/readiness remain hidden behind a future node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        expected = {
+            "task3_runtime_binding": "test_runtime_binding_antigravity.py",
+            "task3_predecessor": "test_predecessor_antigravity.py",
+            "task3_sources": "test_sources_antigravity.py",
+            "task3_lifecycle": "test_lifecycle_antigravity.py",
+            "task3_readiness": "test_readiness_antigravity.py",
+        }
+        for node_id, test_leaf in expected.items():
+            with self.subTest(node_id=node_id):
+                self.assertIn(node_id, node_by_id)
+                self.assertNotEqual(node_by_id[node_id].get("status"), "future_unknown")
+                self.assertIn("caller", node_by_id[node_id]["role"].lower())
+                self.assertIn("effect", node_by_id[node_id]["role"].lower())
+                self.assertTrue(any(path.endswith(test_leaf) for path in node_by_id[node_id]["tests"]))
+                self.assertTrue(node_by_id[node_id]["evidence"])
 
 
 if __name__ == "__main__":

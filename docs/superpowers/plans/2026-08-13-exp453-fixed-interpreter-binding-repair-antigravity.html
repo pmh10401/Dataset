@@ -64,23 +64,23 @@ python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_a
 <li><input disabled type="checkbox" checked> <strong>Step 6 — review/commit/map:</strong> Grok은 diff를 read-only 검토하고 Codex가 science invariant를 확인한 뒤 source/tests commit과 map-only child를 만든다.</li>
 </ol></section>
 
-<section><h2><input disabled type="checkbox"> Task 3: Runtime binding, 두 predecessor, readiness</h2>
+<section><h2><input disabled type="checkbox" checked> Task 3: Runtime binding, 두 predecessor, readiness</h2>
 <p><strong>Files:</strong> Create scratch runtime binding helper/launcher and Exp453 <code>predecessor</code>, <code>sources</code>, <code>lifecycle</code>, <code>readiness</code> plus tests.</p>
 <p><strong>Produces:</strong> <code>ensure_fixed_runtime_antigravity(launcher: Path, argv: tuple[str,...]) -&gt; None</code>, <code>capture_predecessors_antigravity()</code>, <code>open_test_labels_once_antigravity(authority)</code>, <code>run_phase_antigravity()</code>, <code>readiness_antigravity(commit)</code>.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1 — RED wrong venv:</strong> base CPython은 <code>resolve()</code>-equal이지만 executable 문자열은 다른 Exp444 venv subprocess로 test-only probe launcher를 시작한다. Exp453 package import 전 fixed executable/prefix re-exec가 없음을 RED로 확인한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 2 — minimal binding:</strong><pre><code>def ensure_fixed_runtime_antigravity(launcher: Path, argv: tuple[str, ...]) -&gt; None:
+<li><input disabled type="checkbox" checked> <strong>Step 1 — RED wrong venv:</strong> base CPython은 <code>resolve()</code>-equal이지만 executable 문자열은 다른 Exp444 venv subprocess로 test-only probe launcher를 시작한다. Exp453 package import 전 fixed executable/prefix re-exec가 없음을 RED로 확인한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 2 — minimal binding:</strong><pre><code>def ensure_fixed_runtime_antigravity(launcher: Path, argv: tuple[str, ...]) -&gt; None:
     if sys.executable == FIXED_EXECUTABLE and sys.prefix == FIXED_PREFIX:
         return
     if os.environ.get(REEXEC_MARKER) == "1":
         raise RuntimeError("Exp453 fixed runtime re-exec failed")
     env = dict(os.environ); env[REEXEC_MARKER] = "1"
     os.execve(FIXED_EXECUTABLE, [FIXED_EXECUTABLE, str(launcher), *sys.argv[1:]], env)</code></pre><p>실제 이름에는 모두 <code>_antigravity</code>를 붙인다. Launcher는 이 함수를 호출한 뒤에만 thread env와 package import를 수행한다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 3 — RED predecessor:</strong> Exp452 receipt/audit hash 또는 absent root가 다르면 실패하고, Exp449 96 prediction bytes가 다르면 별도로 실패하는 fixture를 만든다.</li>
-<li><input disabled type="checkbox"> <strong>Step 4 — RED label gate:</strong> 두 predecessor capture가 같기 전에는 label opener가 호출되지 않는지 검사한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 5 — GREEN source/lifecycle/readiness:</strong> one-shot lifecycle receipt에 exact executable, exact prefix, Python/NumPy/aeon/scikit-learn 네 버전을 기록하고 검증한다. readiness는 label row를 읽지 않는다.</li>
-<li><input disabled type="checkbox"> <strong>Step 6 — subprocess proof:</strong> test-only probe launcher로 (a) wrong venv은 정확히 한 번 re-exec, (b) fixed venv는 re-exec 없음, (c) <code>argv</code>와 <code>--reviewed-commit</code> 보존, (d) exec 실패 또는 marker 후에도 runtime이 틀리면 label/root 접근 없이 중단을 검사한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 7 — GREEN twice:</strong> Task 3 synthetic suite twice, Exp452 corresponding tests once, compile/diff/map checks를 실행한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 8 — review/commit/map:</strong> Grok root-cause/read-only diff review 후 Codex가 통합·테스트하고 bounded commit과 map child를 만든다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 3 — RED predecessor:</strong> Exp452 receipt/audit hash 또는 absent root가 다르면 실패하고, Exp449 96 prediction bytes가 다르면 별도로 실패하는 fixture를 만든다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4 — RED label gate:</strong> 두 predecessor capture가 같기 전에는 label opener가 호출되지 않는지 검사한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 5 — GREEN source/lifecycle/readiness:</strong> one-shot lifecycle receipt에 exact executable, exact prefix, Python/NumPy/aeon/scikit-learn 네 버전을 기록하고 검증한다. readiness는 label row를 읽지 않는다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — subprocess proof:</strong> test-only probe launcher로 (a) wrong venv은 정확히 한 번 re-exec, (b) fixed venv는 re-exec 없음, (c) <code>argv</code>와 <code>--reviewed-commit</code> 보존, (d) exec 실패 또는 marker 후에도 runtime이 틀리면 label/root 접근 없이 중단을 검사한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 7 — GREEN twice:</strong> Task 3 synthetic suite twice, Exp452 corresponding tests once, compile/diff/map checks를 실행한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 8 — review/commit/map:</strong> Grok root-cause/read-only diff review 후 Codex가 통합·테스트하고 bounded commit과 map child를 만든다.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 4: 동일 evaluator와 exact replay</h2>
