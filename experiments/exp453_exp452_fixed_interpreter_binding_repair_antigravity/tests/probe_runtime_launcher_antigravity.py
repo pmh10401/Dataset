@@ -29,6 +29,24 @@ if os.environ.get("EXP453_PROBE_BIND_ANTIGRAVITY") == "1":
         sys.path.insert(0, str(_SCRATCH_ANTIGRAVITY))
     from exp453_runtime_binding_antigravity import ensure_fixed_runtime_antigravity
 
+    probe = os.environ.get("EXP453_RUNTIME_METADATA_PROBE_ANTIGRAVITY")
+    if probe:
+        import importlib.metadata
+
+        overrides = json.loads(probe)
+        if type(overrides) is not dict or any(
+            type(name) is not str or type(value) is not str for name, value in overrides.items()
+        ):
+            raise RuntimeError("Exp453 metadata probe is invalid")
+        original = importlib.metadata.version
+
+        def version_antigravity(name: str) -> str:
+            if name in overrides:
+                return overrides[name]
+            return original(name)
+
+        importlib.metadata.version = version_antigravity
+
     ensure_fixed_runtime_antigravity(Path(__file__), tuple(sys.argv[1:]))
 
 

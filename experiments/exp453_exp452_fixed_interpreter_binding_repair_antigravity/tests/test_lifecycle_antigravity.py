@@ -301,6 +301,19 @@ class LifecycleAntigravityTest(unittest.TestCase):
                 aeon_version,
                 sklearn_version,
             )
+        original = lifecycle.importlib.metadata.version
+
+        def drifted_numpy_antigravity(name: str) -> str:
+            if name == "numpy":
+                return "2.4.6"
+            return original(name)
+
+        lifecycle.importlib.metadata.version = drifted_numpy_antigravity
+        try:
+            with self.assertRaises(ValueError):
+                lifecycle._production_paths_antigravity()
+        finally:
+            lifecycle.importlib.metadata.version = original
 
 
 if __name__ == "__main__":

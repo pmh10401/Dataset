@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import importlib.metadata
 import os
 from pathlib import Path
+import platform
 import stat
+import sys
 from typing import Callable, TypeVar
 
 from .artifacts_antigravity import (
@@ -75,17 +78,49 @@ class _LifecyclePathsAntigravity:
             raise ValueError("lifecycle paths are invalid")
 
 
-_PRODUCTION_PATHS_ANTIGRAVITY = _LifecyclePathsAntigravity(
-    Path(EXP453_RECEIPT_DIRECTORY_ANTIGRAVITY),
-    Path(EXP453_FAILURE_AUDIT_ANTIGRAVITY),
-    Path(EXP453_EVALUATION_ROOT_ANTIGRAVITY),
-    FIXED_EXECUTABLE_ANTIGRAVITY,
-    FIXED_PREFIX_ANTIGRAVITY,
-    RUNTIME_VERSIONS_ANTIGRAVITY[0],
-    RUNTIME_VERSIONS_ANTIGRAVITY[1],
-    RUNTIME_VERSIONS_ANTIGRAVITY[2],
-    RUNTIME_VERSIONS_ANTIGRAVITY[3],
-)
+def _observe_exact_runtime_antigravity(*, distribution_version=None) -> tuple[str, str, str, str, str, str]:
+    version = importlib.metadata.version if distribution_version is None else distribution_version
+    if not callable(version):
+        raise ValueError("lifecycle paths are invalid")
+    try:
+        numpy_version = version("numpy")
+        aeon_version = version("aeon")
+        sklearn_version = version("scikit-learn")
+    except importlib.metadata.PackageNotFoundError as error:
+        raise ValueError("lifecycle paths are invalid") from error
+    observed = (
+        sys.executable,
+        sys.prefix,
+        platform.python_version(),
+        numpy_version,
+        aeon_version,
+        sklearn_version,
+    )
+    if (
+        any(type(item) is not str or not item for item in observed)
+        or observed[0] != FIXED_EXECUTABLE_ANTIGRAVITY
+        or observed[1] != FIXED_PREFIX_ANTIGRAVITY
+        or observed[2:] != RUNTIME_VERSIONS_ANTIGRAVITY
+    ):
+        raise ValueError("lifecycle paths are invalid")
+    return observed
+
+
+def _production_paths_antigravity() -> _LifecyclePathsAntigravity:
+    executable, prefix, python_version, numpy_version, aeon_version, sklearn_version = (
+        _observe_exact_runtime_antigravity()
+    )
+    return _LifecyclePathsAntigravity(
+        Path(EXP453_RECEIPT_DIRECTORY_ANTIGRAVITY),
+        Path(EXP453_FAILURE_AUDIT_ANTIGRAVITY),
+        Path(EXP453_EVALUATION_ROOT_ANTIGRAVITY),
+        executable,
+        prefix,
+        python_version,
+        numpy_version,
+        aeon_version,
+        sklearn_version,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -376,7 +411,7 @@ def _root_identity_antigravity(root: Path) -> str | None:
 
 
 def validate_receipt_inventory_antigravity(
-    receipt_directory: Path = _PRODUCTION_PATHS_ANTIGRAVITY.receipt_directory,
+    receipt_directory: Path = Path(EXP453_RECEIPT_DIRECTORY_ANTIGRAVITY),
     *,
     evaluation_root: Path | None = None,
 ) -> ReceiptClassificationAntigravity:
@@ -405,7 +440,7 @@ def validate_receipt_inventory_antigravity(
 
 
 def receipt_reviewed_commit_antigravity(
-    receipt_directory: Path = _PRODUCTION_PATHS_ANTIGRAVITY.receipt_directory,
+    receipt_directory: Path = Path(EXP453_RECEIPT_DIRECTORY_ANTIGRAVITY),
 ) -> str:
     classification = validate_receipt_inventory_antigravity(receipt_directory)
     if classification.invalid or classification.stopped or classification.reviewed_commit is None:
@@ -670,7 +705,7 @@ def run_phase_antigravity(
         phase,
         reviewed_commit,
         operation,
-        _PRODUCTION_PATHS_ANTIGRAVITY,
+        _production_paths_antigravity(),
     )
 
 

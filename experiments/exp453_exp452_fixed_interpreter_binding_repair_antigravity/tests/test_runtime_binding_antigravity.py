@@ -83,6 +83,9 @@ class RuntimeBindingAntigravityTest(unittest.TestCase):
         compact = source.replace(" ", "")
         self.assertIn("sys.executable==FIXED_EXECUTABLE_ANTIGRAVITY", compact)
         self.assertIn("sys.prefix==FIXED_PREFIX_ANTIGRAVITY", compact)
+        self.assertIn("importlib.metadata", source)
+        self.assertIn("platform.python_version", source)
+        self.assertIn("observe_exact_runtime_antigravity", source)
 
     def test_wrong_venv_reexecs_exactly_once_and_preserves_argv_antigravity(self) -> None:
         """Break caught: wrong venv imports Exp453 or drops --reviewed-commit."""
@@ -153,6 +156,21 @@ class RuntimeBindingAntigravityTest(unittest.TestCase):
         self.assertIn("re-exec failed", result.stderr)
         self.assertNotIn("import experiments.exp453", result.stderr)
         self.assertNotIn("open_test_labels_once_antigravity", result.stderr)
+
+    def test_fixed_path_wrong_package_version_rejected_before_import_antigravity(self) -> None:
+        """Break caught: a drifted package version on the fixed path still proceeds to Exp453 import."""
+        result = _probe_antigravity(
+            FIXED_EXECUTABLE_ANTIGRAVITY,
+            bind=True,
+            extra_argv=["evaluate"],
+            env={"EXP453_RUNTIME_METADATA_PROBE_ANTIGRAVITY": json.dumps({"numpy": "2.4.6"})},
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("re-exec failed", result.stderr)
+        self.assertEqual(result.stdout.strip(), "")
+        self.assertNotIn("import experiments.exp453", result.stderr)
+        self.assertNotIn("open_test_labels_once_antigravity", result.stderr)
+        self.assertNotIn("lifecycle_antigravity", result.stderr)
 
     def test_official_launcher_binds_before_thread_env_and_package_import_antigravity(self) -> None:
         """Break caught: the official launcher imports Exp453 or sets threads before re-exec."""

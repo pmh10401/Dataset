@@ -407,7 +407,7 @@ def _run_production_readiness_phase_antigravity(
     precondition: Callable[[], None],
 ) -> _T:
     from .lifecycle_antigravity import (
-        _PRODUCTION_PATHS_ANTIGRAVITY,
+        _production_paths_antigravity,
         _run_phase_with_paths_antigravity,
     )
 
@@ -415,7 +415,7 @@ def _run_production_readiness_phase_antigravity(
         "readiness",
         reviewed_commit,
         operation,
-        _PRODUCTION_PATHS_ANTIGRAVITY,
+        _production_paths_antigravity(),
         path_precondition=precondition,
     )
 
