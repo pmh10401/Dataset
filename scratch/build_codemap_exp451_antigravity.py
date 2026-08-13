@@ -88,7 +88,7 @@ def _self_contained_html_antigravity(graph: dict[str, object]) -> str:
     return f"""<!doctype html>
 <html lang=\"ko\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>Exp451 코드맵</title><style>body{{font:16px/1.6 system-ui,sans-serif;max-width:1120px;margin:2rem auto;padding:0 1rem}}code,pre{{background:#f1f4f8;padding:.15rem .3rem;border-radius:4px;overflow:auto}}li{{margin:.35rem 0}}</style></head>
-<body><h1>Exp451 거버넌스 코드맵</h1><p>Exp449는 active로 보존되고, Exp451은 planned sibling이다. 미래 구현 경로는 증거 없는 관계로 명시적으로 unknown 처리한다.</p>
+<body><h1>Exp451 거버넌스 코드맵</h1><p>Exp449는 active로 보존되고, Exp451은 planned sibling이다. Task 2의 RDST 설정·계약·audit은 source와 focused test 증거로 고정되고, 이후 점수화 경로만 아직 구현되지 않았다.</p>
 <h2>노드</h2><ul>{''.join(f'<li><code>{html_module.escape(str(node["path"]))}</code> — {html_module.escape(str(node["role"]))}</li>' for node in graph["nodes"])}</ul>
 <h2>관계</h2><pre id=\"codemap-json-antigravity\" type=\"application/json\">{rendered}</pre></body></html>"""
 
@@ -116,7 +116,9 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "map_builder", "path": "scratch/build_codemap_exp451_antigravity.py", "role": "30-node 상한, evidence/ref/unknown/fingerprint 검증과 same-parent lock 생성.", "tests": [governance_test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp451_antigravity.py", "def validate_map_antigravity")]},
         {"id": "exp449_predecessor_boundary", "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py", "role": "향후 재사용 가능한 것은 Exp449 LocalGap code semantics뿐이며, failed evaluation artifact는 scientific input이 아니다.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_scoring_antigravity.py"], "evidence": [_evidence_antigravity("experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py", "def score_candidate_antigravity")]},
         {"id": "exp449_terminal_outcome", "path": "RESEARCH_STATE.json", "role": "Exp449의 one-session label evaluation failure와 permanent stop은 governance-only evidence이며 Exp451 input으로 재사용하지 않는다.", "tests": ["experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py", "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_readiness_antigravity.py"], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", "frozen prediction indices differ from evidence"), _evidence_antigravity("RESEARCH_STATE.json", "\"permanent_stop\": true")]},
-        {"id": "future_rdst_implementation", "path": "experiments/exp451_rdst_local_gap_qualification_antigravity/rdst_antigravity.py", "role": "Task 2 이후 생성될 공식 RDST adapter; 아직 source evidence가 없는 unknown 구현 경로.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "rdst_config", "path": "experiments/exp451_rdst_local_gap_qualification_antigravity/config_antigravity.py", "role": "Exp451 identity, root, RDST·LocalGap 수치와 CPU/thread 규칙을 immutable exact-key authority로 동결.", "tests": ["experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_config_antigravity.py"], "evidence": [_evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY"), _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/config_antigravity.py", "decode_frozen_config_antigravity")]},
+        {"id": "rdst_contracts", "path": "experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "role": "label 없는 dataset bundle, score snapshot, canonical frozen prediction authority를 exact type·immutable bytes로 강제.", "tests": ["experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_contracts_antigravity.py"], "evidence": [_evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "DatasetBundleAntigravity"), _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "FrozenPredictionAuthorityAntigravity")]},
+        {"id": "rdst_method_audit", "path": "experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "role": "고정 interpreter subprocess로 aeon class/signature/source SHA와 y=None deterministic fixture를 fail-closed audit.", "tests": ["experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_method_audit_antigravity.py"], "evidence": [_evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "audit_rdst_antigravity"), _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "RdstAuditResultAntigravity")]},
     ]
     edges: list[dict[str, object]] = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP451_PREREGISTRATION_antigravity_KO.html", "설계 SHA256")},
@@ -127,14 +129,17 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "experiment_catalog", "to": "research_state", "type": "governs", "evidence": _evidence_antigravity("EXPERIMENT_CATALOG.json", "Exp451")},
         {"from": "champion_ledger", "to": "research_state", "type": "reads", "evidence": _evidence_antigravity("CHAMPION_LEDGER.json", "Exp451")},
         {"from": "exp449_terminal_outcome", "to": "research_state", "type": "reads", "evidence": _evidence_antigravity("RESEARCH_STATE.json", "failed artifact is not reused")},
-        {"from": "preregistration", "to": "future_rdst_implementation", "type": "future_unknown", "evidence": _evidence_antigravity("docs/EXP451_PREREGISTRATION_antigravity_KO.html", "max_shapelets=1024")},
+        {"from": "approved_design", "to": "rdst_config", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html", "동결할 과학 설정")},
+        {"from": "preregistration", "to": "rdst_config", "type": "governs", "evidence": _evidence_antigravity("docs/EXP451_PREREGISTRATION_antigravity_KO.html", "max_shapelets=1024")},
+        {"from": "rdst_config", "to": "rdst_method_audit", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")},
+        {"from": "rdst_config", "to": "rdst_contracts", "type": "governs", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "CandidateScoresAntigravity")},
     ]
-    unknown_relationships = [{"from": "preregistration", "to": "future_rdst_implementation", "reason": "Task 1에는 RDST adapter source가 아직 없으므로 future relation is explicitly unknown."}]
+    unknown_relationships: list[dict[str, str]] = []
     graph: dict[str, object] = {
         "schema": "exp451_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
-        "topology_note": "This bounded triplet keeps Exp449 active but terminal immutable. It maps the failed Exp449 evaluation only as governance evidence, distinguishes it from reusable LocalGap code semantics, keeps Exp451 scientific input byte-authoritative Exp448 stable-26, and marks only the source-absent RDST implementation relation unknown.",
+        "topology_note": "이 bounded triplet은 Exp449 active terminal truth와 Exp448 stable-26 scientific-input 경계를 보존한다. Task 2는 immutable config, label-free contracts, fixed-interpreter RDST audit와 focused tests를 source evidence로 연결하며, 아직 실행·점수화·label 경로를 주장하지 않는다.",
         "nodes": nodes,
         "edges": edges,
         "unknown_relationships": unknown_relationships,

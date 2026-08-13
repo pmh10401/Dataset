@@ -134,7 +134,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "invalid unknown reference"):
             builder.validate_map_antigravity(graph, lock, rendered_html)
 
-    def test_map_rejects_known_edge_to_future_unknown_node_antigravity(self) -> None:
+    def test_map_rejects_edge_to_removed_future_node_antigravity(self) -> None:
         builder, graph, lock, rendered_html = valid_map_triplet_antigravity()
         graph = copy.deepcopy(graph)
         graph["edges"].append(
@@ -146,7 +146,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             }
         )
         rendered_html = builder._self_contained_html_antigravity(graph)
-        with self.assertRaisesRegex(ValueError, "unmarked unknown relationship"):
+        with self.assertRaisesRegex(ValueError, "invalid edge reference"):
             builder.validate_map_antigravity(graph, lock, rendered_html)
 
     def test_map_rejects_existing_but_nonfunctional_parent_commit_antigravity(self) -> None:
@@ -155,6 +155,26 @@ class GovernanceAntigravityTest(unittest.TestCase):
         lock["working_tree_dirty"] = False
         with self.assertRaisesRegex(ValueError, "invalid source parent relationship"):
             builder.validate_map_antigravity(graph, lock, rendered_html)
+
+    def test_map_replaces_future_rdst_with_task2_source_and_tests_antigravity(self) -> None:
+        builder = map_builder_module_antigravity()
+        source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+        graph, lock, rendered_html = builder.build_map_antigravity(source_commit, "2026-08-13T00:00:00Z")
+        lock["working_tree_dirty"] = False
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        self.assertNotIn("future_rdst_implementation", node_by_id)
+        expected = {
+            "rdst_config": ("experiments/exp451_rdst_local_gap_qualification_antigravity/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY", "experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_config_antigravity.py"),
+            "rdst_contracts": ("experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "FrozenPredictionAuthorityAntigravity", "experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_contracts_antigravity.py"),
+            "rdst_method_audit": ("experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "audit_rdst_antigravity", "experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_method_audit_antigravity.py"),
+        }
+        for node_id, (path, symbol, test) in expected.items():
+            with self.subTest(node_id=node_id):
+                self.assertEqual(node_by_id[node_id]["path"], path)
+                self.assertIn(test, node_by_id[node_id]["tests"])
+                self.assertIn({"path": path, "symbol": symbol}, node_by_id[node_id]["evidence"])
+        self.assertEqual(graph["unknown_relationships"], [])
+        builder.validate_map_antigravity(graph, lock, rendered_html)
 
 
 if __name__ == "__main__":
