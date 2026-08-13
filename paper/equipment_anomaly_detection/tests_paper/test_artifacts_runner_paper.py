@@ -806,29 +806,30 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
     def test_runner_retries_only_pending_after_incomplete_without_global_or_freeze_side_effects(self):
         """A runner that journals/freezes before exact coverage would make the failed wave look complete."""
         from paper.equipment_anomaly_detection import runner_paper as runner
-        from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
-        from paper.equipment_anomaly_detection.artifacts_paper import canonical_json_bytes, write_create_only
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
         root = self.fixture.fixture.base / "runner_boundary_antigravity"; config = runner.PipelineConfig(self.fixture.fixture.db, root, "smoke", ("alpha", "beta"))
-        context = {"context_sha256": "a" * 64}; records = [{"record_sha256": "prior"}]
-        attempts, calculated, task6, task7 = [0], [], [], []
-        incomplete = {"status": "proposal_score_incomplete", "completed": 1, "failed": 1, "pending": 1, "pending_datasets": ["beta"], "attempts_path": str(root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts")}
-        def verify(_config):
-            return context, records, ["preflight", "prepare", "acceleration"] if attempts[0] < 2 else ["preflight", "prepare", "acceleration", "proposal_score"]
-        def write(root_value, stage, _context, _prior):
-            self.assertEqual(stage, "proposal_score")
-            attempts[0] += 1
-            if attempts[0] == 1:
-                raise ProposalScoreIncomplete(completed=1, failed=1, pending=("beta",), attempts_path=incomplete["attempts_path"])
-            calculated.append("beta"); task6.append("global"); task7.append("global")
-            write_create_only(root_value / "stage_artifacts_paper" / "proposal_freeze" / "proposal_manifest_paper.json", canonical_json_bytes({"schema": "test"}))
-            write_create_only(root_value / "pipeline_journal_paper" / "000004_proposal_score_paper.json", canonical_json_bytes({"schema": "paper-task8-journal-complete.v1"}))
-        with patch.object(runner, "context_payload", return_value=context), patch.object(runner, "verify_journal", side_effect=verify), patch.object(runner, "_write_complete", side_effect=write), patch.object(runner, "_incomplete_status", return_value=incomplete), patch.object(runner, "verify_completed", return_value={"status": "completed"}):
-            self.assertEqual(runner.run_pipeline(config), incomplete)
-            self.assertEqual((task6, task7, calculated), ([], [], []))
+        alpha = self.fixture._task4_task5_values(); beta = self.fixture._task4_task5_values()
+        raw = {"alpha": alpha[0], "beta": self.fixture.fixture._typed("beta")[0]}
+        values = {"alpha": (alpha[1], alpha[2]), "beta": (beta[1], beta[2])}
+        low = LowFrequencyResult(("alpha", "beta"), self.fixture.fixture._typed("alpha")[3].rows + self.fixture.fixture._typed("beta")[3].rows, (), (), 0, {"alpha": frozenset(), "beta": frozenset()})
+        policies = PolicyBundle(tuple(PolicyRoute(name, {dataset: frozenset() for dataset in raw}, {dataset: np.zeros(2) for dataset in raw}, {dataset: np.zeros(2) for dataset in raw}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
+        original_acceleration = runner.build_acceleration_manifest; failed, calculated = [True], []
+        def acceleration(context_sha256): return original_acceleration(context_sha256, logical_cpu_count=1)
+        def collect(raw_value):
+            calculated.append(raw_value.dataset)
+            if raw_value.dataset == "beta" and failed[0]: failed[0] = False; raise RuntimeError("fixture beta failure")
+            return values[raw_value.dataset]
+        with patch.object(runner, "build_catalog", return_value=self.fixture.catalog), patch.object(runner, "load_dataset_values", side_effect=lambda _path, dataset: raw[dataset]), patch.object(runner, "build_acceleration_manifest", side_effect=acceleration), patch.object(score, "_score_dataset_task4_task5", side_effect=collect), patch.object(score, "score_low_frequency", return_value=low) as task6, patch.object(score, "classify_stability", return_value=alpha[4]) as task7, patch.object(score, "build_hard_evidence_surface", return_value=object()), patch.object(score, "build_policies", return_value=policies):
+            first = runner.run_pipeline(config)
+            self.assertEqual((first["status"], first["completed"], first["failed"], first["pending_datasets"]), ("proposal_score_incomplete", 1, 1, ["beta"]))
+            self.assertEqual((task6.call_count, task7.call_count, calculated), (0, 0, ["alpha", "beta"]))
             self.assertFalse((root / "stage_artifacts_paper" / "proposal_freeze").exists())
             self.assertFalse((root / "pipeline_journal_paper" / "000004_proposal_score_paper.json").exists())
-            self.assertEqual(runner.run_pipeline(config), {"status": "completed"})
-        self.assertEqual((calculated, task6, task7), (["beta"], ["global"], ["global"]))
+            second = runner.run_pipeline(config)
+        self.assertEqual(second["status"], "completed")
+        self.assertEqual((calculated, task6.call_count, task7.call_count), (["alpha", "beta", "beta"], 1, 1))
         self.assertTrue((root / "stage_artifacts_paper" / "proposal_freeze" / "proposal_manifest_paper.json").is_file())
         self.assertTrue((root / "pipeline_journal_paper" / "000004_proposal_score_paper.json").is_file())
 

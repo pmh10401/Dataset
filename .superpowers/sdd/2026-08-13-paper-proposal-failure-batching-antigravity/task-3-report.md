@@ -35,7 +35,7 @@
 
 ## Final runner boundary regression
 
-- Added a two-invocation `run_pipeline` boundary test with mocked catalog/science work: first invocation returns exact incomplete status without global/freeze/proposal-journal effects; the second computes only `beta`, invokes Task6/7 once, and creates the freeze/proposal completion evidence.
+- Replaced the self-fulfilling lifecycle-mocked case with two real `run_pipeline` invocations using real `_write_complete`, journal verification/status, success/attempt records, shard writer, and freeze. Only catalog/data and scientific leaf computations are mocked: the first wave persists `alpha`, fails `beta`, and has no Task6/7/freeze/proposal journal; the second scores only `beta`, runs Task6/7 once, then creates and verifies the actual freeze/proposal completion evidence.
 
 ## Judgment calls
 
