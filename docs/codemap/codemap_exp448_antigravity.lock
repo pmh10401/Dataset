@@ -1,7 +1,7 @@
 {
-  "current_commit": "3050fc48985201a780d133f15f5e345d4c972935",
+  "current_commit": "a0cdb065e9a3aad56da172b8e69975ed2a2d86c0",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-13T11:18:07+0900",
+  "generated_at": "2026-08-13T11:51:35+0900",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -35,7 +35,7 @@
   "module_fingerprints": {
     "root": "4c00bd3bc99063b3df9c9f61313e350d817557ec1ce485d368fd25406b1f3a00",
     ".superpowers": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
-    "docs": "2edf904204326cddf658963b46336dee8b199a1ae783014710c0159d1bc4d259",
+    "docs": "155de4d7fe2ce0c230ca334683eb75a143039347bf052ccf92530137f6941e87",
     "experiments": "dc6089347ee1e7508d52aa751b0e07af82736a1f0f18ec3d1bf9f69976f54215",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "dbe3ace489aa4830676fb2a8fda9a510f06eb56e5ec8259337d1cc1cdacba1e8",
@@ -45,6 +45,6 @@
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_prior_lock": [
-    "paper"
+    "docs"
   ]
 }

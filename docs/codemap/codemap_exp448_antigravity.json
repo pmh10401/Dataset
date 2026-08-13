@@ -1,9 +1,11 @@
 {
-  "generated_at": "2026-08-13T11:18:07+0900",
-  "generated_from_commit": "3050fc48985201a780d133f15f5e345d4c972935",
+  "generated_at": "2026-08-13T11:51:35+0900",
+  "generated_from_commit": "a0cdb065e9a3aad56da172b8e69975ed2a2d86c0",
+  "working_tree_dirty": true,
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
-    "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
+    "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle.",
+    "Existing label-free public-baseline CLI, resumable runner, and frozen Deep SVDD/DROCC CPU scoring closure."
   ],
   "nodes": [
     {
@@ -488,6 +490,160 @@
           "symbol": "compose_proposal_score"
         }
       ]
+    },
+    {
+      "id": "public_baseline_cli",
+      "path": "experiments/paper_public_baselines/cli.py",
+      "role": "Closed label-free public-baseline lifecycle dispatcher.",
+      "entrypoints": [
+        "main"
+      ],
+      "callers": [
+        "scratch/run_paper_public_baselines.py"
+      ],
+      "effects": [
+        "prepare/assess-mlx/score/freeze dispatch with lazy evaluation imports"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_cli.py"
+      ],
+      "constraints": [
+        "Score dispatch remains label-free and deep scoring requires exactly one worker.",
+        "The existing CLI and its score-source closure stay unchanged for deferred execution."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/cli.py",
+          "symbol": "main"
+        },
+        {
+          "path": "scratch/run_paper_public_baselines.py",
+          "symbol": "from experiments.paper_public_baselines.cli import main"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_runner",
+      "path": "experiments/paper_public_baselines/runner.py",
+      "role": "Resumable values-only scoring and immutable score-root verification.",
+      "entrypoints": [
+        "run_methods",
+        "freeze_score_root",
+        "verify_score_root"
+      ],
+      "callers": [
+        "experiments/paper_public_baselines/cli.py",
+        "experiments/paper_public_baselines/tests/test_runner.py"
+      ],
+      "effects": [
+        "score_published_method -> conformal alerts -> create-only shards -> frozen manifest"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_runner.py"
+      ],
+      "constraints": [
+        "Only fully verified shard/meta pairs are reusable.",
+        "Frozen verification requires exact method/dataset coverage without TEST labels."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/runner.py",
+          "symbol": "run_methods"
+        },
+        {
+          "path": "experiments/paper_public_baselines/runner.py",
+          "symbol": "verify_score_root"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_deep_common",
+      "path": "experiments/paper_public_baselines/methods/deep_common.py",
+      "role": "Frozen deterministic PyTorch CPU cross-fitting shared by both published deep baselines.",
+      "entrypoints": [
+        "crossfit_deep_scores",
+        "seed_cpu"
+      ],
+      "callers": [
+        "experiments/paper_public_baselines/methods/deep_svdd.py",
+        "experiments/paper_public_baselines/methods/drocc.py",
+        "experiments/paper_public_baselines/tests/test_deep_methods.py"
+      ],
+      "effects": [
+        "deterministic CPU 5-fold TRAIN OOF plus separate full-fit TEST scores"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_deep_methods.py",
+        "experiments/paper_public_baselines/tests/test_runner.py source-hash contract"
+      ],
+      "constraints": [
+        "PyTorch CPU, one thread, seed, five folds, and 50 official epochs are frozen.",
+        "No TEST values participate in TRAIN OOF fitting."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/methods/deep_common.py",
+          "symbol": "crossfit_deep_scores"
+        },
+        {
+          "path": "experiments/paper_public_baselines/tests/test_runner.py",
+          "symbol": "methods/deep_common.py"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_deep_svdd",
+      "path": "experiments/paper_public_baselines/methods/deep_svdd.py",
+      "role": "Frozen published Deep SVDD 1D scoring implementation.",
+      "entrypoints": [
+        "score_deep_svdd"
+      ],
+      "callers": [
+        "experiments/paper_public_baselines/methods/__init__.py",
+        "experiments/paper_public_baselines/tests/test_deep_methods.py"
+      ],
+      "effects": [
+        "Deep SVDD ScoreResult"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_deep_methods.py"
+      ],
+      "constraints": [
+        "Uses the shared deterministic CPU cross-fit path without changing score semantics."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/methods/deep_svdd.py",
+          "symbol": "score_deep_svdd"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_drocc",
+      "path": "experiments/paper_public_baselines/methods/drocc.py",
+      "role": "Frozen published DROCC 1D scoring implementation.",
+      "entrypoints": [
+        "score_drocc"
+      ],
+      "callers": [
+        "experiments/paper_public_baselines/methods/__init__.py",
+        "experiments/paper_public_baselines/tests/test_deep_methods.py"
+      ],
+      "effects": [
+        "DROCC ScoreResult"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_deep_methods.py"
+      ],
+      "constraints": [
+        "Uses deterministic annulus adversaries in the shared CPU cross-fit path."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/methods/drocc.py",
+          "symbol": "score_drocc"
+        }
+      ]
     }
   ],
   "edges": [
@@ -670,6 +826,51 @@
         "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
         "symbol": "replay_hard_route"
       }
+    },
+    {
+      "from": "public_baseline_cli",
+      "to": "public_baseline_runner",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/cli.py",
+        "symbol": "from .runner import ScoreRunConfig, freeze_score_root, run_methods"
+      }
+    },
+    {
+      "from": "public_baseline_runner",
+      "to": "public_baseline_deep_svdd",
+      "type": "calls",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/runner.py",
+        "symbol": "score_published_method"
+      }
+    },
+    {
+      "from": "public_baseline_runner",
+      "to": "public_baseline_drocc",
+      "type": "calls",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/runner.py",
+        "symbol": "score_published_method"
+      }
+    },
+    {
+      "from": "public_baseline_deep_svdd",
+      "to": "public_baseline_deep_common",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/methods/deep_svdd.py",
+        "symbol": "from .deep_common import"
+      }
+    },
+    {
+      "from": "public_baseline_drocc",
+      "to": "public_baseline_deep_common",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/methods/drocc.py",
+        "symbol": "from .deep_common import"
+      }
     }
   ],
   "flows": [
@@ -749,6 +950,17 @@
         "paper_proposal_score"
       ],
       "outcome": "The paper Task8/Task9 preflight-to-proposal-score pipeline records CPU/accelerator evidence, reconstructs label-free hard routes, derives 11 workers from 12 logical CPUs, parallelizes only independent Task4+Task5 values-only scoring, and freezes typed proposal shards; it neither executes nor authorizes Exp448 readiness, evaluation, inspection, promotion, or dashboard activity."
+    },
+    {
+      "trigger": "Deferred published deep-baseline execution",
+      "steps": [
+        "public_baseline_cli",
+        "public_baseline_runner",
+        "public_baseline_deep_svdd",
+        "public_baseline_drocc",
+        "public_baseline_deep_common"
+      ],
+      "outcome": "50-epoch CPU score roots remain label-free until frozen evaluation."
     }
   ],
   "unknown_relationships": [],
