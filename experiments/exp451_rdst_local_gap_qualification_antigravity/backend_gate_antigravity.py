@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import math
 import platform
+import time
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
@@ -130,6 +131,7 @@ def installed_backend_probe_antigravity(name: BackendNameAntigravity) -> Backend
     """Record optional-runtime availability without importing optional modules at import time."""
     if name == "cpu":
         raise ValueError("CPU is not an accelerator probe")
+    started = time.perf_counter()
     package = "mlx" if name == "mlx" else "torch"
     available = importlib.util.find_spec(package) is not None
     version = "not_installed"
@@ -141,8 +143,19 @@ def installed_backend_probe_antigravity(name: BackendNameAntigravity) -> Backend
         if name == "mps":
             device = "mps" if bool(module.backends.mps.is_available()) else "mps_unavailable"
             available = bool(module.backends.mps.is_available())
-    return BackendProbeAntigravity(name, available, False, False, 0.0, 1.0, 1.0, ((package, version),), device, reason)
+            if available:
+                # This is an availability-only inclusive transfer/synchronization smoke,
+                # not an approximate LocalGap implementation or a speed qualification.
+                cpu_started = time.perf_counter()
+                module.zeros(1, device="cpu")
+                cpu_seconds = max(time.perf_counter() - cpu_started, float.fromhex("0x1.0p-52"))
+                accelerator_started = time.perf_counter()
+                module.zeros(1, device="mps")
+                module.mps.synchronize()
+                accelerator_seconds = max(time.perf_counter() - accelerator_started, float.fromhex("0x1.0p-52"))
+                return BackendProbeAntigravity(name, available, False, False, 0.0, cpu_seconds, accelerator_seconds, ((package, version),), device, reason)
+    elapsed = max(time.perf_counter() - started, float.fromhex("0x1.0p-52"))
+    return BackendProbeAntigravity(name, available, False, False, 0.0, elapsed, elapsed, ((package, version),), device, reason)
 
 
 __all__ = ["BackendNameAntigravity", "BackendProbeAntigravity", "BackendDecisionAntigravity", "backend_name_from_decision_antigravity", "build_local_gap_backend_antigravity", "decide_backend_antigravity", "installed_backend_probe_antigravity"]
-
