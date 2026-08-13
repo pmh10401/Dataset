@@ -121,6 +121,26 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertTrue(all(edge["type"] == "future_unknown" for edge in graph["edges"] if edge["to"] in {"future_product_modules", "future_official_lifecycle"}))
         builder.validate_map_antigravity(graph, lock, html)
 
+    def test_map_answers_task_two_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: leaving implemented Task 2 foundations hidden behind a future/unknown node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        expected_tests = {
+            "task2_config": "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_config_antigravity.py",
+            "task2_contracts": "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_contracts_antigravity.py",
+            "task2_artifacts": "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_artifacts_antigravity.py",
+            "task2_bootstrap": "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_bootstrap_antigravity.py",
+            "task2_dashboard": "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_dashboard_export_antigravity.py",
+        }
+        differential = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_controlled_fork_differential_antigravity.py"
+        for node_id, focused_test in expected_tests.items():
+            with self.subTest(node_id=node_id):
+                self.assertIn(node_id, node_by_id)
+                self.assertNotEqual(node_by_id[node_id].get("status"), "future_unknown")
+                self.assertEqual(node_by_id[node_id]["tests"], [focused_test, differential])
+                self.assertTrue(any(edge["from"] == "task2_regressions" and edge["to"] == node_id and edge["type"] == "tests" for edge in graph["edges"]))
+                self.assertTrue(any(edge["from"] == node_id and edge["to"] == "future_product_modules" and edge["type"] == "future_unknown" for edge in graph["edges"]))
+
     def test_documents_exclude_exp449_qualified_two_as_a_decision_input_antigravity(self) -> None:
         for relative in DOCUMENTS_ANTIGRAVITY:
             content = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8").lower()

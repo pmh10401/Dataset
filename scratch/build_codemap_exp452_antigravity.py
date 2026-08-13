@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded initial Exp452 governance code map."""
+"""Build and validate the bounded Exp452 governance and foundation code map."""
 
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ def _html_antigravity(graph: dict[str, object]) -> str:
     payload = html_module.escape(_canonical_bytes_antigravity(graph).decode("utf-8"))
     items = "".join(f'<li><code>{html_module.escape(str(node["path"]))}</code> — {html_module.escape(str(node["role"]))}</li>' for node in graph["nodes"])
     return f'''<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp452 코드맵</title><style>body{{max-width:1050px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp452 초기 거버넌스 코드맵</h1><p>Task 1은 governance만 구현한다. product module 및 official lifecycle의 call/effect/test 관계는 future/unknown으로 표시하며 구현 사실을 주장하지 않는다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp452 코드맵</title><style>body{{max-width:1050px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp452 거버넌스와 고정 기반 코드맵</h1><p>Task 2의 config, contract, canonical artifact IO, paired bootstrap, aggregate-only dashboard projection은 구현됐다. predecessor, lifecycle, evaluator, replay, CLI와 official lifecycle 관계는 future/unknown으로 유지한다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
 
 
 def _allowed_source_parent_antigravity(source_parent: str) -> bool:
@@ -99,6 +99,12 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     if not generated_at.endswith("Z"):
         raise ValueError("generated_at must be UTC ISO-8601 ending in Z")
     test = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_governance_antigravity.py"
+    differential = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_controlled_fork_differential_antigravity.py"
+    config_test = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_config_antigravity.py"
+    contracts_test = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_contracts_antigravity.py"
+    artifacts_test = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_artifacts_antigravity.py"
+    bootstrap_test = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_bootstrap_antigravity.py"
+    dashboard_test = "experiments/exp452_exp449_index_order_repair_antigravity/tests/test_dashboard_export_antigravity.py"
     nodes: list[dict[str, object]] = [
         {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-13-exp452-exp449-index-order-repair-antigravity-design.html", "role": "Exp449 index-order repair의 승인된 고정 경계.", "tests": [test], "evidence": [_evidence_antigravity("docs/superpowers/specs/2026-08-13-exp452-exp449-index-order-repair-antigravity-design.html", "Exp452: Exp449 인덱스 순서 복구 설계")]},
         {"id": "implementation_plan", "path": "docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "role": "Task 1 TDD와 map-only child 규칙.", "tests": [test], "evidence": [_evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Task 1: Governance HTML과 Exp452 코드맵")]},
@@ -110,8 +116,14 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "non-promotion 및 unchanged pending candidate record.", "tests": [test], "evidence": [_evidence_antigravity("CHAMPION_LEDGER.json", "\"experiment\": \"Exp452\"")]},
         {"id": "governance_regression", "path": test, "role": "strict JSON, no Markdown twin, zero official counts 및 map validation test.", "tests": [test], "evidence": [_evidence_antigravity(test, "test_map_is_strict_embedded_and_marks_product_relations_future_unknown_antigravity")]},
         {"id": "map_builder", "path": "scratch/build_codemap_exp452_antigravity.py", "role": "bounded graph, strict embedded JSON와 tracked fingerprint lock generator.", "tests": [test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp452_antigravity.py", "def validate_map_antigravity")]},
-        {"id": "future_product_modules", "path": "experiments/exp452_exp449_index_order_repair_antigravity", "role": "Task 2–5 product modules are not implemented in Task 1.", "status": "future_unknown", "tests": [], "evidence": []},
-        {"id": "future_official_lifecycle", "path": "Exp452 official readiness/evaluate/inspect", "role": "official lifecycle is not run or implemented in Task 1.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "task2_config", "path": "experiments/exp452_exp449_index_order_repair_antigravity/config_antigravity.py", "role": "Exp452 identity/path/predecessor/index-order nodes를 추가하고 Exp449 science와 48/96/16을 고정한다.", "tests": [config_test, differential], "evidence": [_evidence_antigravity("experiments/exp452_exp449_index_order_repair_antigravity/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")]},
+        {"id": "task2_contracts", "path": "experiments/exp452_exp449_index_order_repair_antigravity/contracts_antigravity.py", "role": "strict exact-type confusion과 candidate metric records; 현재 callers는 focused/differential tests뿐이다.", "tests": [contracts_test, differential], "evidence": [_evidence_antigravity("experiments/exp452_exp449_index_order_repair_antigravity/contracts_antigravity.py", "class CandidateMetricAntigravity")]},
+        {"id": "task2_artifacts", "path": "experiments/exp452_exp449_index_order_repair_antigravity/artifacts_antigravity.py", "role": "canonical JSON/JSONL, create-only no-follow write와 descriptor-validated exact inventory hashing.", "tests": [artifacts_test, differential], "evidence": [_evidence_antigravity("experiments/exp452_exp449_index_order_repair_antigravity/artifacts_antigravity.py", "def artifact_map_bytes_antigravity")]},
+        {"id": "task2_bootstrap", "path": "experiments/exp452_exp449_index_order_repair_antigravity/bootstrap_antigravity.py", "role": "Exp449-exact PCG64 paired FN/FP/F1 descriptive bootstrap; selection effect는 없다.", "tests": [bootstrap_test, differential], "evidence": [_evidence_antigravity("experiments/exp452_exp449_index_order_repair_antigravity/bootstrap_antigravity.py", "def paired_delta_antigravity")]},
+        {"id": "task2_dashboard", "path": "experiments/exp452_exp449_index_order_repair_antigravity/dashboard_export_antigravity.py", "role": "aggregate-only pure projection; label/index/dataset/path/hash/log/per-dataset material을 recursive reject하고 write하지 않는다.", "tests": [dashboard_test, differential], "evidence": [_evidence_antigravity("experiments/exp452_exp449_index_order_repair_antigravity/dashboard_export_antigravity.py", "def public_result_antigravity")]},
+        {"id": "task2_regressions", "path": differential, "role": "six focused suites와 controlled-fork AST guard의 caller boundary.", "tests": [config_test, contracts_test, artifacts_test, bootstrap_test, dashboard_test, differential], "evidence": [_evidence_antigravity(differential, "class ControlledForkDifferentialAntigravityTest")]},
+        {"id": "future_product_modules", "path": "Exp452 Task 3-5 predecessor/lifecycle/evaluator/replay/CLI", "role": "Task 3–5 consumers and effects remain unimplemented and unknown after Task 2.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "future_official_lifecycle", "path": "Exp452 official readiness/evaluate/inspect", "role": "official lifecycle is not run or implemented in Task 2.", "status": "future_unknown", "tests": [], "evidence": []},
     ]
     edges: list[dict[str, object]] = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP452_PREREGISTRATION_antigravity_KO.html", "Exp452")},
@@ -119,10 +131,28 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_planned_truth_is_label_free_and_non_promoting_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": _evidence_antigravity(test, "builder.validate_map_antigravity")},
         {"from": "research_state", "to": "preregistration", "type": "reads", "evidence": _evidence_antigravity("RESEARCH_STATE.json", "EXP452_PREREGISTRATION_antigravity_KO.html")},
+        {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "FROZEN_CONFIG_ANTIGRAVITY")},
+        {"from": "implementation_plan", "to": "task2_contracts", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "ConfusionAntigravity")},
+        {"from": "implementation_plan", "to": "task2_artifacts", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "canonical JSON/JSONL")},
+        {"from": "implementation_plan", "to": "task2_bootstrap", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "paired_delta_antigravity()")},
+        {"from": "implementation_plan", "to": "task2_dashboard", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Dashboard allowlist")},
+        {"from": "task2_regressions", "to": "task2_config", "type": "tests", "evidence": _evidence_antigravity(config_test, "test_candidate_matrix_and_scientific_settings_match_exp449_antigravity")},
+        {"from": "task2_regressions", "to": "task2_contracts", "type": "tests", "evidence": _evidence_antigravity(contracts_test, "test_bool_is_not_an_integer_metric_antigravity")},
+        {"from": "task2_regressions", "to": "task2_artifacts", "type": "tests", "evidence": _evidence_antigravity(artifacts_test, "test_canonical_json_and_jsonl_are_exact_antigravity")},
+        {"from": "task2_regressions", "to": "task2_bootstrap", "type": "tests", "evidence": _evidence_antigravity(bootstrap_test, "test_bootstrap_authority_is_byte_exact_antigravity")},
+        {"from": "task2_regressions", "to": "task2_dashboard", "type": "tests", "evidence": _evidence_antigravity(dashboard_test, "test_public_result_returns_only_the_complete_aggregate_allowlist_antigravity")},
+        {"from": "task2_config", "to": "future_product_modules", "type": "future_unknown", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Task 3: Exp449 읽기 전용 predecessor와 lifecycle")},
+        {"from": "task2_contracts", "to": "future_product_modules", "type": "future_unknown", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Task 4: 정렬 복구 evaluator와 source-free replay")},
+        {"from": "task2_artifacts", "to": "future_product_modules", "type": "future_unknown", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Task 4: 정렬 복구 evaluator와 source-free replay")},
+        {"from": "task2_bootstrap", "to": "future_product_modules", "type": "future_unknown", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Task 4: 정렬 복구 evaluator와 source-free replay")},
+        {"from": "task2_dashboard", "to": "future_product_modules", "type": "future_unknown", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "Task 4: 정렬 복구 evaluator와 source-free replay")},
         {"from": "approved_design", "to": "future_product_modules", "type": "future_unknown", "evidence": _evidence_antigravity("docs/superpowers/specs/2026-08-13-exp452-exp449-index-order-repair-antigravity-design.html", "구현 단계")},
         {"from": "runbook", "to": "future_official_lifecycle", "type": "future_unknown", "evidence": _evidence_antigravity("docs/EXP452_RUNBOOK_antigravity_KO.html", "현재는 실행 금지")},
     ]
-    graph: dict[str, object] = {"schema": "exp452_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "topology_note": "Task 1 governance map: unimplemented product calls, effects, and tests are explicitly future/unknown.", "nodes": nodes, "edges": edges, "unknown_relationships": [{"from": "approved_design", "to": "future_product_modules", "reason": "Task 2–5 product implementation is future work."}, {"from": "runbook", "to": "future_official_lifecycle", "reason": "Task 1 forbids official lifecycle execution."}]}
+    future_sources = ("approved_design", "task2_config", "task2_contracts", "task2_artifacts", "task2_bootstrap", "task2_dashboard")
+    unknowns = [{"from": source, "to": "future_product_modules", "reason": "Task 3–5 consumer/effect relationships remain unimplemented after Task 2."} for source in future_sources]
+    unknowns.append({"from": "runbook", "to": "future_official_lifecycle", "reason": "Task 2 forbids official lifecycle execution."})
+    graph: dict[str, object] = {"schema": "exp452_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "topology_note": "Task 2 map: frozen foundations and their focused/differential test callers are implemented; Task 3–5 effects remain explicitly future/unknown.", "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
     lock: dict[str, object] = {"schema": "exp452_codemap_same_commit_v1", "source_parent_commit": source_commit, "working_tree_dirty": bool(_git_output_antigravity("status", "--porcelain")), "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "fingerprint_algorithm": "sha256-v1: tracked bytes excluding exactly the Exp452 map triplet", "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
     return graph, lock, _html_antigravity(graph)
 
