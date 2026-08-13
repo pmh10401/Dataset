@@ -42,7 +42,7 @@ _DOCUMENTS_ANTIGRAVITY = (
     (
         "implementation_report",
         "docs/EXP452_IMPLEMENTATION_REPORT_antigravity.html",
-        "3b139d88a99bfc0d64d90bd0cef1f8058dac3b0d955357b36e792fe2644334c1",
+        "9eb55622e98bd88d09fceeb83143071e491b7eeeda41d2b8ad75256279192adc",
     ),
     (
         "preregistration",

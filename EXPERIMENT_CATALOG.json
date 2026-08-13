@@ -1258,7 +1258,7 @@
       ],
       "reviewed_design_commit": "b9ff4bf6b76e37f00146f3080edb9c58068d43ee",
       "reviewed_design_sha256": "59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075",
-      "document_sha256": {"preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2", "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754", "implementation_report": "3b139d88a99bfc0d64d90bd0cef1f8058dac3b0d955357b36e792fe2644334c1"},
+      "document_sha256": {"preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2", "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754", "implementation_report": "9eb55622e98bd88d09fceeb83143071e491b7eeeda41d2b8ad75256279192adc"},
       "run_identity": "exp452-exp449-index-order-repair-antigravity-20260813",
       "artifact_schema": "exp452",
       "predecessor_prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
@@ -1282,7 +1282,7 @@
       "promotion_allowed": false,
       "routing_allowed": false,
       "pending_candidate_changed": false,
-      "implementation_candidate_commit": "4589101e9376fee2d636430d167ed7e4cb1a960d",
+      "implementation_candidate_commit": "538bb932b61f42e7c56bd4e2c7dbdf9c24b4fca3",
       "implementation_test_counts": {"exp452_discovery_runs": [81, 81], "focused_cli_readiness_replay_runs": [15, 15], "exp449_corresponding": 32},
       "notes": "Implementation verification complete; Exp449 artifacts remain immutable predecessor evidence and its qualified-2 staging result cannot guide Exp452. Champion and pending candidate are unchanged; official lifecycle and label access remain unauthorized."
     }
