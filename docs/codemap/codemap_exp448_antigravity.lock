@@ -1,7 +1,7 @@
 {
-  "current_commit": "fff9ba790892557d369a24ebe5b5d55b6ad1e7a7",
+  "current_commit": "7f44d7c52a7139e6024cfa1a2bc38b4ab51169f7",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-13T23:36:42+0900",
+  "generated_at": "2026-08-14T07:50:19+0900",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -33,19 +33,21 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    "root": "7f8e6eca26519afce51fe8a4df97d42c9d85e708c1bd337e58400968c1f5153a",
+    "root": "35b69ff09510b6e30f90540cf6c39e98b082c1e6882277bd801281f56f463511",
     ".superpowers": "a7e4ca2c671dde5eb461e27a66439a175a8ddc47f5cbc930724b807a509ea65c",
-    "docs": "5f98022ce830cd5616f2977443031445f49905577fa8305a5a4f9ab6ee6d3079",
-    "experiments": "40908a96f017624a46d93641c615ed4566a330f488d571f59ab6f79fd77b58f8",
+    "docs": "c131d79853e24766632976c94426f1add7e15b801d1a13794e7bf492feaafa1f",
+    "experiments": "afa517de86ede8c3509d43b4b6a3cf96b25d21665154448cf5c0e0610dd92d8f",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "551bf48b8db3246e8be28c7c9abc58c9bdbdd903aed0bfbb598ea69b9a70e1f1",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "c92c31e5b439504f1d12a7ee52ceaeef358d72c2c9be83117e7f351a846c7082",
+    "scratch": "73ca1e59d3d330b5a9a44f91a26fec2a8051879287945f7da5d04e4b57a42709",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_prior_lock": [
     "root",
-    "docs"
+    "docs",
+    "experiments",
+    "scratch"
   ]
 }
