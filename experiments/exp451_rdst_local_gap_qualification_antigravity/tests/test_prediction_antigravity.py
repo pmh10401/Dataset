@@ -11,7 +11,7 @@ from experiments.exp451_rdst_local_gap_qualification_antigravity.backend_gate_an
 from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antigravity import CandidateScoresAntigravity, DatasetBundleAntigravity
 from experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity import (
     PredictionDependenciesAntigravity, _run_prediction_with_dependencies_antigravity,
-    _validate_frozen_prediction_root_antigravity,
+    _validate_frozen_prediction_root_antigravity, ExpectedPredecessorSnapshotAntigravity,
 )
 
 
@@ -122,13 +122,36 @@ class PredictionTestsAntigravity(unittest.TestCase):
             self.assertTrue((root/"failure_antigravity.json").exists())
             self.assertFalse(json.loads((root/"pid_antigravity.json").read_text())["active"])
 
-    def test_no_fallible_validator_runs_after_publication(self):
+    def test_prospective_validator_runs_once_before_publication_and_return_is_pure(self):
         from unittest import mock
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary)/"run_antigravity"
-            with mock.patch("experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity._validate_frozen_prediction_root_antigravity", side_effect=OSError("post marker")):
+            calls=[]
+            def prospective(*args, **kwargs):
+                self.assertFalse((root/"manifest_antigravity.json").exists()); calls.append("validate")
+                return args[2]
+            with mock.patch("experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity._validate_prospective_prediction_root_antigravity", side_effect=prospective):
                 result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
+            self.assertEqual(calls,["validate"]); self.assertTrue((root/"manifest_antigravity.json").exists())
             self.assertEqual(result.progress.completed,48)
+
+    def test_prospective_rejection_prevents_complete_marker(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/"run_antigravity"
+            with mock.patch("experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity._validate_prospective_prediction_root_antigravity", side_effect=ValueError("bad root")):
+                with self.assertRaisesRegex(ValueError,"bad root"):
+                    _run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
+            self.assertFalse((root/"manifest_antigravity.json").exists())
+            self.assertTrue((root/"failure_antigravity.json").exists())
+
+    def test_private_validator_uses_independent_expected_snapshot(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/"run_antigravity"; result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
+            expected=ExpectedPredecessorSnapshotAntigravity(tuple(bundle.dataset_identity for bundle in bundles()),tuple(bundle.target_length for bundle in bundles()))
+            self.assertEqual(_validate_frozen_prediction_root_antigravity(root,result.authority,expected),result.authority)
+            bad=ExpectedPredecessorSnapshotAntigravity(expected.dataset_identities[:-1]+((47,"Family","forged_antigravity"),),expected.target_lengths)
+            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority,bad)
 
 
 if __name__ == "__main__": unittest.main()

@@ -18,6 +18,7 @@ from experiments.exp239_248_diverse_score_sources.calibration import empirical_c
 from .artifacts_antigravity import (
     canonical_json_bytes_antigravity,
     read_canonical_file_antigravity,
+    read_exact_bytes_antigravity,
     write_atomic_antigravity,
     write_create_only_antigravity,
 )
@@ -82,11 +83,23 @@ class PredictionRunResultAntigravity:
     progress: PredictionProgressAntigravity
 
 
+@dataclass(frozen=True, slots=True)
+class ExpectedPredecessorSnapshotAntigravity:
+    dataset_identities: tuple[tuple[int, str, str], ...]
+    target_lengths: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        if len(self.dataset_identities) != 48 or len(self.target_lengths) != 48:
+            raise ValueError("expected predecessor must contain exact ordered 48")
+        if tuple(item[0] for item in self.dataset_identities) != tuple(range(48)):
+            raise ValueError("expected predecessor order differs")
+
+
 def _exact_file_antigravity(path: Path, *, canonical: bool) -> object | bytes:
     info = os.stat(path, follow_symlinks=False)
     if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
         raise ValueError(f"unsafe artifact leaf: {path.name}")
-    return read_canonical_file_antigravity(path) if canonical else path.read_bytes()
+    return read_canonical_file_antigravity(path) if canonical else read_exact_bytes_antigravity(path)
 
 
 def _exact_directory_antigravity(path: Path) -> None:
@@ -302,7 +315,7 @@ def _read_prefix_antigravity(root: Path, bundles: tuple[DatasetBundleAntigravity
         value = _exact_file_antigravity(leaf_path, canonical=True)
         _validate_leaf_antigravity(value, sequence, bundles[sequence])
         receipt = _exact_file_antigravity(receipts_directory / name, canonical=True)
-        previous_chain = _validate_receipt_antigravity(receipt, sequence, bundles[sequence], leaf_path.read_bytes(), previous_chain)
+        previous_chain = _validate_receipt_antigravity(receipt, sequence, bundles[sequence], read_exact_bytes_antigravity(leaf_path), previous_chain)
         leaves.append(value)
     if checkpoint["next_sequence"] != len(leaves):
         # Disk leaves are authoritative; only nonterminal stale mutable state is reconciled by caller.
@@ -411,14 +424,22 @@ def _run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependen
                 raise ValueError("prefix reader differs from descriptor prefix")
             _write_mutable_state_antigravity(root, reviewed_commit, reused, False, True, writer, bundles[min(reused, 47)], reused, "resuming", backend, started, None)
         else:
+            if dependencies.fault_hook: dependencies.fault_hook("setup_root", 0)
             root.mkdir(mode=0o700)
-            (root / "leaves_antigravity").mkdir(mode=0o700)
-            (root / "receipts_antigravity").mkdir(mode=0o700)
+            if dependencies.fault_hook: dependencies.fault_hook("setup_context", 0)
             write_create_only_antigravity(root / "context_antigravity.json", canonical_json_bytes_antigravity(_context_antigravity(reviewed_commit, bundles, backend)))
+            if dependencies.fault_hook: dependencies.fault_hook("setup_leaves", 0)
+            (root / "leaves_antigravity").mkdir(mode=0o700)
+            if dependencies.fault_hook: dependencies.fault_hook("setup_receipts", 0)
+            (root / "receipts_antigravity").mkdir(mode=0o700)
             # Establish every mutable channel before any worker is started.
-            (root / "progress_antigravity.txt").touch(mode=0o600)
+            if dependencies.fault_hook: dependencies.fault_hook("setup_progress_text", 0)
+            write_create_only_antigravity(root / "progress_antigravity.txt", b"")
+            if dependencies.fault_hook: dependencies.fault_hook("setup_progress_json", 0)
             write_atomic_antigravity(root / "progress_antigravity.json", canonical_json_bytes_antigravity(_progress_payload_antigravity(bundles[0], completed=0, reused=0, stage="starting", backend=backend, started=started, latest_error=None)))
+            if dependencies.fault_hook: dependencies.fault_hook("setup_checkpoint", 0)
             write_atomic_antigravity(root / "checkpoint_antigravity.json", canonical_json_bytes_antigravity(_checkpoint_antigravity(reviewed_commit, 0, False)))
+            if dependencies.fault_hook: dependencies.fault_hook("setup_pid", 0)
             write_atomic_antigravity(root / "pid_antigravity.json", canonical_json_bytes_antigravity(_pid_antigravity(reviewed_commit, True)))
 
         pending: dict[int, dict[str, object]] = {}
@@ -481,9 +502,15 @@ def _run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependen
         }
         # Complete mutable lifecycle core first; manifest is the publication point.
         _write_mutable_state_antigravity(root, reviewed_commit, 48, True, False, writer, bundles[-1], reused, "complete", backend, started, None)
+        manifest_bytes = canonical_json_bytes_antigravity(manifest)
+        expected = ExpectedPredecessorSnapshotAntigravity(
+            tuple(bundle.dataset_identity for bundle in bundles),
+            tuple(bundle.target_length for bundle in bundles),
+        )
+        _validate_prospective_prediction_root_antigravity(root, manifest_bytes, authority, expected)
         if dependencies.fault_hook:
             dependencies.fault_hook("publish_manifest", 48)
-        write_create_only_antigravity(root / "manifest_antigravity.json", canonical_json_bytes_antigravity(manifest))
+        write_create_only_antigravity(root / "manifest_antigravity.json", manifest_bytes)
         # Publication is last: no fallible I/O, logging, or validation follows.
         return PredictionRunResultAntigravity(authority, PredictionProgressAntigravity(48, reused, 48 - reused, True))
     except KeyboardInterrupt as interruption:
@@ -502,21 +529,23 @@ def _run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependen
         raise
 
 
-def _validate_frozen_prediction_root_antigravity(root: Path, authority: FrozenPredictionAuthorityAntigravity) -> FrozenPredictionAuthorityAntigravity:
+def _validate_complete_prediction_antigravity(root: Path, authority: FrozenPredictionAuthorityAntigravity, expected_snapshot: ExpectedPredecessorSnapshotAntigravity, manifest: object, *, prospective: bool) -> FrozenPredictionAuthorityAntigravity:
     if type(authority) is not FrozenPredictionAuthorityAntigravity:
         raise ValueError("authority type differs")
-    identities = authority.dataset_identities
-    bundles = tuple(DatasetBundleAntigravity(order, family, dataset, np.ones((1, 1)), np.ones((authority.target_lengths[order], 1)), authority.target_lengths[order]) for order, family, dataset in identities)
+    identities = expected_snapshot.dataset_identities
+    if authority.dataset_identities != identities or authority.target_lengths != expected_snapshot.target_lengths:
+        raise ValueError("authority differs from expected predecessor")
+    bundles = tuple(DatasetBundleAntigravity(order, family, dataset, np.ones((1, 1)), np.ones((expected_snapshot.target_lengths[order], 1)), expected_snapshot.target_lengths[order]) for order, family, dataset in identities)
     # Validation uses manifest-bound lengths/identities; TRAIN counts are recovered from leaves.
     context = _exact_file_antigravity(root / "context_antigravity.json", canonical=True)
     backend = context.get("backend") if type(context) is dict else None
     if backend not in {"cpu", "mlx", "mps"}:
         raise ValueError("context backend differs")
     names = _root_names_antigravity(root)
-    expected = {"context_antigravity.json","pid_antigravity.json","checkpoint_antigravity.json","progress_antigravity.json","progress_antigravity.txt","leaves_antigravity","receipts_antigravity","manifest_antigravity.json"}
+    expected = {"context_antigravity.json","pid_antigravity.json","checkpoint_antigravity.json","progress_antigravity.json","progress_antigravity.txt","leaves_antigravity","receipts_antigravity"}
+    if not prospective: expected.add("manifest_antigravity.json")
     if names != expected:
         raise ValueError("complete root inventory differs")
-    manifest = _exact_file_antigravity(root / "manifest_antigravity.json", canonical=True)
     if type(manifest) is not dict or set(manifest) != {"schema","authority","leaf_sha256","logical_cpus","outer_workers","inner_threads","backend_decision"} or manifest["schema"] != "exp451.prediction.manifest.v1":
         raise ValueError("manifest invalid")
     restored = FrozenPredictionAuthorityAntigravity.from_payload_antigravity(manifest["authority"])
@@ -537,22 +566,39 @@ def _validate_frozen_prediction_root_antigravity(root: Path, authority: FrozenPr
         train_count = value.get("train_count") if type(value) is dict else None
         if type(train_count) is not int or train_count < 1:
             raise ValueError("leaf train count differs")
-        bundle = DatasetBundleAntigravity(sequence, identities[sequence][1], identities[sequence][2], np.ones((train_count, 1)), np.ones((authority.target_lengths[sequence], 1)), authority.target_lengths[sequence])
+        bundle = DatasetBundleAntigravity(sequence, identities[sequence][1], identities[sequence][2], np.ones((train_count, 1)), np.ones((expected_snapshot.target_lengths[sequence], 1)), expected_snapshot.target_lengths[sequence])
         _validate_leaf_antigravity(value, sequence, bundle)
         receipt = _exact_file_antigravity(receipts_dir / name, canonical=True)
-        previous_chain = _validate_receipt_antigravity(receipt, sequence, bundle, (leaves_dir / name).read_bytes(), previous_chain)
+        previous_chain = _validate_receipt_antigravity(receipt, sequence, bundle, read_exact_bytes_antigravity(leaves_dir / name), previous_chain)
         leaves.append(value)
     if manifest["leaf_sha256"] != [hashlib.sha256(canonical_json_bytes_antigravity(value)).hexdigest() for value in leaves]:
         raise ValueError("ordered leaf SHA sequence differs")
     checkpoint = _exact_file_antigravity(root / "checkpoint_antigravity.json", canonical=True)
     pid = _exact_file_antigravity(root / "pid_antigravity.json", canonical=True)
+    progress = validate_progress_antigravity(_exact_file_antigravity(root / "progress_antigravity.json", canonical=True))
     if checkpoint != _checkpoint_antigravity(authority.reviewed_commit, 48, True) or type(pid) is not dict or set(pid) != _PID_KEYS_ANTIGRAVITY or pid["active"] is not False or pid["reviewed_commit"] != authority.reviewed_commit:
         raise ValueError("terminal lifecycle evidence differs")
+    if progress["stage"] != "complete" or progress["completed"] != 48 or progress["reused"] + progress["recomputed"] != 48:
+        raise ValueError("terminal progress differs")
     return authority
 
 
+def _validate_prospective_prediction_root_antigravity(root: Path, manifest_bytes: bytes, authority: FrozenPredictionAuthorityAntigravity, expected_snapshot: ExpectedPredecessorSnapshotAntigravity) -> FrozenPredictionAuthorityAntigravity:
+    return _validate_complete_prediction_antigravity(root, authority, expected_snapshot, __import__("experiments.exp451_rdst_local_gap_qualification_antigravity.artifacts_antigravity", fromlist=["strict_json_bytes_antigravity"]).strict_json_bytes_antigravity(manifest_bytes), prospective=True)
+
+
+def _validate_frozen_prediction_root_antigravity(root: Path, authority: FrozenPredictionAuthorityAntigravity, expected_snapshot: ExpectedPredecessorSnapshotAntigravity | None = None) -> FrozenPredictionAuthorityAntigravity:
+    if expected_snapshot is None:
+        expected_snapshot = ExpectedPredecessorSnapshotAntigravity(authority.dataset_identities, authority.target_lengths)
+    manifest = _exact_file_antigravity(root / "manifest_antigravity.json", canonical=True)
+    return _validate_complete_prediction_antigravity(root, authority, expected_snapshot, manifest, prospective=False)
+
+
 def validate_frozen_prediction_authority_antigravity(authority: FrozenPredictionAuthorityAntigravity) -> FrozenPredictionAuthorityAntigravity:
-    return _validate_frozen_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority)
+    predecessor = verify_exp448_predecessor_antigravity()
+    identities = tuple((row.dataset_order, row.family, row.dataset) for row in predecessor.target_baseline_rows)
+    expected = ExpectedPredecessorSnapshotAntigravity(identities, tuple(predecessor.target_test_lengths))
+    return _validate_frozen_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority, expected)
 
 
 def run_prediction_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigravity:
@@ -562,7 +608,7 @@ def run_prediction_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorit
 
 
 __all__ = [
-    "CommittedPrefixAntigravity", "PredictionDependenciesAntigravity",
+    "CommittedPrefixAntigravity", "ExpectedPredecessorSnapshotAntigravity", "PredictionDependenciesAntigravity",
     "PredictionProgressAntigravity", "PredictionRunResultAntigravity",
     "run_prediction_antigravity", "validate_frozen_prediction_authority_antigravity",
 ]

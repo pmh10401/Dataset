@@ -39,5 +39,22 @@ class ArtifactsTestsAntigravity(unittest.TestCase):
                 write_create_only_antigravity(destination, payload)
             self.assertEqual(destination.read_bytes(), payload)
 
+    def test_zero_write_and_directory_fsync_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "leaf_antigravity.json"
+            payload = canonical_json_bytes_antigravity({"x": 1})
+            with mock.patch("experiments.exp451_rdst_local_gap_qualification_antigravity.artifacts_antigravity.os.write", return_value=0):
+                with self.assertRaises(OSError): write_create_only_antigravity(destination, payload)
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "leaf_antigravity.json"
+            payload = canonical_json_bytes_antigravity({"x": 1})
+            real_fsync = os.fsync
+            def fail_directory(fd):
+                if os.path.isdir(f"/dev/fd/{fd}"):
+                    raise OSError("directory fsync")
+                return real_fsync(fd)
+            with mock.patch("experiments.exp451_rdst_local_gap_qualification_antigravity.artifacts_antigravity.os.fsync", side_effect=fail_directory):
+                with self.assertRaises(OSError): write_create_only_antigravity(destination, payload)
+
 
 if __name__ == "__main__": unittest.main()

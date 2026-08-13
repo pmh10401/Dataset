@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from experiments.exp451_rdst_local_gap_qualification_antigravity.progress_antigravity import PROGRESS_KEYS_ANTIGRAVITY, ProgressWriterAntigravity, select_outer_workers_antigravity
+from experiments.exp451_rdst_local_gap_qualification_antigravity.progress_antigravity import PROGRESS_KEYS_ANTIGRAVITY, ProgressWriterAntigravity, select_outer_workers_antigravity, validate_progress_antigravity
 
 
 class ProgressTestsAntigravity(unittest.TestCase):
@@ -26,6 +26,18 @@ class ProgressTestsAntigravity(unittest.TestCase):
             ProgressWriterAntigravity(Path(temporary)).write_antigravity(payload)
             import json
             self.assertEqual(set(json.loads((Path(temporary)/"progress_antigravity.json").read_text())), PROGRESS_KEYS_ANTIGRAVITY)
+
+    def test_progress_semantics_reject_incoherent_states_and_primitive_types(self):
+        mutations = (
+            {"pid": True}, {"dataset": ""}, {"family": ""}, {"stage": "complete", "completed": 47},
+            {"stage": "complete", "latest_error": "bad"}, {"stage": "failed", "latest_error": None},
+            {"stage": "commit", "error": 1}, {"reused": 2, "recomputed": 0},
+            {"train_rows": 0}, {"test_rows": 0}, {"series_length": 0}, {"backend": "cuda"},
+        )
+        for change in mutations:
+            with self.subTest(change=change):
+                payload = self.payload(1); payload.update(change)
+                with self.assertRaises(ValueError): validate_progress_antigravity(payload)
 
 
 if __name__ == "__main__": unittest.main()
