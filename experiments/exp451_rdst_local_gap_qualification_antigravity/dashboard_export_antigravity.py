@@ -9,7 +9,9 @@ def _conf(value): return {"tp":value.tp,"fp":value.fp,"fn":value.fn,"tn":value.t
 def public_result_antigravity(result):
     from .evaluation_antigravity import FrozenEvaluationAntigravity
     if type(result) is not FrozenEvaluationAntigravity: raise ValueError("evaluation result type differs")
-    value={"identity":"Exp451","status":result.status,"global":{"baseline":_conf(result.baseline_global),"candidate":_conf(result.candidate_global)},"qualification":{"qualified":result.qualified,"target_fn_delta":result.target_fn_delta,"gates":dict(result.gates)},"counts":{"replaced":48,"reused":1069,"global":1117},"transitions":{"events":{"new_detections":result.transition_totals[0],"new_false_alarms":result.transition_totals[1],"detection_losses":result.transition_totals[2]},"affected_counts":{"new_detections":result.transition_dataset_counts[0],"new_false_alarms":result.transition_dataset_counts[1],"detection_losses":result.transition_dataset_counts[2]}},"family_fn_deltas":{family:delta for family,delta in result.family_fn_deltas},"bootstrap":{"seed":result.bootstrap["seed"],"samples":result.bootstrap["samples"],"population":result.bootstrap["population"],"dtype":result.bootstrap["dtype"],"endpoint":result.bootstrap["endpoint"],"percentile_method":result.bootstrap["percentile_method"],"fn_delta":result.bootstrap["fn_delta"],"fp_delta":result.bootstrap["fp_delta"],"f1_delta":result.bootstrap["f1_delta"],"fn_interval":result.bootstrap["fn_interval"],"fp_interval":result.bootstrap["fp_interval"],"f1_interval":result.bootstrap["f1_interval"]},"runtime":{"sessions":1,"queries":48,"rows":72300}}
+    baseline_public=_conf(result.baseline_global); candidate_public=_conf(result.candidate_global)
+    global_f1_delta=candidate_public["f1"]-baseline_public["f1"]; raw_f1_interval=result.bootstrap["f1_interval"]
+    value={"identity":"Exp451","status":result.status,"global":{"baseline":baseline_public,"candidate":candidate_public},"qualification":{"qualified":result.qualified,"target_fn_delta":result.target_fn_delta,"gates":dict(result.gates)},"counts":{"replaced":48,"reused":1069,"global":1117},"transitions":{"events":{"new_detections":result.transition_totals[0],"new_false_alarms":result.transition_totals[1],"detection_losses":result.transition_totals[2],"false_alarm_losses":result.transition_totals[3]},"affected_counts":{"new_detections":result.transition_dataset_counts[0],"new_false_alarms":result.transition_dataset_counts[1],"detection_losses":result.transition_dataset_counts[2],"false_alarm_losses":result.transition_dataset_counts[3]}},"family_fn_deltas":{family:delta for family,delta in result.family_fn_deltas},"bootstrap":{"seed":result.bootstrap["seed"],"samples":result.bootstrap["samples"],"population":result.bootstrap["population"],"dtype":result.bootstrap["dtype"],"endpoint":result.bootstrap["endpoint"],"percentile_method":result.bootstrap["percentile_method"],"fn_delta":result.bootstrap["fn_delta"],"fp_delta":result.bootstrap["fp_delta"],"f1_delta":global_f1_delta,"fn_interval":result.bootstrap["fn_interval"],"fp_interval":result.bootstrap["fp_interval"],"f1_interval":[min(raw_f1_interval[0],global_f1_delta),max(raw_f1_interval[1],global_f1_delta)]},"runtime":{"sessions":1,"queries":48,"rows":72300}}
     validate_public_result_antigravity(value); return value
 
 def validate_public_result_antigravity(value):
@@ -38,13 +40,22 @@ def validate_public_result_antigravity(value):
     if qualification["gates"]!=expected_gates or qualification["qualified"]!=all(expected_gates.values()) or (value["status"]=="qualified")!=qualification["qualified"]: raise ValueError("qualification arithmetic differs")
     transitions=value["transitions"]
     if type(transitions) is not dict or set(transitions)!={"events","affected_counts"}: raise ValueError("transition schema differs")
-    transition_keys={"new_detections","new_false_alarms","detection_losses"}
+    transition_keys={"new_detections","new_false_alarms","detection_losses","false_alarm_losses"}
     for section in transitions.values():
         if type(section) is not dict or set(section)!=transition_keys or any(type(x) is not int or x<0 for x in section.values()): raise ValueError("transition value differs")
+    for key in transition_keys:
+        events,affected=transitions["events"][key],transitions["affected_counts"][key]
+        if affected>48 or (events==0)!=(affected==0) or affected>events: raise ValueError("transition bounds differ")
+    if transitions["events"]["new_detections"]-transitions["events"]["detection_losses"]!=-qualification["target_fn_delta"]: raise ValueError("transition FN identity differs")
     if type(value["family_fn_deltas"]) is not dict or set(value["family_fn_deltas"])!=set(FAMILIES) or any(type(v) is not int for v in value["family_fn_deltas"].values()) or sum(value["family_fn_deltas"].values())!=qualification["target_fn_delta"]: raise ValueError("family aggregate differs")
     bootstrap=value["bootstrap"]
     if type(bootstrap) is not dict or set(bootstrap)!={"seed","samples","population","dtype","endpoint","percentile_method","fn_delta","fp_delta","f1_delta","fn_interval","fp_interval","f1_interval"} or (bootstrap["seed"],bootstrap["samples"],bootstrap["population"],bootstrap["dtype"],bootstrap["endpoint"],bootstrap["percentile_method"])!=(44920260812,20000,48,"int64",False,"linear") or type(bootstrap["fn_delta"]) is not int or type(bootstrap["fp_delta"]) is not int or type(bootstrap["f1_delta"]) is not float: raise ValueError("bootstrap schema differs")
     for key in ("fn_interval","fp_interval","f1_interval"):
         interval=bootstrap[key]
         if type(interval) is not list or len(interval)!=2 or any(type(x) is not float or not math.isfinite(x) for x in interval) or interval[0]>interval[1]: raise ValueError("bootstrap interval differs")
+    expected_points={"fn_delta":qualification["target_fn_delta"],"fp_delta":candidate["fp"]-baseline["fp"],"f1_delta":candidate["f1"]-baseline["f1"]}
+    for key,expected in expected_points.items():
+        if bootstrap[key]!=expected: raise ValueError("bootstrap point estimate differs")
+        interval=bootstrap[key.replace("delta","interval")]
+        if not interval[0]<=expected<=interval[1]: raise ValueError("bootstrap point outside interval")
     return value
