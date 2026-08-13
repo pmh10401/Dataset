@@ -80,7 +80,7 @@ def test_exp451_planned_truth_antigravity(self):
     state = strict_json_antigravity(Path("RESEARCH_STATE.json"))
     self.assertEqual(state["active_experiment"], "Exp449")
     self.assertEqual(state["exp451"]["status"], "planned_not_started")
-    self.assertEqual(protected_exp449_state_sha256(state), "5041bc34c5323658779fbf017925dec80be5e315efd56f5189c94f7c9dcb36b2")
+    self.assertEqual(protected_exp449_state_sha256(state), "e8e1114bc0c837a68f83464f4f92ddcb08945d95a67f09ebb1dea3d82c0886aa")
     self.assertEqual(state["exp451"]["label_access_count"], 0)
     self.assertFalse(state["exp451"]["official_readiness_started"])
     self.assertEqual(state["exp451"]["target_dataset_count"], 48)
@@ -247,6 +247,7 @@ git commit -m "feat(exp451): pin predecessor and source boundaries"</pre><p>그 
 <h3>Task 5: prediction freeze, checkpoint, 로그</h3>
 <p><strong>Files:</strong> Create <code>artifacts_antigravity.py</code>, <code>progress_antigravity.py</code>, <code>prediction_antigravity.py</code> and focused tests. Update map.</p>
 <p><strong>Interfaces:</strong> Produces public <code>run_prediction_antigravity(reviewed_commit: str) -&gt; FrozenPredictionAuthorityAntigravity</code>, private test seam <code>_run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependencies: PredictionDependenciesAntigravity) -&gt; PredictionRunResultAntigravity</code>, <code>validate_frozen_prediction_authority_antigravity(authority)</code>, and atomic progress JSON/text.</p>
+<p><strong>Frozen prediction identity:</strong> every ordered leaf freezes dataset identity, target length, candidate indices, and canonical bytes together. The aggregate preserves that exact sequence; it may not derive identity from a set, frozenset, sorting pass, or a value-only digest.</p>
 <ol>
 <li><label><input type="checkbox" disabled>RED exact 48 leaf와 label-free schema test를 작성한다.</label><pre>ALLOWED_PREDICTION_KEYS = {"sequence","dataset","family","target_length","train_count","test_count","indices","score_identities","alpha","attainable_p","resolution_blocked"}
 self.assertEqual(len(rows), 48)
@@ -303,6 +304,7 @@ git commit -m "feat(exp451): freeze resumable RDST predictions"</pre><p>그 다�
 <h3>Task 6: 단일 label 평가와 replay</h3>
 <p><strong>Files:</strong> Create <code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code> and focused tests. Update map.</p>
 <p><strong>Interfaces:</strong> Produces <code>evaluate_antigravity(prediction_authority,reviewed_commit)</code>, <code>inspect_replay_antigravity(evaluation_root)</code>, <code>public_result_antigravity(result)</code>.</p>
+<p><strong>Pre-label evidence gate:</strong> before constructing or calling the label opener, evaluation must compare frozen prediction indices with evaluation evidence by exact value, exact length, and exact ordered dataset/index pairing. It must reject missing, extra, duplicate, reordered, and dataset-pair mismatch fixtures with opener count 0; only the normal fixture may open exactly one session for 48 queries and 72,300 rows. Set/frozenset comparison, independent sorting, or order-insensitive matching is forbidden.</p>
 <ol>
 <li><label><input type="checkbox" disabled>RED qualification tests를 작성한다.</label><pre>self.assertTrue(qualifies_antigravity(Confusion(tp=1931,fp=314,fn=1987,tn=191668), target_fn_delta=-1))
 self.assertFalse(qualifies_antigravity(Confusion(tp=1931,fp=315,fn=1987,tn=191667), target_fn_delta=-1))
@@ -386,7 +388,7 @@ self.assertTrue(all(not path.exists() and not path.is_symlink() for path in OFFI
 "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool EXPERIMENT_CATALOG.json &gt;/dev/null
 git diff --check
 git add docs/EXP451_IMPLEMENTATION_REPORT_antigravity.html RESEARCH_STATE.json EXPERIMENT_CATALOG.json CHAMPION_LEDGER.json
-git commit -m "docs(exp451): close implementation verification"</pre><p>Exp449 protected-state SHA는 여전히 <code>5041bc34c5323658779fbf017925dec80be5e315efd56f5189c94f7c9dcb36b2</code>여야 한다.</p></li>
+git commit -m "docs(exp451): close implementation verification"</pre><p>Exp449 protected-state SHA는 여전히 <code>e8e1114bc0c837a68f83464f4f92ddcb08945d95a67f09ebb1dea3d82c0886aa</code>여야 한다.</p></li>
 <li><label><input type="checkbox" disabled>방금 만든 clean docs commit을 기준으로 map-only child를 만든다.</label><pre>FUNCTIONAL_COMMIT="$(git rev-parse HEAD)"
 "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --source-commit "$FUNCTIONAL_COMMIT"
 "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --validate-only

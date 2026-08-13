@@ -126,8 +126,8 @@
     },
     "document_sha256": {
       "preregistration": "2860a8f2d6a317b99bdcbaba152068b631671b6c447819421ff5de2d452e797a",
-      "runbook": "409bbc5e74cd286b8744511788410caca17da9ccb79ac096d029ba8634c4501a",
-      "implementation_report": "db09c38c5aa52e4e94c857fb27500524e28518c33c3b2c00566fa2812421f8f6"
+      "runbook": "1778f118b687c078f737775a1ab2ac1bdf8b2522359309b374c69709435a9853",
+      "implementation_report": "60d232157e1f143444b3233230e009191da242752375b30bb60ef8bfb99fc8cb"
     },
     "run_identity": "exp451-rdst-local-gap-qualification-antigravity-20260813",
     "artifact_schema": "exp451",
@@ -135,7 +135,9 @@
     "evaluation_root": "/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813",
     "readiness_receipt": "/Users/mac/Documents/Dataset/exp451_readiness_receipt_antigravity.json",
     "failure_audit": "/Users/mac/Documents/Dataset/exp451_failure_audit_antigravity.json",
-    "predecessor": "Exp448 stable-26 byte-authoritative aggregate truth; Exp449 remains active and independent",
+    "scientific_input": "Exp448 stable-26 byte-authoritative aggregate truth",
+    "predecessor": "Exp448 stable-26 byte-authoritative aggregate truth; Exp449 terminal outcome is governance-only and not a scientific input",
+    "exp449_terminal_governance": "active immutable permanent-stop after one 48-query/72300-row label session; evaluation root absent; failed artifact is not reused",
     "post_hoc_method_qualification": true,
     "target_family_count": 8,
     "target_dataset_count": 48,

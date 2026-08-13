@@ -359,8 +359,13 @@
     {
       "experiment": "Exp451",
       "status": "planned_not_started",
-      "reason": "Exp451 is a post-hoc RDST + LocalGap method qualification over the ordered eight-family, 48-dataset subset. It is registered as a planned sibling while Exp449 remains active. No readiness, prediction, evaluation, inspect, TEST-label access, champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert has occurred.",
+      "reason": "Exp451 is a post-hoc RDST + LocalGap method qualification over the ordered eight-family, 48-dataset subset. It is registered as a planned sibling while Exp449 remains active but terminal immutable after its failed evaluation; Exp449 failed evidence is governance-only and not a scientific input. Exp451 scientific input is Exp448 stable-26 byte-authoritative aggregate truth. No Exp451 readiness, prediction, evaluation, inspect, TEST-label access, champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert has occurred.",
       "reviewed_design_sha256": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
+      "document_sha256": {
+        "preregistration": "2860a8f2d6a317b99bdcbaba152068b631671b6c447819421ff5de2d452e797a",
+        "runbook": "1778f118b687c078f737775a1ab2ac1bdf8b2522359309b374c69709435a9853",
+        "implementation_report": "60d232157e1f143444b3233230e009191da242752375b30bb60ef8bfb99fc8cb"
+      },
       "run_identity": "exp451-rdst-local-gap-qualification-antigravity-20260813",
       "prediction_sha256": null,
       "evaluation": null,

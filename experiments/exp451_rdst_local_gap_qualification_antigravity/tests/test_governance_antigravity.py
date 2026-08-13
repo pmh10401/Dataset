@@ -25,7 +25,7 @@ PROTECTED_EXP449_KEYS_ANTIGRAVITY = (
     "approval_scope",
 )
 PROTECTED_EXP449_SHA256_ANTIGRAVITY = (
-    "5041bc34c5323658779fbf017925dec80be5e315efd56f5189c94f7c9dcb36b2"
+    "e8e1114bc0c837a68f83464f4f92ddcb08945d95a67f09ebb1dea3d82c0886aa"
 )
 BASE_COMMIT_ANTIGRAVITY = "b5a3623c13d6db241a9b83e36b7e1f3937caddfe"
 
@@ -83,6 +83,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         self.assertIsInstance(state, dict)
         self.assertEqual(state["active_experiment"], "Exp449")
+        self.assertEqual(state["active_phase"], "official_readiness_passed_evaluation_failed_immutable_no_retry")
+        self.assertEqual(state["status"], "official_readiness_passed_evaluation_failed_immutable_no_retry")
         self.assertEqual(state["exp451"]["status"], "planned_not_started")
         self.assertEqual(
             protected_exp449_state_sha256_antigravity(state),
@@ -92,6 +94,21 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(state["exp451"]["official_readiness_started"])
         self.assertEqual(state["exp451"]["target_dataset_count"], 48)
         self.assertEqual(state["exp451"]["target_test_rows"], 72_300)
+        self.assertEqual(state["exp451"]["scientific_input"], "Exp448 stable-26 byte-authoritative aggregate truth")
+        self.assertEqual(state["exp451"]["label_access_count"], 0)
+        self.assertEqual(state["exp451"]["official_lifecycle"]["label_sessions"], 0)
+        exp449 = state["exp449"]
+        exp449_lifecycle = exp449["official_lifecycle"]
+        self.assertEqual(exp449["status"], "official_readiness_passed_evaluation_failed_immutable_no_retry")
+        self.assertEqual(exp449["label_access_count"], 1)
+        self.assertTrue(exp449["test_labels_opened"])
+        self.assertEqual(exp449_lifecycle["label_sessions"], 1)
+        self.assertEqual(exp449_lifecycle["evaluate_label_query_count"], 48)
+        self.assertEqual(exp449_lifecycle["evaluate_label_row_count"], 72_300)
+        self.assertEqual(exp449_lifecycle["evaluation_root"], "absent")
+        self.assertTrue(exp449_lifecycle["permanent_stop"])
+        for root_key in ("prediction_root", "evaluation_root", "readiness_receipt", "failure_audit"):
+            self.assertFalse(Path(state["exp451"][root_key]).exists(), root_key)
 
     def test_exp451_governance_documents_are_self_contained_antigravity(self) -> None:
         for relative_path in (
@@ -102,6 +119,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             content = (ROOT_ANTIGRAVITY / relative_path).read_text(encoding="utf-8")
             self.assertIn("<!doctype html>", content.lower())
             self.assertIn("Exp451", content)
+        runbook = (ROOT_ANTIGRAVITY / "docs/EXP451_RUNBOOK_antigravity_KO.html").read_text(encoding="utf-8")
+        implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP451_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
+        for content in (runbook, implementation_report):
+            self.assertIn("Exp449", content)
+            self.assertIn("immutable", content)
+            self.assertIn("Exp448", content)
 
     def test_map_rejects_unknown_relationship_with_ghost_node_ids_antigravity(self) -> None:
         builder, graph, lock, rendered_html = valid_map_triplet_antigravity()
