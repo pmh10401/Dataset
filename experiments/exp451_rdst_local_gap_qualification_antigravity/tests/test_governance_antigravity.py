@@ -196,6 +196,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertIn(test, nodes[node_id]["tests"])
                 self.assertIn({"path": path, "symbol": symbol}, nodes[node_id]["evidence"])
 
+    def test_map_connects_task4_predecessor_and_source_firewall_antigravity(self) -> None:
+        builder = map_builder_module_antigravity()
+        source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+        graph, lock, rendered_html = builder.build_map_antigravity(source_commit, "2026-08-13T00:00:00Z")
+        lock["working_tree_dirty"] = False
+        nodes = {node["id"]: node for node in graph["nodes"]}
+        self.assertEqual(nodes["exp448_immutable_predecessor"]["path"], "experiments/exp451_rdst_local_gap_qualification_antigravity/predecessor_antigravity.py")
+        self.assertEqual(nodes["prediction_evaluation_source_firewall"]["path"], "experiments/exp451_rdst_local_gap_qualification_antigravity/sources_antigravity.py")
+        edges = {(edge["from"], edge["to"], edge["type"]) for edge in graph["edges"]}
+        self.assertIn(("exp448_immutable_predecessor", "prediction_evaluation_source_firewall", "governs"), edges)
+        self.assertIn(("prediction_evaluation_source_firewall", "localgap_scoring", "reads"), edges)
+        builder.validate_map_antigravity(graph, lock, rendered_html)
+
 
 if __name__ == "__main__":
     unittest.main()
