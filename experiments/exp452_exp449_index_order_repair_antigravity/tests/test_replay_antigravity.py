@@ -91,6 +91,18 @@ class ReplayAntigravityTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity())
 
+    def test_replay_requires_exact_exp452_evaluation_schema_antigravity(self) -> None:
+        """Break caught: a rehashed predecessor schema is accepted as an Exp452 evaluation."""
+        from experiments.exp452_exp449_index_order_repair_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp452_exp449_index_order_repair_antigravity.replay_antigravity import inspect_replay_at_antigravity
+        with tempfile.TemporaryDirectory(prefix="exp452_schema_antigravity_") as temporary:
+            _expected, root, dependencies = self._publication_antigravity(temporary)
+            path = root / "evaluation_antigravity.json"
+            payload = json.loads(path.read_text()); payload["schema"] = "exp449"
+            path.write_bytes(canonical_json_bytes_antigravity(payload)); self._rehash_antigravity(root, path.name)
+            with self.assertRaisesRegex(ValueError, "evaluation schema differs"):
+                inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity())
+
     def test_source_free_replay_import_firewall_subprocess_antigravity(self) -> None:
         """Break caught: importing replay reaches labels, SQLite, network, or dashboard publication."""
         code = (

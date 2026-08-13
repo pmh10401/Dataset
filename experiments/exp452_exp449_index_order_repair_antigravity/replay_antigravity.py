@@ -281,7 +281,7 @@ def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_
             or row_sha256 != expected_prediction_authority.canonical_row_sha256
             or sha256("".join(row_sha256).encode("ascii")).hexdigest() != expected_prediction_authority.canonical_aggregate_sha256):
         raise ValueError("trusted prediction authority differs")
-    if not isinstance(evaluation, dict) or set(evaluation) != {"schema", "reviewed_commit", "candidate_count", "qualified_count", "label_session_count", "label_query_count", "label_row_count", "routing_research_eligible", "dataset_evidence"} or type(evaluation["dataset_evidence"]) is not list or evaluation["dataset_evidence"] != context["target_datasets"] and any(True for _ in ()):
+    if not isinstance(evaluation, dict) or set(evaluation) != {"schema", "reviewed_commit", "candidate_count", "qualified_count", "label_session_count", "label_query_count", "label_row_count", "routing_research_eligible", "dataset_evidence"} or evaluation.get("schema") != "exp452" or type(evaluation["dataset_evidence"]) is not list or evaluation["dataset_evidence"] != context["target_datasets"] and any(True for _ in ()):
         raise ValueError("evaluation schema differs")
     evidence: list[dict[str, object]] = []
     for context_row, row in zip(context["target_datasets"], evaluation["dataset_evidence"], strict=True):
