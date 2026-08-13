@@ -1,7 +1,6 @@
 """Adversarial Task 8 lifecycle, typed shard, and parity tests."""
 from __future__ import annotations
 
-from dataclasses import replace
 from hashlib import sha256
 import contextlib, io, json, sqlite3, tempfile, unittest
 from pathlib import Path
@@ -157,38 +156,59 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         self.fixture.tearDown()
 
     def _authority(self, backend):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
         from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority
-        return Task4Task5SuccessAuthority("a" * 64, self.catalog["catalog_sha256"], backend, "b" * 64, "c" * 64)
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        context = context_payload(self.fixture.config())
+        return Task4Task5SuccessAuthority.from_verified_context(context, self.catalog, build_acceleration_manifest(context["context_sha256"], logical_cpu_count=backend.logical_cpu_count))
 
     def _task4_task5_values(self):
         """Use the real frozen source threshold and origin identity for each source row."""
         from paper.equipment_anomaly_detection.artifacts_paper import TASK4_TASK5_SOURCE_ORIGIN_IDS
         from paper.equipment_anomaly_detection.lineage_paper import LINEAGE_NODES
+        from paper.equipment_anomaly_detection.calibration_paper import upper_tail_pvalues
         from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, SOURCE_ALPHA_PAPER, HardSourceBundle, HardSourceResult
         raw, _sources, route, low, stability, policies, backend = self.fixture._typed()
         origins = {node.node_id: node for node in LINEAGE_NODES}
         sources = HardSourceBundle(EXPECTED_HARD_SOURCES, {
-            name: HardSourceResult(name, origins[TASK4_TASK5_SOURCE_ORIGIN_IDS[name]], np.asarray((.1, .2)), np.asarray((.1, .2)), np.asarray((.9, .8)), SOURCE_ALPHA_PAPER[name], np.asarray((False, False)), True, "eligible")
+            name: HardSourceResult(name, origins[TASK4_TASK5_SOURCE_ORIGIN_IDS[name]], np.asarray((.1, .2)), np.asarray((.1, .2)), upper_tail_pvalues(np.asarray((.1, .2)), np.asarray((.1, .2))), SOURCE_ALPHA_PAPER[name], upper_tail_pvalues(np.asarray((.1, .2)), np.asarray((.1, .2))) <= SOURCE_ALPHA_PAPER[name], True, "eligible")
             for name in EXPECTED_HARD_SOURCES
         })
         return raw, sources, route, low, stability, policies, backend
 
+    def _nonempty_route(self):
+        from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
+        return HardRouteResult(
+            RouteLanes(frozenset({0}), frozenset({1}), frozenset()), frozenset({0}), frozenset({1}), frozenset({0}),
+            RouteLanes(frozenset(), frozenset(), frozenset({1})), SourceExpansion(frozenset({0}), frozenset({0})),
+            RouteLanes(frozenset(), frozenset({1}), frozenset()), frozenset({1}), RouteLanes(frozenset({1}), frozenset(), frozenset()),
+            frozenset({1}), frozenset(), 2,
+        )
+
+    def test_authority_is_derived_from_context_catalog_and_verified_acceleration(self):
+        """Accepting caller-supplied hashes permits a different run's cache to masquerade as this run."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        _raw, _sources, _route, _low, _stability, _policies, backend = self._task4_task5_values()
+        with self.assertRaises(TypeError):
+            Task4Task5SuccessAuthority("a" * 64, self.catalog["catalog_sha256"], backend, "b" * 64, "c" * 64)
+        context = context_payload(self.fixture.config())
+        with self.assertRaises(ValueError):
+            Task4Task5SuccessAuthority.from_verified_context({**context, "context_sha256": "0" * 64}, self.catalog, build_acceleration_manifest(context["context_sha256"], logical_cpu_count=3))
+        with self.assertRaises(ValueError):
+            Task4Task5SuccessAuthority.from_verified_context(context, self.catalog, build_acceleration_manifest("f" * 64, logical_cpu_count=3))
+
     def test_success_record_round_trips_continuous_sources_and_every_hard_route_stage(self):
         """Discarding OOF scores, an abstention, or any route stage would silently alter a later Task6/7 replay."""
         from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, write_task4_task5_success_record
-        from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
         from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
         raw, sources, _route, _low, _stability, _policies, backend = self._task4_task5_values()
         changed = dict(sources.by_name)
         source = changed["rocket_exp40"]
         changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, np.empty(0), np.empty(0), np.ones(2), source.threshold, np.zeros(2, dtype=bool), False, "dependency_unavailable")
         sources = HardSourceBundle(sources.source_names, changed)
-        route = HardRouteResult(
-            RouteLanes(frozenset({0}), frozenset({1}), frozenset()), frozenset({0}), frozenset({1}), frozenset({0}),
-            RouteLanes(frozenset(), frozenset(), frozenset({1})), SourceExpansion(frozenset({0}), frozenset({0})),
-            RouteLanes(frozenset(), frozenset({1}), frozenset()), frozenset({1}), RouteLanes(frozenset({1}), frozenset(), frozenset()),
-            frozenset({1}), frozenset(), 2,
-        )
+        route = self._nonempty_route()
         authority = self._authority(backend)
         path = write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
         with self.assertRaises(FileExistsError):
@@ -210,6 +230,7 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
             self.assertTrue(np.array_equal(actual.test_pvalue, expected.test_pvalue))
             self.assertTrue(np.array_equal(actual.test_native_pass, expected.test_native_pass))
             self.assertFalse(actual.test_score.flags.writeable)
+            self.assertEqual(actual.test_score.dtype, np.dtype("float64"))
 
     def test_success_record_rejects_tampered_authorities_payload_and_namespace_attacks(self):
         """Trusting a record after any identity mutation or unsafe sibling changes cache provenance."""
@@ -217,29 +238,30 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
         authority = self._authority(backend)
         path = write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
-        with self.assertRaises(ValueError):
-            read_task4_task5_success_record(self.root, self.catalog, replace(authority, context_sha256="d" * 64), raw)
-        with self.assertRaises(ValueError):
-            read_task4_task5_success_record(self.root, self.catalog, replace(authority, catalog_sha256="e" * 64), raw)
-        with self.assertRaises(ValueError):
-            read_task4_task5_success_record(self.root, self.catalog, replace(authority, scientific_config_sha256="f" * 64), raw)
-        with self.assertRaises(ValueError):
-            read_task4_task5_success_record(self.root, self.catalog, replace(authority, code_closure_sha256="1" * 64), raw)
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
         from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision, RawDataset
-        with self.assertRaises(ValueError):
-            read_task4_task5_success_record(self.root, self.catalog, replace(authority, backend=FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest("2" * 64, logical_cpu_count=12))), raw)
+        original = json.loads(path.read_bytes())
+        for field, value in (("context_sha256", "d" * 64), ("catalog_sha256", "e" * 64), ("scientific_config_sha256", "f" * 64), ("code_closure_sha256", "1" * 64), ("backend", FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest(authority.context_sha256, logical_cpu_count=12)).artifact_record())):
+            forged = {**original, field: value}
+            path.write_bytes(_canonical(forged))
+            with self.assertRaises(ValueError):
+                read_task4_task5_success_record(self.root, self.catalog, authority, raw)
+        path.write_bytes(_canonical(original))
         bad_raw = RawDataset(raw.dataset, raw.metadata_length, raw.train_indices, raw.train_blobs, raw.train_rows, raw.test_indices, raw.test_blobs[:-1] + (_blob((99, 99)),), raw.test_rows)
         with self.assertRaises(ValueError):
             read_task4_task5_success_record(self.root, self.catalog, authority, bad_raw)
         tampered = json.loads(path.read_bytes())
-        tampered["payload"]["sources"][0]["test_pvalue"][0] = 99.0
+        tampered["payload"]["sources"][0]["test_score"][0] = 99.0
         path.write_bytes(_canonical(tampered))
         with self.assertRaisesRegex(ValueError, "payload"):
             read_task4_task5_success_record(self.root, self.catalog, authority, raw)
         path.write_bytes(_canonical({**tampered, "payload_sha256": sha256(_canonical(tampered["payload"])).hexdigest()}))
         with self.assertRaises(ValueError):
             read_task4_task5_success_record(self.root, self.catalog, authority, raw)
+        from paper.equipment_anomaly_detection.calibration_paper import upper_tail_pvalues
+        tampered["payload"]["sources"][0]["test_pvalue"] = upper_tail_pvalues(np.asarray(tampered["payload"]["sources"][0]["train_oof_score"]), np.asarray(tampered["payload"]["sources"][0]["test_score"])).tolist()
+        path.write_bytes(_canonical({**tampered, "payload_sha256": sha256(_canonical(tampered["payload"])).hexdigest()}))
+        self.assertEqual(read_task4_task5_success_record(self.root, self.catalog, authority, raw).sources.by_name["rocket_exp40"].test_score[0], 99.0)
         path.unlink()
         write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
         path.parent.joinpath("extra_antigravity.json").write_text("{}\n")
@@ -247,6 +269,10 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
             read_task4_task5_success_record(self.root, self.catalog, authority, raw)
         path.parent.joinpath("extra_antigravity.json").unlink()
         work = self.root / "stage_artifacts_paper" / "proposal_work" / TASK4_TASK5_SUCCESS_DIRECTORY
+        work.joinpath("unknown_antigravity").mkdir()
+        with self.assertRaisesRegex(ValueError, "namespace"):
+            read_task4_task5_success_record(self.root, self.catalog, authority, raw)
+        work.joinpath("unknown_antigravity").rmdir()
         path.unlink()
         path.parent.rmdir()
         path.parent.symlink_to(work, target_is_directory=True)
@@ -256,7 +282,14 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
     def test_reread_sources_and_route_project_to_byte_identical_existing_task8_shard(self):
         """A serialization conversion that changes the downstream Task8 bytes is not a scientifically safe reuse seam."""
         from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, write_task4_task5_success_record, write_typed_proposal_shard
-        raw, sources, route, low, stability, policies, backend = self._task4_task5_values()
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
+        raw, sources, _route, low, stability, policies, backend = self._task4_task5_values()
+        changed = dict(sources.by_name); source = changed["rocket_exp40"]
+        changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64), np.ones(2, dtype=np.float64), source.threshold, np.zeros(2, dtype=bool), False, "dependency_unavailable")
+        sources = HardSourceBundle(sources.source_names, changed)
+        route = self._nonempty_route()
+        low = LowFrequencyResult((raw.dataset,), low.rows, (), (), 0, {raw.dataset: route.exp253.hard})
         authority = self._authority(backend)
         write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
         reread = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
@@ -265,6 +298,16 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         memory_path = write_typed_proposal_shard(memory_root, self.catalog, raw, sources, route, low, stability, policies, backend)
         reread_path = write_typed_proposal_shard(reread_root, self.catalog, raw, reread.sources, reread.route, low, stability, policies, backend)
         self.assertEqual(memory_path.read_bytes(), reread_path.read_bytes())
+
+    def test_writer_rejects_non_float64_source_arrays(self):
+        """Casting float32 or integer source evidence on write would make the cache a lossy scientific transform."""
+        from paper.equipment_anomaly_detection.artifacts_paper import write_task4_task5_success_record
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
+        raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
+        changed = dict(sources.by_name); source = changed["rocket_exp40"]
+        changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, source.train_oof_score.astype(np.float32), source.test_score.astype(np.float32), source.test_pvalue.astype(np.float32), source.threshold, source.test_native_pass, source.eligible, source.eligibility_reason)
+        with self.assertRaisesRegex(ValueError, "float64"):
+            write_task4_task5_success_record(self.root, self.catalog, self._authority(backend), raw, HardSourceBundle(sources.source_names, changed), route)
 
 
 class Task9AccelerationTests(unittest.TestCase):
@@ -426,6 +469,41 @@ class Task9ParallelCompositionTests(unittest.TestCase):
         """Dropping a failed dataset would produce a plausible but scientifically incomplete global population."""
         with self.assertRaisesRegex(RuntimeError, "alpha.*bounded worker failure"):
             self._patched_composition(self._acceleration(3), fail_dataset="alpha")
+
+    def test_parent_collection_publishes_worker_result_without_passing_writer_to_worker(self):
+        """Letting a worker receive the writer/root would make create-only cache publication race process failures."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, read_task4_task5_success_record
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        record_fixture = Task4Task5SuccessRecordTests("run")
+        record_fixture.setUp()
+        try:
+            raw, sources, route, _low, _stability, _policies, _backend = record_fixture._task4_task5_values()
+            context = context_payload(record_fixture.fixture.config())
+            acceleration = build_acceleration_manifest(context["context_sha256"], logical_cpu_count=3)
+            authority = Task4Task5SuccessAuthority.from_verified_context(context, record_fixture.catalog, acceleration)
+            publisher = score.task4_task5_success_publisher(record_fixture.root, record_fixture.catalog, authority)
+            class Future:
+                def result(self): return sources, route
+                def cancel(self): return False
+            case = self
+            class ParentExecutor:
+                def __init__(self, *, max_workers): self.max_workers = max_workers
+                def __enter__(self): return self
+                def __exit__(self, *_args): return False
+                def submit(self, fn, *args):
+                    case.assertEqual(len(args), 1)
+                    case.assertIs(args[0], raw)
+                    return Future()
+            with patch.object(score, "ProcessPoolExecutor", ParentExecutor), patch.object(score, "as_completed", side_effect=lambda futures: tuple(futures)):
+                observed_sources, observed_routes = score._collect_task4_task5({raw.dataset: raw}, FrozenTask8BackendDecision.from_acceleration_manifest(acceleration), publish_success=publisher)
+            self.assertEqual(observed_sources[raw.dataset], sources)
+            self.assertEqual(observed_routes[raw.dataset], route)
+            self.assertEqual(read_task4_task5_success_record(record_fixture.root, record_fixture.catalog, authority, raw).route, route)
+        finally:
+            record_fixture.tearDown()
 
     def test_parallel_completion_progress_is_flush_visible_and_keeps_sorted_results(self):
         """Collecting submitted futures in dataset order hides actual completion order and leaves long runs opaque."""

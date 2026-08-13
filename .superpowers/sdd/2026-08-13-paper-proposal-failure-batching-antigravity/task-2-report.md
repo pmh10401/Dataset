@@ -35,3 +35,21 @@ JUDGMENT CALLS:
 - Deferred the Exp448 governance-triplet semantic refresh to the dedicated Task 5; this task refreshed the paper closure lock that current strict tests require.
 
 GAPS: no Task 2 implementation gap. The broad capable hard-source/route command is intentionally inconclusive; it is out of scope for this serialization-only task.
+
+## Fix round 1/5
+
+CHANGES:
+
+- `Task4Task5SuccessAuthority` is now constructible only through `from_verified_context`. The factory recomputes the runner context SHA, binds the exact catalog SHA and canonical code-closure SHA, verifies the acceleration manifest against that context, derives the frozen Task4/Task5 source/route configuration SHA, and derives the backend from the verified assessment.
+- `_collect_task4_task5` now accepts an optional parent-only `publish_success` callback. `task4_task5_success_publisher` closes over root/catalog/derived authority in the parent; workers still receive only `RawDataset`.
+- Eligible records require float64 TRAIN OOF/TEST/p-value arrays, exact `upper_tail_pvalues(TRAIN OOF, TEST)`, and the frozen native-pass relation. Task8 projection now represents an abstained source's unavailable TEST score as its existing empty JSON array while preserving the unchanged shard schema.
+- The work-record inventory rejects unrecognized success-token directories or ambiguous files. Both paper and Exp448 codemap triplets describe the authority/publication flow.
+
+VERIFIED:
+
+- RED: authority factory/publication/dtype/semantic-projection tests failed before implementation (missing factory/direct authority construction and absent float64/semantic checks).
+- GREEN: `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v` passed 27 tests after the fix.
+
+LIMITATION:
+
+- A record whose TEST score, p-values, native-pass flags, and payload hash are all forged consistently can satisfy serialization-local checks. The cache is authenticated computation output, not an independent model recomputation oracle; the context-bound, create-only parent publication after worker return is the trust anchor. Rerunning the frozen source models is required to independently disprove such a fully self-consistent forgery.

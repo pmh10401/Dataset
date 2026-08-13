@@ -8,9 +8,9 @@ import os
 import sys
 from time import monotonic
 from types import MappingProxyType
-from typing import Mapping
+from typing import Callable, Mapping
 
-from .artifacts_paper import freeze_score_root, write_typed_proposal_shard
+from .artifacts_paper import Task4Task5SuccessAuthority, freeze_score_root, write_task4_task5_success_record, write_typed_proposal_shard
 from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, RawDataset, Task8FrozenManifest
 from .hard_route_paper import HardRouteResult, replay_hard_route
 from .routing_paper import PolicyBundle, build_hard_evidence_surface, build_policies
@@ -83,7 +83,19 @@ def _progress(stage: str, completed: int, total: int, started: float, dataset: s
     print(f"{stage} {completed}/{total} {100.0 * completed / total:.1f}% elapsed={elapsed:.1f}s rate={rate:.2f}/s eta={eta:.1f}s{suffix}", file=sys.stderr, flush=True)
 
 
-def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
+Task4Task5SuccessPublisher = Callable[[RawDataset, HardSourceBundle, HardRouteResult], None]
+
+
+def task4_task5_success_publisher(root, catalog: dict[str, object], authority: Task4Task5SuccessAuthority) -> Task4Task5SuccessPublisher:
+    """Return a parent-only publisher; workers receive neither root nor authority."""
+    if not isinstance(authority, Task4Task5SuccessAuthority):
+        raise TypeError("Task4+5 success authority is required")
+    def publish(raw: RawDataset, sources: HardSourceBundle, route: HardRouteResult) -> None:
+        write_task4_task5_success_record(root, catalog, authority, raw, sources, route)
+    return publish
+
+
+def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, publish_success: Task4Task5SuccessPublisher | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
     sources: dict[str, HardSourceBundle] = {}
     routes: dict[str, HardRouteResult] = {}
     started, total = monotonic(), len(raw)
@@ -92,6 +104,8 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
         for completed, dataset in enumerate(raw, 1):
             try:
                 sources[dataset], routes[dataset] = _score_dataset_task4_task5(raw[dataset])
+                if publish_success is not None:
+                    publish_success(raw[dataset], sources[dataset], routes[dataset])
             except Exception as error:
                 raise RuntimeError(f"Task4+Task5 worker failed for dataset {dataset}: {error}") from error
             _progress("Task4+Task5", completed, total, started, dataset)
@@ -104,6 +118,8 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
                 dataset = datasets[future]
                 try:
                     sources[dataset], routes[dataset] = future.result()
+                    if publish_success is not None:
+                        publish_success(raw[dataset], sources[dataset], routes[dataset])
                 except Exception as error:
                     for pending in futures.values():
                         pending.cancel()
@@ -150,4 +166,4 @@ def write_and_freeze_proposal_score(root, catalog: dict[str, object], proposal: 
     return freeze_score_root(root, catalog)
 
 
-__all__ = ["ProposalScore", "compose_proposal_score", "write_and_freeze_proposal_score"]
+__all__ = ["ProposalScore", "Task4Task5SuccessPublisher", "compose_proposal_score", "task4_task5_success_publisher", "write_and_freeze_proposal_score"]
