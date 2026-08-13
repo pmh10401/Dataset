@@ -1,7 +1,7 @@
 {
-  "current_commit": "07cf61ea017d341e869720ab700a0e35b1dda031",
-  "working_tree_dirty": true,
-  "generated_at": "2026-08-13T23:45:00+0900",
+  "current_commit": "fc49e513d6bf39fb5314651bfad9d73725be704e",
+  "working_tree_dirty": false,
+  "generated_at": "2026-08-13T23:28:30+0900",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -33,9 +33,9 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    "root": "0d4e051cb7463bcd3b2c12939ebb21dddfb56830bad44ae392855a936ad6b515",
+    "root": "6e2849039967c4a9906cbb3659e439b1fb0d6ec9a3c0f73a14cb7121a799ffc0",
     ".superpowers": "a7e4ca2c671dde5eb461e27a66439a175a8ddc47f5cbc930724b807a509ea65c",
-    "docs": "fe8a44f75f056d8007bda51cbf29850fbce8fa5f95898d7c48c64f863313dfc9",
+    "docs": "5e3460c7dbcafe0d903c2d61e21d8ac4aaacc191507a8267f9040f9961c8e255",
     "experiments": "40908a96f017624a46d93641c615ed4566a330f488d571f59ab6f79fd77b58f8",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "551bf48b8db3246e8be28c7c9abc58c9bdbdd903aed0bfbb598ea69b9a70e1f1",
@@ -46,8 +46,6 @@
   },
   "changed_modules_since_prior_lock": [
     "root",
-    "docs",
-    "experiments",
-    "scratch"
+    "docs"
   ]
 }
