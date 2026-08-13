@@ -78,7 +78,59 @@ class EvaluationAntigravityTests(unittest.TestCase):
             evidence = json.loads((root / "evaluation_antigravity.json").read_text())["dataset_evidence"]
             actual = [entry["candidates"][method]["indices"] for entry in evidence for method in entry["candidates"]]
             self.assertEqual(actual, frozen)
-            self.assertEqual(inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity()), result)
+            self.assertEqual(inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity(), expected_reviewed_commit="a" * 40), result)
+
+    def test_distinct_exp449_and_exp452_commits_publish_and_replay_antigravity(self) -> None:
+        """Break caught: a predecessor commit is treated as the Exp452 lifecycle commit."""
+        from experiments.exp452_exp449_index_order_repair_antigravity import evaluation_antigravity as evaluation
+        from experiments.exp452_exp449_index_order_repair_antigravity import lifecycle_antigravity as lifecycle
+        from experiments.exp452_exp449_index_order_repair_antigravity import replay_antigravity as replay
+        from experiments.exp452_exp449_index_order_repair_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        import hashlib
+
+        exp449_commit, exp452_commit = "a" * 40, "b" * 40
+        with tempfile.TemporaryDirectory(prefix="exp452_commit_domains_antigravity_") as temporary:
+            root = Path(temporary) / "publication_antigravity"
+            dependencies = self._dependencies_antigravity(root)
+            capture = dependencies.capture_task5_prediction_antigravity()
+            self.assertEqual(capture.authority.reviewed_commit, exp449_commit)
+            paths = lifecycle._LifecyclePathsAntigravity(root.parent / "receipts_antigravity", root.parent / "audit_antigravity.json", root)
+            lifecycle._run_phase_with_paths_antigravity("readiness", exp452_commit, lambda: None, paths)
+            result = evaluation._evaluate_with_lifecycle_dependencies_antigravity(
+                exp452_commit,
+                lambda: capture,
+                lambda pinned: evaluation._evaluate_with_dependencies_antigravity(exp452_commit, dependencies),
+                evaluation_root=root,
+                receipt_dir=paths.receipt_directory,
+                audit_path=paths.audit_path,
+            )
+            self.assertEqual(len(tuple(root.iterdir())), 12)
+            context = json.loads((root / "context_antigravity.json").read_text())
+            manifest = json.loads((root / "prediction_manifest_antigravity.json").read_text())
+            evaluation_payload = json.loads((root / "evaluation_antigravity.json").read_text())
+            self.assertEqual((context["reviewed_commit"], evaluation_payload["reviewed_commit"], manifest["exp449_reviewed_commit"]), (exp452_commit, exp452_commit, exp449_commit))
+            replayed = replay._inspect_with_dependencies_antigravity(
+                lambda: capture,
+                lambda publication, prediction, lifecycle_commit: replay.inspect_replay_at_antigravity(publication, expected_prediction_authority=prediction, expected_reviewed_commit=lifecycle_commit),
+                evaluation_root=root,
+                receipt_dir=paths.receipt_directory,
+                audit_path=paths.audit_path,
+            )
+            self.assertEqual(replayed, result)
+
+            def rehash(name: str) -> None:
+                hashes = json.loads((root / "artifact_sha256_antigravity.json").read_text())
+                hashes[name] = hashlib.sha256((root / name).read_bytes()).hexdigest()
+                (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
+
+            for name, key, wrong in (("context_antigravity.json", "reviewed_commit", exp449_commit), ("evaluation_antigravity.json", "reviewed_commit", exp449_commit), ("prediction_manifest_antigravity.json", "exp449_reviewed_commit", exp452_commit)):
+                with self.subTest(name=name):
+                    original = (root / name).read_bytes()
+                    payload = json.loads(original); payload[key] = wrong
+                    (root / name).write_bytes(canonical_json_bytes_antigravity(payload)); rehash(name)
+                    with self.assertRaises(ValueError):
+                        replay.inspect_replay_at_antigravity(root, expected_prediction_authority=capture, expected_reviewed_commit=exp452_commit)
+                    (root / name).write_bytes(original); rehash(name)
 
     def test_publication_destination_and_label_failure_matrix_fails_closed_antigravity(self) -> None:
         """Break caught: unsafe publication or one label boundary failure publishes a valid root."""

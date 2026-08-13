@@ -46,7 +46,7 @@ class ReplayAntigravityTests(unittest.TestCase):
             hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
             (root / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(hashes))
             with self.assertRaisesRegex(ValueError, "frozen prediction indices differ from evidence"):
-                inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity())
+                inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity(), expected_reviewed_commit="a" * 40)
 
     def test_rehashed_index_evidence_rejects_all_exact_list_violations_antigravity(self) -> None:
         """Break caught: replay accepts set-equivalent or malformed evidence after artifact-map rehash."""
@@ -72,7 +72,7 @@ class ReplayAntigravityTests(unittest.TestCase):
                 path.write_bytes(canonical_json_bytes_antigravity(payload))
                 self._rehash_antigravity(root, path.name)
                 with self.assertRaises(ValueError):
-                    inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity())
+                    inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity(), expected_reviewed_commit="a" * 40)
 
     def test_replay_rejects_rehashed_semantic_leaf_and_artifact_map_tamper_antigravity(self) -> None:
         """Break caught: a self-consistent semantic leaf or the map itself can be forged."""
@@ -91,7 +91,7 @@ class ReplayAntigravityTests(unittest.TestCase):
                     payload = json.loads(path.read_text()); payload["context_antigravity.json"] = "0" * 64
                     path.write_bytes(canonical_json_bytes_antigravity(payload))
                 with self.assertRaises(ValueError):
-                    inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity())
+                    inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity(), expected_reviewed_commit="a" * 40)
 
     def test_replay_requires_exact_exp452_evaluation_schema_antigravity(self) -> None:
         """Break caught: a rehashed predecessor schema is accepted as an Exp452 evaluation."""
@@ -103,7 +103,7 @@ class ReplayAntigravityTests(unittest.TestCase):
             payload = json.loads(path.read_text()); payload["schema"] = "exp449"
             path.write_bytes(canonical_json_bytes_antigravity(payload)); self._rehash_antigravity(root, path.name)
             with self.assertRaisesRegex(ValueError, "evaluation schema differs"):
-                inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity())
+                inspect_replay_at_antigravity(root, expected_prediction_authority=dependencies.capture_task5_prediction_antigravity(), expected_reviewed_commit="a" * 40)
 
     def test_source_free_replay_import_firewall_subprocess_antigravity(self) -> None:
         """Break caught: importing replay reaches labels, SQLite, network, or dashboard publication."""

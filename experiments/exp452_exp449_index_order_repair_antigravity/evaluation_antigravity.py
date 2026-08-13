@@ -178,7 +178,7 @@ def _forensic_name_antigravity(root: Path) -> str:
     return f".{root.name}.forensic_{os.urandom(16).hex()}_antigravity"
 
 
-def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> None:
+def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_prediction_authority: FrozenPredictionCaptureAntigravity, reviewed_commit: str) -> None:
     """Publish with post-rename retained-FD verification and bounded identity recovery."""
     if root.exists() or root.is_symlink() or set(payloads) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("publication destination is invalid or already exists")
@@ -199,7 +199,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
         _fsync_directory_antigravity(staging_fd)
         retained_identity = os.fstat(staging_fd)
         _assert_directory_entry_identity_at_antigravity(parent_fd, staging_name, retained_identity)
-        inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority)
+        inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority, expected_reviewed_commit=reviewed_commit)
         if _identity_antigravity(os.fstat(staging_fd)) != _identity_antigravity(retained_identity):
             raise ValueError("publication directory changed while retained")
         _fsync_directory_antigravity(staging_fd)
@@ -211,7 +211,7 @@ def _publish_antigravity(root: Path, payloads: Mapping[str, bytes], expected_pre
         phase = "post_rename_identity"
         _assert_directory_entry_identity_at_antigravity(parent_fd, root.name, retained_identity)
         phase = "post_rename_replay"
-        inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority)
+        inspect_replay_at_fd_antigravity(staging_fd, expected_prediction_authority=expected_prediction_authority, expected_reviewed_commit=reviewed_commit)
         if _identity_antigravity(os.fstat(staging_fd)) != _identity_antigravity(retained_identity):
             raise ValueError("publication descriptor identity differs after rename")
         _assert_directory_entry_identity_at_antigravity(parent_fd, root.name, retained_identity)
@@ -284,8 +284,6 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         expected_prediction_authority = getattr(dependencies, "capture_task5_prediction_antigravity")()
         if type(expected_prediction_authority) is not FrozenPredictionCaptureAntigravity:
             raise ValueError("Task5 prediction capture differs")
-        if expected_prediction_authority.authority.reviewed_commit != reviewed_commit:
-            raise ValueError("Task5 reviewed commit differs")
         predictions = _prediction_rows_antigravity(expected_prediction_authority, authority)
         baseline_global = getattr(authority, "baseline_confusion", None)
         baselines = getattr(authority, "target_baseline_rows", None)
@@ -341,7 +339,7 @@ def _evaluate_with_dependencies_antigravity(reviewed_commit: object, dependencie
         if getattr(dependencies, "capture_exp448_antigravity")() != authority: raise ValueError("Exp448 source drift before commit")
         artifact_map = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
         expected = FrozenEvaluationAntigravity(reviewed_commit, 16, qualified_count, 1, 48, 72300, tuple(metrics), sha256(canonical_json_bytes_antigravity(artifact_map)).hexdigest(), sha256(canonical_json_bytes_antigravity(decision)).hexdigest(), routing_research_eligible)
-        _publish_antigravity(root, payloads, expected_prediction_authority)
+        _publish_antigravity(root, payloads, expected_prediction_authority, reviewed_commit)
         return expected
     except BaseException as error:
         if session is not None and opened and not closed:
@@ -383,23 +381,21 @@ def evaluate_antigravity(reviewed_commit: str) -> FrozenEvaluationAntigravity:
 
 def _evaluate_with_lifecycle_dependencies_antigravity(reviewed_commit: str, capture_prediction, operation, *, evaluation_root: Path, receipt_dir=None, audit_path=None) -> FrozenEvaluationAntigravity:
     """Private test seam that pins prediction before lifecycle start and never owns label access."""
-    from .lifecycle_antigravity import run_phase_antigravity
+    from .lifecycle_antigravity import _LifecyclePathsAntigravity, _PRODUCTION_PATHS_ANTIGRAVITY, _run_phase_with_paths_antigravity
     captured = None
     def precondition() -> None:
         nonlocal captured
         if evaluation_root.exists() or evaluation_root.is_symlink():
             raise ValueError("evaluation destination is occupied")
         captured = capture_prediction()
-        if captured.authority.reviewed_commit != reviewed_commit:
-            raise ValueError("Task5 reviewed commit differs")
     def run() -> FrozenEvaluationAntigravity:
         if captured is None:
             raise ValueError("prediction was not descriptor-captured")
         return operation(captured)
-    keywords = {"path_precondition": precondition, "prediction_root": _OFFICIAL_PREDICTION_ROOT_ANTIGRAVITY if receipt_dir is None else evaluation_root.parent / "prediction", "evaluation_root": evaluation_root}
-    if receipt_dir is not None: keywords["receipt_dir"] = receipt_dir
-    if audit_path is not None: keywords["audit_path"] = audit_path
-    return run_phase_antigravity("evaluate", reviewed_commit, run, **keywords)
+    if (receipt_dir is None) is not (audit_path is None):
+        raise ValueError("lifecycle path override is incomplete")
+    paths = _PRODUCTION_PATHS_ANTIGRAVITY if receipt_dir is None else _LifecyclePathsAntigravity(Path(receipt_dir), Path(audit_path), evaluation_root)
+    return _run_phase_with_paths_antigravity("evaluate", reviewed_commit, run, paths, path_precondition=precondition)
 
 
 def inspect_antigravity() -> FrozenEvaluationAntigravity:

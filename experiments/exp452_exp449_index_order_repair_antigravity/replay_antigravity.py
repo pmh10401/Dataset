@@ -259,10 +259,12 @@ def _bootstrap_antigravity(value: object, metrics: tuple[CandidateMetricAntigrav
                 raise ValueError("bootstrap interval differs")
 
 
-def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> FrozenEvaluationAntigravity:
+def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_prediction_authority: FrozenPredictionCaptureAntigravity, expected_reviewed_commit: str) -> FrozenEvaluationAntigravity:
     """Reconstruct semantics only after a caller has pinned the complete leaf set."""
     if type(expected_prediction_authority) is not FrozenPredictionCaptureAntigravity:
         raise ValueError("trusted prediction authority differs")
+    if type(expected_reviewed_commit) is not str or len(expected_reviewed_commit) != 40 or any(ch not in "0123456789abcdef" for ch in expected_reviewed_commit):
+        raise ValueError("reviewed commit is invalid")
     artifact_map = _json_antigravity(leaves, "artifact_sha256_antigravity.json")
     if not isinstance(artifact_map, dict) or set(artifact_map) != set(_LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("artifact hash map differs")
@@ -275,7 +277,7 @@ def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_
     metric_rows, family_rows = _jsonl_antigravity(leaves, "candidate_metrics_antigravity.jsonl"), _jsonl_antigravity(leaves, "family_metrics_antigravity.jsonl")
     bootstrap, decision, dashboard = (_json_antigravity(leaves, name) for name in ("bootstrap_antigravity.json", "decision_antigravity.json", "dashboard_snapshot_antigravity.json"))
     expected_registry = [[family, list(methods)] for family, methods in CANDIDATE_MATRIX_ANTIGRAVITY]
-    if not isinstance(context, dict) or set(context) != {"schema", "reviewed_commit", "label_access_count", "target_datasets", "target_authority_sha256", "exp448_target_identity_sha256"} or context.get("schema") != "exp452" or context.get("reviewed_commit") != getattr(expected_prediction_authority.authority, "reviewed_commit", None) or context.get("reviewed_commit") != (evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None) or context.get("label_access_count") != 1 or type(context["target_datasets"]) is not list or context["target_authority_sha256"] != sha256(canonical_json_bytes_antigravity(context["target_datasets"])).hexdigest() or context["exp448_target_identity_sha256"] != _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY or tuple((row.get("dataset"), row.get("family")) for row in context["target_datasets"] if isinstance(row, dict)) != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or compatibility != {"schema": "exp452.task4", "predecessor": "exp449_stopped", "prediction_authority": "task3"} or registry != expected_registry:
+    if not isinstance(context, dict) or set(context) != {"schema", "reviewed_commit", "label_access_count", "target_datasets", "target_authority_sha256", "exp448_target_identity_sha256"} or context.get("schema") != "exp452" or context.get("reviewed_commit") != expected_reviewed_commit or context.get("reviewed_commit") != (evaluation.get("reviewed_commit") if isinstance(evaluation, dict) else None) or context.get("label_access_count") != 1 or type(context["target_datasets"]) is not list or context["target_authority_sha256"] != sha256(canonical_json_bytes_antigravity(context["target_datasets"])).hexdigest() or context["exp448_target_identity_sha256"] != _EXP448_TARGET_IDENTITY_SHA256_ANTIGRAVITY or tuple((row.get("dataset"), row.get("family")) for row in context["target_datasets"] if isinstance(row, dict)) != _EXP448_TARGET_IDENTITIES_ANTIGRAVITY or compatibility != {"schema": "exp452.task4", "predecessor": "exp449_stopped", "prediction_authority": "task3"} or registry != expected_registry:
         raise ValueError("publication context or compatibility differs")
     expected_manifest = {"schema": "exp452_prediction_manifest", "rows": 96, "candidate_pairs": 16, "frozen_prediction_sha256": sha256(leaves["frozen_predictions_antigravity.jsonl"]).hexdigest(), "exp449_reviewed_commit": getattr(expected_prediction_authority.authority, "reviewed_commit", None), "exp449_prediction_aggregate_sha256": getattr(expected_prediction_authority.authority, "prediction_aggregate_sha256", None), "predecessor_attestation_sha256": getattr(expected_prediction_authority.authority, "predecessor_attestation_sha256", None), "label_access_count": 0}
     if not isinstance(manifest, dict) or manifest != expected_manifest:
@@ -349,14 +351,14 @@ def _inspect_replay_leaves_antigravity(leaves: Mapping[str, bytes], *, expected_
     return result
 
 
-def inspect_replay_at_fd_antigravity(root_fd: int, *, expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> FrozenEvaluationAntigravity:
+def inspect_replay_at_fd_antigravity(root_fd: int, *, expected_prediction_authority: FrozenPredictionCaptureAntigravity, expected_reviewed_commit: str) -> FrozenEvaluationAntigravity:
     """Private retained-descriptor transaction used before canonical publication."""
-    return _inspect_replay_leaves_antigravity(_pin_leaves_at_fd_antigravity(root_fd), expected_prediction_authority=expected_prediction_authority)
+    return _inspect_replay_leaves_antigravity(_pin_leaves_at_fd_antigravity(root_fd), expected_prediction_authority=expected_prediction_authority, expected_reviewed_commit=expected_reviewed_commit)
 
 
-def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: FrozenPredictionCaptureAntigravity) -> FrozenEvaluationAntigravity:
+def inspect_replay_at_antigravity(root: Path, *, expected_prediction_authority: FrozenPredictionCaptureAntigravity, expected_reviewed_commit: str) -> FrozenEvaluationAntigravity:
     """Source-free public replay that pins its pathname before semantic validation."""
-    return _inspect_replay_leaves_antigravity(_pin_leaves_antigravity(root), expected_prediction_authority=expected_prediction_authority)
+    return _inspect_replay_leaves_antigravity(_pin_leaves_antigravity(root), expected_prediction_authority=expected_prediction_authority, expected_reviewed_commit=expected_reviewed_commit)
 
 
 def inspect_antigravity() -> FrozenEvaluationAntigravity:
@@ -370,25 +372,24 @@ def inspect_antigravity() -> FrozenEvaluationAntigravity:
     evaluation_root = Path("/Users/mac/Documents/Dataset/exp452_exp449_index_order_repair_evaluation_antigravity_20260813")
     return _inspect_with_dependencies_antigravity(
         lambda: capture,
-        lambda root, capture: inspect_replay_at_antigravity(root, expected_prediction_authority=capture),
+        lambda root, capture, reviewed_commit: inspect_replay_at_antigravity(root, expected_prediction_authority=capture, expected_reviewed_commit=reviewed_commit),
         evaluation_root=evaluation_root,
     )
 
 
 def _inspect_with_dependencies_antigravity(capture_prediction, replay, *, evaluation_root: Path, receipt_dir=None, audit_path=None) -> FrozenEvaluationAntigravity:
     """Private synthetic seam: lifecycle owns receipt authority before capture/replay."""
-    from .lifecycle_antigravity import run_phase_antigravity
+    from .lifecycle_antigravity import _LifecyclePathsAntigravity, _PRODUCTION_PATHS_ANTIGRAVITY, _run_phase_with_paths_antigravity
     def precondition() -> None:
         if not evaluation_root.is_dir() or evaluation_root.is_symlink():
             raise ValueError("evaluation publication is unavailable")
     def operation(reviewed_commit: str) -> FrozenEvaluationAntigravity:
         prediction = capture_prediction()
-        if prediction.authority.reviewed_commit != reviewed_commit:
-            raise ValueError("prediction reviewed commit differs")
-        return replay(evaluation_root, prediction)
-    if receipt_dir is not None or audit_path is not None:
-        raise ValueError("inspect path override is unavailable")
-    return run_phase_antigravity("inspect", None, operation)
+        return replay(evaluation_root, prediction, reviewed_commit)
+    if (receipt_dir is None) is not (audit_path is None):
+        raise ValueError("lifecycle path override is incomplete")
+    paths = _PRODUCTION_PATHS_ANTIGRAVITY if receipt_dir is None else _LifecyclePathsAntigravity(Path(receipt_dir), Path(audit_path), evaluation_root)
+    return _run_phase_with_paths_antigravity("inspect", None, operation, paths, path_precondition=precondition)
 
 
 __all__ = ["FrozenEvaluationAntigravity", "PredictionAuthorityAntigravity", "inspect_antigravity", "inspect_replay_at_antigravity", "inspect_replay_at_fd_antigravity"]
