@@ -146,6 +146,28 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertTrue(any(edge["from"] == "task2_regressions" and edge["to"] == node_id and edge["type"] == "tests" for edge in graph["edges"]))
                 self.assertTrue(any(edge["from"] == node_id and edge["to"] == "future_product_modules" and edge["type"] == "future_unknown" for edge in graph["edges"]))
 
+    def test_map_answers_task_three_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: implemented predecessor/label/lifecycle/readiness remain falsely unknown."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        expected = {
+            "task3_predecessor": "test_predecessor_antigravity.py",
+            "task3_sources": "test_sources_antigravity.py",
+            "task3_lifecycle": "test_lifecycle_antigravity.py",
+            "task3_readiness": "test_readiness_antigravity.py",
+        }
+        for node_id, test_leaf in expected.items():
+            with self.subTest(node_id=node_id):
+                self.assertIn(node_id, node_by_id)
+                self.assertNotEqual(node_by_id[node_id].get("status"), "future_unknown")
+                self.assertTrue(any(path.endswith(test_leaf) for path in node_by_id[node_id]["tests"]))
+                self.assertIn("caller", node_by_id[node_id]["role"].lower())
+                self.assertIn("effect", node_by_id[node_id]["role"].lower())
+        self.assertTrue(any(edge["from"] == "task3_sources" and edge["to"] == "task3_predecessor" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task3_readiness" and edge["to"] == "task3_predecessor" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task3_readiness" and edge["to"] == "task3_lifecycle" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task3_sources" and edge["to"] == "future_product_modules" and edge["type"] == "future_unknown" for edge in graph["edges"]))
+
     def test_documents_exclude_exp449_qualified_two_as_a_decision_input_antigravity(self) -> None:
         for relative in DOCUMENTS_ANTIGRAVITY:
             content = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8").lower()

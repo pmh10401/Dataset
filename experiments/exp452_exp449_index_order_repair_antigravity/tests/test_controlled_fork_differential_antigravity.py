@@ -105,6 +105,34 @@ def _function_ast_antigravity(source: str, name: str, *, allowed_return_wrapper:
     return ast.dump(ast.fix_missing_locations(normalized), include_attributes=False)
 
 
+def _literal_assignment_antigravity(source: str, name: str) -> object:
+    tree = ast.parse(source)
+    assignment = next(
+        (
+            node
+            for node in tree.body
+            if isinstance(node, ast.Assign) and name in _assignment_names_antigravity(node)
+        ),
+        None,
+    )
+    if assignment is None:
+        raise AssertionError(f"missing controlled assignment: {name}")
+    return ast.literal_eval(assignment.value)
+
+
+def _function_body_ast_antigravity(source: str, name: str) -> str:
+    tree = ast.parse(source)
+    function = next(
+        (node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name),
+        None,
+    )
+    if function is None:
+        raise AssertionError(f"missing controlled function: {name}")
+    if function.body and isinstance(function.body[0], ast.Expr) and isinstance(function.body[0].value, ast.Constant) and type(function.body[0].value.value) is str:
+        function.body.pop(0)
+    return ast.dump(ast.fix_missing_locations(function), include_attributes=False)
+
+
 class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
     def test_config_ast_allows_only_named_identity_path_predecessor_and_index_nodes_antigravity(self) -> None:
         """Break caught: changing a scientific config node outside the explicit allowlist."""
@@ -157,6 +185,61 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
             }
             with self.subTest(module=module):
                 self.assertFalse(any(name == blocked or name.startswith(f"{blocked}.") for name in imported for blocked in forbidden))
+
+    def test_task3_label_database_metadata_and_conversion_are_exp449_exact_antigravity(self) -> None:
+        """Break caught: the controlled fork changes TEST SQL, database identity, or label conversion."""
+        before = (_EXP449_ANTIGRAVITY / "sources_antigravity.py").read_text(encoding="utf-8")
+        after = (_EXP452_ANTIGRAVITY / "sources_antigravity.py").read_text(encoding="utf-8")
+        for name in (
+            "_DATABASE_SHA256_ANTIGRAVITY",
+            "_DATABASE_INODE_ANTIGRAVITY",
+            "_LABEL_SQL_ANTIGRAVITY",
+            "_TARGET_DATASET_COUNT_ANTIGRAVITY",
+            "_TARGET_LABEL_ROWS_ANTIGRAVITY",
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(
+                    _literal_assignment_antigravity(before, name),
+                    _literal_assignment_antigravity(after, name),
+                )
+        self.assertEqual(
+            _function_body_ast_antigravity(before, "convert_test_label_row_antigravity"),
+            _function_body_ast_antigravity(after, "convert_test_label_row_antigravity"),
+        )
+
+    def test_task3_predecessor_authority_excludes_qualified_metrics_and_readiness_imports_antigravity(self) -> None:
+        """Break caught: stopped authority leaks qualified metrics or readiness gains label/backend imports."""
+        predecessor = (_EXP452_ANTIGRAVITY / "predecessor_antigravity.py").read_text(encoding="utf-8")
+        tree = ast.parse(predecessor)
+        authority = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "_Exp449StoppedAuthorityAntigravity"
+        )
+        fields = {
+            node.target.id
+            for node in authority.body
+            if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+        }
+        self.assertFalse({"qualified_count", "candidate_metrics", "family_metrics"} & fields)
+
+        readiness = (_EXP452_ANTIGRAVITY / "readiness_antigravity.py").read_text(encoding="utf-8")
+        imported = {
+            alias.name
+            for node in ast.walk(ast.parse(readiness))
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        } | {
+            node.module or ""
+            for node in ast.walk(ast.parse(readiness))
+            if isinstance(node, ast.ImportFrom)
+        }
+        forbidden = {
+            "sqlite3", "numpy", "torch", "mlx", "requests", "urllib", "httpx",
+            "sources_antigravity", "evaluation_antigravity", "replay_antigravity",
+            "dashboard_export_antigravity",
+        }
+        self.assertFalse(any(name == blocked or name.startswith(f"{blocked}.") for name in imported for blocked in forbidden))
 
 
 if __name__ == "__main__":
