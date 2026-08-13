@@ -48,20 +48,20 @@ git diff --check
 <li><input disabled type="checkbox" checked> <strong>Step 6 — 검토와 commit:</strong> Grok read-only 계획/문서 검토 후 Codex가 판단·수정·검증하고 governance commit과 map-only child를 만든다.</li>
 </ol></section>
 
-<section><h2><input disabled type="checkbox"> Task 2: Controlled-fork 과학 불변 계약</h2>
+<section><h2><input disabled type="checkbox" checked> Task 2: Controlled-fork 과학 불변 계약</h2>
 <p><strong>Files:</strong> Create Exp453 <code>config</code>, <code>contracts</code>, <code>artifacts</code>, <code>bootstrap</code>, <code>dashboard_export</code> and tests including <code>test_controlled_fork_differential_antigravity.py</code>.</p>
 <p><strong>Consumes:</strong> Task 1 document SHA and paths. <strong>Produces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>, canonical helpers, metric contracts, bootstrap function, dashboard projection.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1 — map preflight:</strong><pre><code>python3 scratch/build_codemap_exp453_antigravity.py --validate-only
+<li><input disabled type="checkbox" checked> <strong>Step 1 — map preflight:</strong><pre><code>python3 scratch/build_codemap_exp453_antigravity.py --validate-only
 # Answer callers, effects, tests for the five Task 2 modules before edits.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 2 — RED constants:</strong> 48/96/16, seeds, alpha, Exp449 aggregate, 12 leaves, bootstrap constants, exact runtime versions를 table test한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 3 — RED differential:</strong> AST normalized diff가 identity/path/runtime-binding named nodes 외의 Exp452/Exp453 차이를 거부하게 한다. Exp452의 <code>resolve()</code>/<code>samefile()</code> identity 판정은 복사하지 않고 exact executable/prefix 문자열 비교를 허용 delta로 명시한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 4 — GREEN implementation:</strong> Exp452 foundations를 controlled copy하고 identity/path/runtime constants만 바꾼다.<pre><code>FIXED_EXECUTABLE_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python"
+<li><input disabled type="checkbox" checked> <strong>Step 2 — RED constants:</strong> 48/96/16, seeds, alpha, Exp449 aggregate, 12 leaves, bootstrap constants, exact runtime versions를 table test한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 3 — RED differential:</strong> AST normalized diff가 identity/path/runtime-binding named nodes 외의 Exp452/Exp453 차이를 거부하게 한다. Exp452의 <code>resolve()</code>/<code>samefile()</code> identity 판정은 복사하지 않고 exact executable/prefix 문자열 비교를 허용 delta로 명시한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4 — GREEN implementation:</strong> Exp452 foundations를 controlled copy하고 identity/path/runtime constants만 바꾼다.<pre><code>FIXED_EXECUTABLE_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python"
 FIXED_PREFIX_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314"
 RUNTIME_VERSIONS_ANTIGRAVITY = ("3.14.6", "2.3.5", "1.4.0", "1.7.2")</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 5 — GREEN twice:</strong><pre><code>python3 -m unittest discover -s experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests -p 'test_config_antigravity.py'
+<li><input disabled type="checkbox" checked> <strong>Step 5 — GREEN twice:</strong><pre><code>python3 -m unittest discover -s experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests -p 'test_config_antigravity.py'
 python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_controlled_fork_differential_antigravity -v
 # Repeat both; Exp452 foundations once; all exit 0.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 6 — review/commit/map:</strong> Grok은 diff를 read-only 검토하고 Codex가 science invariant를 확인한 뒤 source/tests commit과 map-only child를 만든다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — review/commit/map:</strong> Grok은 diff를 read-only 검토하고 Codex가 science invariant를 확인한 뒤 source/tests commit과 map-only child를 만든다.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 3: Runtime binding, 두 predecessor, readiness</h2>

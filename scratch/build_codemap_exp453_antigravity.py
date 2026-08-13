@@ -82,7 +82,7 @@ def _html_antigravity(graph: dict[str, object]) -> str:
         f'<li><code>{html_module.escape(str(node["path"]))}</code> — {html_module.escape(str(node["role"]))}</li>'
         for node in graph["nodes"]
     )
-    return f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp453 코드맵</title><style>body{{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp453 Task 1 코드맵</h1><p>현재 구현된 범위는 HTML governance, 세 ledger record, governance regression과 이 map builder뿐이다. Task 2–5 제품 관계는 아직 future unknown이다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
+    return f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp453 코드맵</title><style>body{{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp453 Task 2 코드맵</h1><p>HTML governance와 Task 2 config/contracts/artifacts/bootstrap/dashboard foundation이 구현되었다. Task 3–5 product relation은 아직 future unknown이다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
 
 
 def _allowed_source_parent_antigravity(source_parent: str) -> bool:
@@ -104,6 +104,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         raise ValueError("generated_at must end in Z")
 
     test = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_governance_antigravity.py"
+    differential = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_controlled_fork_differential_antigravity.py"
     plan = "docs/superpowers/plans/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity.html"
     future_path = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity"
     nodes: list[dict[str, object]] = [
@@ -114,13 +115,17 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp453 planned, zero-label, null-result truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"exp453"')]},
         {"id": "governance_regression", "path": test, "role": "HTML, ledger, hash, future-map regression.", "tests": [test], "evidence": [_evidence_antigravity(test, "class GovernanceAntigravityTest")]},
         {"id": "map_builder", "path": "scratch/build_codemap_exp453_antigravity.py", "role": "bounded HTML/JSON/lock generator.", "tests": [test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp453_antigravity.py", "def validate_map_antigravity")]},
-        {"id": "task2_foundations", "path": future_path, "role": "Future config/contracts/artifacts/bootstrap/dashboard.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "task2_regressions", "path": differential, "role": "Caller: Task 2 focused verification. Effect: rejects scientific drift across all foundations.", "tests": [differential], "evidence": [_evidence_antigravity(differential, "class ControlledForkDifferentialAntigravityTest")]},
+        {"id": "task2_config", "path": f"{future_path}/config_antigravity.py", "role": "Caller: future readiness and evaluator. Effect: freezes runtime identity and unchanged scientific profile.", "tests": [f"{future_path}/tests/test_config_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")]},
+        {"id": "task2_contracts", "path": f"{future_path}/contracts_antigravity.py", "role": "Caller: future sources, evaluator and replay. Effect: freezes exact metric and dataset records.", "tests": [f"{future_path}/tests/test_contracts_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/contracts_antigravity.py", "class CandidateMetricAntigravity")]},
+        {"id": "task2_artifacts", "path": f"{future_path}/artifacts_antigravity.py", "role": "Caller: future lifecycle, evaluator and replay. Effect: fixes canonical bytes and artifact-map construction.", "tests": [f"{future_path}/tests/test_artifacts_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/artifacts_antigravity.py", "def canonical_json_bytes_antigravity")]},
+        {"id": "task2_bootstrap", "path": f"{future_path}/bootstrap_antigravity.py", "role": "Caller: future evaluator. Effect: fixes the paired draw bytes and FN/FP/F1 intervals.", "tests": [f"{future_path}/tests/test_bootstrap_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/bootstrap_antigravity.py", "def paired_delta_antigravity")]},
+        {"id": "task2_dashboard", "path": f"{future_path}/dashboard_export_antigravity.py", "role": "Caller: future evaluator result projection. Effect: exposes only the same aggregate qualification result.", "tests": [f"{future_path}/tests/test_dashboard_export_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/dashboard_export_antigravity.py", "def public_result_antigravity")]},
         {"id": "task3_runtime_predecessors", "path": future_path, "role": "Future runtime binding, dual predecessor, labels, lifecycle, readiness.", "status": "future_unknown", "tests": [], "evidence": []},
         {"id": "task4_evaluation_replay", "path": future_path, "role": "Future evaluator and exact replay.", "status": "future_unknown", "tests": [], "evidence": []},
         {"id": "task5_cli", "path": future_path, "role": "Future closed CLI and clean candidate.", "status": "future_unknown", "tests": [], "evidence": []},
     ]
     future_pairs = [
-        ("implementation_plan", "task2_foundations"),
         ("implementation_plan", "task3_runtime_predecessors"),
         ("implementation_plan", "task4_evaluation_replay"),
         ("implementation_plan", "task5_cli"),
@@ -131,11 +136,25 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_planned_truth_preserves_science_and_champion_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": _evidence_antigravity(test, "builder.validate_map_antigravity")},
         *[
+            {"from": "implementation_plan", "to": node_id, "type": "governs", "evidence": _evidence_antigravity(plan, "Task 2: Controlled-fork")}
+            for node_id in ("task2_config", "task2_contracts", "task2_artifacts", "task2_bootstrap", "task2_dashboard")
+        ],
+        *[
+            {"from": "task2_regressions", "to": node_id, "type": "tests", "evidence": _evidence_antigravity(differential, test_symbol)}
+            for node_id, test_symbol in (
+                ("task2_config", "test_scientific_config_is_identical_after_named_runtime_fields_are_removed_antigravity"),
+                ("task2_contracts", "test_contract_artifact_and_bootstrap_asts_are_identity_only_antigravity"),
+                ("task2_artifacts", "test_contract_artifact_and_bootstrap_asts_are_identity_only_antigravity"),
+                ("task2_bootstrap", "test_contract_artifact_and_bootstrap_asts_are_identity_only_antigravity"),
+                ("task2_dashboard", "test_dashboard_projection_ast_changes_identity_only_antigravity"),
+            )
+        ],
+        *[
             {"from": left, "to": right, "type": "future_unknown", "evidence": _evidence_antigravity(plan, f"Task {index}")}
-            for index, (left, right) in enumerate(future_pairs, start=2)
+            for index, (left, right) in enumerate(future_pairs, start=3)
         ],
     ]
-    unknowns = [{"from": left, "to": right, "reason": "Task 1 has no product implementation yet."} for left, right in future_pairs]
+    unknowns = [{"from": left, "to": right, "reason": "Task 2 does not implement this later product boundary."} for left, right in future_pairs]
     graph: dict[str, object] = {"schema": "exp453_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
     lock: dict[str, object] = {"schema": "exp453_codemap_map_child_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
     return graph, lock, _html_antigravity(graph)
