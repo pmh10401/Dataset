@@ -47,16 +47,25 @@ tensor feature fusion, and neural embeddings when parity and speed gates pass.
 
 ## Native Delegation Policy
 
-For native delegated implementation, use the locally installed Grok CLI with
-model `grok-4.6` and reasoning effort `high`. Run it headlessly in the assigned
-worktree with an explicit task brief, and disable memory, web search, and Grok
-subagents unless the user requests them. For design, commitment-boundary
-review, and final review, use a fresh `sol_advisor_sol_reviewer`
-(GPT-5.6 Sol / High).
+Use the locally installed Grok CLI with model `grok-4.6` and reasoning effort
+`high` for independent review, root-cause analysis, and alternative proposals.
+Grok does not make the final decision and does not integrate changes into the
+authoritative experiment branch. Codex owns the final judgment, integration,
+tests, and experimental-result verification.
 
-`sol_advisor_terra_implementer` and GPT-5.6 Luna / Max are not used for native
-implementation delegation unless the user explicitly opts into that lane for
-the specific request.
+Run Grok headlessly with an explicit task brief and disable memory, web search,
+and Grok subagents unless the user requests them. Default Grok reviews to a
+non-writing permission mode. If Grok must edit concurrently, create a dedicated
+Grok worktree and let Codex inspect, test, and integrate the resulting diff.
+Never grant Grok write permission in a worktree where an official experiment is
+running; use a separate worktree or a read-only snapshot instead.
+
+For commitment-boundary and final independent review, Codex may also use a fresh
+`sol_advisor_sol_reviewer` (GPT-5.6 Sol / High), while retaining final acceptance
+in the primary Codex session.
+
+`sol_advisor_terra_implementer` and GPT-5.6 Luna / Max are not used unless the
+user explicitly opts into that lane for the specific request.
 
 ## File Naming Policy
 
