@@ -46,7 +46,7 @@ evaluate, inspect 또는 root allocation이 허용되지 않는다.
 
 - Python/NumPy are `3.14.6` / `2.4.6`; design, plan, preregistration, and runbook SHA256 values
   remain respectively `ed2b6e5e...3ce4`, `b79b3b7f...fe934`, `af2b8b10...c612f`, and
-  `3a6fa326...c595`.
+  `731b049d945fb84237a8a6066e04f557167dd110fffbbcca379c40025c68991b`.
 - The DB SHA256 is `8458e678...ef3c`, inode `1048138`, nlink `1`. The immutable Exp447 audit
   SHA256 is `9f8f7d3d...2b97`, inode `19812443`, nlink `1`.
 - Descriptor-pinned Exp446 identity remains `1117` datasets with manifest
