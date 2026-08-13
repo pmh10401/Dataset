@@ -71,3 +71,14 @@ VERIFIED:
 JUDGMENT CALL:
 
 - The synchronized codemap triplets remain structurally current; semantic finalization of their descriptions is deferred to the dedicated Task 5 ownership, per parent direction.
+
+## Fix round 3/5
+
+CHANGES:
+
+- `verify_journal` now accepts `proposal_work` only after re-deriving the current Task4+5 authority and verifying the complete present success-record inventory against current catalog/raw/backend evidence. Empty or absent work is valid; it never completes proposal scoring.
+- Added a bounded recursive-journal regression covering a published record and rejecting an extra work file.
+
+VERIFIED:
+
+- `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -q`: `Ran 29 tests in 1.619s` — `OK`.

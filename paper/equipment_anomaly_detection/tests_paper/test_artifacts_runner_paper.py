@@ -322,6 +322,41 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "float64"):
             write_task4_task5_success_record(self.root, self.catalog, self._authority(backend), raw, HardSourceBundle(sources.source_names, changed), route)
 
+    def test_recursive_journal_accepts_only_verified_proposal_work_records(self):
+        """A parent-published success record is valid work, while an unverified proposal-work sibling is pollution."""
+        from paper.equipment_anomaly_detection.acceleration_paper import verify_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import FrozenTask8BackendDecision, canonical_json_bytes, freeze_score_root, read_canonical, write_create_only, write_task4_task5_success_record, write_typed_proposal_shard
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        from paper.equipment_anomaly_detection import runner_paper as runner
+        closure_patch = patch.object(runner, "_closure", return_value={"runner_paper.py": "0" * 64})
+        closure_patch.start(); self.addCleanup(closure_patch.stop)
+        config = self.fixture.config(); self.root.mkdir()
+        context = runner.context_payload(config)
+        write_create_only(runner._journal_path(self.root, 0, "context"), canonical_json_bytes(runner._record({"schema": "paper-task8-journal-context.v1", "context": context, "previous_record_sha256": "genesis"})))
+        for stage in ("preflight", "prepare", "acceleration"):
+            runner._write_complete(self.root, stage, context, runner._records(self.root)[-1]["record_sha256"])
+        acceleration = verify_acceleration_manifest(read_canonical(runner._artifact_path(self.root, "acceleration")), context["context_sha256"])
+        raw, sources, route, _low, stability, _policies, _backend = self._task4_task5_values()
+        authority = self._authority(FrozenTask8BackendDecision.from_acceleration_manifest(acceleration))
+        write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        first, second = self.fixture._typed("alpha"), self.fixture._typed("beta")
+        raw_patch = patch.object(runner, "load_dataset_values", side_effect=lambda _db, dataset: {"alpha": raw, "beta": second[0]}[dataset])
+        raw_patch.start(); self.addCleanup(raw_patch.stop)
+        low = LowFrequencyResult(("alpha", "beta"), first[3].rows + second[3].rows, (), (), 0, {"alpha": frozenset(), "beta": frozenset()})
+        policies = PolicyBundle(tuple(PolicyRoute(name, {"alpha": frozenset(), "beta": frozenset()}, {"alpha": np.zeros(2), "beta": np.zeros(2)}, {"alpha": np.zeros(2), "beta": np.zeros(2)}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
+        backend = FrozenTask8BackendDecision.from_acceleration_manifest(acceleration)
+        write_typed_proposal_shard(self.root, self.catalog, raw, sources, route, low, stability, policies, backend)
+        write_typed_proposal_shard(self.root, self.catalog, second[0], second[1], second[2], low, second[4], policies, backend)
+        freeze_score_root(self.root, self.catalog, self.fixture.acceptance)
+        proposal = runner._proposal_artifact(self.root, context)
+        write_create_only(runner._artifact_path(self.root, "proposal_score"), canonical_json_bytes(proposal))
+        write_create_only(runner._journal_path(self.root, 4, "proposal_score"), canonical_json_bytes(runner._record({"schema": "paper-task8-journal-complete.v1", "stage": "proposal_score", "previous_record_sha256": runner._records(self.root)[-1]["record_sha256"], "artifact": runner._artifact_record(self.root, "proposal_score", context), "finished_at": runner._now()})))
+        self.assertEqual(runner.verify_journal(config)[2], ["preflight", "prepare", "acceleration", "proposal_score"])
+        self.root.joinpath("stage_artifacts_paper", "proposal_work", "extra_antigravity.json").write_text("{}\n")
+        with self.assertRaisesRegex(runner.PipelineStateError, "namespace pollution"):
+            runner.verify_journal(config)
+
 
 class Task9AccelerationTests(unittest.TestCase):
     def test_context_registry_binds_exported_acceleration_schema(self):

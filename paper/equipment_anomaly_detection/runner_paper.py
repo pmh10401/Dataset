@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 
 from .acceleration_paper import ACCELERATION_SCHEMA, build_acceleration_manifest, verify_acceleration_manifest
-from .artifacts_paper import canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, write_create_only
+from .artifacts_paper import Task4Task5SuccessAuthority, canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, verify_task4_task5_success_namespace, write_create_only
 from .catalog_paper import build_catalog, load_acceptance
 from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
 from .contracts_paper import FrozenTask8BackendDecision
@@ -121,6 +121,18 @@ def verify_journal(config):
     artifact_root=safe_child(root,ARTIFACT_DIRECTORY)
     actual_names={item.name for item in artifact_root.iterdir()} if artifact_root.is_dir() else set()
     expected_names=set(complete)|({"proposal_freeze"} if "proposal_score" in complete else set())
+    if "proposal_work" in actual_names:
+        if "acceleration" not in complete:
+            raise PipelineStateError("namespace pollution")
+        try:
+            acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
+            catalog=_catalog_from_context(context)
+            raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
+            authority=Task4Task5SuccessAuthority.from_verified_context(context,catalog,acceleration)
+            verify_task4_task5_success_namespace(root,catalog,authority,raw)
+        except ValueError as error:
+            raise PipelineStateError("namespace pollution") from error
+        expected_names.add("proposal_work")
     if actual_names != expected_names: raise PipelineStateError("namespace pollution")
     return context,records,complete
 

@@ -380,6 +380,43 @@ def read_task4_task5_success_record(root: Path, catalog: dict[str, object], auth
         raise ValueError("Task4+5 success typed round-trip differs")
     return Task4Task5SuccessRecord(sources, route)
 
+
+def verify_task4_task5_success_namespace(root: Path, catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw_by_dataset: dict[str, RawDataset]) -> tuple[str, ...]:
+    """Accept only an empty or fully readable parent-published Task4+5 work inventory."""
+    if not isinstance(authority, Task4Task5SuccessAuthority) or not isinstance(catalog, dict) or catalog.get("catalog_sha256") != authority.catalog_sha256 or not isinstance(raw_by_dataset, dict):
+        raise ValueError("Task4+5 success namespace authority differs")
+    datasets = {entry["dataset"] for entry in catalog.get("datasets", ()) if isinstance(entry, dict) and type(entry.get("dataset")) is str}
+    if not datasets or set(raw_by_dataset) != datasets:
+        raise ValueError("Task4+5 success namespace raw inventory differs")
+    work = safe_child(root, ARTIFACT_DIRECTORY, PROPOSAL_WORK_DIRECTORY)
+    details = _lstat(work)
+    if details is None:
+        return ()
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("Task4+5 success namespace differs")
+    children = {item.name for item in work.iterdir()}
+    if not children:
+        return ()
+    if children != {TASK4_TASK5_SUCCESS_DIRECTORY}:
+        raise ValueError("Task4+5 success namespace differs")
+    success_root = safe_child(work, TASK4_TASK5_SUCCESS_DIRECTORY)
+    details = _lstat(success_root)
+    if details is None:
+        return ()
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("Task4+5 success namespace differs")
+    tokens = {f"{sha256(dataset.encode('utf-8')).hexdigest()}_antigravity": dataset for dataset in datasets}
+    present = {item.name for item in success_root.iterdir()}
+    if not present <= set(tokens):
+        raise ValueError("Task4+5 success namespace differs")
+    for token in present:
+        directory = safe_child(success_root, token)
+        details = _lstat(directory)
+        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode) or {item.name for item in directory.iterdir()} != {TASK4_TASK5_SUCCESS_NAME}:
+            raise ValueError("Task4+5 success namespace differs")
+        read_task4_task5_success_record(root, catalog, authority, raw_by_dataset[tokens[token]])
+    return tuple(sorted(tokens[token] for token in present))
+
 def _typed_payload(raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,low:LowFrequencyResult,stability:StabilityPartition,policies:PolicyBundle,backend:FrozenTask8BackendDecision,entry:dict[str,object])->dict[str,object]:
     _raw_identity(raw,entry); n=entry["test"]["count"]
     if not isinstance(sources,HardSourceBundle) or tuple(sources.source_names)!=EXPECTED_HARD_SOURCES or set(sources.by_name)!=set(EXPECTED_HARD_SOURCES):raise TypeError("typed Task4 source bundle is invalid")
