@@ -1,7 +1,7 @@
 {
-  "current_commit": "0aebfb49b6bb6a5d6c60efd0c79074b9edadd3d8",
-  "working_tree_dirty": true,
-  "generated_at": "2026-08-13T19:50:50+0900",
+  "current_commit": "92e560b30a26267818c089b906f90be5b0d2444f",
+  "working_tree_dirty": false,
+  "generated_at": "2026-08-13T19:53:18+0900",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -44,7 +44,5 @@
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
-  "changed_modules_since_prior_lock": [
-    "paper"
-  ]
+  "changed_modules_since_prior_lock": []
 }
