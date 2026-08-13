@@ -122,5 +122,13 @@ class PredictionTestsAntigravity(unittest.TestCase):
             self.assertTrue((root/"failure_antigravity.json").exists())
             self.assertFalse(json.loads((root/"pid_antigravity.json").read_text())["active"])
 
+    def test_no_fallible_validator_runs_after_publication(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/"run_antigravity"
+            with mock.patch("experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity._validate_frozen_prediction_root_antigravity", side_effect=OSError("post marker")):
+                result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
+            self.assertEqual(result.progress.completed,48)
+
 
 if __name__ == "__main__": unittest.main()

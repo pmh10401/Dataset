@@ -30,7 +30,7 @@ from .backend_gate_antigravity import (
 from .config_antigravity import FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY
 from .contracts_antigravity import CandidateScoresAntigravity, DatasetBundleAntigravity, FrozenPredictionAuthorityAntigravity
 from .predecessor_antigravity import verify_exp448_predecessor_antigravity
-from .progress_antigravity import ProgressWriterAntigravity, select_outer_workers_antigravity
+from .progress_antigravity import ProgressWriterAntigravity, select_outer_workers_antigravity, validate_progress_antigravity
 from .scoring_antigravity import aggregate_seed_scores_antigravity, score_candidate_antigravity
 from .sources_antigravity import load_target_bundle_antigravity
 
@@ -47,6 +47,8 @@ _PID_KEYS_ANTIGRAVITY = {"schema", "pid", "active", "reviewed_commit"}
 _CHECKPOINT_KEYS_ANTIGRAVITY = {"schema", "reviewed_commit", "next_sequence", "terminal"}
 _RECEIPT_KEYS_ANTIGRAVITY = {"schema", "sequence", "dataset_identity_sha256", "leaf_sha256", "previous_chain_sha256", "chain_sha256"}
 _CHAIN_ORIGIN_ANTIGRAVITY = "0" * 64
+_SEED_IDENTITY_KEYS_ANTIGRAVITY = {"kind","seed","train_dtype","train_shape","test_dtype","test_shape","expected_train_length","expected_test_length","feature_dimension","retained_shapelets","train_bytes_sha256","test_bytes_sha256","canonical_sha256"}
+_AGGREGATE_IDENTITY_KEYS_ANTIGRAVITY = (_SEED_IDENTITY_KEYS_ANTIGRAVITY - {"seed"}) | {"seeds"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,7 +171,8 @@ def _prediction_worker_antigravity(sequence: int, bundle: DatasetBundleAntigravi
 
 
 def _validate_score_identity_antigravity(value: object, bundle: DatasetBundleAntigravity, *, seed: int | None) -> None:
-    if type(value) is not dict or type(value.get("canonical_sha256")) is not str:
+    expected_keys = _AGGREGATE_IDENTITY_KEYS_ANTIGRAVITY if seed is None else _SEED_IDENTITY_KEYS_ANTIGRAVITY
+    if type(value) is not dict or set(value) != expected_keys or type(value.get("canonical_sha256")) is not str:
         raise ValueError("score identity malformed")
     payload = dict(value)
     digest = payload.pop("canonical_sha256")
@@ -185,6 +188,9 @@ def _validate_score_identity_antigravity(value: object, bundle: DatasetBundleAnt
     for key in ("train_dtype", "test_dtype", "train_bytes_sha256", "test_bytes_sha256"):
         if type(payload.get(key)) is not str or not payload[key]:
             raise ValueError("score identity string differs")
+    for key in ("train_bytes_sha256", "test_bytes_sha256"):
+        if not re.fullmatch(r"[0-9a-f]{64}", payload[key]):
+            raise ValueError("score SHA differs")
     if payload.get("train_shape") != [len(bundle.train_normal)] or payload.get("test_shape") != [len(bundle.test_values)]:
         raise ValueError("score identity shape differs")
     if seed is None:
@@ -247,7 +253,7 @@ def _progress_payload_antigravity(bundle: DatasetBundleAntigravity, *, completed
         "series_length": bundle.train_normal.shape[1], "seed": None,
         "fold": None, "stage": stage, "backend": backend, "completed": completed,
         "total": 48, "success": completed, "error": 0 if latest_error is None else 1,
-        "reused": reused, "datasets_per_second": rate, "elapsed_seconds": elapsed,
+        "reused": reused, "recomputed": completed - reused, "datasets_per_second": rate, "elapsed_seconds": elapsed,
         "eta_seconds": eta, "checkpoint": "checkpoint_antigravity.json", "latest_error": latest_error,
     }
 
@@ -273,7 +279,7 @@ def _read_prefix_antigravity(root: Path, bundles: tuple[DatasetBundleAntigravity
         raise ValueError("prediction context differs")
     pid = _exact_file_antigravity(root / "pid_antigravity.json", canonical=True)
     checkpoint = _exact_file_antigravity(root / "checkpoint_antigravity.json", canonical=True)
-    _exact_file_antigravity(root / "progress_antigravity.json", canonical=True)
+    validate_progress_antigravity(_exact_file_antigravity(root / "progress_antigravity.json", canonical=True))
     _exact_file_antigravity(root / "progress_antigravity.txt", canonical=False)
     if type(pid) is not dict or set(pid) != _PID_KEYS_ANTIGRAVITY or pid["reviewed_commit"] != reviewed_commit or type(pid["active"]) is not bool or type(pid["pid"]) is not int:
         raise ValueError("PID evidence differs")
@@ -478,7 +484,7 @@ def _run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependen
         if dependencies.fault_hook:
             dependencies.fault_hook("publish_manifest", 48)
         write_create_only_antigravity(root / "manifest_antigravity.json", canonical_json_bytes_antigravity(manifest))
-        _validate_frozen_prediction_root_antigravity(root, authority)
+        # Publication is last: no fallible I/O, logging, or validation follows.
         return PredictionRunResultAntigravity(authority, PredictionProgressAntigravity(48, reused, 48 - reused, True))
     except KeyboardInterrupt as interruption:
         secondary: BaseException | None = None
