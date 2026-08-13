@@ -95,8 +95,8 @@ class HardRouteResult:
     n_test: int
 
     def __post_init__(self) -> None:
-        if type(self.n_test) is not int or self.n_test < 1:
-            raise ValueError("hard route result requires a positive TEST size")
+        if type(self.n_test) is not int or self.n_test < 0:
+            raise ValueError("hard route result requires a non-negative TEST size")
         for lane in (self.exp74d, self.exp137, self.exp236, self.exp253):
             if not isinstance(lane, RouteLanes):
                 raise ValueError("hard route stages require route lanes")
@@ -267,7 +267,18 @@ def exact_normal_guard(hard: frozenset[int], train_blobs: tuple[bytes, ...], tes
     return frozenset(set(hard) - set(removed)), removed
 
 
+def empty_hard_route_result_paper(n_test: int) -> HardRouteResult:
+    empty = RouteLanes(frozenset(), frozenset(), frozenset())
+    return HardRouteResult(
+        empty, frozenset(), frozenset(), frozenset(), empty,
+        SourceExpansion(frozenset(), frozenset()),
+        empty, frozenset(), empty, frozenset(), frozenset(), int(n_test),
+    )
+
+
 def replay_hard_route(values: RawDataset, sources: HardSourceBundle, mini: MiniRocketResult) -> HardRouteResult:
+    if len(values.train_rows) < 2 or not values.test_rows:
+        return empty_hard_route_result_paper(len(values.test_rows))
     evidence = build_legacy_route_evidence(values)
     exp74d, exp89, exp90, exp93 = replay_exp74d_89_90_93(evidence)
     exp137 = replay_exp133_134_135_137(exp93, evidence.confirmation_blocks)
@@ -317,4 +328,4 @@ def compare_parity(new: Mapping[str, frozenset[int]], oracle_path: Path) -> Pari
     return ParityReport(not differing and set(new) == set(oracle), differing)
 
 
-__all__ = ["CANONICAL_SMOKE_DATASET_COUNT_PAPER", "EXP234_SOURCES_PAPER", "Exp134Review", "FrozenSmokeReport", "HardRouteResult", "MAX_TOP_PAPER", "ParityReport", "RouteLanes", "SourceExpansion", "compare_parity", "exact_normal_guard", "freeze_canonical_smoke", "minimum_source_expansion", "replay_exp133_134_135_137", "replay_exp134", "replay_exp74d_89_90_93", "replay_hard_route", "union_three_source_hard"]
+__all__ = ["CANONICAL_SMOKE_DATASET_COUNT_PAPER", "EXP234_SOURCES_PAPER", "Exp134Review", "FrozenSmokeReport", "HardRouteResult", "MAX_TOP_PAPER", "ParityReport", "RouteLanes", "SourceExpansion", "compare_parity", "empty_hard_route_result_paper", "exact_normal_guard", "freeze_canonical_smoke", "minimum_source_expansion", "replay_exp133_134_135_137", "replay_exp134", "replay_exp74d_89_90_93", "replay_hard_route", "union_three_source_hard"]

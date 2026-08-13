@@ -39,6 +39,10 @@ from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
     MiniRocketConfig,
     score_configuration_paper,
 )
+from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper import (
+    PINNED_TORCH_VERSION_PAPER,
+    verify_exp84_environment_paper,
+)
 from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import (
     align_series_lengths_paper,
     repair_linear_edge_nearest_paper,
@@ -64,6 +68,14 @@ EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY = (
     "MelbournePedestrian_normal_9",
 )
 EXPECTED_AFFECTED_SHA256_ANTIGRAVITY = "ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9"
+EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY = "MelbournePedestrian_normal_10"
+EXPECTED_UNION_DATASETS_ANTIGRAVITY = tuple(sorted((*EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY, EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY)))
+EXPECTED_UNION_DATASET_COUNT_ANTIGRAVITY = 20
+EXPECTED_UNION_TEST_ONLY_ROWS_ANTIGRAVITY = 3
+EXPECTED_UNION_TEST_ONLY_SCALARS_ANTIGRAVITY = 3
+EXPECTED_UNION_SHA256_ANTIGRAVITY = sha256(
+    json.dumps(list(EXPECTED_UNION_DATASETS_ANTIGRAVITY), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+).hexdigest()
 FROZEN_ALPHAS_ANTIGRAVITY = (0.005,)
 KERNEL_DIMENSIONS_ANTIGRAVITY = {1024: 1008, 4096: 4032}
 SEEDS_ANTIGRAVITY = (20260721, 20261721)
@@ -125,6 +137,38 @@ class InventoryGateAntigravity:
             "affected_datasets_sha256": self.affected_datasets_sha256,
             "label_access_count": self.label_access_count,
             "repaired_row_count": self.repaired_row_count,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class UnionInventoryGateAntigravity:
+    dataset_count: int
+    datasets: tuple[str, ...]
+    test_only_dataset: str
+    test_only_rows: int
+    test_only_scalars: int
+    label_access_count: int
+
+    def __post_init__(self) -> None:
+        _exact_int(self.dataset_count, EXPECTED_UNION_DATASET_COUNT_ANTIGRAVITY, "union_dataset_count")
+        datasets = tuple(self.datasets)
+        if type(self.datasets) is not tuple or datasets != EXPECTED_UNION_DATASETS_ANTIGRAVITY:
+            raise ValueError("union datasets differ from official TRAIN-or-TEST authority")
+        if self.test_only_dataset != EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY:
+            raise ValueError("union test-only dataset differs")
+        _exact_int(self.test_only_rows, EXPECTED_UNION_TEST_ONLY_ROWS_ANTIGRAVITY, "union_test_only_rows")
+        _exact_int(self.test_only_scalars, EXPECTED_UNION_TEST_ONLY_SCALARS_ANTIGRAVITY, "union_test_only_scalars")
+        _exact_int(self.label_access_count, 0, "union_label_access_count")
+
+    def to_payload_antigravity(self) -> dict[str, object]:
+        return {
+            "dataset_count": self.dataset_count,
+            "datasets": list(self.datasets),
+            "datasets_sha256": EXPECTED_UNION_SHA256_ANTIGRAVITY,
+            "test_only_dataset": self.test_only_dataset,
+            "test_only_rows": self.test_only_rows,
+            "test_only_scalars": self.test_only_scalars,
+            "label_access_count": self.label_access_count,
         }
 
 
@@ -220,6 +264,8 @@ class R4ReadinessDependenciesAntigravity:
     affected_raw_context: Callable[[object], ContextManager[Mapping[str, object]]]
     prepare_policy_a: Callable[[object], object]
     score_configuration: Callable[..., object]
+    verify_union: Callable[[object, Mapping[str, object]], UnionInventoryGateAntigravity]
+    verify_environment: Callable[[], Mapping[str, object]]
 
     def __post_init__(self) -> None:
         if any(not callable(getattr(self, name)) for name in self.__dataclass_fields__):
@@ -278,6 +324,10 @@ def _code_closure_sha256_antigravity() -> str:
         "paper/equipment_anomaly_detection/contracts_paper.py",
         "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
         "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py",
+        "paper/equipment_anomaly_detection/hard_route_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
     )
     hashes = {}
     for name in names:
@@ -317,12 +367,67 @@ def _score_configuration_antigravity(dataset: str, train: np.ndarray, test: np.n
     return score_configuration_paper(train, test, config=MiniRocketConfig(), **kwargs)
 
 
+def _union_gate_from_rows_antigravity(raw_values: Mapping[str, object], *, label_access_count: int) -> UnionInventoryGateAntigravity:
+    affected: set[str] = set()
+    test_only_rows = 0
+    test_only_scalars = 0
+    forbidden_fields = ("label", "raw_label", "ground_truth", "anomaly")
+    for dataset, raw in raw_values.items():
+        if any(any(hasattr(row, field) for field in forbidden_fields) for row in tuple(getattr(raw, "test", ()))):
+            raise ValueError(f"TEST label field crossed the values-only boundary: {dataset}")
+        train_missing = False
+        for row in tuple(getattr(raw, "train", ())):
+            values = np.asarray(getattr(row, "values", ()), dtype="<f4")
+            if tuple(int(index) for index in np.flatnonzero(~np.isfinite(values))):
+                train_missing = True
+                affected.add(dataset)
+        for row in tuple(getattr(raw, "test", ())):
+            values = np.asarray(getattr(row, "values", ()), dtype="<f4")
+            missing = tuple(int(index) for index in np.flatnonzero(~np.isfinite(values)))
+            if missing:
+                affected.add(dataset)
+                if dataset == EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY and not train_missing:
+                    test_only_rows += 1
+                    test_only_scalars += len(missing)
+    return UnionInventoryGateAntigravity(
+        dataset_count=len(tuple(sorted(affected))),
+        datasets=tuple(sorted(affected)),
+        test_only_dataset=EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY,
+        test_only_rows=test_only_rows,
+        test_only_scalars=test_only_scalars,
+        label_access_count=label_access_count,
+    )
+
+
+def _production_union_antigravity(snapshot: object, train_raw: Mapping[str, object]) -> UnionInventoryGateAntigravity:
+    del train_raw
+    with TemporaryDirectory(prefix="paper_r4_union_antigravity_") as temporary:
+        attempt = Path(temporary) / "attempt_antigravity"
+        pinned = pin_database_snapshot_antigravity(
+            EXP443_FROZEN_CONFIG.database_path,
+            attempt,
+            expected_sha256=EXP443_FROZEN_CONFIG.database_sha256,
+        )
+        try:
+            raw_values = {
+                dataset: load_raw_dataset_antigravity(pinned, dataset)
+                for dataset in EXPECTED_UNION_DATASETS_ANTIGRAVITY
+            }
+            if pinned.label_access_count != 0:
+                raise ValueError("label_access_count differs after union raw load")
+            return _union_gate_from_rows_antigravity(raw_values, label_access_count=0)
+        finally:
+            pinned.close(terminal_evidence_durable=True)
+
+
 def _default_dependencies_antigravity() -> R4ReadinessDependenciesAntigravity:
     return R4ReadinessDependenciesAntigravity(
         verify_sources=verify_frozen_sources_antigravity,
         affected_raw_context=_production_raw_context_antigravity,
         prepare_policy_a=_prepare_policy_a_antigravity,
         score_configuration=_score_configuration_antigravity,
+        verify_union=_production_union_antigravity,
+        verify_environment=verify_exp84_environment_paper,
     )
 
 
@@ -450,6 +555,17 @@ def run_r4_readiness_antigravity(
             "not_ready", None, (), (failure,), _database_sha256_antigravity(snapshot), closure, environment,
         )
     emit("inventory ready")
+    try:
+        union = deps.verify_union(snapshot, detached_raw)
+        if not isinstance(union, UnionInventoryGateAntigravity):
+            raise ValueError("union inventory type is invalid")
+        environment = {**environment, "union_inventory": union.to_payload_antigravity(), "pinned_torch": PINNED_TORCH_VERSION_PAPER}
+        deps.verify_environment()
+    except (OSError, RuntimeError, ValueError) as error:
+        failure = f"union_or_environment: {type(error).__name__}: {error}"
+        return R4ReadinessResultAntigravity(
+            "not_ready", inventory, (), (failure,), _database_sha256_antigravity(snapshot), closure, environment,
+        )
 
     evidence: list[ParityEvidenceAntigravity] = []
     failures: list[str] = []
@@ -524,7 +640,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 __all__ = [
     "EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY", "EXPECTED_AFFECTED_SHA256_ANTIGRAVITY",
-    "InventoryGateAntigravity", "ParityEvidenceAntigravity", "R4ReadinessDependenciesAntigravity",
+    "EXPECTED_UNION_DATASETS_ANTIGRAVITY", "EXPECTED_UNION_DATASET_COUNT_ANTIGRAVITY",
+    "EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY", "EXPECTED_UNION_TEST_ONLY_ROWS_ANTIGRAVITY",
+    "EXPECTED_UNION_TEST_ONLY_SCALARS_ANTIGRAVITY", "EXPECTED_UNION_SHA256_ANTIGRAVITY",
+    "InventoryGateAntigravity", "UnionInventoryGateAntigravity", "ParityEvidenceAntigravity", "R4ReadinessDependenciesAntigravity",
     "R4ReadinessResultAntigravity", "ReadinessFailureAntigravity",
     "canonical_result_bytes_antigravity", "main", "run_r4_readiness_antigravity",
 ]

@@ -29,7 +29,10 @@ class Task8LifecycleTests(unittest.TestCase):
         from paper.equipment_anomaly_detection.catalog_paper import build_catalog
         self.catalog=build_catalog(self.db,mode="smoke",smoke_datasets=("alpha","beta")); self.oracle=self.base/"oracle_antigravity.json"; self.root=self.base/"run_antigravity"
         policies=((),(),(),()); self.oracle.write_bytes(_canonical({"schema":"paper-task8-coordinate-oracle.v1","policies":[{"policy_id":name,"coordinates":[]} for name in ("hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable")]})); self.acceptance=self.base/"acceptance_antigravity.json"; self._acceptance(policies)
-    def tearDown(self): self.temporary.cleanup()
+        self._env_gate=patch("paper.equipment_anomaly_detection.proposal_score_paper.verify_exp84_environment_paper", return_value={"torch":"2.13.0","hydra":"constructed","output_type":"tensor"}); self._env_gate.start()
+    def tearDown(self):
+        self._env_gate.stop()
+        self.temporary.cleanup()
     def _acceptance(self, policies):
         from paper.equipment_anomaly_detection.catalog_paper import coordinate_digest
         records=[{"policy_id":name,"order":order,"coordinates":[[dataset,index] for dataset,index in coords],"coordinate_count":len(coords),"coordinate_sha256":coordinate_digest(coords)} for order,(name,coords) in enumerate(zip(("hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable"),policies,strict=True))]

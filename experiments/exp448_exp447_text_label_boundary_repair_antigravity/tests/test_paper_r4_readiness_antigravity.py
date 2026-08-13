@@ -7,6 +7,7 @@ from hashlib import sha256
 import io
 import json
 import os
+from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -16,8 +17,10 @@ import numpy as np
 from experiments.exp448_exp447_text_label_boundary_repair_antigravity.paper_r4_readiness_antigravity import (
     EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY,
     EXPECTED_AFFECTED_SHA256_ANTIGRAVITY,
+    EXPECTED_UNION_DATASETS_ANTIGRAVITY,
     InventoryGateAntigravity,
     R4ReadinessDependenciesAntigravity,
+    UnionInventoryGateAntigravity,
     canonical_result_bytes_antigravity,
     main,
     run_r4_readiness_antigravity,
@@ -164,11 +167,23 @@ def _dependencies(
             arrays[f"kernels_{requested_kernels}__test_by_seed"] = np.stack([np.asarray([199.0], dtype="<f8")] * 2)
         return ConfigurationScoresPaper(train_score, test_score, expected_dimension)
 
+    def verify_union(_snapshot, _raw):
+        return UnionInventoryGateAntigravity(
+            dataset_count=20,
+            datasets=EXPECTED_UNION_DATASETS_ANTIGRAVITY,
+            test_only_dataset="MelbournePedestrian_normal_10",
+            test_only_rows=3,
+            test_only_scalars=3,
+            label_access_count=0,
+        )
+
     return R4ReadinessDependenciesAntigravity(
         verify_sources=lambda: authority,
         affected_raw_context=raw_context,
         prepare_policy_a=lambda values: prepare_dataset_antigravity(values, POLICY_A_ANTIGRAVITY),
         score_configuration=score,
+        verify_union=verify_union,
+        verify_environment=lambda: {"torch": "2.13.0", "hydra": "constructed"},
     ), opened
 
 
@@ -283,6 +298,62 @@ class R4ReadinessParityTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(stdout.getvalue().encode("utf-8"), canonical_result_bytes_antigravity(expected))
         self.assertEqual(json.loads(stdout.getvalue())["status"], "ready")
+
+    def test_union_inventory_mismatch_fails_before_scoring(self) -> None:
+        """Production mutation caught: readiness accepted TRAIN 19/164/983/0 without the official TRAIN-or-TEST union of 20."""
+        scored = []
+        dependencies, _ = _dependencies()
+
+        def bad_union(_snapshot, _raw):
+            raise ValueError("union_dataset_count differs: expected=20 actual=19")
+
+        def score(*_args, **_kwargs):
+            scored.append("score")
+            raise AssertionError("union mismatch must fail before MiniRocket")
+
+        dependencies = replace(dependencies, verify_union=bad_union, score_configuration=score)
+        result = run_r4_readiness_antigravity(dependencies=dependencies)
+        self.assertEqual(result.status, "not_ready")
+        self.assertIn("union_dataset_count", result.failures[0])
+        self.assertEqual(result.parity, ())
+        self.assertEqual(scored, [])
+
+    def test_bounded_db_union_identity_without_test_labels(self) -> None:
+        """Official TRAIN-or-TEST union identity is 20, including MelbournePedestrian_normal_10 TEST-only 3/3."""
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.database_antigravity import (
+            load_raw_dataset_antigravity,
+            pin_database_snapshot_antigravity,
+        )
+        from experiments.exp448_exp447_text_label_boundary_repair_antigravity.paper_r4_readiness_antigravity import (
+            EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY,
+        )
+        from tempfile import TemporaryDirectory
+
+        database = Path(EXP443_FROZEN_CONFIG.database_path)
+        if not database.is_file():
+            self.skipTest("frozen database is unavailable")
+        with TemporaryDirectory(prefix="paper_r4_union_db_antigravity_") as temporary:
+            pinned = pin_database_snapshot_antigravity(
+                str(database), Path(temporary) / "attempt_antigravity",
+                expected_sha256=EXP443_FROZEN_CONFIG.database_sha256,
+            )
+            try:
+                raw = load_raw_dataset_antigravity(pinned, EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY)
+                self.assertEqual(pinned.label_access_count, 0)
+                self.assertFalse(any(hasattr(row, "label") for row in raw.test))
+                train_missing = sum(1 for row in raw.train if np.isnan(np.asarray(row.values, dtype="<f4")).any() or not np.isfinite(np.asarray(row.values, dtype="<f4")).all())
+                test_rows = 0
+                test_scalars = 0
+                for row in raw.test:
+                    missing = tuple(int(index) for index in np.flatnonzero(~np.isfinite(np.asarray(row.values, dtype="<f4"))))
+                    if missing:
+                        test_rows += 1
+                        test_scalars += len(missing)
+            finally:
+                pinned.close(terminal_evidence_durable=True)
+        self.assertEqual(train_missing, 0)
+        self.assertEqual(test_rows, 3)
+        self.assertEqual(test_scalars, 3)
 
 
 @unittest.skipUnless(os.environ.get("PAPER_R4_READINESS_REAL_ANTIGRAVITY") == "1", "opt-in bounded real readiness")

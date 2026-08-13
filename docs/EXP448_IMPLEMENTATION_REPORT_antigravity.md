@@ -69,13 +69,16 @@ only. It does not authorize smoke-root or official r4-root creation.
   worker policy (`logical_cpu_count - 1`, inner threads = 1), and scoring
   closure hashes are immutable. `check` is read-only.
 - The production interpreter
-  `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python`
+  `/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python`
   is accepted only as that exact lexical venv symlink. `check` requires
   `sys.executable` to equal that path, `sys.prefix` to equal the venv root, a
   regular resolved executable, and a hash-bound python identity. Authority
   records `executable`, `executable_realpath`, `python_prefix`,
   `python_base_prefix`, and `python_identity_sha256`. Worker and pipeline
   commands invoke the pinned venv path and never resolve it to base Python.
+  The exp443 venv is not mutated. The failed 20260813 smoke/ops pair remains
+  immutable evidence; official smoke is the v2 path and must stay absent until
+  a later authorized smoke. Official r4 remains unauthorized.
 - `_command_is_this_worker` matches only the exact 13-token full-worker argv
   grammar, including the stored authority SHA. `stop` rereads OS argv before
   SIGTERM and returns `stop_refused` if identity changed.

@@ -2,7 +2,7 @@
   "schema": "paper-source-provenance.v1",
   "helpers": {
     "hard_route_paper.py": {
-      "paper_sha256": "d876e96aa32fbf3bc4c4069d539bfca12f1a786b3eb1d3172040f96f0df0a308",
+      "paper_sha256": "748a6f93cd0728e1eb78a3c3e552ad4ee2fa41a8f9afe7e9b08882fd1b869ef7",
       "origins": [
         {
           "module": "run_experiment_60_62_rocket_imaging_selector_variants",
@@ -192,7 +192,7 @@
       ]
     },
     "sources_paper/multirocket_hydra_paper.py": {
-      "paper_sha256": "d4c4a57b20c322da9f7cc80da21e24f69fb7a3c7c77ef8da9ccb236ab7dc8341",
+      "paper_sha256": "e8ecfad5065f01dbc70840a7d459d81da119fcefc95cade9f8554291d7d01a81",
       "origins": [
         {
           "module": "run_model_hard_research_experiments",
@@ -270,7 +270,7 @@
       ]
     },
     "sources_paper/legacy_route_sources_paper.py": {
-      "paper_sha256": "386a2e81c50134f37d93d654455442e86c2b4f6ab2f82987f9d2348985e09331",
+      "paper_sha256": "88fd51b78985932da721e5b193d3dcd1f23df746687f60baf2bdcf66414ac561",
       "origins": [
         {
           "module": "run_experiment_40_original_score_normalization_sweep",
@@ -325,6 +325,13 @@
             "prediction_bundle"
           ],
           "source_sha256": "4ab38ef8a0ad152ccfc18c1297c40aca31ba79ac29348b9f5da029682507b2ed"
+        },
+        {
+          "module": "experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity",
+          "symbols": [
+            "repair_linear_edge_nearest_antigravity"
+          ],
+          "source_sha256": "411c7721cb5a8e058fd9fc60ea079b0f8d68874d87a6bd445f5518a85bcd3452"
         }
       ]
     },

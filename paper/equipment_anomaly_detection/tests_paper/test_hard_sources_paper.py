@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -266,6 +267,104 @@ print('source-parity: rocket_exp40 rocket_block_b exp55_small exp55_randomized_c
         completed = subprocess.run([str(oracle), "-c", code], cwd=Path.cwd(),
                                    check=True, timeout=90)
         self.assertEqual(completed.returncode, 0)
+
+    def _fake_aeon(self, hydra_init):
+        class MultiRocket:
+            def __init__(self, **_kwargs):
+                pass
+
+            def fit(self, _rows):
+                return self
+
+            def transform(self, rows):
+                return np.ones((len(rows), 8), dtype=np.float32)
+
+        class HydraTransformer:
+            def __init__(self, **kwargs):
+                hydra_init(kwargs)
+
+            def fit(self, _rows):
+                return self
+
+            def transform(self, rows):
+                return np.ones((len(rows), 8), dtype=np.float32)
+
+        return SimpleNamespace(MultiRocket=MultiRocket, HydraTransformer=HydraTransformer)
+
+    def test_hydra_constructor_torch_modulenotfound_is_typed_dependency(self) -> None:
+        """Production mutation caught: Hydra constructor ModuleNotFoundError mentioning torch escaped as an untyped per-dataset crash."""
+        from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper import exp84_score_pair_paper
+        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import DependencyUnavailablePaper
+
+        def explode(_kwargs):
+            raise ModuleNotFoundError("HydraTransformer requires package 'torch' to be present in the python environment")
+
+        fake = self._fake_aeon(explode)
+        with patch.dict(sys.modules, {"aeon.transformations.collection.convolution_based": fake}):
+            with self.assertRaises(DependencyUnavailablePaper) as error:
+                exp84_score_pair_paper(np.ones((3, 8), dtype=np.float32), np.ones((2, 8), dtype=np.float32))
+        self.assertIn("torch", str(error.exception))
+        self.assertIsInstance(error.exception.__cause__, ModuleNotFoundError)
+
+    def test_unrelated_hydra_runtimeerror_is_not_converted(self) -> None:
+        """Production mutation caught: a broad except would hide a real Hydra RuntimeError."""
+        from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper import exp84_score_pair_paper
+        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import DependencyUnavailablePaper
+
+        def explode(_kwargs):
+            raise RuntimeError("cuda allocator exploded")
+
+        fake = self._fake_aeon(explode)
+        with patch.dict(sys.modules, {"aeon.transformations.collection.convolution_based": fake}):
+            with self.assertRaisesRegex(RuntimeError, "cuda allocator exploded"):
+                exp84_score_pair_paper(np.ones((3, 8), dtype=np.float32), np.ones((2, 8), dtype=np.float32))
+        with patch.dict(sys.modules, {"aeon.transformations.collection.convolution_based": fake}):
+            with self.assertRaises(RuntimeError):
+                try:
+                    exp84_score_pair_paper(np.ones((3, 8), dtype=np.float32), np.ones((2, 8), dtype=np.float32))
+                except DependencyUnavailablePaper as error:
+                    self.fail(f"unrelated RuntimeError was converted: {error}")
+
+    def test_unrelated_modulenotfound_is_not_converted(self) -> None:
+        """Production mutation caught: only a torch-mentioning Hydra ModuleNotFoundError may become DependencyUnavailablePaper."""
+        from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper import exp84_score_pair_paper
+        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import DependencyUnavailablePaper
+
+        def explode(_kwargs):
+            raise ModuleNotFoundError("No module named 'something_else'")
+
+        fake = self._fake_aeon(explode)
+        with patch.dict(sys.modules, {"aeon.transformations.collection.convolution_based": fake}):
+            with self.assertRaisesRegex(ModuleNotFoundError, "something_else"):
+                exp84_score_pair_paper(np.ones((3, 8), dtype=np.float32), np.ones((2, 8), dtype=np.float32))
+            with self.assertRaises(ModuleNotFoundError):
+                try:
+                    exp84_score_pair_paper(np.ones((3, 8), dtype=np.float32), np.ones((2, 8), dtype=np.float32))
+                except DependencyUnavailablePaper as error:
+                    self.fail(f"unrelated ModuleNotFoundError was converted: {error}")
+
+    def test_environment_gate_fails_before_dataset_fanout(self) -> None:
+        """Production mutation caught: missing torch was retried once per dataset instead of failing before fanout."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from paper.equipment_anomaly_detection.proposal_score_paper import _collect_task4_task5
+        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import DependencyUnavailablePaper
+
+        called: list[str] = []
+        raw = {"ChlorineConcentration_normal_3": self.values, "PigAirwayPressure_normal_1": self.values}
+        backend = FrozenTask8BackendDecision.from_acceleration_manifest(
+            build_acceleration_manifest("f" * 64, logical_cpu_count=2)
+        )
+        with patch(
+            "paper.equipment_anomaly_detection.proposal_score_paper.verify_exp84_environment_paper",
+            side_effect=DependencyUnavailablePaper("dependency_unavailable:torch"),
+        ), patch(
+            "paper.equipment_anomaly_detection.proposal_score_paper._score_dataset_task4_task5",
+            side_effect=lambda values: called.append(values.dataset),
+        ):
+            with self.assertRaisesRegex(DependencyUnavailablePaper, "torch"):
+                _collect_task4_task5(raw, backend)
+        self.assertEqual(called, [])
 
 
 if __name__ == "__main__":

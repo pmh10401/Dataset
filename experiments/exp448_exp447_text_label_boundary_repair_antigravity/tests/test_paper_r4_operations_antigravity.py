@@ -27,7 +27,7 @@ LAUNCHER_PATH = REPOSITORY_ROOT / "scratch/manage_paper_r4_proposal_antigravity.
 FORBIDDEN_LABEL_MODULE = "paper.equipment_anomaly_detection.label_access_paper"
 OFFICIAL_PATHS = {
     "OFFICIAL_INTERPRETER": Path(
-        "/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python"
+        "/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python"
     ),
     "OFFICIAL_DATABASE": Path("/Users/mac/Documents/Dataset/univariate_ts.db"),
     "OFFICIAL_R3_ROOT": Path(
@@ -40,7 +40,13 @@ OFFICIAL_PATHS = {
         "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
     ),
     "OFFICIAL_SMOKE_ROOT": Path(
+        "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+    ),
+    "FAILED_SMOKE_ROOT": Path(
         "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813"
+    ),
+    "FAILED_SMOKE_OPS_ROOT": Path(
+        "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity"
     ),
 }
 EXPECTED_SMOKE_DATASETS = (
@@ -123,7 +129,7 @@ class PaperR4OperationsTests(unittest.TestCase):
         r4 = dataset / "paper_proposal_full_r4_antigravity_20260813"
         if create_r4:
             r4.mkdir()
-        smoke = dataset / "paper_proposal_r4_prelaunch_smoke_antigravity_20260813"
+        smoke = dataset / "paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
         ops = dataset / "paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
         for relative in module.SCORING_CLOSURE_PATHS:
             path = repo / relative
@@ -558,6 +564,8 @@ class PaperR4OperationsTests(unittest.TestCase):
             ), mock.patch.object(
                 runner, "load_dataset_values", side_effect=lambda _path, name: raw[name]
             ), mock.patch.object(runner, "build_acceleration_manifest", side_effect=acceleration), mock.patch.object(
+                score, "verify_exp84_environment_paper", return_value={"torch": "2.13.0", "hydra": "constructed"}
+            ), mock.patch.object(
                 score, "_score_dataset_task4_task5", side_effect=calculate
             ), mock.patch.object(score, "score_low_frequency", return_value=low), mock.patch.object(
                 score, "classify_stability", return_value=alpha[4]
@@ -1102,7 +1110,11 @@ class PaperR4OperationsTests(unittest.TestCase):
             OFFICIAL_PATHS["OFFICIAL_SMOKE_ROOT"],
             Path(str(OFFICIAL_PATHS["OFFICIAL_SMOKE_ROOT"]) + "_ops_antigravity"),
         )
-        before = {path: (path.exists(), path.is_symlink()) for path in official_roots}
+        failed_roots = (
+            OFFICIAL_PATHS["FAILED_SMOKE_ROOT"],
+            OFFICIAL_PATHS["FAILED_SMOKE_OPS_ROOT"],
+        )
+        before = {path: (path.exists(), path.is_symlink()) for path in official_roots + failed_roots}
         completed = subprocess.run(
             [str(official), "-B", "-u", str(seam)],
             cwd=str(REPOSITORY_ROOT),
@@ -1123,10 +1135,17 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertFalse(module.OFFICIAL_R4_ROOT.exists())
         self.assertFalse(module.OFFICIAL_OPS_ROOT.exists())
         self.assertFalse(module.OFFICIAL_SMOKE_ROOT.exists())
-        self.assertEqual({path: (path.exists(), path.is_symlink()) for path in official_roots}, before)
+        self.assertEqual({path: (path.exists(), path.is_symlink()) for path in official_roots + failed_roots}, before)
         for path in official_roots:
             self.assertFalse(path.exists())
             self.assertFalse(path.is_symlink())
+        for path in failed_roots:
+            self.assertTrue(path.is_dir())
+            self.assertFalse(path.is_symlink())
+        self.assertEqual(payload["failed_smoke_root"], str(OFFICIAL_PATHS["FAILED_SMOKE_ROOT"]))
+        self.assertEqual(payload["failed_smoke_ops_root"], str(OFFICIAL_PATHS["FAILED_SMOKE_OPS_ROOT"]))
+        self.assertEqual(payload["failed_smoke_tree_sha256"], module.FAILED_SMOKE_TREE_SHA256)
+        self.assertEqual(payload["failed_smoke_ops_tree_sha256"], module.FAILED_SMOKE_OPS_TREE_SHA256)
 
     def test_command_is_this_worker_rejects_unrelated_c_prefix_antigravity(self) -> None:
         module = self.load_launcher()
@@ -1416,7 +1435,7 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertEqual(inventory["joblib"], "1.5.3")
         self.assertEqual(inventory["scikit-image"], "absent")
         self.assertEqual(inventory["pycatch22"], "absent")
-        self.assertEqual(inventory["torch"], "absent")
+        self.assertEqual(inventory["torch"], "2.13.0")
         self.assertEqual(inventory["mlx"], "absent")
         self.assertEqual(inventory["mlx-metal"], "absent")
         self.assertEqual(

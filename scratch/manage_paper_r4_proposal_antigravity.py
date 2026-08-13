@@ -28,7 +28,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 OFFICIAL_INTERPRETER = Path(
-    "/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python"
+    "/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python"
 )
 OFFICIAL_DATABASE = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
 OFFICIAL_R3_ROOT = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813")
@@ -37,8 +37,18 @@ OFFICIAL_OPS_ROOT = Path(
     "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
 )
 OFFICIAL_SMOKE_ROOT = Path(
+    "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+)
+FAILED_SMOKE_ROOT = Path(
     "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813"
 )
+FAILED_SMOKE_OPS_ROOT = Path(
+    "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity"
+)
+FAILED_SMOKE_TREE_SHA256 = "5b91f015c0e63bbc28b0de3ae1d142fb814d023c7812bc3fef2a69c38f7bd429"
+FAILED_SMOKE_OPS_TREE_SHA256 = "5677b79105bc7bc6d884cf7d713e42bb7b12f3fe1f57c18971e19d73483c01f6"
+FAILED_SMOKE_OPS_AUTHORITY_SHA256 = "e64bf4fce16d651ea68c187e9d9faef2af685a35fabf1bb2ce3beb14bcf66a58"
+PINNED_TORCH_VERSION = "2.13.0"
 EXPECTED_DATABASE_SHA256 = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
 EXPECTED_DATASET_COUNT = 1117
 INNER_NUMERICAL_THREADS = 1
@@ -124,6 +134,9 @@ SCORING_CLOSURE_PATHS = (
     "paper/equipment_anomaly_detection/data_paper.py",
     "paper/equipment_anomaly_detection/hard_route_paper.py",
     "paper/equipment_anomaly_detection/config_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
 )
 AUTHORITY_FIELDS = {
     "schema",
@@ -139,6 +152,11 @@ AUTHORITY_FIELDS = {
     "r4_absent",
     "ops_root",
     "smoke_root",
+    "failed_smoke_root",
+    "failed_smoke_ops_root",
+    "failed_smoke_tree_sha256",
+    "failed_smoke_ops_tree_sha256",
+    "failed_smoke_ops_authority_sha256",
     "smoke_result_sha256",
     "executable",
     "executable_realpath",
@@ -391,6 +409,37 @@ def _inventory_digest(inventory: Mapping[str, object]) -> str:
     return sha256(canonical_json_bytes(dict(inventory))).hexdigest()
 
 
+def _failed_evidence_identity() -> dict[str, str]:
+    for path, name in ((FAILED_SMOKE_ROOT, "failed smoke root"), (FAILED_SMOKE_OPS_ROOT, "failed smoke-ops root")):
+        _reject_symlink(path, name)
+        _validate_ops_root(path, name)
+        if not path.is_dir():
+            raise ValueError(f"{name} must remain present as immutable evidence")
+    smoke_digest = _tree_digest(FAILED_SMOKE_ROOT, "failed smoke root")
+    ops_digest = _tree_digest(FAILED_SMOKE_OPS_ROOT, "failed smoke-ops root")
+    authority_hash = FAILED_SMOKE_OPS_ROOT / "authority_sha256_antigravity.txt"
+    _require_regular_file(authority_hash, "failed smoke-ops authority hash")
+    recorded = authority_hash.read_text(encoding="ascii").strip()
+    if smoke_digest != FAILED_SMOKE_TREE_SHA256:
+        raise ValueError("failed smoke root digest differs")
+    if ops_digest != FAILED_SMOKE_OPS_TREE_SHA256:
+        raise ValueError("failed smoke-ops root digest differs")
+    if recorded != FAILED_SMOKE_OPS_AUTHORITY_SHA256:
+        raise ValueError("failed smoke-ops authority digest differs")
+    return {
+        "failed_smoke_root": str(FAILED_SMOKE_ROOT),
+        "failed_smoke_ops_root": str(FAILED_SMOKE_OPS_ROOT),
+        "failed_smoke_tree_sha256": smoke_digest,
+        "failed_smoke_ops_tree_sha256": ops_digest,
+        "failed_smoke_ops_authority_sha256": recorded,
+    }
+
+
+def _require_new_smoke_absent() -> None:
+    _require_absent(OFFICIAL_SMOKE_ROOT, "v2 smoke root")
+    _require_absent(smoke_ops_paths().root, "v2 smoke-ops root")
+
+
 def _smoke_root_manifest_sha256() -> str:
     root = Path(OFFICIAL_SMOKE_ROOT)
     _reject_symlink(root, "smoke root")
@@ -542,6 +591,7 @@ def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = N
         "r4_absent": True,
         "ops_root": str(OFFICIAL_OPS_ROOT),
         "smoke_root": str(OFFICIAL_SMOKE_ROOT),
+        **_failed_evidence_identity(),
         "smoke_result_sha256": smoke_result_sha256,
         "executable": runtime["executable"],
         "executable_realpath": runtime["executable_realpath"],
@@ -618,15 +668,26 @@ def validate_authority(authority: Mapping[str, object]) -> dict[str, object]:
     smoke = authority.get("smoke_result_sha256")
     if smoke is not None and not _is_sha256(smoke):
         raise ValueError("launch authority smoke result hash is invalid")
+    if (
+        authority.get("failed_smoke_root") != str(FAILED_SMOKE_ROOT)
+        or authority.get("failed_smoke_ops_root") != str(FAILED_SMOKE_OPS_ROOT)
+        or authority.get("failed_smoke_tree_sha256") != FAILED_SMOKE_TREE_SHA256
+        or authority.get("failed_smoke_ops_tree_sha256") != FAILED_SMOKE_OPS_TREE_SHA256
+        or authority.get("failed_smoke_ops_authority_sha256") != FAILED_SMOKE_OPS_AUTHORITY_SHA256
+    ):
+        raise ValueError("launch authority failed smoke evidence identity is invalid")
     backend = authority.get("backend")
     if not isinstance(backend, dict) or set(backend) != BACKEND_FIELDS or backend.get("selected_backend") != "cpu":
         raise ValueError("launch authority backend schema is invalid")
     return dict(authority)
 
 
-def check(reviewed_commit: str) -> dict[str, object]:
+def check(reviewed_commit: str, *, require_new_smoke_absent: bool = True) -> dict[str, object]:
     _require_absent(OFFICIAL_R4_ROOT, "r4 root")
     _reject_symlink(OFFICIAL_R4_ROOT, "r4 root")
+    if require_new_smoke_absent:
+        _require_new_smoke_absent()
+    _failed_evidence_identity()
     _validate_ops_root(OFFICIAL_OPS_ROOT, "ops root")
     _validate_ops_root(OFFICIAL_SMOKE_ROOT, "smoke root")
     _validate_ops_root(smoke_ops_paths().root, "smoke-ops root")
@@ -1027,7 +1088,7 @@ def _spawn_worker(
 
 
 def launch(reviewed_commit: str, *, spawn=subprocess.Popen) -> dict[str, object]:
-    check(reviewed_commit)
+    check(reviewed_commit, require_new_smoke_absent=False)
     smoke = verify_smoke_authorization(reviewed_commit)
     authority = build_authority(reviewed_commit, smoke_result_sha256=str(smoke["result_sha256"]))
     if OFFICIAL_R4_ROOT.exists() or OFFICIAL_R4_ROOT.is_symlink():
@@ -1383,7 +1444,7 @@ def inspect_status(reviewed_commit: str, now_epoch: float | None = None) -> dict
 
 
 def smoke(reviewed_commit: str, *, run_child=None) -> dict[str, object]:
-    check(reviewed_commit)
+    check(reviewed_commit, require_new_smoke_absent=False)
     if OFFICIAL_SMOKE_ROOT.is_symlink():
         raise ValueError("smoke root must not be a symlink")
     smoke_paths = smoke_ops_paths()

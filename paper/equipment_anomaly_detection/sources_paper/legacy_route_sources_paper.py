@@ -18,7 +18,7 @@ from ..contracts_paper import RawDataset
 from .imaging_paper import EXP55_CONFIG_PAPER, EXP56_CONFIG_PAPER, imaging_score_pair_paper
 from .knn_paper import density_knn_score_pair_paper
 from .multirocket_hydra_paper import exp84_score_pair_paper
-from .preprocessing_paper import align_series_lengths_paper, z_normalize_paper
+from .preprocessing_paper import align_series_lengths_paper, repair_linear_edge_nearest_paper, z_normalize_paper
 from .rocket_paper import MAX_TRAIN_REFERENCE_PAPER, make_kernels_paper, reference_train_paper, rocket_feature_pair_paper, rocket_transform_paper
 
 
@@ -31,7 +31,12 @@ PROVENANCE_PAPER = {
     "run_experiment_131_rocket_block_b_calibration.py": ("fixed_reference", "score_block_b"),
     "run_experiment_132_block_b_review_integration.py": ("fixed_reference", "block_scores"),
     "run_experiment_135_block_c_review_confirmation.py": ("block_c_candidates",),
+    "experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity": ("repair_linear_edge_nearest_antigravity",),
 }
+
+
+class LegacyFullFitNonfiniteInputPaper(ValueError):
+    """A Task5 full-fit working copy cannot be repaired safely."""
 
 
 def parse_family_paper(dataset_name: str) -> str:
@@ -221,16 +226,26 @@ def _confirmation_blocks(train: np.ndarray, test: np.ndarray) -> ConfirmationBlo
     return ConfirmationBlocks(FullFitScoreView("block_a", a_train, a_test, .015), FullFitScoreView("block_b", b_train, b_test, .015), FullFitScoreView("block_b", b_train, b_test, .01), FullFitScoreView("block_c", c_train, c_test, .01))
 
 
+def _repair_rows_for_legacy_fullfit_paper(rows: tuple[np.ndarray, ...], *, dataset: str, split: str) -> tuple[np.ndarray, ...]:
+    repaired: list[np.ndarray] = []
+    for index, row in enumerate(rows):
+        try:
+            repaired.append(repair_linear_edge_nearest_paper(row))
+        except ValueError as error:
+            raise LegacyFullFitNonfiniteInputPaper(f"dataset={dataset} split={split} row={index}: {error}") from error
+    return tuple(repaired)
+
+
 def build_legacy_route_evidence(values: RawDataset) -> LegacyRouteEvidence:
     if len(values.train_rows) < 2 or not values.test_rows:
         raise ValueError("legacy full-fit route requires at least two TRAIN and one TEST row")
-    if any(not np.isfinite(np.asarray(row, dtype=float)).all() for row in (*values.train_rows, *values.test_rows)):
-        raise ValueError("legacy full-fit route requires finite raw values")
+    train_work = _repair_rows_for_legacy_fullfit_paper(values.train_rows, dataset=values.dataset, split="TRAIN")
+    test_work = _repair_rows_for_legacy_fullfit_paper(values.test_rows, dataset=values.dataset, split="TEST")
     exp40_target = max(8, int(values.metadata_length))
-    all_lengths = [len(row) for row in (*values.train_rows, *values.test_rows)]
+    all_lengths = [len(row) for row in (*train_work, *test_work)]
     transductive_target = min(max(8, int(round(float(np.median(all_lengths))))), 2048)
-    exp40_train, exp40_test = align_series_lengths_paper(values.train_rows, exp40_target), align_series_lengths_paper(values.test_rows, exp40_target)
-    route_train, route_test = align_series_lengths_paper(values.train_rows, transductive_target), align_series_lengths_paper(values.test_rows, transductive_target)
+    exp40_train, exp40_test = align_series_lengths_paper(train_work, exp40_target), align_series_lengths_paper(test_work, exp40_target)
+    route_train, route_test = align_series_lengths_paper(train_work, transductive_target), align_series_lengths_paper(test_work, transductive_target)
     primary = {"rocket_exp40": _fullfit_primary("rocket_exp40", exp40_train, exp40_test, exp40_target)}
     for name in ("exp55_best", "exp56_best"):
         primary[name] = _fullfit_primary(name, route_train, route_test, transductive_target)
@@ -238,4 +253,4 @@ def build_legacy_route_evidence(values: RawDataset) -> LegacyRouteEvidence:
     return LegacyRouteEvidence(values.dataset, parse_family_paper(values.dataset), len(values.train_rows), len(values.test_rows), int(round(float(np.median([len(row) for row in values.test_rows])))), primary, exp84, _confirmation_blocks(exp40_train, exp40_test), exp40_target, transductive_target, True)
 
 
-__all__ = ["ConfirmationBlocks", "FullFitScoreView", "LegacyRouteEvidence", "WEAK_FAMILIES_PAPER", "build_legacy_route_evidence", "count_cap_threshold_paper", "parse_family_paper"]
+__all__ = ["ConfirmationBlocks", "FullFitScoreView", "LegacyFullFitNonfiniteInputPaper", "LegacyRouteEvidence", "WEAK_FAMILIES_PAPER", "build_legacy_route_evidence", "count_cap_threshold_paper", "parse_family_paper"]

@@ -47,13 +47,19 @@ root. Do not run `smoke` or `launch` until a later explicit user approval.
 Fixed interpreter and paths:
 
 ```text
-interpreter = /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python
+interpreter = /Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python
 database    = /Users/mac/Documents/Dataset/univariate_ts.db
 r3          = /Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813
 r4          = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813
 ops         = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity
-smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813
+smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813
+failed_smoke = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813
+failed_ops   = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity
 ```
+
+The failed 20260813 smoke/ops pair is immutable read-only evidence. Do not migrate,
+reuse, edit, or delete it. `check` requires those roots present and the v2 smoke/ops
+roots absent. Official r4 remains unauthorized.
 
 Read-only check (allowed after the operations code is committed; creates no roots).
 The command must be invoked with that exact lexical venv path so `sys.executable`
@@ -67,7 +73,7 @@ Worker/pipeline commands keep the same venv path and do not resolve it to
 base Python.
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py check --reviewed-commit REVIEWED_COMMIT
 ```
 
@@ -81,14 +87,14 @@ verification-only invocation. The CLI exits 0 only for top-level
 nonzero.
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py smoke --reviewed-commit REVIEWED_COMMIT
 ```
 
 Operator observation after a future authorized process exists:
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py status --reviewed-commit REVIEWED_COMMIT
 tail -f /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity/progress_antigravity.log
 ```
@@ -102,9 +108,9 @@ partial or polluted shape is rejected. Checkpoints are never migrated into a
 new closure/config.
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py stop --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py resume --reviewed-commit REVIEWED_COMMIT
 ```
 
@@ -112,6 +118,6 @@ Final post-review launch remains blocked until a new explicit user approval.
 The future command, not to be run now, is:
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py launch --reviewed-commit REVIEWED_COMMIT
 ```

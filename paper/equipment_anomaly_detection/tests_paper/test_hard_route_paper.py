@@ -545,6 +545,162 @@ print('frozen-db-10-exp137-exp236-artifact-parity',','.join(names))
         self.assertNotIn("oracle_path", inspect.signature(replay_hard_route).parameters)
         self.assertNotIn("frozen_coordinates", inspect.signature(replay_hard_route).parameters)
 
+    def _repairable_row(self) -> np.ndarray:
+        return np.asarray([1.0, np.nan, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype="<f4")
+
+    def _finite_row(self, offset: float) -> np.ndarray:
+        return np.arange(8, dtype="<f4") + np.float32(offset)
+
+    def _dataset(self, name: str, train: tuple[np.ndarray, ...], test: tuple[np.ndarray, ...]) -> RawDataset:
+        return RawDataset(
+            name, 8,
+            tuple(range(len(train))), tuple(row.tobytes() for row in train), train,
+            tuple(range(len(test))), tuple(b"test" + bytes([index]) for index in range(len(test))), test,
+        )
+
+    def test_task5_fullfit_repairs_working_copy_without_mutating_rawdataset(self) -> None:
+        """Production mutation caught: Task5 full-fit rejected repairable nonfinite raw rows instead of scoring a detached working copy."""
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity import (
+            repair_linear_edge_nearest_antigravity,
+        )
+        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import repair_linear_edge_nearest_paper
+
+        original = self._repairable_row()
+        raw_bytes = original.tobytes()
+        values = self._dataset(
+            "DodgerLoopDay_normal_1",
+            (original.copy(), self._finite_row(1.0)),
+            (self._finite_row(10.0), self._finite_row(11.0)),
+        )
+        captured: list[tuple[np.ndarray, np.ndarray]] = []
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, np.arange(2, dtype=float), np.zeros(2), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+
+        def capture(name, train, test, target):
+            captured.append((np.array(train, copy=True), np.array(test, copy=True)))
+            return FullFitScoreView(name, np.arange(len(train), dtype=float), np.arange(len(test), dtype=float), .015)
+
+        with patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._fullfit_primary", side_effect=capture), patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._confirmation_blocks", return_value=blocks):
+            evidence = build_legacy_route_evidence(values)
+        self.assertEqual(values.train_rows[0].tobytes(), raw_bytes)
+        self.assertTrue(np.isnan(values.train_rows[0][1]))
+        self.assertEqual(evidence.dataset, "DodgerLoopDay_normal_1")
+        self.assertEqual(evidence.n_train, 2)
+        self.assertEqual(evidence.n_test, 2)
+        expected = repair_linear_edge_nearest_antigravity(original)
+        self.assertEqual(repair_linear_edge_nearest_paper(original).tobytes(), expected.tobytes())
+        self.assertTrue(captured)
+        self.assertTrue(all(np.isfinite(matrix).all() for pair in captured for matrix in pair))
+
+    def test_task5_fullfit_interpolation_is_origin_equivalent_literal(self) -> None:
+        """Production mutation caught: Task5 full-fit empty-routed repairable inputs instead of applying the frozen Exp226/Exp443 formula."""
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity import (
+            repair_linear_edge_nearest_antigravity,
+        )
+
+        original = self._repairable_row()
+        values = self._dataset(
+            "MelbournePedestrian_normal_9",
+            (original.copy(), self._finite_row(2.0)),
+            (self._finite_row(20.0),),
+        )
+        seen: list[np.ndarray] = []
+
+        def capture_align(rows, target):
+            seen.append(np.stack([np.asarray(row, dtype="<f4") for row in rows]))
+            from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import align_series_lengths_paper
+            return align_series_lengths_paper(rows, target)
+
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, np.arange(2, dtype=float), np.zeros(1), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        with patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper.align_series_lengths_paper", side_effect=capture_align), patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._fullfit_primary", side_effect=lambda name, train, test, target: FullFitScoreView(name, np.arange(len(train), dtype=float), np.arange(len(test), dtype=float), .015)), patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._confirmation_blocks", return_value=blocks):
+            evidence = build_legacy_route_evidence(values)
+        self.assertGreaterEqual(len(seen), 1)
+        np.testing.assert_array_equal(seen[0][0], repair_linear_edge_nearest_antigravity(original))
+        self.assertTrue(np.isfinite(seen[0]).all())
+        self.assertEqual(evidence.n_train, 2)
+
+    def test_task5_fullfit_reports_dataset_split_row_only_for_unrepairable(self) -> None:
+        """Production mutation caught: unrepairable Task5 rows failed without dataset/split/row context."""
+        from paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper import (
+            LegacyFullFitNonfiniteInputPaper,
+        )
+
+        values = self._dataset(
+            "DodgerLoopGame_normal_1",
+            (np.full(8, np.nan, dtype="<f4"), self._finite_row(1.0)),
+            (self._finite_row(3.0),),
+        )
+        with self.assertRaisesRegex(
+            LegacyFullFitNonfiniteInputPaper,
+            r"dataset=DodgerLoopGame_normal_1 split=TRAIN row=0: series is entirely non-finite",
+        ):
+            build_legacy_route_evidence(values)
+
+    def test_task5_fullfit_handles_test_only_melbourne_shape_without_empty_route(self) -> None:
+        """Production mutation caught: TEST-only MelbournePedestrian_normal_10 nonfinite rows were empty-routed instead of repaired."""
+        train = (self._finite_row(1.0), self._finite_row(2.0))
+        test = (
+            self._finite_row(10.0),
+            np.asarray([np.nan, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype="<f4"),
+            np.asarray([1.0, 2.0, np.inf, 4.0, 5.0, 6.0, 7.0, 8.0], dtype="<f4"),
+            np.asarray([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, np.nan], dtype="<f4"),
+        )
+        values = self._dataset("MelbournePedestrian_normal_10", train, test)
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, np.arange(2, dtype=float), np.zeros(4), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        with patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._fullfit_primary", side_effect=lambda name, train, test, target: FullFitScoreView(name, np.arange(len(train), dtype=float), np.arange(len(test), dtype=float), .015)), patch("paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper._confirmation_blocks", return_value=blocks):
+            evidence = build_legacy_route_evidence(values)
+        self.assertEqual(evidence.dataset, "MelbournePedestrian_normal_10")
+        self.assertEqual(evidence.n_test, 4)
+        self.assertTrue(np.isnan(values.test_rows[1][0]))
+
+    def test_task4_still_abstains_on_nonfinite_input_after_task5_repair(self) -> None:
+        """Task4 OOF must keep nonfinite_input abstention; repair is Task5 working-copy only."""
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import score_hard_sources
+
+        values = self._dataset(
+            "DodgerLoopDay_normal_4",
+            (self._repairable_row(), self._finite_row(1.0), self._finite_row(2.0), self._finite_row(3.0), self._finite_row(4.0)),
+            (self._finite_row(10.0),),
+        )
+        bundle = score_hard_sources(values)
+        self.assertTrue(all(item.eligibility_reason == "nonfinite_input" for item in bundle.by_name.values()))
+
+    def test_undersized_phoneme_shaped_route_is_typed_empty_without_fullfit(self) -> None:
+        """Production mutation caught: Phoneme_normal_39 n_train=1 raised instead of a typed empty HardRouteResult."""
+        values = self._dataset("Phoneme_normal_39", (self._finite_row(0.0),), tuple(self._finite_row(index + 1.0) for index in range(3)))
+        with patch("paper.equipment_anomaly_detection.hard_route_paper.build_legacy_route_evidence") as fullfit:
+            result = replay_hard_route(values, self.sources, self.mini)
+        fullfit.assert_not_called()
+        self.assertEqual(result.n_test, 3)
+        self.assertEqual(result.exp74d.hard, frozenset())
+        self.assertEqual(result.exp74d.standard, frozenset())
+        self.assertEqual(result.exp253.hard, frozenset())
+        self.assertEqual(result.automatic_hard, frozenset())
+        self.assertFalse(result.exp74d.hard & result.exp74d.standard)
+
+    def test_n_train_2_remains_fullfit_eligible(self) -> None:
+        """Production mutation caught: raising the undersized threshold to 5 would empty-route n_train=2..4."""
+        values = self._dataset("Boundary_normal_2", (self._finite_row(0.0), self._finite_row(1.0)), (self._finite_row(2.0),))
+        with patch(
+            "paper.equipment_anomaly_detection.hard_route_paper.build_legacy_route_evidence",
+            side_effect=RuntimeError("fullfit_reached"),
+        ) as fullfit:
+            with self.assertRaisesRegex(RuntimeError, "fullfit_reached"):
+                replay_hard_route(values, self.sources, self.mini)
+        fullfit.assert_called_once()
+
+    def test_n_test_zero_is_typed_empty_without_raise(self) -> None:
+        """Production mutation caught: n_test<1 raised instead of an n_test-preserving empty route."""
+        values = RawDataset(
+            "EmptyTest_normal_1", 8, (0, 1), (b"a", b"b"),
+            (self._finite_row(0.0), self._finite_row(1.0)),
+            (), (), (),
+        )
+        with patch("paper.equipment_anomaly_detection.hard_route_paper.build_legacy_route_evidence") as fullfit:
+            result = replay_hard_route(values, self.sources, self.mini)
+        fullfit.assert_not_called()
+        self.assertEqual(result.n_test, 0)
+        self.assertEqual(result.automatic_hard, frozenset())
+
 
 if __name__ == "__main__":
     unittest.main()
