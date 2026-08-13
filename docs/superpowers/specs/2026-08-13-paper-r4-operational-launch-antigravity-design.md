@@ -26,13 +26,26 @@ runs.
 
 ## Frozen operational paths
 
-- Repository: `/Users/mac/.codex/worktrees/e1be/Time Series`
-- Interpreter: `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python`
+Current executable authority:
+
+- Repository: `/Users/mac/Documents/Time Series/.worktrees/grok-paper-r4-operational-antigravity`
+- Interpreter: `/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python`
 - Database: `/Users/mac/Documents/Dataset/univariate_ts.db`
 - Immutable prior root: `/Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813`
 - Future official root: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`
-- Operations namespace: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity`
-- Prelaunch smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813`
+- Official operations namespace: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity`
+- Prelaunch smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813`
+- Prelaunch smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813_ops_antigravity`
+
+The exp443 MiniRocket interpreter is not the current paper r4 authority.
+Official r4 and its ops namespace remain unauthorized and must stay absent.
+The v2 smoke and smoke-ops roots are the current executable smoke authority
+and must also stay absent until a later authorized smoke.
+
+Immutable failed v1 evidence, present and never current or reusable:
+
+- Failed smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813`
+- Failed smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity`
 
 The launcher rejects alternate values rather than accepting configurable
 official paths. The reviewed commit is supplied explicitly and must be an exact
