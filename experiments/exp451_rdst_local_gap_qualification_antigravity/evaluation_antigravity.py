@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import dataclasses
+import ctypes
+import errno
 import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -101,18 +104,60 @@ def _result_payload_antigravity(result: FrozenEvaluationAntigravity) -> dict[str
     return {"schema":"exp451.evaluation.result.v1","identity":result.identity,"status":result.status,"reviewed_commit":result.reviewed_commit,"prediction_authority_sha256":result.prediction_authority_sha256,"predecessor_hashes":list(result.predecessor_hashes),"replaced_dataset_count":48,"reused_dataset_count":1069,"global_dataset_count":1117,"label_session_count":1,"label_query_count":48,"label_row_count":72300,"bootstrap_dataset_pairs":48,"target_order":[list(x) for x in result.target_order],"baseline_global":_conf_payload_antigravity(result.baseline_global),"candidate_global":_conf_payload_antigravity(result.candidate_global),"baseline_f1":result.baseline_f1,"candidate_f1":result.candidate_f1,"target_baseline_fn":result.target_baseline_fn,"target_candidate_fn":result.target_candidate_fn,"target_fn_delta":result.target_fn_delta,"transition_totals":list(result.transition_totals),"transition_dataset_counts":list(result.transition_dataset_counts),"family_fn_deltas":[list(x) for x in result.family_fn_deltas],"gates":[list(x) for x in result.gates],"qualified":result.qualified,"bootstrap":result.bootstrap,"baseline_matrix":[list(x) for x in result.baseline_matrix],"candidate_matrix":[list(x) for x in result.candidate_matrix]}
 
 
-def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity) -> None:
+def _rename_no_replace_antigravity(source: Path, destination: Path) -> None:
+    if destination.exists() or destination.is_symlink(): raise FileExistsError(destination)
+    if __import__("sys").platform == "darwin":
+        libc=ctypes.CDLL(None,use_errno=True); function=getattr(libc,"renamex_np",None)
+        if function is None: raise OSError(errno.ENOTSUP,"renamex_np unavailable")
+        function.argtypes=(ctypes.c_char_p,ctypes.c_char_p,ctypes.c_uint); function.restype=ctypes.c_int
+        if function(os.fsencode(source),os.fsencode(destination),0x4):
+            code=ctypes.get_errno(); raise OSError(code,os.strerror(code),destination)
+    else: os.rename(source,destination)
+
+
+def _remove_private_staging_antigravity(staging: Path) -> None:
+    if not staging.exists() or staging.is_symlink(): return
+    for name in tuple(os.listdir(staging)):
+        path=staging/name
+        if path.is_file() and not path.is_symlink(): path.unlink()
+    staging.rmdir()
+
+
+def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity, authority: FrozenPredictionAuthorityAntigravity) -> None:
     if root.exists() or root.is_symlink(): raise ValueError("evaluation root already exists")
-    root.mkdir(mode=0o700)
+    staging=root.parent/f".{root.name}.{os.getpid()}.staging_antigravity"
+    if staging.exists() or staging.is_symlink(): raise ValueError("private staging collision")
+    staging.mkdir(mode=0o700)
     from .dashboard_export_antigravity import public_result_antigravity
-    leaves = {"context_antigravity.json":{"schema":"exp451.evaluation.context.v1","reviewed_commit":result.reviewed_commit,"prediction_authority_sha256":result.prediction_authority_sha256,"predecessor_hashes":list(result.predecessor_hashes)},"datasets_antigravity.json":{"schema":"exp451.evaluation.datasets.v1","rows":[_dataset_payload_antigravity(x) for x in result.dataset_rows]},"result_antigravity.json":_result_payload_antigravity(result),"dashboard_antigravity.json":public_result_antigravity(result)}
-    hashes={}
-    for name,value in leaves.items():
-        payload=canonical_json_bytes_antigravity(value); write_create_only_antigravity(root/name,payload); hashes[name]=hashlib.sha256(payload).hexdigest()
-    manifest={"schema":"exp451.evaluation.manifest.v1","inventory":list((*leaves.keys(),"manifest_antigravity.json")),"leaf_sha256":hashes,"result_sha256":hashes["result_antigravity.json"]}
-    write_create_only_antigravity(root/"manifest_antigravity.json",canonical_json_bytes_antigravity(manifest))
-    from .replay_antigravity import inspect_replay_antigravity
-    if inspect_replay_antigravity(root) != result: raise ValueError("prospective replay differs")
+    leaves = {"context_antigravity.json":{"schema":"exp451.evaluation.context.v1","reviewed_commit":result.reviewed_commit,"prediction_authority":authority.to_payload_antigravity(),"predecessor_hashes":list(result.predecessor_hashes)},"datasets_antigravity.json":{"schema":"exp451.evaluation.datasets.v1","rows":[_dataset_payload_antigravity(x) for x in result.dataset_rows]},"result_antigravity.json":_result_payload_antigravity(result),"dashboard_antigravity.json":public_result_antigravity(result)}
+    promoted=False
+    try:
+        hashes={}
+        for name,value in leaves.items():
+            payload=canonical_json_bytes_antigravity(value); write_create_only_antigravity(staging/name,payload); hashes[name]=hashlib.sha256(payload).hexdigest()
+        artifact_map={"schema":"exp451.evaluation.artifact_map.v1","leaf_sha256":hashes}
+        map_bytes=canonical_json_bytes_antigravity(artifact_map); write_create_only_antigravity(staging/"artifact_map_antigravity.json",map_bytes)
+        inventory=[*leaves.keys(),"artifact_map_antigravity.json","manifest_antigravity.json"]
+        manifest={"schema":"exp451.evaluation.manifest.v1","inventory":inventory,"artifact_map_sha256":hashlib.sha256(map_bytes).hexdigest(),"result_sha256":hashes["result_antigravity.json"],"dashboard_sha256":hashes["dashboard_antigravity.json"]}
+        write_create_only_antigravity(staging/"manifest_antigravity.json",canonical_json_bytes_antigravity(manifest))
+        directory_fd=os.open(staging,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+        try: os.fsync(directory_fd)
+        finally: os.close(directory_fd)
+        from .replay_antigravity import inspect_replay_antigravity
+        if inspect_replay_antigravity(staging,expected_prediction_authority=authority)!=result: raise ValueError("private replay differs")
+        _rename_no_replace_antigravity(staging,root); promoted=True
+        parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+        try: os.fsync(parent_fd)
+        finally: os.close(parent_fd)
+        try:
+            if inspect_replay_antigravity(root,expected_prediction_authority=authority)!=result: raise ValueError("public replay differs")
+        except BaseException:
+            forensic=root.parent/f".{root.name}.forensic.{os.getpid()}_antigravity"
+            _rename_no_replace_antigravity(root,forensic)
+            raise
+    except BaseException:
+        if not promoted: _remove_private_staging_antigravity(staging)
+        raise
 
 
 def _evaluate_with_dependencies_antigravity(authority: FrozenPredictionAuthorityAntigravity, reviewed_commit: str, dependencies: EvaluationDependenciesAntigravity) -> FrozenEvaluationAntigravity:
@@ -140,10 +185,9 @@ def _evaluate_with_dependencies_antigravity(authority: FrozenPredictionAuthority
     for family in dict.fromkeys(x[1] for x in identities): families.append((family,sum(x.candidate.fn-x.baseline.fn for x in dataset_rows if x.identity[1]==family)))
     totals=tuple(sum(getattr(x,f) for x in dataset_rows) for f in ("new_detections","new_false_alarms","detection_losses")); counts=tuple(sum(getattr(x,f)>0 for x in dataset_rows) for f in ("new_detections","new_false_alarms","detection_losses"))
     result=FrozenEvaluationAntigravity("Exp451","qualified" if all(x[1] for x in gates) else "not_qualified",reviewed_commit,authority.canonical_sha256_antigravity,(predecessor.artifact_map_sha256,predecessor.evaluation_sha256,predecessor.decision_sha256),48,1069,1117,1,48,72300,48,identities,BASELINE_GLOBAL_ANTIGRAVITY,global_candidate,_f1_antigravity(BASELINE_GLOBAL_ANTIGRAVITY),_f1_antigravity(global_candidate),old.fn,new.fn,delta,totals,counts,tuple(families),gates,qualifies_antigravity(global_candidate,delta),bootstrap,base_matrix,candidate_matrix,dataset_rows)
-    _publish_antigravity(dependencies.evaluation_root,result); return result
+    _publish_antigravity(dependencies.evaluation_root,result,authority); return result
 
 
 def evaluate_antigravity(prediction_authority: FrozenPredictionAuthorityAntigravity, reviewed_commit: str) -> FrozenEvaluationAntigravity:
     predecessor=verify_exp448_predecessor_antigravity(); evidence=tuple(EvaluationEvidenceRowAntigravity(i,identity,prediction_authority.target_lengths[i],prediction_authority.candidate_indices[i]) for i,identity in enumerate(prediction_authority.dataset_identities))
     return _evaluate_with_dependencies_antigravity(prediction_authority,reviewed_commit,EvaluationDependenciesAntigravity(validate_frozen_prediction_authority_antigravity,lambda:predecessor,evidence,lambda:open_ordered_label_session_antigravity,OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY))
-

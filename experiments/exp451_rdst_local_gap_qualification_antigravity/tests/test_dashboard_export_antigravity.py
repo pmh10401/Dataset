@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 import tempfile, unittest
 from pathlib import Path
 from .test_evaluation_antigravity import SHA, fixture_antigravity
@@ -16,5 +17,13 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             self.assertEqual(public["runtime"], {"sessions":1,"queries":48,"rows":72300})
             for key in ("raw_labels", "dataset_names", "local_path", "sha256", "sql_log", "candidate_indices"):
                 with self.assertRaises(ValueError): validate_public_result_antigravity({**public, key: []})
+            malformed=[]
+            wrong=copy.deepcopy(public); wrong["global"]["candidate"]["f1"] += .1; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["qualification"]["qualified"] = not wrong["qualification"]["qualified"]; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["runtime"]["rows"] = 72299; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["family_fn_deltas"].pop(next(iter(wrong["family_fn_deltas"]))); malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["status"] = "/tmp/private/database.sqlite"; malformed.append(wrong)
+            for attack in malformed:
+                with self.assertRaises(ValueError): validate_public_result_antigravity(attack)
 
 if __name__ == "__main__": unittest.main()
