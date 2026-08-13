@@ -26,10 +26,6 @@ def _forbidden_key_antigravity(value: str) -> bool:
 
 
 def _safe_antigravity(value: object) -> bool:
-    if isinstance(value, Mapping):
-        return all(type(key) is str and not _forbidden_key_antigravity(key) and _safe_antigravity(item) for key, item in value.items())
-    if isinstance(value, (tuple, list)):
-        return all(_safe_antigravity(item) for item in value)
     if isinstance(value, str):
         if type(value) is not str:
             return False
@@ -40,6 +36,10 @@ def _safe_antigravity(value: object) -> bool:
             or re.search(r"_(?:normal|abnormal)_\d+$", lowered)
             or any(token in lowered for token in _SENSITIVE_ANTIGRAVITY)
         )
+    if isinstance(value, Mapping):
+        return all(type(key) is str and not _forbidden_key_antigravity(key) and _safe_antigravity(item) for key, item in value.items())
+    if isinstance(value, (tuple, list)):
+        return all(_safe_antigravity(item) for item in value)
     return True
 
 

@@ -1,10 +1,30 @@
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from copy import deepcopy
 import unittest
 
 from experiments.exp452_exp449_index_order_repair_antigravity.config_antigravity import CANDIDATE_MATRIX_ANTIGRAVITY
 from experiments.exp452_exp449_index_order_repair_antigravity.dashboard_export_antigravity import public_result_antigravity
+
+
+class _HybridStringMappingAntigravity(str, Mapping[str, object]):
+    """Expose no mapping items while retaining a forged string identity."""
+
+    def __getitem__(self, key: str) -> object:
+        raise KeyError(key)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(())
+
+    def __len__(self) -> int:
+        return 0
+
+    def __eq__(self, other: object) -> bool:
+        return True
+
+    def __ne__(self, other: object) -> bool:
+        return False
 
 
 def _valid_result_antigravity() -> dict[str, object]:
@@ -116,6 +136,30 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             payload = _valid_result_antigravity()
             mutate(payload)
             with self.subTest(label=label), self.assertRaises(ValueError):
+                public_result_antigravity(payload)
+
+    def test_public_result_rejects_hybrid_string_mapping_identity_values_antigravity(self) -> None:
+        """Break caught: Mapping dispatch hiding a forged private string identity behind empty items."""
+        cases = (
+            ("schema", _HybridStringMappingAntigravity("/Users/mac/Documents/Dataset/private")),
+            ("experiment", _HybridStringMappingAntigravity("Crop_normal_1")),
+        )
+        for field, value in cases:
+            payload = _valid_result_antigravity()
+            payload[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                public_result_antigravity(payload)
+
+    def test_public_result_rejects_hybrid_string_mapping_nested_values_antigravity(self) -> None:
+        """Break caught: empty Mapping items hiding path/dataset strings in nested family-method fields."""
+        cases = (
+            ("family", _HybridStringMappingAntigravity("/Users/mac/Documents/Dataset/private")),
+            ("method", _HybridStringMappingAntigravity("Crop_normal_1")),
+        )
+        for field, value in cases:
+            payload = _valid_result_antigravity()
+            payload["candidates"][0][field] = value  # type: ignore[index]
+            with self.subTest(field=field), self.assertRaises(ValueError):
                 public_result_antigravity(payload)
 
     def test_public_result_recomputes_counts_f1_gates_and_summary_antigravity(self) -> None:
