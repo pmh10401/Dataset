@@ -28,6 +28,7 @@ from paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper 
     _fullfit_primary,
     build_legacy_route_evidence,
 )
+from paper.equipment_anomaly_detection.sources_paper.rocket_paper import MAX_TRAIN_REFERENCE_PAPER
 from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import ConfigurationScoresPaper, MiniRocketKernelResult, MiniRocketResult, SEEDS_PAPER
 from paper.equipment_anomaly_detection.hard_route_paper import (
     _exp93_order,
@@ -125,6 +126,46 @@ class HardRouteTests(unittest.TestCase):
         self.assertIn(1, exp74d.hard | exp74d.standard | exp74d.priority)
         self.assertEqual(exp89, exp90)
         self.assertIsInstance(exp93, frozenset)
+
+    def test_legacy_evidence_distinguishes_capped_rocket_from_full_train_sources(self) -> None:
+        """Treating every full-fit source as raw-full TRAIN rejects valid large-TRAIN evidence."""
+        n_train, n_test, capped_train = MAX_TRAIN_REFERENCE_PAPER + 1, 3, MAX_TRAIN_REFERENCE_PAPER
+
+        def view(name: str, train_size: int, *, rate: float = .015) -> FullFitScoreView:
+            return FullFitScoreView(name, np.zeros(train_size), np.zeros(n_test), rate)
+
+        def evidence(*, rocket_size: int = capped_train, exp55_size: int = n_train) -> LegacyRouteEvidence:
+            primary = {
+                "rocket_exp40": view("rocket_exp40", rocket_size),
+                "exp55_best": view("exp55_best", exp55_size),
+                "exp56_best": view("exp56_best", n_train),
+            }
+            blocks = ConfirmationBlocks(
+                view("block_a", capped_train),
+                view("block_b", capped_train),
+                view("block_b", capped_train, rate=.01),
+                view("block_c", capped_train, rate=.01),
+            )
+            return LegacyRouteEvidence("synthetic_normal_1", "synthetic", n_train, n_test, 8, primary, view("exp84", n_train), blocks)
+
+        accepted = evidence()
+        self.assertEqual(accepted.primary["rocket_exp40"].train_score.size, capped_train)
+        self.assertEqual(accepted.primary["exp55_best"].train_score.size, n_train)
+        self.assertEqual(accepted.primary["exp56_best"].train_score.size, n_train)
+        self.assertEqual(accepted.exp84.train_score.size, n_train)
+        self.assertEqual(
+            tuple(view.train_score.size for view in (
+                accepted.confirmation_blocks.block_a,
+                accepted.confirmation_blocks.block_b_015,
+                accepted.confirmation_blocks.block_b_01,
+                accepted.confirmation_blocks.block_c,
+            )),
+            (capped_train, capped_train, capped_train, capped_train),
+        )
+        with self.assertRaisesRegex(ValueError, "rocket_exp40 score shape"):
+            evidence(rocket_size=capped_train - 1)
+        with self.assertRaisesRegex(ValueError, "exp55_best score shape"):
+            evidence(exp55_size=capped_train)
 
     def test_exp74d_hard_precedes_overlapping_standard_review_from_label_free_evidence(self) -> None:
         """Leaving a hard member in Exp74d review makes RouteLanes reject the raw-evidence replay."""

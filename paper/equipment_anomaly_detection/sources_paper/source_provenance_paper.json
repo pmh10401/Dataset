@@ -263,7 +263,7 @@
       ]
     },
     "sources_paper/legacy_route_sources_paper.py": {
-      "paper_sha256": "83305f204d256ffba30214fc7f6b32b39a944de6e76c38a19fa28f26b951bd95",
+      "paper_sha256": "386a2e81c50134f37d93d654455442e86c2b4f6ab2f82987f9d2348985e09331",
       "origins": [
         {
           "module": "run_experiment_40_original_score_normalization_sweep",

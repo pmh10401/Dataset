@@ -19,7 +19,7 @@ from .imaging_paper import EXP55_CONFIG_PAPER, EXP56_CONFIG_PAPER, imaging_score
 from .knn_paper import density_knn_score_pair_paper
 from .multirocket_hydra_paper import exp84_score_pair_paper
 from .preprocessing_paper import align_series_lengths_paper, z_normalize_paper
-from .rocket_paper import make_kernels_paper, reference_train_paper, rocket_feature_pair_paper, rocket_transform_paper
+from .rocket_paper import MAX_TRAIN_REFERENCE_PAPER, make_kernels_paper, reference_train_paper, rocket_feature_pair_paper, rocket_transform_paper
 
 
 WEAK_FAMILIES_PAPER = frozenset(("ChlorineConcentration", "Computers", "EthanolLevel", "HandOutlines", "LargeKitchenAppliances", "MiddlePhalanxOutlineCorrect", "MoteStrain", "RefrigerationDevices", "ScreenType", "Yoga"))
@@ -149,15 +149,28 @@ class LegacyRouteEvidence:
         primary = dict(self.primary)
         if set(primary) != required or any(not isinstance(view, FullFitScoreView) for view in primary.values()):
             raise ValueError("legacy evidence primary sources differ from the frozen route")
-        if any(view.train_score.size != int(self.n_train) or view.test_score.size != int(self.n_test) for view in primary.values()):
-            raise ValueError("legacy evidence source score shapes differ from raw rows")
-        if not isinstance(self.exp84, FullFitScoreView) or self.exp84.train_score.size != int(self.n_train) or self.exp84.test_score.size != int(self.n_test):
+        n_train, n_test = int(self.n_train), int(self.n_test)
+        capped_train = min(n_train, MAX_TRAIN_REFERENCE_PAPER)
+        rocket = primary["rocket_exp40"]
+        if rocket.train_score.size != capped_train or rocket.test_score.size != n_test:
+            raise ValueError("legacy evidence rocket_exp40 score shape differs from reference rows")
+        for name in ("exp55_best", "exp56_best"):
+            view = primary[name]
+            if view.train_score.size != n_train or view.test_score.size != n_test:
+                raise ValueError(f"legacy evidence {name} score shape differs from raw rows")
+        if not isinstance(self.exp84, FullFitScoreView) or self.exp84.train_score.size != n_train or self.exp84.test_score.size != n_test:
             raise ValueError("legacy evidence Exp84 score shape differs from raw rows")
         blocks = self.confirmation_blocks
         if not isinstance(blocks, ConfirmationBlocks):
             raise ValueError("legacy evidence requires confirmation blocks")
-        if any(view.train_score.size != int(self.n_train) or view.test_score.size != int(self.n_test) for view in (blocks.block_a, blocks.block_b_015, blocks.block_b_01, blocks.block_c)):
-            raise ValueError("confirmation score shapes differ from raw rows")
+        for block_name, view in (
+            ("Block-A", blocks.block_a),
+            ("Block-B@.015", blocks.block_b_015),
+            ("Block-B@.01", blocks.block_b_01),
+            ("Block-C", blocks.block_c),
+        ):
+            if view.train_score.size != capped_train or view.test_score.size != n_test:
+                raise ValueError(f"confirmation {block_name} score shapes differ from reference rows")
         if self.exp40_target_length is not None and int(self.exp40_target_length) < 8:
             raise ValueError("Exp40 target length must be at least eight")
         if self.transductive_target_length is not None and not 8 <= int(self.transductive_target_length) <= 2048:

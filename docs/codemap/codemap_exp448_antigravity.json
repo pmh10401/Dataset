@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T10:15:19+0900",
-  "generated_from_commit": "e71257d923c1a940b547f156a9ca8f493ec0d522",
+  "generated_at": "2026-08-13T11:18:07+0900",
+  "generated_from_commit": "3050fc48985201a780d133f15f5e345d4c972935",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
     "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
@@ -445,7 +445,7 @@
         "tests_paper/test_artifacts_runner_paper.py"
       ],
       "effects": [
-        "constructs Exp74d hard, standard-review, and priority lanes from raw evidence before later frozen hard-route stages; standard review excludes the frozen hard lane and RouteLanes enforces lane disjointness"
+        "constructs Exp74d hard, standard-review, and priority lanes from raw evidence before later frozen hard-route stages; standard review excludes the frozen hard lane, RouteLanes enforces lane disjointness, and source-specific validation retains the frozen capped ROCKET/Block-A/B/C reference while Exp55/56/84 remain full raw TRAIN"
       ],
       "tests": [
         "tests_paper/test_hard_route_paper.py",
