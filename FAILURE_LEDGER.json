@@ -1,8 +1,33 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-12T01:10:46+09:00",
+  "updated_at": "2026-08-13T14:54:00+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
+    {
+      "experiment": "Exp452",
+      "category": "official_readiness_failed_immutable_no_retry",
+      "evidence": "/Users/mac/Documents/Dataset/exp452_index_order_repair_failure_audit_antigravity.json",
+      "facts": {
+        "reviewed_commit": "96e42f78659d3b892f8c137dfa8f74f718982001",
+        "readiness_invocations": 1,
+        "readiness_exit_code": 1,
+        "evaluate_invocations": 0,
+        "inspect_invocations": 0,
+        "label_access_count": 0,
+        "label_sessions": 0,
+        "label_queries": 0,
+        "label_rows": 0,
+        "evaluation_root_created": false,
+        "error": "ValueError: Exp452 requires the exact fixed Python and NumPy runtime",
+        "observed_python_version": "3.14.6",
+        "observed_numpy_version": "2.4.6",
+        "required_numpy_version": "2.3.5",
+        "stopped_receipt_sha256": "8f7238ea20499a4136ffa1aaa730c9d94e35670b45eb780ccbe9d5594aff97e2",
+        "failure_audit_sha256": "e55985a66d18561a403c4927bfcd45a1cd20fe5af74841b96997e9c6e59a5b86",
+        "retry_permitted": false
+      },
+      "lesson": "A one-shot Exp452 lifecycle treats an exact-runtime mismatch as an immutable pre-evaluation stop: preserve receipt and audit, do not retry, and do not derive scientific metrics, routing, promotion, or dashboard output."
+    },
     {
       "experiment": "Exp405",
       "category": "research_gate_failed",

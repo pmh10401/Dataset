@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-12T05:15:11+09:00",
+  "updated_at": "2026-08-13T14:54:00+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -386,10 +386,10 @@
     },
     {
       "experiment": "Exp452",
-      "status": "implementation_verified_awaiting_official_readiness",
-      "reason": "Exp452 implementation verification covers the canonical index-order repair over immutable Exp449 predictions. Exp449 qualified-2 staging results cannot guide Exp452 selection, thresholds, routing, candidate removal, champion, or promotion. No Exp452 readiness, evaluation, inspect, TEST-label access, champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert has occurred.",
+      "status": "official_readiness_failed_immutable_no_retry",
+      "reason": "The one authorized Exp452 readiness invocation stopped permanently before labels because the fixed interpreter exposed NumPy 2.4.6 instead of frozen 2.3.5. Exp449 qualified-2 staging results cannot guide Exp452 selection, thresholds, routing, candidate removal, champion, or promotion. Evaluate and inspect did not run; no champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert occurred.",
       "reviewed_design_sha256": "59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075",
-      "document_sha256": {"preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2", "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754", "implementation_report": "9eb55622e98bd88d09fceeb83143071e491b7eeeda41d2b8ad75256279192adc"},
+      "document_sha256": {"preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2", "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754", "implementation_report": "ddc38f6c597ea1a819785ce0c426661480adef46ee9d25475ebae99a9bf7b7e2"},
       "run_identity": "exp452-exp449-index-order-repair-antigravity-20260813",
       "prediction_sha256": null,
       "result_sha256": null,
@@ -399,10 +399,10 @@
       "inspect_sha256": null,
       "label_access_count": 0,
       "test_labels_opened": false,
-      "official_readiness_started": false,
+      "official_readiness_started": true,
       "official_evaluate_started": false,
       "official_inspect_started": false,
-      "official_lifecycle": {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0},
+      "official_lifecycle": {"readiness_invocations": 1, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0, "label_query_count": 0, "label_row_count": 0, "readiness_exit_code": 1, "evaluate_exit_code": null, "inspect_exit_code": null},
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
@@ -410,8 +410,10 @@
       "routing_allowed": false,
       "pending_candidate_changed": false,
       "implementation_candidate_commit": "538bb932b61f42e7c56bd4e2c7dbdf9c24b4fca3",
+      "official_reviewed_commit": "96e42f78659d3b892f8c137dfa8f74f718982001",
       "implementation_test_counts": {"exp452_discovery_runs": [81, 81], "focused_cli_readiness_replay_runs": [15, 15], "exp449_corresponding": 32},
-      "next_action": "await_fresh_review_and_separate_official_execution_approval"
+      "official_failure": {"phase": "readiness", "error": "ValueError: Exp452 requires the exact fixed Python and NumPy runtime", "observed_python_version": "3.14.6", "observed_numpy_version": "2.4.6", "required_numpy_version": "2.3.5", "stopped_receipt_sha256": "8f7238ea20499a4136ffa1aaa730c9d94e35670b45eb780ccbe9d5594aff97e2", "failure_audit_sha256": "e55985a66d18561a403c4927bfcd45a1cd20fe5af74841b96997e9c6e59a5b86", "evaluation_root_created": false, "retry_permitted": false},
+      "next_action": "preserve_immutable_readiness_stop_no_retry_no_champion_action"
     }
   ]
 }
