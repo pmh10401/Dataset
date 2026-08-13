@@ -14,6 +14,12 @@ from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antig
 
 
 class ContractsAntigravityTest(unittest.TestCase):
+    def test_real_external_dataset_orders_are_preserved_antigravity(self) -> None:
+        identities=((101,"Crop","a"),(102,"Crop","b"),(148,"FordA","c"))
+        authority=FrozenPredictionAuthorityAntigravity("a"*40,identities,(2,2,2),((),(),()))
+        self.assertEqual(authority.dataset_identities,identities)
+        with self.assertRaises(ValueError): FrozenPredictionAuthorityAntigravity("a"*40,((101,"Crop","a"),(101,"Crop","b")),(2,2),((),()))
+        with self.assertRaises(ValueError): FrozenPredictionAuthorityAntigravity("a"*40,((0,"Crop","a"),),(2,),((),))
     def test_dataset_bundle_copies_caller_arrays_without_labels_antigravity(self) -> None:
         train = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
         test = np.array([[5.0, 6.0]], dtype=np.float64)
@@ -54,7 +60,7 @@ class ContractsAntigravityTest(unittest.TestCase):
     def test_prediction_authority_has_canonical_hash_and_rejects_unordered_or_malformed_input_antigravity(self) -> None:
         authority = FrozenPredictionAuthorityAntigravity(
             "a" * 40,
-            ((0, "Crop", "Crop_001"), (1, "Crop", "Crop_002")),
+            ((1, "Crop", "Crop_001"), (2, "Crop", "Crop_002")),
             (3, 2),
             ((0, 2), ()),
         )
@@ -64,7 +70,7 @@ class ContractsAntigravityTest(unittest.TestCase):
         self.assertEqual(restored.canonical_sha256_antigravity, authority.canonical_sha256_antigravity)
         self.assertEqual(len(authority.canonical_sha256_antigravity), 64)
         with self.assertRaises(ValueError):
-            FrozenPredictionAuthorityAntigravity("a" * 40, ((1, "Crop", "Crop_002"), (0, "Crop", "Crop_001")), (2, 3), ((), ()))
+            FrozenPredictionAuthorityAntigravity("a" * 40, ((1, "Crop", "Crop_002"), (1, "Crop", "Crop_001")), (2, 3), ((), ()))
         malformed = dict(payload)
         malformed["canonical_sha256"] = "bad"
         with self.assertRaises(ValueError):

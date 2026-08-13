@@ -1,5 +1,5 @@
 from __future__ import annotations
-import copy
+import copy, json
 import tempfile, unittest
 from pathlib import Path
 from .test_evaluation_antigravity import SHA, fixture_antigravity
@@ -37,6 +37,8 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             for attack in malformed:
                 with self.assertRaises(ValueError): validate_public_result_antigravity(attack,expected_result=result)
             self.assertEqual(validate_public_result_antigravity(public,expected_result=result),public)
+            reordered=json.loads(json.dumps(public,sort_keys=True))
+            self.assertEqual(validate_public_result_antigravity(reordered,expected_result=result),reordered)
             with self.assertRaises(TypeError): validate_public_result_antigravity(public)
 
 if __name__ == "__main__": unittest.main()

@@ -23,7 +23,7 @@ def decision():
     return decide_backend_antigravity(probe)
 
 def bundles():
-    return tuple(DatasetBundleAntigravity(i, "Family", f"Dataset_{i}_antigravity", np.arange(20, dtype=float).reshape(5,4) + i*100, np.arange(12, dtype=float).reshape(3,4) + i*100, 3) for i in range(48))
+    return tuple(DatasetBundleAntigravity(i+1, "Family", f"Dataset_{i}_antigravity", np.arange(20, dtype=float).reshape(5,4) + i*100, np.arange(12, dtype=float).reshape(3,4) + i*100, 3) for i in range(48))
 
 def expected_snapshot():
     items = bundles()
@@ -43,7 +43,7 @@ def nonfinite_scorer(train, test, seed, backend):
 
 class PredictionTestsAntigravity(unittest.TestCase):
     def dependencies(self, root, fault=None):
-        return PredictionDependenciesAntigravity(fault, lambda: None, decision(), root=root, bundles=bundles(), scorer=scorer, logical_cpus=12)
+        return PredictionDependenciesAntigravity(fault, lambda: None, decision(), root=root, bundles=bundles(), scorer=scorer, logical_cpus=12, expected_snapshot=expected_snapshot())
 
     def test_synthetic_48_freeze_and_validation(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -155,7 +155,7 @@ class PredictionTestsAntigravity(unittest.TestCase):
             root=Path(temporary)/"run_antigravity"; result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
             expected=ExpectedPredecessorSnapshotAntigravity(tuple(bundle.dataset_identity for bundle in bundles()),tuple(bundle.target_length for bundle in bundles()))
             self.assertEqual(_validate_frozen_prediction_root_antigravity(root,result.authority,expected),result.authority)
-            bad=ExpectedPredecessorSnapshotAntigravity(expected.dataset_identities[:-1]+((47,"Family","forged_antigravity"),),expected.target_lengths)
+            bad=ExpectedPredecessorSnapshotAntigravity(expected.dataset_identities[:-1]+((49,"Family","forged_antigravity"),),expected.target_lengths)
             with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority,bad)
 
     def test_private_validator_requires_independent_snapshot_and_tree_is_retained(self):

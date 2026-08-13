@@ -61,7 +61,7 @@ def _validate_shape_antigravity(value):
 def _exact_equal_antigravity(left, right):
     if type(left) is not type(right): return False
     if type(left) is dict:
-        return list(left)==list(right) and all(_exact_equal_antigravity(left[key],right[key]) for key in left)
+        return set(left)==set(right) and all(_exact_equal_antigravity(left[key],right[key]) for key in left)
     if type(left) is list:
         return len(left)==len(right) and all(_exact_equal_antigravity(a,b) for a,b in zip(left,right,strict=True))
     return left==right

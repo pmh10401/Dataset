@@ -16,7 +16,7 @@ class SourcesAntigravityTest(unittest.TestCase):
     def _authority_antigravity(self):  # type: ignore[no-untyped-def]
         from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antigravity import FrozenPredictionAuthorityAntigravity
         names = tuple(f"Crop_{index:02d}" for index in range(48))
-        return FrozenPredictionAuthorityAntigravity("a" * 40, tuple((i, "Crop", name) for i, name in enumerate(names)), tuple([1500] * 47 + [1800]), tuple(() for _ in names))
+        return FrozenPredictionAuthorityAntigravity("a" * 40, tuple((i, "Crop", name) for i, name in enumerate(names,start=1)), tuple([1500] * 47 + [1800]), tuple(() for _ in names))
 
     def test_value_fixture_is_normalized_immutable_and_has_no_label_surface_antigravity(self) -> None:
         from experiments.exp451_rdst_local_gap_qualification_antigravity import sources_antigravity as sources
@@ -96,7 +96,7 @@ class SourcesAntigravityTest(unittest.TestCase):
             {"reviewed_commit": "b" * 40},
             {"canonical_sha256": "0" * 64},
             {"target_lengths": tuple([1499, 1501] + list(authority.target_lengths[2:]))},
-            {"dataset_identities": ((0, "Other", authority.dataset_identities[0][2]),) + authority.dataset_identities[1:]},
+            {"dataset_identities": ((1, "Other", authority.dataset_identities[0][2]),) + authority.dataset_identities[1:]},
             {"candidate_indices": ((0,),) + authority.candidate_indices[1:]},
         )
         for change in attacks:

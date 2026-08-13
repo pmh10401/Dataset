@@ -102,15 +102,17 @@ class FrozenPredictionAuthorityAntigravity:
         if not self.dataset_identities or len(self.dataset_identities) != len(self.target_lengths) or len(self.dataset_identities) != len(self.candidate_indices):
             raise ValueError("prediction authority collection lengths differ")
         identities: set[tuple[int, str, str]] = set()
-        for order, identity in enumerate(self.dataset_identities):
+        dataset_orders: set[int] = set()
+        for identity in self.dataset_identities:
             if type(identity) is not tuple or len(identity) != 3:
                 raise ValueError("dataset identity is invalid")
             dataset_order, family, dataset = identity
             _exact_int_antigravity(dataset_order, "dataset_order")
             _exact_string_antigravity(family, "family")
             _exact_string_antigravity(dataset, "dataset")
-            if dataset_order != order or identity in identities:
+            if dataset_order <= 0 or dataset_order in dataset_orders or identity in identities:
                 raise ValueError("dataset identities must be unique and ordered")
+            dataset_orders.add(dataset_order)
             identities.add(identity)
         for target_length, indices in zip(self.target_lengths, self.candidate_indices, strict=True):
             _exact_int_antigravity(target_length, "target_length", minimum=1)

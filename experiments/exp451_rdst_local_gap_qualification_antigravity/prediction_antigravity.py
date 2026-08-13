@@ -74,6 +74,7 @@ class PredictionDependenciesAntigravity:
     scorer: Callable[..., CandidateScoresAntigravity] = score_candidate_antigravity
     logical_cpus: int | None = None
     completion_observer: Callable[[int, int], None] | None = None
+    expected_snapshot: "ExpectedPredecessorSnapshotAntigravity | None" = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,8 +99,11 @@ class ExpectedPredecessorSnapshotAntigravity:
     def __post_init__(self) -> None:
         if len(self.dataset_identities) != 48 or len(self.target_lengths) != 48:
             raise ValueError("expected predecessor must contain exact ordered 48")
-        if tuple(item[0] for item in self.dataset_identities) != tuple(range(48)):
-            raise ValueError("expected predecessor order differs")
+        orders=[]
+        for identity,length in zip(self.dataset_identities,self.target_lengths,strict=True):
+            if type(identity) is not tuple or len(identity)!=3 or type(identity[0]) is not int or identity[0]<=0 or any(type(x) is not str or not x for x in identity[1:]) or type(length) is not int or length<=0: raise ValueError("expected predecessor identity differs")
+            orders.append(identity[0])
+        if len(set(orders))!=48 or len(set(self.dataset_identities))!=48: raise ValueError("expected predecessor order differs")
 
 
 class PinnedPredictionTreeAntigravity:
@@ -565,10 +569,12 @@ def _run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependen
         raise ValueError("reviewed commit invalid")
     root = dependencies.root or _OFFICIAL_ROOT_ANTIGRAVITY
     bundles = dependencies.bundles
+    expected_snapshot=dependencies.expected_snapshot
     if bundles is None:
         predecessor = verify_exp448_predecessor_antigravity()
         bundles = tuple(load_target_bundle_antigravity(name) for name in predecessor.target_dataset_names)
-    if type(bundles) is not tuple or len(bundles) != 48 or tuple(bundle.dataset_order for bundle in bundles) != tuple(range(48)):
+        expected_snapshot=ExpectedPredecessorSnapshotAntigravity(tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True)),tuple(predecessor.target_test_lengths))
+    if type(expected_snapshot) is not ExpectedPredecessorSnapshotAntigravity or type(bundles) is not tuple or len(bundles) != 48 or tuple(bundle.dataset_identity for bundle in bundles)!=expected_snapshot.dataset_identities or tuple(bundle.target_length for bundle in bundles)!=expected_snapshot.target_lengths:
         raise ValueError("exact ordered 48 bundles required")
     backend = dependencies.backend_decision.selected_name
     logical_cpus = dependencies.logical_cpus or os.cpu_count() or 1
@@ -684,11 +690,7 @@ def _run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependen
         # Complete mutable lifecycle core first; manifest is the publication point.
         _write_mutable_state_antigravity(root, reviewed_commit, 48, True, False, writer, bundles[-1], reused, "complete", backend, started, None)
         manifest_bytes = canonical_json_bytes_antigravity(manifest)
-        expected = ExpectedPredecessorSnapshotAntigravity(
-            tuple(bundle.dataset_identity for bundle in bundles),
-            tuple(bundle.target_length for bundle in bundles),
-        )
-        _validate_prospective_prediction_root_antigravity(root, manifest_bytes, authority, expected)
+        _validate_prospective_prediction_root_antigravity(root, manifest_bytes, authority, expected_snapshot)
         if dependencies.fault_hook:
             dependencies.fault_hook("publish_manifest", 48)
         write_create_only_antigravity(root / "manifest_antigravity.json", manifest_bytes)
@@ -716,7 +718,7 @@ def _validate_complete_prediction_antigravity(tree: PinnedPredictionTreeAntigrav
     identities = expected_snapshot.dataset_identities
     if authority.dataset_identities != identities or authority.target_lengths != expected_snapshot.target_lengths:
         raise ValueError("authority differs from expected predecessor")
-    bundles = tuple(DatasetBundleAntigravity(order, family, dataset, np.ones((1, 1)), np.ones((expected_snapshot.target_lengths[order], 1)), expected_snapshot.target_lengths[order]) for order, family, dataset in identities)
+    bundles = tuple(DatasetBundleAntigravity(order, family, dataset, np.ones((1, 1)), np.ones((expected_snapshot.target_lengths[sequence], 1)), expected_snapshot.target_lengths[sequence]) for sequence,(order, family, dataset) in enumerate(identities))
     # Validation uses manifest-bound lengths/identities; TRAIN counts are recovered from leaves.
     context = tree.read_canonical_antigravity(tree.root_fd, "context_antigravity.json")
     backend = context.get("backend") if type(context) is dict else None
@@ -751,7 +753,7 @@ def _validate_complete_prediction_antigravity(tree: PinnedPredictionTreeAntigrav
         train_count = value.get("train_count") if type(value) is dict else None
         if type(train_count) is not int or train_count < 1:
             raise ValueError("leaf train count differs")
-        bundle = DatasetBundleAntigravity(sequence, identities[sequence][1], identities[sequence][2], np.ones((train_count, 1)), np.ones((expected_snapshot.target_lengths[sequence], 1)), expected_snapshot.target_lengths[sequence])
+        bundle = DatasetBundleAntigravity(identities[sequence][0], identities[sequence][1], identities[sequence][2], np.ones((train_count, 1)), np.ones((expected_snapshot.target_lengths[sequence], 1)), expected_snapshot.target_lengths[sequence])
         _validate_leaf_antigravity(value, sequence, bundle)
         receipt_bytes = tree.read_bytes_antigravity(tree.receipts_fd, name)
         receipt = strict_json_bytes_antigravity(receipt_bytes)
