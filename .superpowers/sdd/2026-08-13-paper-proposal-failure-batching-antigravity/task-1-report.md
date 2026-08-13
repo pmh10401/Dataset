@@ -15,3 +15,11 @@ JUDGMENT CALLS:
 - The repair itself preserves Exp443 `ValueError` semantics for byte-level formula parity; the MiniRocket caller wraps invalid rows in `MiniRocketNonfiniteInputPaper` so failure is typed and dataset-local.
 - The `< MINIMUM_TRAIN_PAPER` empty-result branch remains untouched to preserve frozen Exp249 control flow.
 GAPS: none
+
+ROUND 1 REVIEW FIX EVIDENCE:
+- Added focused public-boundary tests for `MiniRocketNonfiniteInputPaper` dataset/split/row context and the frozen small-TRAIN short circuit before repair.
+- Corrected the Exp448 map with all AST callers of `preprocessing_paper.py` and an explicit Exp443 repair-origin provenance node, edge, and flow.
+- Corrected the paper map with the Exp443 preprocessing origin and expanded MiniRocket test coverage description; regenerated both HTML/JSON/lock triplets.
+- `python3 -m unittest -v` over the seven non-capable MiniRocket boundary tests: 7 passed.
+- `python3 -m unittest -v paper.equipment_anomaly_detection.tests_paper.test_config_lineage_paper`: 15 passed.
+- Explicit Exp448 HTML-payload/node/edge/flow/fingerprint validator printed `codemap-preflight 28 34 9`; `git diff --cached --check` was clean.

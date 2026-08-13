@@ -715,12 +715,19 @@
         "z_normalize_paper"
       ],
       "callers": [
+        "sources_paper/canonical_paper.py",
+        "sources_paper/hard_sources_paper.py",
+        "sources_paper/imaging_paper.py",
+        "sources_paper/legacy_route_sources_paper.py",
         "sources_paper/minirocket_paper.py",
-        "sources_paper/legacy_route_sources_paper.py"
+        "sources_paper/multirocket_hydra_paper.py",
+        "tests_paper/test_hard_sources_paper.py",
+        "tests_paper/test_minirocket_paper.py"
       ],
       "effects": [
         "repairs each MiniRocket TRAIN and TEST row on its original grid before fixed TRAIN-target alignment and z-normalization",
-        "does not change shared hard-source preprocessing"
+        "does not change shared hard-source preprocessing",
+        "records the Exp443 Policy A repair provenance while preserving runtime isolation"
       ],
       "tests": [
         "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
@@ -734,6 +741,10 @@
         {
           "path": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
           "symbol": "repair_linear_edge_nearest_paper"
+        },
+        {
+          "path": "paper/equipment_anomaly_detection/sources_paper/source_provenance_paper.json",
+          "symbol": "experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity"
         }
       ]
     },
@@ -752,6 +763,7 @@
       ],
       "effects": [
         "repairs TRAIN and TEST rows only for MiniRocket before alignment and z-normalization",
+        "raises typed dataset/split/row-local failures for unrepairable scored rows while preserving the frozen small-TRAIN short circuit",
         "preserves frozen 1024/4096 kernel, seed, p-value intersection, and typed aeon-absence boundaries"
       ],
       "tests": [
@@ -765,6 +777,32 @@
         {
           "path": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
           "symbol": "score_minirocket_confirmations"
+        }
+      ]
+    },
+    {
+      "id": "exp443_repair_origin",
+      "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+      "role": "Frozen Exp443 Policy A float32 linear-edge/nearest repair provenance source.",
+      "entrypoints": [
+        "repair_linear_edge_nearest_antigravity"
+      ],
+      "callers": [
+        "paper_minirocket_preprocessing"
+      ],
+      "effects": [
+        "defines original-grid interpolation, nearest finite edge extension, and fail-closed empty/all-nonfinite handling"
+      ],
+      "tests": [
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py"
+      ],
+      "constraints": [
+        "The paper helper must remain byte-identical on registered float32 fixtures without introducing an experiment runtime dependency."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/sources_paper/source_provenance_paper.json",
+          "symbol": "repair_linear_edge_nearest_antigravity"
         }
       ]
     }
@@ -1066,6 +1104,15 @@
         "path": "paper/equipment_anomaly_detection/hard_route_paper.py",
         "symbol": "MiniRocketResult"
       }
+    },
+    {
+      "from": "paper_minirocket_preprocessing",
+      "to": "exp443_repair_origin",
+      "type": "provenance",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/sources_paper/source_provenance_paper.json",
+        "symbol": "repair_linear_edge_nearest_antigravity"
+      }
     }
   ],
   "flows": [
@@ -1161,12 +1208,13 @@
     {
       "trigger": "Task1 MiniRocket nonfinite restoration",
       "steps": [
+        "exp443_repair_origin",
         "paper_minirocket_preprocessing",
         "paper_minirocket_scoring",
         "paper_hard_route",
         "paper_proposal_score"
       ],
-      "outcome": "Only MiniRocket TRAIN and TEST values are repaired on the original float32 grid before alignment; all other hard sources and every frozen scoring/routing rule remain unchanged."
+      "outcome": "The paper helper is provenance-bound to Exp443 Policy A and repairs only MiniRocket TRAIN and TEST values on the original float32 grid before alignment; all other hard sources and every frozen scoring/routing rule remain unchanged."
     }
   ],
   "unknown_relationships": [],

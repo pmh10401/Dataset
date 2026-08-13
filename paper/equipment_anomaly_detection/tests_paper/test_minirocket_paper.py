@@ -17,6 +17,7 @@ from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
     ConfigurationScoresPaper,
     DependencyUnavailablePaper,
     MiniRocketConfig,
+    MiniRocketNonfiniteInputPaper,
     expected_feature_dimension_paper,
     score_configuration_paper,
     score_minirocket_confirmations,
@@ -70,6 +71,31 @@ class MiniRocketTests(unittest.TestCase):
             score_minirocket_confirmations(values)
         self.assertEqual(len(observed), 4)
         self.assertTrue(all(np.isfinite(matrix).all() for pair in observed for matrix in pair))
+
+    def test_confirmations_report_dataset_local_context_for_unrepairable_rows(self) -> None:
+        values = RawDataset(
+            "invalid_fixture", 6, tuple(range(5)), (b"a",) * 5,
+            tuple(np.arange(6, dtype="<f4") for _ in range(5)),
+            tuple(range(2)), (b"b",) * 2,
+            (np.arange(6, dtype="<f4"), np.full(6, np.nan, dtype="<f4")),
+        )
+        with self.assertRaisesRegex(
+            MiniRocketNonfiniteInputPaper,
+            r"dataset=invalid_fixture split=TEST row=1: series is entirely non-finite",
+        ):
+            score_minirocket_confirmations(values)
+
+    def test_small_train_short_circuits_before_nonfinite_repair(self) -> None:
+        values = RawDataset(
+            "small_fixture", 6, tuple(range(4)), (b"a",) * 4,
+            tuple(np.full(6, np.nan, dtype="<f4") for _ in range(4)),
+            (0,), (b"b",), (np.full(6, np.nan, dtype="<f4"),),
+        )
+        with patch.object(minirocket_paper, "repair_linear_edge_nearest_paper") as repair:
+            result = score_minirocket_confirmations(values)
+        repair.assert_not_called()
+        self.assertEqual(result.k1024, frozenset())
+        self.assertEqual(result.k4096, frozenset())
 
     def test_requested_kernel_feature_dimensions_are_frozen(self) -> None:
         config = MiniRocketConfig()
