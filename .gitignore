@@ -27,5 +27,6 @@ outputs/**/*checkpoint*.jsonl
 outputs/**/CHECKPOINT.jsonl
 outputs/**/*smoke*/
 outputs/**/*.log
+.superpowers/sdd/2026-08-13-exp452-exp449-index-order-repair-antigravity.html/task-5-report.md
 outputs/**/*.zip
 outputs/**/*.pptx
