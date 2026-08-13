@@ -179,6 +179,23 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(edges[("approved_design", "rdst_contracts")]["type"], "governs")
         builder.validate_map_antigravity(graph, lock, rendered_html)
 
+    def test_map_connects_task3_rdst_localgap_source_evidence_antigravity(self) -> None:
+        builder = map_builder_module_antigravity()
+        source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+        graph, lock, rendered_html = builder.build_map_antigravity(source_commit, "2026-08-13T00:00:00Z")
+        lock["working_tree_dirty"] = False
+        nodes = {node["id"]: node for node in graph["nodes"]}
+        expected = {
+            "official_rdst_representation": ("experiments/exp451_rdst_local_gap_qualification_antigravity/rdst_antigravity.py", "RDSTRepresentationAntigravity", "experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_rdst_antigravity.py"),
+            "localgap_scoring": ("experiments/exp451_rdst_local_gap_qualification_antigravity/scoring_antigravity.py", "score_candidate_antigravity", "experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_scoring_antigravity.py"),
+            "localgap_backend_gate": ("experiments/exp451_rdst_local_gap_qualification_antigravity/backend_gate_antigravity.py", "decide_backend_antigravity", "experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_backend_gate_antigravity.py"),
+        }
+        for node_id, (path, symbol, test) in expected.items():
+            with self.subTest(node_id=node_id):
+                self.assertEqual(nodes[node_id]["path"], path)
+                self.assertIn(test, nodes[node_id]["tests"])
+                self.assertIn({"path": path, "symbol": symbol}, nodes[node_id]["evidence"])
+
 
 if __name__ == "__main__":
     unittest.main()
