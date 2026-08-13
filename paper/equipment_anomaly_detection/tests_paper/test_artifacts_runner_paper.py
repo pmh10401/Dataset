@@ -803,5 +803,34 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "attempt"):
                 runner._incomplete_status(self.fixture.root, context)
 
+    def test_runner_retries_only_pending_after_incomplete_without_global_or_freeze_side_effects(self):
+        """A runner that journals/freezes before exact coverage would make the failed wave look complete."""
+        from paper.equipment_anomaly_detection import runner_paper as runner
+        from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
+        from paper.equipment_anomaly_detection.artifacts_paper import canonical_json_bytes, write_create_only
+        root = self.fixture.fixture.base / "runner_boundary_antigravity"; config = runner.PipelineConfig(self.fixture.fixture.db, root, "smoke", ("alpha", "beta"))
+        context = {"context_sha256": "a" * 64}; records = [{"record_sha256": "prior"}]
+        attempts, calculated, task6, task7 = [0], [], [], []
+        incomplete = {"status": "proposal_score_incomplete", "completed": 1, "failed": 1, "pending": 1, "pending_datasets": ["beta"], "attempts_path": str(root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts")}
+        def verify(_config):
+            return context, records, ["preflight", "prepare", "acceleration"] if attempts[0] < 2 else ["preflight", "prepare", "acceleration", "proposal_score"]
+        def write(root_value, stage, _context, _prior):
+            self.assertEqual(stage, "proposal_score")
+            attempts[0] += 1
+            if attempts[0] == 1:
+                raise ProposalScoreIncomplete(completed=1, failed=1, pending=("beta",), attempts_path=incomplete["attempts_path"])
+            calculated.append("beta"); task6.append("global"); task7.append("global")
+            write_create_only(root_value / "stage_artifacts_paper" / "proposal_freeze" / "proposal_manifest_paper.json", canonical_json_bytes({"schema": "test"}))
+            write_create_only(root_value / "pipeline_journal_paper" / "000004_proposal_score_paper.json", canonical_json_bytes({"schema": "paper-task8-journal-complete.v1"}))
+        with patch.object(runner, "context_payload", return_value=context), patch.object(runner, "verify_journal", side_effect=verify), patch.object(runner, "_write_complete", side_effect=write), patch.object(runner, "_incomplete_status", return_value=incomplete), patch.object(runner, "verify_completed", return_value={"status": "completed"}):
+            self.assertEqual(runner.run_pipeline(config), incomplete)
+            self.assertEqual((task6, task7, calculated), ([], [], []))
+            self.assertFalse((root / "stage_artifacts_paper" / "proposal_freeze").exists())
+            self.assertFalse((root / "pipeline_journal_paper" / "000004_proposal_score_paper.json").exists())
+            self.assertEqual(runner.run_pipeline(config), {"status": "completed"})
+        self.assertEqual((calculated, task6, task7), (["beta"], ["global"], ["global"]))
+        self.assertTrue((root / "stage_artifacts_paper" / "proposal_freeze" / "proposal_manifest_paper.json").is_file())
+        self.assertTrue((root / "pipeline_journal_paper" / "000004_proposal_score_paper.json").is_file())
+
 
 if __name__=="__main__":unittest.main()

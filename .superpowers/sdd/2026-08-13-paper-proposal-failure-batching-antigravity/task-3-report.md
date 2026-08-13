@@ -17,7 +17,7 @@
 
 ## Verification
 
-- `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v` — 36 passed after fix round 2.
+- `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v` — 37 passed after the final runner boundary regression.
 - `python3 -m py_compile paper/equipment_anomaly_detection/artifacts_paper.py paper/equipment_anomaly_detection/proposal_score_paper.py paper/equipment_anomaly_detection/runner_paper.py paper/equipment_anomaly_detection/pipeline_paper.py` — passed.
 - Strict codemap-lock hash closure and `validate_codemap_triplet` — passed.
 - `git diff --check` — passed.
@@ -32,6 +32,10 @@
 ## Fix round 2
 
 - Added a seven-coordinate, two-worker failure-wave stress test. It records the submitted/uncommitted window, verifies the cap remains four, verifies later coordinates replenish, and verifies a parent persistence occurs before replenishment.
+
+## Final runner boundary regression
+
+- Added a two-invocation `run_pipeline` boundary test with mocked catalog/science work: first invocation returns exact incomplete status without global/freeze/proposal-journal effects; the second computes only `beta`, invokes Task6/7 once, and creates the freeze/proposal completion evidence.
 
 ## Judgment calls
 
