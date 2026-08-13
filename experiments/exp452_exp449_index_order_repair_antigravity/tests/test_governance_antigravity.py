@@ -58,7 +58,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn("<!doctype html>", path.read_text(encoding="utf-8").lower())
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html").read_text(encoding="utf-8")
         completed_sections: list[tuple[int, int]] = []
-        for task_number, expected_tags in ((1, 7), (2, 8), (3, 8)):
+        for task_number, expected_tags in ((1, 7), (2, 8), (3, 8), (4, 9)):
             section = re.search(rf"<section><h2><input\b[^>]*> Task {task_number}:.*?</section>", plan, flags=re.IGNORECASE | re.DOTALL)
             self.assertIsNotNone(section)
             assert section is not None

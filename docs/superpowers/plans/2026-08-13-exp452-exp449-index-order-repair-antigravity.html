@@ -70,17 +70,17 @@
 <li><input disabled type="checkbox" checked> <strong>Step 7:</strong> Map/review; require <code>git diff --exit-code 5dfe3216 -- experiments/exp449_residual_fn_method_qualification_antigravity</code>.</li>
 </ol></section>
 
-<section><h2><input disabled type="checkbox"> Task 4: 정렬 복구 evaluator와 source-free replay</h2>
+<section><h2><input disabled type="checkbox" checked> Task 4: 정렬 복구 evaluator와 source-free replay</h2>
 <p><strong>Files:</strong> Create <code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code> and tests.</p>
 <p><strong>Produces:</strong> <code>evaluate_antigravity(reviewed_commit)</code>, <code>inspect_antigravity()</code>, exact 12-leaf publication.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1:</strong> RED order fixture: prediction <code>[1,3,5]</code> and evidence source <code>frozenset({5,1,3})</code> have equal sets but unordered list fails exact replay.</li>
-<li><input disabled type="checkbox"> <strong>Step 2:</strong> RED 96-row parity: synthetic 48-dataset fixture fails with <code>list(current[dataset])</code>.</li>
-<li><input disabled type="checkbox"> <strong>Step 3:</strong> Implement only <code>"indices": sorted(current[datasets[position]])</code> at evidence creation.</li>
-<li><input disabled type="checkbox"> <strong>Step 4:</strong> Replay keeps <code>candidate["indices"] == frozen_row["indices"]</code>. Do not sort or compare sets in replay.</li>
-<li><input disabled type="checkbox"> <strong>Step 5:</strong> Differential proof: after identity/path/hash removal, confusion, metrics, bootstrap, decision, leaf names/order equal Exp449 pure evaluation with the same integer labels.</li>
-<li><input disabled type="checkbox"> <strong>Step 6:</strong> Failure tests: missing/extra/duplicate/reordered index, semantic rehash, partial root, drift, query/close/audit failure, artifact-map tamper.</li>
-<li><input disabled type="checkbox"> <strong>Step 7:</strong> Evaluator/replay twice, Exp449 once, source-free inspect subprocess keeps SQLite/labels/network/dashboard unloaded.</li>
-<li><input disabled type="checkbox"> <strong>Step 8:</strong> Commit source/tests and map child; fresh review blocks any delta beyond identity/predecessor/<code>sorted</code>.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 1:</strong> RED order fixture: prediction <code>[1,3,5]</code> and evidence source <code>frozenset({5,1,3})</code> have equal sets but unordered list fails exact replay.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 2:</strong> RED 96-row parity: synthetic 48-dataset fixture fails with <code>list(current[dataset])</code>.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 3:</strong> Implement only <code>"indices": sorted(current[datasets[position]])</code> at evidence creation.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4:</strong> Replay keeps <code>candidate["indices"] == frozen_row["indices"]</code>. Do not sort or compare sets in replay.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 5:</strong> Differential proof: after identity/path/hash removal, confusion, metrics, bootstrap, decision, leaf names/order equal Exp449 pure evaluation with the same integer labels.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6:</strong> Failure tests: missing/extra/duplicate/reordered index, semantic rehash, partial root, drift, query/close/audit failure, artifact-map tamper.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 7:</strong> Evaluator/replay twice, Exp449 once, source-free inspect subprocess keeps SQLite/labels/network/dashboard unloaded.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 8:</strong> Commit source/tests and map child; fresh review blocks any delta beyond identity/predecessor/<code>sorted</code>.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 5: Closed CLI, 전체 검증, clean 후보</h2>
