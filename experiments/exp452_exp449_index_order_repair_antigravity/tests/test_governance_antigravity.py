@@ -67,13 +67,15 @@ class GovernanceAntigravityTest(unittest.TestCase):
             for tag in completed_tags:
                 self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
             completed_sections.append((section.start(), section.end()))
-        remaining_plan = plan
-        for start, end in reversed(completed_sections):
-            remaining_plan = remaining_plan[:start] + remaining_plan[end:]
-        pending_tags = re.findall(r"<input\b[^>]*>", remaining_plan, flags=re.IGNORECASE)
-        self.assertTrue(pending_tags)
-        for tag in pending_tags:
-            self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+        task_six = re.search(r"<section><h2><input\b[^>]*> Task 6:.*?</section>", plan, flags=re.IGNORECASE | re.DOTALL)
+        self.assertIsNotNone(task_six)
+        assert task_six is not None
+        task_six_tags = re.findall(r"<input\b[^>]*>", task_six.group(0), flags=re.IGNORECASE)
+        self.assertEqual(len(task_six_tags), 9)
+        for index in (1, 2, 3, 7):
+            self.assertRegex(task_six_tags[index], r"\bchecked(?:\s|=|>)")
+        for index in (0, 4, 5, 6, 8):
+            self.assertNotRegex(task_six_tags[index], r"\bchecked(?:\s|=|>)")
 
     def test_checked_plan_input_fixture_is_detected_antigravity(self) -> None:
         checked_tag = '<input disabled type="checkbox" checked>'
@@ -87,9 +89,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsInstance(catalog, dict)
         self.assertIsInstance(champion, dict)
         exp452 = state["exp452"]
-        self.assertEqual(exp452["status"], "implementation_verified_awaiting_official_readiness")
+        lifecycle = {"readiness_invocations": 1, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0, "label_query_count": 0, "label_row_count": 0, "readiness_exit_code": 1, "evaluate_exit_code": None, "inspect_exit_code": None}
+        self.assertEqual(exp452["status"], "official_readiness_failed_immutable_no_retry")
         self.assertEqual(exp452["label_access_count"], 0)
-        self.assertEqual(exp452["official_lifecycle"], {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0})
+        self.assertFalse(exp452["test_labels_opened"])
+        self.assertTrue(exp452["official_readiness_started"])
+        self.assertFalse(exp452["official_evaluate_started"])
+        self.assertFalse(exp452["official_inspect_started"])
+        self.assertEqual(exp452["official_lifecycle"], lifecycle)
         self.assertIsNone(exp452["prediction_sha256"])
         self.assertIsNone(exp452["result_sha256"])
         self.assertIsNone(exp452["evaluation_sha256"])
@@ -98,11 +105,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(exp452["promotion_allowed"])
         self.assertFalse(exp452["routing_allowed"])
         self.assertFalse(exp452["pending_candidate_changed"])
+        self.assertEqual(exp452["official_failure"]["phase"], "readiness")
+        self.assertFalse(exp452["official_failure"]["retry_permitted"])
         self.assertIn("qualified", exp452["qualified_two_boundary"].lower())
         self.assertIn("cannot guide", exp452["qualified_two_boundary"].lower())
         catalog_entry = next(entry for entry in catalog["experiments"] if entry["id"] == "Exp452")
-        self.assertEqual(catalog_entry["status"], "implementation_verified_awaiting_official_readiness")
-        self.assertEqual(catalog_entry["official_lifecycle"], {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0})
+        self.assertEqual(catalog_entry["status"], "official_readiness_failed_immutable_no_retry")
+        self.assertEqual(catalog_entry["official_lifecycle"], lifecycle)
         self.assertIsNone(catalog_entry["prediction_sha256"])
         self.assertIsNone(catalog_entry["result_sha256"])
         self.assertIsNone(catalog_entry["evaluation_sha256"])
@@ -111,9 +120,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(catalog_entry["promotion_allowed"])
         self.assertFalse(catalog_entry["routing_allowed"])
         self.assertFalse(catalog_entry["pending_candidate_changed"])
+        self.assertEqual(catalog_entry["official_failure"]["phase"], "readiness")
+        self.assertFalse(catalog_entry["official_failure"]["retry_permitted"])
         champion_entry = next(entry for entry in champion["history"] if entry["experiment"] == "Exp452")
-        self.assertEqual(champion_entry["status"], "implementation_verified_awaiting_official_readiness")
-        self.assertEqual(champion_entry["official_lifecycle"], {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0})
+        self.assertEqual(champion_entry["status"], "official_readiness_failed_immutable_no_retry")
+        self.assertEqual(champion_entry["official_lifecycle"], lifecycle)
         self.assertIsNone(champion_entry["prediction_sha256"])
         self.assertIsNone(champion_entry["result_sha256"])
         self.assertIsNone(champion_entry["evaluation_sha256"])
@@ -122,6 +133,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(champion_entry["promotion_allowed"])
         self.assertFalse(champion_entry["routing_allowed"])
         self.assertFalse(champion_entry["pending_candidate_changed"])
+        self.assertEqual(champion_entry["official_failure"]["phase"], "readiness")
+        self.assertFalse(champion_entry["official_failure"]["retry_permitted"])
         self.assertFalse((ROOT_ANTIGRAVITY / "EXPERIMENT_HISTORY.json").exists())
 
     def test_map_is_strict_embedded_and_records_task_five_cli_antigravity(self) -> None:
