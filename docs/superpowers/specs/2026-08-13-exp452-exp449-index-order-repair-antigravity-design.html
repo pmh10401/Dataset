@@ -68,10 +68,23 @@
   <li>새 run identity: <code>exp452-exp449-index-order-repair-antigravity-20260813</code></li>
   <li>새 package: <code>experiments/exp452_exp449_index_order_repair_antigravity</code></li>
   <li>새 launcher: <code>scratch/run_exp452_exp449_index_order_repair_antigravity.py</code></li>
-  <li>새 prediction/evaluation/receipt/audit root는 Exp449와 겹치지 않는 Exp452 전용 이름을 사용한다.</li>
+  <li>읽기 전용 Exp449 prediction: <code>/Users/mac/Documents/Dataset/exp449_residual_fn_method_qualification_antigravity_20260812</code></li>
+  <li>Exp452 evaluation root: <code>/Users/mac/Documents/Dataset/exp452_exp449_index_order_repair_evaluation_antigravity_20260813</code></li>
+  <li>Exp452 receipt directory: <code>/Users/mac/Documents/Dataset/exp452_index_order_repair_lifecycle_receipts_antigravity_20260813</code></li>
+  <li>Exp452 failure audit: <code>/Users/mac/Documents/Dataset/exp452_index_order_repair_failure_audit_antigravity.json</code></li>
   <li>새로 만드는 모든 파일명에는 <code>antigravity</code>가 들어가며 <code>__init__.py</code>를 만들지 않는다.</li>
 </ul>
 <p>Exp449 package, prediction root, staging directory, receipt, failure audit는 읽기 전용 predecessor evidence다. 어느 것도 수정·삭제·이동하지 않는다.</p>
+
+<p>사람이 읽는 새 문서는 모두 self-contained HTML로 만든다. 정확한 파일은 아래와 같다.</p>
+<ul>
+  <li>Plan: <code>docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html</code></li>
+  <li>Preregistration: <code>docs/EXP452_PREREGISTRATION_antigravity_KO.html</code></li>
+  <li>Runbook: <code>docs/EXP452_RUNBOOK_antigravity_KO.html</code></li>
+  <li>Implementation report: <code>docs/EXP452_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+  <li>Code map HTML: <code>docs/codemap/codemap_exp452_antigravity.html</code></li>
+</ul>
+<p>같은 내용을 가진 Markdown 문서를 따로 만들지 않는다. 기계가 읽는 code map JSON과 lock은 각각 <code>docs/codemap/codemap_exp452_antigravity.json</code>, <code>docs/codemap/codemap_exp452_antigravity.lock</code>을 사용한다.</p>
 
 <h2>6. 테스트 순서</h2>
 <ol>
@@ -85,7 +98,8 @@
 </ol>
 
 <h2>7. 공식 실행 규칙</h2>
-<p>구현과 검토가 끝난 뒤에만 Exp452 official lifecycle을 한 번 실행할 수 있다. 명령은 <code>readiness</code>, <code>evaluate</code>, <code>inspect</code> 순서로 각각 한 번만 허용한다. Exp449 prediction을 새로 만들지 않으므로 Exp452에는 별도 predict command를 두지 않는다.</p>
+<p>구현과 검토가 끝난 뒤에만 Exp452 official lifecycle을 한 번 실행할 수 있다. 명령은 <code>readiness --reviewed-commit LOWER40HEX</code>, <code>evaluate --reviewed-commit LOWER40HEX</code>, bare <code>inspect</code> 순서로 각각 한 번만 허용한다. Exp449 prediction을 새로 만들지 않으므로 Exp452에는 별도 predict command를 두지 않는다.</p>
+<p><code>readiness</code>와 <code>evaluate</code>는 fresh Sol이 승인한 동일한 clean commit을 받아야 한다. <code>inspect</code>는 argument를 받지 않으며, evaluation artifact와 receipt 안의 reviewed commit이 그 동일한 commit인지 확인한다. HEAD, map lock, receipt, artifact 중 하나라도 다른 commit을 가리키면 실패한다.</p>
 <ul>
   <li>Readiness가 실패하면 evaluate와 inspect를 실행하지 않는다.</li>
   <li>Evaluate가 실패하면 inspect를 실행하지 않는다.</li>
