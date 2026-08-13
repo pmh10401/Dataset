@@ -728,6 +728,37 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
             score._collect_task4_task5(raw, backend)
         self.assertEqual(max(observed), 2 * backend.dataset_workers)
 
+    def test_seven_coordinate_failure_wave_caps_uncommitted_window_and_persists_before_replenish(self):
+        """Eagerly queuing seven coordinates can strand more than the four-coordinate worker window."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        _manifest, _context, backend = self._backend(3)
+        raw = {f"d{index}": self.raw["alpha"] for index in range(7)}
+        active, submitted, published, maxima = set(), [], [], []
+        case = self
+        values = self.values
+        class Future:
+            def __init__(self, dataset): self.dataset = dataset
+            def result(self):
+                if self.dataset == "d1": raise RuntimeError("fixture worker failure")
+                return values["alpha"]
+        class Executor:
+            def __init__(self, *, max_workers): self.max_workers = max_workers
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def submit(self, _fn, child):
+                if len(submitted) >= 4: case.assertTrue(published or "d1" in submitted)
+                dataset = f"d{len(submitted)}"; future = Future(dataset); submitted.append(dataset); active.add(future); maxima.append(len(active)); return future
+        executor = Executor(max_workers=backend.dataset_workers)
+        def completion(futures):
+            future = tuple(futures)[0]; active.remove(future); return (future,)
+        def persist(_raw, _sources, _route): published.append(_raw.dataset)
+        with patch.object(score, "ProcessPoolExecutor", side_effect=lambda **_kwargs: executor), patch.object(score, "as_completed", side_effect=completion):
+            with self.assertRaises(score.ProposalScoreIncomplete):
+                score._collect_task4_task5(raw, backend, publish_success=persist)
+        self.assertLessEqual(max(maxima), 2 * backend.dataset_workers)
+        self.assertEqual(submitted, [f"d{index}" for index in range(7)])
+        self.assertEqual(len(published), 6)
+
     def test_parent_interruption_retries_only_uncommitted_coordinates(self):
         """After a parent interruption, a persisted success must not be recomputed with the remaining future."""
         from paper.equipment_anomaly_detection import proposal_score_paper as score
