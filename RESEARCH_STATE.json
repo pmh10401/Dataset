@@ -115,7 +115,7 @@
   "exp451": {
     "experiment": "Exp451",
     "kind": "rdst_local_gap_qualification",
-    "status": "implementation_verified_awaiting_official_readiness",
+    "status": "planned_not_started",
     "reviewed_design_sha256": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
     "documents": {
       "design": "docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html",
@@ -163,7 +163,7 @@
   "exp452": {
     "experiment": "Exp452",
     "kind": "exp449_index_order_repair",
-    "status": "planned_not_started",
+    "status": "implementation_verified_awaiting_official_readiness",
     "reviewed_design_commit": "b9ff4bf6b76e37f00146f3080edb9c58068d43ee",
     "reviewed_design_sha256": "59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075",
     "documents": {
