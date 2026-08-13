@@ -363,6 +363,48 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 if recovery_fault is not None:
                     self.assertIn(f"recovery_{recovery_fault}_error=OSError: recovery {recovery_fault}", "\n".join(raised.exception.__notes__))
 
+    def test_dual_predecessor_authority_without_reviewed_commit_publishes_manifest_antigravity(self) -> None:
+        """Break caught: production dual-predecessor authority raises AttributeError on manifest reviewed_commit."""
+        from experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        from experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.predecessor_antigravity import _Exp453PredecessorAuthorityAntigravity
+        from experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.replay_antigravity import FrozenPredictionCaptureAntigravity, inspect_replay_at_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp453_dual_authority_manifest_antigravity_") as temporary:
+            root = Path(temporary) / "publication_antigravity"
+            dependencies = self._dependencies_antigravity(root)
+            captured = dependencies.capture_task5_prediction_antigravity()
+            target = dependencies.capture_exp448_antigravity()
+            authority = _Exp453PredecessorAuthorityAntigravity(
+                "1" * 64,
+                "2" * 64,
+                "3" * 64,
+                "4" * 64,
+                "5" * 64,
+                True,
+                target.target_dataset_names,
+                captured.canonical_rows,
+                48,
+                96,
+                0,
+                0,
+                0,
+            )
+            self.assertFalse(hasattr(authority, "reviewed_commit"))
+            capture = FrozenPredictionCaptureAntigravity(
+                authority,
+                captured.canonical_rows,
+                captured.canonical_row_sha256,
+                captured.canonical_aggregate_sha256,
+            )
+            dependencies.capture_task5_prediction_antigravity = lambda: capture
+            result = _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            manifest = json.loads((root / "prediction_manifest_antigravity.json").read_text())
+            self.assertIsNone(manifest["exp449_reviewed_commit"])
+            self.assertEqual(
+                inspect_replay_at_antigravity(root, expected_prediction_authority=capture, expected_reviewed_commit="a" * 40),
+                result,
+            )
+
     def test_official_surfaces_consume_task3_dual_predecessor_and_label_opener_antigravity(self) -> None:
         """Break caught: official evaluate/inspect keep the Exp452 predecessor and label surfaces."""
         from experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.evaluation_antigravity import evaluate_antigravity, inspect_antigravity
