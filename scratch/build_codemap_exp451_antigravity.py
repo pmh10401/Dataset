@@ -143,7 +143,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "official_rdst_representation", "to": "localgap_scoring", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/scoring_antigravity.py", "make_rdst_antigravity")},
         {"from": "localgap_backend_gate", "to": "localgap_scoring", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/scoring_antigravity.py", "build_local_gap_backend_antigravity")},
         {"from": "exp448_immutable_predecessor", "to": "prediction_evaluation_source_firewall", "type": "governs", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/sources_antigravity.py", "verify_exp448_predecessor_antigravity")},
-        {"from": "prediction_evaluation_source_firewall", "to": "localgap_scoring", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "DatasetBundleAntigravity")},
+        {"from": "prediction_evaluation_source_firewall", "to": "rdst_contracts", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/sources_antigravity.py", "from .contracts_antigravity import")},
     ]
     unknown_relationships: list[dict[str, str]] = []
     graph: dict[str, object] = {

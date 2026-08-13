@@ -36,3 +36,12 @@
 ## Concerns
 
 - None. Exp451 remains planned; no official lifecycle or actual TEST-label read occurred.
+
+## Review fix round 1
+
+- RED proved the original production validator could not dynamically delegate to the absent future Task 5 artifact validator, did not return a complete authenticated authority, and skipped post-read database verification on a query failure. GREEN now delegates dynamically and fails before opener when Task 5 is absent or rejects the artifact.
+- `ValidatedPredictionAuthorityAntigravity` binds reviewed commit, canonical SHA256, ordered `(order,family,name)` identities, exact per-dataset lengths and candidate indices. The private seam requires equality with the exact fixture authority; production independently requires the exact Exp448 48 identities/order and frozen TEST lengths `(1000,1000,2350,...,1550,1800)` totaling 72,300.
+- Direct Task 4 tests cover production-opener count 0, reviewed-commit/hash/family/length/candidate attacks, label/schema/function/write/pragma/attach authorizer denial, DB symlink/hardlink/inode/SHA attacks, value postverification after read failure, label under/over/bool/gap/non-text attacks, iterator/query plus close failure distinction, terminal guard, and single close attempt.
+- Values production now runs postverification exactly once after every attempted read even when SQL/parsing/normalization/bundle construction fails. Combined primary and cleanup/postverification errors use an inspectable `ExceptionGroup`; connection and descriptor cleanup remain one-attempt.
+- Label close is marked attempted before invocation, preventing a second close after a raising close. Query/iterator and close errors remain separate members of an `ExceptionGroup` and the guard remains terminal.
+- The speculative firewall-to-scoring edge was removed. The map now records the concrete `sources_antigravity.py` import of Exp451 contracts.

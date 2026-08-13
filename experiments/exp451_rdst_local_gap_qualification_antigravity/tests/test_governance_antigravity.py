@@ -206,7 +206,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(nodes["prediction_evaluation_source_firewall"]["path"], "experiments/exp451_rdst_local_gap_qualification_antigravity/sources_antigravity.py")
         edges = {(edge["from"], edge["to"], edge["type"]) for edge in graph["edges"]}
         self.assertIn(("exp448_immutable_predecessor", "prediction_evaluation_source_firewall", "governs"), edges)
-        self.assertIn(("prediction_evaluation_source_firewall", "localgap_scoring", "reads"), edges)
+        self.assertIn(("prediction_evaluation_source_firewall", "rdst_contracts", "reads"), edges)
+        self.assertNotIn(("prediction_evaluation_source_firewall", "localgap_scoring", "reads"), edges)
         builder.validate_map_antigravity(graph, lock, rendered_html)
 
 

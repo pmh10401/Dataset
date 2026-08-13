@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 import hashlib
+import importlib
 import os
 from pathlib import Path
 import sqlite3
@@ -105,7 +107,7 @@ def _bundle_from_rows_antigravity(dataset_order: int, family: str, dataset: str,
     return DatasetBundleAntigravity(dataset_order, family, dataset, normalize(train), normalize(test), len(test))
 
 
-def _load_target_bundle_with_connection_antigravity(dataset: str, connection_factory: Callable[[], object]) -> DatasetBundleAntigravity:
+def _load_target_bundle_with_connection_antigravity(dataset: str, connection_factory: Callable[[], object], *, close_connection_antigravity: bool = True) -> DatasetBundleAntigravity:
     authority = verify_exp448_predecessor_antigravity()
     if type(dataset) is not str or dataset not in authority.target_dataset_names:
         raise ValueError("dataset is not an exact Exp448 target")
@@ -115,23 +117,48 @@ def _load_target_bundle_with_connection_antigravity(dataset: str, connection_fac
         rows = tuple(connection.execute(_VALUE_SQL_ANTIGRAVITY, (dataset,)))
         return _bundle_from_rows_antigravity(authority.target_dataset_order[position], authority.target_baseline_rows[position].family, dataset, rows)
     finally:
-        connection.close()
+        if close_connection_antigravity:
+            connection.close()
 
 
 def load_target_bundle_antigravity(dataset: str) -> DatasetBundleAntigravity:
     """Load row-wise z-normalized values without granting label capability."""
     descriptor, identity = _verify_database_antigravity()
     connection = None
+    close_attempted = False
+    read_attempted = False
+    primary: BaseException | None = None
     try:
         connection = _connection_from_descriptor_antigravity(descriptor, labels=False)
-        result = _load_target_bundle_with_connection_antigravity(dataset, lambda: connection)
-        connection = None  # helper closed it exactly once
-        _assert_database_unchanged_antigravity(descriptor, identity)
+        read_attempted = True
+        result = _load_target_bundle_with_connection_antigravity(dataset, lambda: connection, close_connection_antigravity=False)
         return result
+    except BaseException as error:
+        primary = error
+        raise
     finally:
-        if connection is not None:
-            connection.close()
-        os.close(descriptor)
+        cleanup_errors: list[BaseException] = []
+        if connection is not None and not close_attempted:
+            close_attempted = True
+            try:
+                connection.close()
+            except BaseException as error:
+                cleanup_errors.append(error)
+        if read_attempted:
+            try:
+                _assert_database_unchanged_antigravity(descriptor, identity)
+            except BaseException as error:
+                cleanup_errors.append(error)
+        try:
+            os.close(descriptor)
+        except BaseException as error:
+            cleanup_errors.append(error)
+        if cleanup_errors:
+            if primary is not None:
+                raise ExceptionGroup("values read and cleanup/postverification failures", [primary, *cleanup_errors]) from primary
+            if len(cleanup_errors) == 1:
+                raise cleanup_errors[0]
+            raise ExceptionGroup("values cleanup/postverification failures", cleanup_errors)
 
 
 @dataclass(slots=True)
@@ -149,7 +176,7 @@ class LabelSessionGuardAntigravity:
 @dataclass(frozen=True, slots=True)
 class LabelSourceDependenciesAntigravity:
     connection_factory: Callable[[], object]
-    prediction_validator: Callable[[FrozenPredictionAuthorityAntigravity], tuple[str, ...]]
+    prediction_validator: Callable[[FrozenPredictionAuthorityAntigravity], "ValidatedPredictionAuthorityAntigravity"]
     session_guard: LabelSessionGuardAntigravity
 
     def __post_init__(self) -> None:
@@ -176,16 +203,46 @@ class LabelSnapshotAntigravity:
         object.__setattr__(self, "labels", tuple(snapshots))
 
 
-def _validate_prediction_authority_antigravity(authority: FrozenPredictionAuthorityAntigravity) -> tuple[str, ...]:
+@dataclass(frozen=True, slots=True)
+class ValidatedPredictionAuthorityAntigravity:
+    reviewed_commit: str
+    canonical_sha256: str
+    dataset_identities: tuple[tuple[int, str, str], ...]
+    target_lengths: tuple[int, ...]
+    candidate_indices: tuple[tuple[int, ...], ...]
+
+    @classmethod
+    def from_authority_antigravity(cls, authority: FrozenPredictionAuthorityAntigravity) -> "ValidatedPredictionAuthorityAntigravity":
+        if type(authority) is not FrozenPredictionAuthorityAntigravity:
+            raise ValueError("validated prediction source type differs")
+        restored = FrozenPredictionAuthorityAntigravity.from_payload_antigravity(authority.to_payload_antigravity())
+        return cls(restored.reviewed_commit, restored.canonical_sha256_antigravity, restored.dataset_identities, restored.target_lengths, restored.candidate_indices)
+
+    def matches_antigravity(self, authority: FrozenPredictionAuthorityAntigravity) -> bool:
+        return self == type(self).from_authority_antigravity(authority)
+
+
+_TASK5_PREDICTION_MODULE_ANTIGRAVITY = "experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity"
+
+
+def _validate_prediction_authority_antigravity(authority: FrozenPredictionAuthorityAntigravity) -> ValidatedPredictionAuthorityAntigravity:
     if type(authority) is not FrozenPredictionAuthorityAntigravity:
         raise ValueError("prediction authority type differs")
-    # Canonical round trip rejects semantic aliases and binds names, lengths and indices.
-    restored = FrozenPredictionAuthorityAntigravity.from_payload_antigravity(authority.to_payload_antigravity())
+    try:
+        module = importlib.import_module(_TASK5_PREDICTION_MODULE_ANTIGRAVITY)
+        validator = getattr(module, "validate_frozen_prediction_authority_antigravity")
+        restored = validator(authority)
+    except (ImportError, AttributeError, TypeError, ValueError) as error:
+        raise ValueError("Task5 frozen prediction validator is unavailable or rejected authority") from error
+    if type(restored) is not FrozenPredictionAuthorityAntigravity or restored != authority:
+        raise ValueError("Task5 validator did not return the exact authority")
+    validated = ValidatedPredictionAuthorityAntigravity.from_authority_antigravity(restored)
     predecessor = verify_exp448_predecessor_antigravity()
-    names = tuple(identity[2] for identity in restored.dataset_identities)
-    if names != predecessor.target_dataset_names or len(names) != 48 or sum(restored.target_lengths) != 72_300:
-        raise ValueError("prediction dataset/length authority differs")
-    return names
+    expected_identities = tuple((order, row.family, name) for order, row, name in zip(predecessor.target_dataset_order, predecessor.target_baseline_rows, predecessor.target_dataset_names, strict=True))
+    if (validated.dataset_identities != expected_identities or validated.target_lengths != predecessor.target_test_lengths
+            or len(validated.dataset_identities) != 48 or sum(validated.target_lengths) != 72_300):
+        raise ValueError("prediction identity/order/per-dataset length authority differs")
+    return validated
 
 
 def _open_ordered_label_session_with_dependencies_antigravity(authority: FrozenPredictionAuthorityAntigravity, dependencies: LabelSourceDependenciesAntigravity) -> LabelSnapshotAntigravity:
@@ -194,8 +251,11 @@ def _open_ordered_label_session_with_dependencies_antigravity(authority: FrozenP
     if type(authority) is not FrozenPredictionAuthorityAntigravity:
         raise ValueError("prediction authority type differs")
     FrozenPredictionAuthorityAntigravity.from_payload_antigravity(authority.to_payload_antigravity())
-    names = dependencies.prediction_validator(authority)
-    if type(names) is not tuple or len(names) != 48 or len(set(names)) != 48 or names != tuple(identity[2] for identity in authority.dataset_identities) or sum(authority.target_lengths) != 72_300:
+    validated = dependencies.prediction_validator(authority)
+    if type(validated) is not ValidatedPredictionAuthorityAntigravity or not validated.matches_antigravity(authority):
+        raise ValueError("validated prediction artifact authority differs")
+    names = tuple(identity[2] for identity in validated.dataset_identities)
+    if len(names) != 48 or len(set(names)) != 48 or sum(validated.target_lengths) != 72_300:
         raise ValueError("validated prediction order differs")
     dependencies.session_guard.claim_antigravity()
     connection = None
@@ -203,7 +263,8 @@ def _open_ordered_label_session_with_dependencies_antigravity(authority: FrozenP
     try:
         connection = dependencies.connection_factory()
         vectors = []
-        for name, expected_length in zip(names, authority.target_lengths, strict=True):
+        connection_close_attempted = False
+        for name, expected_length in zip(names, validated.target_lengths, strict=True):
             rows = tuple(connection.execute(_LABEL_SQL_ANTIGRAVITY, (name,)))
             if len(rows) != expected_length:
                 raise ValueError("label row count differs")
@@ -213,15 +274,17 @@ def _open_ordered_label_session_with_dependencies_antigravity(authority: FrozenP
                     raise ValueError("label index/text differs")
                 labels[expected_index] = int(row[1])
             vectors.append(labels)
+        connection_close_attempted = True
         connection.close()
         connection = None
-        return LabelSnapshotAntigravity(names, tuple(vectors), tuple(authority.target_lengths), 72_300, 1)
+        return LabelSnapshotAntigravity(names, tuple(vectors), validated.target_lengths, 72_300, 1)
     except BaseException as error:
         primary = error
         raise
     finally:
-        if connection is not None:
+        if connection is not None and not locals().get("connection_close_attempted", False):
             try:
+                connection_close_attempted = True
                 connection.close()
             except BaseException as cleanup:
                 if primary is None:

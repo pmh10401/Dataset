@@ -12,6 +12,7 @@ from experiments.exp449_residual_fn_method_qualification_antigravity.predecessor
 _TARGET_FAMILIES_ANTIGRAVITY = ("Crop", "ElectricDevices", "FordA", "FordB", "Yoga", "ECG5000", "ChlorineConcentration", "StarLightCurves")
 _TARGET_COUNTS_ANTIGRAVITY = (24, 7, 2, 2, 2, 5, 3, 3)
 _TARGET_FN_ANTIGRAVITY = (246, 200, 88, 75, 63, 56, 56, 53)
+_TARGET_TEST_LENGTHS_ANTIGRAVITY = (1000, 1000, 2350, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 2950, 1800, 50, 150, 50, 1400, 4250, 1600, 2650, 4350, 1250, 1300, 2550, 2400, 2300, 2200, 1350, 2600, 5400, 1550, 1800)
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +29,7 @@ class Exp448PredecessorAuthorityAntigravity:
     baseline_confusion: tuple[int, int, int, int]
     target_family_fn: tuple[int, ...]
     target_test_rows: int
+    target_test_lengths: tuple[int, ...]
     label_access_count: int
 
 
@@ -54,7 +56,7 @@ def verify_exp448_predecessor_antigravity() -> Exp448PredecessorAuthorityAntigra
     return Exp448PredecessorAuthorityAntigravity(
         tuple(source.root_identity), source.artifact_map_sha256, source.evaluation_sha256,
         source.decision_sha256, 1117, 48, tuple(source.target_dataset_order), names, rows,
-        (1930, 314, 1988, 191668), _TARGET_FN_ANTIGRAVITY, 72_300, 0,
+        (1930, 314, 1988, 191668), _TARGET_FN_ANTIGRAVITY, 72_300, _TARGET_TEST_LENGTHS_ANTIGRAVITY, 0,
     )
 
 
