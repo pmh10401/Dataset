@@ -103,8 +103,9 @@ Deep SVDD partial 산출물은
 - Deep SVDD deferred launcher: **prepared, not started, 새 공식 root 0/1,117**
 - DROCC deferred launcher: **prepared, not started, 새 공식 root 0/1,117**
 - Canonical backend: **deterministic PyTorch CPU, worker 1, epochs 50**
-- Operational support: **independent roots, create-only authority, PID/lock,
-  live log, partial verified status, exact resume, freeze and verify**
+- Operational support: **independent canonical roots, create-only authority,
+  flock-only liveness (PID/heartbeat metadata only), live log, bounded
+  shard/meta publication tolerance, exact resume, freeze and verify**
 
 향후 공식 root는 각각
 `/Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_1d_full_v1_antigravity`와

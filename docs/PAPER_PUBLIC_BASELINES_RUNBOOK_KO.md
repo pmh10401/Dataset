@@ -203,3 +203,8 @@ commit, wrapper 또는 score-source identity가 다르거나 shard/meta 한쪽�
 byte가 변조됐으면 덮어쓰지 않고 실패한다. 기존 107-pair mixed root
 `/Users/mac/Documents/Dataset/paper_public_baselines_deep_partial_v1`은 증거로만
 보존하며 두 새 공식 root 어느 쪽에도 복사하지 않는다.
+
+`run-root`는 canonical 경로로 고정하며 symlink leaf는 거부한다. sibling
+`worker_lock_antigravity.lock`의 비차단 `flock`만 실행 중 여부를 판단한다.
+`pid_antigravity.txt`와 heartbeat는 관찰용 metadata이며 liveness 판정에는
+사용하지 않는다.

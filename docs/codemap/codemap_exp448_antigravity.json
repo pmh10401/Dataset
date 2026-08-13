@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T12:04:18+0900",
-  "generated_from_commit": "995b8876fdce7012a56dabf657d55ea645fe98a4",
+  "generated_at": "2026-08-13T12:50:01+0900",
+  "generated_from_commit": "fdab5cea829d1bd54a2b20f69269f161df74ee8d",
   "working_tree_dirty": true,
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
@@ -659,7 +659,7 @@
         "operator"
       ],
       "effects": [
-        "immutable authority, detached one-method execution, progress/status, frozen score-root verification"
+        "exact immutable authority, canonical-flock detached execution, transient shard-pair grace, signal-safe child shutdown, progress/status, and frozen score-root identity verification"
       ],
       "tests": [
         "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py"
@@ -667,6 +667,9 @@
       "constraints": [
         "Only deep_svdd_1d and drocc_1d are accepted.",
         "Official CPU, worker 1, PyTorch thread 1, 50 epochs, seed 20260812, and 1,117-pair coverage are immutable.",
+        "Canonical resolved run roots reject symlink leaves; flock alone determines liveness and PID files are informational.",
+        "SIGTERM/SIGINT are forwarded to the active child and bounded shutdown completes before the worker releases its lock.",
+        "Authority, frozen DB/method/count/run-config identity, and the verified scoring-source closure fail closed on drift.",
         "Import, status, and verify do not start training; verify remains label-free."
       ],
       "evidence": [
@@ -687,7 +690,7 @@
         "unittest discovery"
       ],
       "effects": [
-        "protects no-training import, official config, duplicate launch, verified partial status, stale heartbeat, and label-free verify boundaries"
+        "protects no-training import, exact official authority, canonical flock liveness, symlink rejection, transient/stable shard pairs, signal forwarding, and frozen run/source identity"
       ],
       "tests": [
         "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py"
