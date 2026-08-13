@@ -18,7 +18,7 @@ from .sources_paper.stability_paper import StabilityPartition
 
 SHARD_SCHEMA="paper-task8-proposal-shard.v3"; MANIFEST_SCHEMA="paper-task8-proposal-manifest.v1"; PARITY_SCHEMA="paper-task8-parity.v1"
 ARTIFACT_DIRECTORY="stage_artifacts_paper"; FREEZE_STAGE="proposal_freeze"; SHARD_DIRECTORY="shards"; MANIFEST_NAME="proposal_manifest_paper.json"
-TASK4_TASK5_SUCCESS_SCHEMA="paper-task4-task5-success.v1"; PROPOSAL_WORK_DIRECTORY="proposal_work"; TASK4_TASK5_SUCCESS_DIRECTORY="task4_task5_success"; TASK4_TASK5_SUCCESS_NAME="task4_task5_success_antigravity.json"
+TASK4_TASK5_SUCCESS_SCHEMA="paper-task4-task5-success.v1"; TASK4_TASK5_ATTEMPT_SCHEMA="paper-task4-task5-attempt.v1"; PROPOSAL_WORK_DIRECTORY="proposal_work"; TASK4_TASK5_SUCCESS_DIRECTORY="task4_task5_success"; TASK4_TASK5_ATTEMPT_DIRECTORY="task4_task5_attempts"; TASK4_TASK5_SUCCESS_NAME="task4_task5_success_antigravity.json"
 TASK4_TASK5_SOURCE_ORIGIN_IDS={"rocket_exp40":"rocket_exp40","exp55_best":"exp55_best","exp56_best":"exp56_best","exp84":"exp84_family_guard","rocket_block_b":"rocket_block_b","canonical_normal_state":"canonical_normal_state"}
 POLICIES=("hard_only","hard_plus_source","hard_plus_stable","hard_plus_unstable")
 
@@ -61,6 +61,15 @@ class Task4Task5SuccessRecord:
     """Allowlisted typed reconstruction of one cached per-dataset Task4+5 result."""
     sources: HardSourceBundle
     route: HardRouteResult
+
+@dataclass(frozen=True, slots=True)
+class Task4Task5AttemptRecord:
+    """Operational-only parent evidence for a failed Task4+5 coordinate attempt."""
+    dataset: str
+    wave: int
+    attempt: int
+    exception_type: str
+    exception_message: str
 
 def canonical_json_bytes(value: object) -> bytes:
     try:return json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()+b"\n"
@@ -381,6 +390,82 @@ def read_task4_task5_success_record(root: Path, catalog: dict[str, object], auth
     return Task4Task5SuccessRecord(sources, route)
 
 
+def _task4_task5_attempt_root(root: Path) -> Path:
+    return safe_child(root, ARTIFACT_DIRECTORY, PROPOSAL_WORK_DIRECTORY, TASK4_TASK5_ATTEMPT_DIRECTORY)
+
+
+def _task4_task5_attempt_path(root: Path, attempt: int) -> Path:
+    return safe_child(_task4_task5_attempt_root(root), f"attempt_{attempt:06d}_antigravity.json")
+
+
+def _task4_task5_attempt_envelope(catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw: RawDataset, wave: int, attempt: int, error: Exception) -> dict[str, object]:
+    if type(wave) is not int or wave < 1 or type(attempt) is not int or attempt < 1 or not isinstance(error, Exception):
+        raise ValueError("Task4+5 attempt identity is invalid")
+    entry = _catalog_entry(catalog, raw.dataset)
+    _raw_identity(raw, entry)
+    payload = {"schema": TASK4_TASK5_ATTEMPT_SCHEMA, "context_sha256": authority.context_sha256, "catalog_sha256": authority.catalog_sha256,
+               "raw_identity": entry, "backend": authority.backend.artifact_record(), "scientific_config_sha256": authority.scientific_config_sha256,
+               "code_closure_sha256": authority.code_closure_sha256, "dataset": raw.dataset, "wave": wave, "attempt": attempt,
+               "exception_type": type(error).__name__, "exception_message": str(error)}
+    return {**payload, "record_sha256": sha256_bytes(canonical_json_bytes(payload))}
+
+
+def append_task4_task5_attempt_record(root: Path, catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw: RawDataset, wave: int, error: Exception) -> Path:
+    """Append one parent-written failure record; attempts never authorize scientific success."""
+    if not isinstance(authority, Task4Task5SuccessAuthority):
+        raise TypeError("Task4+5 attempt authority is required")
+    directory = _task4_task5_attempt_root(root)
+    details = _lstat(directory)
+    if details is not None and (stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode)):
+        raise ValueError("Task4+5 attempt namespace differs")
+    existing = sorted(directory.iterdir()) if details is not None else []
+    names = [item.name for item in existing]
+    expected = [f"attempt_{index:06d}_antigravity.json" for index in range(1, len(names) + 1)]
+    if names != expected:
+        raise ValueError("Task4+5 attempt namespace differs")
+    attempt = len(names) + 1
+    path = _task4_task5_attempt_path(root, attempt)
+    write_create_only(path, canonical_json_bytes(_task4_task5_attempt_envelope(catalog, authority, raw, wave, attempt, error)))
+    return path
+
+
+def verify_task4_task5_attempt_namespace(root: Path, catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw_by_dataset: dict[str, RawDataset]) -> tuple[Task4Task5AttemptRecord, ...]:
+    """Verify the registered append-only failure ledger without mistaking it for success."""
+    directory = _task4_task5_attempt_root(root)
+    details = _lstat(directory)
+    if details is None:
+        return ()
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("Task4+5 attempt namespace differs")
+    paths = sorted(directory.iterdir())
+    if [path.name for path in paths] != [f"attempt_{index:06d}_antigravity.json" for index in range(1, len(paths) + 1)]:
+        raise ValueError("Task4+5 attempt namespace differs")
+    records: list[Task4Task5AttemptRecord] = []
+    required = {"schema", "context_sha256", "catalog_sha256", "raw_identity", "backend", "scientific_config_sha256", "code_closure_sha256", "dataset", "wave", "attempt", "exception_type", "exception_message", "record_sha256"}
+    for index, path in enumerate(paths, 1):
+        value = read_canonical(path)
+        if not isinstance(value, dict) or set(value) != required or value.get("schema") != TASK4_TASK5_ATTEMPT_SCHEMA or value.get("attempt") != index:
+            raise ValueError("Task4+5 attempt record differs")
+        payload = {key: child for key, child in value.items() if key != "record_sha256"}
+        if value["record_sha256"] != sha256_bytes(canonical_json_bytes(payload)) or value["context_sha256"] != authority.context_sha256 or value["catalog_sha256"] != authority.catalog_sha256 or value["scientific_config_sha256"] != authority.scientific_config_sha256 or value["code_closure_sha256"] != authority.code_closure_sha256:
+            raise ValueError("Task4+5 attempt authority differs")
+        dataset = value["dataset"]
+        if dataset not in raw_by_dataset or type(value["wave"]) is not int or value["wave"] < 1 or type(value["exception_type"]) is not str or not value["exception_type"] or type(value["exception_message"]) is not str:
+            raise ValueError("Task4+5 attempt record differs")
+        entry = _catalog_entry(catalog, dataset)
+        _raw_identity(raw_by_dataset[dataset], entry)
+        if value["raw_identity"] != entry:
+            raise ValueError("Task4+5 attempt raw identity differs")
+        try:
+            backend = FrozenTask8BackendDecision.from_artifact_record(value["backend"])
+        except ValueError as error:
+            raise ValueError("Task4+5 attempt backend differs") from error
+        if backend != authority.backend:
+            raise ValueError("Task4+5 attempt backend differs")
+        records.append(Task4Task5AttemptRecord(dataset, value["wave"], index, value["exception_type"], value["exception_message"]))
+    return tuple(records)
+
+
 def verify_task4_task5_success_namespace(root: Path, catalog: dict[str, object], authority: Task4Task5SuccessAuthority, raw_by_dataset: dict[str, RawDataset]) -> tuple[str, ...]:
     """Accept only an empty or fully readable parent-published Task4+5 work inventory."""
     if not isinstance(authority, Task4Task5SuccessAuthority) or not isinstance(catalog, dict) or catalog.get("catalog_sha256") != authority.catalog_sha256 or not isinstance(raw_by_dataset, dict):
@@ -397,8 +482,12 @@ def verify_task4_task5_success_namespace(root: Path, catalog: dict[str, object],
     children = {item.name for item in work.iterdir()}
     if not children:
         return ()
-    if children != {TASK4_TASK5_SUCCESS_DIRECTORY}:
+    if not children <= {TASK4_TASK5_SUCCESS_DIRECTORY, TASK4_TASK5_ATTEMPT_DIRECTORY}:
         raise ValueError("Task4+5 success namespace differs")
+    if TASK4_TASK5_ATTEMPT_DIRECTORY in children:
+        verify_task4_task5_attempt_namespace(root, catalog, authority, raw_by_dataset)
+    if TASK4_TASK5_SUCCESS_DIRECTORY not in children:
+        return ()
     success_root = safe_child(work, TASK4_TASK5_SUCCESS_DIRECTORY)
     details = _lstat(success_root)
     if details is None:

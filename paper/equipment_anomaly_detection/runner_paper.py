@@ -8,13 +8,13 @@ import os
 from pathlib import Path
 
 from .acceleration_paper import ACCELERATION_SCHEMA, build_acceleration_manifest, verify_acceleration_manifest
-from .artifacts_paper import Task4Task5SuccessAuthority, canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, verify_task4_task5_success_namespace, write_create_only
+from .artifacts_paper import Task4Task5SuccessAuthority, canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, verify_task4_task5_attempt_namespace, verify_task4_task5_success_namespace, write_create_only
 from .catalog_paper import build_catalog, load_acceptance
 from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
 from .contracts_paper import FrozenTask8BackendDecision
 from .data_paper import load_dataset_values
 from .lineage_paper import read_strict_json, sha256_file
-from .proposal_score_paper import compose_proposal_score, write_and_freeze_proposal_score
+from .proposal_score_paper import ProposalScoreIncomplete, compose_proposal_score, write_and_freeze_proposal_score
 
 PIPELINE_STAGE_ORDER=("preflight","prepare","acceleration","proposal_score","proposal_freeze","proposal_parity","public_baselines","baseline_bridge","evaluate","report","independent_verify")
 JOURNAL_DIRECTORY="pipeline_journal_paper"; ARTIFACT_DIRECTORY="stage_artifacts_paper"
@@ -130,11 +130,23 @@ def verify_journal(config):
             raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
             authority=Task4Task5SuccessAuthority.from_verified_context(context,catalog,acceleration)
             verify_task4_task5_success_namespace(root,catalog,authority,raw)
+            verify_task4_task5_attempt_namespace(root,catalog,authority,raw)
         except ValueError as error:
             raise PipelineStateError("namespace pollution") from error
         expected_names.add("proposal_work")
     if actual_names != expected_names: raise PipelineStateError("namespace pollution")
     return context,records,complete
+
+def _incomplete_status(root, context):
+    acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
+    catalog=_catalog_from_context(context); raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
+    authority=Task4Task5SuccessAuthority.from_verified_context(context,catalog,acceleration)
+    completed=verify_task4_task5_success_namespace(root,catalog,authority,raw)
+    attempts=verify_task4_task5_attempt_namespace(root,catalog,authority,raw)
+    pending=tuple(dataset for dataset in raw if dataset not in completed)
+    failed=tuple(sorted({record.dataset for record in attempts if record.dataset in pending}))
+    attempt_path=str(safe_child(root,ARTIFACT_DIRECTORY,"proposal_work","task4_task5_attempts"))
+    return {"status":"proposal_score_incomplete","completed":len(completed),"failed":len(failed),"pending":len(pending),"pending_datasets":list(pending),"failed_datasets":list(failed),"queue_path":attempt_path,"attempts_path":attempt_path,"completed_stages":["preflight","prepare","acceleration"],"next_stage":"proposal_score"}
 
 def _write_complete(root,stage,context,prior):
     if stage=="preflight": payload={"schema":"paper-task8-preflight.v1","stage":stage,"context_sha256":context["context_sha256"]}
@@ -160,11 +172,16 @@ def run_pipeline(config: PipelineConfig):
     context,records,complete=verify_journal(config)
     next_stage=next((stage for stage in ("preflight","prepare","acceleration","proposal_score") if stage not in complete),None)
     if next_stage is None: return verify_completed(config)
-    _write_complete(root,next_stage,context,records[-1]["record_sha256"])
+    try:
+        _write_complete(root,next_stage,context,records[-1]["record_sha256"])
+    except ProposalScoreIncomplete:
+        return _incomplete_status(root,context)
     return run_pipeline(config)
 
 def verify_completed(config):
-    _,_records_value,complete=verify_journal(config)
+    context,_records_value,complete=verify_journal(config)
+    if complete == ["preflight","prepare","acceleration"] and safe_child(config.run_root,ARTIFACT_DIRECTORY, "proposal_work").exists():
+        return _incomplete_status(safe_root(config.run_root),context)
     return {"status":"completed_prefix" if complete != ["preflight","prepare","acceleration","proposal_score"] else "completed","completed_stages":complete,"failed_stage":None,"next_stage":"proposal_freeze" if len(complete)==4 else ("preflight","prepare","acceleration","proposal_score")[len(complete)]}
 def evaluate_stage(*_args,**_kwargs): raise PipelineNotImplementedError("evaluate is unavailable until Task 11")
 __all__=["ARTIFACT_DIRECTORY","JOURNAL_DIRECTORY","PIPELINE_STAGE_ORDER","PipelineConfig","PipelineNotImplementedError","PipelineStateError","context_payload","evaluate_stage","run_pipeline","verify_completed","verify_journal"]

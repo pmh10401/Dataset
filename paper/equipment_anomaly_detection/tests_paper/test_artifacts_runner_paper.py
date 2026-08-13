@@ -515,7 +515,8 @@ class Task9ParallelCompositionTests(unittest.TestCase):
 
     def test_parallel_worker_failure_names_its_dataset(self):
         """Dropping a failed dataset would produce a plausible but scientifically incomplete global population."""
-        with self.assertRaisesRegex(RuntimeError, "alpha.*bounded worker failure"):
+        from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
+        with self.assertRaisesRegex(ProposalScoreIncomplete, "proposal_score_incomplete"):
             self._patched_composition(self._acceleration(3), fail_dataset="alpha")
 
     def test_parent_collection_publishes_worker_result_without_passing_writer_to_worker(self):
@@ -565,7 +566,7 @@ class Task9ParallelCompositionTests(unittest.TestCase):
             raw, sources, route, low, stability, policies, _backend = record_fixture._task4_task5_values()
             context = context_payload(record_fixture.fixture.config()); acceleration = build_acceleration_manifest(context["context_sha256"], logical_cpu_count=1)
             authority = Task4Task5SuccessAuthority.from_verified_context(context, record_fixture.catalog, acceleration)
-            def collect(_raw, _backend, *, publish_success):
+            def collect(_raw, _backend, *, publish_success, **_recovery):
                 publish_success(raw, sources, route)
                 return {raw.dataset: sources}, {raw.dataset: route}
             with patch.object(score, "_collect_task4_task5", side_effect=collect), patch.object(score, "score_low_frequency", return_value=low), patch.object(score, "classify_stability", return_value=stability), patch.object(score, "build_hard_evidence_surface", return_value=object()), patch.object(score, "build_policies", return_value=policies):
@@ -589,7 +590,7 @@ class Task9ParallelCompositionTests(unittest.TestCase):
             def submit(self, _fn, raw): future = Future(raw.dataset); self.futures[raw.dataset] = future; return future
         def completed_first(futures):
             by_dataset = {future.dataset: future for future in futures}
-            return (by_dataset["beta"], by_dataset["alpha"])
+            return (by_dataset["beta"], by_dataset["alpha"]) if set(by_dataset) == {"alpha", "beta"} else tuple(by_dataset.values())
         class RecordingStderr(io.StringIO):
             def __init__(self):
                 super().__init__(); self.flush_calls = 0
@@ -618,5 +619,96 @@ class Task9ParallelCompositionTests(unittest.TestCase):
         self.assertTrue(any(line == "Task6 finish" for line in lines))
         self.assertTrue(any(line == "Task7 start" for line in lines))
         self.assertTrue(any(line == "Task7 finish" for line in lines))
+
+class Task4Task5FailureBatchingTests(unittest.TestCase):
+    """A dataset failure must leave a small, exact, retryable Task4+5 queue."""
+
+    def setUp(self) -> None:
+        self.fixture = Task4Task5SuccessRecordTests("run")
+        self.fixture.setUp()
+        first, second = self.fixture._task4_task5_values(), self.fixture._task4_task5_values()
+        from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+        beta = self.fixture.fixture._typed("beta")[0]
+        self.raw = {"alpha": first[0], "beta": beta}
+        self.values = {"alpha": (first[1], first[2]), "beta": (first[1], first[2])}
+
+    def tearDown(self) -> None:
+        self.fixture.tearDown()
+
+    def _backend(self, logical_cpu_count=1):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        context = context_payload(self.fixture.fixture.config())
+        return build_acceleration_manifest(context["context_sha256"], logical_cpu_count=logical_cpu_count), context, FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest(context["context_sha256"], logical_cpu_count=logical_cpu_count))
+
+    def test_failure_persists_later_success_and_second_wave_retries_only_pending(self):
+        """Cancelling siblings or resubmitting beta would discard/recompute verified work."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, read_task4_task5_success_record
+        manifest, context, backend = self._backend()
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, self.fixture.catalog, manifest)
+        called = []
+        def fail_alpha(raw):
+            called.append(raw.dataset)
+            if raw.dataset == "alpha":
+                raise RuntimeError("fixture failure")
+            return self.values[raw.dataset]
+        with patch.object(score, "_score_dataset_task4_task5", side_effect=fail_alpha):
+            with self.assertRaises(score.ProposalScoreIncomplete) as raised:
+                score._collect_task4_task5(self.raw, backend, root=self.fixture.root, context=context, catalog=self.fixture.catalog, acceleration_manifest=manifest)
+        self.assertEqual(called, ["alpha", "beta"])
+        self.assertEqual(raised.exception.status, "proposal_score_incomplete")
+        self.assertEqual(raised.exception.pending, ("alpha",))
+        self.assertEqual(read_task4_task5_success_record(self.fixture.root, self.fixture.catalog, authority, self.raw["beta"]).route, self.values["beta"][1])
+        attempts = self.fixture.root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts"
+        self.assertEqual(len(tuple(attempts.iterdir())), 1)
+        called.clear()
+        with patch.object(score, "_score_dataset_task4_task5", side_effect=lambda raw: (called.append(raw.dataset), self.values[raw.dataset])[1]):
+            sources, routes = score._collect_task4_task5(self.raw, backend, root=self.fixture.root, context=context, catalog=self.fixture.catalog, acceleration_manifest=manifest)
+        self.assertEqual(called, ["alpha"])
+        self.assertEqual(tuple(sources), ("alpha", "beta"))
+        self.assertEqual(tuple(routes), ("alpha", "beta"))
+
+    def test_rolling_submission_never_exceeds_twice_the_dataset_workers(self):
+        """Submitting the full catalog ahead of commits makes a parent interruption needlessly expensive."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        _manifest, _context, backend = self._backend(3)
+        raw = {name: self.raw["alpha"] for name in ("a", "b", "c", "d", "e")}
+        values = self.values["alpha"]
+        class Future:
+            def __init__(self, raw): self.raw = raw
+            def result(self): return values
+        observed = []
+        class Executor:
+            def __init__(self, *, max_workers): self.live = set(); self.max_workers = max_workers
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def submit(self, _function, child):
+                future = Future(child); self.live.add(future); observed.append(len(self.live)); return future
+        def one_completion(futures):
+            future = tuple(futures)[0]; executor.live.remove(future); return (future,)
+        executor = Executor(max_workers=backend.dataset_workers)
+        with patch.object(score, "ProcessPoolExecutor", side_effect=lambda **_kwargs: executor), patch.object(score, "as_completed", side_effect=one_completion):
+            score._collect_task4_task5(raw, backend)
+        self.assertEqual(max(observed), 2 * backend.dataset_workers)
+
+    def test_incomplete_status_counts_only_verified_successes_and_rejects_attempt_tampering(self):
+        """Treating a failure ledger as a success, or accepting its mutation, makes resume coverage unsound."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, append_task4_task5_attempt_record, canonical_json_bytes, write_create_only
+        from paper.equipment_anomaly_detection import runner_paper as runner
+        manifest, context, _backend = self._backend()
+        write_create_only(self.fixture.root / "stage_artifacts_paper" / "acceleration" / "acceleration_paper.json", canonical_json_bytes(manifest))
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, self.fixture.catalog, manifest)
+        append_task4_task5_attempt_record(self.fixture.root, self.fixture.catalog, authority, self.raw["alpha"], 1, RuntimeError("fixture failure"))
+        attempt = append_task4_task5_attempt_record(self.fixture.root, self.fixture.catalog, authority, self.raw["beta"], 1, RuntimeError("fixture failure"))
+        with patch.object(runner, "_catalog_from_context", return_value=self.fixture.catalog), patch.object(runner, "load_dataset_values", side_effect=lambda _path, dataset: self.raw[dataset]):
+            status = runner._incomplete_status(self.fixture.root, context)
+            self.assertEqual((status["status"], status["completed"], status["failed"], status["pending"], status["pending_datasets"]), ("proposal_score_incomplete", 0, 2, 2, ["alpha", "beta"]))
+            forged = json.loads(attempt.read_bytes()); forged["exception_message"] = "forged"; attempt.write_bytes(_canonical(forged))
+            with self.assertRaisesRegex(ValueError, "attempt"):
+                runner._incomplete_status(self.fixture.root, context)
+
 
 if __name__=="__main__":unittest.main()

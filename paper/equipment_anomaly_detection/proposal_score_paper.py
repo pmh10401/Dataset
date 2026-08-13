@@ -10,7 +10,9 @@ from time import monotonic
 from types import MappingProxyType
 from typing import Callable, Mapping
 
-from .artifacts_paper import Task4Task5SuccessAuthority, freeze_score_root, write_task4_task5_success_record, write_typed_proposal_shard
+import numpy as np
+
+from .artifacts_paper import Task4Task5SuccessAuthority, append_task4_task5_attempt_record, freeze_score_root, read_task4_task5_success_record, verify_task4_task5_attempt_namespace, verify_task4_task5_success_namespace, write_task4_task5_success_record, write_typed_proposal_shard
 from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, RawDataset, Task8FrozenManifest
 from .hard_route_paper import HardRouteResult, replay_hard_route
 from .routing_paper import PolicyBundle, build_hard_evidence_surface, build_policies
@@ -43,6 +45,23 @@ class ProposalScore:
         object.__setattr__(self, "sources", MappingProxyType(sources))
         object.__setattr__(self, "routes", MappingProxyType(routes))
         object.__setattr__(self, "stage_seconds", MappingProxyType(timing))
+
+
+class ProposalScoreIncomplete(RuntimeError):
+    """Typed operational result: Task4+5 lacks exact verified success coverage."""
+    status = "proposal_score_incomplete"
+
+    def __init__(self, *, completed: int, failed: int, pending: tuple[str, ...], queue_path: str | None, attempts_path: str | None) -> None:
+        self.completed = completed
+        self.failed = failed
+        self.pending = pending
+        self.queue_path = queue_path
+        self.attempts_path = attempts_path
+        super().__init__(f"proposal_score_incomplete completed={completed} failed={failed} pending={len(pending)} queue={','.join(pending)}")
+
+    def artifact_record(self) -> dict[str, object]:
+        return {"status": self.status, "completed": self.completed, "failed": self.failed, "pending": len(self.pending),
+                "pending_datasets": list(self.pending), "queue_path": self.queue_path, "attempts_path": self.attempts_path}
 
 
 def _label_firewall() -> None:
@@ -95,36 +114,94 @@ def task4_task5_success_publisher(root, catalog: dict[str, object], authority: T
     return publish
 
 
-def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, publish_success: Task4Task5SuccessPublisher | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
+def _risk_first_queue(raw: Mapping[str, RawDataset]) -> tuple[str, ...]:
+    """Label-free operational ordering; completed records remain catalog-sorted on reconstruction."""
+    def risk(values: RawDataset) -> tuple[int, str]:
+        rows = tuple(values.train_rows) + tuple(values.test_rows)
+        finite = tuple(bool(np.all(np.isfinite(row))) for row in rows)
+        if not all(finite):
+            return (0 if any(finite) else 1, values.dataset)
+        if len(values.train_rows) < 4:
+            return (2, values.dataset)
+        if len(values.train_rows) >= 100:
+            return (3, values.dataset)
+        if values.metadata_length >= 1024:
+            return (4, values.dataset)
+        return (5, values.dataset)
+    return tuple(sorted(raw, key=lambda dataset: risk(raw[dataset])))
+
+
+def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, acceleration_manifest: object | None = None, publish_success: Task4Task5SuccessPublisher | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
+    recovery_inputs = (root is not None, context is not None, catalog is not None)
+    if any(recovery_inputs) and (not all(recovery_inputs) or acceleration_manifest is None):
+        raise ValueError("Task4+5 recovery inputs are incomplete")
+    authority = None
     sources: dict[str, HardSourceBundle] = {}
     routes: dict[str, HardRouteResult] = {}
-    started, total = monotonic(), len(raw)
+    failed: list[str] = []
+    pending_raw = dict(raw)
+    wave = 1
+    if all(recovery_inputs):
+        if tuple(entry.get("dataset") for entry in catalog.get("datasets", ())) != tuple(raw) or any(not isinstance(values, RawDataset) or values.dataset != dataset for dataset, values in raw.items()):
+            raise ValueError("Task4+5 catalog raw identity differs")
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, catalog, acceleration_manifest)
+        verified = verify_task4_task5_success_namespace(root, catalog, authority, dict(raw))
+        attempts = verify_task4_task5_attempt_namespace(root, catalog, authority, dict(raw))
+        wave = max((record.wave for record in attempts), default=0) + 1
+        for dataset in verified:
+            record = read_task4_task5_success_record(root, catalog, authority, raw[dataset])
+            sources[dataset], routes[dataset] = record.sources, record.route
+            pending_raw.pop(dataset)
+        if publish_success is None:
+            publish_success = task4_task5_success_publisher(root, catalog, authority)
+    queue = _risk_first_queue(pending_raw)
+    started, total = monotonic(), len(queue)
     _progress("Task4+Task5 start", 0, total, started)
+    def persist_result(dataset: str, result: tuple[HardSourceBundle, HardRouteResult]) -> None:
+        sources[dataset], routes[dataset] = result
+        if publish_success is not None:
+            publish_success(raw[dataset], sources[dataset], routes[dataset])
+
+    def persist_failure(dataset: str, error: Exception) -> None:
+        failed.append(dataset)
+        if authority is not None:
+            append_task4_task5_attempt_record(root, catalog, authority, raw[dataset], wave, error)
+
     if backend.dataset_workers == 1:
-        for completed, dataset in enumerate(raw, 1):
+        for completed, dataset in enumerate(queue, 1):
             try:
-                sources[dataset], routes[dataset] = _score_dataset_task4_task5(raw[dataset])
-                if publish_success is not None:
-                    publish_success(raw[dataset], sources[dataset], routes[dataset])
+                persist_result(dataset, _score_dataset_task4_task5(raw[dataset]))
             except Exception as error:
-                raise RuntimeError(f"Task4+Task5 worker failed for dataset {dataset}: {error}") from error
+                persist_failure(dataset, error)
             _progress("Task4+Task5", completed, total, started, dataset)
-        return dict(sorted(sources.items())), dict(sorted(routes.items()))
-    with _pin_inner_numerical_threads():
+    elif queue:
+      with _pin_inner_numerical_threads():
         with ProcessPoolExecutor(max_workers=backend.dataset_workers) as executor:
-            futures = {dataset: executor.submit(_score_dataset_task4_task5, raw[dataset]) for dataset in raw}
-            datasets = {future: dataset for dataset, future in futures.items()}
-            for completed, future in enumerate(as_completed(futures.values()), 1):
-                dataset = datasets[future]
+            futures = {}
+            iterator = iter(queue)
+            window = min(len(queue), 2 * backend.dataset_workers)
+            for _ in range(window):
+                dataset = next(iterator)
+                futures[executor.submit(_score_dataset_task4_task5, raw[dataset])] = dataset
+            completed = 0
+            while futures:
+                future = next(iter(as_completed(tuple(futures))))
+                dataset = futures.pop(future)
+                completed += 1
                 try:
-                    sources[dataset], routes[dataset] = future.result()
-                    if publish_success is not None:
-                        publish_success(raw[dataset], sources[dataset], routes[dataset])
+                    persist_result(dataset, future.result())
                 except Exception as error:
-                    for pending in futures.values():
-                        pending.cancel()
-                    raise RuntimeError(f"Task4+Task5 worker failed for dataset {dataset}: {error}") from error
+                    persist_failure(dataset, error)
                 _progress("Task4+Task5", completed, total, started, dataset)
+                try:
+                    next_dataset = next(iterator)
+                except StopIteration:
+                    continue
+                futures[executor.submit(_score_dataset_task4_task5, raw[next_dataset])] = next_dataset
+    if failed:
+        pending = tuple(sorted(failed))
+        attempts_path = str(root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts") if root is not None else None
+        raise ProposalScoreIncomplete(completed=len(sources), failed=len(failed), pending=pending, queue_path=attempts_path, attempts_path=attempts_path)
     return dict(sorted(sources.items())), dict(sorted(routes.items()))
 
 
@@ -143,7 +220,7 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
         authority = Task4Task5SuccessAuthority.from_verified_context(context, catalog, acceleration_manifest)
         publisher = task4_task5_success_publisher(root, catalog, authority)
     started = monotonic()
-    sources, routes = _collect_task4_task5(raw, backend, publish_success=publisher)
+    sources, routes = _collect_task4_task5(raw, backend, root=root, context=context, catalog=catalog, acceleration_manifest=acceleration_manifest, publish_success=publisher)
     hard_seconds = float(monotonic() - started)
     _label_firewall()
     print("Task6 start", file=sys.stderr, flush=True)
@@ -173,4 +250,4 @@ def write_and_freeze_proposal_score(root, catalog: dict[str, object], proposal: 
     return freeze_score_root(root, catalog)
 
 
-__all__ = ["ProposalScore", "Task4Task5SuccessPublisher", "compose_proposal_score", "task4_task5_success_publisher", "write_and_freeze_proposal_score"]
+__all__ = ["ProposalScore", "ProposalScoreIncomplete", "Task4Task5SuccessPublisher", "compose_proposal_score", "task4_task5_success_publisher", "write_and_freeze_proposal_score"]
