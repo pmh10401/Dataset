@@ -137,7 +137,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     edges: list[dict[str, object]] = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP452_PREREGISTRATION_antigravity_KO.html", "Exp452")},
         {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "map-only child")},
-        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_planned_truth_is_label_free_and_non_promoting_antigravity")},
+        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_implementation_candidate_truth_is_label_free_and_non_promoting_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": _evidence_antigravity(test, "builder.validate_map_antigravity")},
         {"from": "research_state", "to": "preregistration", "type": "reads", "evidence": _evidence_antigravity("RESEARCH_STATE.json", "EXP452_PREREGISTRATION_antigravity_KO.html")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html", "FROZEN_CONFIG_ANTIGRAVITY")},

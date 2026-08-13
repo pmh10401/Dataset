@@ -115,7 +115,7 @@
   "exp451": {
     "experiment": "Exp451",
     "kind": "rdst_local_gap_qualification",
-    "status": "planned_not_started",
+    "status": "implementation_verified_awaiting_official_readiness",
     "reviewed_design_sha256": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
     "documents": {
       "design": "docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html",
@@ -176,7 +176,7 @@
     "document_sha256": {
       "preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2",
       "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754",
-      "implementation_report": "39f6a9f5544ad77b76122de4d7651f60f687de698efa9f274020fab93496d585"
+      "implementation_report": "3b139d88a99bfc0d64d90bd0cef1f8058dac3b0d955357b36e792fe2644334c1"
     },
     "run_identity": "exp452-exp449-index-order-repair-antigravity-20260813",
     "artifact_schema": "exp452",
@@ -191,8 +191,10 @@
     "alpha": 0.005,
     "qualified_two_boundary": "Exp449 qualified-2 staging result cannot guide Exp452 selection, thresholds, routing, candidate removal, champion, or promotion.",
     "prediction_sha256": null,
+    "result_sha256": null,
     "evaluation_sha256": null,
     "decision_sha256": null,
+    "inspect_sha256": null,
     "label_access_count": 0,
     "test_labels_opened": false,
     "official_readiness_started": false,
@@ -204,6 +206,8 @@
     "routing_allowed": false,
     "scientific_winner_selected": false,
     "pending_candidate_changed": false,
+    "implementation_candidate_commit": "4589101e9376fee2d636430d167ed7e4cb1a960d",
+    "implementation_test_counts": {"exp452_discovery_runs": [81, 81], "focused_cli_readiness_replay_runs": [15, 15], "exp449_corresponding": 32},
     "no_official_run_without_separate_approval": true
   },
   "exp448_exp447_text_label_boundary_repair": {
