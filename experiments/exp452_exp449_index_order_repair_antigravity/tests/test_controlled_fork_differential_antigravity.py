@@ -241,6 +241,22 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
         }
         self.assertFalse(any(name == blocked or name.startswith(f"{blocked}.") for name in imported for blocked in forbidden))
 
+    def test_task4_allows_only_sorted_evidence_and_ordered_replay_delta_antigravity(self) -> None:
+        """Break caught: evaluator preserves unordered evidence or replay normalizes its comparison."""
+        evaluation = ast.parse((_EXP452_ANTIGRAVITY / "evaluation_antigravity.py").read_text(encoding="utf-8"))
+        sorted_calls = [
+            node for node in ast.walk(evaluation)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "sorted"
+            and len(node.args) == 1
+        ]
+        self.assertEqual(len(sorted_calls), 1)
+        argument = sorted_calls[0].args[0]
+        self.assertIsInstance(argument, ast.Subscript)
+        replay = (_EXP452_ANTIGRAVITY / "replay_antigravity.py").read_text(encoding="utf-8")
+        self.assertIn('candidate["indices"] != row["indices"]', replay)
+        self.assertNotIn('sorted(candidate["indices"])', replay)
+        self.assertNotIn('set(candidate["indices"])', replay)
+
 
 if __name__ == "__main__":
     unittest.main()
