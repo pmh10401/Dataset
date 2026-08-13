@@ -115,15 +115,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(champion_entry["pending_candidate_changed"])
         self.assertFalse((ROOT_ANTIGRAVITY / "EXPERIMENT_HISTORY.json").exists())
 
-    def test_map_is_strict_embedded_and_marks_product_relations_future_unknown_antigravity(self) -> None:
+    def test_map_is_strict_embedded_and_records_task_five_cli_antigravity(self) -> None:
         builder = map_builder_antigravity()
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         html = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         self.assertIsInstance(graph, dict)
         self.assertLessEqual(len(graph["nodes"]), 20)
-        self.assertTrue(graph["unknown_relationships"])
-        self.assertTrue(all(edge["type"] == "future_unknown" for edge in graph["edges"] if edge["to"] in {"future_product_modules", "future_official_lifecycle"}))
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        self.assertIn("task2_regressions", node_by_id)
+        self.assertIn("task5_cli", node_by_id)
+        self.assertFalse(graph["unknown_relationships"])
+        self.assertTrue(any(edge["from"] == "task5_cli" and edge["to"] == "task3_readiness" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task5_cli" and edge["to"] == "task4_evaluator" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task5_cli" and edge["to"] == "task4_replay" and edge["type"] == "reads" for edge in graph["edges"]))
         builder.validate_map_antigravity(graph, lock, html)
 
     def test_map_answers_task_two_callers_effects_and_tests_antigravity(self) -> None:
