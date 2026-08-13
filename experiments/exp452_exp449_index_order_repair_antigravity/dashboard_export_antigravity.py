@@ -36,11 +36,26 @@ def _safe_antigravity(value: object) -> bool:
             or re.search(r"_(?:normal|abnormal)_\d+$", lowered)
             or any(token in lowered for token in _SENSITIVE_ANTIGRAVITY)
         )
-    if isinstance(value, Mapping):
+    if type(value) is dict:
         return all(type(key) is str and not _forbidden_key_antigravity(key) and _safe_antigravity(item) for key, item in value.items())
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, Mapping):
+        return False
+    if type(value) is list:
         return all(_safe_antigravity(item) for item in value)
-    return True
+    if isinstance(value, (list, tuple)):
+        return False
+    return type(value) in (bool, int, float)
+
+
+def _materialize_antigravity(value: object) -> object:
+    """Return a deep built-in copy of one already validated schema value."""
+    if type(value) is dict:
+        return {key: _materialize_antigravity(item) for key, item in value.items()}
+    if type(value) is list:
+        return [_materialize_antigravity(item) for item in value]
+    if type(value) in (str, bool, int, float):
+        return value
+    raise ValueError("public result contains an unsupported value")
 
 
 def public_result_antigravity(result: Mapping[str, object]) -> Mapping[str, object]:
@@ -71,7 +86,7 @@ def public_result_antigravity(result: Mapping[str, object]) -> Mapping[str, obje
         raise ValueError("public runtime aggregate differs")
     if result["status"] != "synthetic_complete" or type(result["repeatable"]) is not bool or result["repeatable"] is not True or type(result["qualified_candidate_count"]) is not int or result["qualified_candidate_count"] != sum(item["qualified"] for item in result["candidates"]) or type(result["routing_research_eligible"]) is not bool or result["routing_research_eligible"] is not (result["qualified_candidate_count"] > 0):
         raise ValueError("public qualification summary differs")
-    return {key: result[key] for key in result_fields}
+    return _materialize_antigravity({key: result[key] for key in result_fields})  # type: ignore[return-value]
 
 
 __all__ = ["public_result_antigravity"]

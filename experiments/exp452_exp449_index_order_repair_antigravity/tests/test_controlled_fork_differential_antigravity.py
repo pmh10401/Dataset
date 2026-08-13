@@ -88,11 +88,19 @@ def _normalize_identity_only_antigravity(source: str) -> str:
     return ast.dump(ast.fix_missing_locations(tree), include_attributes=False)
 
 
-def _function_ast_antigravity(source: str, name: str) -> str:
+def _function_ast_antigravity(source: str, name: str, *, allowed_return_wrapper: str | None = None) -> str:
     tree = ast.parse(source)
     function = next((node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name), None)
     if function is None:
         raise AssertionError(f"missing controlled function: {name}")
+    if allowed_return_wrapper is not None:
+        returns = [node for node in function.body if isinstance(node, ast.Return)]
+        if len(returns) != 1 or not isinstance(returns[0].value, ast.Call):
+            raise AssertionError("controlled function must have one wrapped final return")
+        call = returns[0].value
+        if not isinstance(call.func, ast.Name) or call.func.id != allowed_return_wrapper or len(call.args) != 1 or call.keywords:
+            raise AssertionError("controlled function return wrapper differs")
+        returns[0].value = call.args[0]
     normalized = _IdentityNormalizerAntigravity().visit(function)
     return ast.dump(ast.fix_missing_locations(normalized), include_attributes=False)
 
@@ -116,10 +124,10 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
         """Break caught: weakening frozen aggregate math under the dashboard sanitizer."""
         before = (_EXP449_ANTIGRAVITY / "dashboard_export_antigravity.py").read_text(encoding="utf-8")
         after = (_EXP452_ANTIGRAVITY / "dashboard_export_antigravity.py").read_text(encoding="utf-8")
-        self.assertEqual(
-            _function_ast_antigravity(before, "public_result_antigravity"),
-            _function_ast_antigravity(after, "public_result_antigravity"),
-        )
+        expected = _function_ast_antigravity(before, "public_result_antigravity")
+        self.assertEqual(expected, _function_ast_antigravity(after, "public_result_antigravity", allowed_return_wrapper="_materialize_antigravity"))
+        changed = after.replace('global_["fn"] < 1988', 'global_["fn"] < 1987', 1)
+        self.assertNotEqual(expected, _function_ast_antigravity(changed, "public_result_antigravity", allowed_return_wrapper="_materialize_antigravity"))
 
     def test_differential_rejects_unallowlisted_scientific_change_antigravity(self) -> None:
         """Break caught: a permissive normalizer accepting a retuned cross-fit fold count."""

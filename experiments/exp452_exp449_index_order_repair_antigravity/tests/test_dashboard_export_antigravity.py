@@ -27,6 +27,24 @@ class _HybridStringMappingAntigravity(str, Mapping[str, object]):
         return False
 
 
+class _DeceptiveDictAntigravity(dict[str, object]):
+    """Hide sensitive keys from iteration while retaining direct lookup."""
+
+    def __iter__(self) -> Iterator[str]:
+        return (key for key in dict.__iter__(self) if key != "raw_labels")
+
+    def items(self) -> Iterator[tuple[str, object]]:  # type: ignore[override]
+        return ((key, dict.__getitem__(self, key)) for key in self)
+
+
+class _ListSubclassAntigravity(list[object]):
+    pass
+
+
+class _TupleSubclassAntigravity(tuple[object, ...]):
+    pass
+
+
 def _valid_result_antigravity() -> dict[str, object]:
     global_f1 = 0.62664286873276
     candidates = [
@@ -161,6 +179,55 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             payload["candidates"][0][field] = value  # type: ignore[index]
             with self.subTest(field=field), self.assertRaises(ValueError):
                 public_result_antigravity(payload)
+
+    def test_public_result_rejects_deceptive_dict_hiding_raw_labels_antigravity(self) -> None:
+        """Break caught: validating a filtered dict view then returning the original raw-label carrier."""
+        payload = _valid_result_antigravity()
+        candidate = _DeceptiveDictAntigravity(payload["candidates"][0])  # type: ignore[index]
+        candidate["raw_labels"] = [0, 1]
+        payload["candidates"][0] = candidate  # type: ignore[index]
+        with self.assertRaises(ValueError):
+            public_result_antigravity(payload)
+
+    def test_public_result_requires_exact_builtin_schema_containers_antigravity(self) -> None:
+        """Break caught: accepting Mapping/list/tuple subclasses or unsupported tuple containers."""
+        cases = (
+            ("top-level dict subclass", lambda payload: _DeceptiveDictAntigravity(payload)),
+            ("baseline dict subclass", lambda payload: {**payload, "baseline": _DeceptiveDictAntigravity(payload["baseline"])}),
+            ("candidate list subclass", lambda payload: {**payload, "candidates": _ListSubclassAntigravity(payload["candidates"])}),
+            ("family list subclass", lambda payload: {**payload, "families": _ListSubclassAntigravity(payload["families"])}),
+            ("family tuple", lambda payload: {**payload, "families": tuple(payload["families"])}),
+            ("family tuple subclass", lambda payload: {**payload, "families": _TupleSubclassAntigravity(payload["families"])}),
+        )
+        for label, build in cases:
+            payload = build(_valid_result_antigravity())
+            with self.subTest(label=label), self.assertRaises(ValueError):
+                public_result_antigravity(payload)
+
+    def test_public_result_materializes_a_deep_builtin_projection_antigravity(self) -> None:
+        """Break caught: returning validated caller-owned nested containers that can later reveal or mutate data."""
+        payload = _valid_result_antigravity()
+        projected = public_result_antigravity(payload)
+        self.assertIs(type(projected), dict)
+        self.assertIs(type(projected["baseline"]), dict)
+        self.assertIs(type(projected["candidates"]), list)
+        self.assertIs(type(projected["candidates"][0]), dict)  # type: ignore[index]
+        self.assertIs(type(projected["candidates"][0]["gates"]), dict)  # type: ignore[index]
+        self.assertIs(type(projected["candidates"][0]["global"]), dict)  # type: ignore[index]
+        self.assertIs(type(projected["families"]), list)
+        self.assertIs(type(projected["runtime"]), dict)
+        self.assertIsNot(projected["baseline"], payload["baseline"])
+        self.assertIsNot(projected["candidates"], payload["candidates"])
+        self.assertIsNot(projected["candidates"][0], payload["candidates"][0])  # type: ignore[index]
+        self.assertIsNot(projected["candidates"][0]["gates"], payload["candidates"][0]["gates"])  # type: ignore[index]
+        self.assertIsNot(projected["candidates"][0]["global"], payload["candidates"][0]["global"])  # type: ignore[index]
+        self.assertIsNot(projected["families"], payload["families"])
+        self.assertIsNot(projected["runtime"], payload["runtime"])
+        original_tp = projected["baseline"]["tp"]  # type: ignore[index]
+        payload["baseline"]["tp"] = 0  # type: ignore[index]
+        payload["candidates"][0]["family"] = "mutated"  # type: ignore[index]
+        self.assertEqual(projected["baseline"]["tp"], original_tp)  # type: ignore[index]
+        self.assertEqual(projected["candidates"][0]["family"], "Crop")  # type: ignore[index]
 
     def test_public_result_recomputes_counts_f1_gates_and_summary_antigravity(self) -> None:
         """Break caught: accepting self-reported aggregate math without recomputation."""
