@@ -386,8 +386,27 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
         self.assertIsInstance(argument, ast.Subscript)
         replay = (_EXP452_ANTIGRAVITY / "replay_antigravity.py").read_text(encoding="utf-8")
         self.assertIn('candidate["indices"] != row["indices"]', replay)
-        self.assertNotIn('sorted(candidate["indices"])', replay)
-        self.assertNotIn('set(candidate["indices"])', replay)
+        replay_tree = ast.parse(replay)
+
+        def indexed_name(node: ast.AST, name: str) -> bool:
+            return (
+                isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name) and node.value.id == name
+                and isinstance(node.slice, ast.Constant) and node.slice.value == "indices"
+            )
+
+        def normalized_candidate_indices(node: ast.AST) -> bool:
+            return (
+                isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in {"sorted", "set"}
+                and len(node.args) == 1 and indexed_name(node.args[0], "candidate")
+            )
+
+        normalized_comparisons = [
+            node for node in ast.walk(replay_tree) if isinstance(node, ast.Compare)
+            and any(isinstance(operator, (ast.Eq, ast.NotEq)) for operator in node.ops)
+            and any(normalized_candidate_indices(operand) for operand in (node.left, *node.comparators))
+            and any(indexed_name(operand, "row") for operand in (node.left, *node.comparators))
+        ]
+        self.assertEqual(normalized_comparisons, [])
 
     def test_task4_runtime_same_label_differential_preserves_scientific_payloads_antigravity(self) -> None:
         """Break caught: the ordered-evidence fork changes same-label metrics or aggregate semantics."""
