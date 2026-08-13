@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp452 Exp449 인덱스 순서 복구 구현 계획</title>
+<style>body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.68 system-ui;color:#172033}h1,h2{line-height:1.3}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}pre{background:#eef2f7;padding:1rem;white-space:pre-wrap;overflow:auto}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.5rem;text-align:left;vertical-align:top}</style>
+</head><body><main>
+<h1>Exp452 Exp449 인덱스 순서 복구 구현 계획</h1>
+<p><strong>Agent 실행 규칙:</strong> Task별로 <code>superpowers:subagent-driven-development</code>를 사용한다. 각 Task는 Terra 구현, 테스트, 코드맵 동기화, fresh review까지 끝나야 다음 Task로 넘어간다. 완료된 Task와 Step만 체크한다.</p>
+<p><strong>목표:</strong> Exp449의 과학 계산은 그대로 두고 evaluation evidence의 index를 항상 정렬해 source-free replay가 통과하도록 만든다.</p>
+<p><strong>구조:</strong> Exp452는 Exp449의 필요한 평가 경계만 통제된 복사본으로 만든다. Exp449 prediction과 실패 evidence는 읽기 전용이다. 의미 있는 변경은 <code>list(frozenset)</code> 대신 <code>sorted(frozenset)</code>을 쓰는 한 곳뿐이다.</p>
+<p><strong>기술:</strong> Python 3.14, stdlib, NumPy, SQLite read-only label session, canonical JSON/JSONL, descriptor-pinned validation, unittest.</p>
+
+<h2>Global Constraints</h2><ul>
+<li>승인 설계 commit은 <code>b9ff4bf6b76e37f00146f3080edb9c58068d43ee</code>, SHA-256은 <code>59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075</code>이다.</li>
+<li>Exp449 prediction aggregate <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>와 Exp449 artifacts는 수정하지 않는다.</li>
+<li>96개 후보 중 75개는 list 순서만 다르고, 75개 모두 index 집합은 같다.</li>
+<li>Exp449 qualified candidate 2개를 선택, threshold, routing, 후보 제거에 사용하지 않는다.</li>
+<li>48 datasets, 96 predictions, 16 family-method pairs, seeds, alpha, bootstrap, FN·FP·F1 기준을 바꾸지 않는다.</li>
+<li>사람이 읽는 새 문서는 self-contained HTML이다. 모든 새 파일명에 <code>antigravity</code>를 넣고 Markdown 복사본과 <code>__init__.py</code>를 만들지 않는다.</li>
+<li>Exp452는 CPU 단일 프로세스를 사용한다. Readiness는 PyTorch/MLX/mlx-metal/MPS 상태와 tensor 부적합 이유를 기록한다.</li>
+<li>공식 명령은 readiness, evaluate, inspect뿐이며 각각 한 번이다. 실패하면 영구 중단하고 재시도하지 않는다.</li>
+</ul>
+
+<h2>파일 구조</h2><table><thead><tr><th>파일</th><th>한 가지 책임</th></tr></thead><tbody>
+<tr><td><code>config_antigravity.py</code></td><td>Exp452 identity, 고정 기준, 고정 경로</td></tr>
+<tr><td><code>contracts_antigravity.py</code></td><td>confusion, metric, predecessor authority 타입</td></tr>
+<tr><td><code>artifacts_antigravity.py</code></td><td>canonical JSON/JSONL과 안전한 file IO</td></tr>
+<tr><td><code>bootstrap_antigravity.py</code></td><td>Exp449와 같은 paired bootstrap</td></tr>
+<tr><td><code>predecessor_antigravity.py</code></td><td>Exp449 prediction·audit·staging 읽기 전용 검증</td></tr>
+<tr><td><code>sources_antigravity.py</code></td><td>Evaluate에서만 열리는 단일 TEST-label session</td></tr>
+<tr><td><code>lifecycle_antigravity.py</code></td><td>세 명령 receipt와 terminal stop</td></tr>
+<tr><td><code>evaluation_antigravity.py</code></td><td><code>sorted(indices)</code>와 12-leaf publication</td></tr>
+<tr><td><code>replay_antigravity.py</code></td><td>index 순서까지 exact replay</td></tr>
+<tr><td><code>readiness_antigravity.py</code></td><td>clean commit, map, predecessor, 경로, CPU fallback</td></tr>
+<tr><td><code>cli_antigravity.py</code></td><td>정확히 세 명령의 lazy import</td></tr>
+<tr><td><code>dashboard_export_antigravity.py</code></td><td>성공 후 aggregate-only allowlist</td></tr>
+</tbody></table>
+
+<section><h2><input disabled type="checkbox"> Task 1: Governance HTML과 Exp452 코드맵</h2>
+<p><strong>Files:</strong> Create <code>docs/EXP452_PREREGISTRATION_antigravity_KO.html</code>, <code>docs/EXP452_RUNBOOK_antigravity_KO.html</code>, <code>docs/EXP452_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>scratch/build_codemap_exp452_antigravity.py</code>, map triplet, governance test. Modify Exp452 records in four root ledgers.</p>
+<p><strong>Produces:</strong> final document SHA values, planned/non-promoted truth, and a map with future product relations.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1:</strong> Write RED governance test: all human docs are <code>.html</code>, contain <code>antigravity</code>, have no Markdown twin, and all plan boxes start unchecked.</li>
+<li><input disabled type="checkbox"> <strong>Step 2:</strong> Run <code>python3 -m unittest experiments.exp452_exp449_index_order_repair_antigravity.tests.test_governance_antigravity</code>. Expected: missing docs/map.</li>
+<li><input disabled type="checkbox"> <strong>Step 3:</strong> Write preregistration, runbook, report. State that qualified-2 cannot guide Exp452.</li>
+<li><input disabled type="checkbox"> <strong>Step 4:</strong> Register <code>planned_not_started</code>, official counts 0, label 0, result hashes null, champion/pending unchanged.</li>
+<li><input disabled type="checkbox"> <strong>Step 5:</strong> Generate at most 20 map nodes; unimplemented calls stay unknown; HTML embedded JSON equals JSON; lock fingerprints tracked files.</li>
+<li><input disabled type="checkbox"> <strong>Step 6:</strong> Run governance twice, strict JSON, map validator, diff check. Commit governance and a map-only child.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 2: 고정 계약과 차이 제한 장치</h2>
+<p><strong>Files:</strong> Create <code>config</code>, <code>contracts</code>, <code>artifacts</code>, <code>bootstrap</code>, <code>dashboard_export</code> antigravity modules, matching tests, and <code>test_controlled_fork_differential_antigravity.py</code>.</p>
+<p><strong>Produces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>ConfusionAntigravity</code>, <code>CandidateMetricAntigravity</code>, canonical helpers, <code>paired_delta_antigravity()</code>, dashboard projection.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1:</strong> RED constants: assert 48/96/16, alpha <code>0.005</code>, seeds <code>[20260721,20261721]</code>, Exp449 aggregate, bootstrap constants.</li>
+<li><input disabled type="checkbox"> <strong>Step 2:</strong> RED AST differential: allow only Exp452 identity/path/schema and named predecessor/index-order nodes.</li>
+<li><input disabled type="checkbox"> <strong>Step 3:</strong> Run focused discovery. Expected: foundation module imports fail.</li>
+<li><input disabled type="checkbox"> <strong>Step 4:</strong> Controlled-copy Exp449 constants without numeric change.</li>
+<li><input disabled type="checkbox"> <strong>Step 5:</strong> Dashboard allowlist rejects raw labels, indices, dataset names, paths, hashes, logs, and per-dataset rows.</li>
+<li><input disabled type="checkbox"> <strong>Step 6:</strong> Run focused tests twice, Exp449 corresponding tests once, compile and differential guards.</li>
+<li><input disabled type="checkbox"> <strong>Step 7:</strong> Update map, commit bounded source/tests and map child, fresh review.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 3: Exp449 읽기 전용 predecessor와 lifecycle</h2>
+<p><strong>Files:</strong> Create <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code>, <code>lifecycle_antigravity.py</code>, <code>readiness_antigravity.py</code> and tests.</p>
+<p><strong>Produces:</strong> <code>capture_exp449_stopped_authority_antigravity()</code>, <code>open_test_labels_once_antigravity(authority)</code>, <code>run_phase_antigravity()</code>, <code>readiness_antigravity(reviewed_commit)</code>.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1:</strong> RED predecessor: exact prediction aggregate/96 rows, stopped receipt, audit SHA <code>bdbb0921…4716e</code>, staging inode <code>21764083</code>, 12 leaves, 1/48/72,300 facts, 75 order-only mismatches. Tamper/missing/symlink/multilink/published Exp449 evaluation root fail.</li>
+<li><input disabled type="checkbox"> <strong>Step 2:</strong> RED lifecycle: exact Exp452 paths; only readiness→evaluate→inspect; complete/stopped receipts; nonzero permanent stop; occupied paths block.</li>
+<li><input disabled type="checkbox"> <strong>Step 3:</strong> RED label boundary: labels unreachable until two identical predecessor captures; one session, 48 ordered queries, 72,300 rows; truthful close error.</li>
+<li><input disabled type="checkbox"> <strong>Step 4:</strong> Implement no-follow retained-descriptor capture with exact inventory/bytes/SHA/identity recheck. Do not expose qualified metrics to config.</li>
+<li><input disabled type="checkbox"> <strong>Step 5:</strong> Implement readiness: first/last clean map, document SHA, absent Exp452 paths, DB identity, Python/NumPy/backend versions, CPU fallback reason.</li>
+<li><input disabled type="checkbox"> <strong>Step 6:</strong> Synthetic adversarial tests twice and one real read-only predecessor probe with zero label queries and no Exp452 root.</li>
+<li><input disabled type="checkbox"> <strong>Step 7:</strong> Map/review; require <code>git diff --exit-code 5dfe3216 -- experiments/exp449_residual_fn_method_qualification_antigravity</code>.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 4: 정렬 복구 evaluator와 source-free replay</h2>
+<p><strong>Files:</strong> Create <code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code> and tests.</p>
+<p><strong>Produces:</strong> <code>evaluate_antigravity(reviewed_commit)</code>, <code>inspect_antigravity()</code>, exact 12-leaf publication.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1:</strong> RED order fixture: prediction <code>[1,3,5]</code> and evidence source <code>frozenset({5,1,3})</code> have equal sets but unordered list fails exact replay.</li>
+<li><input disabled type="checkbox"> <strong>Step 2:</strong> RED 96-row parity: synthetic 48-dataset fixture fails with <code>list(current[dataset])</code>.</li>
+<li><input disabled type="checkbox"> <strong>Step 3:</strong> Implement only <code>"indices": sorted(current[datasets[position]])</code> at evidence creation.</li>
+<li><input disabled type="checkbox"> <strong>Step 4:</strong> Replay keeps <code>candidate["indices"] == frozen_row["indices"]</code>. Do not sort or compare sets in replay.</li>
+<li><input disabled type="checkbox"> <strong>Step 5:</strong> Differential proof: after identity/path/hash removal, confusion, metrics, bootstrap, decision, leaf names/order equal Exp449 pure evaluation with the same integer labels.</li>
+<li><input disabled type="checkbox"> <strong>Step 6:</strong> Failure tests: missing/extra/duplicate/reordered index, semantic rehash, partial root, drift, query/close/audit failure, artifact-map tamper.</li>
+<li><input disabled type="checkbox"> <strong>Step 7:</strong> Evaluator/replay twice, Exp449 once, source-free inspect subprocess keeps SQLite/labels/network/dashboard unloaded.</li>
+<li><input disabled type="checkbox"> <strong>Step 8:</strong> Commit source/tests and map child; fresh review blocks any delta beyond identity/predecessor/<code>sorted</code>.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 5: Closed CLI, 전체 검증, clean 후보</h2>
+<p><strong>Files:</strong> Create <code>cli_antigravity.py</code>, launcher, tests. Update report/ledgers/map only after tests.</p>
+<p><strong>Produces:</strong> exact readiness/evaluate/inspect commands and <code>implementation_verified_awaiting_official_readiness</code>.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1:</strong> RED parser accepts only three forms. Reject predict/new/resume/retry, abbreviations, overrides, uppercase/non-40-hex commit, inspect arguments.</li>
+<li><input disabled type="checkbox"> <strong>Step 2:</strong> RED import firewall: help/readiness/inspect leave SQLite labels/evaluator/network/dashboard unloaded; evaluate checks clean HEAD first.</li>
+<li><input disabled type="checkbox"> <strong>Step 3:</strong> Launcher works from <code>/tmp</code> and sets seven thread variables to <code>1</code> before imports.</li>
+<li><input disabled type="checkbox"> <strong>Step 4:</strong> CLI/readiness/replay focused tests twice.</li>
+<li><input disabled type="checkbox"> <strong>Step 5:</strong> Exp452 discovery twice, Exp449 once, proportionate Exp448/444–447 once, one process at a time with HTML/log sentinels.</li>
+<li><input disabled type="checkbox"> <strong>Step 6:</strong> Verify Exp452 namespaces absent, DB exact, Exp449 unchanged, official labels 0, dashboard untouched.</li>
+<li><input disabled type="checkbox"> <strong>Step 7:</strong> Record exact clean candidate, null official hashes, label 0, no champion/pending/routing change.</li>
+<li><input disabled type="checkbox"> <strong>Step 8:</strong> Commit truth/map and obtain fresh Terra then fresh Sol <code>ship</code>.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 6: 공식 1회 lifecycle과 결과 closeout</h2>
+<p><strong>Files:</strong> No source. Modify truth/report/ledgers/map only after outcome. Dashboard is later separate-site work.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1:</strong> User authorizes exact Task-5 reviewed commit after Sol ship.</li>
+<li><input disabled type="checkbox"> <strong>Step 2:</strong> Reconfirm clean map, predecessor, DB, label 0, absent Exp452 paths, no duplicate process.</li>
+<li><input disabled type="checkbox"> <strong>Step 3:</strong> Run readiness once with exact reviewed commit.</li>
+<li><input disabled type="checkbox"> <strong>Step 4:</strong> After readiness exit 0, evaluate once; require one session/48 queries/72,300 rows. Any nonzero forbids inspect.</li>
+<li><input disabled type="checkbox"> <strong>Step 5:</strong> Independently recompute 12 hashes, 96 index-list parity, confusion, bootstrap draw SHA, decision, prediction bytes, receipt commit.</li>
+<li><input disabled type="checkbox"> <strong>Step 6:</strong> Only after all checks, run bare inspect once.</li>
+<li><input disabled type="checkbox"> <strong>Step 7:</strong> Record success or stop, counts/hashes, no promotion/routing; commit truth/map and fresh final review.</li>
+<li><input disabled type="checkbox"> <strong>Step 8:</strong> Only successful reviewed truth may later publish aggregate-only dashboard data; failure authorizes no reevaluation.</li>
+</ol></section>
+
+<h2>Self-review checklist</h2><ul>
+<li>설계 요구사항은 Task 1–6 중 하나에 연결된다.</li>
+<li>의미 있는 계산 변경은 Task 4의 <code>sorted(...)</code> 한 곳뿐이다.</li>
+<li>Task 3–4는 qualified 2개를 설정에 사용하지 못하게 한다.</li>
+<li>모든 사람용 문서는 HTML이고 새 파일명에는 <code>antigravity</code>가 있다.</li>
+<li>공식 실행은 Task 6 전에는 금지된다.</li>
+</ul>
+</main></body></html>
