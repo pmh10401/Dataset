@@ -55,7 +55,12 @@ ops         = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20
 smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813
 ```
 
-Read-only check (allowed after the operations code is committed; creates no roots):
+Read-only check (allowed after the operations code is committed; creates no roots).
+The command must be invoked with that exact lexical venv path so `sys.executable`
+and `sys.prefix` stay the venv identity. Authority records `executable`,
+`executable_realpath`, `python_prefix`, `python_base_prefix`, and
+`python_identity_sha256`. Worker/pipeline commands keep the same venv path and
+do not resolve it to base Python.
 
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \

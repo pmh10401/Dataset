@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import signal
 import subprocess
@@ -138,14 +139,51 @@ class PaperR4OperationsTests(unittest.TestCase):
             subprocess.check_call(["git", "commit", "-m", "closure"], cwd=repo, stdout=subprocess.DEVNULL)
             commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
         module.REPOSITORY_ROOT = repo
-        module.OFFICIAL_INTERPRETER = Path(sys.executable).resolve()
+        module.OFFICIAL_INTERPRETER = self._install_venv_interpreter(dataset)
         module.OFFICIAL_DATABASE = database
         module.OFFICIAL_R3_ROOT = r3
         module.OFFICIAL_R4_ROOT = r4
         module.OFFICIAL_OPS_ROOT = ops
         module.OFFICIAL_SMOKE_ROOT = smoke
         module.EXPECTED_DATABASE_SHA256 = sha256(database.read_bytes()).hexdigest()
+        self._bind_official_runtime(module)
         return repo, commit, dataset
+
+    def _install_venv_interpreter(self, dataset: Path) -> Path:
+        venv = dataset / "venv_antigravity"
+        bindir = venv / "bin"
+        bindir.mkdir(parents=True)
+        target = Path(sys.executable).resolve()
+        interpreter = bindir / "python"
+        interpreter.symlink_to(target)
+        (venv / "pyvenv.cfg").write_text(
+            "\n".join(
+                (
+                    f"home = {target.parent}",
+                    "include-system-site-packages = false",
+                    f"version = {platform.python_version()}",
+                    f"executable = {target}",
+                    "",
+                )
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(interpreter.is_symlink())
+        self.assertTrue(interpreter.resolve().is_file())
+        self.assertFalse(interpreter.resolve().is_symlink())
+        return interpreter
+
+    def _bind_official_runtime(self, module) -> None:
+        official = Path(module.OFFICIAL_INTERPRETER)
+        executable = mock.patch.object(module.sys, "executable", str(official))
+        prefix = mock.patch.object(module.sys, "prefix", str(official.parent.parent))
+        executable.start()
+        prefix.start()
+        self.addCleanup(executable.stop)
+        self.addCleanup(prefix.stop)
+
+    def _authority_digest(self, module, authority) -> str:
+        return sha256(module.canonical_json_bytes(authority)).hexdigest()
 
     def test_launcher_file_exists_antigravity(self) -> None:
         self.assertTrue(LAUNCHER_PATH.is_file())
@@ -192,6 +230,12 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertIs(result["git_clean"], True)
         self.assertEqual(result["database_sha256"], module.EXPECTED_DATABASE_SHA256)
         self.assertEqual(result["executable"], str(module.OFFICIAL_INTERPRETER))
+        self.assertTrue(module.OFFICIAL_INTERPRETER.is_symlink())
+        self.assertEqual(result["executable_realpath"], str(module.OFFICIAL_INTERPRETER.resolve()))
+        self.assertNotEqual(result["executable"], result["executable_realpath"])
+        self.assertEqual(result["python_prefix"], str(module.OFFICIAL_INTERPRETER.parent.parent))
+        self.assertEqual(result["python_base_prefix"], module.sys.base_prefix)
+        self.assertRegex(result["python_identity_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(result["r4_absent"], True)
         self.assertEqual(result["dataset_workers"], max(1, os.cpu_count() - 1))
         self.assertEqual(result["inner_numerical_threads"], 1)
@@ -279,12 +323,33 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertFalse(module.OFFICIAL_R4_ROOT.exists())
         command = captured["command"]
         kwargs = captured["kwargs"]
+        self.assertEqual(command[0], str(module.OFFICIAL_INTERPRETER))
+        self.assertNotEqual(command[0], str(Path(module.OFFICIAL_INTERPRETER).resolve()))
+        self.assertEqual(
+            command,
+            [
+                str(module.OFFICIAL_INTERPRETER),
+                "-B",
+                "-u",
+                str(Path(module.__file__).resolve()),
+                "_worker",
+                "--reviewed-commit",
+                commit,
+                "--authority-sha256",
+                result["authority_sha256"],
+                "--lock-fd",
+                str(kwargs["pass_fds"][0]),
+                "--mode",
+                "full",
+            ],
+        )
         self.assertEqual(command[command.index("--lock-fd") + 1], str(kwargs["pass_fds"][0]))
         self.assertEqual(command[command.index("--mode") + 1], "full")
         for name in module.NUMERICAL_THREAD_VARIABLES:
             self.assertEqual(kwargs["env"][name], "1")
         child = module.pipeline_command("full", module.OFFICIAL_R4_ROOT)
         self.assertEqual(child[:6], [str(module.OFFICIAL_INTERPRETER), "-B", "-u", "-m", module.PIPELINE_MODULE, "run"])
+        self.assertNotEqual(child[0], str(Path(module.OFFICIAL_INTERPRETER).resolve()))
         self.assertNotIn("--dataset-workers", child)
 
     def test_stop_does_not_signal_unrelated_live_pid_when_lock_is_free_antigravity(self) -> None:
@@ -632,17 +697,7 @@ class PaperR4OperationsTests(unittest.TestCase):
                 }
             )
         )
-        identity = (
-            str(Path(module.OFFICIAL_INTERPRETER).resolve()),
-            "-B",
-            "-u",
-            str(Path(module.__file__).resolve()),
-            "_worker",
-            "--reviewed-commit",
-            commit,
-            "--mode",
-            "full",
-        )
+        identity = self._canonical_worker_argv(module, commit, self._authority_digest(module, authority))
         with paths.worker_lock.open("a+b") as lock_stream:
             fcntl.flock(lock_stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             with mock.patch.object(module, "_process_command_identity", return_value=identity):
@@ -696,9 +751,24 @@ class PaperR4OperationsTests(unittest.TestCase):
         spaced.mkdir()
         script = spaced / "manage_paper_r4_proposal_antigravity.py"
         script.write_text("import time\ntime.sleep(30)\n", encoding="utf-8")
-        interpreter = str(Path(module.OFFICIAL_INTERPRETER).resolve())
+        interpreter = str(module.OFFICIAL_INTERPRETER)
+        digest = "a" * 64
         worker = subprocess.Popen(
-            [interpreter, str(script.resolve()), "_worker", "--reviewed-commit", commit]
+            [
+                interpreter,
+                "-B",
+                "-u",
+                str(script.resolve()),
+                "_worker",
+                "--reviewed-commit",
+                commit,
+                "--authority-sha256",
+                digest,
+                "--lock-fd",
+                "3",
+                "--mode",
+                "full",
+            ]
         )
         unrelated = subprocess.Popen([interpreter, "-c", "import time; time.sleep(30)"])
         self.addCleanup(lambda: worker.poll() is not None or worker.kill() or worker.wait())
@@ -726,21 +796,27 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertNotIn(" ".join(identity), identity)
         self.assertIn(identity[0], module._official_interpreter_tokens())
         with mock.patch.object(module, "__file__", str(script.resolve())):
-            self.assertTrue(module._command_is_this_worker(identity, commit), msg=repr(identity))
-            self.assertFalse(module._command_is_this_worker(other, commit))
-            self.assertFalse(module._command_is_this_worker(identity, "0" * 40))
-            self.assertFalse(module._command_is_this_worker(" ".join(identity), commit))
+            self.assertTrue(module._command_is_this_worker(identity, commit, digest), msg=repr(identity))
+            self.assertFalse(module._command_is_this_worker(other, commit, digest))
+            self.assertFalse(module._command_is_this_worker(identity, "0" * 40, digest))
+            self.assertFalse(module._command_is_this_worker(" ".join(identity), commit, digest))
+            self.assertFalse(module._command_is_this_worker(identity, commit, "0" * 64))
 
-    def _canonical_worker_argv(self, module, commit: str, *, extra: tuple[str, ...] = ()) -> tuple[str, ...]:
+    def _canonical_worker_argv(self, module, commit: str, authority_sha256: str, *, lock_fd: str = "3") -> tuple[str, ...]:
         return (
-            str(Path(module.OFFICIAL_INTERPRETER).resolve()),
+            str(module.OFFICIAL_INTERPRETER),
             "-B",
             "-u",
             str(Path(module.__file__).resolve()),
             "_worker",
             "--reviewed-commit",
             commit,
-            *extra,
+            "--authority-sha256",
+            authority_sha256,
+            "--lock-fd",
+            lock_fd,
+            "--mode",
+            "full",
         )
 
     def test_process_command_identity_returns_exact_tokens_and_fails_closed_antigravity(self) -> None:
@@ -750,7 +826,7 @@ class PaperR4OperationsTests(unittest.TestCase):
         spaced.mkdir()
         script = spaced / "manage_paper_r4_proposal_antigravity.py"
         script.write_text("import time\ntime.sleep(30)\n", encoding="utf-8")
-        interpreter = str(Path(module.OFFICIAL_INTERPRETER).resolve())
+        interpreter = str(module.OFFICIAL_INTERPRETER)
         worker = subprocess.Popen(
             [interpreter, str(script.resolve()), "_worker", "--reviewed-commit", commit]
         )
@@ -783,10 +859,11 @@ class PaperR4OperationsTests(unittest.TestCase):
     def test_command_is_this_worker_rejects_adversarial_near_matches_antigravity(self) -> None:
         module = self.load_launcher()
         _repo, commit, _dataset = self._prepare_fixture(module)
-        interpreter = str(Path(module.OFFICIAL_INTERPRETER).resolve())
+        interpreter = str(module.OFFICIAL_INTERPRETER)
         launcher = str(Path(module.__file__).resolve())
-        canonical = self._canonical_worker_argv(module, commit, extra=("--mode", "full"))
-        self.assertTrue(module._command_is_this_worker(canonical, commit))
+        digest = "c" * 64
+        canonical = self._canonical_worker_argv(module, commit, digest)
+        self.assertTrue(module._command_is_this_worker(canonical, commit, digest))
         near_matches = (
             " ".join(canonical),
             (interpreter, launcher + " _worker --reviewed-commit " + commit),
@@ -803,12 +880,15 @@ class PaperR4OperationsTests(unittest.TestCase):
             (launcher, "_worker", "--reviewed-commit", commit),
             (interpreter, "_worker", "--reviewed-commit", commit),
             (interpreter, launcher, "_worker", "--reviewed-commit", "0" * 40),
+            canonical[:-2],
+            canonical + ("--extra",),
+            (*canonical[:5], "--reviewed-commit", commit, "--mode", "full"),
             (),
             None,
         )
         for candidate in near_matches:
             self.assertFalse(
-                module._command_is_this_worker(candidate, commit),
+                module._command_is_this_worker(candidate, commit, digest),
                 msg=repr(candidate),
             )
 
@@ -904,6 +984,191 @@ class PaperR4OperationsTests(unittest.TestCase):
         linked.symlink_to(extra)
         with self.assertRaisesRegex(ValueError, "symlink"):
             module._identity_digest(module.OFFICIAL_R3_ROOT)
+
+    def test_require_official_runtime_accepts_only_lexical_venv_symlink_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, dataset = self._prepare_fixture(module)
+        official = Path(module.OFFICIAL_INTERPRETER)
+        self.assertTrue(official.is_symlink())
+        identity = module._require_official_runtime()
+        self.assertEqual(identity["executable"], str(official))
+        self.assertEqual(identity["executable_realpath"], str(official.resolve()))
+        self.assertEqual(identity["python_prefix"], str(official.parent.parent))
+        self.assertEqual(identity["python_base_prefix"], module.sys.base_prefix)
+        self.assertRegex(identity["python_identity_sha256"], r"^[0-9a-f]{64}$")
+        with mock.patch.object(module.sys, "executable", str(official.resolve())):
+            with self.assertRaisesRegex(ValueError, "interpreter"):
+                module._require_official_runtime()
+        with mock.patch.object(module.sys, "prefix", str(official.resolve().parent.parent)):
+            with self.assertRaisesRegex(ValueError, "prefix|venv"):
+                module._require_official_runtime()
+        regular = dataset / "regular_python_antigravity"
+        regular.write_bytes(official.resolve().read_bytes())
+        regular.chmod(0o755)
+        module.OFFICIAL_INTERPRETER = regular
+        with mock.patch.object(module.sys, "executable", str(regular)):
+            with mock.patch.object(module.sys, "prefix", str(regular.parent)):
+                with self.assertRaisesRegex(ValueError, "symlink|venv|interpreter"):
+                    module._require_official_runtime()
+
+    def test_pinned_venv_check_reaches_authority_without_official_writes_antigravity(self) -> None:
+        official = Path(OFFICIAL_PATHS["OFFICIAL_INTERPRETER"])
+        self.assertTrue(official.is_file())
+        self.assertTrue(official.is_symlink())
+        module = self.load_launcher()
+        repo, commit, dataset = self._prepare_fixture(module)
+        seam = dataset / "production_check_seam_antigravity.py"
+        seam.write_text(
+            "\n".join(
+                (
+                    "from hashlib import sha256",
+                    "import importlib.util",
+                    "import json",
+                    "from pathlib import Path",
+                    "import sys",
+                    f"launcher = Path({str(LAUNCHER_PATH)!r})",
+                    "spec = importlib.util.spec_from_file_location('paper_r4_ops_prod_antigravity', launcher)",
+                    "loaded = importlib.util.module_from_spec(spec)",
+                    "sys.modules[spec.name] = loaded",
+                    "spec.loader.exec_module(loaded)",
+                    f"loaded.REPOSITORY_ROOT = Path({str(repo)!r})",
+                    f"loaded.OFFICIAL_DATABASE = Path({str(module.OFFICIAL_DATABASE)!r})",
+                    f"loaded.OFFICIAL_R3_ROOT = Path({str(module.OFFICIAL_R3_ROOT)!r})",
+                    f"loaded.OFFICIAL_R4_ROOT = Path({str(module.OFFICIAL_R4_ROOT)!r})",
+                    f"loaded.OFFICIAL_OPS_ROOT = Path({str(module.OFFICIAL_OPS_ROOT)!r})",
+                    f"loaded.OFFICIAL_SMOKE_ROOT = Path({str(module.OFFICIAL_SMOKE_ROOT)!r})",
+                    "loaded.EXPECTED_DATABASE_SHA256 = sha256(loaded.OFFICIAL_DATABASE.read_bytes()).hexdigest()",
+                    f"result = loaded.check({commit!r})",
+                    "print(json.dumps(result, sort_keys=True, separators=(',', ':')))",
+                    "",
+                )
+            ),
+            encoding="utf-8",
+        )
+        official_roots = (
+            OFFICIAL_PATHS["OFFICIAL_R4_ROOT"],
+            OFFICIAL_PATHS["OFFICIAL_OPS_ROOT"],
+            OFFICIAL_PATHS["OFFICIAL_SMOKE_ROOT"],
+            Path(str(OFFICIAL_PATHS["OFFICIAL_SMOKE_ROOT"]) + "_ops_antigravity"),
+        )
+        before = {path: (path.exists(), path.is_symlink()) for path in official_roots}
+        completed = subprocess.run(
+            [str(official), "-B", "-u", str(seam)],
+            cwd=str(REPOSITORY_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["schema"], "paper-r4-launch-authority-antigravity.v1")
+        self.assertEqual(payload["executable"], str(official))
+        self.assertEqual(payload["python_prefix"], str(official.parent.parent))
+        self.assertEqual(payload["python_base_prefix"], "/Library/Frameworks/Python.framework/Versions/3.14")
+        self.assertEqual(payload["executable_realpath"], str(official.resolve()))
+        self.assertNotEqual(payload["executable"], payload["executable_realpath"])
+        self.assertRegex(payload["python_identity_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(payload["reviewed_commit"], commit)
+        self.assertFalse(module.OFFICIAL_R4_ROOT.exists())
+        self.assertFalse(module.OFFICIAL_OPS_ROOT.exists())
+        self.assertFalse(module.OFFICIAL_SMOKE_ROOT.exists())
+        self.assertEqual({path: (path.exists(), path.is_symlink()) for path in official_roots}, before)
+        for path in official_roots:
+            self.assertFalse(path.exists())
+            self.assertFalse(path.is_symlink())
+
+    def test_command_is_this_worker_rejects_unrelated_c_prefix_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        digest = "d" * 64
+        canonical = self._canonical_worker_argv(module, commit, digest)
+        prefixed = (canonical[0], "-c", "raise SystemExit(0)") + canonical[1:]
+        self.assertTrue(module._command_is_this_worker(canonical, commit, digest))
+        self.assertFalse(module._command_is_this_worker(prefixed, commit, digest))
+        self.assertFalse(module._command_is_this_worker((canonical[0], "-c") + canonical[1:], commit, digest))
+        self.assertEqual(len(canonical), 13)
+
+    def test_stop_rereads_argv_before_sigterm_and_refuses_mutation_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        module.STOP_SIGINT_SECONDS = 0.05
+        module.STOP_SIGTERM_SECONDS = 0.05
+        authority = module.check(commit)
+        digest = self._authority_digest(module, authority)
+        paths = module.ops_paths()
+        paths.root.mkdir(parents=True)
+        encoded = module.canonical_json_bytes(authority)
+        paths.authority.write_bytes(encoded)
+        paths.authority_sha256.write_text(digest + "\n", encoding="ascii")
+        identity = self._canonical_worker_argv(module, commit, digest)
+        mutated = identity[:1] + ("-c", "import time; time.sleep(30)") + identity[1:]
+        child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+        self.addCleanup(lambda: child.poll() is not None or child.kill() or child.wait())
+        paths.pid.write_text(f"{child.pid}\n", encoding="ascii")
+        paths.state.write_bytes(
+            module.canonical_json_bytes(
+                {
+                    "schema": module.STATE_SCHEMA,
+                    "status": "running",
+                    "mode": "full",
+                    "started_epoch": 1.0,
+                    "heartbeat_epoch": 2.0,
+                    "pid": child.pid,
+                    "child_returncode": None,
+                    "last_error": None,
+                    "reviewed_commit": commit,
+                }
+            )
+        )
+        identities = iter((identity, mutated))
+        sent: list[int] = []
+
+        def fake_kill(pid, signum):
+            if pid != child.pid:
+                raise AssertionError("stop signaled an unexpected pid")
+            sent.append(signum)
+            if signum == signal.SIGTERM:
+                raise AssertionError("SIGTERM must not be sent after identity mutation")
+
+        with paths.worker_lock.open("a+b") as lock_stream:
+            fcntl.flock(lock_stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with mock.patch.object(module, "_process_command_identity", side_effect=lambda _pid: next(identities)):
+                with mock.patch.object(module, "_pid_exists", return_value=True):
+                    with mock.patch.object(module.os, "kill", side_effect=fake_kill):
+                        result = module.stop(commit)
+        self.assertEqual(result["status"], "stop_refused")
+        self.assertNotIn(signal.SIGTERM, sent)
+        self.assertEqual(sent, [signal.SIGINT])
+        self.assertTrue(module._pid_exists(child.pid))
+
+    def test_publish_smoke_result_is_create_only_and_byte_identical_reuse_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        authority = module.check(commit)
+        pipeline = {"status": "completed", "completed": 22, "failed": 0, "pending": 0}
+        first = module._publish_smoke_result(authority, pipeline)
+        paths = module.smoke_ops_paths()
+        original = paths.smoke_result.read_bytes()
+        inode = paths.smoke_result.stat().st_ino
+        replaced: list[object] = []
+        original_replace = module._atomic_replace
+
+        def tracked_replace(path, payload):
+            replaced.append((path, payload))
+            return original_replace(path, payload)
+
+        with mock.patch.object(module, "_atomic_replace", side_effect=tracked_replace):
+            second = module._publish_smoke_result(authority, pipeline)
+        self.assertEqual(paths.smoke_result.read_bytes(), original)
+        self.assertEqual(paths.smoke_result.stat().st_ino, inode)
+        self.assertEqual(second, first)
+        self.assertEqual(replaced, [])
+        different = {"status": "completed", "completed": 21, "failed": 1, "pending": 0}
+        with self.assertRaisesRegex(ValueError, "existing smoke result"):
+            module._publish_smoke_result(authority, different)
+        self.assertEqual(paths.smoke_result.read_bytes(), original)
+        self.assertEqual(paths.smoke_result.stat().st_ino, inode)
+        self.assertEqual(replaced, [])
 
 
 if __name__ == "__main__":

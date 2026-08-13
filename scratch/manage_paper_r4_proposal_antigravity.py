@@ -112,6 +112,10 @@ AUTHORITY_FIELDS = {
     "smoke_root",
     "smoke_result_sha256",
     "executable",
+    "executable_realpath",
+    "python_prefix",
+    "python_base_prefix",
+    "python_identity_sha256",
     "python_version",
     "platform",
     "git_commit",
@@ -321,16 +325,42 @@ def _logical_workers() -> tuple[int, int]:
     return logical, max(1, logical - 1)
 
 
-def _require_official_runtime() -> Path:
+def _require_official_runtime() -> dict[str, str]:
     official = Path(OFFICIAL_INTERPRETER)
-    _reject_symlink(official, "official interpreter")
-    if not official.is_file():
-        raise ValueError("official interpreter is absent")
-    running = Path(sys.executable).resolve()
-    pinned = official.resolve()
-    if running != pinned:
+    lexical = str(official)
+    if sys.executable != lexical:
         raise ValueError("running interpreter is not the official interpreter")
-    return pinned
+    expected_prefix = str(official.parent.parent)
+    if sys.prefix != expected_prefix:
+        raise ValueError("running interpreter prefix is not the official venv")
+    if not official.is_symlink():
+        raise ValueError("official interpreter must be a venv symlink")
+    if not official.exists():
+        raise ValueError("official interpreter is absent")
+    resolved = official.resolve()
+    if resolved.is_symlink() or not resolved.is_file() or not os.access(resolved, os.X_OK):
+        raise ValueError("official interpreter resolved target is not a regular executable")
+    pyvenv = official.parent.parent / "pyvenv.cfg"
+    _reject_symlink(pyvenv, "official venv identity")
+    if not pyvenv.is_file():
+        raise ValueError("official venv identity is absent")
+    identity = {
+        "executable": lexical,
+        "executable_realpath": str(resolved),
+        "python_prefix": sys.prefix,
+        "python_base_prefix": sys.base_prefix,
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "python_build": " ".join(platform.python_build()),
+        "pyvenv_cfg_sha256": sha256_file(pyvenv),
+    }
+    return {
+        "executable": identity["executable"],
+        "executable_realpath": identity["executable_realpath"],
+        "python_prefix": identity["python_prefix"],
+        "python_base_prefix": identity["python_base_prefix"],
+        "python_identity_sha256": sha256(canonical_json_bytes(identity)).hexdigest(),
+    }
 
 
 def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = None) -> dict[str, object]:
@@ -340,7 +370,7 @@ def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = N
         raise ValueError("reviewed commit must match clean HEAD")
     if not clean:
         raise ValueError("official launch requires a clean Git worktree")
-    executable = _require_official_runtime()
+    runtime = _require_official_runtime()
     _reject_symlink(OFFICIAL_DATABASE, "database")
     if not OFFICIAL_DATABASE.is_file():
         raise ValueError("official database is absent")
@@ -365,7 +395,11 @@ def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = N
         "ops_root": str(OFFICIAL_OPS_ROOT),
         "smoke_root": str(OFFICIAL_SMOKE_ROOT),
         "smoke_result_sha256": smoke_result_sha256,
-        "executable": str(executable),
+        "executable": runtime["executable"],
+        "executable_realpath": runtime["executable_realpath"],
+        "python_prefix": runtime["python_prefix"],
+        "python_base_prefix": runtime["python_base_prefix"],
+        "python_identity_sha256": runtime["python_identity_sha256"],
         "python_version": platform.python_version(),
         "platform": platform.platform(),
         "git_commit": head,
@@ -410,6 +444,18 @@ def validate_authority(authority: Mapping[str, object]) -> dict[str, object]:
         raise ValueError("launch authority source closure is invalid")
     if not _is_sha256(authority.get("launcher_sha256")) or not _is_sha256(authority.get("r3_digest")) or not _is_sha256(authority.get("database_sha256")):
         raise ValueError("launch authority digest is invalid")
+    if (
+        type(authority.get("executable")) is not str
+        or not authority["executable"]
+        or type(authority.get("executable_realpath")) is not str
+        or not authority["executable_realpath"]
+        or type(authority.get("python_prefix")) is not str
+        or not authority["python_prefix"]
+        or type(authority.get("python_base_prefix")) is not str
+        or not authority["python_base_prefix"]
+        or not _is_sha256(authority.get("python_identity_sha256"))
+    ):
+        raise ValueError("launch authority python identity is invalid")
     smoke = authority.get("smoke_result_sha256")
     if smoke is not None and not _is_sha256(smoke):
         raise ValueError("launch authority smoke result hash is invalid")
@@ -591,13 +637,14 @@ def _publish_smoke_result(authority: Mapping[str, object], pipeline: Mapping[str
     digest = sha256(canonical_json_bytes(bare)).hexdigest()
     payload = {**bare, "result_sha256": digest}
     encoded = canonical_json_bytes(payload)
-    if paths.smoke_result.exists():
-        existing = json.loads(paths.smoke_result.read_text(encoding="utf-8"))
-        if existing.get("authority_sha256") != bare["authority_sha256"]:
-            raise ValueError("existing smoke result authority differs")
-        _atomic_replace(paths.smoke_result, encoded)
-    else:
-        _write_create_only(paths.smoke_result, encoded)
+    if paths.smoke_result.exists() or paths.smoke_result.is_symlink():
+        if paths.smoke_result.is_symlink() or not paths.smoke_result.is_file():
+            raise ValueError("existing smoke result is invalid")
+        existing = paths.smoke_result.read_bytes()
+        if existing != encoded:
+            raise ValueError("existing smoke result differs from the newly verified result")
+        return json.loads(existing.decode("utf-8"))
+    _write_create_only(paths.smoke_result, encoded)
     return payload
 
 
@@ -622,7 +669,7 @@ def _spawn_worker(
 ) -> dict[str, object]:
     paths = ops_paths() if mode == "full" else smoke_ops_paths()
     command = [
-        str(Path(OFFICIAL_INTERPRETER).resolve()),
+        str(OFFICIAL_INTERPRETER),
         "-B",
         "-u",
         str(Path(__file__).resolve()),
@@ -761,8 +808,8 @@ def _official_interpreter_tokens() -> frozenset[str]:
     return frozenset(tokens)
 
 
-def _command_is_this_worker(command: object, reviewed_commit: str) -> bool:
-    if type(command) is not tuple or not command:
+def _command_is_this_worker(command: object, reviewed_commit: str, authority_sha256: str) -> bool:
+    if type(command) is not tuple:
         return False
     if any(type(token) is not str for token in command):
         return False
@@ -770,24 +817,30 @@ def _command_is_this_worker(command: object, reviewed_commit: str) -> bool:
         commit = _reviewed_commit(reviewed_commit)
     except ValueError:
         return False
-    interpreter_at = [index for index, token in enumerate(command) if token in _official_interpreter_tokens()]
-    if len(interpreter_at) != 1:
+    if type(authority_sha256) is not str or not _is_sha256(authority_sha256):
+        return False
+    if len(command) != 13:
         return False
     launcher = str(Path(__file__).resolve())
-    if command.count(launcher) != 1:
+    expected = (
+        "-B",
+        "-u",
+        launcher,
+        "_worker",
+        "--reviewed-commit",
+        commit,
+        "--authority-sha256",
+        authority_sha256,
+        "--lock-fd",
+    )
+    if command[1:10] != expected:
         return False
-    if command.count("_worker") != 1:
+    if command[0] not in _official_interpreter_tokens():
         return False
-    if command.count("--reviewed-commit") != 1:
+    lock_fd = command[10]
+    if not lock_fd.isdigit() or lock_fd != str(int(lock_fd)):
         return False
-    if command.count(commit) != 1:
-        return False
-    launcher_at = command.index(launcher)
-    worker_at = command.index("_worker")
-    flag_at = command.index("--reviewed-commit")
-    if flag_at + 1 >= len(command) or command[flag_at + 1] != commit:
-        return False
-    return interpreter_at[0] < launcher_at < worker_at < flag_at
+    return command[11:13] == ("--mode", "full")
 
 
 def _state_payload(
@@ -845,6 +898,9 @@ def stop(reviewed_commit: str) -> dict[str, object]:
         current = build_authority(commit, smoke_result_sha256=stored.get("smoke_result_sha256"))
         if canonical_json_bytes(stored) != canonical_json_bytes(current):
             return refused
+        digest = paths.authority_sha256.read_text(encoding="ascii").strip()
+        if digest != sha256(canonical_json_bytes(stored)).hexdigest():
+            return refused
         pid = _read_pid(paths.pid)
         state = _validate_state(json.loads(paths.state.read_text(encoding="utf-8")))
         identity = _process_command_identity(pid) if type(pid) is int else ()
@@ -855,7 +911,7 @@ def stop(reviewed_commit: str) -> dict[str, object]:
         or state.get("status") != "running"
         or state.get("pid") != pid
         or state.get("reviewed_commit") != commit
-        or not _command_is_this_worker(identity, commit)
+        or not _command_is_this_worker(identity, commit, digest)
     ):
         return {**refused, "pid": pid}
     os.kill(pid, signal.SIGINT)
@@ -864,6 +920,12 @@ def stop(reviewed_commit: str) -> dict[str, object]:
         if not _pid_exists(pid):
             return {"status": "stopped", "pid": pid, "signaled": "SIGINT"}
         time.sleep(0.05)
+    try:
+        identity = _process_command_identity(pid)
+    except (OSError, ValueError):
+        return {**refused, "pid": pid, "signaled": "SIGINT"}
+    if not _command_is_this_worker(identity, commit, digest):
+        return {**refused, "pid": pid, "signaled": "SIGINT"}
     os.kill(pid, signal.SIGTERM)
     deadline = time.time() + STOP_SIGTERM_SECONDS
     while time.time() < deadline:

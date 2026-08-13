@@ -68,9 +68,25 @@ only. It does not authorize smoke-root or official r4-root creation.
   `launch`, `status`, `stop`, `resume`, and internal `_worker`. Official paths,
   worker policy (`logical_cpu_count - 1`, inner threads = 1), and scoring
   closure hashes are immutable. `check` is read-only.
-- Focused operations tests cover authority/check, exclusive flock, stale PID
-  recovery, signal relay, status fixtures, and a small typed Task4+Task5 smoke
-  resume-equivalence fixture. They write only temporary Git/DB/path fixtures.
+- The production interpreter
+  `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python`
+  is accepted only as that exact lexical venv symlink. `check` requires
+  `sys.executable` to equal that path, `sys.prefix` to equal the venv root, a
+  regular resolved executable, and a hash-bound python identity. Authority
+  records `executable`, `executable_realpath`, `python_prefix`,
+  `python_base_prefix`, and `python_identity_sha256`. Worker and pipeline
+  commands invoke the pinned venv path and never resolve it to base Python.
+- `_command_is_this_worker` matches only the exact 13-token full-worker argv
+  grammar, including the stored authority SHA. `stop` rereads OS argv before
+  SIGTERM and returns `stop_refused` if identity changed.
+- `_publish_smoke_result` is create-only. An existing result is reused only
+  when its bytes are identical to the newly verified encoding; otherwise it is
+  rejected. Existing smoke evidence is never atomic-replaced.
+- Focused operations tests cover authority/check, a pinned-venv check seam,
+  exclusive flock, stale PID recovery, exact argv-grammar stop identity,
+  SIGTERM revalidation, create-only smoke reuse/rejection, status fixtures,
+  and a small typed Task4+Task5 smoke resume-equivalence fixture. They write
+  only temporary Git/DB/path fixtures.
 - Implementation verification does not create
   `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`,
   the smoke root, or the ops root, and it starts no official or detached
