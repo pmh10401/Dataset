@@ -16,7 +16,7 @@ class ReadinessAntigravityTests(unittest.TestCase):
         graph, lock, _html = build_map_antigravity("3f60be54fa551be4d2695de154477d48b522ad9c", "2026-08-13T00:00:00+00:00")
         self.assertIn("tracked_fingerprints", lock)
         self.assertNotIn("docs/codemap/codemap_exp449_antigravity.json", lock["tracked_fingerprints"])
-        self.assertEqual(graph["scope"], ["Task 5 official outcome is implemented and immutable: readiness and zero-label predict succeeded once, evaluation failed permanently before labels, inspect/retry are prohibited, and dashboard_access=blocked remains presentation-only."])
+        self.assertEqual(graph["scope"], ["Task 5 official outcome is implemented and immutable: readiness and zero-label predict succeeded once; evaluation opened one 48-query/72,300-row label session and retained staging evidence before replay failed permanently; inspect/retry are prohibited and dashboard_access=blocked remains presentation-only."])
 
     def test_reviewed_map_rejects_dirty_parent_path_and_fingerprint_drift_antigravity(self) -> None:
         """Break caught: a stale or incomplete same-commit review can authorize readiness."""

@@ -1,22 +1,22 @@
 {
   "generated_at": "2026-08-13T00:00:00Z",
-  "source_parent_commit": "275e639854f2436289f49ac79cea4e1e698f542e",
+  "source_parent_commit": "581fd7320d2dd8e19375a87c6b046b149001a8ad",
   "scope": [
-    "Task 5 official outcome is implemented and immutable: readiness and zero-label predict succeeded once, evaluation failed permanently before labels, inspect/retry are prohibited, and dashboard_access=blocked remains presentation-only."
+    "Task 5 official outcome is implemented and immutable: readiness and zero-label predict succeeded once; evaluation opened one 48-query/72,300-row label session and retained staging evidence before replay failed permanently; inspect/retry are prohibited and dashboard_access=blocked remains presentation-only."
   ],
   "topology_note": "The map retains 20 nodes by consolidating prediction progress into the public prediction-authority boundary while retaining its concrete import, progress tests, 96-leaf completion gate, and lifecycle flow. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
   "nodes": [
     {
       "id": "research_control",
       "path": "RESEARCH_STATE.json",
-      "role": "Task-5 official outcome truth: readiness/predict succeeded once, evaluation failed permanently before labels, inspect is prohibited, and champion/pending candidate remain unchanged.",
+      "role": "Task-5 official outcome truth: readiness/predict succeeded once; evaluation opened one label session and retained staging evidence before permanent replay failure; inspect is prohibited and champion/pending remain unchanged.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
       "evidence": [
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"official_readiness_passed_evaluation_failed_immutable_no_retry\""
+          "symbol": "\"evaluate_label_row_count\": 72300"
         },
         {
           "path": "CHAMPION_LEDGER.json",
@@ -585,7 +585,7 @@
         "task6_evaluation",
         "research_control"
       ],
-      "outcome": "Readiness and immutable zero-label prediction completed once; evaluation then failed before labels, appended terminal stopped and a create-only audit, and permanently forbids inspect, retry, recovery, promotion, routing, and dashboard action."
+      "outcome": "Readiness and immutable zero-label prediction completed once; evaluation opened its sole 48-query/72,300-row label session, retained 12-leaf local staging evidence, then failed prepublication replay, appended terminal stopped and a create-only audit, and permanently forbids inspect, retry, recovery, promotion, routing, and dashboard action."
     },
     {
       "trigger": "Descriptor capture to sole label session",
@@ -596,7 +596,7 @@
         "label_free_source",
         "task6_replay"
       ],
-      "outcome": "Evaluation can open exactly one 48-query/72,300-row label session only after capture and receipt gates; this official outcome failed before that boundary and opened none."
+      "outcome": "Evaluation opens exactly one 48-query/72,300-row label session only after capture and receipt gates; this official outcome opened that session but failed later at prepublication replay."
     },
     {
       "trigger": "Task-4 label-free score generation",

@@ -141,7 +141,11 @@ class Exp449GovernanceTest(unittest.TestCase):
         self.assertIn("official_label_sessions = 1", prereg)
         state = strict_json_antigravity(Path("RESEARCH_STATE.json"))
         self.assertEqual(state["active_experiment"], "Exp449")
-        self.assertEqual(state["exp449"]["label_access_count"], 0)
+        self.assertEqual(state["exp449"]["label_access_count"], 1)
+        self.assertEqual(state["exp449"]["official_lifecycle"]["predict_label_access_count"], 0)
+        self.assertEqual(state["exp449"]["official_lifecycle"]["label_sessions"], 1)
+        self.assertEqual(state["exp449"]["official_lifecycle"]["evaluate_label_query_count"], 48)
+        self.assertEqual(state["exp449"]["official_lifecycle"]["evaluate_label_row_count"], 72300)
         self.assertTrue(state["exp449"]["official_readiness_started"])
         self.assertEqual(state["pending_candidate"], EXPECTED_PENDING_CANDIDATE)
 
