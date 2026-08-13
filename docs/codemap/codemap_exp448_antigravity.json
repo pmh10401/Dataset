@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T07:09:00+0900",
-  "generated_from_commit": "77f674fb7dcd757f90f2734eeefd83f4dbd19cfa",
+  "generated_at": "2026-08-13T08:25:00+0900",
+  "generated_from_commit": "1dd6431c2f769b73caed86daf251059b59660ef1",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
     "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
@@ -431,6 +431,38 @@
       ]
     },
     {
+      "id": "paper_hard_route",
+      "path": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "role": "Label-free frozen Exp74d through Exp253 hard-route reconstruction used by the separate internal paper rerun.",
+      "entrypoints": [
+        "replay_exp74d_89_90_93",
+        "replay_hard_route"
+      ],
+      "callers": [
+        "proposal_score_paper.py",
+        "routing_paper.py",
+        "tests_paper/test_hard_route_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "effects": [
+        "constructs Exp74d hard, standard-review, and priority lanes from raw evidence before later frozen hard-route stages; standard review excludes the frozen hard lane and RouteLanes enforces lane disjointness"
+      ],
+      "tests": [
+        "tests_paper/test_hard_route_paper.py",
+        "tests_paper/test_artifacts_runner_paper.py"
+      ],
+      "constraints": [
+        "This is a label-free internal paper-rerun component and cannot authorize, mutate, or satisfy any immutable official Exp448 lifecycle gate.",
+        "The frozen Exp74d hard lane has precedence over standard review."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/hard_route_paper.py",
+          "symbol": "replay_exp74d_89_90_93"
+        }
+      ]
+    },
+    {
       "id": "paper_proposal_score",
       "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
       "role": "Values-only Task4–7 paper score composition, selection, stability, and typed Task8 shard freeze.",
@@ -442,7 +474,7 @@
         "runner_paper.py"
       ],
       "effects": [
-        "parallelizes only independent Task4+Task5 scoring with deterministic collection and restored parent numerical-thread environment, then performs exactly one population-global Task6 before selected-only Task7 and typed Task8 shard freeze"
+        "parallelizes only independent Task4+Task5 scoring with actual-completion progress reporting, restores parent numerical-thread environment, stores sorted deterministic results, then performs exactly one population-global Task6 before selected-only Task7 and typed Task8 shard freeze"
       ],
       "tests": [
         "tests_paper/test_artifacts_runner_paper.py"
@@ -629,6 +661,15 @@
         "path": "paper/equipment_anomaly_detection/runner_paper.py",
         "symbol": "compose_proposal_score, write_and_freeze_proposal_score"
       }
+    },
+    {
+      "from": "paper_proposal_score",
+      "to": "paper_hard_route",
+      "type": "calls",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "symbol": "replay_hard_route"
+      }
     }
   ],
   "flows": [
@@ -704,9 +745,10 @@
         "paper_pipeline_cli",
         "paper_runner",
         "paper_acceleration",
+        "paper_hard_route",
         "paper_proposal_score"
       ],
-      "outcome": "The paper Task8/Task9 preflight-to-proposal-score pipeline records CPU/accelerator evidence, derives 11 workers from 12 logical CPUs, parallelizes only independent Task4+Task5 values-only scoring, and freezes typed proposal shards; it neither executes nor authorizes Exp448 readiness, evaluation, inspection, promotion, or dashboard activity."
+      "outcome": "The paper Task8/Task9 preflight-to-proposal-score pipeline records CPU/accelerator evidence, reconstructs label-free hard routes, derives 11 workers from 12 logical CPUs, parallelizes only independent Task4+Task5 values-only scoring, and freezes typed proposal shards; it neither executes nor authorizes Exp448 readiness, evaluation, inspection, promotion, or dashboard activity."
     }
   ],
   "unknown_relationships": [],

@@ -126,6 +126,25 @@ class HardRouteTests(unittest.TestCase):
         self.assertEqual(exp89, exp90)
         self.assertIsInstance(exp93, frozenset)
 
+    def test_exp74d_hard_precedes_overlapping_standard_review_from_label_free_evidence(self) -> None:
+        """Leaving a hard member in Exp74d review makes RouteLanes reject the raw-evidence replay."""
+        n_train, n_test = 207, 250
+        train = lambda threshold: np.r_[np.zeros(n_train - 4), np.full(4, threshold)]
+        def score(**values):
+            result = np.zeros(n_test)
+            for index, value in values.items():
+                result[int(index)] = value
+            return result
+        rocket = FullFitScoreView("rocket_exp40", train(98.5), score(**{"42": 100., "248": 99., "10": 98., "11": 97., "12": 96., "13": 95., "35": 10., "247": 9., "249": 8.}), .015)
+        exp55 = FullFitScoreView("exp55_best", train(98.), score(**{"248": 100., "249": 99., "35": 97.9, "247": 97.8, "42": 97.7}), .015)
+        exp56 = FullFitScoreView("exp56_best", train(98.), score(**{"249": 100., "248": 99., "35": 97.9, "247": 97.8, "42": 97.7}), .015)
+        blocks = ConfirmationBlocks(*(FullFitScoreView(name, train(1.), np.zeros(n_test), rate) for name, rate in (("a", .015), ("b", .015), ("b", .01), ("c", .01))))
+        evidence = LegacyRouteEvidence("synthetic_normal_1", "synthetic", n_train, n_test, 16, {"rocket_exp40": rocket, "exp55_best": exp55, "exp56_best": exp56}, FullFitScoreView("exp84", train(1.), np.zeros(n_test), .015), blocks)
+        lanes, _, _, _ = replay_exp74d_89_90_93(evidence)
+        self.assertEqual(lanes.hard, frozenset({42, 248, 249}))
+        self.assertEqual(lanes.standard, frozenset({35, 247}))
+        self.assertFalse(lanes.hard & lanes.standard)
+
     def test_exp84_family_guard_uses_the_frozen_weak_family_set(self) -> None:
         self.assertIn("ChlorineConcentration", WEAK_FAMILIES_PAPER)
         self.assertNotIn("InlineSkate", WEAK_FAMILIES_PAPER)

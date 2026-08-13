@@ -1,7 +1,7 @@
 """Narrow Task4--7 score composition for the frozen proposal population."""
 from __future__ import annotations
 
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import contextmanager
 from dataclasses import dataclass
 import os
@@ -74,25 +74,42 @@ def _score_dataset_task4_task5(raw: RawDataset) -> tuple[HardSourceBundle, HardR
     return sources, replay_hard_route(raw, sources, mini)
 
 
+def _progress(stage: str, completed: int, total: int, started: float, dataset: str | None = None) -> None:
+    elapsed = float(monotonic() - started)
+    rate = completed / elapsed if elapsed > 0.0 else 0.0
+    remaining = total - completed
+    eta = remaining / rate if rate > 0.0 else 0.0
+    suffix = f" dataset={dataset}" if dataset is not None else ""
+    print(f"{stage} {completed}/{total} {100.0 * completed / total:.1f}% elapsed={elapsed:.1f}s rate={rate:.2f}/s eta={eta:.1f}s{suffix}", file=sys.stderr, flush=True)
+
+
 def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
     sources: dict[str, HardSourceBundle] = {}
     routes: dict[str, HardRouteResult] = {}
+    started, total = monotonic(), len(raw)
+    _progress("Task4+Task5 start", 0, total, started)
     if backend.dataset_workers == 1:
-        for dataset in raw:
+        for completed, dataset in enumerate(raw, 1):
             try:
                 sources[dataset], routes[dataset] = _score_dataset_task4_task5(raw[dataset])
             except Exception as error:
                 raise RuntimeError(f"Task4+Task5 worker failed for dataset {dataset}: {error}") from error
-        return sources, routes
+            _progress("Task4+Task5", completed, total, started, dataset)
+        return dict(sorted(sources.items())), dict(sorted(routes.items()))
     with _pin_inner_numerical_threads():
         with ProcessPoolExecutor(max_workers=backend.dataset_workers) as executor:
             futures = {dataset: executor.submit(_score_dataset_task4_task5, raw[dataset]) for dataset in raw}
-            for dataset in raw:
+            datasets = {future: dataset for dataset, future in futures.items()}
+            for completed, future in enumerate(as_completed(futures.values()), 1):
+                dataset = datasets[future]
                 try:
-                    sources[dataset], routes[dataset] = futures[dataset].result()
+                    sources[dataset], routes[dataset] = future.result()
                 except Exception as error:
+                    for pending in futures.values():
+                        pending.cancel()
                     raise RuntimeError(f"Task4+Task5 worker failed for dataset {dataset}: {error}") from error
-    return sources, routes
+                _progress("Task4+Task5", completed, total, started, dataset)
+    return dict(sorted(sources.items())), dict(sorted(routes.items()))
 
 
 def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_manifest: object) -> ProposalScore:
@@ -106,14 +123,18 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
     sources, routes = _collect_task4_task5(raw, backend)
     hard_seconds = float(monotonic() - started)
     _label_firewall()
+    print("Task6 start", file=sys.stderr, flush=True)
     low_started = monotonic()
     hard_lanes = {dataset: routes[dataset].exp253.hard for dataset in raw}
     low = score_low_frequency(raw, hard_lanes)
     low_seconds = float(monotonic() - low_started)
+    print("Task6 finish", file=sys.stderr, flush=True)
     _label_firewall()
+    print("Task7 start", file=sys.stderr, flush=True)
     stability_started = monotonic()
     stability = classify_stability(low, raw)
     stability_seconds = float(monotonic() - stability_started)
+    print("Task7 finish", file=sys.stderr, flush=True)
     surface = build_hard_evidence_surface(sources, routes, raw)
     policies = build_policies(surface, low, stability, raw)
     _label_firewall()

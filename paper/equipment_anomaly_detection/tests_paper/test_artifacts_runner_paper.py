@@ -264,6 +264,7 @@ class Task9ParallelCompositionTests(unittest.TestCase):
             def result(self):
                 if self.error is not None: raise self.error
                 return self.value
+            def cancel(self): return False
         class InlineExecutor:
             observed_workers = []
             def __init__(self, *, max_workers): self.observed_workers.append(max_workers)
@@ -279,8 +280,9 @@ class Task9ParallelCompositionTests(unittest.TestCase):
             patch.object(score, "build_hard_evidence_surface", return_value=object()),
             patch.object(score, "build_policies", return_value=self.policies),
             patch.object(score, "ProcessPoolExecutor", InlineExecutor),
+            patch.object(score, "as_completed", side_effect=lambda futures: tuple(futures)),
         )
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8]:
             return score.compose_proposal_score(self.raw, manifest), events, InlineExecutor.observed_workers
 
     def test_two_worker_collection_matches_sequential_before_one_global_task6(self):
@@ -300,5 +302,50 @@ class Task9ParallelCompositionTests(unittest.TestCase):
         """Dropping a failed dataset would produce a plausible but scientifically incomplete global population."""
         with self.assertRaisesRegex(RuntimeError, "alpha.*bounded worker failure"):
             self._patched_composition(self._acceleration(3), fail_dataset="alpha")
+
+    def test_parallel_completion_progress_is_flush_visible_and_keeps_sorted_results(self):
+        """Collecting submitted futures in dataset order hides actual completion order and leaves long runs opaque."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        completed = []
+        values = self.per_dataset
+        class Future:
+            def __init__(self, dataset): self.dataset = dataset
+            def result(self): completed.append(self.dataset); return values[self.dataset]
+        class CompletionExecutor:
+            def __init__(self, *, max_workers): self.futures = {}
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def submit(self, _fn, raw): future = Future(raw.dataset); self.futures[raw.dataset] = future; return future
+        def completed_first(futures):
+            by_dataset = {future.dataset: future for future in futures}
+            return (by_dataset["beta"], by_dataset["alpha"])
+        class RecordingStderr(io.StringIO):
+            def __init__(self):
+                super().__init__(); self.flush_calls = 0
+            def flush(self):
+                self.flush_calls += 1
+                super().flush()
+        stderr = RecordingStderr()
+        patches = (
+            patch.object(score, "ProcessPoolExecutor", CompletionExecutor),
+            patch.object(score, "as_completed", side_effect=completed_first),
+            patch.object(score, "score_low_frequency", return_value=self.low),
+            patch.object(score, "classify_stability", return_value=self.stability),
+            patch.object(score, "build_hard_evidence_surface", return_value=object()),
+            patch.object(score, "build_policies", return_value=self.policies),
+        )
+        with contextlib.redirect_stderr(stderr), patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+            proposal = score.compose_proposal_score(self.raw, self._acceleration(3))
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(completed, ["beta", "alpha"])
+        self.assertEqual(tuple(proposal.sources), ("alpha", "beta"))
+        self.assertGreaterEqual(stderr.flush_calls, 7)
+        self.assertTrue(any("Task4+Task5 start" in line and "0/2" in line for line in lines))
+        self.assertTrue(any("Task4+Task5 1/2" in line and "50.0%" in line and "dataset=beta" in line and "elapsed=" in line and "rate=" in line and "eta=" in line for line in lines))
+        self.assertTrue(any("Task4+Task5 2/2" in line and "100.0%" in line and "dataset=alpha" in line for line in lines))
+        self.assertTrue(any(line == "Task6 start" for line in lines))
+        self.assertTrue(any(line == "Task6 finish" for line in lines))
+        self.assertTrue(any(line == "Task7 start" for line in lines))
+        self.assertTrue(any(line == "Task7 finish" for line in lines))
 
 if __name__=="__main__":unittest.main()

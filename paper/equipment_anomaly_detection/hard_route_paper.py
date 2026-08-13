@@ -195,7 +195,7 @@ def replay_exp74d_89_90_93(evidence: LegacyRouteEvidence) -> tuple[RouteLanes, f
     large = evidence.n_train >= 100 and evidence.n_test >= 100
     primary = _ranked_primary(evidence, budget2) & _cap(set(range(evidence.n_test)), rocket.test_score, max(budget2, 2 * budget1))
     review_pool = _ranked_primary(evidence, budget2) - primary
-    review = _cap(review_pool, rocket.test_score, budget1)
+    review = _cap(review_pool, rocket.test_score, budget1) - base
     exp74d = RouteLanes(frozenset(base | primary if large else base), frozenset(review if large else set()), frozenset())
 
     exp84_fg, exp84_cap3 = evidence.exp84_family_guard, evidence.exp84_count_cap_3pct

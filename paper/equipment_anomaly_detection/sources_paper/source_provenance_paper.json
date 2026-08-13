@@ -2,7 +2,7 @@
   "schema": "paper-source-provenance.v1",
   "helpers": {
     "hard_route_paper.py": {
-      "paper_sha256": "ffc95c157047c7c7a0d49240526313758fe015144057ec1eda1ff873dc1959e8",
+      "paper_sha256": "d876e96aa32fbf3bc4c4069d539bfca12f1a786b3eb1d3172040f96f0df0a308",
       "origins": [
         {
           "module": "run_experiment_60_62_rocket_imaging_selector_variants",
