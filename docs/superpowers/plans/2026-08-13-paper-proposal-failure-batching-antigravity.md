@@ -18,6 +18,8 @@
 - Preserve `/Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813` unchanged as failed evidence.
 - New repository filenames must include `antigravity`; existing paper module names remain unchanged.
 - CPU dataset workers remain the verified logical-CPU-minus-one policy; inner numerical threads remain one.
+- Limit submitted-but-uncommitted work to at most `2 * dataset_workers`; do not enqueue all 1,117 raw datasets at once.
+- Run a cheap values-only population preflight and a deterministic risk-first probe before the expensive wave. Scheduling may change, but all reconstructed mappings and final artifacts remain catalog-sorted.
 
 ---
 
@@ -73,10 +75,12 @@
 - Worker exceptions append one canonical attempt record under `proposal_work/task4_task5_attempts/`; remaining futures continue.
 - Queue identity is exactly sorted `(catalog datasets - verified successes)` and includes failed plus never-attempted coordinates.
 - `run` returns `proposal_score_incomplete` with completed/failed/pending counts and paths; a later `run` retries only the queue.
+- The scheduler keeps at most `2 * dataset_workers` futures submitted at once and publishes each verified success before submitting far beyond the bounded window.
 
 - [ ] Add RED tests where one of several datasets fails while later datasets succeed and are persisted.
 - [ ] Add RED tests that a second invocation does not call successful coordinates and retries only failed/unattempted coordinates.
-- [ ] Implement parent-only success publication, append-only attempts, no sibling cancellation, and exact end-of-wave queue reporting.
+- [ ] Add RED tests that submitted-but-uncommitted work never exceeds `2 * dataset_workers`, including one worker exception and one simulated parent interruption.
+- [ ] Implement parent-only success publication, append-only attempts, bounded rolling submission, no sibling cancellation, and exact end-of-wave queue reporting.
 - [ ] Block Task6/7, final shards, proposal manifest, proposal journal record, and `completed` status while the queue is nonempty.
 - [ ] Ensure `verify_journal` accepts only the registered, strictly verified incomplete work namespace and rejects pollution/tampering.
 - [ ] Run focused tests and commit.
@@ -95,6 +99,7 @@
 - [ ] Compare all final shard bytes, shard hashes, manifest bytes, policy coordinates, continuous scores, and stage order against an uninterrupted run.
 - [ ] Add a 19-affected-dataset capable parity gate using the frozen Exp443 Policy A/Exp249 evidence; require finite outputs, score tolerance `1e-6`, and identical candidates at every frozen alpha.
 - [ ] Add full-population preflight inventory assertions: 19 affected datasets, 164 affected normal TRAIN rows, 983 nonfinite scalars, zero all-missing rows.
+- [ ] Prove the deterministic risk-first probe covers the 19 affected datasets plus frozen small-TRAIN/large-TRAIN/long-series boundary cases before the general wave, without changing catalog-sorted final bytes.
 - [ ] Run focused, inherited Task4–9, lineage, and capable MiniRocket suites; commit.
 
 ### Task 5: Regenerate governance and prepare r4 without launching it
