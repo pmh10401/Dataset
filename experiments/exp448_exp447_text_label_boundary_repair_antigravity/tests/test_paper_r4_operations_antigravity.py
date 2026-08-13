@@ -243,6 +243,30 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertEqual(set(result["scoring_closure_sha256"]), set(module.SCORING_CLOSURE_PATHS))
         self.assertRegex(result["r3_digest"], r"^[0-9a-f]{64}$")
         self.assertRegex(result["launcher_sha256"], r"^[0-9a-f]{64}$")
+        inventory = result["scientific_distribution_inventory"]
+        self.assertEqual(tuple(inventory), module.SCIENTIFIC_DISTRIBUTION_PACKAGES)
+        self.assertEqual(
+            set(inventory),
+            {
+                "numpy",
+                "scipy",
+                "scikit-learn",
+                "aeon",
+                "pandas",
+                "numba",
+                "joblib",
+                "scikit-image",
+                "pycatch22",
+                "torch",
+                "mlx",
+                "mlx-metal",
+            },
+        )
+        self.assertTrue(all(type(value) is str and value for value in inventory.values()))
+        self.assertEqual(
+            result["scientific_distribution_inventory_sha256"],
+            sha256(module.canonical_json_bytes(inventory)).hexdigest(),
+        )
         backend = result["backend"]
         self.assertEqual(backend["selected_backend"], "cpu")
         self.assertIn("pytorch_version", backend)
@@ -544,28 +568,44 @@ class PaperR4OperationsTests(unittest.TestCase):
             runner, "build_catalog", return_value=fixture.fixture.catalog
         ), mock.patch.object(runner, "load_dataset_values", side_effect=lambda _path, name: raw[name]):
             first = module.smoke(commit, run_child=lambda mode, root, paths: run_child(mode, root, paths, fail_beta_once=True))
+            self.assertEqual(first["status"], "smoke_incomplete")
             self.assertEqual(first["pipeline"]["status"], "proposal_score_incomplete")
             self.assertEqual(first["pipeline"]["pending_datasets"], ["beta"])
             self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
+            self.assertFalse(module.smoke_ops_paths().preauthorization.exists())
             self.assertNotIn("result_sha256", first)
             self.assertNotIn(FORBIDDEN_LABEL_MODULE, sys.modules)
             self.assertFalse(official_r4.exists())
             second = module.smoke(commit, run_child=lambda mode, root, paths: run_child(mode, root, paths, fail_beta_once=False))
+            self.assertEqual(second["status"], "smoke_confirmation_required")
             self.assertEqual(second["pipeline"]["status"], "completed")
+            self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
+            self.assertTrue(module.smoke_ops_paths().preauthorization.is_file())
             freeze = module.OFFICIAL_SMOKE_ROOT / "stage_artifacts_paper" / "proposal_freeze"
             resumed = {path.name: path.read_bytes() for path in sorted((freeze / "shards").iterdir())}
             resumed["proposal_manifest_paper.json"] = (freeze / "proposal_manifest_paper.json").read_bytes()
+            verify_calls: list[str] = []
+
+            def forbidden_third(*_args, **_kwargs):
+                verify_calls.append("child")
+                raise AssertionError("completed smoke must not recompute Task4+5")
+
+            third = module.smoke(commit, run_child=forbidden_third)
+            self.assertEqual(third["status"], "smoke_verified")
+            self.assertEqual(verify_calls, [])
+            self.assertTrue(module.smoke_ops_paths().smoke_result.is_file())
             shutil.rmtree(module.OFFICIAL_SMOKE_ROOT)
             shutil.rmtree(module.smoke_ops_paths().root)
-            third = module.smoke(commit, run_child=lambda mode, root, paths: run_child(mode, root, paths, fail_beta_once=False))
-            self.assertEqual(third["pipeline"]["status"], "completed")
+            fourth = module.smoke(commit, run_child=lambda mode, root, paths: run_child(mode, root, paths, fail_beta_once=False))
+            self.assertEqual(fourth["status"], "smoke_confirmation_required")
+            self.assertEqual(fourth["pipeline"]["status"], "completed")
         baseline_freeze = module.OFFICIAL_SMOKE_ROOT / "stage_artifacts_paper" / "proposal_freeze"
         baseline = {path.name: path.read_bytes() for path in sorted((baseline_freeze / "shards").iterdir())}
         baseline["proposal_manifest_paper.json"] = (baseline_freeze / "proposal_manifest_paper.json").read_bytes()
         self.assertEqual(resumed, baseline)
         self.assertFalse(official_r4.exists())
         self.assertNotIn(FORBIDDEN_LABEL_MODULE, sys.modules)
-        self.assertTrue(module.smoke_ops_paths().smoke_result.is_file())
+        self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
 
     def test_launch_acquires_lock_once_and_does_not_leak_parent_lock_antigravity(self) -> None:
         module = self.load_launcher()
@@ -740,7 +780,10 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertFalse(module._worker_lock_is_held(module.smoke_ops_paths().worker_lock))
         with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
             retry = module.smoke(commit, run_child=lambda *_a, **_k: 0)
-        self.assertEqual(retry["status"], "smoke_verified")
+        self.assertEqual(retry["status"], "smoke_confirmation_required")
+        self.assertNotIn("result_sha256", retry)
+        self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
+        self.assertTrue(module.smoke_ops_paths().preauthorization.is_file())
         self.assertFalse(module.OFFICIAL_SMOKE_ROOT.exists())
         self.assertFalse(module._worker_lock_is_held(module.smoke_ops_paths().worker_lock))
 
@@ -950,25 +993,26 @@ class PaperR4OperationsTests(unittest.TestCase):
             held["status"] = module._worker_lock_is_held(module.smoke_ops_paths().worker_lock)
             return {"status": "completed"}
 
-        original_publish = module._publish_smoke_result
+        original_marker = module._publish_smoke_preauthorization
 
-        def publish(*args, **kwargs):
-            held["publish"] = module._worker_lock_is_held(module.smoke_ops_paths().worker_lock)
-            return original_publish(*args, **kwargs)
+        def mark(*args, **kwargs):
+            held["marker"] = module._worker_lock_is_held(module.smoke_ops_paths().worker_lock)
+            return original_marker(*args, **kwargs)
 
         r4_paths = module.ops_paths()
         r4_paths.root.mkdir(parents=True)
         with r4_paths.worker_lock.open("a+b") as lock_stream:
             fcntl.flock(lock_stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             with mock.patch.object(module, "_pipeline_status", side_effect=status), mock.patch.object(
-                module, "_publish_smoke_result", side_effect=publish
+                module, "_publish_smoke_preauthorization", side_effect=mark
             ):
                 result = module.smoke(commit, run_child=run_child)
-        self.assertEqual(result["status"], "smoke_verified")
+        self.assertEqual(result["status"], "smoke_confirmation_required")
         self.assertEqual(held["child"], True)
         self.assertEqual(held["status"], True)
-        self.assertEqual(held["publish"], True)
+        self.assertEqual(held["marker"], True)
         self.assertEqual(held["r4_during_smoke"], True)
+        self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
         self.assertFalse(module._worker_lock_is_held(module.smoke_ops_paths().worker_lock))
         self.assertFalse(module.OFFICIAL_SMOKE_ROOT.exists())
 
@@ -990,7 +1034,8 @@ class PaperR4OperationsTests(unittest.TestCase):
         _repo, commit, dataset = self._prepare_fixture(module)
         official = Path(module.OFFICIAL_INTERPRETER)
         self.assertTrue(official.is_symlink())
-        identity = module._require_official_runtime()
+        inventory_sha256 = module._inventory_digest(module._scientific_distribution_inventory())
+        identity = module._require_official_runtime(inventory_sha256=inventory_sha256)
         self.assertEqual(identity["executable"], str(official))
         self.assertEqual(identity["executable_realpath"], str(official.resolve()))
         self.assertEqual(identity["python_prefix"], str(official.parent.parent))
@@ -998,10 +1043,10 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertRegex(identity["python_identity_sha256"], r"^[0-9a-f]{64}$")
         with mock.patch.object(module.sys, "executable", str(official.resolve())):
             with self.assertRaisesRegex(ValueError, "interpreter"):
-                module._require_official_runtime()
+                module._require_official_runtime(inventory_sha256=inventory_sha256)
         with mock.patch.object(module.sys, "prefix", str(official.resolve().parent.parent)):
             with self.assertRaisesRegex(ValueError, "prefix|venv"):
-                module._require_official_runtime()
+                module._require_official_runtime(inventory_sha256=inventory_sha256)
         regular = dataset / "regular_python_antigravity"
         regular.write_bytes(official.resolve().read_bytes())
         regular.chmod(0o755)
@@ -1009,7 +1054,7 @@ class PaperR4OperationsTests(unittest.TestCase):
         with mock.patch.object(module.sys, "executable", str(regular)):
             with mock.patch.object(module.sys, "prefix", str(regular.parent)):
                 with self.assertRaisesRegex(ValueError, "symlink|venv|interpreter"):
-                    module._require_official_runtime()
+                    module._require_official_runtime(inventory_sha256=inventory_sha256)
 
     def test_pinned_venv_check_reaches_authority_without_official_writes_antigravity(self) -> None:
         official = Path(OFFICIAL_PATHS["OFFICIAL_INTERPRETER"])
@@ -1169,6 +1214,356 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertEqual(paths.smoke_result.read_bytes(), original)
         self.assertEqual(paths.smoke_result.stat().st_ino, inode)
         self.assertEqual(replaced, [])
+
+    def test_first_completed_smoke_wave_is_not_authorizing_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
+            result = module.smoke(commit, run_child=lambda *_a, **_k: 0)
+        self.assertEqual(result["status"], "smoke_confirmation_required")
+        self.assertNotIn("result_sha256", result)
+        self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
+        self.assertTrue(module.smoke_ops_paths().preauthorization.is_file())
+        with self.assertRaisesRegex(ValueError, "smoke"):
+            module.launch(commit, spawn=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("spawn")))
+
+    def test_second_smoke_invocation_reuses_completed_root_and_publishes_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        child_calls: list[str] = []
+
+        def first_child(*_args, **_kwargs):
+            child_calls.append("first")
+            return 0
+
+        def forbidden(*_args, **_kwargs):
+            child_calls.append("second")
+            raise AssertionError("second smoke must not recompute Task4+5")
+
+        with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
+            first = module.smoke(commit, run_child=first_child)
+            second = module.smoke(commit, run_child=forbidden)
+        self.assertEqual(first["status"], "smoke_confirmation_required")
+        self.assertEqual(second["status"], "smoke_verified")
+        self.assertEqual(child_calls, ["first"])
+        self.assertIn("result_sha256", second)
+        self.assertTrue(module.smoke_ops_paths().smoke_result.is_file())
+        self.assertEqual(second.get("reuse"), True)
+
+    def test_incomplete_then_complete_still_requires_verify_only_invocation_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        phase = {"wave": 0}
+        child_calls: list[str] = []
+
+        def run_child(*_args, **_kwargs):
+            child_calls.append("child")
+            phase["wave"] += 1
+            return 2 if phase["wave"] == 1 else 0
+
+        def forbidden(*_args, **_kwargs):
+            child_calls.append("verify")
+            raise AssertionError("third smoke must be verification-only")
+
+        def status(*_args, **_kwargs):
+            if phase["wave"] < 2:
+                return {"status": "proposal_score_incomplete", "pending": 1}
+            return {"status": "completed"}
+
+        with mock.patch.object(module, "_pipeline_status", side_effect=status):
+            first = module.smoke(commit, run_child=run_child)
+            second = module.smoke(commit, run_child=run_child)
+            third = module.smoke(commit, run_child=forbidden)
+        self.assertEqual(first["status"], "smoke_incomplete")
+        self.assertNotIn("result_sha256", first)
+        self.assertEqual(second["status"], "smoke_confirmation_required")
+        self.assertNotIn("result_sha256", second)
+        self.assertEqual(third["status"], "smoke_verified")
+        self.assertEqual(child_calls, ["child", "child"])
+        self.assertTrue(module.smoke_ops_paths().smoke_result.is_file())
+
+    def test_smoke_preauthorization_marker_tamper_and_context_mismatch_fail_closed_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
+            first = module.smoke(commit, run_child=lambda *_a, **_k: 0)
+        self.assertEqual(first["status"], "smoke_confirmation_required")
+        marker_path = module.smoke_ops_paths().preauthorization
+        original = json.loads(marker_path.read_text(encoding="utf-8"))
+        tampered = dict(original)
+        tampered["authority_sha256"] = "a" * 64
+        tampered["marker_sha256"] = sha256(
+            module.canonical_json_bytes({key: value for key, value in tampered.items() if key != "marker_sha256"})
+        ).hexdigest()
+        marker_path.write_bytes(module.canonical_json_bytes(tampered))
+        with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
+            with self.assertRaisesRegex(ValueError, "preauthorization|authority|marker"):
+                module.smoke(commit, run_child=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("child")))
+        self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
+        marker_path.write_bytes(module.canonical_json_bytes(original))
+        with mock.patch.object(module, "build_authority", wraps=module.build_authority) as wrapped:
+            def mutated(reviewed_commit, **kwargs):
+                authority = wrapped(reviewed_commit, **kwargs)
+                inventory = dict(authority["scientific_distribution_inventory"])
+                inventory["numpy"] = "0.0.0-forged"
+                authority["scientific_distribution_inventory"] = inventory
+                authority["scientific_distribution_inventory_sha256"] = sha256(
+                    module.canonical_json_bytes(inventory)
+                ).hexdigest()
+                return authority
+
+            with mock.patch.object(module, "build_authority", side_effect=mutated):
+                with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
+                    with self.assertRaisesRegex(ValueError, "preauthorization|authority|context|marker"):
+                        module.smoke(commit, run_child=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("child")))
+        self.assertFalse(module.smoke_ops_paths().smoke_result.exists())
+
+    def test_scientific_distribution_inventory_mutation_and_absent_present_fail_closed_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        authority = module.check(commit)
+        inventory = dict(authority["scientific_distribution_inventory"])
+        mutated = dict(authority)
+        mutated_inventory = dict(inventory)
+        mutated_inventory["numpy"] = "9.9.9-mutated"
+        mutated["scientific_distribution_inventory"] = mutated_inventory
+        mutated["scientific_distribution_inventory_sha256"] = sha256(
+            module.canonical_json_bytes(mutated_inventory)
+        ).hexdigest()
+        with self.assertRaisesRegex(ValueError, "inventory|distribution|authority"):
+            module.validate_authority(mutated)
+            current = module.build_authority(commit)
+            if module.canonical_json_bytes(mutated) != module.canonical_json_bytes(current):
+                raise ValueError("resume authority differs from the stored launch identity")
+        flipped = dict(authority)
+        flipped_inventory = dict(inventory)
+        sample = "scikit-image" if inventory.get("scikit-image") == "absent" else "numpy"
+        flipped_inventory[sample] = "absent" if inventory[sample] != "absent" else "1.0.0"
+        flipped["scientific_distribution_inventory"] = flipped_inventory
+        flipped["scientific_distribution_inventory_sha256"] = sha256(
+            module.canonical_json_bytes(flipped_inventory)
+        ).hexdigest()
+        with self.assertRaisesRegex(ValueError, "inventory|distribution|authority"):
+            current = module.build_authority(commit)
+            if module.canonical_json_bytes(flipped) != module.canonical_json_bytes(current):
+                raise ValueError("resume authority differs from the stored launch identity")
+        extra = dict(authority)
+        extra_inventory = dict(inventory)
+        extra_inventory["unexpected"] = "1.0.0"
+        extra["scientific_distribution_inventory"] = extra_inventory
+        extra["scientific_distribution_inventory_sha256"] = sha256(
+            module.canonical_json_bytes(extra_inventory)
+        ).hexdigest()
+        with self.assertRaisesRegex(ValueError, "inventory|distribution|schema"):
+            module.validate_authority(extra)
+
+    def test_production_venv_check_records_exact_scientific_inventory_antigravity(self) -> None:
+        official = Path(OFFICIAL_PATHS["OFFICIAL_INTERPRETER"])
+        module = self.load_launcher()
+        repo, commit, dataset = self._prepare_fixture(module)
+        seam = dataset / "production_inventory_check_antigravity.py"
+        seam.write_text(
+            "\n".join(
+                (
+                    "from hashlib import sha256",
+                    "import importlib.util",
+                    "import json",
+                    "from pathlib import Path",
+                    "import sys",
+                    f"launcher = Path({str(LAUNCHER_PATH)!r})",
+                    "spec = importlib.util.spec_from_file_location('paper_r4_ops_inv_antigravity', launcher)",
+                    "loaded = importlib.util.module_from_spec(spec)",
+                    "sys.modules[spec.name] = loaded",
+                    "spec.loader.exec_module(loaded)",
+                    f"loaded.REPOSITORY_ROOT = Path({str(repo)!r})",
+                    f"loaded.OFFICIAL_DATABASE = Path({str(module.OFFICIAL_DATABASE)!r})",
+                    f"loaded.OFFICIAL_R3_ROOT = Path({str(module.OFFICIAL_R3_ROOT)!r})",
+                    f"loaded.OFFICIAL_R4_ROOT = Path({str(module.OFFICIAL_R4_ROOT)!r})",
+                    f"loaded.OFFICIAL_OPS_ROOT = Path({str(module.OFFICIAL_OPS_ROOT)!r})",
+                    f"loaded.OFFICIAL_SMOKE_ROOT = Path({str(module.OFFICIAL_SMOKE_ROOT)!r})",
+                    "loaded.EXPECTED_DATABASE_SHA256 = sha256(loaded.OFFICIAL_DATABASE.read_bytes()).hexdigest()",
+                    f"result = loaded.check({commit!r})",
+                    "print(json.dumps(result, sort_keys=True, separators=(',', ':')))",
+                    "",
+                )
+            ),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            [str(official), "-B", "-u", str(seam)],
+            cwd=str(REPOSITORY_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        payload = json.loads(completed.stdout)
+        inventory = payload["scientific_distribution_inventory"]
+        self.assertEqual(set(inventory), set(module.SCIENTIFIC_DISTRIBUTION_PACKAGES))
+        self.assertEqual(len(inventory), len(module.SCIENTIFIC_DISTRIBUTION_PACKAGES))
+        self.assertEqual(inventory["numpy"], "2.3.5")
+        self.assertEqual(inventory["scipy"], "1.17.1")
+        self.assertEqual(inventory["scikit-learn"], "1.8.0")
+        self.assertEqual(inventory["aeon"], "1.5.0")
+        self.assertEqual(inventory["pandas"], "2.3.3")
+        self.assertEqual(inventory["numba"], "0.63.1")
+        self.assertEqual(inventory["joblib"], "1.5.3")
+        self.assertEqual(inventory["scikit-image"], "absent")
+        self.assertEqual(inventory["pycatch22"], "absent")
+        self.assertEqual(inventory["torch"], "absent")
+        self.assertEqual(inventory["mlx"], "absent")
+        self.assertEqual(inventory["mlx-metal"], "absent")
+        self.assertEqual(
+            payload["scientific_distribution_inventory_sha256"],
+            sha256(module.canonical_json_bytes(inventory)).hexdigest(),
+        )
+        self.assertFalse(module.OFFICIAL_R4_ROOT.exists())
+        self.assertFalse(module.OFFICIAL_OPS_ROOT.exists())
+        self.assertFalse(module.OFFICIAL_SMOKE_ROOT.exists())
+
+    def test_create_only_short_write_leaves_no_truncated_final_and_retry_succeeds_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, dataset = self._prepare_fixture(module)
+        destination = dataset / "publication_antigravity.json"
+        payload = module.canonical_json_bytes({"schema": "paper-r4-short-write-antigravity.v1", "body": "x" * 64})
+        original = module.os.write
+        calls = {"n": 0}
+
+        def short(fd, data):
+            calls["n"] += 1
+            if calls["n"] == 1 and len(data) > 8:
+                original(fd, data[:8])
+                raise OSError("injected short write")
+            return original(fd, data)
+
+        with mock.patch.object(module.os, "write", side_effect=short):
+            with self.assertRaisesRegex(OSError, "injected short write"):
+                module._write_create_only(destination, payload)
+        self.assertFalse(destination.exists())
+        self.assertFalse(destination.is_symlink())
+        leftovers = [path for path in destination.parent.iterdir() if path.name.startswith(".")]
+        self.assertEqual(leftovers, [])
+        module._write_create_only(destination, payload)
+        self.assertEqual(destination.read_bytes(), payload)
+        self.assertTrue(destination.is_file())
+        self.assertFalse(destination.is_symlink())
+
+    def test_create_only_concurrent_no_clobber_rejects_replacement_antigravity(self) -> None:
+        import threading
+
+        module = self.load_launcher()
+        _repo, commit, dataset = self._prepare_fixture(module)
+        destination = dataset / "concurrent_publication_antigravity.json"
+        first = module.canonical_json_bytes({"winner": "alpha", "pad": "a" * 32})
+        second = module.canonical_json_bytes({"winner": "beta", "pad": "b" * 32})
+        results: list[object] = []
+
+        def writer(payload):
+            results.append(_call_write(module, destination, payload))
+
+        threads = (
+            threading.Thread(target=writer, args=(first,)),
+            threading.Thread(target=writer, args=(second,)),
+        )
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+        self.assertTrue(destination.is_file())
+        self.assertFalse(destination.is_symlink())
+        self.assertIn(destination.read_bytes(), {first, second})
+        self.assertEqual(sum(result is None for result in results), 1)
+        self.assertEqual(sum(isinstance(result, ValueError) for result in results), 1)
+        self.assertRegex(str(next(result for result in results if result is not None)), "exists|destination|clobber|differs")
+
+    def test_publish_authority_recovers_exact_one_file_partial_pair_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, _dataset = self._prepare_fixture(module)
+        authority = module.check(commit)
+        encoded = module.canonical_json_bytes(authority)
+        digest = sha256(encoded).hexdigest()
+        paths = module.ops_paths()
+        paths.root.mkdir(parents=True)
+        paths.authority.write_bytes(encoded)
+        recovered = module._publish_authority(paths, authority)
+        self.assertEqual(recovered, digest)
+        self.assertEqual(paths.authority.read_bytes(), encoded)
+        self.assertEqual(paths.authority_sha256.read_text(encoding="ascii").strip(), digest)
+        shutil.rmtree(paths.root)
+        paths.root.mkdir(parents=True)
+        paths.authority_sha256.write_text(digest + "\n", encoding="ascii")
+        recovered = module._publish_authority(paths, authority)
+        self.assertEqual(recovered, digest)
+        self.assertEqual(paths.authority.read_bytes(), encoded)
+        shutil.rmtree(paths.root)
+        paths.root.mkdir(parents=True)
+        paths.authority.write_bytes(b'{"forged":true}\n')
+        with self.assertRaisesRegex(ValueError, "partial|authority|differs|incomplete"):
+            module._publish_authority(paths, authority)
+        self.assertFalse(paths.authority_sha256.exists())
+        shutil.rmtree(paths.root)
+        paths.root.mkdir(parents=True)
+        paths.authority_sha256.write_text(("0" * 64) + "\n", encoding="ascii")
+        with self.assertRaisesRegex(ValueError, "partial|authority|differs|incomplete|SHA256"):
+            module._publish_authority(paths, authority)
+        self.assertFalse(paths.authority.exists())
+
+    def test_check_and_lock_reject_ops_and_smoke_ops_symlinks_antigravity(self) -> None:
+        module = self.load_launcher()
+        _repo, commit, dataset = self._prepare_fixture(module)
+        external = dataset / "external_valid_looking_antigravity"
+        external.mkdir()
+        (external / "authority_antigravity.json").write_text('{"schema":"forged"}\n', encoding="utf-8")
+        (external / "worker_lock_antigravity.lock").write_bytes(b"lock")
+        (external / "smoke_result_antigravity.json").write_text('{"schema":"forged"}\n', encoding="utf-8")
+        smoke_ops = module.smoke_ops_paths().root
+        smoke_ops.symlink_to(external, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "symlink|smoke-ops|ops"):
+            module.check(commit)
+        smoke_ops.unlink()
+        component = dataset / "linked_component_antigravity"
+        component.symlink_to(external, target_is_directory=True)
+        module.OFFICIAL_OPS_ROOT = component / "paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+        with self.assertRaisesRegex(ValueError, "symlink|component|ops"):
+            module.check(commit)
+        module.OFFICIAL_OPS_ROOT = dataset / "paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+        paths = module.ops_paths()
+        paths.root.mkdir(parents=True)
+        paths.worker_lock.symlink_to(external / "worker_lock_antigravity.lock")
+        with self.assertRaisesRegex(ValueError, "symlink|lock"):
+            module._acquire_lock(paths)
+        paths.worker_lock.unlink()
+        authority = module.check(commit)
+        smoke_paths = module.smoke_ops_paths()
+        smoke_paths.root.mkdir(parents=True)
+        smoke_paths.smoke_result.symlink_to(external / "smoke_result_antigravity.json")
+        with mock.patch.object(module, "_pipeline_status", return_value={"status": "completed"}):
+            with self.assertRaisesRegex(ValueError, "symlink|result"):
+                module.verify_smoke_authorization(commit)
+        smoke_paths.smoke_result.unlink()
+        smoke_paths.authority.symlink_to(external / "authority_antigravity.json")
+        with self.assertRaisesRegex(ValueError, "symlink|authority"):
+            module._load_authority(smoke_paths)
+        smoke_paths.authority.unlink()
+        smoke_paths.authority_sha256.symlink_to(external / "authority_antigravity.json")
+        with self.assertRaisesRegex(ValueError, "symlink|hash|authority"):
+            module._publish_authority(smoke_paths, authority)
+        smoke_paths.authority_sha256.unlink()
+        smoke_paths.pid.symlink_to(external / "worker_lock_antigravity.lock")
+        with self.assertRaisesRegex(ValueError, "symlink|PID|pid"):
+            module._validate_ops_confinement(smoke_paths)
+        smoke_paths.pid.unlink()
+        smoke_paths.state.symlink_to(external / "authority_antigravity.json")
+        with self.assertRaisesRegex(ValueError, "symlink|state"):
+            module._validate_ops_confinement(smoke_paths)
+
+
+def _call_write(module, destination: Path, payload: bytes):
+    try:
+        module._write_create_only(destination, payload)
+    except BaseException as error:
+        return error
+    return None
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ from pathlib import Path
 import platform
 import re
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -46,6 +47,34 @@ AUTHORITY_SCHEMA = "paper-r4-launch-authority-antigravity.v1"
 STATE_SCHEMA = "paper-r4-ops-state-antigravity.v1"
 PROGRESS_SCHEMA = "paper-r4-progress-event-antigravity.v1"
 SMOKE_RESULT_SCHEMA = "paper-r4-smoke-result-antigravity.v1"
+SMOKE_PREAUTHORIZATION_SCHEMA = "paper-r4-smoke-preauthorization-antigravity.v1"
+SCIENTIFIC_DISTRIBUTION_PACKAGES = (
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "aeon",
+    "pandas",
+    "numba",
+    "joblib",
+    "scikit-image",
+    "pycatch22",
+    "torch",
+    "mlx",
+    "mlx-metal",
+)
+_SYSTEM_PATH_PREFIXES = frozenset(
+    {
+        Path("/"),
+        Path("/Users"),
+        Path("/var"),
+        Path("/tmp"),
+        Path("/private"),
+        Path("/private/var"),
+        Path("/private/tmp"),
+        Path("/System"),
+        Path("/Library"),
+    }
+)
 FORBIDDEN_LABEL_MODULE = "paper.equipment_anomaly_detection.label_access_paper"
 STOP_SIGINT_SECONDS = 5.0
 STOP_SIGTERM_SECONDS = 5.0
@@ -116,6 +145,8 @@ AUTHORITY_FIELDS = {
     "python_prefix",
     "python_base_prefix",
     "python_identity_sha256",
+    "scientific_distribution_inventory",
+    "scientific_distribution_inventory_sha256",
     "python_version",
     "platform",
     "git_commit",
@@ -135,6 +166,15 @@ SMOKE_RESULT_FIELDS = {
     "smoke_root",
     "label_module_loaded",
     "result_sha256",
+}
+SMOKE_PREAUTHORIZATION_FIELDS = {
+    "schema",
+    "authority_sha256",
+    "smoke_root",
+    "smoke_root_manifest_sha256",
+    "pipeline_status",
+    "pipeline_sha256",
+    "marker_sha256",
 }
 STATE_FIELDS = {
     "schema",
@@ -174,6 +214,7 @@ class OpsPaths:
     progress_events: Path
     worker_lock: Path
     smoke_result: Path
+    preauthorization: Path
 
 
 def ops_paths(root: Path | None = None) -> OpsPaths:
@@ -188,6 +229,7 @@ def ops_paths(root: Path | None = None) -> OpsPaths:
         progress_events=base / "progress_events_antigravity.jsonl",
         worker_lock=base / "worker_lock_antigravity.lock",
         smoke_result=base / "smoke_result_antigravity.json",
+        preauthorization=base / "smoke_preauthorization_antigravity.json",
     )
 
 
@@ -229,14 +271,95 @@ def _require_absent(path: Path, name: str) -> None:
         raise ValueError(f"{name} must be absent")
 
 
-def _identity_digest(path: Path) -> str:
-    _reject_symlink(path, "r3 root")
+def _lstat(path: Path):
+    try:
+        return Path(path).lstat()
+    except FileNotFoundError:
+        return None
+
+
+def _operational_components(path: Path) -> tuple[Path, ...]:
+    current = Path(path)
+    items: list[Path] = []
+    while current not in _SYSTEM_PATH_PREFIXES and current.parent != current:
+        items.append(current)
+        current = current.parent
+    return tuple(items)
+
+
+def _validate_directory_components(path: Path, name: str) -> None:
+    for component in _operational_components(path):
+        info = _lstat(component)
+        if info is None:
+            continue
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+            raise ValueError(f"{name} path component is not a real directory")
+
+
+def _validate_ops_root(path: Path, name: str) -> None:
+    _reject_symlink(path, name)
+    _validate_directory_components(path, name)
+    info = _lstat(path)
+    if info is not None and (stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode)):
+        raise ValueError(f"{name} is not a real directory")
+
+
+def _require_regular_file(path: Path, name: str) -> None:
+    info = _lstat(path)
+    if info is None or stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+        raise ValueError(f"{name} must be a regular non-symlink file")
+
+
+def _validate_regular_file_if_present(path: Path, name: str) -> None:
+    _validate_directory_components(path.parent, f"{name} parent")
+    info = _lstat(path)
+    if info is None:
+        return
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+        raise ValueError(f"{name} must be a regular non-symlink file")
+
+
+def _ensure_real_directory(path: Path, name: str) -> None:
+    _validate_directory_components(path, name)
+    _reject_symlink(path, name)
+    info = _lstat(path)
+    if info is not None and not stat.S_ISDIR(info.st_mode):
+        raise ValueError(f"{name} is not a directory")
+    if info is None:
+        Path(path).mkdir(parents=True, exist_ok=True)
+        _validate_directory_components(path, name)
+        _reject_symlink(path, name)
+        created = _lstat(path)
+        if created is None or stat.S_ISLNK(created.st_mode) or not stat.S_ISDIR(created.st_mode):
+            raise ValueError(f"{name} is not a real directory")
+
+
+def _validate_ops_confinement(paths: OpsPaths, *, create_root: bool = False) -> None:
+    _validate_ops_root(paths.root, "ops root")
+    if create_root:
+        _ensure_real_directory(paths.root, "ops root")
+    for artifact, name in (
+        (paths.authority, "authority"),
+        (paths.authority_sha256, "authority hash"),
+        (paths.pid, "PID"),
+        (paths.state, "state"),
+        (paths.progress_log, "progress log"),
+        (paths.progress_events, "progress events"),
+        (paths.worker_lock, "lock"),
+        (paths.smoke_result, "smoke result"),
+        (paths.preauthorization, "smoke preauthorization"),
+    ):
+        _validate_regular_file_if_present(artifact, name)
+
+
+def _tree_digest(path: Path, name: str) -> str:
+    _reject_symlink(path, name)
     if not path.is_dir():
-        raise ValueError("r3 root is absent")
+        raise ValueError(f"{name} is absent")
     hasher = sha256()
     for item in sorted(path.rglob("*"), key=lambda value: value.relative_to(path).as_posix()):
         if item.is_symlink():
-            raise ValueError("r3 tree must not contain a symlink")
+            raise ValueError(f"{name} tree must not contain a symlink")
         relative = item.relative_to(path).as_posix()
         if item.is_dir():
             kind, size, content = "dir", 0, b""
@@ -244,7 +367,7 @@ def _identity_digest(path: Path) -> str:
             content = item.read_bytes()
             kind, size = "file", len(content)
         else:
-            raise ValueError("r3 tree contains an unsupported entry")
+            raise ValueError(f"{name} tree contains an unsupported entry")
         hasher.update(relative.encode("utf-8"))
         hasher.update(b"\0")
         hasher.update(kind.encode("ascii"))
@@ -254,6 +377,26 @@ def _identity_digest(path: Path) -> str:
         hasher.update(content)
         hasher.update(b"\0")
     return hasher.hexdigest()
+
+
+def _identity_digest(path: Path) -> str:
+    return _tree_digest(path, "r3 root")
+
+
+def _scientific_distribution_inventory() -> dict[str, str]:
+    return {name: _version(name) for name in SCIENTIFIC_DISTRIBUTION_PACKAGES}
+
+
+def _inventory_digest(inventory: Mapping[str, object]) -> str:
+    return sha256(canonical_json_bytes(dict(inventory))).hexdigest()
+
+
+def _smoke_root_manifest_sha256() -> str:
+    root = Path(OFFICIAL_SMOKE_ROOT)
+    _reject_symlink(root, "smoke root")
+    if not root.exists():
+        return sha256(canonical_json_bytes({"state": "absent"})).hexdigest()
+    return _tree_digest(root, "smoke root")
 
 
 def _version(name: str) -> str:
@@ -325,7 +468,7 @@ def _logical_workers() -> tuple[int, int]:
     return logical, max(1, logical - 1)
 
 
-def _require_official_runtime() -> dict[str, str]:
+def _require_official_runtime(*, inventory_sha256: str) -> dict[str, str]:
     official = Path(OFFICIAL_INTERPRETER)
     lexical = str(official)
     if sys.executable != lexical:
@@ -344,6 +487,8 @@ def _require_official_runtime() -> dict[str, str]:
     _reject_symlink(pyvenv, "official venv identity")
     if not pyvenv.is_file():
         raise ValueError("official venv identity is absent")
+    if not _is_sha256(inventory_sha256):
+        raise ValueError("scientific distribution inventory hash is invalid")
     identity = {
         "executable": lexical,
         "executable_realpath": str(resolved),
@@ -353,6 +498,7 @@ def _require_official_runtime() -> dict[str, str]:
         "python_implementation": platform.python_implementation(),
         "python_build": " ".join(platform.python_build()),
         "pyvenv_cfg_sha256": sha256_file(pyvenv),
+        "scientific_distribution_inventory_sha256": inventory_sha256,
     }
     return {
         "executable": identity["executable"],
@@ -370,7 +516,9 @@ def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = N
         raise ValueError("reviewed commit must match clean HEAD")
     if not clean:
         raise ValueError("official launch requires a clean Git worktree")
-    runtime = _require_official_runtime()
+    inventory = _scientific_distribution_inventory()
+    inventory_sha256 = _inventory_digest(inventory)
+    runtime = _require_official_runtime(inventory_sha256=inventory_sha256)
     _reject_symlink(OFFICIAL_DATABASE, "database")
     if not OFFICIAL_DATABASE.is_file():
         raise ValueError("official database is absent")
@@ -400,6 +548,8 @@ def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = N
         "python_prefix": runtime["python_prefix"],
         "python_base_prefix": runtime["python_base_prefix"],
         "python_identity_sha256": runtime["python_identity_sha256"],
+        "scientific_distribution_inventory": inventory,
+        "scientific_distribution_inventory_sha256": inventory_sha256,
         "python_version": platform.python_version(),
         "platform": platform.platform(),
         "git_commit": head,
@@ -456,6 +606,15 @@ def validate_authority(authority: Mapping[str, object]) -> dict[str, object]:
         or not _is_sha256(authority.get("python_identity_sha256"))
     ):
         raise ValueError("launch authority python identity is invalid")
+    inventory = authority.get("scientific_distribution_inventory")
+    if (
+        not isinstance(inventory, dict)
+        or set(inventory) != set(SCIENTIFIC_DISTRIBUTION_PACKAGES)
+        or any(type(value) is not str or not value for value in inventory.values())
+        or not _is_sha256(authority.get("scientific_distribution_inventory_sha256"))
+        or authority.get("scientific_distribution_inventory_sha256") != _inventory_digest(inventory)
+    ):
+        raise ValueError("launch authority scientific distribution inventory is invalid")
     smoke = authority.get("smoke_result_sha256")
     if smoke is not None and not _is_sha256(smoke):
         raise ValueError("launch authority smoke result hash is invalid")
@@ -468,8 +627,11 @@ def validate_authority(authority: Mapping[str, object]) -> dict[str, object]:
 def check(reviewed_commit: str) -> dict[str, object]:
     _require_absent(OFFICIAL_R4_ROOT, "r4 root")
     _reject_symlink(OFFICIAL_R4_ROOT, "r4 root")
-    _reject_symlink(OFFICIAL_OPS_ROOT, "ops root")
-    _reject_symlink(OFFICIAL_SMOKE_ROOT, "smoke root")
+    _validate_ops_root(OFFICIAL_OPS_ROOT, "ops root")
+    _validate_ops_root(OFFICIAL_SMOKE_ROOT, "smoke root")
+    _validate_ops_root(smoke_ops_paths().root, "smoke-ops root")
+    _validate_ops_confinement(ops_paths(), create_root=False)
+    _validate_ops_confinement(smoke_ops_paths(), create_root=False)
     return build_authority(reviewed_commit)
 
 
@@ -498,16 +660,48 @@ def pipeline_command(mode: str, run_root: Path) -> list[str]:
     return command
 
 
+def _fsync_directory(path: Path) -> None:
+    directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
+
 def _write_create_only(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW, 0o600)
+    destination = Path(path)
+    _validate_regular_file_if_present(destination, "create-only destination")
+    if destination.exists() or destination.is_symlink():
+        _require_regular_file(destination, "create-only destination")
+        if destination.read_bytes() != payload:
+            raise ValueError("existing destination differs")
+        return
+    _ensure_real_directory(destination.parent, "create-only parent")
+    temporary = destination.with_name(f".{destination.name}.{os.getpid()}.{time.time_ns()}.tmp_antigravity")
+    descriptor = os.open(
+        temporary,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW,
+        0o600,
+    )
     try:
         written = os.write(descriptor, payload)
         if written != len(payload):
             raise ValueError("create-only write was incomplete")
         os.fsync(descriptor)
-    finally:
+    except BaseException:
         os.close(descriptor)
+        temporary.unlink(missing_ok=True)
+        raise
+    os.close(descriptor)
+    try:
+        os.link(temporary, destination)
+    except FileExistsError as error:
+        _require_regular_file(destination, "create-only destination")
+        if destination.read_bytes() != payload:
+            raise ValueError("existing destination differs") from error
+    finally:
+        _fsync_directory(destination.parent)
+        temporary.unlink(missing_ok=True)
 
 
 def _atomic_replace(path: Path, payload: bytes) -> None:
@@ -542,8 +736,10 @@ def _append_event(path: Path, payload: Mapping[str, object]) -> None:
 
 
 def _worker_lock_is_held(path: Path) -> bool:
-    if not path.is_file():
+    info = _lstat(path)
+    if info is None:
         return False
+    _require_regular_file(path, "lock")
     with path.open("rb") as stream:
         try:
             fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -554,8 +750,10 @@ def _worker_lock_is_held(path: Path) -> bool:
 
 
 def _read_pid(path: Path) -> int | None:
-    if not path.is_file():
+    info = _lstat(path)
+    if info is None:
         return None
+    _require_regular_file(path, "PID")
     try:
         value = int(path.read_text(encoding="ascii").strip())
     except (OSError, UnicodeDecodeError, ValueError) as error:
@@ -566,24 +764,43 @@ def _read_pid(path: Path) -> int | None:
 
 
 def _publish_authority(paths: OpsPaths, authority: Mapping[str, object]) -> str:
+    _validate_ops_confinement(paths, create_root=True)
     encoded = canonical_json_bytes(authority)
     digest = sha256(encoded).hexdigest()
-    if paths.authority.exists() or paths.authority_sha256.exists():
-        if not paths.authority.is_file() or not paths.authority_sha256.is_file():
-            raise ValueError("existing launch authority is incomplete")
+    digest_bytes = (digest + "\n").encode("ascii")
+    auth_present = paths.authority.exists() or paths.authority.is_symlink()
+    hash_present = paths.authority_sha256.exists() or paths.authority_sha256.is_symlink()
+    if auth_present:
+        _require_regular_file(paths.authority, "authority")
+    if hash_present:
+        _require_regular_file(paths.authority_sha256, "authority hash")
+    if auth_present and hash_present:
         if paths.authority.read_bytes() != encoded:
             raise ValueError("existing launch authority differs from current identity")
         if paths.authority_sha256.read_text(encoding="ascii").strip() != digest:
             raise ValueError("existing launch authority SHA256 differs")
-    else:
+        return digest
+    if auth_present:
+        if paths.authority.read_bytes() != encoded:
+            raise ValueError("partial launch authority differs from current identity")
+        _write_create_only(paths.authority_sha256, digest_bytes)
+        return digest
+    if hash_present:
+        if paths.authority_sha256.read_text(encoding="ascii").strip() != digest:
+            raise ValueError("partial launch authority SHA256 differs")
         _write_create_only(paths.authority, encoded)
-        _write_create_only(paths.authority_sha256, (digest + "\n").encode("ascii"))
+        return digest
+    _write_create_only(paths.authority, encoded)
+    _write_create_only(paths.authority_sha256, digest_bytes)
     return digest
 
 
 def _load_authority(paths: OpsPaths) -> dict[str, object]:
-    if not paths.authority.is_file() or not paths.authority_sha256.is_file():
+    _validate_ops_confinement(paths, create_root=False)
+    if _lstat(paths.authority) is None or _lstat(paths.authority_sha256) is None:
         raise ValueError("launch authority is absent or incomplete")
+    _require_regular_file(paths.authority, "authority")
+    _require_regular_file(paths.authority_sha256, "authority hash")
     expected = paths.authority_sha256.read_text(encoding="ascii").strip()
     if sha256_file(paths.authority) != expected:
         raise ValueError("launch authority SHA256 mismatch")
@@ -600,8 +817,11 @@ def _pipeline_status(run_root: Path, mode: str) -> dict[str, object]:
 
 def verify_smoke_authorization(reviewed_commit: str) -> dict[str, object]:
     paths = smoke_ops_paths()
-    if not paths.smoke_result.is_file():
+    _validate_ops_confinement(paths, create_root=False)
+    _validate_regular_file_if_present(paths.smoke_result, "smoke result")
+    if paths.smoke_result.is_symlink() or not paths.smoke_result.is_file():
         raise ValueError("verified smoke result is absent")
+    _require_regular_file(paths.smoke_result, "smoke result")
     payload = json.loads(paths.smoke_result.read_text(encoding="utf-8"))
     if not isinstance(payload, dict) or set(payload) != SMOKE_RESULT_FIELDS or payload.get("schema") != SMOKE_RESULT_SCHEMA:
         raise ValueError("smoke result schema is invalid")
@@ -625,8 +845,68 @@ def verify_smoke_authorization(reviewed_commit: str) -> dict[str, object]:
     return payload
 
 
+def _smoke_preauthorization_payload(authority: Mapping[str, object], pipeline: Mapping[str, object]) -> dict[str, object]:
+    bare = {
+        "schema": SMOKE_PREAUTHORIZATION_SCHEMA,
+        "authority_sha256": sha256(canonical_json_bytes(authority)).hexdigest(),
+        "smoke_root": str(OFFICIAL_SMOKE_ROOT),
+        "smoke_root_manifest_sha256": _smoke_root_manifest_sha256(),
+        "pipeline_status": "completed",
+        "pipeline_sha256": sha256(canonical_json_bytes(dict(pipeline))).hexdigest(),
+    }
+    digest = sha256(canonical_json_bytes(bare)).hexdigest()
+    return {**bare, "marker_sha256": digest}
+
+
+def _load_smoke_preauthorization(paths: OpsPaths) -> dict[str, object] | None:
+    _validate_regular_file_if_present(paths.preauthorization, "smoke preauthorization")
+    if _lstat(paths.preauthorization) is None:
+        return None
+    _require_regular_file(paths.preauthorization, "smoke preauthorization")
+    payload = json.loads(paths.preauthorization.read_text(encoding="utf-8"))
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != SMOKE_PREAUTHORIZATION_FIELDS
+        or payload.get("schema") != SMOKE_PREAUTHORIZATION_SCHEMA
+    ):
+        raise ValueError("smoke preauthorization schema is invalid")
+    digest = payload.get("marker_sha256")
+    bare = {key: value for key, value in payload.items() if key != "marker_sha256"}
+    if sha256(canonical_json_bytes(bare)).hexdigest() != digest:
+        raise ValueError("smoke preauthorization marker hash differs")
+    return payload
+
+
+def _publish_smoke_preauthorization(
+    paths: OpsPaths,
+    authority: Mapping[str, object],
+    pipeline: Mapping[str, object],
+) -> dict[str, object]:
+    payload = _smoke_preauthorization_payload(authority, pipeline)
+    _write_create_only(paths.preauthorization, canonical_json_bytes(payload))
+    return payload
+
+
+def _verify_smoke_preauthorization(
+    paths: OpsPaths,
+    authority: Mapping[str, object],
+    pipeline: Mapping[str, object],
+) -> dict[str, object]:
+    stored = _load_smoke_preauthorization(paths)
+    if stored is None:
+        raise ValueError("smoke preauthorization marker is absent")
+    expected = _smoke_preauthorization_payload(authority, pipeline)
+    if canonical_json_bytes(stored) != canonical_json_bytes(expected):
+        raise ValueError("smoke preauthorization marker does not match current authority")
+    if stored.get("pipeline_status") != "completed" or pipeline.get("status") != "completed":
+        raise ValueError("smoke preauthorization is not completed")
+    return stored
+
+
 def _publish_smoke_result(authority: Mapping[str, object], pipeline: Mapping[str, object]) -> dict[str, object]:
     paths = smoke_ops_paths()
+    _validate_ops_confinement(paths, create_root=True)
+    _validate_regular_file_if_present(paths.smoke_result, "smoke result")
     bare = {
         "schema": SMOKE_RESULT_SCHEMA,
         "authority_sha256": sha256(canonical_json_bytes(authority)).hexdigest(),
@@ -649,8 +929,21 @@ def _publish_smoke_result(authority: Mapping[str, object], pipeline: Mapping[str
 
 
 def _acquire_lock(paths: OpsPaths):
-    paths.root.mkdir(parents=True, exist_ok=True)
-    stream = paths.worker_lock.open("a+b")
+    _validate_ops_confinement(paths, create_root=True)
+    _validate_regular_file_if_present(paths.worker_lock, "lock")
+    flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW
+    try:
+        descriptor = os.open(paths.worker_lock, flags, 0o600)
+    except OSError as error:
+        raise ValueError("worker lock is invalid") from error
+    try:
+        info = os.fstat(descriptor)
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("worker lock must be a regular non-symlink file")
+        stream = os.fdopen(descriptor, "r+b", closefd=True)
+    except Exception:
+        os.close(descriptor)
+        raise
     try:
         fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError as error:
@@ -889,6 +1182,10 @@ def _validate_state(payload: object) -> dict[str, object]:
 def stop(reviewed_commit: str) -> dict[str, object]:
     commit = _reviewed_commit(reviewed_commit)
     paths = ops_paths()
+    try:
+        _validate_ops_confinement(paths, create_root=False)
+    except ValueError:
+        return {"status": "stop_refused", "pid": None, "signaled": False}
     if not _worker_lock_is_held(paths.worker_lock):
         return {"status": "already_stopped", "pid": None, "signaled": False}
     refused = {"status": "stop_refused", "pid": None, "signaled": False}
@@ -949,6 +1246,25 @@ def inspect_status(reviewed_commit: str, now_epoch: float | None = None) -> dict
     commit = _reviewed_commit(reviewed_commit)
     now = time.time() if now_epoch is None else float(now_epoch)
     paths = ops_paths()
+    try:
+        _validate_ops_confinement(paths, create_root=False)
+    except ValueError as error:
+        return {
+            "run_root": str(OFFICIAL_R4_ROOT),
+            "ops_root": str(paths.root),
+            "pid": None,
+            "lock_held": False,
+            "completed": 0,
+            "failed": 0,
+            "pending": EXPECTED_DATASET_COUNT,
+            "percentage": 0.0,
+            "elapsed_seconds": None,
+            "rate_per_second": None,
+            "eta_seconds": None,
+            "status": "tampered",
+            "failure_kind": "ops_confinement",
+            "last_error": str(error),
+        }
     base: dict[str, object] = {
         "run_root": str(OFFICIAL_R4_ROOT),
         "ops_root": str(paths.root),
@@ -1020,16 +1336,36 @@ def smoke(reviewed_commit: str, *, run_child=None) -> dict[str, object]:
     smoke_paths = smoke_ops_paths()
     lock_stream = _acquire_lock(smoke_paths)
     try:
-        if OFFICIAL_SMOKE_ROOT.exists():
+        existing = None
+        if OFFICIAL_SMOKE_ROOT.exists() or OFFICIAL_SMOKE_ROOT.is_symlink():
+            _reject_symlink(OFFICIAL_SMOKE_ROOT, "smoke root")
             try:
                 existing = _pipeline_status(OFFICIAL_SMOKE_ROOT, "smoke")
             except Exception as error:
                 raise ValueError("existing smoke root does not match this authority") from error
-            del existing
         authority = build_authority(reviewed_commit)
         _publish_authority(smoke_paths, authority)
+        marker = _load_smoke_preauthorization(smoke_paths)
+        already_completed = bool(existing is not None and existing.get("status") == "completed")
+        if marker is not None:
+            pipeline = _pipeline_status(OFFICIAL_SMOKE_ROOT, "smoke")
+            if pipeline.get("status") != "completed":
+                raise ValueError("smoke preauthorization is present but the smoke root is not completed")
+            _verify_smoke_preauthorization(smoke_paths, authority, pipeline)
+            _validate_label_firewall()
+            result = _publish_smoke_result(authority, pipeline)
+            return {
+                "status": "smoke_verified",
+                "child_returncode": None,
+                "pipeline": pipeline,
+                "result_sha256": result["result_sha256"],
+                "smoke_root": str(OFFICIAL_SMOKE_ROOT),
+                "reuse": True,
+            }
         runner = _run_pipeline_child if run_child is None else run_child
-        child_code = runner("smoke", OFFICIAL_SMOKE_ROOT, smoke_paths)
+        child_code = None
+        if not already_completed:
+            child_code = runner("smoke", OFFICIAL_SMOKE_ROOT, smoke_paths)
         pipeline = _pipeline_status(OFFICIAL_SMOKE_ROOT, "smoke")
         _validate_label_firewall()
         if pipeline.get("status") == "proposal_score_incomplete":
@@ -1041,12 +1377,11 @@ def smoke(reviewed_commit: str, *, run_child=None) -> dict[str, object]:
             }
         if pipeline.get("status") != "completed":
             raise ValueError("smoke result is not a verified completed or incomplete wave")
-        result = _publish_smoke_result(authority, pipeline)
+        _publish_smoke_preauthorization(smoke_paths, authority, pipeline)
         return {
-            "status": "smoke_verified",
+            "status": "smoke_confirmation_required",
             "child_returncode": child_code,
             "pipeline": pipeline,
-            "result_sha256": result["result_sha256"],
             "smoke_root": str(OFFICIAL_SMOKE_ROOT),
         }
     finally:

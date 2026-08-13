@@ -82,11 +82,36 @@ only. It does not authorize smoke-root or official r4-root creation.
 - `_publish_smoke_result` is create-only. An existing result is reused only
   when its bytes are identical to the newly verified encoding; otherwise it is
   rejected. Existing smoke evidence is never atomic-replaced.
+- Smoke authorization is a two-invocation gate. The first completed wave may
+  compute and semantically verify artifacts, but it only writes a create-only
+  preauthorization marker and returns `smoke_confirmation_required`. A second
+  same-authority invocation verifies the pre-existing completed root without
+  recomputing Task4+5 science and only then publishes `smoke_result`. An
+  incomplete first wave stays non-authorizing; the later resume may compute
+  pending work, and a completed resume still requires one additional
+  verification-only invocation. The marker binds current authority, smoke-root
+  semantic hashes, and completed status.
+- Authority records a frozen scientific distribution inventory for every
+  runtime dependency imported by Tasks 1–9 and score sources (numpy, scipy,
+  scikit-learn, aeon, pandas, numba, joblib, scikit-image, pycatch22, torch,
+  mlx, mlx-metal) as exact version or `absent`, plus a canonical inventory
+  SHA included in python identity. check/launch/resume/stop/status rebuild and
+  compare that inventory.
+- Create-only publication writes an exclusive no-follow temp, fsyncs, installs
+  with a no-clobber hard link, fsyncs the directory, and deletes the temp.
+  `_publish_authority` recovers an exact one-file partial pair and rejects
+  mismatched or unsafe partials.
+- Ops confinement is shared: `check` rejects a symlinked smoke-ops root;
+  every existing ops/smoke-ops path component must be a real directory; every
+  present authority/hash/PID/state/progress/lock/result/marker artifact must
+  be a regular non-symlink file. `_acquire_lock` uses no-follow exclusive
+  regular-file validation.
 - Focused operations tests cover authority/check, a pinned-venv check seam,
   exclusive flock, stale PID recovery, exact argv-grammar stop identity,
-  SIGTERM revalidation, create-only smoke reuse/rejection, status fixtures,
-  and a small typed Task4+Task5 smoke resume-equivalence fixture. They write
-  only temporary Git/DB/path fixtures.
+  SIGTERM revalidation, the two-invocation smoke gate, inventory mutation,
+  atomic no-clobber publication, ops/smoke-ops symlink confinement, status
+  fixtures, and a small typed Task4+Task5 smoke resume-equivalence fixture.
+  They write only temporary Git/DB/path fixtures.
 - Implementation verification does not create
   `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`,
   the smoke root, or the ops root, and it starts no official or detached

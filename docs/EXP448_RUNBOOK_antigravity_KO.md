@@ -58,16 +58,25 @@ smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_ant
 Read-only check (allowed after the operations code is committed; creates no roots).
 The command must be invoked with that exact lexical venv path so `sys.executable`
 and `sys.prefix` stay the venv identity. Authority records `executable`,
-`executable_realpath`, `python_prefix`, `python_base_prefix`, and
-`python_identity_sha256`. Worker/pipeline commands keep the same venv path and
-do not resolve it to base Python.
+`executable_realpath`, `python_prefix`, `python_base_prefix`,
+`python_identity_sha256`, and the frozen scientific distribution inventory
+(exact version or `absent` for numpy, scipy, scikit-learn, aeon, pandas,
+numba, joblib, scikit-image, pycatch22, torch, mlx, mlx-metal) plus its
+canonical SHA. `check` also rejects a symlinked smoke-ops derived root.
+Worker/pipeline commands keep the same venv path and do not resolve it to
+base Python.
 
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py check --reviewed-commit REVIEWED_COMMIT
 ```
 
-Future prelaunch smoke, still unauthorized by this implementation:
+Future prelaunch smoke, still unauthorized by this implementation. The first
+completed invocation is non-authorizing (`smoke_confirmation_required`) and
+does not publish `smoke_result`. A second same-authority verification-only
+invocation is required before create-only authorization. An incomplete first
+wave plus a later completing resume still requires one additional
+verification-only invocation.
 
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
