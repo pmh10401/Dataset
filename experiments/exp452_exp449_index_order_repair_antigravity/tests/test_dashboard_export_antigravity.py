@@ -70,6 +70,54 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 public_result_antigravity(payload)
 
+    def test_public_result_rejects_string_subclasses_in_identity_fields_antigravity(self) -> None:
+        """Break caught: a non-exact identity string bypassing checks through inherited or forged equality."""
+        class StringSubclassAntigravity(str):
+            pass
+
+        class EqualityOverridingStringSubclassAntigravity(str):
+            def __eq__(self, other: object) -> bool:
+                return True
+
+            def __ne__(self, other: object) -> bool:
+                return False
+
+        cases = (
+            ("schema", StringSubclassAntigravity("exp452.public-method-qualification.v1")),
+            ("experiment", StringSubclassAntigravity("Exp452")),
+            ("schema", EqualityOverridingStringSubclassAntigravity("/Users/mac/Documents/Dataset/private")),
+            ("experiment", EqualityOverridingStringSubclassAntigravity("Crop_normal_1")),
+        )
+        for field, value in cases:
+            payload = _valid_result_antigravity()
+            payload[field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                public_result_antigravity(payload)
+
+    def test_public_result_rejects_nested_string_subclasses_even_when_equality_lies_antigravity(self) -> None:
+        """Break caught: a nested path or dataset identity comparing equal to an allowlisted family/method."""
+        class StringSubclassAntigravity(str):
+            pass
+
+        class EqualityOverridingStringSubclassAntigravity(str):
+            def __eq__(self, other: object) -> bool:
+                return True
+
+            def __ne__(self, other: object) -> bool:
+                return False
+
+        mutations = (
+            ("family list subclass", lambda payload: payload["families"].__setitem__(0, StringSubclassAntigravity("Crop"))),  # type: ignore[union-attr]
+            ("candidate family subclass", lambda payload: payload["candidates"][0].__setitem__("family", StringSubclassAntigravity("Crop"))),  # type: ignore[index]
+            ("private path equality subclass", lambda payload: payload["candidates"][0].__setitem__("family", EqualityOverridingStringSubclassAntigravity("/Users/mac/Documents/Dataset/private"))),  # type: ignore[index]
+            ("dataset equality subclass", lambda payload: payload["candidates"][0].__setitem__("method", EqualityOverridingStringSubclassAntigravity("Crop_normal_1"))),  # type: ignore[index]
+        )
+        for label, mutate in mutations:
+            payload = _valid_result_antigravity()
+            mutate(payload)
+            with self.subTest(label=label), self.assertRaises(ValueError):
+                public_result_antigravity(payload)
+
     def test_public_result_recomputes_counts_f1_gates_and_summary_antigravity(self) -> None:
         """Break caught: accepting self-reported aggregate math without recomputation."""
         mutations = []

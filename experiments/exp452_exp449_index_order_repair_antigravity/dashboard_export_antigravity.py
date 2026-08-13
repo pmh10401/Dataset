@@ -30,7 +30,9 @@ def _safe_antigravity(value: object) -> bool:
         return all(type(key) is str and not _forbidden_key_antigravity(key) and _safe_antigravity(item) for key, item in value.items())
     if isinstance(value, (tuple, list)):
         return all(_safe_antigravity(item) for item in value)
-    if type(value) is str:
+    if isinstance(value, str):
+        if type(value) is not str:
+            return False
         lowered = value.lower()
         return not (
             value.startswith(("/", "~/", "file://"))
