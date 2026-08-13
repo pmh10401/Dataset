@@ -83,17 +83,17 @@ python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_a
 <li><input disabled type="checkbox" checked> <strong>Step 8 — review/commit/map:</strong> Grok root-cause/read-only diff review 후 Codex가 통합·테스트하고 bounded commit과 map child를 만든다.</li>
 </ol></section>
 
-<section><h2><input disabled type="checkbox"> Task 4: 동일 evaluator와 exact replay</h2>
+<section><h2><input disabled type="checkbox" checked> Task 4: 동일 evaluator와 exact replay</h2>
 <p><strong>Files:</strong> Create Exp453 <code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code> and tests.</p>
 <p><strong>Consumes:</strong> Task 3 dual predecessor authority and label opener. <strong>Produces:</strong> <code>evaluate_antigravity(reviewed_commit)</code>, <code>inspect_antigravity()</code>, exact 12-leaf root.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1 — RED full differential:</strong> 동일 Exp449 prediction bytes와 synthetic labels로 Exp452/Exp453 12-leaf normalized payload equality test를 작성한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 2 — GREEN controlled copy:</strong> Exp452 evaluation/replay를 복사하고 identity, path, predecessor schema만 바꾼다. <code>sorted(indices)</code>는 그대로 둔다.</li>
-<li><input disabled type="checkbox"> <strong>Step 3 — exact allowed differences:</strong> experiment/schema/path/reviewed commit/runtime binding과 그 값에서 파생된 hash만 allowlist한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 4 — synthetic result assertions:</strong> Exp452와 동일한 synthetic fixture에서 96 exact ordered index lists, confusion, FN, FP, F1, bootstrap draw SHA, decision, 12 leaf names/order를 검사한다. 실제 48 queries/72,300 TEST rows는 Task 6 공식 실행에서만 확인한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 5 — replay rejection:</strong> missing/extra/reordered index, changed confusion/bootstrap/decision, partial root를 각각 재해시해도 reject되는지 검사한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 6 — GREEN twice:</strong><pre><code>python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_evaluation_antigravity experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_replay_antigravity -v
+<li><input disabled type="checkbox" checked> <strong>Step 1 — RED full differential:</strong> 동일 Exp449 prediction bytes와 synthetic labels로 Exp452/Exp453 12-leaf normalized payload equality test를 작성한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 2 — GREEN controlled copy:</strong> Exp452 evaluation/replay를 복사하고 identity, path, predecessor schema만 바꾼다. <code>sorted(indices)</code>는 그대로 둔다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 3 — exact allowed differences:</strong> experiment/schema/path/reviewed commit/runtime binding과 그 값에서 파생된 hash만 allowlist한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4 — synthetic result assertions:</strong> Exp452와 동일한 synthetic fixture에서 96 exact ordered index lists, confusion, FN, FP, F1, bootstrap draw SHA, decision, 12 leaf names/order를 검사한다. 실제 48 queries/72,300 TEST rows는 Task 6 공식 실행에서만 확인한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 5 — replay rejection:</strong> missing/extra/reordered index, changed confusion/bootstrap/decision, partial root를 각각 재해시해도 reject되는지 검사한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — GREEN twice:</strong><pre><code>python3 -m unittest experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_evaluation_antigravity experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.tests.test_replay_antigravity -v
 # Run twice under fixed interpreter; Exp452 evaluator/replay once; all exit 0.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 7 — review/commit/map:</strong> Grok 독립 parity 검토, Codex 최종 diff·테스트·map 검증 후 commit한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 7 — review/commit/map:</strong> Grok 독립 parity 검토, Codex 최종 diff·테스트·map 검증 후 commit한다.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 5: Closed CLI와 clean 공식 후보</h2>

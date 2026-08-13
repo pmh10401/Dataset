@@ -75,7 +75,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             for tag in tags:
-                if task_number in (1, 2, 3):
+                if task_number in (1, 2, 3, 4):
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
                 else:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
@@ -134,7 +134,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict)
         self.assertLessEqual(len(graph["nodes"]), 20)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("task4_evaluation_replay", "task5_cli"):
+        for node_id in ("task5_cli",):
             self.assertEqual(node_by_id[node_id]["status"], "future_unknown")
             self.assertEqual(node_by_id[node_id]["evidence"], [])
         self.assertTrue(graph["unknown_relationships"])
@@ -187,6 +187,22 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertIn("effect", node_by_id[node_id]["role"].lower())
                 self.assertTrue(any(path.endswith(test_leaf) for path in node_by_id[node_id]["tests"]))
                 self.assertTrue(node_by_id[node_id]["evidence"])
+
+    def test_map_answers_task_four_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: Task 4 evaluator/replay remain hidden behind a future node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        node = node_by_id["task4_evaluation_replay"]
+        self.assertNotEqual(node.get("status"), "future_unknown")
+        self.assertIn("caller", node["role"].lower())
+        self.assertIn("effect", node["role"].lower())
+        self.assertTrue(any(path.endswith("test_evaluation_antigravity.py") for path in node["tests"]))
+        self.assertTrue(any(path.endswith("test_replay_antigravity.py") for path in node["tests"]))
+        self.assertTrue(node["evidence"])
+        self.assertTrue(any(edge["from"] == "implementation_plan" and edge["to"] == "task4_evaluation_replay" and edge["type"] == "governs" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task4_evaluation_replay" and edge["to"] == "task3_predecessor" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task4_evaluation_replay" and edge["to"] == "task3_sources" and edge["type"] == "reads" for edge in graph["edges"]))
 
 
 if __name__ == "__main__":
