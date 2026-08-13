@@ -6,7 +6,9 @@ from dataclasses import replace
 import os
 import unittest
 
-from .test_predecessor_antigravity import SyntheticPredecessorFixtureAntigravity
+from experiments.exp452_exp449_index_order_repair_antigravity.tests.test_predecessor_antigravity import (
+    SyntheticPredecessorFixtureAntigravity,
+)
 
 
 class CompleteConnectionAntigravity:
