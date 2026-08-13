@@ -51,17 +51,16 @@ class ProposalScoreIncomplete(RuntimeError):
     """Typed operational result: Task4+5 lacks exact verified success coverage."""
     status = "proposal_score_incomplete"
 
-    def __init__(self, *, completed: int, failed: int, pending: tuple[str, ...], queue_path: str | None, attempts_path: str | None) -> None:
+    def __init__(self, *, completed: int, failed: int, pending: tuple[str, ...], attempts_path: str | None) -> None:
         self.completed = completed
         self.failed = failed
         self.pending = pending
-        self.queue_path = queue_path
         self.attempts_path = attempts_path
         super().__init__(f"proposal_score_incomplete completed={completed} failed={failed} pending={len(pending)} queue={','.join(pending)}")
 
     def artifact_record(self) -> dict[str, object]:
         return {"status": self.status, "completed": self.completed, "failed": self.failed, "pending": len(self.pending),
-                "pending_datasets": list(self.pending), "queue_path": self.queue_path, "attempts_path": self.attempts_path}
+                "pending_datasets": list(self.pending), "attempts_path": self.attempts_path}
 
 
 def _label_firewall() -> None:
@@ -155,6 +154,8 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
         if publish_success is None:
             publish_success = task4_task5_success_publisher(root, catalog, authority)
     queue = _risk_first_queue(pending_raw)
+    if not queue:
+        return dict(sorted(sources.items())), dict(sorted(routes.items()))
     started, total = monotonic(), len(queue)
     _progress("Task4+Task5 start", 0, total, started)
     def persist_result(dataset: str, result: tuple[HardSourceBundle, HardRouteResult]) -> None:
@@ -201,7 +202,7 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
     if failed:
         pending = tuple(sorted(failed))
         attempts_path = str(root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts") if root is not None else None
-        raise ProposalScoreIncomplete(completed=len(sources), failed=len(failed), pending=pending, queue_path=attempts_path, attempts_path=attempts_path)
+        raise ProposalScoreIncomplete(completed=len(sources), failed=len(failed), pending=pending, attempts_path=attempts_path)
     return dict(sorted(sources.items())), dict(sorted(routes.items()))
 
 

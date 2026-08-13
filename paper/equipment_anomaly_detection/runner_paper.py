@@ -146,7 +146,7 @@ def _incomplete_status(root, context):
     pending=tuple(dataset for dataset in raw if dataset not in completed)
     failed=tuple(sorted({record.dataset for record in attempts if record.dataset in pending}))
     attempt_path=str(safe_child(root,ARTIFACT_DIRECTORY,"proposal_work","task4_task5_attempts"))
-    return {"status":"proposal_score_incomplete","completed":len(completed),"failed":len(failed),"pending":len(pending),"pending_datasets":list(pending),"failed_datasets":list(failed),"queue_path":attempt_path,"attempts_path":attempt_path,"completed_stages":["preflight","prepare","acceleration"],"next_stage":"proposal_score"}
+    return {"status":"proposal_score_incomplete","completed":len(completed),"failed":len(failed),"pending":len(pending),"pending_datasets":list(pending),"failed_datasets":list(failed),"attempts_path":attempt_path,"completed_stages":["preflight","prepare","acceleration"],"next_stage":"proposal_score"}
 
 def _write_complete(root,stage,context,prior):
     if stage=="preflight": payload={"schema":"paper-task8-preflight.v1","stage":stage,"context_sha256":context["context_sha256"]}

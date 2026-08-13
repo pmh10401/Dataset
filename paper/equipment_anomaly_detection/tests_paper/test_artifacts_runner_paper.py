@@ -459,6 +459,7 @@ class Task9ParallelCompositionTests(unittest.TestCase):
     def _patched_composition(self, manifest, *, fail_dataset=None):
         from paper.equipment_anomaly_detection import proposal_score_paper as score
         events = []
+        self.last_events = events
         def hard(raw):
             events.append(("task4", raw.dataset))
             if raw.dataset == fail_dataset:
@@ -518,6 +519,7 @@ class Task9ParallelCompositionTests(unittest.TestCase):
         from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
         with self.assertRaisesRegex(ProposalScoreIncomplete, "proposal_score_incomplete"):
             self._patched_composition(self._acceleration(3), fail_dataset="alpha")
+        self.assertNotIn(("task6", "global"), self.last_events)
 
     def test_parent_collection_publishes_worker_result_without_passing_writer_to_worker(self):
         """Letting a worker receive the writer/root would make create-only cache publication race process failures."""
@@ -574,6 +576,26 @@ class Task9ParallelCompositionTests(unittest.TestCase):
             self.assertEqual(read_task4_task5_success_record(record_fixture.root, record_fixture.catalog, authority, raw).route, route)
         finally:
             record_fixture.tearDown()
+
+    def test_exact_coverage_resume_runs_global_task6_and_task7_once(self):
+        """Rerunning global stages per cached coordinate would change their population-wide semantics."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, write_task4_task5_success_record
+        from paper.equipment_anomaly_detection.runner_paper import context_payload
+        context = context_payload(self.fixture.config()); acceleration = build_acceleration_manifest(context["context_sha256"], logical_cpu_count=3)
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, self.fixture.catalog, acceleration)
+        valid = Task4Task5SuccessRecordTests("run"); valid.setUp()
+        try:
+            _raw, sources, route, _low, _stability, _policies, _backend = valid._task4_task5_values()
+        finally:
+            valid.tearDown()
+        for dataset in self.raw:
+            write_task4_task5_success_record(self.fixture.root, self.fixture.catalog, authority, self.raw[dataset], sources, route)
+        with patch.object(score, "_score_dataset_task4_task5", side_effect=AssertionError("covered coordinate was scheduled")), patch.object(score, "score_low_frequency", return_value=self.low) as task6, patch.object(score, "classify_stability", return_value=self.stability) as task7, patch.object(score, "build_hard_evidence_surface", return_value=object()), patch.object(score, "build_policies", return_value=self.policies):
+            proposal = score.compose_proposal_score(self.raw, acceleration, root=self.fixture.root, context=context, catalog=self.fixture.catalog)
+        self.assertEqual(tuple(proposal.sources), ("alpha", "beta"))
+        task6.assert_called_once(); task7.assert_called_once()
 
     def test_parallel_completion_progress_is_flush_visible_and_keeps_sorted_results(self):
         """Collecting submitted futures in dataset order hides actual completion order and leaves long runs opaque."""
@@ -670,6 +692,19 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
         self.assertEqual(tuple(sources), ("alpha", "beta"))
         self.assertEqual(tuple(routes), ("alpha", "beta"))
 
+    def test_exact_success_coverage_restarts_without_scheduling_or_zero_total_progress(self):
+        """A fully persisted restart must reconstruct work without dividing by the empty pending total."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, write_task4_task5_success_record
+        manifest, context, backend = self._backend()
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, self.fixture.catalog, manifest)
+        for dataset in ("alpha", "beta"):
+            write_task4_task5_success_record(self.fixture.root, self.fixture.catalog, authority, self.raw[dataset], *self.values[dataset])
+        with patch.object(score, "_score_dataset_task4_task5", side_effect=AssertionError("covered coordinate was scheduled")):
+            sources, routes = score._collect_task4_task5(self.raw, backend, root=self.fixture.root, context=context, catalog=self.fixture.catalog, acceleration_manifest=manifest)
+        self.assertEqual(tuple(sources), ("alpha", "beta"))
+        self.assertEqual(tuple(routes), ("alpha", "beta"))
+
     def test_rolling_submission_never_exceeds_twice_the_dataset_workers(self):
         """Submitting the full catalog ahead of commits makes a parent interruption needlessly expensive."""
         from paper.equipment_anomaly_detection import proposal_score_paper as score
@@ -692,6 +727,33 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
         with patch.object(score, "ProcessPoolExecutor", side_effect=lambda **_kwargs: executor), patch.object(score, "as_completed", side_effect=one_completion):
             score._collect_task4_task5(raw, backend)
         self.assertEqual(max(observed), 2 * backend.dataset_workers)
+
+    def test_parent_interruption_retries_only_uncommitted_coordinates(self):
+        """After a parent interruption, a persisted success must not be recomputed with the remaining future."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, write_task4_task5_success_record
+        manifest, context, backend = self._backend(3)
+        authority = Task4Task5SuccessAuthority.from_verified_context(context, self.fixture.catalog, manifest)
+        submissions = []
+        values = self.values
+        class Future:
+            def __init__(self, raw): self.raw = raw
+            def result(self): return values[self.raw.dataset]
+        class Executor:
+            def __init__(self, *, max_workers): pass
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def submit(self, _fn, raw): submissions.append(raw.dataset); return Future(raw)
+        def publish_then_interrupt(raw, sources, route):
+            write_task4_task5_success_record(self.fixture.root, self.fixture.catalog, authority, raw, sources, route)
+            raise KeyboardInterrupt("parent interruption")
+        with patch.object(score, "ProcessPoolExecutor", Executor), patch.object(score, "as_completed", side_effect=lambda futures: (tuple(futures)[0],)):
+            with self.assertRaises(KeyboardInterrupt):
+                score._collect_task4_task5(self.raw, backend, root=self.fixture.root, context=context, catalog=self.fixture.catalog, acceleration_manifest=manifest, publish_success=publish_then_interrupt)
+        self.assertLessEqual(len(submissions), 2 * backend.dataset_workers)
+        with patch.object(score, "ProcessPoolExecutor", Executor), patch.object(score, "as_completed", side_effect=lambda futures: (tuple(futures)[0],)):
+            score._collect_task4_task5(self.raw, backend, root=self.fixture.root, context=context, catalog=self.fixture.catalog, acceleration_manifest=manifest, publish_success=lambda *_args: None)
+        self.assertEqual(submissions, ["alpha", "beta", "beta"])
 
     def test_incomplete_status_counts_only_verified_successes_and_rejects_attempt_tampering(self):
         """Treating a failure ledger as a success, or accepting its mutation, makes resume coverage unsound."""

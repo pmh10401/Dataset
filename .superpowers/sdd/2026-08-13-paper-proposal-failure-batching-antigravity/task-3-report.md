@@ -17,11 +17,17 @@
 
 ## Verification
 
-- `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v` — 32 passed.
+- `python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper -v` — 35 passed after fix round 1.
 - `python3 -m py_compile paper/equipment_anomaly_detection/artifacts_paper.py paper/equipment_anomaly_detection/proposal_score_paper.py paper/equipment_anomaly_detection/runner_paper.py paper/equipment_anomaly_detection/pipeline_paper.py` — passed.
 - Strict codemap-lock hash closure and `validate_codemap_triplet` — passed.
 - `git diff --check` — passed.
 - No proposal/training process or root launch was performed.
+
+## Fix round 1
+
+- Exact verified coverage now returns from Task4+5 before emitting zero-total progress, so restart reconstruction neither schedules workers nor divides by zero; composition then runs Task6 and Task7 exactly once.
+- Incomplete payloads expose the exact pending dataset list and only the truthful `attempts_path`; the misleading `queue_path` alias was removed.
+- Added focused interruption coverage: a parent-persisted coordinate survives interruption and only the remaining submitted-but-uncommitted coordinate is scheduled on restart, within the same rolling-window bound.
 
 ## Judgment calls
 
