@@ -57,8 +57,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(path.with_suffix(".md").exists())
             self.assertIn("<!doctype html>", path.read_text(encoding="utf-8").lower())
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-13-exp452-exp449-index-order-repair-antigravity.html").read_text(encoding="utf-8")
-        for tag in re.findall(r"<input\\b[^>]*>", plan, flags=re.IGNORECASE):
-            self.assertNotRegex(tag, r"\\bchecked(?:\\s|=|>)")
+        tags = re.findall(r"<input\b[^>]*>", plan, flags=re.IGNORECASE)
+        self.assertTrue(tags)
+        for tag in tags:
+            self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+
+    def test_checked_plan_input_fixture_is_detected_antigravity(self) -> None:
+        checked_tag = '<input disabled type="checkbox" checked>'
+        self.assertRegex(checked_tag, r"\bchecked(?:\s|=|>)")
 
     def test_planned_truth_is_label_free_and_non_promoting_antigravity(self) -> None:
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
@@ -80,8 +86,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("cannot guide", exp452["qualified_two_boundary"].lower())
         catalog_entry = next(entry for entry in catalog["experiments"] if entry["id"] == "Exp452")
         self.assertEqual(catalog_entry["status"], "planned_not_started")
+        self.assertEqual(catalog_entry["official_lifecycle"], {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0})
+        self.assertIsNone(catalog_entry["prediction_sha256"])
+        self.assertIsNone(catalog_entry["evaluation_sha256"])
+        self.assertFalse(catalog_entry["promotion_allowed"])
+        self.assertFalse(catalog_entry["routing_allowed"])
+        self.assertFalse(catalog_entry["pending_candidate_changed"])
         champion_entry = next(entry for entry in champion["history"] if entry["experiment"] == "Exp452")
         self.assertEqual(champion_entry["status"], "planned_not_started")
+        self.assertEqual(champion_entry["official_lifecycle"], {"readiness_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0})
+        self.assertIsNone(champion_entry["prediction_sha256"])
+        self.assertIsNone(champion_entry["evaluation_sha256"])
+        self.assertFalse(champion_entry["promotion_allowed"])
+        self.assertFalse(champion_entry["routing_allowed"])
+        self.assertFalse(champion_entry["pending_candidate_changed"])
         self.assertFalse((ROOT_ANTIGRAVITY / "EXPERIMENT_HISTORY.json").exists())
 
     def test_map_is_strict_embedded_and_marks_product_relations_future_unknown_antigravity(self) -> None:
