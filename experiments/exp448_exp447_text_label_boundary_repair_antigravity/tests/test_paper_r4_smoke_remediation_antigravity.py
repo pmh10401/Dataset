@@ -38,8 +38,12 @@ FAILED_SMOKE_ROOT = Path(
 FAILED_SMOKE_OPS_ROOT = Path(
     "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity"
 )
-NEW_SMOKE_ROOT = Path(
+VERIFIED_V2_SMOKE_ROOT = Path(
     "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+)
+VERIFIED_V2_SMOKE_OPS_ROOT = Path(str(VERIFIED_V2_SMOKE_ROOT) + "_ops_antigravity")
+NEW_SMOKE_ROOT = Path(
+    "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814"
 )
 NEW_SMOKE_OPS_ROOT = Path(str(NEW_SMOKE_ROOT) + "_ops_antigravity")
 NEW_INTERPRETER = Path(
@@ -138,12 +142,16 @@ class PaperR4SmokeRemediationTests(unittest.TestCase):
                 _collect_task4_task5({"ChlorineConcentration_normal_3": torch_missing}, backend)
         self.assertEqual(scored, [])
 
-    def test_old_failed_roots_are_preserved_and_new_v2_roots_are_absent(self) -> None:
-        """Production mutation caught: check still assumed the failed smoke root had to be absent."""
+    def test_old_failed_and_verified_v2_roots_are_preserved_and_new_v3_roots_are_absent(self) -> None:
+        """Production mutation caught: repaired launch must not reuse v2 smoke or the failed official ops root."""
         self.assertTrue(FAILED_SMOKE_ROOT.is_dir())
         self.assertTrue(FAILED_SMOKE_OPS_ROOT.is_dir())
         self.assertFalse(FAILED_SMOKE_ROOT.is_symlink())
         self.assertFalse(FAILED_SMOKE_OPS_ROOT.is_symlink())
+        self.assertTrue(VERIFIED_V2_SMOKE_ROOT.is_dir())
+        self.assertTrue(VERIFIED_V2_SMOKE_OPS_ROOT.is_dir())
+        self.assertFalse(VERIFIED_V2_SMOKE_ROOT.is_symlink())
+        self.assertFalse(VERIFIED_V2_SMOKE_OPS_ROOT.is_symlink())
         self.assertFalse(NEW_SMOKE_ROOT.exists())
         self.assertFalse(NEW_SMOKE_OPS_ROOT.exists())
         self.assertFalse(NEW_SMOKE_ROOT.is_symlink())

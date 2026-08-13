@@ -51,15 +51,27 @@ interpreter = /Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py31
 database    = /Users/mac/Documents/Dataset/univariate_ts.db
 r3          = /Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813
 r4          = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813
-ops         = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity
-smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813
+ops         = /Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity
+smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814
 failed_smoke = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813
-failed_ops   = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity
+failed_smoke_ops = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity
+verified_v2_smoke = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813
+verified_v2_smoke_ops = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813_ops_antigravity
+failed_official_ops = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity
 ```
 
-The failed 20260813 smoke/ops pair is immutable read-only evidence. Do not migrate,
-reuse, edit, or delete it. `check` requires those roots present and the v2 smoke/ops
-roots absent. Official r4 remains unauthorized.
+The failed 20260813 smoke/ops pair, the verified v2 smoke/ops pair, and the
+failed official 20260813 ops root are immutable read-only evidence. Do not
+migrate, reuse, edit, or delete them. Changing the launcher invalidates the
+verified v2 smoke authorization, so a repaired-code launch requires a newly
+verified v3 smoke and must never reuse the v2 result SHA. `check` requires
+those evidence roots present and the current v3 smoke/ops roots absent.
+Scientific `r4` remains
+`/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`
+and stays unauthorized and absent. Worker and pipeline children now receive
+`stdin=subprocess.DEVNULL`, inherit the canonical lock only on fd >= 3, and
+emit `child_start` only after a successful Popen with the exact positive child
+PID.
 
 Read-only check (allowed after the operations code is committed; creates no roots).
 The command must be invoked with that exact lexical venv path so `sys.executable`
@@ -77,10 +89,11 @@ base Python.
   scratch/manage_paper_r4_proposal_antigravity.py check --reviewed-commit REVIEWED_COMMIT
 ```
 
-Future prelaunch smoke, still unauthorized by this implementation. The v2
-smoke authority is the frozen sorted 23-name set and includes
+Future prelaunch smoke, still unauthorized by this implementation. The current
+v3 smoke authority is the same frozen sorted 23-name set and includes
 `MelbournePedestrian_normal_10` so the official TEST-only union member is
-exercised on the real Task4+5 path. The first
+exercised on the real Task4+5 path. The verified v2 smoke remains evidence
+only. The first
 completed invocation is non-authorizing (`smoke_confirmation_required`) and
 does not publish `smoke_result`. A second same-authority verification-only
 invocation is required before create-only authorization. An incomplete first
@@ -99,7 +112,7 @@ Operator observation after a future authorized process exists:
 ```bash
 /Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python \
   scratch/manage_paper_r4_proposal_antigravity.py status --reviewed-commit REVIEWED_COMMIT
-tail -f /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity/progress_antigravity.log
+tail -f /Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity/progress_antigravity.log
 ```
 
 Stop and resume. There is no automatic retry. After a `proposal_score_incomplete`

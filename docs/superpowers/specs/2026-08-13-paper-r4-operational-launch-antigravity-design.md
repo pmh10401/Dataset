@@ -33,19 +33,25 @@ Current executable authority:
 - Database: `/Users/mac/Documents/Dataset/univariate_ts.db`
 - Immutable prior root: `/Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813`
 - Future official root: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`
-- Official operations namespace: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity`
-- Prelaunch smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813`
-- Prelaunch smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813_ops_antigravity`
+- Official operations namespace: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity`
+- Prelaunch smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814`
+- Prelaunch smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814_ops_antigravity`
 
 The exp443 MiniRocket interpreter is not the current paper r4 authority.
-Official r4 and its ops namespace remain unauthorized and must stay absent.
-The v2 smoke and smoke-ops roots are the current executable smoke authority
-and must also stay absent until a later authorized smoke.
+Scientific official r4 remains
+`/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`
+and must stay absent. The current v3 smoke/ops roots and the 20260814 ops
+namespace remain unauthorized and must also stay absent until a later
+authorized smoke. The verified v2 smoke result cannot authorize a repaired
+launcher.
 
-Immutable failed v1 evidence, present and never current or reusable:
+Immutable evidence, present and never current or reusable:
 
-- Failed smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813`
-- Failed smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity`
+- Failed v1 smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813`
+- Failed v1 smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity`
+- Verified v2 smoke root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813`
+- Verified v2 smoke-ops root: `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813_ops_antigravity`
+- Failed official ops root: `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity`
 
 The launcher rejects alternate values rather than accepting configurable
 official paths. The reviewed commit is supplied explicitly and must be an exact

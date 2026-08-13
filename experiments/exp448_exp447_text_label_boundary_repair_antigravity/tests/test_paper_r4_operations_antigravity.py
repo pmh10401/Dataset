@@ -37,16 +37,25 @@ OFFICIAL_PATHS = {
         "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813"
     ),
     "OFFICIAL_OPS_ROOT": Path(
-        "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+        "/Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity"
     ),
     "OFFICIAL_SMOKE_ROOT": Path(
-        "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+        "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814"
     ),
     "FAILED_SMOKE_ROOT": Path(
         "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813"
     ),
     "FAILED_SMOKE_OPS_ROOT": Path(
         "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity"
+    ),
+    "FAILED_OFFICIAL_OPS_ROOT": Path(
+        "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+    ),
+    "VERIFIED_V2_SMOKE_ROOT": Path(
+        "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+    ),
+    "VERIFIED_V2_SMOKE_OPS_ROOT": Path(
+        "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813_ops_antigravity"
     ),
 }
 EXPECTED_SMOKE_DATASETS = (
@@ -130,8 +139,8 @@ class PaperR4OperationsTests(unittest.TestCase):
         r4 = dataset / "paper_proposal_full_r4_antigravity_20260813"
         if create_r4:
             r4.mkdir()
-        smoke = dataset / "paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
-        ops = dataset / "paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+        smoke = dataset / Path(module.OFFICIAL_SMOKE_ROOT).name
+        ops = dataset / Path(module.OFFICIAL_OPS_ROOT).name
         for relative in module.SCORING_CLOSURE_PATHS:
             path = repo / relative
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -1115,8 +1124,16 @@ class PaperR4OperationsTests(unittest.TestCase):
         failed_roots = (
             OFFICIAL_PATHS["FAILED_SMOKE_ROOT"],
             OFFICIAL_PATHS["FAILED_SMOKE_OPS_ROOT"],
+            OFFICIAL_PATHS["FAILED_OFFICIAL_OPS_ROOT"],
         )
-        before = {path: (path.exists(), path.is_symlink()) for path in official_roots + failed_roots}
+        verified_v2_roots = (
+            OFFICIAL_PATHS["VERIFIED_V2_SMOKE_ROOT"],
+            OFFICIAL_PATHS["VERIFIED_V2_SMOKE_OPS_ROOT"],
+        )
+        before = {
+            path: (path.exists(), path.is_symlink())
+            for path in official_roots + failed_roots + verified_v2_roots
+        }
         completed = subprocess.run(
             [str(official), "-B", "-u", str(seam)],
             cwd=str(REPOSITORY_ROOT),
@@ -1137,11 +1154,17 @@ class PaperR4OperationsTests(unittest.TestCase):
         self.assertFalse(module.OFFICIAL_R4_ROOT.exists())
         self.assertFalse(module.OFFICIAL_OPS_ROOT.exists())
         self.assertFalse(module.OFFICIAL_SMOKE_ROOT.exists())
-        self.assertEqual({path: (path.exists(), path.is_symlink()) for path in official_roots + failed_roots}, before)
+        self.assertEqual(
+            {
+                path: (path.exists(), path.is_symlink())
+                for path in official_roots + failed_roots + verified_v2_roots
+            },
+            before,
+        )
         for path in official_roots:
             self.assertFalse(path.exists())
             self.assertFalse(path.is_symlink())
-        for path in failed_roots:
+        for path in failed_roots + verified_v2_roots:
             self.assertTrue(path.is_dir())
             self.assertFalse(path.is_symlink())
         self.assertEqual(payload["failed_smoke_root"], str(OFFICIAL_PATHS["FAILED_SMOKE_ROOT"]))

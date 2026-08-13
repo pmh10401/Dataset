@@ -34,10 +34,10 @@ OFFICIAL_DATABASE = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
 OFFICIAL_R3_ROOT = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813")
 OFFICIAL_R4_ROOT = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813")
 OFFICIAL_OPS_ROOT = Path(
-    "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+    "/Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity"
 )
 OFFICIAL_SMOKE_ROOT = Path(
-    "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+    "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814"
 )
 FAILED_SMOKE_ROOT = Path(
     "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813"
@@ -45,9 +45,25 @@ FAILED_SMOKE_ROOT = Path(
 FAILED_SMOKE_OPS_ROOT = Path(
     "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813_ops_antigravity"
 )
+FAILED_OFFICIAL_OPS_ROOT = Path(
+    "/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"
+)
+VERIFIED_V2_SMOKE_ROOT = Path(
+    "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"
+)
+VERIFIED_V2_SMOKE_OPS_ROOT = Path(str(VERIFIED_V2_SMOKE_ROOT) + "_ops_antigravity")
 FAILED_SMOKE_TREE_SHA256 = "5b91f015c0e63bbc28b0de3ae1d142fb814d023c7812bc3fef2a69c38f7bd429"
 FAILED_SMOKE_OPS_TREE_SHA256 = "5677b79105bc7bc6d884cf7d713e42bb7b12f3fe1f57c18971e19d73483c01f6"
 FAILED_SMOKE_OPS_AUTHORITY_SHA256 = "e64bf4fce16d651ea68c187e9d9faef2af685a35fabf1bb2ce3beb14bcf66a58"
+FAILED_OFFICIAL_OPS_TREE_SHA256 = "61bee0c09a314c85058269b61fcb444077007ad74bfcc975626bcd40f261a8d6"
+FAILED_OFFICIAL_OPS_AUTHORITY_SHA256 = "dc2b97b2a1118f120551a63ed0e4071ca5f8e00bc808975adf9f7611e3f75860"
+FAILED_OFFICIAL_OPS_STATE_SHA256 = "db3eb188ac7fadcc0a5fb754f095f02bb646bafcffb252385eb82619968094b9"
+FAILED_OFFICIAL_OPS_PROGRESS_LOG_SHA256 = "cfb65a61ffa6599dff9ef110226b1ae6fc11d71e7cb6a5ce8dfcc47e5d88e019"
+FAILED_OFFICIAL_OPS_PROGRESS_EVENTS_SHA256 = "4f106be4f75ddb004f847fcb80ee456848de802e03c0000d056cd37a1eb24db7"
+VERIFIED_V2_SMOKE_TREE_SHA256 = "a31b588cd6be3c90575032c830822c79d333e34e2dadd20c19d0b2c7fdd2a3f8"
+VERIFIED_V2_SMOKE_OPS_TREE_SHA256 = "66d9fa0b79cb76aa3d76c40decd3fac57c1220bc22f59ed07b062b3c5d956d46"
+VERIFIED_V2_SMOKE_RESULT_SHA256 = "ffce73aaa0d93770f3f86452c6f22b4703fc1f1cc82f339ede1b6b86b3a30953"
+VERIFIED_V2_SMOKE_OPS_AUTHORITY_SHA256 = "d276164b00672b8b92e749673ebef1b89edda4cba13315819789bbd7d87d78a8"
 PINNED_TORCH_VERSION = "2.13.0"
 EXPECTED_DATABASE_SHA256 = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
 EXPECTED_DATASET_COUNT = 1117
@@ -158,6 +174,18 @@ AUTHORITY_FIELDS = {
     "failed_smoke_tree_sha256",
     "failed_smoke_ops_tree_sha256",
     "failed_smoke_ops_authority_sha256",
+    "verified_v2_smoke_root",
+    "verified_v2_smoke_ops_root",
+    "verified_v2_smoke_tree_sha256",
+    "verified_v2_smoke_ops_tree_sha256",
+    "verified_v2_smoke_result_sha256",
+    "verified_v2_smoke_ops_authority_sha256",
+    "failed_official_ops_root",
+    "failed_official_ops_tree_sha256",
+    "failed_official_ops_authority_sha256",
+    "failed_official_ops_state_sha256",
+    "failed_official_ops_progress_log_sha256",
+    "failed_official_ops_progress_events_sha256",
     "smoke_result_sha256",
     "executable",
     "executable_realpath",
@@ -436,9 +464,92 @@ def _failed_evidence_identity() -> dict[str, str]:
     }
 
 
+def _verified_v2_smoke_identity() -> dict[str, str]:
+    for path, name in (
+        (VERIFIED_V2_SMOKE_ROOT, "verified v2 smoke root"),
+        (VERIFIED_V2_SMOKE_OPS_ROOT, "verified v2 smoke-ops root"),
+    ):
+        _reject_symlink(path, name)
+        _validate_ops_root(path, name)
+        if not path.is_dir():
+            raise ValueError(f"{name} must remain present as immutable evidence")
+    smoke_digest = _tree_digest(VERIFIED_V2_SMOKE_ROOT, "verified v2 smoke root")
+    ops_digest = _tree_digest(VERIFIED_V2_SMOKE_OPS_ROOT, "verified v2 smoke-ops root")
+    authority_hash = VERIFIED_V2_SMOKE_OPS_ROOT / "authority_sha256_antigravity.txt"
+    result_path = VERIFIED_V2_SMOKE_OPS_ROOT / "smoke_result_antigravity.json"
+    _require_regular_file(authority_hash, "verified v2 smoke-ops authority hash")
+    _require_regular_file(result_path, "verified v2 smoke result")
+    recorded = authority_hash.read_text(encoding="ascii").strip()
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    result_digest = payload.get("result_sha256") if isinstance(payload, dict) else None
+    if smoke_digest != VERIFIED_V2_SMOKE_TREE_SHA256:
+        raise ValueError("verified v2 smoke root digest differs")
+    if ops_digest != VERIFIED_V2_SMOKE_OPS_TREE_SHA256:
+        raise ValueError("verified v2 smoke-ops root digest differs")
+    if recorded != VERIFIED_V2_SMOKE_OPS_AUTHORITY_SHA256:
+        raise ValueError("verified v2 smoke-ops authority digest differs")
+    if result_digest != VERIFIED_V2_SMOKE_RESULT_SHA256:
+        raise ValueError("verified v2 smoke result digest differs")
+    return {
+        "verified_v2_smoke_root": str(VERIFIED_V2_SMOKE_ROOT),
+        "verified_v2_smoke_ops_root": str(VERIFIED_V2_SMOKE_OPS_ROOT),
+        "verified_v2_smoke_tree_sha256": smoke_digest,
+        "verified_v2_smoke_ops_tree_sha256": ops_digest,
+        "verified_v2_smoke_result_sha256": result_digest,
+        "verified_v2_smoke_ops_authority_sha256": recorded,
+    }
+
+
+def _failed_official_ops_identity() -> dict[str, str]:
+    path = FAILED_OFFICIAL_OPS_ROOT
+    _reject_symlink(path, "failed official ops root")
+    _validate_ops_root(path, "failed official ops root")
+    if not path.is_dir():
+        raise ValueError("failed official ops root must remain present as immutable evidence")
+    tree_digest = _tree_digest(path, "failed official ops root")
+    authority = path / "authority_antigravity.json"
+    state = path / "state_antigravity.json"
+    progress_log = path / "progress_antigravity.log"
+    progress_events = path / "progress_events_antigravity.jsonl"
+    _require_regular_file(authority, "failed official ops authority")
+    _require_regular_file(state, "failed official ops state")
+    _require_regular_file(progress_log, "failed official ops progress log")
+    _require_regular_file(progress_events, "failed official ops progress events")
+    authority_digest = sha256_file(authority)
+    state_digest = sha256_file(state)
+    log_digest = sha256_file(progress_log)
+    events_digest = sha256_file(progress_events)
+    if tree_digest != FAILED_OFFICIAL_OPS_TREE_SHA256:
+        raise ValueError("failed official ops root digest differs")
+    if authority_digest != FAILED_OFFICIAL_OPS_AUTHORITY_SHA256:
+        raise ValueError("failed official ops authority digest differs")
+    if state_digest != FAILED_OFFICIAL_OPS_STATE_SHA256:
+        raise ValueError("failed official ops state digest differs")
+    if log_digest != FAILED_OFFICIAL_OPS_PROGRESS_LOG_SHA256:
+        raise ValueError("failed official ops progress log digest differs")
+    if events_digest != FAILED_OFFICIAL_OPS_PROGRESS_EVENTS_SHA256:
+        raise ValueError("failed official ops progress events digest differs")
+    return {
+        "failed_official_ops_root": str(path),
+        "failed_official_ops_tree_sha256": tree_digest,
+        "failed_official_ops_authority_sha256": authority_digest,
+        "failed_official_ops_state_sha256": state_digest,
+        "failed_official_ops_progress_log_sha256": log_digest,
+        "failed_official_ops_progress_events_sha256": events_digest,
+    }
+
+
+def _immutable_evidence_identity() -> dict[str, str]:
+    return {
+        **_failed_evidence_identity(),
+        **_verified_v2_smoke_identity(),
+        **_failed_official_ops_identity(),
+    }
+
+
 def _require_new_smoke_absent() -> None:
-    _require_absent(OFFICIAL_SMOKE_ROOT, "v2 smoke root")
-    _require_absent(smoke_ops_paths().root, "v2 smoke-ops root")
+    _require_absent(OFFICIAL_SMOKE_ROOT, "v3 smoke root")
+    _require_absent(smoke_ops_paths().root, "v3 smoke-ops root")
 
 
 def _smoke_root_manifest_sha256() -> str:
@@ -592,7 +703,7 @@ def build_authority(reviewed_commit: str, *, smoke_result_sha256: str | None = N
         "r4_absent": True,
         "ops_root": str(OFFICIAL_OPS_ROOT),
         "smoke_root": str(OFFICIAL_SMOKE_ROOT),
-        **_failed_evidence_identity(),
+        **_immutable_evidence_identity(),
         "smoke_result_sha256": smoke_result_sha256,
         "executable": runtime["executable"],
         "executable_realpath": runtime["executable_realpath"],
@@ -669,6 +780,10 @@ def validate_authority(authority: Mapping[str, object]) -> dict[str, object]:
     smoke = authority.get("smoke_result_sha256")
     if smoke is not None and not _is_sha256(smoke):
         raise ValueError("launch authority smoke result hash is invalid")
+    if smoke == VERIFIED_V2_SMOKE_RESULT_SHA256:
+        raise ValueError("verified v2 smoke result cannot authorize a repaired launch")
+    if authority.get("smoke_root") != str(OFFICIAL_SMOKE_ROOT) or authority.get("ops_root") != str(OFFICIAL_OPS_ROOT):
+        raise ValueError("launch authority current smoke/ops identity is invalid")
     if (
         authority.get("failed_smoke_root") != str(FAILED_SMOKE_ROOT)
         or authority.get("failed_smoke_ops_root") != str(FAILED_SMOKE_OPS_ROOT)
@@ -677,6 +792,24 @@ def validate_authority(authority: Mapping[str, object]) -> dict[str, object]:
         or authority.get("failed_smoke_ops_authority_sha256") != FAILED_SMOKE_OPS_AUTHORITY_SHA256
     ):
         raise ValueError("launch authority failed smoke evidence identity is invalid")
+    if (
+        authority.get("verified_v2_smoke_root") != str(VERIFIED_V2_SMOKE_ROOT)
+        or authority.get("verified_v2_smoke_ops_root") != str(VERIFIED_V2_SMOKE_OPS_ROOT)
+        or authority.get("verified_v2_smoke_tree_sha256") != VERIFIED_V2_SMOKE_TREE_SHA256
+        or authority.get("verified_v2_smoke_ops_tree_sha256") != VERIFIED_V2_SMOKE_OPS_TREE_SHA256
+        or authority.get("verified_v2_smoke_result_sha256") != VERIFIED_V2_SMOKE_RESULT_SHA256
+        or authority.get("verified_v2_smoke_ops_authority_sha256") != VERIFIED_V2_SMOKE_OPS_AUTHORITY_SHA256
+    ):
+        raise ValueError("launch authority verified v2 smoke evidence identity is invalid")
+    if (
+        authority.get("failed_official_ops_root") != str(FAILED_OFFICIAL_OPS_ROOT)
+        or authority.get("failed_official_ops_tree_sha256") != FAILED_OFFICIAL_OPS_TREE_SHA256
+        or authority.get("failed_official_ops_authority_sha256") != FAILED_OFFICIAL_OPS_AUTHORITY_SHA256
+        or authority.get("failed_official_ops_state_sha256") != FAILED_OFFICIAL_OPS_STATE_SHA256
+        or authority.get("failed_official_ops_progress_log_sha256") != FAILED_OFFICIAL_OPS_PROGRESS_LOG_SHA256
+        or authority.get("failed_official_ops_progress_events_sha256") != FAILED_OFFICIAL_OPS_PROGRESS_EVENTS_SHA256
+    ):
+        raise ValueError("launch authority failed official ops evidence identity is invalid")
     backend = authority.get("backend")
     if not isinstance(backend, dict) or set(backend) != BACKEND_FIELDS or backend.get("selected_backend") != "cpu":
         raise ValueError("launch authority backend schema is invalid")
@@ -688,7 +821,7 @@ def check(reviewed_commit: str, *, require_new_smoke_absent: bool = True) -> dic
     _reject_symlink(OFFICIAL_R4_ROOT, "r4 root")
     if require_new_smoke_absent:
         _require_new_smoke_absent()
-    _failed_evidence_identity()
+    _immutable_evidence_identity()
     _validate_ops_root(OFFICIAL_OPS_ROOT, "ops root")
     _validate_ops_root(OFFICIAL_SMOKE_ROOT, "smoke root")
     _validate_ops_root(smoke_ops_paths().root, "smoke-ops root")
@@ -894,6 +1027,11 @@ def verify_smoke_authorization(reviewed_commit: str) -> dict[str, object]:
     current = build_authority(reviewed_commit)
     if payload.get("authority_sha256") != sha256(canonical_json_bytes(current)).hexdigest():
         raise ValueError("smoke result authority differs")
+    if (
+        payload.get("smoke_root") == str(VERIFIED_V2_SMOKE_ROOT)
+        or payload.get("result_sha256") == VERIFIED_V2_SMOKE_RESULT_SHA256
+    ):
+        raise ValueError("verified v2 smoke result cannot authorize a repaired launch")
     if payload.get("smoke_root") != str(OFFICIAL_SMOKE_ROOT):
         raise ValueError("smoke result root differs")
     if payload.get("label_module_loaded") is not False:
@@ -990,6 +1128,33 @@ def _publish_smoke_result(authority: Mapping[str, object], pipeline: Mapping[str
     return payload
 
 
+def _ensure_inherited_lock_fd(fd: int) -> int:
+    if type(fd) is not int or fd < 0:
+        raise ValueError("inherited lock fd is invalid")
+    if fd >= 3:
+        return fd
+    extras: list[int] = []
+    current = fd
+    try:
+        while current < 3:
+            duplicated = os.dup(current)
+            extras.append(duplicated)
+            current = duplicated
+        for stale in [fd, *[item for item in extras if item != current]]:
+            os.close(stale)
+        flags = fcntl.fcntl(current, fcntl.F_GETFD)
+        fcntl.fcntl(current, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
+        return current
+    except BaseException:
+        for extra in extras:
+            if extra != current:
+                try:
+                    os.close(extra)
+                except Exception:
+                    pass
+        raise
+
+
 def _authenticate_inherited_lock_fd(lock_fd: int, lock_path: Path):
     owned = False
     try:
@@ -1005,6 +1170,7 @@ def _authenticate_inherited_lock_fd(lock_fd: int, lock_path: Path):
         lock_info = Path(lock_path).lstat()
         if (info.st_dev, info.st_ino) != (lock_info.st_dev, lock_info.st_ino):
             raise ValueError("inherited lock fd does not match canonical lock")
+        lock_fd = _ensure_inherited_lock_fd(lock_fd)
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as error:
@@ -1030,18 +1196,25 @@ def _acquire_lock(paths: OpsPaths):
     except OSError as error:
         raise ValueError("worker lock is invalid") from error
     try:
+        descriptor = _ensure_inherited_lock_fd(descriptor)
         info = os.fstat(descriptor)
         if not stat.S_ISREG(info.st_mode):
             raise ValueError("worker lock must be a regular non-symlink file")
         stream = os.fdopen(descriptor, "r+b", closefd=True)
     except Exception:
-        os.close(descriptor)
+        try:
+            os.close(descriptor)
+        except Exception:
+            pass
         raise
     try:
         fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError as error:
         stream.close()
         raise ValueError("paper r4 worker is already running") from error
+    if stream.fileno() < 3:
+        stream.close()
+        raise ValueError("inherited lock fd is invalid")
     return stream
 
 
@@ -1069,6 +1242,10 @@ def _spawn_worker(
         "--mode",
         mode,
     ]
+    lock_fd = lock_stream.fileno()
+    if type(lock_fd) is not int or lock_fd < 3:
+        raise ValueError("inherited lock fd is invalid")
+    command[command.index("--lock-fd") + 1] = str(lock_fd)
     log_stream = paths.progress_log.open("ab", buffering=0)
     try:
         process = spawn(
@@ -1076,9 +1253,10 @@ def _spawn_worker(
             cwd=str(REPOSITORY_ROOT),
             env=_thread_environment(),
             start_new_session=True,
+            stdin=subprocess.DEVNULL,
             stdout=log_stream,
             stderr=subprocess.STDOUT,
-            pass_fds=(lock_stream.fileno(),),
+            pass_fds=(lock_fd,),
         )
     finally:
         log_stream.close()
@@ -1505,15 +1683,19 @@ def smoke(reviewed_commit: str, *, run_child=None) -> dict[str, object]:
 
 def _run_pipeline_child(mode: str, run_root: Path, paths: OpsPaths) -> int:
     command = pipeline_command(mode, run_root)
-    _append_log(paths.progress_log, "child_start " + " ".join(command))
     child = subprocess.Popen(
         command,
         cwd=str(REPOSITORY_ROOT),
         env=_thread_environment(),
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
     )
+    pid = child.pid
+    if type(pid) is not int or pid < 1:
+        raise ValueError("pipeline child did not return a valid PID")
+    _append_log(paths.progress_log, f"child_start {pid} " + " ".join(command))
     assert child.stdout is not None
     for line in child.stdout:
         text = line.rstrip("\n")
@@ -1586,6 +1768,18 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
         )
         run_root = OFFICIAL_R4_ROOT if mode == "full" else OFFICIAL_SMOKE_ROOT
         command = pipeline_command(mode, run_root)
+        child = subprocess.Popen(
+            command,
+            cwd=str(REPOSITORY_ROOT),
+            env=_thread_environment(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        pid = child.pid
+        if type(pid) is not int or pid < 1:
+            raise ValueError("pipeline child did not return a valid PID")
         _append_event(
             paths.progress_events,
             {
@@ -1594,16 +1788,8 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
                 "stream": "state",
                 "line": "child_start",
                 "command": command,
-                "child_pid": None,
+                "child_pid": pid,
             },
-        )
-        child = subprocess.Popen(
-            command,
-            cwd=str(REPOSITORY_ROOT),
-            env=_thread_environment(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
         )
         assert child.stdout is not None
         for line in child.stdout:

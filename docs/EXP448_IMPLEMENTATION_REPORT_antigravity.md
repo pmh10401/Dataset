@@ -46,7 +46,7 @@ evaluate, inspect 또는 root allocation이 허용되지 않는다.
 
 - Python/NumPy are `3.14.6` / `2.4.6`; design, plan, preregistration, and runbook SHA256 values
   remain respectively `ed2b6e5e...3ce4`, `b79b3b7f...fe934`, `af2b8b10...c612f`, and
-  `731b049d945fb84237a8a6066e04f557167dd110fffbbcca379c40025c68991b`.
+  `5eab3a9596a649205c552f282f5f6137804d5b74638984ebe78e3c7c35c5a789`.
 - The DB SHA256 is `8458e678...ef3c`, inode `1048138`, nlink `1`. The immutable Exp447 audit
   SHA256 is `9f8f7d3d...2b97`, inode `19812443`, nlink `1`.
 - Descriptor-pinned Exp446 identity remains `1117` datasets with manifest
@@ -125,6 +125,24 @@ only. It does not authorize smoke-root or official r4-root creation.
   state/log behavior remains. Resume accepts only an empty r4 root or a root
   whose only child is an empty canonical journal directory, then lets the
   runner initialize; every other partial or polluted shape is rejected.
+- Official-r4 stdio isolation: `_spawn_worker`, `_worker` pipeline child, and
+  `_run_pipeline_child` pass `stdin=subprocess.DEVNULL` while keeping their
+  previous stdout/stderr routing. The inherited canonical lock fd is duplicated
+  to fd >= 3 when parent fd0/1/2 are unavailable, preserving flock
+  open-file-description ownership. The worker `child_start` event is emitted
+  only after a successful Popen and carries the exact positive `child.pid`.
+- Path authority after the failed official ops attempt: scientific
+  `OFFICIAL_R4_ROOT` stays
+  `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`
+  and remains absent. Current ops is
+  `/Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity`.
+  Current smoke is
+  `/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814`
+  plus matching `_ops_antigravity`. The failed 20260813 official ops root, the
+  failed v1 smoke/ops pair, and the verified v2 smoke/ops pair are bound by
+  exact tree/authority/state/progress or result hashes and remain immutable
+  non-reusable evidence. A repaired launch requires newly verified v3 smoke
+  and rejects the bound v2 result SHA.
 - CLI `smoke` exits 0 only for top-level `smoke_verified`.
   `smoke_confirmation_required` and `smoke_incomplete` are nonzero.
 - Paper `write_create_only` remains a complete write loop, fsync, same-directory
@@ -152,5 +170,6 @@ only. It does not authorize smoke-root or official r4-root creation.
   resume-equivalence fixture. They write only temporary Git/DB/path fixtures.
 - Implementation verification does not create
   `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`,
-  the smoke root, or the ops root, and it starts no official or detached
-  experiment process.
+  the current v3 smoke root, or the current 20260814 ops root, and it starts
+  no official or detached experiment process. It does not mutate the failed
+  official ops root or the verified v2 smoke evidence.
