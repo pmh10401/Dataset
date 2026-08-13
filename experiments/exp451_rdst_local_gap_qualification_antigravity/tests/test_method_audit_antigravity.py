@@ -17,6 +17,15 @@ from experiments.exp451_rdst_local_gap_qualification_antigravity.method_audit_an
 
 
 class MethodAuditAntigravityTest(unittest.TestCase):
+    def test_scientific_runtime_checks_exact_versions_then_audits_once_antigravity(self):
+        from unittest.mock import patch
+        from experiments.exp451_rdst_local_gap_qualification_antigravity import method_audit_antigravity as module
+        expected=object()
+        versions={"aeon":"1.4.0","numpy":"2.3.5","scikit-learn":"1.7.2"}
+        with patch.object(module.sys,"executable",module.FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY.fixed_interpreter), patch.object(module.sys,"version_info",(3,14,6)), patch.object(module.importlib.metadata,"version",side_effect=versions.__getitem__), patch.object(module,"audit_rdst_antigravity",return_value=expected) as audit:
+            self.assertIs(module.validate_scientific_runtime_antigravity(),expected); audit.assert_called_once_with()
+        with patch.object(module.sys,"executable","/wrong"), patch.object(module,"audit_rdst_antigravity") as audit, self.assertRaises(ValueError): module.validate_scientific_runtime_antigravity()
+        audit.assert_not_called()
     def valid_response_antigravity(self) -> dict[str, object]:
         return {
             "schema": "exp451.rdst_audit.response.v1", "aeon_version": "1.4.0",

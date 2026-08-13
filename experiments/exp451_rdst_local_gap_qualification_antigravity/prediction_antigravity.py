@@ -797,13 +797,25 @@ def validate_frozen_prediction_authority_antigravity(authority: FrozenPrediction
 
 
 def run_prediction_antigravity(reviewed_commit: str) -> FrozenPredictionAuthorityAntigravity:
+    from .method_audit_antigravity import validate_scientific_runtime_antigravity
+    validate_scientific_runtime_antigravity()
     decision = decide_backend_antigravity(installed_backend_probe_antigravity("mlx"))
     dependencies = PredictionDependenciesAntigravity(None, lambda: None, decision)
     return _run_prediction_with_dependencies_antigravity(reviewed_commit, dependencies).authority
+
+def load_frozen_prediction_authority_antigravity() -> FrozenPredictionAuthorityAntigravity:
+    predecessor=verify_exp448_predecessor_antigravity()
+    identities=tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True))
+    expected=ExpectedPredecessorSnapshotAntigravity(identities,tuple(predecessor.target_test_lengths))
+    with PinnedPredictionTreeAntigravity(_OFFICIAL_ROOT_ANTIGRAVITY) as tree:
+        manifest=tree.read_canonical_antigravity(tree.root_fd,"manifest_antigravity.json")
+        if type(manifest) is not dict or type(manifest.get("authority")) is not dict: raise ValueError("prediction manifest authority absent")
+        authority=FrozenPredictionAuthorityAntigravity.from_payload_antigravity(manifest["authority"])
+        return _validate_complete_prediction_antigravity(tree,authority,expected,manifest,prospective=False)
 
 
 __all__ = [
     "CommittedPrefixAntigravity", "ExpectedPredecessorSnapshotAntigravity", "PredictionDependenciesAntigravity",
     "PredictionProgressAntigravity", "PredictionRunResultAntigravity",
-    "PinnedPredictionTreeAntigravity", "run_prediction_antigravity", "validate_frozen_prediction_authority_antigravity",
+    "PinnedPredictionTreeAntigravity", "load_frozen_prediction_authority_antigravity", "run_prediction_antigravity", "validate_frozen_prediction_authority_antigravity",
 ]

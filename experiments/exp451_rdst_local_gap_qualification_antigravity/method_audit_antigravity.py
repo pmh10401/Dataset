@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import importlib.metadata
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from typing import Final
 
@@ -191,3 +193,10 @@ def audit_rdst_antigravity() -> RdstAuditResultAntigravity:
     if (result.seed, result.max_shapelets, result.n_jobs) != (authority.seeds[0], authority.max_shapelets, authority.rdst_n_jobs):
         raise ValueError("fixed RDST fixture parameters differ")
     return result
+
+def validate_scientific_runtime_antigravity() -> RdstAuditResultAntigravity:
+    authority=FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY
+    if sys.executable!=authority.fixed_interpreter or ".".join(map(str,sys.version_info[:3]))!=authority.python_version: raise ValueError("scientific Python runtime differs")
+    expected={"aeon":authority.aeon_version,"numpy":authority.numpy_version,"scikit-learn":authority.sklearn_version}
+    if any(importlib.metadata.version(name)!=version for name,version in expected.items()): raise ValueError("scientific package runtime differs")
+    return audit_rdst_antigravity()

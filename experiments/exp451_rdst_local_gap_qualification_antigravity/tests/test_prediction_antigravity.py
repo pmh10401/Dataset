@@ -42,6 +42,29 @@ def nonfinite_scorer(train, test, seed, backend):
 
 
 class PredictionTestsAntigravity(unittest.TestCase):
+    def test_public_prediction_preflight_precedes_backend_and_data_antigravity(self):
+        from unittest.mock import patch
+        from experiments.exp451_rdst_local_gap_qualification_antigravity import prediction_antigravity as module
+        with patch("experiments.exp451_rdst_local_gap_qualification_antigravity.method_audit_antigravity.validate_scientific_runtime_antigravity",side_effect=ValueError("runtime")), patch.object(module,"installed_backend_probe_antigravity") as backend, patch.object(module,"_run_prediction_with_dependencies_antigravity") as run, self.assertRaisesRegex(ValueError,"runtime"):
+            module.run_prediction_antigravity(SHA)
+        backend.assert_not_called(); run.assert_not_called()
+
+    def test_loader_uses_one_tree_snapshot_and_real_expected_authority_antigravity(self):
+        from unittest.mock import patch
+        from experiments.exp451_rdst_local_gap_qualification_antigravity import prediction_antigravity as module
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antigravity import FrozenPredictionAuthorityAntigravity
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.predecessor_antigravity import verify_exp448_predecessor_antigravity
+        predecessor=verify_exp448_predecessor_antigravity(); identities=tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True)); authority=FrozenPredictionAuthorityAntigravity(SHA,identities,predecessor.target_test_lengths,tuple(() for _ in identities)); manifest={"authority":authority.to_payload_antigravity()}; captured=[]
+        class Tree:
+            root_fd=7
+            def __init__(self,root): captured.append(("init",root))
+            def __enter__(self): return self
+            def __exit__(self,*args): captured.append(("exit",))
+            def read_canonical_antigravity(self,fd,name): return manifest
+        def complete(tree,value,expected,manifest_value,prospective): captured.append((value,expected,prospective)); return value
+        with patch.object(module,"PinnedPredictionTreeAntigravity",Tree), patch.object(module,"_validate_complete_prediction_antigravity",side_effect=complete): self.assertEqual(module.load_frozen_prediction_authority_antigravity(),authority)
+        self.assertEqual(sum(item[0]=="init" for item in captured if type(item[0]) is str),1); self.assertEqual(captured[-2][1],ExpectedPredecessorSnapshotAntigravity(identities,predecessor.target_test_lengths))
+
     def test_public_validator_passes_exact_real_predecessor_snapshot_without_labels_antigravity(self):
         from unittest.mock import patch
         from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antigravity import FrozenPredictionAuthorityAntigravity
