@@ -130,7 +130,7 @@ class Exp449GovernanceTest(unittest.TestCase):
         source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         graph, _lock, html = build_map_antigravity(source_commit, "2026-08-12T11:30:00+00:00")
         lifecycle = next(node for node in graph["nodes"] if node["id"] == "receipt_lifecycle")
-        self.assertIn("Task-2", lifecycle["role"])
+        self.assertIn("terminal stopped", lifecycle["role"])
         self.assertIn("implemented", graph["scope"][0])
         self.assertIn("Task 3 readiness/CLI/launcher is implemented-for-review", html)
 
@@ -142,7 +142,7 @@ class Exp449GovernanceTest(unittest.TestCase):
         state = strict_json_antigravity(Path("RESEARCH_STATE.json"))
         self.assertEqual(state["active_experiment"], "Exp449")
         self.assertEqual(state["exp449"]["label_access_count"], 0)
-        self.assertFalse(state["exp449"]["official_readiness_started"])
+        self.assertTrue(state["exp449"]["official_readiness_started"])
         self.assertEqual(state["pending_candidate"], EXPECTED_PENDING_CANDIDATE)
 
     def test_global_human_readable_document_policy_is_exact_antigravity(self):

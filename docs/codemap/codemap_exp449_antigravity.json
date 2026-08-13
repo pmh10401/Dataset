@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-08-12T23:44:47+00:00",
-  "source_parent_commit": "7c1aecd62ed0bf94c7784b262789997a18b5c40b",
+  "generated_at": "2026-08-13T00:00:00Z",
+  "source_parent_commit": "275e639854f2436289f49ac79cea4e1e698f542e",
   "scope": [
-    "Task 3 readiness/CLI/launcher is implemented-for-review; Task 4 clean-candidate verification is implemented-for-review. Official lifecycle remains unauthorized, and dashboard_access=blocked is presentation-only."
+    "Task 5 official outcome is implemented and immutable: readiness and zero-label predict succeeded once, evaluation failed permanently before labels, inspect/retry are prohibited, and dashboard_access=blocked remains presentation-only."
   ],
   "topology_note": "The map retains 20 nodes by consolidating prediction progress into the public prediction-authority boundary while retaining its concrete import, progress tests, 96-leaf completion gate, and lifecycle flow. The lock uses the same-commit source-parent contract and excludes exactly its own three Exp449 triplet paths.",
   "nodes": [
     {
       "id": "research_control",
       "path": "RESEARCH_STATE.json",
-      "role": "Task-4 clean-candidate truth: implementation verified awaiting official readiness, zero label access, closed official lifecycle, dashboard_access=blocked, and unchanged champion/pending candidate.",
+      "role": "Task-5 official outcome truth: readiness/predict succeeded once, evaluation failed permanently before labels, inspect is prohibited, and champion/pending candidate remain unchanged.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
       "evidence": [
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"implementation_verified_awaiting_official_readiness\""
+          "symbol": "\"official_readiness_passed_evaluation_failed_immutable_no_retry\""
         },
         {
           "path": "CHAMPION_LEDGER.json",
@@ -83,14 +83,14 @@
     {
       "id": "two_root_correction_plan",
       "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
-      "role": "Executable superseding plan: Task 4 clean-candidate verification is implemented-for-review; Task 5 remains unauthorized and original unsafe Tasks 7–8 remain unchecked.",
+      "role": "Executable superseding plan: authorized Task-5 outcome is immutable after evaluation failure; no retry, inspect, dashboard action, or original unsafe Task 7–8 action is permitted.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_governance_antigravity.py"
       ],
       "evidence": [
         {
           "path": "docs/superpowers/plans/2026-08-12-exp449-two-root-lifecycle-correction-antigravity.html",
-          "symbol": "Task 4: Sequential verification, dashboard authority evidence, and same-commit clean truth"
+          "symbol": "Task 5: Authorized single-use lifecycle and truth/dashboard closeout"
         },
         {
           "path": "docs/superpowers/plans/2026-08-12-exp449-residual-fn-method-qualification-antigravity.html",
@@ -241,7 +241,7 @@
     {
       "id": "receipt_lifecycle",
       "path": "experiments/exp449_residual_fn_method_qualification_antigravity/lifecycle_antigravity.py",
-      "role": "Task-2 descriptor-safe receipt state machine and unified create-only failure audit, now entered by Task-3 reviewed-map readiness, the exact lazy CLI, and the outside-CWD launcher. Official execution remains closed.",
+      "role": "Descriptor-safe receipt state machine and create-only audit: Task-5 produced the terminal stopped receipt after its sole evaluation failure, permanently blocking later lifecycle commands.",
       "tests": [
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_lifecycle_antigravity.py",
         "experiments/exp449_residual_fn_method_qualification_antigravity/tests/test_prediction_antigravity.py",
@@ -577,15 +577,15 @@
   ],
   "flows": [
     {
-      "trigger": "Task 4 clean-candidate verification",
+      "trigger": "Task 5 authorized lifecycle outcome",
       "steps": [
         "two_root_correction_design",
         "receipt_lifecycle",
-        "exp448_authority",
-        "research_control",
-        "two_root_correction_plan"
+        "prediction_authority",
+        "task6_evaluation",
+        "research_control"
       ],
-      "outcome": "Retained serial regressions and descriptor-only authority establish a clean implementation candidate without authorizing an official command, labels, roots, receipts, audit, or dashboard access."
+      "outcome": "Readiness and immutable zero-label prediction completed once; evaluation then failed before labels, appended terminal stopped and a create-only audit, and permanently forbids inspect, retry, recovery, promotion, routing, and dashboard action."
     },
     {
       "trigger": "Descriptor capture to sole label session",
@@ -596,7 +596,7 @@
         "label_free_source",
         "task6_replay"
       ],
-      "outcome": "Evaluation captures the immutable prediction authority before evaluate-started, opens exactly one 48-query/72,300-row label session only after that receipt, and publishes exactly twelve evaluation leaves before evaluate-complete."
+      "outcome": "Evaluation can open exactly one 48-query/72,300-row label session only after capture and receipt gates; this official outcome failed before that boundary and opened none."
     },
     {
       "trigger": "Task-4 label-free score generation",
@@ -610,9 +610,9 @@
     }
   ],
   "unknown_relationships": [
-    "Task 5 official lifecycle and any presentation action remain future authorized stages."
+    "No remaining Exp449 lifecycle or presentation action is authorized after the terminal stopped receipt."
   ],
   "unknowns": [
-    "Exp448 source commit 500ccbe12b07475e51e8cdcbfa8619d9fbdefddb, Sites version 6, and one-account/no-group custom owner ACL are future authenticated metadata only; no dashboard or site was accessed, and dashboard_access remains blocked."
+    "Exp448 source commit 500ccbe12b07475e51e8cdcbfa8619d9fbdefddb, Sites version 6, and one-account/no-group custom owner ACL remain future authenticated metadata only; no dashboard or site was accessed, and dashboard_access remains blocked."
   ]
 }
