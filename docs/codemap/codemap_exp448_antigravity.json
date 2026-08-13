@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T08:25:00+0900",
-  "generated_from_commit": "1dd6431c2f769b73caed86daf251059b59660ef1",
+  "generated_at": "2026-08-13T10:15:19+0900",
+  "generated_from_commit": "e71257d923c1a940b547f156a9ca8f493ec0d522",
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
     "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle."
