@@ -115,18 +115,20 @@ def _result_payload_antigravity(result: FrozenEvaluationAntigravity) -> dict[str
     return {"schema":"exp451.evaluation.result.v1","identity":result.identity,"status":result.status,"reviewed_commit":result.reviewed_commit,"prediction_authority_sha256":result.prediction_authority_sha256,"predecessor_hashes":list(result.predecessor_hashes),"replaced_dataset_count":48,"reused_dataset_count":1069,"global_dataset_count":1117,"label_session_count":1,"label_query_count":48,"label_row_count":72300,"bootstrap_dataset_pairs":48,"target_order":[list(x) for x in result.target_order],"baseline_global":_conf_payload_antigravity(result.baseline_global),"candidate_global":_conf_payload_antigravity(result.candidate_global),"baseline_f1":result.baseline_f1,"candidate_f1":result.candidate_f1,"target_baseline_fn":result.target_baseline_fn,"target_candidate_fn":result.target_candidate_fn,"target_fn_delta":result.target_fn_delta,"transition_totals":list(result.transition_totals),"transition_dataset_counts":list(result.transition_dataset_counts),"family_fn_deltas":[list(x) for x in result.family_fn_deltas],"gates":[list(x) for x in result.gates],"qualified":result.qualified,"bootstrap":result.bootstrap,"baseline_matrix":[list(x) for x in result.baseline_matrix],"candidate_matrix":[list(x) for x in result.candidate_matrix]}
 
 
-def _rename_no_replace_antigravity(source: Path, destination: Path) -> None:
-    if destination.exists() or destination.is_symlink(): raise FileExistsError(destination)
+def _rename_no_replace_antigravity(parent_fd: int, source_name: str, destination_name: str) -> None:
     if __import__("sys").platform == "darwin":
-        libc=ctypes.CDLL(None,use_errno=True); function=getattr(libc,"renamex_np",None)
-        if function is None: raise OSError(errno.ENOTSUP,"renamex_np unavailable")
-        function.argtypes=(ctypes.c_char_p,ctypes.c_char_p,ctypes.c_uint); function.restype=ctypes.c_int
-        if function(os.fsencode(source),os.fsencode(destination),0x4):
-            code=ctypes.get_errno(); raise OSError(code,os.strerror(code),destination)
-    else: os.rename(source,destination)
+        libc=ctypes.CDLL(None,use_errno=True); function=getattr(libc,"renameatx_np",None)
+        if function is None: raise OSError(errno.ENOTSUP,"renameatx_np unavailable")
+        function.argtypes=(ctypes.c_int,ctypes.c_char_p,ctypes.c_int,ctypes.c_char_p,ctypes.c_uint); function.restype=ctypes.c_int
+        if function(parent_fd,os.fsencode(source_name),parent_fd,os.fsencode(destination_name),0x4):
+            code=ctypes.get_errno(); raise OSError(code,os.strerror(code),destination_name)
+    else:
+        if destination_name in os.listdir(parent_fd): raise FileExistsError(destination_name)
+        os.rename(source_name,destination_name,src_dir_fd=parent_fd,dst_dir_fd=parent_fd)
 
 
 class PublicationInvariantErrorAntigravity(RuntimeError): pass
+def _close_publication_fd_antigravity(descriptor: int) -> None: os.close(descriptor)
 
 def _remove_private_staging_at_antigravity(parent_fd: int, staging_fd: int, name: str) -> None:
     for leaf in tuple(os.listdir(staging_fd)):
@@ -170,7 +172,7 @@ def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity, author
         try: os.close(parent_fd)
         except BaseException as close_error: setup_error.add_note(f"parent_close_error={type(close_error).__name__}: {close_error}")
         raise
-    promoted=False; primary_error=None
+    promoted=False; primary_error=None; terminal_success=False
     try:
         hashes={}
         for name,value in leaves.items():
@@ -185,29 +187,26 @@ def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity, author
         retained_identity=(lambda x:(x.st_dev,x.st_ino,x.st_mode,x.st_nlink,x.st_size,x.st_mtime_ns,x.st_ctime_ns))(os.fstat(staging_fd))
         if inspect_replay_antigravity(staging,expected_prediction_authority=authority,expected_predecessor_authority=predecessor,_retained_root_fd=staging_fd,_expected_named_identity=retained_identity)!=result: raise ValueError("private replay differs")
         staging_identity=os.stat(staging,follow_symlinks=False)
-        _rename_no_replace_antigravity(staging,root); promoted=True
+        _rename_no_replace_antigravity(parent_fd,staging.name,root.name); promoted=True
         promoted_identity=(lambda x:(x.st_dev,x.st_ino,x.st_mode,x.st_nlink,x.st_size,x.st_mtime_ns,x.st_ctime_ns))(os.fstat(staging_fd))
         try:
-            flush_parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
-            try: os.fsync(flush_parent_fd)
-            finally: os.close(flush_parent_fd)
+            os.fsync(parent_fd)
             if inspect_replay_antigravity(root,expected_prediction_authority=authority,expected_predecessor_authority=predecessor,_retained_root_fd=staging_fd,_expected_named_identity=promoted_identity)!=result: raise ValueError("public replay differs")
+            terminal_success=True
         except BaseException as primary:
             try:
                 current=os.stat(root,follow_symlinks=False)
                 if (current.st_dev,current.st_ino)!=(staging_identity.st_dev,staging_identity.st_ino): raise ValueError("promoted namespace no longer names retained staging inode")
                 forensic=None
                 for _ in range(32):
-                    candidate=root.parent/f".{root.name}.forensic.{secrets.token_hex(16)}_antigravity"
-                    try: _rename_no_replace_antigravity(root,candidate)
+                    candidate_name=f".{root.name}.forensic.{secrets.token_hex(16)}_antigravity"; candidate=root.parent/candidate_name
+                    try: _rename_no_replace_antigravity(parent_fd,root.name,candidate_name)
                     except FileExistsError: continue
                     forensic=candidate; break
                 if forensic is None: raise FileExistsError("forensic namespace allocation exhausted")
                 moved=os.stat(forensic,follow_symlinks=False)
                 if (moved.st_dev,moved.st_ino)!=(staging_identity.st_dev,staging_identity.st_ino) or root.exists() or root.is_symlink(): raise ValueError("forensic move identity differs")
-                recovery_parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
-                try: os.fsync(recovery_parent_fd)
-                finally: os.close(recovery_parent_fd)
+                os.fsync(parent_fd)
             except BaseException as recovery:
                 primary.add_note(f"forensic_recovery_error={type(recovery).__name__}: {recovery}")
                 if root.exists() or root.is_symlink():
@@ -228,12 +227,12 @@ def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity, author
     finally:
         close_errors=[]
         for descriptor,label in ((staging_fd,"staging"),(parent_fd,"parent")):
-            try: os.close(descriptor)
+            try: _close_publication_fd_antigravity(descriptor)
             except BaseException as close_error: close_errors.append((label,close_error))
         if close_errors:
             if primary_error is not None:
                 for label,close_error in close_errors: primary_error.add_note(f"{label}_close_error={type(close_error).__name__}: {close_error}")
-            else: raise ExceptionGroup("evaluation publication descriptor close failures",[error for _,error in close_errors])
+            elif not terminal_success: raise ExceptionGroup("evaluation publication descriptor close failures",[error for _,error in close_errors])
 
 
 def _evaluate_with_dependencies_antigravity(authority: FrozenPredictionAuthorityAntigravity, reviewed_commit: str, dependencies: EvaluationDependenciesAntigravity) -> FrozenEvaluationAntigravity:

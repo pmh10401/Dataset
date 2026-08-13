@@ -11,6 +11,9 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             authority,deps,_=fixture_antigravity(Path(directory)/"evaluation_antigravity"); result=_evaluate_with_dependencies_antigravity(authority,SHA,deps)
             public=public_result_antigravity(result)
+            self.assertEqual(public["bootstrap"]["scope"],"target_48_paired")
+            self.assertEqual(public["bootstrap"]["f1_delta"],result.bootstrap["f1_delta"])
+            self.assertEqual(public["bootstrap"]["f1_interval"],result.bootstrap["f1_interval"])
             flattened=str(public).lower()
             for forbidden in ("dataset", "indices", "label", "sha", "path", "database", "sql", "audit", "checkpoint", "log"):
                 self.assertNotIn(forbidden, flattened)
@@ -29,6 +32,8 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             wrong=copy.deepcopy(public); wrong["transitions"]["events"]={key:0 for key in wrong["transitions"]["events"]}; wrong["transitions"]["affected_counts"]={key:48 for key in wrong["transitions"]["affected_counts"]}; wrong["bootstrap"]["fn_delta"]=999; malformed.append(wrong)
             wrong=copy.deepcopy(public); wrong["bootstrap"]["fp_delta"]+=1; malformed.append(wrong)
             wrong=copy.deepcopy(public); wrong["bootstrap"]["f1_delta"]+=.01; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["bootstrap"]["scope"]="global"; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["transitions"]["events"]["false_alarm_losses"]+=1; malformed.append(wrong)
             for attack in malformed:
                 with self.assertRaises(ValueError): validate_public_result_antigravity(attack)
 

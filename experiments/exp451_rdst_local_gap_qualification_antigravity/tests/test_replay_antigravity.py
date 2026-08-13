@@ -95,10 +95,10 @@ class ReplayAntigravityTest(unittest.TestCase):
             def fail_public_parent(fd):
                 if root.exists() and stat.S_ISDIR(os.fstat(fd).st_mode): raise OSError("primary parent fsync")
                 return original_fsync(fd)
-            def collide_once(source,destination):
+            def collide_once(parent_fd,source,destination):
                 nonlocal renames; renames+=1
                 if renames==2: raise FileExistsError("atomic collision")
-                return original_rename(source,destination)
+                return original_rename(parent_fd,source,destination)
             with patch.object(evaluation.os,"fsync",side_effect=fail_public_parent), patch.object(evaluation,"_rename_no_replace_antigravity",side_effect=collide_once), self.assertRaisesRegex(OSError,"primary parent fsync"):
                 _evaluate_with_dependencies_antigravity(authority,SHA,deps)
             self.assertGreaterEqual(renames,3); self.assertFalse(root.exists()); self.assertEqual(len(tuple(Path(directory).glob(".*forensic.*_antigravity"))),1)
@@ -163,10 +163,10 @@ class ReplayAntigravityTest(unittest.TestCase):
             def fail_parent(fd):
                 if root.exists() and stat.S_ISDIR(os.fstat(fd).st_mode): raise OSError("primary fsync")
                 return original_fsync(fd)
-            def fail_forensic(source,destination):
+            def fail_forensic(parent_fd,source,destination):
                 nonlocal calls; calls+=1
                 if calls>=2: raise OSError("forensic rename fault")
-                return original_rename(source,destination)
+                return original_rename(parent_fd,source,destination)
             with patch.object(evaluation.os,"fsync",side_effect=fail_parent), patch.object(evaluation,"_rename_no_replace_antigravity",side_effect=fail_forensic), self.assertRaises(PublicationInvariantErrorAntigravity): _evaluate_with_dependencies_antigravity(authority,SHA,deps)
             self.assertTrue(root.exists())
 
@@ -201,5 +201,25 @@ class ReplayAntigravityTest(unittest.TestCase):
             with patch.object(replay.os,"close",side_effect=close_fault), self.assertRaises((OSError,ExceptionGroup)):
                 replay.inspect_replay_antigravity(root,expected_prediction_authority=authority,expected_predecessor_authority=deps.predecessor_loader())
             self.assertEqual(len(os.listdir("/dev/fd")),baseline)
+
+    def test_verified_publication_success_close_failure_is_nonfatal_antigravity(self):
+        from experiments.exp451_rdst_local_gap_qualification_antigravity import evaluation_antigravity as evaluation
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root); original=evaluation._close_publication_fd_antigravity; injected=False
+            def close_after(fd):
+                nonlocal injected; original(fd)
+                if root.exists() and not injected: injected=True; raise OSError("verified-success close")
+            with patch.object(evaluation,"_close_publication_fd_antigravity",side_effect=close_after): result=_evaluate_with_dependencies_antigravity(authority,SHA,deps)
+            self.assertEqual(result.global_dataset_count,1117); self.assertTrue(root.is_dir()); self.assertTrue(injected)
+
+    def test_result_bool_as_int_and_int_as_float_rehash_are_rejected_antigravity(self):
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.replay_antigravity import inspect_replay_antigravity
+        for field,bad in (("label_row_count",True),("target_baseline_fn",954.0)):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root); _evaluate_with_dependencies_antigravity(authority,SHA,deps)
+                self._rewrite_and_rehash_antigravity(root,"result_antigravity.json",lambda value:value.__setitem__(field,bad))
+                with self.assertRaises(ValueError): inspect_replay_antigravity(root,expected_prediction_authority=authority,expected_predecessor_authority=deps.predecessor_loader())
 
 if __name__ == "__main__": unittest.main()
