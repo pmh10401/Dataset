@@ -55,3 +55,23 @@ evaluate, inspect 또는 root allocation이 허용되지 않는다.
 - No real TEST label value was queried, no official command was invoked, no dashboard/network
   module was imported by the no-label command paths, and no root/result/audit was created.
   Exp447 audit truth and champion `pending_candidate` remain unchanged.
+
+## Paper r4 operations implementation
+
+The approved paper-r4 operational launch plan is implemented in this worktree
+only. It does not authorize smoke-root or official r4-root creation.
+
+- Public paper CLI now prints canonical JSON for `run`, `status`, and `verify`.
+  `completed` exits 0, `proposal_score_incomplete` exits 2, and semantic
+  exceptions still propagate instead of being converted to success.
+- `scratch/manage_paper_r4_proposal_antigravity.py` exposes `check`, `smoke`,
+  `launch`, `status`, `stop`, `resume`, and internal `_worker`. Official paths,
+  worker policy (`logical_cpu_count - 1`, inner threads = 1), and scoring
+  closure hashes are immutable. `check` is read-only.
+- Focused operations tests cover authority/check, exclusive flock, stale PID
+  recovery, signal relay, status fixtures, and a small typed Task4+Task5 smoke
+  resume-equivalence fixture. They write only temporary Git/DB/path fixtures.
+- Implementation verification does not create
+  `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`,
+  the smoke root, or the ops root, and it starts no official or detached
+  experiment process.

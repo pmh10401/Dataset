@@ -876,5 +876,68 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
         self.assertEqual((root / "stage_artifacts_paper" / "proposal_score" / "proposal_score_paper.json").read_bytes(), baseline_score)
 
 
+class PublicCliContractTests(unittest.TestCase):
+    """The public pipeline CLI must print canonical JSON and return truthful exit codes."""
+
+    _COMMAND = (
+        "run",
+        "--db-path",
+        "fixture.sqlite",
+        "--run-root",
+        "run_root_antigravity",
+        "--mode",
+        "smoke",
+        "--smoke-dataset",
+        "alpha",
+    )
+
+    def _main(self, argv, **patches):
+        from paper.equipment_anomaly_detection import pipeline_paper as pipeline
+
+        stdout = io.StringIO()
+        with contextlib.ExitStack() as stack:
+            for name, value in patches.items():
+                stack.enter_context(patch.object(pipeline, name, value))
+            stack.enter_context(contextlib.redirect_stdout(stdout))
+            stack.enter_context(contextlib.redirect_stderr(io.StringIO()))
+            code = pipeline.main(list(argv))
+        return code, stdout.getvalue()
+
+    def test_completed_run_prints_canonical_json_and_exits_zero(self):
+        payload = {"status": "completed", "completed_stages": ["preflight", "prepare", "acceleration", "proposal_score"]}
+        code, printed = self._main(self._COMMAND, run_pipeline=lambda _config: payload)
+        self.assertEqual(code, 0)
+        self.assertEqual(printed, json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+
+    def test_incomplete_run_prints_canonical_json_and_exits_two(self):
+        payload = {"status": "proposal_score_incomplete", "completed": 1, "failed": 1, "pending": 1}
+        code, printed = self._main(self._COMMAND, run_pipeline=lambda _config: payload)
+        self.assertEqual(code, 2)
+        self.assertEqual(json.loads(printed), payload)
+        self.assertEqual(printed, json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+
+    def test_status_and_verify_print_canonical_json(self):
+        payload = {"status": "completed", "completed_stages": ["preflight"]}
+        for command in ("status", "verify"):
+            argv = (command,) + self._COMMAND[1:]
+            code, printed = self._main(argv, verify_completed=lambda _config: payload)
+            self.assertEqual(code, 0)
+            self.assertEqual(printed, json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+
+    def test_non_completed_status_is_nonzero(self):
+        payload = {"status": "completed_prefix", "completed_stages": ["preflight"]}
+        code, printed = self._main(("status",) + self._COMMAND[1:], verify_completed=lambda _config: payload)
+        self.assertNotEqual(code, 0)
+        self.assertEqual(json.loads(printed), payload)
+
+    def test_semantic_exception_is_not_converted_to_success(self):
+        from paper.equipment_anomaly_detection.runner_paper import PipelineStateError
+
+        def fail(_config):
+            raise PipelineStateError("root pollution")
+
+        with self.assertRaises(PipelineStateError):
+            self._main(self._COMMAND, run_pipeline=fail)
+
 
 if __name__=="__main__":unittest.main()

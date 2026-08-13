@@ -1,6 +1,7 @@
 """The public Task 8 CLI exposes only run, status, and verify."""
 from __future__ import annotations
 import argparse, json
+from collections.abc import Mapping
 from pathlib import Path
 from .runner_paper import PipelineConfig, run_pipeline, verify_completed
 def _config(args): return PipelineConfig(args.db_path,args.run_root,args.mode,tuple(args.smoke_dataset),args.acceptance_path)
@@ -9,8 +10,17 @@ def build_parser():
     for command in ("run","status","verify"):
         child=commands.add_parser(command); child.add_argument("--db-path",required=True,type=Path); child.add_argument("--run-root",required=True,type=Path); child.add_argument("--mode",required=True,choices=("smoke","full")); child.add_argument("--smoke-dataset",action="append",default=[]); child.add_argument("--acceptance-path",type=Path)
     return parser
+def exit_code_for_result_paper(result: Mapping[str, object]) -> int:
+    if not isinstance(result, Mapping):
+        raise TypeError("pipeline result must be a mapping")
+    status = result.get("status")
+    if status == "completed":
+        return 0
+    if status == "proposal_score_incomplete":
+        return 2
+    return 1
 def main(argv=None):
     args=build_parser().parse_args(argv); value=run_pipeline(_config(args)) if args.command=="run" else verify_completed(_config(args))
-    if args.command!="run": print(json.dumps(value,sort_keys=True,separators=(",",":")))
-    return 0
+    print(json.dumps(value,sort_keys=True,separators=(",",":")))
+    return exit_code_for_result_paper(value)
 if __name__=="__main__": raise SystemExit(main())

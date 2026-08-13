@@ -37,3 +37,62 @@ independent verification과 truth/map closeout을 먼저 한다. 성공했을 �
 descriptive-only/non-promoted다. private dashboard는 clean site repository와 sanitized aggregate
 payload가 모두 있을 때만 별도로 진행하며, dashboard failure는 scientific artifact나 retry 권한을
 바꾸지 않는다.
+
+## Paper r4 operations surface (separate from official Exp448)
+
+Implementation verification of `scratch/manage_paper_r4_proposal_antigravity.py` does
+**not** authorize creation of the official r4 root, the smoke root, or the ops
+root. Do not run `smoke` or `launch` until a later explicit user approval.
+
+Fixed interpreter and paths:
+
+```text
+interpreter = /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python
+database    = /Users/mac/Documents/Dataset/univariate_ts.db
+r3          = /Users/mac/Documents/Dataset/paper_proposal_full_r3_antigravity_20260813
+r4          = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813
+ops         = /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity
+smoke       = /Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813
+```
+
+Read-only check (allowed after the operations code is committed; creates no roots):
+
+```bash
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+  scratch/manage_paper_r4_proposal_antigravity.py check --reviewed-commit REVIEWED_COMMIT
+```
+
+Future prelaunch smoke, still unauthorized by this implementation:
+
+```bash
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+  scratch/manage_paper_r4_proposal_antigravity.py smoke --reviewed-commit REVIEWED_COMMIT
+```
+
+Operator observation after a future authorized process exists:
+
+```bash
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+  scratch/manage_paper_r4_proposal_antigravity.py status --reviewed-commit REVIEWED_COMMIT
+tail -f /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity/progress_antigravity.log
+```
+
+Stop and resume. There is no automatic retry. After a `proposal_score_incomplete`
+wave, analyze the full failed/pending batch first. Resume requires another
+explicit approval and the identical authority; it never migrates checkpoints
+into a new closure/config.
+
+```bash
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+  scratch/manage_paper_r4_proposal_antigravity.py stop --reviewed-commit REVIEWED_COMMIT
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+  scratch/manage_paper_r4_proposal_antigravity.py resume --reviewed-commit REVIEWED_COMMIT
+```
+
+Final post-review launch remains blocked until a new explicit user approval.
+The future command, not to be run now, is:
+
+```bash
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
+  scratch/manage_paper_r4_proposal_antigravity.py launch --reviewed-commit REVIEWED_COMMIT
+```
