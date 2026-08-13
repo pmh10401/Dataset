@@ -68,7 +68,7 @@ def _score_rows_antigravity(representation: object, backend: object, rows: np.nd
 def score_candidate_antigravity(train_rows: object, test_rows: object, seed: int, backend_name: BackendNameAntigravity) -> CandidateScoresAntigravity:
     train = _exact_rows_antigravity(train_rows, "TRAIN")
     test = _exact_rows_antigravity(test_rows, "TEST", length=train.shape[1])
-    if type(seed) is not int or seed not in _SEEDS_ANTIGRAVITY or backend_name not in {"cpu", "mlx", "mps"}:
+    if type(seed) is not int or seed not in _SEEDS_ANTIGRAVITY or type(backend_name) is not str or backend_name not in {"cpu", "mlx", "mps"}:
         raise ValueError("seed or backend name is not frozen")
     oof = np.empty(len(train), dtype=float)
     dimensions: set[int] = set()
@@ -104,6 +104,10 @@ class AggregatedScoresAntigravity:
     def __post_init__(self) -> None:
         if self.seeds != _SEEDS_ANTIGRAVITY or type(self.train_oof) is not np.ndarray or type(self.test_scores) is not np.ndarray or self.train_oof.ndim != 1 or self.test_scores.ndim != 1 or not np.isfinite(self.train_oof).all() or not np.isfinite(self.test_scores).all():
             raise ValueError("aggregated scores are invalid")
+        if any(type(value) is not int or value < 1 for value in (self.expected_train_length, self.expected_test_length, self.feature_dimension, self.retained_shapelets)):
+            raise ValueError("aggregated score metadata must be exact positive integers")
+        if type(self.seeds) is not tuple or len(self.seeds) != 2 or any(type(seed) is not int for seed in self.seeds):
+            raise ValueError("aggregated seeds must be exact frozen integers")
         if self.train_oof.shape != (self.expected_train_length,) or self.test_scores.shape != (self.expected_test_length,) or self.feature_dimension != 3 * self.retained_shapelets:
             raise ValueError("aggregated score metadata differs")
         object.__setattr__(self, "train_oof", np.frombuffer(self.train_oof.astype(float, copy=False).tobytes(), dtype=float))
