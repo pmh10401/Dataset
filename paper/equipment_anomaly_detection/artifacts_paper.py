@@ -113,6 +113,9 @@ def _recover_matching_stale_tmp(destination:Path,data:bytes)->None:
     if len(candidates)>1:raise ValueError("stale create-only temp is ambiguous")
     temporary=candidates[0]; details=_lstat(temporary)
     if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("stale create-only temp is not a regular file")
+    published=_lstat(destination)
+    if published is None or stat.S_ISLNK(published.st_mode) or not stat.S_ISREG(published.st_mode):raise ValueError("create-only destination is not a regular file")
+    if (details.st_dev,details.st_ino)!=(published.st_dev,published.st_ino):raise ValueError("stale create-only temp is not the published inode")
     if temporary.read_bytes()!=data:raise ValueError("stale create-only temp differs")
     temporary.unlink(); _fsync_directory(destination.parent)
 def write_create_only(path:Path,data:bytes,*,reuse_identical:bool=False)->None:
@@ -147,7 +150,7 @@ def write_create_only(path:Path,data:bytes,*,reuse_identical:bool=False)->None:
     except BaseException:
         if _lstat(destination) is None:temporary.unlink(missing_ok=True)
         raise
-    temporary.unlink(missing_ok=True); _fsync_directory(destination.parent)
+    _fsync_directory(destination.parent); temporary.unlink(missing_ok=True); _fsync_directory(destination.parent)
 def read_canonical(path:Path)->object:
     details=_lstat(path)
     if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("artifact missing or symlinked")

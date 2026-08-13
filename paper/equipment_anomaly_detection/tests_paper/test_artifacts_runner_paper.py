@@ -275,7 +275,8 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         self.assertEqual(path.name, "task4_task5_success_antigravity.json")
 
     def test_success_record_recovers_stale_tmp_after_link_before_unlink(self):
-        """A leftover same-directory temp after successful link must not permanently block the namespace."""
+        """Successful publication is link, directory fsync, unlink, directory fsync; leftover recovery requires the published inode."""
+        import stat
         from paper.equipment_anomaly_detection import artifacts_paper as artifacts
         from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, verify_task4_task5_success_namespace, write_task4_task5_success_record
         from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
@@ -287,14 +288,49 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         route = self._nonempty_route()
         authority = self._authority(backend)
         path = artifacts._task4_task5_success_path(self.root, raw.dataset)
+        beta_raw = self.fixture._typed("beta")[0]
+        beta_path = artifacts._task4_task5_success_path(self.root, beta_raw.dataset)
         original_link = artifacts.os.link
+        original_fsync = artifacts.os.fsync
+        original_unlink = os.unlink
+        events: list[tuple[object, ...]] = []
+
+        def record_link(source_path, destination_path):
+            events.append(("link", Path(source_path), Path(destination_path)))
+            return original_link(source_path, destination_path)
+
+        def record_fsync(descriptor):
+            info = os.fstat(descriptor)
+            events.append(("fsync", "dir" if stat.S_ISDIR(info.st_mode) else "file", info.st_dev, info.st_ino))
+            return original_fsync(descriptor)
+
+        def record_unlink(target, *args, **kwargs):
+            events.append(("unlink", Path(target)))
+            return original_unlink(target, *args, **kwargs)
+
+        def publication_boundaries(destination: Path) -> list[str]:
+            parent = destination.parent.stat()
+            names = []
+            for event in events:
+                if event[0] == "link" and event[2] == destination:
+                    names.append("link")
+                elif event[0] == "fsync" and event[1] == "dir" and (event[2], event[3]) == (parent.st_dev, parent.st_ino):
+                    names.append("fsync_dir")
+                elif event[0] == "unlink" and event[1].parent == destination.parent and event[1].name.endswith(".tmp_antigravity"):
+                    names.append("unlink")
+            return names
+
+        with patch.object(artifacts.os, "link", side_effect=record_link), patch.object(artifacts.os, "fsync", side_effect=record_fsync), patch.object(os, "unlink", side_effect=record_unlink):
+            write_task4_task5_success_record(self.root, self.catalog, authority, beta_raw, sources, route)
+        self.assertEqual(publication_boundaries(beta_path), ["link", "fsync_dir", "unlink", "fsync_dir"])
 
         def interrupt_after_link(source_path, destination_path):
-            original_link(source_path, destination_path)
+            record_link(source_path, destination_path)
             raise OSError("injected post-link interruption")
 
+        events.clear()
         with self.assertRaisesRegex(OSError, "injected post-link interruption"):
-            with patch.object(artifacts.os, "link", side_effect=interrupt_after_link):
+            with patch.object(artifacts.os, "link", side_effect=interrupt_after_link), patch.object(artifacts.os, "fsync", side_effect=record_fsync), patch.object(os, "unlink", side_effect=record_unlink):
                 write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
         self.assertTrue(path.is_file())
         self.assertFalse(path.is_symlink())
@@ -303,12 +339,27 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         self.assertTrue(leftovers[0].is_file())
         self.assertFalse(leftovers[0].is_symlink())
         self.assertEqual(leftovers[0].read_bytes(), path.read_bytes())
-        write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        leftover_stat, published_stat = leftovers[0].stat(), path.stat()
+        self.assertEqual((leftover_stat.st_dev, leftover_stat.st_ino), (published_stat.st_dev, published_stat.st_ino))
+        events.clear()
+        with patch.object(artifacts.os, "link", side_effect=record_link), patch.object(artifacts.os, "fsync", side_effect=record_fsync), patch.object(os, "unlink", side_effect=record_unlink):
+            write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        self.assertEqual(publication_boundaries(path), ["unlink", "fsync_dir"])
         self.assertEqual([item for item in path.parent.iterdir() if item.name.endswith(".tmp_antigravity")], [])
         self.assertEqual({item.name for item in path.parent.iterdir()}, {path.name})
-        beta = self.fixture._typed("beta")[0]
-        verified = verify_task4_task5_success_namespace(self.root, self.catalog, authority, {raw.dataset: raw, beta.dataset: beta})
-        self.assertEqual(verified, (raw.dataset,))
+        self.assertEqual((path.stat().st_dev, path.stat().st_ino), (published_stat.st_dev, published_stat.st_ino))
+        independent = path.parent / f".{path.name}.independent.tmp_antigravity"
+        independent.write_bytes(path.read_bytes())
+        independent_stat = independent.stat()
+        self.assertEqual(independent.read_bytes(), path.read_bytes())
+        self.assertNotEqual((independent_stat.st_dev, independent_stat.st_ino), (path.stat().st_dev, path.stat().st_ino))
+        with self.assertRaisesRegex(ValueError, "temp|inode"):
+            write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        self.assertTrue(independent.is_file())
+        self.assertEqual(independent.read_bytes(), path.read_bytes())
+        independent.unlink()
+        verified = verify_task4_task5_success_namespace(self.root, self.catalog, authority, {raw.dataset: raw, beta_raw.dataset: beta_raw})
+        self.assertEqual(verified, (raw.dataset, beta_raw.dataset))
         reread = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
         self.assertEqual(reread.route, route)
         self.assertFalse(reread.sources.by_name["rocket_exp40"].eligible)
@@ -348,6 +399,15 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "temp|differ"):
             retry()
         mismatched.unlink()
+
+        independent = path.parent / f".{path.name}.3.4.tmp_antigravity"
+        independent.write_bytes(original)
+        independent_stat = independent.stat()
+        self.assertNotEqual((independent_stat.st_dev, independent_stat.st_ino), (path.stat().st_dev, path.stat().st_ino))
+        with self.assertRaisesRegex(ValueError, "temp|inode"):
+            retry()
+        self.assertTrue(independent.is_file())
+        independent.unlink()
 
         first = path.parent / f".{path.name}.4.4.tmp_antigravity"
         second = path.parent / f".{path.name}.5.5.tmp_antigravity"
