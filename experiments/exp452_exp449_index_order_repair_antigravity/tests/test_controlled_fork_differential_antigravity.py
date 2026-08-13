@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -256,6 +258,33 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
         self.assertIn('candidate["indices"] != row["indices"]', replay)
         self.assertNotIn('sorted(candidate["indices"])', replay)
         self.assertNotIn('set(candidate["indices"])', replay)
+
+    def test_task4_runtime_same_label_differential_preserves_scientific_payloads_antigravity(self) -> None:
+        """Break caught: the ordered-evidence fork changes same-label metrics or aggregate semantics."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity import _LEAVES_ANTIGRAVITY as legacy_leaves, _evaluate_with_dependencies_antigravity as legacy_evaluate
+        from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
+        from experiments.exp452_exp449_index_order_repair_antigravity.evaluation_antigravity import _LEAVES_ANTIGRAVITY as successor_leaves, _evaluate_with_dependencies_antigravity as successor_evaluate
+        from experiments.exp452_exp449_index_order_repair_antigravity.tests.test_evaluation_antigravity import EvaluationAntigravityTests
+        with tempfile.TemporaryDirectory(prefix="exp452_runtime_differential_antigravity_") as temporary:
+            legacy_root = Path(temporary) / "legacy_antigravity"; successor_root = Path(temporary) / "successor_antigravity"
+            legacy = _DependenciesAntigravity(legacy_root)
+            rows = list(legacy.frozen_predictions_antigravity())
+            ordered = [0, 1]
+            for row in rows: row["indices"] = ordered
+            legacy.frozen_predictions_antigravity = lambda: tuple(rows)
+            legacy_result = legacy_evaluate("a" * 40, legacy)
+            successor = EvaluationAntigravityTests()._dependencies_antigravity(successor_root)
+            successor_result = successor_evaluate("a" * 40, successor)
+            self.assertEqual(legacy_leaves, successor_leaves)
+            metric_payload = lambda result: tuple((m.family, m.method, (m.target_confusion.tp, m.target_confusion.fp, m.target_confusion.fn, m.target_confusion.tn), (m.global_confusion.tp, m.global_confusion.fp, m.global_confusion.fn, m.global_confusion.tn), m.target_fn_delta, m.global_f1, m.qualified) for m in result.candidate_metrics)
+            self.assertEqual(metric_payload(legacy_result), metric_payload(successor_result))
+            for name in ("candidate_metrics_antigravity.jsonl", "family_metrics_antigravity.jsonl", "bootstrap_antigravity.json"):
+                self.assertEqual((legacy_root / name).read_bytes(), (successor_root / name).read_bytes())
+            legacy_decision, successor_decision = (json.loads((root / "decision_antigravity.json").read_text()) for root in (legacy_root, successor_root))
+            self.assertEqual({key: value for key, value in legacy_decision.items() if key != "schema"}, {key: value for key, value in successor_decision.items() if key != "schema"})
+            legacy_dashboard, successor_dashboard = (json.loads((root / "dashboard_snapshot_antigravity.json").read_text()) for root in (legacy_root, successor_root))
+            self.assertEqual({key: value for key, value in legacy_dashboard.items() if key not in {"schema", "experiment"}}, {key: value for key, value in successor_dashboard.items() if key not in {"schema", "experiment"}})
+            self.assertEqual([json.loads(line)["indices"] for line in (successor_root / "frozen_predictions_antigravity.jsonl").read_text().splitlines()], [candidate["indices"] for row in json.loads((successor_root / "evaluation_antigravity.json").read_text())["dataset_evidence"] for candidate in row["candidates"].values()])
 
 
 if __name__ == "__main__":

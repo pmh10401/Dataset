@@ -10,16 +10,16 @@ from unittest.mock import patch
 
 
 class EvaluationAntigravityTests(unittest.TestCase):
-    def _dependencies_antigravity(self, root: Path, **kwargs: object):
+    def _dependencies_antigravity(self, root: Path, ordered_indices: list[int] | None = None, **kwargs: object):
         from experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity import _DependenciesAntigravity
         from experiments.exp452_exp449_index_order_repair_antigravity.replay_antigravity import FrozenPredictionCaptureAntigravity
         legacy = _DependenciesAntigravity(root, **kwargs)
         captured = legacy.capture_task5_prediction_antigravity()
-        ordered_indices = [981, 983, 984, 986, 988, 989, 992, 993, 994, 995, 996, 998, 999]
         from experiments.exp452_exp449_index_order_repair_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
         rows = [json.loads(line) for line in captured.canonical_rows.splitlines()]
-        for row in rows:
-            row["indices"] = ordered_indices
+        if ordered_indices is not None:
+            for row in rows:
+                row["indices"] = ordered_indices
         canonical_rows = b"".join(canonical_json_bytes_antigravity(row) for row in rows)
         canonical_row_sha256 = tuple(__import__("hashlib").sha256(line).hexdigest() for line in canonical_rows.splitlines())
         from experiments.exp452_exp449_index_order_repair_antigravity.contracts_antigravity import ConfusionAntigravity, DatasetBaselineAntigravity
@@ -72,7 +72,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="exp452_evaluation_antigravity_") as temporary:
             root = Path(temporary) / "publication_antigravity"
-            dependencies = self._dependencies_antigravity(root)
+            dependencies = self._dependencies_antigravity(root, [981, 983, 984, 986, 988, 989, 992, 993, 994, 995, 996, 998, 999])
             result = _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             frozen = [json.loads(line)["indices"] for line in (root / "frozen_predictions_antigravity.jsonl").read_text().splitlines()]
             evidence = json.loads((root / "evaluation_antigravity.json").read_text())["dataset_evidence"]
@@ -128,6 +128,15 @@ class EvaluationAntigravityTests(unittest.TestCase):
                     with patch.object(module, "_rename_no_replace_at_antigravity", side_effect=appeared), self.assertRaisesRegex(FileExistsError, "replacement"):
                         module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
                 self.assertTrue(dependencies.audit_path.is_file())
+
+    def test_audit_write_failure_preserves_primary_error_antigravity(self) -> None:
+        """Break caught: failure-audit I/O replaces the active synthetic label failure."""
+        from experiments.exp452_exp449_index_order_repair_antigravity import evaluation_antigravity as module
+        with tempfile.TemporaryDirectory(prefix="exp452_audit_failure_antigravity_") as temporary:
+            dependencies = self._dependencies_antigravity(Path(temporary) / "publication_antigravity", query_error=OSError("query primary"))
+            with patch.object(module, "write_create_only_antigravity", side_effect=OSError("audit write")), self.assertRaisesRegex(OSError, "query primary") as raised:
+                module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+            self.assertIn("failure_audit_error=OSError: audit write", "\n".join(raised.exception.__notes__))
 
 
 if __name__ == "__main__":
