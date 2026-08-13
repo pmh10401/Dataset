@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import ast
+import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -133,6 +135,134 @@ def _function_body_ast_antigravity(source: str, name: str) -> str:
     if function.body and isinstance(function.body[0], ast.Expr) and isinstance(function.body[0].value, ast.Constant) and type(function.body[0].value.value) is str:
         function.body.pop(0)
     return ast.dump(ast.fix_missing_locations(function), include_attributes=False)
+
+
+_TASK4_LEAF_NORMALIZERS_ANTIGRAVITY = (
+    "context_antigravity.json", "compatibility_antigravity.json", "candidate_registry_antigravity.json",
+    "frozen_predictions_antigravity.jsonl", "prediction_manifest_antigravity.json", "evaluation_antigravity.json",
+    "candidate_metrics_antigravity.jsonl", "family_metrics_antigravity.jsonl", "bootstrap_antigravity.json",
+    "decision_antigravity.json", "dashboard_snapshot_antigravity.json", "artifact_sha256_antigravity.json",
+)
+
+
+def _parse_task4_leaf_antigravity(name: str, payload: bytes) -> object:
+    return [json.loads(line) for line in payload.splitlines()] if name.endswith(".jsonl") else json.loads(payload)
+
+
+def _canonical_task4_leaf_antigravity(name: str, value: object) -> bytes:
+    if name.endswith(".jsonl"):
+        if not isinstance(value, list):
+            raise AssertionError(f"{name} must remain JSONL")
+        return b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n" for row in value)
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+
+
+def _require_exact_keys_antigravity(value: object, expected: tuple[str, ...], name: str) -> dict[str, object]:
+    if not isinstance(value, dict) or tuple(value) != expected:
+        raise AssertionError(f"unallowlisted {name} shape")
+    return value
+
+
+def _normalize_context_task4_antigravity(value: object, successor: bool) -> object:
+    copied = _require_exact_keys_antigravity(value, ("exp448_target_identity_sha256", "label_access_count", "reviewed_commit", "schema", "target_authority_sha256", "target_datasets"), "context")
+    copied = copy.deepcopy(copied)
+    copied["schema"] = "<schema>"
+    return copied
+
+
+def _normalize_compatibility_task4_antigravity(value: object, successor: bool) -> object:
+    copied = _require_exact_keys_antigravity(value, ("predecessor", "prediction_authority", "schema"), "compatibility")
+    return {"schema": "<schema>", "predecessor": "<predecessor>", "prediction_authority": "<prediction_authority>"}
+
+
+def _normalize_manifest_task4_antigravity(value: object, successor: bool) -> object:
+    allowed = (
+        ("candidate_pairs", "frozen_prediction_sha256", "rows", "schema", "task5_aggregate_sha256", "task5_context_sha256", "task5_inventory", "task5_label_access_count", "task5_leaf_sha256", "task5_manifest_sha256", "task5_reviewed_commit", "task5_source_identity_sha256")
+        if not successor else
+        ("candidate_pairs", "exp449_prediction_aggregate_sha256", "exp449_reviewed_commit", "frozen_prediction_sha256", "label_access_count", "predecessor_attestation_sha256", "rows", "schema")
+    )
+    copied = _require_exact_keys_antigravity(value, allowed, "prediction manifest")
+    # Explicitly discard only predecessor names/commits and their path/identity-derived hashes.
+    return {
+        "schema": "<schema>", "rows": copied["rows"], "candidate_pairs": copied["candidate_pairs"],
+        "frozen_prediction_sha256": copied["frozen_prediction_sha256"],
+        "label_access_count": copied["label_access_count"] if successor else copied["task5_label_access_count"],
+    }
+
+
+def _normalize_evaluation_task4_antigravity(value: object, successor: bool) -> object:
+    if not isinstance(value, dict) or "schema" not in value:
+        raise AssertionError("unallowlisted evaluation shape")
+    copied = copy.deepcopy(value)
+    copied["schema"] = "<schema>"
+    return copied
+
+
+def _normalize_identity_schema_task4_antigravity(value: object, successor: bool) -> object:
+    if not isinstance(value, dict) or "schema" not in value:
+        raise AssertionError("unallowlisted schema leaf shape")
+    copied = copy.deepcopy(value)
+    copied["schema"] = "<schema>"
+    return copied
+
+
+def _normalize_dashboard_task4_antigravity(value: object, successor: bool) -> object:
+    if not isinstance(value, dict) or not {"schema", "experiment"} <= set(value):
+        raise AssertionError("unallowlisted dashboard shape")
+    copied = copy.deepcopy(value)
+    copied["schema"] = "<schema>"
+    copied["experiment"] = "<experiment>"
+    return copied
+
+
+_TASK4_LEAF_NORMALIZATION_TABLE_ANTIGRAVITY = {
+    "context_antigravity.json": _normalize_context_task4_antigravity,
+    "compatibility_antigravity.json": _normalize_compatibility_task4_antigravity,
+    "candidate_registry_antigravity.json": lambda value, successor: value,
+    "frozen_predictions_antigravity.jsonl": lambda value, successor: value,
+    "prediction_manifest_antigravity.json": _normalize_manifest_task4_antigravity,
+    "evaluation_antigravity.json": _normalize_evaluation_task4_antigravity,
+    "candidate_metrics_antigravity.jsonl": lambda value, successor: value,
+    "family_metrics_antigravity.jsonl": lambda value, successor: value,
+    "bootstrap_antigravity.json": lambda value, successor: value,
+    "decision_antigravity.json": _normalize_identity_schema_task4_antigravity,
+    "dashboard_snapshot_antigravity.json": _normalize_dashboard_task4_antigravity,
+}
+
+
+def _assert_task4_leaf_differential_antigravity(legacy: dict[str, bytes], successor: dict[str, bytes]) -> None:
+    """Compare every declared leaf with the one explicit identity/provenance allowlist."""
+    if tuple(legacy) != _TASK4_LEAF_NORMALIZERS_ANTIGRAVITY or tuple(successor) != _TASK4_LEAF_NORMALIZERS_ANTIGRAVITY:
+        raise AssertionError("leaf order differs")
+    normalized: dict[bool, dict[str, object]] = {False: {}, True: {}}
+    for name in _TASK4_LEAF_NORMALIZERS_ANTIGRAVITY[:-1]:
+        normalizer = _TASK4_LEAF_NORMALIZATION_TABLE_ANTIGRAVITY[name]
+        normalized[False][name] = normalizer(_parse_task4_leaf_antigravity(name, legacy[name]), False)
+        normalized[True][name] = normalizer(_parse_task4_leaf_antigravity(name, successor[name]), True)
+        if normalized[False][name] != normalized[True][name]:
+            raise AssertionError(f"normalized leaf differs: {name}")
+    common_indices = [0, 1]
+    for side in (False, True):
+        frozen = normalized[side]["frozen_predictions_antigravity.jsonl"]
+        evaluation = normalized[side]["evaluation_antigravity.json"]
+        if not isinstance(frozen, list) or not isinstance(evaluation, dict):
+            raise AssertionError("frozen/evaluation canonical payload shape differs")
+        evidence = [candidate["indices"] for row in evaluation["dataset_evidence"] for candidate in row["candidates"].values()]
+        if [row["indices"] for row in frozen] != [common_indices] * len(frozen) or evidence != [common_indices] * len(evidence):
+            raise AssertionError("evidence indices are not the common ascending canonical sequence")
+    linked_maps: dict[bool, dict[str, str]] = {}
+    for side, payloads in ((False, legacy), (True, successor)):
+        artifact_map = _parse_task4_leaf_antigravity("artifact_sha256_antigravity.json", payloads["artifact_sha256_antigravity.json"])
+        if not isinstance(artifact_map, dict) or tuple(artifact_map) != tuple(sorted(_TASK4_LEAF_NORMALIZERS_ANTIGRAVITY[:-1])):
+            raise AssertionError("artifact map inventory/order differs")
+        linked: dict[str, str] = {}
+        for name in _TASK4_LEAF_NORMALIZERS_ANTIGRAVITY[:-1]:
+            if artifact_map[name] != hashlib.sha256(payloads[name]).hexdigest():
+                raise AssertionError(f"artifact map raw linkage differs: {name}")
+            linked[name] = hashlib.sha256(_canonical_task4_leaf_antigravity(name, normalized[side][name])).hexdigest()
+        linked_maps[side] = linked
+    if linked_maps[False] != linked_maps[True]:
+        raise AssertionError("artifact map normalized linkage differs")
 
 
 class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
@@ -276,26 +406,24 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
             successor = EvaluationAntigravityTests()._dependencies_antigravity(successor_root)
             successor_result = successor_evaluate("a" * 40, successor)
             self.assertEqual(legacy_leaves, successor_leaves)
-            metric_payload = lambda result: tuple((m.family, m.method, (m.target_confusion.tp, m.target_confusion.fp, m.target_confusion.fn, m.target_confusion.tn), (m.global_confusion.tp, m.global_confusion.fp, m.global_confusion.fn, m.global_confusion.tn), m.target_fn_delta, m.global_f1, m.qualified) for m in result.candidate_metrics)
-            self.assertEqual(metric_payload(legacy_result), metric_payload(successor_result))
-            for name in ("candidate_metrics_antigravity.jsonl", "family_metrics_antigravity.jsonl", "bootstrap_antigravity.json"):
-                self.assertEqual((legacy_root / name).read_bytes(), (successor_root / name).read_bytes())
-            legacy_decision, successor_decision = (json.loads((root / "decision_antigravity.json").read_text()) for root in (legacy_root, successor_root))
-            self.assertEqual({key: value for key, value in legacy_decision.items() if key != "schema"}, {key: value for key, value in successor_decision.items() if key != "schema"})
-            legacy_dashboard, successor_dashboard = (json.loads((root / "dashboard_snapshot_antigravity.json").read_text()) for root in (legacy_root, successor_root))
-            self.assertEqual({key: value for key, value in legacy_dashboard.items() if key not in {"schema", "experiment"}}, {key: value for key, value in successor_dashboard.items() if key not in {"schema", "experiment"}})
-            invariant = ("candidate_registry_antigravity.json", "candidate_metrics_antigravity.jsonl", "family_metrics_antigravity.jsonl", "bootstrap_antigravity.json")
-            for name in invariant: self.assertEqual((legacy_root / name).read_bytes(), (successor_root / name).read_bytes())
-            self.assertEqual(set(legacy_leaves), set(successor_leaves))
-            for root in (legacy_root, successor_root):
-                artifact_map = json.loads((root / "artifact_sha256_antigravity.json").read_text())
-                self.assertEqual(set(artifact_map), set(legacy_leaves[:-1]))
-            legacy_context, successor_context = (json.loads((root / "context_antigravity.json").read_text()) for root in (legacy_root, successor_root))
-            self.assertEqual(legacy_context["target_datasets"], successor_context["target_datasets"])
-            self.assertEqual(json.loads((legacy_root / "candidate_registry_antigravity.json").read_text()), json.loads((successor_root / "candidate_registry_antigravity.json").read_text()))
-            frozen = [json.loads(line)["indices"] for line in (successor_root / "frozen_predictions_antigravity.jsonl").read_text().splitlines()]
-            evidence = [candidate["indices"] for row in json.loads((successor_root / "evaluation_antigravity.json").read_text())["dataset_evidence"] for candidate in row["candidates"].values()]
-            self.assertEqual(frozen, evidence)
+            legacy_payloads = {name: (legacy_root / name).read_bytes() for name in legacy_leaves}
+            successor_payloads = {name: (successor_root / name).read_bytes() for name in successor_leaves}
+            _assert_task4_leaf_differential_antigravity(legacy_payloads, successor_payloads)
+
+            mutations = (
+                ("compatibility", "compatibility_antigravity.json", lambda value: value.__setitem__("unallowlisted", True)),
+                ("frozen-row", "frozen_predictions_antigravity.jsonl", lambda value: value[0].__setitem__("indices", [1, 0])),
+                ("manifest", "prediction_manifest_antigravity.json", lambda value: value.__setitem__("rows", 97)),
+                ("evaluation", "evaluation_antigravity.json", lambda value: value.__setitem__("candidate_count", 17)),
+                ("artifact-map-linkage", "artifact_sha256_antigravity.json", lambda value: value.__setitem__("context_antigravity.json", "0" * 64)),
+            )
+            for family, name, mutate in mutations:
+                changed = dict(successor_payloads)
+                value = _parse_task4_leaf_antigravity(name, changed[name])
+                mutate(value)
+                changed[name] = _canonical_task4_leaf_antigravity(name, value)
+                with self.subTest(family=family), self.assertRaises(AssertionError):
+                    _assert_task4_leaf_differential_antigravity(legacy_payloads, changed)
 
 
 if __name__ == "__main__":
