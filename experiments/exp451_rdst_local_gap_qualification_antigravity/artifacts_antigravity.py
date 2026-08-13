@@ -27,7 +27,7 @@ def _safe_parent_antigravity(path: Path) -> int:
     return os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
 
 def _identity_antigravity(info: os.stat_result) -> tuple[int, ...]:
-    return (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode), info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 def _read_fd_antigravity(fd: int) -> bytes:
     os.lseek(fd, 0, os.SEEK_SET)
@@ -41,6 +41,17 @@ def _verify_namespace_antigravity(parent_fd: int, name: str, expected: os.stat_r
     current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
     if _identity_antigravity(current) != _identity_antigravity(expected):
         raise ValueError("artifact namespace or bytes changed")
+
+def _verify_namespace_reopen_antigravity(parent_fd: int, name: str, expected: os.stat_result, payload: bytes | None = None) -> None:
+    fd = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+    try:
+        opened = os.fstat(fd)
+        if _identity_antigravity(opened) != _identity_antigravity(expected):
+            raise ValueError("artifact namespace reopen differs")
+        if payload is not None and _read_fd_antigravity(fd) != payload:
+            raise ValueError("artifact namespace bytes differ")
+    finally:
+        os.close(fd)
 
 def _write_all_antigravity(fd: int, payload: bytes) -> None:
     view = memoryview(payload)
@@ -66,7 +77,7 @@ def write_create_only_antigravity(destination: Path, payload: bytes, *, fault_ho
             raise OSError("artifact byte count differs")
         if _read_fd_antigravity(fd) != payload:
             raise OSError("artifact canonical reread differs")
-        _verify_namespace_antigravity(parent_fd, destination.name, os.fstat(fd))
+        _verify_namespace_reopen_antigravity(parent_fd, destination.name, os.fstat(fd), payload)
         os.fsync(parent_fd)
     finally:
         if fd >= 0: os.close(fd)
@@ -82,6 +93,10 @@ def write_atomic_antigravity(destination: Path, payload: bytes, *, fault_hook=No
         os.fsync(fd)
         if os.fstat(fd).st_size != len(payload):
             raise OSError("atomic byte count differs")
+        temporary_info = os.fstat(fd)
+        if _read_fd_antigravity(fd) != payload:
+            raise OSError("atomic temporary bytes differ")
+        _verify_namespace_reopen_antigravity(parent_fd, temporary, temporary_info, payload)
         if fault_hook: fault_hook("rename", sequence)
         os.replace(temporary, destination.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
         os.fsync(parent_fd)
@@ -90,7 +105,7 @@ def write_atomic_antigravity(destination: Path, payload: bytes, *, fault_hook=No
             destination_info = os.fstat(destination_fd)
             if not stat.S_ISREG(destination_info.st_mode) or destination_info.st_nlink != 1 or _read_fd_antigravity(destination_fd) != payload:
                 raise ValueError("atomic destination differs")
-            _verify_namespace_antigravity(parent_fd, destination.name, destination_info)
+            _verify_namespace_reopen_antigravity(parent_fd, destination.name, destination_info, payload)
         finally: os.close(destination_fd)
     finally:
         if fd >= 0: os.close(fd)
@@ -118,15 +133,27 @@ def read_canonical_file_antigravity(path: Path) -> object:
 def append_text_antigravity(destination: Path, payload: bytes) -> None:
     if type(payload) is not bytes: raise ValueError("append payload must be bytes")
     parent_fd = _safe_parent_antigravity(destination.parent)
-    fd = os.open(destination.name, os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+    fd = os.open(destination.name, os.O_RDWR | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
     try:
         before = os.fstat(fd)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1: raise ValueError("unsafe append target")
+        previous_size = before.st_size
         _write_all_antigravity(fd, payload); os.fsync(fd)
         after = os.fstat(fd)
         if (after.st_dev, after.st_ino, stat.S_IFMT(after.st_mode), after.st_nlink) != (before.st_dev, before.st_ino, stat.S_IFMT(before.st_mode), 1):
             raise ValueError("append target changed")
-        _verify_namespace_antigravity(parent_fd, destination.name, after)
+        if after.st_size != previous_size + len(payload):
+            raise OSError("append size differs")
+        os.lseek(fd, previous_size, os.SEEK_SET)
+        appended = b""
+        while len(appended) < len(payload):
+            chunk = os.read(fd, len(payload) - len(appended))
+            if not chunk: break
+            appended += chunk
+        if appended != payload:
+            raise OSError("append bytes differ")
+        _verify_namespace_reopen_antigravity(parent_fd, destination.name, after)
+        os.fsync(parent_fd)
     finally: os.close(fd); os.close(parent_fd)
 
 __all__ = ["append_text_antigravity", "canonical_json_bytes_antigravity", "strict_json_bytes_antigravity", "write_create_only_antigravity", "write_atomic_antigravity", "read_canonical_file_antigravity", "read_exact_bytes_antigravity"]

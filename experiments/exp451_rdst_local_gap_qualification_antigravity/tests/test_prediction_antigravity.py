@@ -12,6 +12,7 @@ from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antig
 from experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity import (
     PredictionDependenciesAntigravity, _run_prediction_with_dependencies_antigravity,
     _validate_frozen_prediction_root_antigravity, ExpectedPredecessorSnapshotAntigravity,
+    PinnedPredictionTreeAntigravity,
 )
 
 
@@ -23,6 +24,10 @@ def decision():
 
 def bundles():
     return tuple(DatasetBundleAntigravity(i, "Family", f"Dataset_{i}_antigravity", np.arange(20, dtype=float).reshape(5,4) + i*100, np.arange(12, dtype=float).reshape(3,4) + i*100, 3) for i in range(48))
+
+def expected_snapshot():
+    items = bundles()
+    return ExpectedPredecessorSnapshotAntigravity(tuple(item.dataset_identity for item in items), tuple(item.target_length for item in items))
 
 def scorer(train, test, seed, backend):
     time.sleep((48 - int(train[0, 0]) // 100) * 0.0005)
@@ -46,7 +51,7 @@ class PredictionTestsAntigravity(unittest.TestCase):
             result = _run_prediction_with_dependencies_antigravity(SHA, self.dependencies(root))
             self.assertEqual((result.progress.completed, result.progress.reused, result.progress.recomputed), (48, 0, 48))
             self.assertEqual(len(result.authority.dataset_identities), 48)
-            self.assertEqual(_validate_frozen_prediction_root_antigravity(root, result.authority), result.authority)
+            self.assertEqual(_validate_frozen_prediction_root_antigravity(root, result.authority, expected_snapshot()), result.authority)
             self.assertEqual(len(tuple((root / "leaves_antigravity").iterdir())), 48)
             self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
             self.assertEqual(json.loads((root / "checkpoint_antigravity.json").read_text())["next_sequence"], 48)
@@ -75,7 +80,7 @@ class PredictionTestsAntigravity(unittest.TestCase):
             root = Path(temporary) / "run_antigravity"; result = _run_prediction_with_dependencies_antigravity(SHA, self.dependencies(root))
             leaf = root / "leaves_antigravity" / "0000_antigravity.json"
             leaf.unlink(); leaf.symlink_to(root / "manifest_antigravity.json")
-            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root, result.authority)
+            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root, result.authority, expected_snapshot())
 
     def test_real_process_pool_finishes_out_of_order_but_commits_ordered(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -104,13 +109,13 @@ class PredictionTestsAntigravity(unittest.TestCase):
             with self.assertRaises(ValueError): _run_prediction_with_dependencies_antigravity(SHA, self.dependencies(root))
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "run_antigravity"; result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root)); (root/"extra_antigravity.json").write_text("{}\n")
-            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority)
+            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority,expected_snapshot())
 
     def test_receipt_chain_independently_authenticates_leaf(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary)/"run_antigravity"; result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
             receipt=root/"receipts_antigravity"/"0012_antigravity.json"; value=json.loads(receipt.read_text()); value["previous_chain_sha256"]="0"*64; receipt.write_text(json.dumps(value,sort_keys=True,separators=(",", ":"))+"\n")
-            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority)
+            with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority,expected_snapshot())
 
     def test_manifest_is_publication_last(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -152,6 +157,36 @@ class PredictionTestsAntigravity(unittest.TestCase):
             self.assertEqual(_validate_frozen_prediction_root_antigravity(root,result.authority,expected),result.authority)
             bad=ExpectedPredecessorSnapshotAntigravity(expected.dataset_identities[:-1]+((47,"Family","forged_antigravity"),),expected.target_lengths)
             with self.assertRaises(ValueError): _validate_frozen_prediction_root_antigravity(root,result.authority,bad)
+
+    def test_private_validator_requires_independent_snapshot_and_tree_is_retained(self):
+        import inspect
+        parameter = inspect.signature(_validate_frozen_prediction_root_antigravity).parameters["expected_snapshot"]
+        self.assertIs(parameter.default, inspect.Parameter.empty)
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/"run_antigravity"; result=_run_prediction_with_dependencies_antigravity(SHA,self.dependencies(root))
+            with PinnedPredictionTreeAntigravity(root) as tree:
+                self.assertGreaterEqual(tree.root_fd, 0)
+                self.assertGreaterEqual(tree.leaves_fd, 0)
+                self.assertGreaterEqual(tree.receipts_fd, 0)
+                self.assertEqual(tree.read_canonical_antigravity(tree.root_fd, "manifest_antigravity.json")["authority"], result.authority.to_payload_antigravity())
+
+    def test_every_setup_fault_closes_as_setup_failed_and_rerun_rejects(self):
+        operations = ("setup_root", "setup_leaves", "setup_receipts", "setup_context",
+                      "setup_checkpoint", "setup_progress_json", "setup_progress_text", "setup_pid")
+        for operation in operations:
+            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "run_antigravity"
+                def fault(name, sequence, target=operation):
+                    if name == target:
+                        raise OSError(f"fault:{target}")
+                with self.assertRaises(OSError):
+                    _run_prediction_with_dependencies_antigravity(SHA, self.dependencies(root, fault))
+                self.assertTrue(root.is_dir())
+                self.assertTrue((root / "setup_failure_antigravity.json").is_file())
+                self.assertFalse(json.loads((root / "pid_antigravity.json").read_text())["active"])
+                self.assertEqual(json.loads((root / "progress_antigravity.json").read_text())["stage"], "setup_failed")
+                with self.assertRaises(ValueError):
+                    _run_prediction_with_dependencies_antigravity(SHA, self.dependencies(root))
 
 
 if __name__ == "__main__": unittest.main()

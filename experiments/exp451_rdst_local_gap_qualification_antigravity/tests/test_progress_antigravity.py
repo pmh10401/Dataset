@@ -1,12 +1,12 @@
 import tempfile
 import unittest
 from pathlib import Path
-from experiments.exp451_rdst_local_gap_qualification_antigravity.progress_antigravity import PROGRESS_KEYS_ANTIGRAVITY, ProgressWriterAntigravity, select_outer_workers_antigravity, validate_progress_antigravity
+from experiments.exp451_rdst_local_gap_qualification_antigravity.progress_antigravity import PROGRESS_KEYS_ANTIGRAVITY, PROGRESS_STAGES_ANTIGRAVITY, ProgressWriterAntigravity, select_outer_workers_antigravity, validate_progress_antigravity
 
 
 class ProgressTestsAntigravity(unittest.TestCase):
     def payload(self, completed):
-        return {"pid":1,"dataset":"D_antigravity","family":"F","train_rows":5,"test_rows":3,"series_length":4,"seed":None,"fold":None,"stage":"commit","backend":"cpu","completed":completed,"total":48,"success":completed,"error":0,"reused":0,"recomputed":completed,"datasets_per_second":1.0,"elapsed_seconds":1.0,"eta_seconds":47.0,"checkpoint":"checkpoint_antigravity.json","latest_error":None}
+        return {"pid":1,"dataset":"D_antigravity","family":"F","train_rows":5,"test_rows":3,"series_length":4,"seed":None,"fold":None,"stage":"active","backend":"cpu","completed":completed,"total":48,"success":completed,"error":0,"reused":0,"recomputed":completed,"datasets_per_second":1.0,"elapsed_seconds":1.0,"eta_seconds":47.0,"checkpoint":"checkpoint_antigravity.json","latest_error":None}
     def test_worker_policy(self):
         self.assertEqual(select_outer_workers_antigravity(12, "cpu"), 11)
         self.assertEqual(select_outer_workers_antigravity(12, "mlx"), 1)
@@ -31,13 +31,25 @@ class ProgressTestsAntigravity(unittest.TestCase):
         mutations = (
             {"pid": True}, {"dataset": ""}, {"family": ""}, {"stage": "complete", "completed": 47},
             {"stage": "complete", "latest_error": "bad"}, {"stage": "failed", "latest_error": None},
-            {"stage": "commit", "error": 1}, {"reused": 2, "recomputed": 0},
+            {"stage": "active", "error": 1}, {"reused": 2, "recomputed": 0},
             {"train_rows": 0}, {"test_rows": 0}, {"series_length": 0}, {"backend": "cuda"},
         )
         for change in mutations:
             with self.subTest(change=change):
                 payload = self.payload(1); payload.update(change)
                 with self.assertRaises(ValueError): validate_progress_antigravity(payload)
+
+    def test_progress_stage_set_is_closed_and_terminal_dimensions_are_empty(self):
+        self.assertEqual(PROGRESS_STAGES_ANTIGRAVITY, {"starting", "active", "interrupted", "complete", "failed", "setup_failed"})
+        payload = self.payload(48)
+        payload.update({"dataset": None, "family": None, "train_rows": 0, "test_rows": 0,
+                        "series_length": 0, "stage": "complete", "eta_seconds": 0.0})
+        self.assertEqual(validate_progress_antigravity(payload), payload)
+        for mutation in ({"stage": "commit"}, {"stage": "complete", "dataset": "D_antigravity"},
+                         {"stage": "complete", "eta_seconds": 1.0}, {"stage": "interrupted", "latest_error": None}):
+            with self.subTest(mutation=mutation):
+                bad = dict(payload); bad.update(mutation)
+                with self.assertRaises(ValueError): validate_progress_antigravity(bad)
 
 
 if __name__ == "__main__": unittest.main()
