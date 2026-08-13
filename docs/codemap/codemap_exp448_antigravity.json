@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-13T12:50:01+0900",
-  "generated_from_commit": "fdab5cea829d1bd54a2b20f69269f161df74ee8d",
+  "generated_at": "2026-08-13T13:30:00+0900",
+  "generated_from_commit": "9ca39c377489c9c71006d965abc84a21d1c73eeb",
   "working_tree_dirty": true,
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
@@ -704,6 +704,69 @@
           "symbol": "DeferredDeepLauncherTests"
         }
       ]
+    },
+    {
+      "id": "paper_minirocket_preprocessing",
+      "path": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+      "role": "Frozen TRAIN-derived alignment plus MiniRocket-only linear-edge/nearest nonfinite repair boundary.",
+      "entrypoints": [
+        "repair_linear_edge_nearest_paper",
+        "align_series_lengths_paper",
+        "z_normalize_paper"
+      ],
+      "callers": [
+        "sources_paper/minirocket_paper.py",
+        "sources_paper/legacy_route_sources_paper.py"
+      ],
+      "effects": [
+        "repairs each MiniRocket TRAIN and TEST row on its original grid before fixed TRAIN-target alignment and z-normalization",
+        "does not change shared hard-source preprocessing"
+      ],
+      "tests": [
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py"
+      ],
+      "constraints": [
+        "The repair is byte-identical to Exp443 Policy A / Exp226 sanitize for <f4.",
+        "Empty and all-nonfinite rows fail locally before aeon receives a missing value."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+          "symbol": "repair_linear_edge_nearest_paper"
+        }
+      ]
+    },
+    {
+      "id": "paper_minirocket_scoring",
+      "path": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+      "role": "Standalone frozen Exp249 MiniRocket crossfit/local-gap scoring with source-local nonfinite repair.",
+      "entrypoints": [
+        "score_minirocket_confirmations",
+        "score_configuration_paper"
+      ],
+      "callers": [
+        "hard_route_paper.py",
+        "proposal_score_paper.py",
+        "tests_paper/test_minirocket_paper.py"
+      ],
+      "effects": [
+        "repairs TRAIN and TEST rows only for MiniRocket before alignment and z-normalization",
+        "preserves frozen 1024/4096 kernel, seed, p-value intersection, and typed aeon-absence boundaries"
+      ],
+      "tests": [
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py"
+      ],
+      "constraints": [
+        "No TEST labels or database writes are permitted.",
+        "The source-local repair cannot alter other hard-source preprocessing."
+      ],
+      "evidence": [
+        {
+          "path": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+          "symbol": "score_minirocket_confirmations"
+        }
+      ]
     }
   ],
   "edges": [
@@ -976,6 +1039,33 @@
         "path": "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py",
         "symbol": "spec_from_file_location"
       }
+    },
+    {
+      "from": "paper_minirocket_scoring",
+      "to": "paper_minirocket_preprocessing",
+      "type": "imports",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+        "symbol": "repair_linear_edge_nearest_paper"
+      }
+    },
+    {
+      "from": "paper_proposal_score",
+      "to": "paper_minirocket_scoring",
+      "type": "calls",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "symbol": "score_minirocket_confirmations"
+      }
+    },
+    {
+      "from": "paper_minirocket_scoring",
+      "to": "paper_hard_route",
+      "type": "supplies",
+      "evidence": {
+        "path": "paper/equipment_anomaly_detection/hard_route_paper.py",
+        "symbol": "MiniRocketResult"
+      }
     }
   ],
   "flows": [
@@ -1067,6 +1157,16 @@
         "public_baseline_deep_common"
       ],
       "outcome": "Prepared launch/status/verify tooling keeps future 50-epoch CPU score roots independent and label-free until frozen evaluation; no deep run is started by implementation."
+    },
+    {
+      "trigger": "Task1 MiniRocket nonfinite restoration",
+      "steps": [
+        "paper_minirocket_preprocessing",
+        "paper_minirocket_scoring",
+        "paper_hard_route",
+        "paper_proposal_score"
+      ],
+      "outcome": "Only MiniRocket TRAIN and TEST values are repaired on the original float32 grid before alignment; all other hard sources and every frozen scoring/routing rule remain unchanged."
     }
   ],
   "unknown_relationships": [],

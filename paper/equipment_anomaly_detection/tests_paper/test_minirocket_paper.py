@@ -4,10 +4,17 @@ from __future__ import annotations
 import unittest
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
+from experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity import (
+    repair_linear_edge_nearest_antigravity,
+)
+from paper.equipment_anomaly_detection.sources_paper import minirocket_paper
+from paper.equipment_anomaly_detection.sources_paper import preprocessing_paper
 from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
+    ConfigurationScoresPaper,
     DependencyUnavailablePaper,
     MiniRocketConfig,
     expected_feature_dimension_paper,
@@ -26,6 +33,44 @@ class _Transformer:
 
 
 class MiniRocketTests(unittest.TestCase):
+    def test_linear_edge_nearest_repair_is_byte_identical_to_exp443_policy_a(self) -> None:
+        fixtures = (
+            np.asarray([1.0, np.nan, 3.0], dtype="<f4"),
+            np.asarray([np.nan, 2.0, 4.0, np.nan], dtype="<f4"),
+            np.asarray([1.0, np.inf, -np.inf, 4.0], dtype="<f4"),
+            np.asarray([np.nan, 7.0, np.nan], dtype="<f4"),
+            np.asarray([1.0, 2.0, 3.0], dtype="<f4"),
+        )
+        repair = preprocessing_paper.repair_linear_edge_nearest_paper
+        for values in fixtures:
+            actual = repair(values)
+            expected = repair_linear_edge_nearest_antigravity(values)
+            self.assertEqual(actual.dtype, np.dtype("<f4"))
+            self.assertEqual(actual.tobytes(), expected.tobytes())
+        with self.assertRaisesRegex(ValueError, "entirely non-finite"):
+            repair(np.asarray([np.nan, np.inf], dtype="<f4"))
+
+    def test_confirmations_repair_train_and_test_before_alignment(self) -> None:
+        values = RawDataset(
+            "nonfinite_fixture", 6, tuple(range(5)), (b"a",) * 5,
+            tuple(np.asarray([1.0, np.nan, 3.0, 4.0, 5.0, 6.0], dtype="<f4") for _ in range(5)),
+            tuple(range(2)), (b"b",) * 2,
+            tuple(np.asarray([np.nan, 2.0, 3.0, 4.0, 5.0, np.inf], dtype="<f4") for _ in range(2)),
+        )
+        observed: list[tuple[np.ndarray, np.ndarray]] = []
+
+        def fake_score(train, test, *, requested_kernels, **_):
+            observed.append((np.array(train, copy=True), np.array(test, copy=True)))
+            return ConfigurationScoresPaper(
+                np.arange(len(train), dtype=float), np.arange(len(test), dtype=float),
+                1008 if requested_kernels == 1024 else 4032,
+            )
+
+        with patch.object(minirocket_paper, "score_configuration_paper", side_effect=fake_score):
+            score_minirocket_confirmations(values)
+        self.assertEqual(len(observed), 4)
+        self.assertTrue(all(np.isfinite(matrix).all() for pair in observed for matrix in pair))
+
     def test_requested_kernel_feature_dimensions_are_frozen(self) -> None:
         config = MiniRocketConfig()
         self.assertEqual(expected_feature_dimension_paper(config, 1024), 1008)

@@ -51,6 +51,21 @@ def z_normalize_paper(matrix: np.ndarray) -> np.ndarray:
     return (values - mean) / np.where(std == 0.0, 1.0, std)
 
 
+def repair_linear_edge_nearest_paper(values: np.ndarray) -> np.ndarray:
+    """Repair original-grid float32 nonfinite coordinates, failing closed."""
+    series = np.asarray(values, dtype="<f4").reshape(-1)
+    if len(series) == 0:
+        raise ValueError("series must not be empty")
+    finite = np.isfinite(series)
+    if not finite.any():
+        raise ValueError("series is entirely non-finite")
+    cleaned = np.array(series, dtype="<f4", copy=True)
+    if not finite.all():
+        positions = np.arange(len(series))
+        cleaned[~finite] = np.interp(positions[~finite], positions[finite], series[finite])
+    return np.asarray(cleaned, dtype="<f4")
+
+
 def has_only_finite_values_paper(values: RawDataset) -> bool:
     return all(np.asarray(row).ndim == 1 and len(row) and np.all(np.isfinite(row))
                for row in (*values.train_rows, *values.test_rows))

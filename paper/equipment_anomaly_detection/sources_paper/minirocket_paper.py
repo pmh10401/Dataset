@@ -17,7 +17,12 @@ from sklearn.preprocessing import RobustScaler
 
 from ..calibration_paper import upper_tail_pvalues
 from ..contracts_paper import RawDataset
-from .preprocessing_paper import DependencyUnavailablePaper, align_series_lengths_paper, z_normalize_paper
+from .preprocessing_paper import (
+    DependencyUnavailablePaper,
+    align_series_lengths_paper,
+    repair_linear_edge_nearest_paper,
+    z_normalize_paper,
+)
 
 
 SEEDS_PAPER = (20260721, 20261721)
@@ -144,6 +149,20 @@ class LocalGapModelPaper:
         return np.asarray((distances.mean(axis=1) - (self.local_radius[indices].mean(axis=1) + 1e-9)) / self.scale, dtype=float)
 
 
+class MiniRocketNonfiniteInputPaper(ValueError):
+    """A dataset-local MiniRocket input row cannot be repaired safely."""
+
+
+def _repair_rows_for_minirocket_paper(rows: tuple[np.ndarray, ...], *, dataset: str, split: str) -> tuple[np.ndarray, ...]:
+    repaired: list[np.ndarray] = []
+    for index, row in enumerate(rows):
+        try:
+            repaired.append(repair_linear_edge_nearest_paper(row))
+        except ValueError as error:
+            raise MiniRocketNonfiniteInputPaper(f"dataset={dataset} split={split} row={index}: {error}") from error
+    return tuple(repaired)
+
+
 def actual_kernel_count_paper(requested_kernels: int) -> int:
     requested = int(requested_kernels)
     if requested < 84:
@@ -230,8 +249,10 @@ def score_minirocket_confirmations(values: RawDataset) -> MiniRocketResult:
         empty = {requested: MiniRocketKernelResult(requested, dimension, {}, frozenset()) for requested, dimension in ((1024, 1008), (4096, 4032))}
         return MiniRocketResult(frozenset(), frozenset(), empty)
     target = int(np.clip(np.median([len(row) for row in values.train_rows]), 8, 2048))
-    train = z_normalize_paper(align_series_lengths_paper(values.train_rows, target))
-    test = z_normalize_paper(align_series_lengths_paper(values.test_rows, target))
+    train_rows = _repair_rows_for_minirocket_paper(values.train_rows, dataset=values.dataset, split="TRAIN")
+    test_rows = _repair_rows_for_minirocket_paper(values.test_rows, dataset=values.dataset, split="TEST")
+    train = z_normalize_paper(align_series_lengths_paper(train_rows, target))
+    test = z_normalize_paper(align_series_lengths_paper(test_rows, target))
     by_kernel: dict[int, MiniRocketKernelResult] = {}
     for requested, expected in ((1024, 1008), (4096, 4032)):
         scores = {seed: score_configuration_paper(train, test, config=MiniRocketConfig(), requested_kernels=requested, seed=seed, expected_dimension=expected) for seed in SEEDS_PAPER}
@@ -240,4 +261,4 @@ def score_minirocket_confirmations(values: RawDataset) -> MiniRocketResult:
     return MiniRocketResult(by_kernel[1024].candidate, by_kernel[4096].candidate, by_kernel)
 
 
-__all__ = ["ConfigurationScoresPaper", "DependencyUnavailablePaper", "MiniRocketConfig", "MiniRocketKernelResult", "MiniRocketResult", "actual_kernel_count_paper", "as_aeon_collection_paper", "expected_feature_dimension_paper", "score_configuration_paper", "score_minirocket_confirmations"]
+__all__ = ["ConfigurationScoresPaper", "DependencyUnavailablePaper", "MiniRocketConfig", "MiniRocketKernelResult", "MiniRocketNonfiniteInputPaper", "MiniRocketResult", "actual_kernel_count_paper", "as_aeon_collection_paper", "expected_feature_dimension_paper", "score_configuration_paper", "score_minirocket_confirmations"]
