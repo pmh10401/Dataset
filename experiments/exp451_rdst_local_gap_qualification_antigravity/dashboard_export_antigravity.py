@@ -7,13 +7,14 @@ FAMILIES=("Crop","ElectricDevices","FordA","FordB","Yoga","ECG5000","ChlorineCon
 
 def _conf(value): return {"tp":value.tp,"fp":value.fp,"fn":value.fn,"tn":value.tn,"f1":0.0 if 2*value.tp+value.fp+value.fn==0 else 2*value.tp/(2*value.tp+value.fp+value.fn)}
 def public_result_antigravity(result):
-    from .evaluation_antigravity import FrozenEvaluationAntigravity
+    from .evaluation_codec_antigravity import FrozenEvaluationAntigravity
     if type(result) is not FrozenEvaluationAntigravity: raise ValueError("evaluation result type differs")
     baseline_public=_conf(result.baseline_global); candidate_public=_conf(result.candidate_global)
     value={"identity":"Exp451","status":result.status,"global":{"baseline":baseline_public,"candidate":candidate_public},"qualification":{"qualified":result.qualified,"target_fn_delta":result.target_fn_delta,"gates":dict(result.gates)},"counts":{"replaced":48,"reused":1069,"global":1117},"transitions":{"events":{"new_detections":result.transition_totals[0],"new_false_alarms":result.transition_totals[1],"detection_losses":result.transition_totals[2],"false_alarm_losses":result.transition_totals[3]},"affected_counts":{"new_detections":result.transition_dataset_counts[0],"new_false_alarms":result.transition_dataset_counts[1],"detection_losses":result.transition_dataset_counts[2],"false_alarm_losses":result.transition_dataset_counts[3]}},"family_fn_deltas":{family:delta for family,delta in result.family_fn_deltas},"bootstrap":{"scope":"target_48_paired","seed":result.bootstrap["seed"],"samples":result.bootstrap["samples"],"population":result.bootstrap["population"],"dtype":result.bootstrap["dtype"],"endpoint":result.bootstrap["endpoint"],"percentile_method":result.bootstrap["percentile_method"],"fn_delta":result.bootstrap["fn_delta"],"fp_delta":result.bootstrap["fp_delta"],"f1_delta":result.bootstrap["f1_delta"],"fn_interval":result.bootstrap["fn_interval"],"fp_interval":result.bootstrap["fp_interval"],"f1_interval":result.bootstrap["f1_interval"]},"runtime":{"sessions":1,"queries":48,"rows":72300}}
-    validate_public_result_antigravity(value); return value
+    _validate_shape_antigravity(value)
+    return value
 
-def validate_public_result_antigravity(value):
+def _validate_shape_antigravity(value):
     if type(value) is not dict or set(value)!={"identity","status","global","qualification","counts","transitions","family_fn_deltas","bootstrap","runtime"}: raise ValueError("public schema differs")
     def walk(item):
         if type(item) is dict:
@@ -56,4 +57,19 @@ def validate_public_result_antigravity(value):
     if bootstrap["fp_delta"]!=transitions["events"]["new_false_alarms"]-transitions["events"]["false_alarm_losses"]: raise ValueError("bootstrap target FP differs")
     for key in ("fn","fp","f1"):
         if not bootstrap[f"{key}_interval"][0]<=bootstrap[f"{key}_delta"]<=bootstrap[f"{key}_interval"][1]: raise ValueError("bootstrap point outside interval")
+    return value
+
+def _exact_equal_antigravity(left, right):
+    if type(left) is not type(right): return False
+    if type(left) is dict:
+        return list(left)==list(right) and all(_exact_equal_antigravity(left[key],right[key]) for key in left)
+    if type(left) is list:
+        return len(left)==len(right) and all(_exact_equal_antigravity(a,b) for a,b in zip(left,right,strict=True))
+    return left==right
+
+def validate_public_result_antigravity(value, *, expected_result):
+    from .evaluation_codec_antigravity import FrozenEvaluationAntigravity
+    if type(expected_result) is not FrozenEvaluationAntigravity: raise ValueError("trusted evaluation authority required")
+    expected=public_result_antigravity(expected_result)
+    if not _exact_equal_antigravity(value,expected): raise ValueError("public projection differs from trusted evaluation")
     return value

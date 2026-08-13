@@ -19,7 +19,7 @@ class DashboardExportAntigravityTest(unittest.TestCase):
                 self.assertNotIn(forbidden, flattened)
             self.assertEqual(public["runtime"], {"sessions":1,"queries":48,"rows":72300})
             for key in ("raw_labels", "dataset_names", "local_path", "sha256", "sql_log", "candidate_indices"):
-                with self.assertRaises(ValueError): validate_public_result_antigravity({**public, key: []})
+                with self.assertRaises(ValueError): validate_public_result_antigravity({**public, key: []},expected_result=result)
             malformed=[]
             wrong=copy.deepcopy(public); wrong["global"]["candidate"]["f1"] += .1; malformed.append(wrong)
             wrong=copy.deepcopy(public); wrong["qualification"]["qualified"] = not wrong["qualification"]["qualified"]; malformed.append(wrong)
@@ -35,6 +35,8 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             wrong=copy.deepcopy(public); wrong["bootstrap"]["scope"]="global"; malformed.append(wrong)
             wrong=copy.deepcopy(public); wrong["transitions"]["events"]["false_alarm_losses"]+=1; malformed.append(wrong)
             for attack in malformed:
-                with self.assertRaises(ValueError): validate_public_result_antigravity(attack)
+                with self.assertRaises(ValueError): validate_public_result_antigravity(attack,expected_result=result)
+            self.assertEqual(validate_public_result_antigravity(public,expected_result=result),public)
+            with self.assertRaises(TypeError): validate_public_result_antigravity(public)
 
 if __name__ == "__main__": unittest.main()
