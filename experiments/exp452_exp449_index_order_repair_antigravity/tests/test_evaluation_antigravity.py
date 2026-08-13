@@ -101,6 +101,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
                     _evaluate_with_dependencies_antigravity("a" * 40, dependencies)
                 self.assertFalse(root.is_dir() and not root.is_symlink() and len(tuple(root.iterdir())) == 12)
                 self.assertTrue(dependencies.audit_path.is_file())
+                self.assertEqual(json.loads(dependencies.audit_path.read_text())["schema"], "exp452.task4.failure")
                 if case in {"existing", "partial", "symlink"}:
                     self.assertEqual(dependencies.legacy_antigravity.open_labels_calls, 0)
 
@@ -162,6 +163,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
                     module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
                 self.assertFalse(root.exists()); forensic = Path(temporary) / moved["name"]; self.assertTrue(forensic.is_dir())
                 audit = json.loads(dependencies.audit_path.read_text())
+                self.assertEqual(audit["schema"], "exp452.task4.failure")
                 self.assertEqual((audit["phase"], audit["recovery"]["outcome"], audit["recovery"]["forensic_basename"]), ("post_rename_replay", "moved", moved["name"]))
                 if recovery_fault is not None: self.assertIn(f"recovery_{recovery_fault}_error=OSError: recovery {recovery_fault}", "\n".join(raised.exception.__notes__))
 

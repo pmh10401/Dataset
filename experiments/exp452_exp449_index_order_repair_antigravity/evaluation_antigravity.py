@@ -108,7 +108,7 @@ def _prediction_rows_antigravity(capture: object, authority: object) -> tuple[di
 
 def _audit_antigravity(path: Path, error: BaseException, *, phase: str, label_opened: bool, labels_closed: bool, queries: int, rows: int, recovery: object) -> None:
     notes = tuple(getattr(error, "__notes__", ()))
-    payload = {"schema": "exp449.task6.failure", "phase": phase, "label_session_opened": label_opened, "label_session_closed": labels_closed, "label_queries": queries, "label_rows": rows, "error": f"{type(error).__name__}: {error}", "notes": list(notes), "recovery": recovery}
+    payload = {"schema": "exp452.task4.failure", "phase": phase, "label_session_opened": label_opened, "label_session_closed": labels_closed, "label_queries": queries, "label_rows": rows, "error": f"{type(error).__name__}: {error}", "notes": list(notes), "recovery": recovery}
     try:
         write_create_only_antigravity(path, canonical_json_bytes_antigravity(payload))
     except BaseException as audit_error:
