@@ -284,7 +284,18 @@ class ControlledForkDifferentialAntigravityTest(unittest.TestCase):
             self.assertEqual({key: value for key, value in legacy_decision.items() if key != "schema"}, {key: value for key, value in successor_decision.items() if key != "schema"})
             legacy_dashboard, successor_dashboard = (json.loads((root / "dashboard_snapshot_antigravity.json").read_text()) for root in (legacy_root, successor_root))
             self.assertEqual({key: value for key, value in legacy_dashboard.items() if key not in {"schema", "experiment"}}, {key: value for key, value in successor_dashboard.items() if key not in {"schema", "experiment"}})
-            self.assertEqual([json.loads(line)["indices"] for line in (successor_root / "frozen_predictions_antigravity.jsonl").read_text().splitlines()], [candidate["indices"] for row in json.loads((successor_root / "evaluation_antigravity.json").read_text())["dataset_evidence"] for candidate in row["candidates"].values()])
+            invariant = ("candidate_registry_antigravity.json", "candidate_metrics_antigravity.jsonl", "family_metrics_antigravity.jsonl", "bootstrap_antigravity.json")
+            for name in invariant: self.assertEqual((legacy_root / name).read_bytes(), (successor_root / name).read_bytes())
+            self.assertEqual(set(legacy_leaves), set(successor_leaves))
+            for root in (legacy_root, successor_root):
+                artifact_map = json.loads((root / "artifact_sha256_antigravity.json").read_text())
+                self.assertEqual(set(artifact_map), set(legacy_leaves[:-1]))
+            legacy_context, successor_context = (json.loads((root / "context_antigravity.json").read_text()) for root in (legacy_root, successor_root))
+            self.assertEqual(legacy_context["target_datasets"], successor_context["target_datasets"])
+            self.assertEqual(json.loads((legacy_root / "candidate_registry_antigravity.json").read_text()), json.loads((successor_root / "candidate_registry_antigravity.json").read_text()))
+            frozen = [json.loads(line)["indices"] for line in (successor_root / "frozen_predictions_antigravity.jsonl").read_text().splitlines()]
+            evidence = [candidate["indices"] for row in json.loads((successor_root / "evaluation_antigravity.json").read_text())["dataset_evidence"] for candidate in row["candidates"].values()]
+            self.assertEqual(frozen, evidence)
 
 
 if __name__ == "__main__":

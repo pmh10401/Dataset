@@ -138,6 +138,33 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
             self.assertIn("failure_audit_error=OSError: audit write", "\n".join(raised.exception.__notes__))
 
+    def test_postrename_replay_failure_moves_retained_inode_and_preserves_recovery_truth_antigravity(self) -> None:
+        """Break caught: post-rename replay drift leaves a canonical root or loses forensic recovery truth."""
+        from experiments.exp452_exp449_index_order_repair_antigravity import evaluation_antigravity as module
+        for recovery_fault in (None, "validation", "fsync"):
+            with self.subTest(recovery_fault=recovery_fault), tempfile.TemporaryDirectory(prefix="exp452_postrename_antigravity_") as temporary:
+                root = Path(temporary) / "publication_antigravity"; dependencies = self._dependencies_antigravity(root)
+                original_replay, original_assert, original_fsync = module.inspect_replay_at_fd_antigravity, module._assert_directory_entry_identity_at_antigravity, module._fsync_directory_antigravity
+                calls = 0; moved: dict[str, str] = {}
+                def replay(descriptor: int, **kwargs: object):
+                    nonlocal calls; calls += 1
+                    if calls == 2: raise OSError("postrename replay drift")
+                    return original_replay(descriptor, **kwargs)
+                def assert_identity(parent_fd: int, name: str, retained: object) -> None:
+                    if ".forensic_" in name:
+                        moved["name"] = name
+                        if recovery_fault == "validation": raise OSError("recovery validation")
+                    return original_assert(parent_fd, name, retained)
+                def fsync(descriptor: int) -> None:
+                    if recovery_fault == "fsync" and moved: raise OSError("recovery fsync")
+                    return original_fsync(descriptor)
+                with patch.object(module, "inspect_replay_at_fd_antigravity", side_effect=replay), patch.object(module, "_assert_directory_entry_identity_at_antigravity", side_effect=assert_identity), patch.object(module, "_fsync_directory_antigravity", side_effect=fsync), self.assertRaisesRegex(OSError, "postrename replay drift") as raised:
+                    module._evaluate_with_dependencies_antigravity("a" * 40, dependencies)
+                self.assertFalse(root.exists()); forensic = Path(temporary) / moved["name"]; self.assertTrue(forensic.is_dir())
+                audit = json.loads(dependencies.audit_path.read_text())
+                self.assertEqual((audit["phase"], audit["recovery"]["outcome"], audit["recovery"]["forensic_basename"]), ("post_rename_replay", "moved", moved["name"]))
+                if recovery_fault is not None: self.assertIn(f"recovery_{recovery_fault}_error=OSError: recovery {recovery_fault}", "\n".join(raised.exception.__notes__))
+
 
 if __name__ == "__main__":
     unittest.main()
