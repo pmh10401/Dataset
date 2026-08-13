@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
-import json, math, os, stat
+import json, math, os, stat, time
 from pathlib import Path
 
 import numpy as np
@@ -99,12 +99,37 @@ def _mkdirs(path:Path)->None:
     while _lstat(current) is None:pending.append(current);current=current.parent
     if stat.S_ISLNK(_lstat(current).st_mode) or not stat.S_ISDIR(_lstat(current).st_mode):raise ValueError("artifact parent is unsafe")
     for directory in reversed(pending):os.mkdir(directory)
-def write_create_only(path:Path,data:bytes)->None:
-    _mkdirs(path.parent)
-    if _lstat(path) is not None:raise FileExistsError(f"create-only artifact already exists: {path}")
-    descriptor=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,"O_NOFOLLOW",0),0o600)
-    try:os.write(descriptor,data);os.fsync(descriptor)
+def _fsync_directory(path:Path)->None:
+    descriptor=os.open(path,os.O_RDONLY|os.O_DIRECTORY|getattr(os,"O_CLOEXEC",0))
+    try:os.fsync(descriptor)
     finally:os.close(descriptor)
+def write_create_only(path:Path,data:bytes)->None:
+    destination=Path(path)
+    details=_lstat(destination)
+    if details is not None:
+        if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("create-only destination is not a regular file")
+        if destination.read_bytes()==data:return
+        raise ValueError("existing destination differs")
+    _mkdirs(destination.parent)
+    temporary=destination.with_name(f".{destination.name}.{os.getpid()}.{time.time_ns()}.tmp_antigravity")
+    descriptor=os.open(temporary,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,"O_CLOEXEC",0)|getattr(os,"O_NOFOLLOW",0),0o600)
+    try:
+        view=memoryview(data); offset=0
+        while offset<len(data):
+            written=os.write(descriptor,view[offset:])
+            if written<=0:raise OSError("create-only write returned no bytes")
+            offset+=written
+        os.fsync(descriptor)
+    except BaseException:
+        os.close(descriptor); temporary.unlink(missing_ok=True); raise
+    os.close(descriptor)
+    try:os.link(temporary,destination)
+    except FileExistsError as error:
+        existing=_lstat(destination)
+        if existing is None or stat.S_ISLNK(existing.st_mode) or not stat.S_ISREG(existing.st_mode):raise ValueError("create-only destination is not a regular file") from error
+        if destination.read_bytes()!=data:raise ValueError("existing destination differs") from error
+    finally:
+        _fsync_directory(destination.parent); temporary.unlink(missing_ok=True)
 def read_canonical(path:Path)->object:
     details=_lstat(path)
     if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):raise ValueError("artifact missing or symlinked")

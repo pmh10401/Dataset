@@ -928,6 +928,26 @@ def _publish_smoke_result(authority: Mapping[str, object], pipeline: Mapping[str
     return payload
 
 
+def _authenticate_inherited_lock_fd(lock_fd: int, lock_path: Path):
+    if type(lock_fd) is not int or lock_fd < 0:
+        raise ValueError("inherited lock fd is invalid")
+    try:
+        info = os.fstat(lock_fd)
+    except OSError as error:
+        raise ValueError("inherited lock fd is invalid") from error
+    if not stat.S_ISREG(info.st_mode):
+        raise ValueError("inherited lock fd is not a regular file")
+    _require_regular_file(lock_path, "canonical lock")
+    lock_info = Path(lock_path).lstat()
+    if (info.st_dev, info.st_ino) != (lock_info.st_dev, lock_info.st_ino):
+        raise ValueError("inherited lock fd does not match canonical lock")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as error:
+        raise ValueError("inherited lock fd is contended") from error
+    return os.fdopen(lock_fd, "a+b", closefd=True)
+
+
 def _acquire_lock(paths: OpsPaths):
     _validate_ops_confinement(paths, create_root=True)
     _validate_regular_file_if_present(paths.worker_lock, "lock")
@@ -1015,6 +1035,24 @@ def launch(reviewed_commit: str, *, spawn=subprocess.Popen) -> dict[str, object]
         lock_stream.close()
 
 
+def _verified_pre_genesis_shape(root: Path) -> bool:
+    info = _lstat(root)
+    if info is None or stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+        return False
+    children = sorted(Path(root).iterdir(), key=lambda item: item.name)
+    if not children:
+        return True
+    if len(children) != 1:
+        return False
+    journal = children[0]
+    if journal.name != "pipeline_journal_paper":
+        return False
+    journal_info = _lstat(journal)
+    if journal_info is None or stat.S_ISLNK(journal_info.st_mode) or not stat.S_ISDIR(journal_info.st_mode):
+        return False
+    return not any(journal.iterdir())
+
+
 def resume(reviewed_commit: str, *, spawn=subprocess.Popen) -> dict[str, object]:
     if not OFFICIAL_R4_ROOT.is_dir() or OFFICIAL_R4_ROOT.is_symlink():
         raise ValueError("resume requires an incomplete verified r4 root")
@@ -1024,11 +1062,15 @@ def resume(reviewed_commit: str, *, spawn=subprocess.Popen) -> dict[str, object]
     current = build_authority(reviewed_commit, smoke_result_sha256=str(smoke["result_sha256"]))
     if canonical_json_bytes(stored) != canonical_json_bytes(current):
         raise ValueError("resume authority differs from the stored launch identity")
-    pipeline = _pipeline_status(OFFICIAL_R4_ROOT, "full")
-    if pipeline.get("status") == "completed":
-        raise ValueError("resume requires an incomplete verified r4 root")
-    if pipeline.get("status") not in {"proposal_score_incomplete", "completed_prefix"}:
-        raise ValueError("resume root is not a verified incomplete paper run")
+    if not _verified_pre_genesis_shape(OFFICIAL_R4_ROOT):
+        try:
+            pipeline = _pipeline_status(OFFICIAL_R4_ROOT, "full")
+        except Exception as error:
+            raise ValueError("resume root is not a verified incomplete or pre-genesis paper run") from error
+        if pipeline.get("status") == "completed":
+            raise ValueError("resume requires an incomplete verified r4 root")
+        if pipeline.get("status") not in {"proposal_score_incomplete", "completed_prefix"}:
+            raise ValueError("resume root is not a verified incomplete paper run")
     digest = _publish_authority(paths, current)
     lock_stream = _acquire_lock(paths)
     try:
@@ -1436,11 +1478,13 @@ def _install_child_signal_handlers(active_child, *, register=signal.signal):
 
 def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str) -> int:
     paths = ops_paths() if mode == "full" else smoke_ops_paths()
-    lock_stream = os.fdopen(lock_fd, "a+b", closefd=True)
+    lock_stream = None
     child = None
     restore = _install_child_signal_handlers(lambda: child)
     started = time.time()
     try:
+        lock_stream = _authenticate_inherited_lock_fd(lock_fd, paths.worker_lock)
+        stored = _load_authority(paths)
         smoke_hash = None
         if mode == "full":
             smoke_hash = str(verify_smoke_authorization(reviewed_commit)["result_sha256"])
@@ -1448,7 +1492,8 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
         digest = sha256(canonical_json_bytes(authority)).hexdigest()
         if digest != authority_sha256:
             raise ValueError("worker authority differs from launch authority")
-        _publish_authority(paths, authority)
+        if canonical_json_bytes(stored) != canonical_json_bytes(authority):
+            raise ValueError("worker authority differs from stored launch identity")
         _atomic_replace(paths.pid, f"{os.getpid()}\n".encode("ascii"))
         _atomic_replace(
             paths.state,
@@ -1543,7 +1588,8 @@ def _worker(reviewed_commit: str, authority_sha256: str, lock_fd: int, mode: str
         return 1
     finally:
         restore()
-        lock_stream.close()
+        if lock_stream is not None:
+            lock_stream.close()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1567,7 +1613,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         code = 0
     elif arguments.command == "smoke":
         result = smoke(arguments.reviewed_commit)
-        code = 0 if result["pipeline"]["status"] == "completed" else 2
+        code = 0 if result["status"] == "smoke_verified" else 2
     elif arguments.command == "launch":
         result = launch(arguments.reviewed_commit)
         code = 0

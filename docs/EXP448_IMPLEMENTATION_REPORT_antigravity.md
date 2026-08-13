@@ -101,6 +101,18 @@ only. It does not authorize smoke-root or official r4-root creation.
   with a no-clobber hard link, fsyncs the directory, and deletes the temp.
   `_publish_authority` recovers an exact one-file partial pair and rejects
   mismatched or unsafe partials.
+- `_worker` authenticates the inherited lock fd (regular-file `fstat`,
+  canonical non-symlink `lstat`, `st_dev`/`st_ino` equality, and
+  `LOCK_EX|LOCK_NB` acquire/confirm) and requires a pre-published exact
+  authority rather than creating one. Resume accepts only an empty r4 root or
+  a root whose only child is an empty canonical journal directory, then lets
+  the runner initialize; every other partial or polluted shape is rejected.
+- CLI `smoke` exits 0 only for top-level `smoke_verified`.
+  `smoke_confirmation_required` and `smoke_incomplete` are nonzero.
+- Paper `write_create_only` used by Task4+5 success checkpoints now uses a
+  complete write loop, fsync, same-directory exclusive no-follow temp, atomic
+  no-clobber install, and directory fsync. Exact existing bytes are reusable;
+  a mismatch is rejected. Scientific payloads and schemas are unchanged.
 - Ops confinement is shared: `check` rejects a symlinked smoke-ops root;
   every existing ops/smoke-ops path component must be a real directory; every
   present authority/hash/PID/state/progress/lock/result/marker artifact must
@@ -110,8 +122,9 @@ only. It does not authorize smoke-root or official r4-root creation.
   exclusive flock, stale PID recovery, exact argv-grammar stop identity,
   SIGTERM revalidation, the two-invocation smoke gate, inventory mutation,
   atomic no-clobber publication, ops/smoke-ops symlink confinement, status
-  fixtures, and a small typed Task4+Task5 smoke resume-equivalence fixture.
-  They write only temporary Git/DB/path fixtures.
+  fixtures, inherited lock-fd authentication, pre-genesis resume windows,
+  nonzero CLI smoke statuses, and a small typed Task4+Task5 smoke
+  resume-equivalence fixture. They write only temporary Git/DB/path fixtures.
 - Implementation verification does not create
   `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813`,
   the smoke root, or the ops root, and it starts no official or detached

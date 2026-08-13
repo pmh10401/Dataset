@@ -76,7 +76,9 @@ completed invocation is non-authorizing (`smoke_confirmation_required`) and
 does not publish `smoke_result`. A second same-authority verification-only
 invocation is required before create-only authorization. An incomplete first
 wave plus a later completing resume still requires one additional
-verification-only invocation.
+verification-only invocation. The CLI exits 0 only for top-level
+`smoke_verified`; `smoke_confirmation_required` and `smoke_incomplete` are
+nonzero.
 
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
@@ -93,8 +95,11 @@ tail -f /Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813
 
 Stop and resume. There is no automatic retry. After a `proposal_score_incomplete`
 wave, analyze the full failed/pending batch first. Resume requires another
-explicit approval and the identical authority; it never migrates checkpoints
-into a new closure/config.
+explicit approval and the identical stored authority. It also accepts only
+verified pre-genesis shapes: an empty r4 root, or a root containing only an
+empty canonical journal directory; the runner then initializes. Every other
+partial or polluted shape is rejected. Checkpoints are never migrated into a
+new closure/config.
 
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \

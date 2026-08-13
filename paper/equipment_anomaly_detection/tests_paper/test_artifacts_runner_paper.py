@@ -212,8 +212,12 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
         route = self._nonempty_route()
         authority = self._authority(backend)
         path = write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
-        with self.assertRaises(FileExistsError):
-            write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        original_bytes = path.read_bytes()
+        original_inode = path.stat().st_ino
+        reused = write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        self.assertEqual(reused, path)
+        self.assertEqual(path.read_bytes(), original_bytes)
+        self.assertEqual(path.stat().st_ino, original_inode)
         reread = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
         self.assertEqual(path.name, "task4_task5_success_antigravity.json")
         self.assertEqual(reread.route, route)
@@ -232,6 +236,85 @@ class Task4Task5SuccessRecordTests(unittest.TestCase):
             self.assertTrue(np.array_equal(actual.test_native_pass, expected.test_native_pass))
             self.assertFalse(actual.test_score.flags.writeable)
             self.assertEqual(actual.test_score.dtype, np.dtype("float64"))
+
+    def test_success_record_survives_short_write_interruption_and_retries(self):
+        """A short write must not leave a truncated Task4+5 success file that blocks reuse."""
+        from paper.equipment_anomaly_detection import artifacts_paper as artifacts
+        from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, write_task4_task5_success_record
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
+        raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
+        changed = dict(sources.by_name)
+        source = changed["rocket_exp40"]
+        changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, np.empty(0), np.empty(0), np.ones(2), source.threshold, np.zeros(2, dtype=bool), False, "dependency_unavailable")
+        sources = HardSourceBundle(sources.source_names, changed)
+        route = self._nonempty_route()
+        authority = self._authority(backend)
+        path = artifacts._task4_task5_success_path(self.root, raw.dataset)
+        original = artifacts.os.write
+        calls = {"n": 0}
+
+        def short(fd, data):
+            calls["n"] += 1
+            if calls["n"] == 1 and len(data) > 8:
+                original(fd, data[:8])
+                raise OSError("injected short write")
+            return original(fd, data)
+
+        with self.assertRaisesRegex(OSError, "injected short write"):
+            with patch.object(artifacts.os, "write", side_effect=short):
+                write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        self.assertFalse(path.exists())
+        self.assertFalse(path.is_symlink())
+        leftovers = [item for item in path.parent.iterdir()] if path.parent.exists() else []
+        self.assertEqual(leftovers, [])
+        write_task4_task5_success_record(self.root, self.catalog, authority, raw, sources, route)
+        reread = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
+        self.assertEqual(reread.route, route)
+        self.assertFalse(reread.sources.by_name["rocket_exp40"].eligible)
+        self.assertEqual(reread.sources.by_name["rocket_exp40"].eligibility_reason, "dependency_unavailable")
+        self.assertEqual(path.name, "task4_task5_success_antigravity.json")
+
+    def test_success_record_concurrent_no_clobber_preserves_winner_payload(self):
+        """Concurrent Task4+5 publication must not replace a different winner payload."""
+        import threading
+        from paper.equipment_anomaly_detection.artifacts_paper import read_task4_task5_success_record, write_task4_task5_success_record
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle, HardSourceResult
+        raw, sources, route, _low, _stability, _policies, backend = self._task4_task5_values()
+        first_sources = sources
+        first_route = self._nonempty_route()
+        changed = dict(sources.by_name)
+        source = changed["rocket_exp40"]
+        changed["rocket_exp40"] = HardSourceResult(source.name, source.origin, np.empty(0), np.empty(0), np.ones(2), source.threshold, np.zeros(2, dtype=bool), False, "dependency_unavailable")
+        second_sources = HardSourceBundle(sources.source_names, changed)
+        second_route = route
+        authority = self._authority(backend)
+        results: list[object] = []
+
+        def writer(bundle, route_value):
+            try:
+                write_task4_task5_success_record(self.root, self.catalog, authority, raw, bundle, route_value)
+                results.append("ok")
+            except Exception as error:
+                results.append(error)
+
+        threads = (
+            threading.Thread(target=writer, args=(first_sources, first_route)),
+            threading.Thread(target=writer, args=(second_sources, second_route)),
+        )
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+        self.assertEqual(sum(result == "ok" for result in results), 1)
+        self.assertEqual(sum(isinstance(result, Exception) for result in results), 1)
+        self.assertRegex(str(next(result for result in results if result != "ok")), "differs|exists|clobber")
+        winner = read_task4_task5_success_record(self.root, self.catalog, authority, raw)
+        if winner.sources.by_name["rocket_exp40"].eligible:
+            self.assertEqual(winner.route, first_route)
+            self.assertTrue(np.array_equal(winner.sources.by_name["rocket_exp40"].test_score, first_sources.by_name["rocket_exp40"].test_score))
+        else:
+            self.assertEqual(winner.route, second_route)
+            self.assertEqual(winner.sources.by_name["rocket_exp40"].eligibility_reason, "dependency_unavailable")
 
     def test_success_record_rejects_tampered_authorities_payload_and_namespace_attacks(self):
         """Trusting a record after any identity mutation or unsafe sibling changes cache provenance."""
