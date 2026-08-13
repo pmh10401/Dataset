@@ -70,6 +70,18 @@ def _evidence_antigravity(path: str, symbol: str) -> dict[str, str]:
     return {"path": path, "symbol": symbol}
 
 
+def _is_allowed_source_parent_antigravity(source_parent: str) -> bool:
+    """Allow a clean functional HEAD or exactly its map-only child."""
+    head = _git_output_antigravity("rev-parse", "HEAD")
+    if source_parent == head:
+        return True
+    parent = _git_output_antigravity("rev-parse", "HEAD^")
+    if source_parent != parent:
+        return False
+    changed = set(_git_output_antigravity("diff", "--name-only", "HEAD^", "HEAD").splitlines())
+    return changed == TRIPLET_ANTIGRAVITY
+
+
 def _self_contained_html_antigravity(graph: dict[str, object]) -> str:
     graph_json = _canonical_bytes_antigravity(graph).decode("utf-8")
     rendered = html_module.escape(graph_json)
@@ -175,7 +187,10 @@ def validate_map_antigravity(graph: object, lock: object, html: str) -> None:
     for unknown in unknowns:
         if not isinstance(unknown, dict) or not isinstance(unknown.get("from"), str) or not isinstance(unknown.get("to"), str) or not isinstance(unknown.get("reason"), str):
             raise ValueError("unmarked unknown relationship")
+        if unknown["from"] not in ids or unknown["to"] not in ids:
+            raise ValueError("invalid unknown reference")
         unknown_pairs.add((unknown["from"], unknown["to"]))
+    future_edge_pairs: set[tuple[str, str]] = set()
     for edge in edges:
         if not isinstance(edge, dict) or edge.get("from") not in ids or edge.get("to") not in ids:
             raise ValueError("invalid edge reference")
@@ -183,15 +198,21 @@ def validate_map_antigravity(graph: object, lock: object, html: str) -> None:
             raise ValueError("invalid edge type")
         _validate_evidence_antigravity(edge.get("evidence"))
         pair = (edge["from"], edge["to"])
-        if edge["type"] == "future_unknown":
-            if pair not in unknown_pairs or edge["to"] not in future_ids:
+        touches_future = edge["from"] in future_ids or edge["to"] in future_ids
+        if touches_future:
+            if edge["type"] != "future_unknown" or pair not in unknown_pairs:
                 raise ValueError("unmarked unknown relationship")
-        elif pair in unknown_pairs:
+            future_edge_pairs.add(pair)
+        elif edge["type"] == "future_unknown" or pair in unknown_pairs:
             raise ValueError("unknown relationship asserted as known")
+    if unknown_pairs != future_edge_pairs:
+        raise ValueError("unmarked unknown relationship")
     if not re.fullmatch(r"[0-9a-f]{40}", str(lock.get("source_parent_commit", ""))):
         raise ValueError("invalid source parent")
     if lock.get("source_parent_commit") != graph.get("source_parent_commit"):
         raise ValueError("graph/lock source parent mismatch")
+    if not _is_allowed_source_parent_antigravity(str(lock["source_parent_commit"])):
+        raise ValueError("invalid source parent relationship")
     if lock.get("working_tree_dirty") is not False:
         raise ValueError("same-parent lock must be generated from a clean functional commit")
     if lock.get("represented_paths") != sorted(TRIPLET_ANTIGRAVITY):
