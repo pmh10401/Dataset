@@ -60,7 +60,9 @@ class ScoringAntigravityTest(unittest.TestCase):
         self.assertTrue(np.isfinite(scored.train_oof).all())
 
     def test_score_passes_only_fold_or_full_train_rows_to_each_official_fit_antigravity(self) -> None:
-        train, test = self.rows_antigravity(10).astype(np.float32), self.rows_antigravity(2).astype(np.float32)
+        axis = np.arange(32, dtype=np.float32)
+        train = np.vstack([axis + 100.0 * row for row in range(10)])
+        test = np.vstack([axis + 10_000.0 + 100.0 * row for row in range(3)])
         import experiments.exp451_rdst_local_gap_qualification_antigravity.scoring_antigravity as module
         original = module.make_rdst_antigravity
         fitted: list[np.ndarray] = []
@@ -81,11 +83,13 @@ class ScoringAntigravityTest(unittest.TestCase):
         self.assertEqual(len({id(item) for item in transformers}), 6)
         self.assertEqual([item.random_state for item in transformers], [20260721] * 6)
         for (fit_indices, query_indices), values in zip(crossfit_plan_antigravity(len(train), 20260721), fitted[:5], strict=True):
-            self.assertFalse(any(np.array_equal(row, test[0]) for row in values))
+            self.assertTrue(all(not np.array_equal(row, test_row) for row in values for test_row in test))
             self.assertTrue(all(any(np.allclose(row, source, rtol=0, atol=1e-7) for source in train) for row in values))
             self.assertTrue(all(not any(np.allclose(row, held, rtol=0, atol=1e-7) for row in values) for held in train[query_indices]))
             np.testing.assert_allclose(values, train[fit_indices], rtol=0, atol=1e-7)
         self.assertEqual(len(fitted[-1]), len(train))
+        self.assertTrue(all(not np.array_equal(row, test_row) for row in fitted[-1] for test_row in test))
+        np.testing.assert_array_equal(fitted[-1], train)
 
     def test_score_uses_exact_fold_and_full_reference_seeds_antigravity(self) -> None:
         train, test = self.rows_antigravity(10), self.rows_antigravity(2)
@@ -132,7 +136,14 @@ class ScoringAntigravityTest(unittest.TestCase):
             aggregate_seed_scores_antigravity((second, first))
         with self.assertRaises(ValueError):
             aggregate_seed_scores_antigravity((first, first))
-        for values in ((first.train_oof, first.test_scores, True, 2, 6, 2, (20260721, 20261721)), (first.train_oof, first.test_scores, 2, 2, 0, 2, (20260721, 20261721)), (first.train_oof, first.test_scores, 2, 2, 6, 2, (np.int64(20260721), 20261721))):
+        wrong_seed = CandidateScoresAntigravity(first.train_oof, first.test_scores, 2, 2, 6, 2, 7)
+        different_train_length = CandidateScoresAntigravity(np.asarray([3., 2., 1.]), second.test_scores, 3, 2, 6, 2, 20261721)
+        different_test_length = CandidateScoresAntigravity(second.train_oof, np.asarray([4., 6., 9.]), 2, 3, 6, 2, 20261721)
+        different_dimension = CandidateScoresAntigravity(second.train_oof, second.test_scores, 2, 2, 9, 3, 20261721)
+        for results in ((first, wrong_seed), (first, different_train_length), (first, different_test_length), (first, different_dimension)):
+            with self.subTest(results=results), self.assertRaises(ValueError):
+                aggregate_seed_scores_antigravity(results)
+        for values in ((first.train_oof, first.test_scores, True, 2, 6, 2, (20260721, 20261721)), (first.train_oof, first.test_scores, np.int64(2), 2, 6, 2, (20260721, 20261721)), (first.train_oof, first.test_scores, 2, 2, 0, 2, (20260721, 20261721)), (first.train_oof, first.test_scores, 2, 2, 6, np.int64(2), (20260721, 20261721)), (first.train_oof, first.test_scores, 2, 2, 6, 2, (np.int64(20260721), 20261721))):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 AggregatedScoresAntigravity(*values)
 

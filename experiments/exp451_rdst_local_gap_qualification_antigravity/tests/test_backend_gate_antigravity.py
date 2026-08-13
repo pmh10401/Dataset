@@ -7,6 +7,7 @@ from unittest.mock import patch
 import numpy as np
 
 from experiments.exp451_rdst_local_gap_qualification_antigravity.backend_gate_antigravity import (
+    BackendDecisionAntigravity,
     BackendProbeAntigravity,
     backend_name_from_decision_antigravity,
     build_local_gap_backend_antigravity,
@@ -58,10 +59,21 @@ class BackendGateAntigravityTest(unittest.TestCase):
                 BackendProbeAntigravity(**values)  # type: ignore[arg-type]
 
     def test_decision_rejects_direct_accelerator_construction_without_supported_qualified_probe_antigravity(self) -> None:
-        from experiments.exp451_rdst_local_gap_qualification_antigravity.backend_gate_antigravity import BackendDecisionAntigravity
         with self.assertRaises(ValueError):
             BackendDecisionAntigravity("mlx", (self.probe_antigravity(),), "")
         self.assertEqual(decide_backend_antigravity(self.probe_antigravity(implementation_qualified=True)).selected_name, "cpu")
+
+    def test_decision_requires_the_exact_single_probe_and_derived_fallback_reason_antigravity(self) -> None:
+        probe = self.probe_antigravity()
+        expected = decide_backend_antigravity(probe)
+        for selected_name, probes, reason in (
+            ("cpu", (), "reason"),
+            ("cpu", (probe, probe), "reason"),
+            ("cpu", (self.probe_antigravity(name="mps"),), expected.fallback_reason),
+            ("cpu", (probe,), "arbitrary"),
+        ):
+            with self.subTest(probes=probes, reason=reason), self.assertRaises(ValueError):
+                BackendDecisionAntigravity(selected_name, probes, reason)
 
     def test_installed_accelerator_probe_records_runtime_and_remains_fail_closed_antigravity(self) -> None:
         probe = installed_backend_probe_antigravity("mps")

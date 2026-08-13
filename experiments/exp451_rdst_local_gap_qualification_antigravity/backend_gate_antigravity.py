@@ -75,6 +75,20 @@ class BackendProbeAntigravity:
         return self.available and self.finite and self.candidate_indices_match and self.maximum_normalized_error <= 1e-5 and self.speedup >= 1.1
 
 
+def _fallback_reason_antigravity(probe: BackendProbeAntigravity) -> str:
+    """Canonical fallback evidence for the one-probe decision route."""
+    reasons: list[str] = [probe.name]
+    if not probe.available: reasons.append("unavailable")
+    if not probe.finite: reasons.append("nonfinite")
+    if not probe.candidate_indices_match: reasons.append("candidate_indices_mismatch")
+    if probe.maximum_normalized_error > 1e-5: reasons.append("normalized_error")
+    if probe.speedup < 1.1: reasons.append("speedup")
+    if not probe.implementation_qualified: reasons.append("implementation_unqualified")
+    if probe.name not in _FACTORY_SUPPORTED_BACKENDS_ANTIGRAVITY: reasons.append("factory_unsupported")
+    if probe.reason: reasons.append(probe.reason)
+    return ",".join(reasons)
+
+
 @dataclass(frozen=True, slots=True)
 class BackendDecisionAntigravity:
     selected_name: BackendNameAntigravity
@@ -85,8 +99,9 @@ class BackendDecisionAntigravity:
         _backend_name_antigravity(self.selected_name, "selected_name")
         if type(self.probes) is not tuple or any(type(item) is not BackendProbeAntigravity for item in self.probes) or type(self.fallback_reason) is not str:
             raise ValueError("backend decision is malformed")
-        if self.selected_name == "cpu" and not self.fallback_reason:
-            raise ValueError("CPU decision requires a fallback reason")
+        if self.selected_name == "cpu":
+            if len(self.probes) != 1 or self.fallback_reason != _fallback_reason_antigravity(self.probes[0]) or not self.fallback_reason:
+                raise ValueError("CPU decision must retain exactly one probe and its canonical fallback reason")
         if self.selected_name != "cpu" and (self.fallback_reason or len(self.probes) != 1 or self.probes[0].name != self.selected_name or not self.probes[0].passes_scientific_gate or not self.probes[0].implementation_qualified or self.selected_name not in _FACTORY_SUPPORTED_BACKENDS_ANTIGRAVITY):
             raise ValueError("accelerator decision must have one factory-supported qualified passing probe")
 
@@ -127,16 +142,7 @@ def decide_backend_antigravity(probe: BackendProbeAntigravity) -> BackendDecisio
     passes = probe.passes_scientific_gate and probe.implementation_qualified and probe.name in _FACTORY_SUPPORTED_BACKENDS_ANTIGRAVITY
     if passes:
         return BackendDecisionAntigravity(probe.name, (probe,), "")
-    reasons = []
-    if not probe.available: reasons.append("unavailable")
-    if not probe.finite: reasons.append("nonfinite")
-    if not probe.candidate_indices_match: reasons.append("candidate_indices_mismatch")
-    if probe.maximum_normalized_error > 1e-5: reasons.append("normalized_error")
-    if probe.speedup < 1.1: reasons.append("speedup")
-    if not probe.implementation_qualified: reasons.append("implementation_unqualified")
-    if probe.name not in _FACTORY_SUPPORTED_BACKENDS_ANTIGRAVITY: reasons.append("factory_unsupported")
-    if probe.reason: reasons.append(probe.reason)
-    return BackendDecisionAntigravity("cpu", (probe,), ",".join(reasons) or "gate_failed")
+    return BackendDecisionAntigravity("cpu", (probe,), _fallback_reason_antigravity(probe))
 
 
 def backend_name_from_decision_antigravity(decision: BackendDecisionAntigravity) -> BackendNameAntigravity:
