@@ -16,7 +16,7 @@ from .contracts_antigravity import FrozenPredictionAuthorityAntigravity
 from .predecessor_antigravity import Exp448PredecessorAuthorityAntigravity, verify_exp448_predecessor_antigravity
 from .prediction_antigravity import validate_frozen_prediction_authority_antigravity
 from .sources_antigravity import LabelSnapshotAntigravity, open_ordered_label_session_antigravity
-from .evaluation_codec_antigravity import DatasetEvaluationAntigravity, FrozenEvaluationAntigravity, derive_evaluation_antigravity, f1_antigravity
+from .evaluation_codec_antigravity import DatasetEvaluationAntigravity, FrozenEvaluationAntigravity, baseline_authority_sha256_antigravity, dataset_payload_antigravity, derive_evaluation_antigravity, f1_antigravity, result_payload_antigravity
 
 OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813")
 BASELINE_GLOBAL_ANTIGRAVITY = ConfusionAntigravity(1930, 314, 1988, 191668)
@@ -74,18 +74,14 @@ def _conf_payload_antigravity(value: ConfusionAntigravity) -> dict[str,int]: ret
 
 
 def _dataset_payload_antigravity(row: DatasetEvaluationAntigravity) -> dict[str,object]:
-    return {"sequence":row.sequence,"identity":list(row.identity),"target_length":row.target_length,"baseline":_conf_payload_antigravity(row.baseline),"candidate":_conf_payload_antigravity(row.candidate),"new_detections":row.new_detections,"new_false_alarms":row.new_false_alarms,"detection_losses":row.detection_losses,"false_alarm_losses":row.false_alarm_losses,"stable_candidate_count":row.stable_candidate_count,"stable_candidate_sha256":row.stable_candidate_sha256}
+    return dataset_payload_antigravity(row)
 
 def _baseline_authority_sha256_antigravity(predecessor: Exp448PredecessorAuthorityAntigravity) -> str:
-    rows=[]
-    for row,name,length in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,predecessor.target_test_lengths,strict=True):
-        stable_bytes=canonical_json_bytes_antigravity(sorted(row.stable_candidates))
-        rows.append({"identity":[row.dataset_order,row.family,name],"target_length":length,"baseline":_conf_payload_antigravity(row.confusion),"stable_candidate_count":len(row.stable_candidates),"stable_candidate_sha256":hashlib.sha256(stable_bytes).hexdigest()})
-    return hashlib.sha256(canonical_json_bytes_antigravity({"rows":rows})).hexdigest()
+    return baseline_authority_sha256_antigravity(predecessor)
 
 
 def _result_payload_antigravity(result: FrozenEvaluationAntigravity) -> dict[str,object]:
-    return {"schema":"exp451.evaluation.result.v1","identity":result.identity,"status":result.status,"reviewed_commit":result.reviewed_commit,"prediction_authority_sha256":result.prediction_authority_sha256,"predecessor_hashes":list(result.predecessor_hashes),"replaced_dataset_count":48,"reused_dataset_count":1069,"global_dataset_count":1117,"label_session_count":1,"label_query_count":48,"label_row_count":72300,"bootstrap_dataset_pairs":48,"target_order":[list(x) for x in result.target_order],"baseline_global":_conf_payload_antigravity(result.baseline_global),"candidate_global":_conf_payload_antigravity(result.candidate_global),"baseline_f1":result.baseline_f1,"candidate_f1":result.candidate_f1,"target_baseline_fn":result.target_baseline_fn,"target_candidate_fn":result.target_candidate_fn,"target_fn_delta":result.target_fn_delta,"transition_totals":list(result.transition_totals),"transition_dataset_counts":list(result.transition_dataset_counts),"family_fn_deltas":[list(x) for x in result.family_fn_deltas],"gates":[list(x) for x in result.gates],"qualified":result.qualified,"bootstrap":result.bootstrap,"baseline_matrix":[list(x) for x in result.baseline_matrix],"candidate_matrix":[list(x) for x in result.candidate_matrix]}
+    return result_payload_antigravity(result)
 
 
 def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity, authority: FrozenPredictionAuthorityAntigravity, predecessor: Exp448PredecessorAuthorityAntigravity) -> None:

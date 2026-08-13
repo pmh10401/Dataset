@@ -7,10 +7,9 @@ FAMILIES=("Crop","ElectricDevices","FordA","FordB","Yoga","ECG5000","ChlorineCon
 
 def _conf(value): return {"tp":value.tp,"fp":value.fp,"fn":value.fn,"tn":value.tn,"f1":0.0 if 2*value.tp+value.fp+value.fn==0 else 2*value.tp/(2*value.tp+value.fp+value.fn)}
 def public_result_antigravity(result):
-    from .evaluation_codec_antigravity import FrozenEvaluationAntigravity
+    from .evaluation_codec_antigravity import FrozenEvaluationAntigravity, public_projection_antigravity
     if type(result) is not FrozenEvaluationAntigravity: raise ValueError("evaluation result type differs")
-    baseline_public=_conf(result.baseline_global); candidate_public=_conf(result.candidate_global)
-    value={"identity":"Exp451","status":result.status,"global":{"baseline":baseline_public,"candidate":candidate_public},"qualification":{"qualified":result.qualified,"target_fn_delta":result.target_fn_delta,"gates":dict(result.gates)},"counts":{"replaced":48,"reused":1069,"global":1117},"transitions":{"events":{"new_detections":result.transition_totals[0],"new_false_alarms":result.transition_totals[1],"detection_losses":result.transition_totals[2],"false_alarm_losses":result.transition_totals[3]},"affected_counts":{"new_detections":result.transition_dataset_counts[0],"new_false_alarms":result.transition_dataset_counts[1],"detection_losses":result.transition_dataset_counts[2],"false_alarm_losses":result.transition_dataset_counts[3]}},"family_fn_deltas":{family:delta for family,delta in result.family_fn_deltas},"bootstrap":{"scope":"target_48_paired","seed":result.bootstrap["seed"],"samples":result.bootstrap["samples"],"population":result.bootstrap["population"],"dtype":result.bootstrap["dtype"],"endpoint":result.bootstrap["endpoint"],"percentile_method":result.bootstrap["percentile_method"],"fn_delta":result.bootstrap["fn_delta"],"fp_delta":result.bootstrap["fp_delta"],"f1_delta":result.bootstrap["f1_delta"],"fn_interval":result.bootstrap["fn_interval"],"fp_interval":result.bootstrap["fp_interval"],"f1_interval":result.bootstrap["f1_interval"]},"runtime":{"sessions":1,"queries":48,"rows":72300}}
+    value=public_projection_antigravity(result)
     _validate_shape_antigravity(value)
     return value
 
