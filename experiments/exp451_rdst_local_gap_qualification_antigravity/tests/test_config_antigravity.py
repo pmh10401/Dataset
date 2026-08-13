@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import unittest
 
+import experiments.exp451_rdst_local_gap_qualification_antigravity.config_antigravity as config_module
+
 from experiments.exp451_rdst_local_gap_qualification_antigravity.config_antigravity import (
     FROZEN_CONFIG_ANTIGRAVITY,
     FrozenConfigAuthorityAntigravity,
@@ -48,6 +50,16 @@ class ConfigAntigravityTest(unittest.TestCase):
         extra["unexpected"] = 1
         with self.assertRaises(ValueError):
             decode_frozen_config_antigravity(extra)
+
+    def test_public_config_has_no_mutable_backing_alias_antigravity(self) -> None:
+        before = dict(FROZEN_CONFIG_ANTIGRAVITY)
+        self.assertFalse(hasattr(config_module, "_FROZEN_CONFIG_DATA_ANTIGRAVITY"))
+        self.assertFalse(hasattr(config_module, "_FROZEN_CONFIG_VALUES_ANTIGRAVITY"))
+        public_copy = dict(FROZEN_CONFIG_ANTIGRAVITY)
+        public_copy["max_shapelets"] = 1
+        self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY["max_shapelets"], 1024)
+        self.assertEqual(config_module.FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY.max_shapelets, 1024)
+        self.assertEqual(dict(FROZEN_CONFIG_ANTIGRAVITY), before)
 
 
 if __name__ == "__main__":

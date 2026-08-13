@@ -174,6 +174,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertIn(test, node_by_id[node_id]["tests"])
                 self.assertIn({"path": path, "symbol": symbol}, node_by_id[node_id]["evidence"])
         self.assertEqual(graph["unknown_relationships"], [])
+        edges = {(edge["from"], edge["to"]): edge for edge in graph["edges"]}
+        self.assertNotIn(("rdst_config", "rdst_contracts"), edges)
+        self.assertEqual(edges[("approved_design", "rdst_contracts")]["type"], "governs")
         builder.validate_map_antigravity(graph, lock, rendered_html)
 
 

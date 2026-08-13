@@ -61,6 +61,8 @@ class DatasetBundleAntigravity:
 class CandidateScoresAntigravity:
     train_oof: np.ndarray
     test_scores: np.ndarray
+    expected_train_length: int
+    expected_test_length: int
     feature_dimension: int
     retained_shapelets: int
     seed: int
@@ -68,11 +70,15 @@ class CandidateScoresAntigravity:
     def __post_init__(self) -> None:
         train = _frozen_array_antigravity(self.train_oof, "train_oof", dimensions=1)
         test = _frozen_array_antigravity(self.test_scores, "test_scores", dimensions=1)
+        _exact_int_antigravity(self.expected_train_length, "expected_train_length", minimum=1)
+        _exact_int_antigravity(self.expected_test_length, "expected_test_length", minimum=1)
         _exact_int_antigravity(self.feature_dimension, "feature_dimension", minimum=1)
         _exact_int_antigravity(self.retained_shapelets, "retained_shapelets", minimum=1)
         _exact_int_antigravity(self.seed, "seed")
         if self.feature_dimension != 3 * self.retained_shapelets:
             raise ValueError("feature_dimension must equal three times retained_shapelets")
+        if len(train) != self.expected_train_length or len(test) != self.expected_test_length:
+            raise ValueError("score lengths differ from their dataset authority")
         object.__setattr__(self, "train_oof", train)
         object.__setattr__(self, "test_scores", test)
 

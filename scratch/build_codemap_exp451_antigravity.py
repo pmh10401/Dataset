@@ -131,8 +131,8 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "exp449_terminal_outcome", "to": "research_state", "type": "reads", "evidence": _evidence_antigravity("RESEARCH_STATE.json", "failed artifact is not reused")},
         {"from": "approved_design", "to": "rdst_config", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html", "동결할 과학 설정")},
         {"from": "preregistration", "to": "rdst_config", "type": "governs", "evidence": _evidence_antigravity("docs/EXP451_PREREGISTRATION_antigravity_KO.html", "max_shapelets=1024")},
-        {"from": "rdst_config", "to": "rdst_method_audit", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")},
-        {"from": "rdst_config", "to": "rdst_contracts", "type": "governs", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py", "CandidateScoresAntigravity")},
+        {"from": "rdst_config", "to": "rdst_method_audit", "type": "reads", "evidence": _evidence_antigravity("experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py", "FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY")},
+        {"from": "approved_design", "to": "rdst_contracts", "type": "governs", "evidence": _evidence_antigravity("docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html", "prediction artifact에")},
     ]
     unknown_relationships: list[dict[str, str]] = []
     graph: dict[str, object] = {

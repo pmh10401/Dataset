@@ -8,17 +8,24 @@ import subprocess
 from dataclasses import dataclass
 from typing import Final
 
-from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+from .config_antigravity import FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY
 
 
-_REQUEST_ANTIGRAVITY: Final = {
-    "schema": "exp451.rdst_audit.request.v1",
-    "seed": FROZEN_CONFIG_ANTIGRAVITY["seeds"][0],
-    "max_shapelets": FROZEN_CONFIG_ANTIGRAVITY["max_shapelets"],
-    "n_jobs": FROZEN_CONFIG_ANTIGRAVITY["rdst_n_jobs"],
-    "y_policy": FROZEN_CONFIG_ANTIGRAVITY["fit_label_policy"],
-}
 _EXPECTED_CONSTRUCTOR_SIGNATURE_ANTIGRAVITY: Final = "(max_shapelets: int = 10000, shapelet_lengths: List[int] | numpy.ndarray | None = None, proba_normalization: float = 0.8, threshold_percentiles: List[float] | numpy.ndarray | None = None, alpha_similarity: float = 0.5, use_prime_dilations: bool = False, random_state: int | None = None, n_jobs: int = 1)"
+_KNOWN_AEON_WARNING_MESSAGE_ANTIGRAVITY: Final = "Some invalid values (inf or nan) where converted from to 0 during the shapelet transformation."
+
+
+def _audit_request_antigravity() -> dict[str, object]:
+    authority = FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY
+    return {"schema": "exp451.rdst_audit.request.v1", "seed": authority.seeds[0], "max_shapelets": authority.max_shapelets, "n_jobs": authority.rdst_n_jobs, "y_policy": authority.fit_label_policy}
+
+
+def _canonical_json_text_antigravity(value: object) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n"
+
+
+def _warning_is_allowed_antigravity(message: object, category: object) -> bool:
+    return type(message) is str and message == _KNOWN_AEON_WARNING_MESSAGE_ANTIGRAVITY and category is UserWarning
 
 _AUDIT_PROGRAM_ANTIGRAVITY: Final = r'''
 import hashlib
@@ -62,11 +69,8 @@ fixture = np.array([
 ], dtype=np.float64)
 outputs = []
 retained = []
-with warnings.catch_warnings():
-    # aeon 1.4.0 emits this known conversion warning even after it produces a
-    # finite public output.  The finite check below remains the audit contract;
-    # every other warning is allowed through to stderr and fails the parent.
-    warnings.filterwarnings("ignore", message=r"Some invalid values \(inf or nan\) where converted from to 0 during the shapelet transformation\.", category=UserWarning)
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always")
     for _ in range(2):
         transformer = RandomDilatedShapeletTransform(max_shapelets=request["max_shapelets"], random_state=request["seed"], n_jobs=request["n_jobs"])
         features = transformer.fit_transform(fixture, y=None)
@@ -77,12 +81,14 @@ with warnings.catch_warnings():
             raise RuntimeError("RDST retained-shapelet width differs")
         outputs.append(np.ascontiguousarray(features).tobytes())
         retained.append(count)
+if any(str(item.message) != "Some invalid values (inf or nan) where converted from to 0 during the shapelet transformation." or item.category is not UserWarning for item in caught):
+    raise RuntimeError("unexpected RDST warning")
 if retained[0] != retained[1] or outputs[0] != outputs[1]:
     raise RuntimeError("RDST same-seed fixture is not byte deterministic")
 response = {
     "schema": "exp451.rdst_audit.response.v1",
     "aeon_version": importlib.metadata.version("aeon"),
-    "class_path": "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform",
+    "class_path": RandomDilatedShapeletTransform.__module__ + "." + RandomDilatedShapeletTransform.__qualname__,
     "constructor_signature": str(inspect.signature(RandomDilatedShapeletTransform)),
     "fit_signature": str(inspect.signature(RandomDilatedShapeletTransform.fit)),
     "fit_transform_signature": str(inspect.signature(RandomDilatedShapeletTransform.fit_transform)),
@@ -99,7 +105,7 @@ response = {
     "first_output_sha256": hashlib.sha256(outputs[0]).hexdigest(),
     "second_output_sha256": hashlib.sha256(outputs[1]).hexdigest(),
 }
-print(json.dumps(response, sort_keys=True, separators=(",", ":")))
+sys.stdout.write(json.dumps(response, sort_keys=True, separators=(",", ":")) + "\n")
 '''
 
 
@@ -153,13 +159,14 @@ class RdstAuditResultAntigravity:
 
 def audit_rdst_antigravity() -> RdstAuditResultAntigravity:
     """Audit only the frozen interpreter, class, source, and label-free fixture."""
-    completed = subprocess.run(
-        [FROZEN_CONFIG_ANTIGRAVITY["fixed_interpreter"], "-c", _AUDIT_PROGRAM_ANTIGRAVITY],
-        input=json.dumps(_REQUEST_ANTIGRAVITY, sort_keys=True, separators=(",", ":")),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    request = _audit_request_antigravity()
+    try:
+        completed = subprocess.run(
+            [FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY.fixed_interpreter, "-c", _AUDIT_PROGRAM_ANTIGRAVITY],
+            input=_canonical_json_text_antigravity(request), text=True, capture_output=True, check=False, timeout=30,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError("fixed RDST audit subprocess timed out") from error
     if completed.returncode != 0 or completed.stderr:
         raise RuntimeError(f"fixed RDST audit subprocess failed: {completed.stderr.strip()}")
     decoded = _strict_json_antigravity(completed.stdout)
@@ -170,12 +177,15 @@ def audit_rdst_antigravity() -> RdstAuditResultAntigravity:
     }
     if type(decoded) is not dict or set(decoded) != expected_keys or decoded["schema"] != "exp451.rdst_audit.response.v1":
         raise ValueError("fixed RDST audit response schema differs")
+    if completed.stdout != _canonical_json_text_antigravity(decoded):
+        raise ValueError("fixed RDST audit response is not canonical")
     values = {key: value for key, value in decoded.items() if key != "schema"}
     result = RdstAuditResultAntigravity(**values)
-    if result.aeon_version != FROZEN_CONFIG_ANTIGRAVITY["aeon_version"] or result.class_path != FROZEN_CONFIG_ANTIGRAVITY["rdst_class_path"] or result.source_sha256 != FROZEN_CONFIG_ANTIGRAVITY["source_sha256"]:
+    authority = FROZEN_CONFIG_AUTHORITY_ANTIGRAVITY
+    if result.aeon_version != authority.aeon_version or result.class_path != authority.rdst_class_path or result.source_sha256 != authority.source_sha256:
         raise ValueError("fixed RDST binding differs")
     if result.constructor_signature != _EXPECTED_CONSTRUCTOR_SIGNATURE_ANTIGRAVITY or result.fit_signature != "(self, X, y=None)" or result.fit_transform_signature != "(self, X, y=None)":
         raise ValueError("fixed RDST signature differs")
-    if (result.seed, result.max_shapelets, result.n_jobs) != (_REQUEST_ANTIGRAVITY["seed"], _REQUEST_ANTIGRAVITY["max_shapelets"], _REQUEST_ANTIGRAVITY["n_jobs"]):
+    if (result.seed, result.max_shapelets, result.n_jobs) != (authority.seeds[0], authority.max_shapelets, authority.rdst_n_jobs):
         raise ValueError("fixed RDST fixture parameters differ")
     return result
