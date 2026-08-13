@@ -163,3 +163,43 @@ python3 scratch/run_paper_public_baselines.py prepare \
   --run-root /Users/mac/Documents/Dataset/paper_public_baselines_classical_v1 \
   --methods knn_distance,lof_novelty,ocsvm_rbf,isolation_forest
 ```
+
+## 7. 보류 심층 baseline 독립 실행 키트
+
+이 절의 명령은 아직 하나도 실행하지 않았다. Deep SVDD와 DROCC는 각각
+독립된 새 공식 root를 사용하며 동시에 실행하지 않고 반드시 한 번에 하나만
+실행한다. 설정은 deterministic PyTorch CPU, worker 1, PyTorch thread 1,
+50 epochs, seed 20260812, 1,117개 데이터셋으로 고정된다.
+
+Deep SVDD의 향후 실행 명령은 다음과 같다.
+
+```bash
+python3 scratch/manage_deferred_deep_baselines_antigravity.py launch \
+  --method deep_svdd_1d \
+  --db-path /Users/mac/Documents/Dataset/univariate_ts.db \
+  --run-root /Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_1d_full_v1_antigravity
+```
+
+Deep SVDD가 freeze와 verify까지 끝난 뒤에만 DROCC를 시작한다.
+
+```bash
+python3 scratch/manage_deferred_deep_baselines_antigravity.py launch \
+  --method drocc_1d \
+  --db-path /Users/mac/Documents/Dataset/univariate_ts.db \
+  --run-root /Users/mac/Documents/Dataset/paper_public_baselines_drocc_1d_full_v1_antigravity
+```
+
+아래 `ROOT`에는 확인할 공식 root의 절대경로를 넣는다.
+
+```bash
+python3 scratch/manage_deferred_deep_baselines_antigravity.py status --run-root ROOT
+tail -f ROOT_ops_antigravity/progress_antigravity.log
+python3 scratch/manage_deferred_deep_baselines_antigravity.py verify --run-root ROOT
+```
+
+같은 launch 명령을 다시 실행하면 authority가 정확히 같은 경우에만 완전히
+검증된 shard/meta pair를 재사용해 resume한다. method, DB, interpreter, Git
+commit, wrapper 또는 score-source identity가 다르거나 shard/meta 한쪽만 있거나
+byte가 변조됐으면 덮어쓰지 않고 실패한다. 기존 107-pair mixed root
+`/Users/mac/Documents/Dataset/paper_public_baselines_deep_partial_v1`은 증거로만
+보존하며 두 새 공식 root 어느 쪽에도 복사하지 않는다.

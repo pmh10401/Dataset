@@ -1,11 +1,12 @@
 {
-  "generated_at": "2026-08-13T11:51:35+0900",
-  "generated_from_commit": "a0cdb065e9a3aad56da172b8e69975ed2a2d86c0",
+  "generated_at": "2026-08-13T12:04:18+0900",
+  "generated_from_commit": "995b8876fdce7012a56dabf657d55ea645fe98a4",
   "working_tree_dirty": true,
   "scope": [
     "Exp448 governance, foundations, predecessor/TEXT boundary, evaluation/replay, and Task5 closed CLI/launcher boundary",
     "Internal paper/equipment_anomaly_detection Task8/Task9 proposal rerun pipeline, documented separately from the immutable official Exp448 lifecycle.",
-    "Existing label-free public-baseline CLI, resumable runner, and frozen Deep SVDD/DROCC CPU scoring closure."
+    "Existing label-free public-baseline CLI, resumable runner, and frozen Deep SVDD/DROCC CPU scoring closure.",
+    "Deferred no-training operational launcher, verified partial status, and frozen one-method deep-root verification."
   ],
   "nodes": [
     {
@@ -644,6 +645,62 @@
           "symbol": "score_drocc"
         }
       ]
+    },
+    {
+      "id": "public_baseline_deferred_launcher",
+      "path": "scratch/manage_deferred_deep_baselines_antigravity.py",
+      "role": "No-training operational wrapper for later independent frozen deep-baseline runs.",
+      "entrypoints": [
+        "launch",
+        "status",
+        "verify"
+      ],
+      "callers": [
+        "operator"
+      ],
+      "effects": [
+        "immutable authority, detached one-method execution, progress/status, frozen score-root verification"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py"
+      ],
+      "constraints": [
+        "Only deep_svdd_1d and drocc_1d are accepted.",
+        "Official CPU, worker 1, PyTorch thread 1, 50 epochs, seed 20260812, and 1,117-pair coverage are immutable.",
+        "Import, status, and verify do not start training; verify remains label-free."
+      ],
+      "evidence": [
+        {
+          "path": "scratch/manage_deferred_deep_baselines_antigravity.py",
+          "symbol": "launch, inspect_status, verify_frozen"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_deferred_launcher_tests",
+      "path": "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py",
+      "role": "Boundary tests for the deferred deep-baseline operational wrapper.",
+      "entrypoints": [
+        "DeferredDeepLauncherTests"
+      ],
+      "callers": [
+        "unittest discovery"
+      ],
+      "effects": [
+        "protects no-training import, official config, duplicate launch, verified partial status, stale heartbeat, and label-free verify boundaries"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py"
+      ],
+      "constraints": [
+        "Fixtures use temporary roots and never execute the hidden worker or a 50-epoch score command."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py",
+          "symbol": "DeferredDeepLauncherTests"
+        }
+      ]
     }
   ],
   "edges": [
@@ -871,6 +928,51 @@
         "path": "experiments/paper_public_baselines/methods/drocc.py",
         "symbol": "from .deep_common import"
       }
+    },
+    {
+      "from": "public_baseline_deferred_launcher",
+      "to": "public_baseline_cli",
+      "type": "calls",
+      "evidence": {
+        "path": "scratch/manage_deferred_deep_baselines_antigravity.py",
+        "symbol": "stage_commands -> scratch/run_paper_public_baselines.py"
+      }
+    },
+    {
+      "from": "public_baseline_deferred_launcher",
+      "to": "public_baseline_deep_svdd",
+      "type": "routes",
+      "evidence": {
+        "path": "scratch/manage_deferred_deep_baselines_antigravity.py",
+        "symbol": "ALLOWED_METHODS: deep_svdd_1d"
+      }
+    },
+    {
+      "from": "public_baseline_deferred_launcher",
+      "to": "public_baseline_drocc",
+      "type": "routes",
+      "evidence": {
+        "path": "scratch/manage_deferred_deep_baselines_antigravity.py",
+        "symbol": "ALLOWED_METHODS: drocc_1d"
+      }
+    },
+    {
+      "from": "public_baseline_deferred_launcher",
+      "to": "public_baseline_deep_common",
+      "type": "binds",
+      "evidence": {
+        "path": "scratch/manage_deferred_deep_baselines_antigravity.py",
+        "symbol": "OFFICIAL_EPOCHS, OFFICIAL_WORKERS, backend"
+      }
+    },
+    {
+      "from": "public_baseline_deferred_launcher_tests",
+      "to": "public_baseline_deferred_launcher",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/tests/test_deferred_deep_launcher_antigravity.py",
+        "symbol": "spec_from_file_location"
+      }
     }
   ],
   "flows": [
@@ -954,13 +1056,14 @@
     {
       "trigger": "Deferred published deep-baseline execution",
       "steps": [
+        "public_baseline_deferred_launcher",
         "public_baseline_cli",
         "public_baseline_runner",
         "public_baseline_deep_svdd",
         "public_baseline_drocc",
         "public_baseline_deep_common"
       ],
-      "outcome": "50-epoch CPU score roots remain label-free until frozen evaluation."
+      "outcome": "Prepared launch/status/verify tooling keeps future 50-epoch CPU score roots independent and label-free until frozen evaluation; no deep run is started by implementation."
     }
   ],
   "unknown_relationships": [],

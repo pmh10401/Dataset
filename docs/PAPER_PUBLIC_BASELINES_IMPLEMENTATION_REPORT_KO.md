@@ -41,7 +41,7 @@ Python/NumPy/scikit-learn/PyTorch/MLX/mlx-metal 버전을 기록한다.
 
 ## 검증 상태
 
-- unit/boundary/integration 테스트: **61개 통과**
+- unit/boundary/integration 테스트: **69개 통과**
 - 실데이터 3개 × 6방법 smoke: **18 pair 완료, failure 0**
 - smoke post-freeze 평가와 byte 재생 보고서: **통과**
 - 공식 DB prepare: **1,117개, SHA-256 일치**
@@ -97,3 +97,18 @@ Deep SVDD partial 산출물은
 보존했다. dispatch source hash가 누락됐던 초기 실행도 삭제하지 않고
 `/Users/mac/Documents/Dataset/paper_public_baselines_v1_superseded_unbound_dispatch_20260812`
 에 구분 보존했다. 두 root 모두 논문 성능표에는 사용하지 않는다.
+
+## 보류 심층 실행 준비 상태
+
+- Deep SVDD deferred launcher: **prepared, not started, 새 공식 root 0/1,117**
+- DROCC deferred launcher: **prepared, not started, 새 공식 root 0/1,117**
+- Canonical backend: **deterministic PyTorch CPU, worker 1, epochs 50**
+- Operational support: **independent roots, create-only authority, PID/lock,
+  live log, partial verified status, exact resume, freeze and verify**
+
+향후 공식 root는 각각
+`/Users/mac/Documents/Dataset/paper_public_baselines_deep_svdd_1d_full_v1_antigravity`와
+`/Users/mac/Documents/Dataset/paper_public_baselines_drocc_1d_full_v1_antigravity`이다.
+현재 두 root는 생성하지 않았고 어떤 50-epoch 학습 process도 시작하지 않았다.
+이 준비 상태는 심층 방법의 성능 결과를 뜻하지 않으며 기존 고전 결과를
+변경하지 않는다.
