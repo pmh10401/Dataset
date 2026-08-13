@@ -69,10 +69,12 @@ authorize or stop a worker.
 
 Do not repeat the already-passed 19-dataset/76-comparison MiniRocket readiness
 gate. Exercise the real Task4+Task5 collection and persistence path on this
-frozen, sorted 22-dataset set:
+frozen, sorted 23-dataset set:
 
 - All 19 nonfinite-repair affected datasets frozen by
   `EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY`.
+- `MelbournePedestrian_normal_10`: official TRAIN-or-TEST union TEST-only
+  member with 3 nonfinite TEST rows / 3 scalars and finite TRAIN.
 - `Phoneme_normal_39`: one normal TRAIN row.
 - `ChlorineConcentration_normal_3`: more than 1,000 normal TRAIN rows and the
   historical capped-reference boundary.

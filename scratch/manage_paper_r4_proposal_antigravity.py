@@ -111,6 +111,7 @@ SMOKE_DATASETS = (
     "DodgerLoopWeekend_normal_1",
     "DodgerLoopWeekend_normal_2",
     "MelbournePedestrian_normal_1",
+    "MelbournePedestrian_normal_10",
     "MelbournePedestrian_normal_2",
     "MelbournePedestrian_normal_3",
     "MelbournePedestrian_normal_4",
@@ -714,7 +715,7 @@ def pipeline_command(mode: str, run_root: Path) -> list[str]:
         mode,
     ]
     if mode == "smoke":
-        if SMOKE_DATASETS != tuple(sorted(SMOKE_DATASETS)) or len(SMOKE_DATASETS) != 22:
+        if SMOKE_DATASETS != tuple(sorted(SMOKE_DATASETS)) or len(SMOKE_DATASETS) != 23:
             raise ValueError("smoke dataset identity is invalid")
         for dataset in SMOKE_DATASETS:
             command.extend(["--smoke-dataset", dataset])

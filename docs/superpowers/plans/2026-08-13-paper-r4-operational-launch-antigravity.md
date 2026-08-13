@@ -108,7 +108,7 @@
 
 - [ ] **Step 1: Write smoke selection and resume-equivalence RED tests**
 
-  Hand-check the exact sorted 22-name tuple. Use a small real typed fixture to prove first-wave partial success, append-only failure, no sibling cancellation, second-invocation reuse, byte-identical final projection versus uninterrupted execution, zero label access, and no official-root writes.
+  Hand-check the exact sorted 23-name tuple. Use a small real typed fixture to prove first-wave partial success, append-only failure, no sibling cancellation, second-invocation reuse, byte-identical final projection versus uninterrupted execution, zero label access, and no official-root writes.
 
 - [ ] **Step 2: Observe RED**
 
@@ -116,11 +116,11 @@
 
 - [ ] **Step 3: Implement the minimum smoke command**
 
-  Invoke the existing pipeline in `smoke` mode with the exact 22 names, fixed capable interpreter, fixed DB, separate smoke root, and exact authority. Refuse an existing mismatched smoke root. Publish a result only after journal and proposal manifest verification.
+  Invoke the existing pipeline in `smoke` mode with the exact 23 names, fixed capable interpreter, fixed DB, separate smoke root, and exact authority. Refuse an existing mismatched smoke root. Publish a result only after journal and proposal manifest verification.
 
 - [ ] **Step 4: Run focused GREEN**
 
-  Run the operations module and the existing Task4/Task5 recovery tests. Do not run the real 22-dataset smoke during implementation.
+  Run the operations module and the existing Task4/Task5 recovery tests. Do not run the real 23-dataset smoke during implementation.
 
 ### Task 4: Synchronize maps and operator documentation
 

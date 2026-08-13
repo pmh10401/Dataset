@@ -24,6 +24,11 @@ from experiments.exp443_missing_normal_train_policy_comparison_antigravity.confi
     FROZEN_CONFIG as EXP443_FROZEN_CONFIG,
 )
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity.database_antigravity import (
+    FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY,
+    NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY,
+    POPULATION_SQL_ANTIGRAVITY,
+    QUICK_CHECK_SQL_ANTIGRAVITY,
+    TEST_VALUES_SQL_ANTIGRAVITY,
     load_raw_dataset_antigravity,
     pin_database_snapshot_antigravity,
 )
@@ -367,6 +372,12 @@ def _score_configuration_antigravity(dataset: str, train: np.ndarray, test: np.n
     return score_configuration_paper(train, test, config=MiniRocketConfig(), **kwargs)
 
 
+def _missing_indices_from_blob_antigravity(blob: object) -> tuple[int, ...]:
+    if type(blob) is not bytes or not blob or len(blob) % 4:
+        raise ValueError("values blob is not a non-empty float32 payload")
+    return tuple(int(index) for index in np.flatnonzero(~np.isfinite(np.frombuffer(blob, dtype="<f4"))))
+
+
 def _union_gate_from_rows_antigravity(raw_values: Mapping[str, object], *, label_access_count: int) -> UnionInventoryGateAntigravity:
     affected: set[str] = set()
     test_only_rows = 0
@@ -399,8 +410,56 @@ def _union_gate_from_rows_antigravity(raw_values: Mapping[str, object], *, label
     )
 
 
+def _scan_pinned_union_inventory_antigravity(pinned: object) -> UnionInventoryGateAntigravity:
+    """Values-only TRAIN-or-TEST nonfinite union over the exact pinned population."""
+    affected: set[str] = set()
+    test_only_rows = 0
+    test_only_scalars = 0
+    with pinned.worker_connection_antigravity() as connection:
+        quick = connection.execute(QUICK_CHECK_SQL_ANTIGRAVITY).fetchall()
+        if quick != [("ok",)]:
+            raise ValueError("SQLite quick_check failed")
+        population_rows = connection.execute(POPULATION_SQL_ANTIGRAVITY).fetchall()
+        raw_population = tuple(row[0] for row in population_rows)
+        if any(len(row) != 1 or type(row[0]) is not str or not row[0] for row in population_rows) or raw_population != tuple(sorted(set(raw_population))):
+            raise ValueError("database population identity is invalid")
+        if not FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY.issubset(raw_population):
+            raise ValueError("database exclusions are invalid")
+        names = tuple(name for name in raw_population if name not in FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY)
+        _exact_int(len(names), EXPECTED_DATASETS_ANTIGRAVITY, "dataset_count")
+        if names != tuple(sorted(set(names))):
+            raise ValueError("eligible population must be sorted and unique")
+        for dataset in names:
+            train_rows = connection.execute(NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, (dataset,)).fetchall()
+            test_rows = connection.execute(TEST_VALUES_SQL_ANTIGRAVITY, (dataset,)).fetchall()
+            if not train_rows or not test_rows:
+                raise ValueError(f"values-only rows are absent: {dataset}")
+            train_missing = False
+            for _index, blob in train_rows:
+                if _missing_indices_from_blob_antigravity(blob):
+                    train_missing = True
+                    affected.add(dataset)
+            for _index, blob in test_rows:
+                missing = _missing_indices_from_blob_antigravity(blob)
+                if missing:
+                    affected.add(dataset)
+                    if dataset == EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY and not train_missing:
+                        test_only_rows += 1
+                        test_only_scalars += len(missing)
+    if getattr(pinned, "label_access_count", None) != 0:
+        raise ValueError("label_access_count differs after union raw load")
+    return UnionInventoryGateAntigravity(
+        dataset_count=len(tuple(sorted(affected))),
+        datasets=tuple(sorted(affected)),
+        test_only_dataset=EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY,
+        test_only_rows=test_only_rows,
+        test_only_scalars=test_only_scalars,
+        label_access_count=0,
+    )
+
+
 def _production_union_antigravity(snapshot: object, train_raw: Mapping[str, object]) -> UnionInventoryGateAntigravity:
-    del train_raw
+    del snapshot, train_raw
     with TemporaryDirectory(prefix="paper_r4_union_antigravity_") as temporary:
         attempt = Path(temporary) / "attempt_antigravity"
         pinned = pin_database_snapshot_antigravity(
@@ -409,13 +468,7 @@ def _production_union_antigravity(snapshot: object, train_raw: Mapping[str, obje
             expected_sha256=EXP443_FROZEN_CONFIG.database_sha256,
         )
         try:
-            raw_values = {
-                dataset: load_raw_dataset_antigravity(pinned, dataset)
-                for dataset in EXPECTED_UNION_DATASETS_ANTIGRAVITY
-            }
-            if pinned.label_access_count != 0:
-                raise ValueError("label_access_count differs after union raw load")
-            return _union_gate_from_rows_antigravity(raw_values, label_access_count=0)
+            return _scan_pinned_union_inventory_antigravity(pinned)
         finally:
             pinned.close(terminal_evidence_durable=True)
 

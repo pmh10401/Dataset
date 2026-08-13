@@ -1,7 +1,7 @@
 {
-  "current_commit": "54df11bc45c0fd79d382ca1f0f1a8f4ee75b25a9",
+  "current_commit": "07cf61ea017d341e869720ab700a0e35b1dda031",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-13T23:02:14+0900",
+  "generated_at": "2026-08-13T23:45:00+0900",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -33,14 +33,14 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    "root": "8ec093af396246aec1abdef1a52fc244375787b1c67bb94b0a160f89ef6af907",
+    "root": "0d4e051cb7463bcd3b2c12939ebb21dddfb56830bad44ae392855a936ad6b515",
     ".superpowers": "a7e4ca2c671dde5eb461e27a66439a175a8ddc47f5cbc930724b807a509ea65c",
-    "docs": "9cfb942671b80bc5d8eeabf6926fdc54980e6506b77be11d329091d01b8d65e1",
-    "experiments": "6bebae50330cb7c11880c2fd362ea219b90c714ff5de8d15165f193b88f17e71",
+    "docs": "fe8a44f75f056d8007bda51cbf29850fbce8fa5f95898d7c48c64f863313dfc9",
+    "experiments": "40908a96f017624a46d93641c615ed4566a330f488d571f59ab6f79fd77b58f8",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "551bf48b8db3246e8be28c7c9abc58c9bdbdd903aed0bfbb598ea69b9a70e1f1",
     "reports": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
-    "scratch": "41c6bff2618ee04a4d8a1da26f56e271d803575d612dccbffe0d1ba9f2f3011e",
+    "scratch": "c92c31e5b439504f1d12a7ee52ceaeef358d72c2c9be83117e7f351a846c7082",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
@@ -48,7 +48,6 @@
     "root",
     "docs",
     "experiments",
-    "paper",
     "scratch"
   ]
 }

@@ -13,6 +13,13 @@
     "failed_smoke_root": "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813",
     "v2_smoke_root": "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813",
     "interpreter": "/Users/mac/Documents/Dataset/venvs/paper_r4_torch_antigravity_py314_v2/bin/python",
+    "smoke_dataset_count": 23,
+    "smoke_includes_melbourne_pedestrian_normal_10": true,
+    "union_scan": "values_only_full_population_1117",
+    "union_scan_seconds": 2.992798,
+    "union_members": 20,
+    "melbourne_test_only_rows": 3,
+    "melbourne_test_only_scalars": 3,
     "official_r4": false,
     "test_labels_opened": false
   },

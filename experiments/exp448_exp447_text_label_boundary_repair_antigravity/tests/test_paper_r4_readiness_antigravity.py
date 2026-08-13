@@ -14,13 +14,20 @@ from unittest.mock import patch
 
 import numpy as np
 
+import inspect
+import time
+
 from experiments.exp448_exp447_text_label_boundary_repair_antigravity.paper_r4_readiness_antigravity import (
     EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY,
     EXPECTED_AFFECTED_SHA256_ANTIGRAVITY,
     EXPECTED_UNION_DATASETS_ANTIGRAVITY,
+    EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY,
     InventoryGateAntigravity,
     R4ReadinessDependenciesAntigravity,
     UnionInventoryGateAntigravity,
+    _production_union_antigravity,
+    _scan_pinned_union_inventory_antigravity,
+    _union_gate_from_rows_antigravity,
     canonical_result_bytes_antigravity,
     main,
     run_r4_readiness_antigravity,
@@ -317,6 +324,73 @@ class R4ReadinessParityTests(unittest.TestCase):
         self.assertIn("union_dataset_count", result.failures[0])
         self.assertEqual(result.parity, ())
         self.assertEqual(scored, [])
+
+    def test_injected_21st_nonfinite_dataset_fails_closed(self) -> None:
+        """An unexpected 21st TRAIN-or-TEST nonfinite dataset must fail closed.
+
+        If the scanner walked only the 20 expected names, this extra dataset
+        would be invisible and the gate would vacuous-pass.
+        """
+        raw = {}
+        for name in EXPECTED_AFFECTED_DATASETS_ANTIGRAVITY:
+            values = np.arange(8, dtype="<f4")
+            missing = values.copy()
+            missing[0] = np.nan
+            raw[name] = SimpleNamespace(
+                train=(SimpleNamespace(values=missing), SimpleNamespace(values=values)),
+                test=(SimpleNamespace(values=values + np.float32(10)),),
+            )
+        finite = np.arange(8, dtype="<f4")
+        test_missing = []
+        for index in range(3):
+            row = finite.copy() + np.float32(10 + index)
+            row[0] = np.nan
+            test_missing.append(SimpleNamespace(values=row))
+        raw[EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY] = SimpleNamespace(
+            train=(SimpleNamespace(values=finite),),
+            test=(*test_missing, SimpleNamespace(values=finite + np.float32(20))),
+        )
+        accepted = _union_gate_from_rows_antigravity(raw, label_access_count=0)
+        self.assertEqual(accepted.datasets, EXPECTED_UNION_DATASETS_ANTIGRAVITY)
+        self.assertEqual(accepted.test_only_rows, 3)
+        self.assertEqual(accepted.test_only_scalars, 3)
+
+        extra = finite.copy()
+        extra[1] = np.nan
+        raw["UnexpectedDataset_normal_0"] = SimpleNamespace(
+            train=(SimpleNamespace(values=finite),),
+            test=(SimpleNamespace(values=extra),),
+        )
+        with self.assertRaises(ValueError) as context:
+            _union_gate_from_rows_antigravity(raw, label_access_count=0)
+        self.assertIn("union_dataset_count differs: expected=20 actual=21", str(context.exception))
+        self.assertNotIn("UnexpectedDataset_normal_0", EXPECTED_UNION_DATASETS_ANTIGRAVITY)
+
+    def test_production_union_scans_pinned_population_not_expected_twenty(self) -> None:
+        """Production must independently walk the pinned population, not the 20-name allowlist."""
+        production = inspect.getsource(_production_union_antigravity)
+        scanner = inspect.getsource(_scan_pinned_union_inventory_antigravity)
+        self.assertNotIn("EXPECTED_UNION_DATASETS_ANTIGRAVITY", production)
+        self.assertIn("_scan_pinned_union_inventory_antigravity", production)
+        self.assertIn("POPULATION_SQL_ANTIGRAVITY", scanner)
+        self.assertNotIn("EXPECTED_UNION_DATASETS_ANTIGRAVITY", scanner)
+
+    def test_full_population_values_only_union_scan_antigravity(self) -> None:
+        """Exact pinned 1,117-dataset values-only TRAIN-or-TEST union: 20 members, TEST-only 3/3, no labels."""
+        database = Path(EXP443_FROZEN_CONFIG.database_path)
+        if not database.is_file():
+            self.skipTest("frozen database is unavailable")
+        started = time.perf_counter()
+        gate = _production_union_antigravity(SimpleNamespace(), {})
+        elapsed = time.perf_counter() - started
+        self.assertEqual(gate.dataset_count, 20)
+        self.assertEqual(gate.datasets, EXPECTED_UNION_DATASETS_ANTIGRAVITY)
+        self.assertEqual(gate.test_only_dataset, EXPECTED_UNION_TEST_ONLY_DATASET_ANTIGRAVITY)
+        self.assertEqual(gate.test_only_rows, 3)
+        self.assertEqual(gate.test_only_scalars, 3)
+        self.assertEqual(gate.label_access_count, 0)
+        self.assertLess(elapsed, 120.0)
+        print(f"full_population_union_scan_seconds={elapsed:.6f}", flush=True)
 
     def test_bounded_db_union_identity_without_test_labels(self) -> None:
         """Official TRAIN-or-TEST union identity is 20, including MelbournePedestrian_normal_10 TEST-only 3/3."""

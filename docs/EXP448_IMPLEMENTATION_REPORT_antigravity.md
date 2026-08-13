@@ -79,6 +79,17 @@ only. It does not authorize smoke-root or official r4-root creation.
   The exp443 venv is not mutated. The failed 20260813 smoke/ops pair remains
   immutable evidence; official smoke is the v2 path and must stay absent until
   a later authorized smoke. Official r4 remains unauthorized.
+- Production union inventory independently scans the exact pinned 1,117-dataset
+  population with values-only TRAIN and TEST SQL. The measured bounded runtime
+  was `full_population_union_scan_seconds=2.992798`. The gate asserts the exact
+  20-member TRAIN-or-TEST nonfinite union, MelbournePedestrian_normal_10
+  TEST-only 3 rows/3 scalars, and `label_access_count=0`. An injected 21st
+  unexpected nonfinite dataset fails closed. This remains a low-cost preflight,
+  not scoring.
+- v2 `SMOKE_DATASETS` is the frozen sorted 23-name authority. It now includes
+  `MelbournePedestrian_normal_10` so a later authorized smoke exercises the
+  real production Task4+5 path on the official TEST-only union member. No new
+  smoke or official r4 was launched.
 - `_command_is_this_worker` matches only the exact 13-token full-worker argv
   grammar, including the stored authority SHA. `stop` rereads OS argv before
   SIGTERM and returns `stop_refused` if identity changed.

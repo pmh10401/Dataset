@@ -62,6 +62,7 @@ EXPECTED_SMOKE_DATASETS = (
     "DodgerLoopWeekend_normal_1",
     "DodgerLoopWeekend_normal_2",
     "MelbournePedestrian_normal_1",
+    "MelbournePedestrian_normal_10",
     "MelbournePedestrian_normal_2",
     "MelbournePedestrian_normal_3",
     "MelbournePedestrian_normal_4",
@@ -203,7 +204,8 @@ class PaperR4OperationsTests(unittest.TestCase):
             self.assertEqual(getattr(module, name), path)
         self.assertEqual(module.SMOKE_DATASETS, EXPECTED_SMOKE_DATASETS)
         self.assertEqual(module.SMOKE_DATASETS, tuple(sorted(module.SMOKE_DATASETS)))
-        self.assertEqual(len(module.SMOKE_DATASETS), 22)
+        self.assertEqual(len(module.SMOKE_DATASETS), 23)
+        self.assertIn("MelbournePedestrian_normal_10", module.SMOKE_DATASETS)
         self.assertEqual(module.EXPECTED_DATASET_COUNT, 1117)
         self.assertEqual(module.INNER_NUMERICAL_THREADS, 1)
 
@@ -1215,7 +1217,7 @@ class PaperR4OperationsTests(unittest.TestCase):
         module = self.load_launcher()
         _repo, commit, _dataset = self._prepare_fixture(module)
         authority = module.check(commit)
-        pipeline = {"status": "completed", "completed": 22, "failed": 0, "pending": 0}
+        pipeline = {"status": "completed", "completed": 23, "failed": 0, "pending": 0}
         first = module._publish_smoke_result(authority, pipeline)
         paths = module.smoke_ops_paths()
         original = paths.smoke_result.read_bytes()

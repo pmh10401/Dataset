@@ -77,7 +77,10 @@ base Python.
   scratch/manage_paper_r4_proposal_antigravity.py check --reviewed-commit REVIEWED_COMMIT
 ```
 
-Future prelaunch smoke, still unauthorized by this implementation. The first
+Future prelaunch smoke, still unauthorized by this implementation. The v2
+smoke authority is the frozen sorted 23-name set and includes
+`MelbournePedestrian_normal_10` so the official TEST-only union member is
+exercised on the real Task4+5 path. The first
 completed invocation is non-authorizing (`smoke_confirmation_required`) and
 does not publish `smoke_result`. A second same-authority verification-only
 invocation is required before create-only authorization. An incomplete first
