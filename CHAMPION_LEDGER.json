@@ -353,6 +353,29 @@
         "scientific_or_promotion_gate": false
       },
       "next_action": "await_result_discussion_no_scientific_rerun"
+    },
+    {
+      "experiment": "Exp451",
+      "status": "planned_not_started",
+      "reason": "Exp451 is a post-hoc RDST + LocalGap method qualification over the ordered eight-family, 48-dataset subset. It is registered as a planned sibling while Exp449 remains active. No readiness, prediction, evaluation, inspect, TEST-label access, champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert has occurred.",
+      "reviewed_design_sha256": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
+      "run_identity": "exp451-rdst-local-gap-qualification-antigravity-20260813",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "label_access_count": 0,
+      "test_labels_opened": false,
+      "official_readiness_started": false,
+      "target_family_count": 8,
+      "target_dataset_count": 48,
+      "target_test_rows": 72300,
+      "post_hoc_method_qualification": true,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "next_action": "remain_planned_until_separate_review_and_execution_approval"
     }
   ]
 }

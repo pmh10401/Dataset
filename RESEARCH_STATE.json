@@ -82,6 +82,52 @@
       "exp448_access": "custom_owner_only_one_account_no_groups"
     }
   },
+  "exp451": {
+    "experiment": "Exp451",
+    "kind": "rdst_local_gap_qualification",
+    "status": "planned_not_started",
+    "reviewed_design_sha256": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
+    "documents": {
+      "design": "docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html",
+      "plan": "docs/superpowers/plans/2026-08-13-exp451-rdst-local-gap-qualification-antigravity.html",
+      "preregistration": "docs/EXP451_PREREGISTRATION_antigravity_KO.html",
+      "runbook": "docs/EXP451_RUNBOOK_antigravity_KO.html",
+      "implementation_report": "docs/EXP451_IMPLEMENTATION_REPORT_antigravity.html"
+    },
+    "document_sha256": {
+      "preregistration": "2860a8f2d6a317b99bdcbaba152068b631671b6c447819421ff5de2d452e797a",
+      "runbook": "409bbc5e74cd286b8744511788410caca17da9ccb79ac096d029ba8634c4501a",
+      "implementation_report": "db09c38c5aa52e4e94c857fb27500524e28518c33c3b2c00566fa2812421f8f6"
+    },
+    "run_identity": "exp451-rdst-local-gap-qualification-antigravity-20260813",
+    "artifact_schema": "exp451",
+    "prediction_root": "/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_antigravity_20260813",
+    "evaluation_root": "/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813",
+    "readiness_receipt": "/Users/mac/Documents/Dataset/exp451_readiness_receipt_antigravity.json",
+    "failure_audit": "/Users/mac/Documents/Dataset/exp451_failure_audit_antigravity.json",
+    "predecessor": "Exp448 stable-26 byte-authoritative aggregate truth; Exp449 remains active and independent",
+    "post_hoc_method_qualification": true,
+    "target_family_count": 8,
+    "target_dataset_count": 48,
+    "target_test_rows": 72300,
+    "reused_dataset_count": 1069,
+    "baseline_confusion": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935},
+    "label_access_count": 0,
+    "test_labels_opened": false,
+    "official_readiness_started": false,
+    "official_predict_started": false,
+    "official_evaluate_started": false,
+    "official_inspect_started": false,
+    "official_lifecycle": {"readiness_invocations": 0, "predict_invocations": 0, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0},
+    "cpu_worker_rule": "max(1, logical_cpus - 1)",
+    "rdst_backend": "official_cpu_canonical",
+    "local_gap_backend_gate": {"tensor_eligible": true, "candidate_identity_required": true, "finite_required": true, "max_normalized_error": 0.00001, "minimum_speedup": 1.1, "selected_backend": null},
+    "promotion_allowed": false,
+    "routing_allowed": false,
+    "scientific_winner_selected": false,
+    "pending_candidate_changed": false,
+    "no_official_run_without_separate_approval": true
+  },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",
     "status": "official_evaluation_inspected_complete_dashboard_published_owner_only",

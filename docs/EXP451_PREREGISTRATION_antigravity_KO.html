@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp451 RDST + LocalGap 사전등록</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f5f7fb; --panel:#fff; --text:#152034; --line:#d8deea; --accent:#3159d6; --code:#edf2f8; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#101522; --panel:#19202e; --text:#edf2fb; --line:#354055; --accent:#91aaff; --code:#222b3b; } }
+    body { max-width:960px; margin:28px auto; padding:34px 42px; background:var(--panel); color:var(--text); font:16px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; border:1px solid var(--line); border-radius:16px; }
+    h1,h2 { line-height:1.28; } h2 { margin-top:34px; padding-top:22px; border-top:1px solid var(--line); }
+    code { background:var(--code); padding:.12em .35em; border-radius:4px; } table { width:100%; border-collapse:collapse; } th,td { padding:8px 10px; border:1px solid var(--line); text-align:left; vertical-align:top; } th { background:var(--code); }
+    .notice { border-left:4px solid var(--accent); padding:10px 16px; background:var(--code); }
+  </style>
+</head>
+<body>
+  <h1>Exp451: RDST + LocalGap 사후 자격검증 사전등록</h1>
+  <p>동결일: 2026-08-13 · 상태: <strong>planned_not_started</strong> · 설계 SHA256: <code>63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4</code></p>
+  <p class="notice">Exp451은 Exp448의 TEST 잔여 FN으로 선정된 8개 family를 대상으로 하는 <strong>post-hoc method qualification</strong>이다. 독립적 전향 확인 실험 또는 자동 승격 근거로 주장하지 않는다.</p>
+
+  <h2>목적과 범위</h2>
+  <p>정상 TRAIN에서만 공식 aeon 1.4.0 <code>RandomDilatedShapeletTransform</code>(RDST)을 <code>y=None</code>으로 학습하고, Exp449와 같은 5-fold LocalGap 점수기로 ROCKET 계열의 잔여 이상을 보완할 수 있는지를 비교한다. 대상 family는 Crop, ElectricDevices, FordA, FordB, Yoga, ECG5000, ChlorineConcentration, StarLightCurves이며, 순서가 고정된 실제 대상은 48개 dataset, TEST 행은 72,300개다. 나머지 1,069 dataset은 Exp448 stable-26의 bytes와 confusion을 그대로 재사용한다.</p>
+  <table><tr><th>Exp448 동결 기준선</th><th>값</th></tr><tr><td>TP / FP / FN / TN</td><td>1,930 / 314 / 1,988 / 191,668</td></tr><tr><td>F1</td><td>0.6264199935</td></tr><tr><td>공식 RDST source SHA256</td><td><code>900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2</code></td></tr></table>
+
+  <h2>동결 방법</h2>
+  <ul>
+    <li>RDST: <code>max_shapelets=1024</code>, <code>random_state</code>는 20260721 및 20261721, <code>n_jobs=1</code>, 나머지 생성자 기본값은 aeon 1.4.0 그대로다.</li>
+    <li>각 seed에 대해 정상 TRAIN 5-fold OOF와 전체 TRAIN fit TEST 점수를 구하고, 각각 위치별 중앙값으로 결합한다.</li>
+    <li>LocalGap: k=3, reference 상한 1,000, query chunk 128이다. fold reference seed는 <code>seed + 1009 × (fold_index + 1) + 1024</code>, 전체 fit은 <code>seed + 7919 + 1024</code>이며 선택 index는 오름차순이다.</li>
+    <li>TEST 중앙점수의 TRAIN-OOF empirical upper p-value가 <code>p ≤ 0.005</code>일 때만 후보로 한다. <code>1/(n_train+1) &gt; 0.005</code>이면 후보는 빈 집합이며 <code>resolution_blocked=true</code>로 남긴다.</li>
+    <li>RDST는 결측치를 지원하지 않는다. 기존 정상 TRAIN 결측 정책만 명시적으로 적용하며 임의 대체는 금지한다.</li>
+  </ul>
+
+  <h2>자격 조건과 해석 제한</h2>
+  <p>48개 대상의 Exp448 예측을 Exp451 예측으로 한꺼번에 바꾼 1,117 dataset counterfactual에서 모두 충족해야 한다: 전체 FN &lt; 1,988, 전체 FP ≤ 314, 전체 F1 ≥ 0.6264199935, 그리고 8개 대상 family FN 합계 감소. dataset별 신규 탐지·새 false alarm·기존 탐지 손실과 48쌍 paired bootstrap도 함께 기록한다. 통과해도 champion, pending candidate, routing, operational alert 또는 자동 promotion은 발생하지 않는다.</p>
+
+  <h2>라벨 방화벽</h2>
+  <p>prediction은 TEST label, 실제 이상 위치, 과거 family별 TEST 성능을 읽지 않는다. prediction leaf/inventory/aggregate SHA가 모두 동결된 뒤에만 순서 고정 단일 label session 하나를 허용하며, 정확히 48 dataset·72,300 TEST 행만 읽는다. 본 결과를 보고 shapelet 수, seed, alpha, threshold, 점수기 또는 대상은 바꾸지 않는다. 변경 제안은 Exp452 이상의 새 번호와 사전등록으로 분리한다. 현재 label access count는 0이며 official readiness/predict/evaluate/inspect는 시작하지 않았다.</p>
+
+  <h2>실행·backend 동결</h2>
+  <p>공식 RDST는 NumPy·Numba CPU 구현이므로 CPU canonical이다. 공식 readiness 시 logical CPU를 다시 감지하고 outer worker는 <code>max(1, logical_cpus - 1)</code>, RDST 및 inner thread는 1로 한다. LocalGap 거리행렬만 tensor-eligible이며 CPU 대 PyTorch/MPS 및 CPU 대 MLX smoke에서 동일 input·seed, finite 출력, 후보 index 완전 일치, 최대 정규화 오차 ≤ 1e-5, transfer/synchronization/warm-up/compile 포함 speedup ≥ 1.1을 모두 통과할 때만 선택한다. 하나라도 실패하면 CPU를 유지하며 MLX/MPS-heavy job은 동시에 하나만 허용한다.</p>
+  <p>run identity: <code>exp451-rdst-local-gap-qualification-antigravity-20260813</code><br>prediction root: <code>/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_antigravity_20260813</code><br>evaluation root: <code>/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813</code></p>
+</body>
+</html>

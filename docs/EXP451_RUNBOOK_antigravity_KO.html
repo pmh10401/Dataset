@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Exp451 실행 규약</title><style>:root{color-scheme:light dark;--bg:#f5f7fb;--panel:#fff;--text:#152034;--line:#d8deea;--accent:#3159d6;--code:#edf2f8}@media(prefers-color-scheme:dark){:root{--bg:#101522;--panel:#19202e;--text:#edf2fb;--line:#354055;--accent:#91aaff;--code:#222b3b}}body{max-width:960px;margin:28px auto;padding:34px 42px;background:var(--panel);color:var(--text);font:16px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;border:1px solid var(--line);border-radius:16px}h1,h2{line-height:1.28}h2{margin-top:34px;padding-top:22px;border-top:1px solid var(--line)}code{background:var(--code);padding:.12em .35em;border-radius:4px}.stop{border-left:4px solid var(--accent);padding:10px 16px;background:var(--code)}</style></head>
+<body>
+<h1>Exp451 RDST + LocalGap 실행 규약</h1>
+<p>상태: <strong>planned_not_started</strong>. 이 문서는 아직 실행 권한이 아니다. Exp449는 계속 active이며 champion과 pending candidate는 변경되지 않는다.</p>
+<p class="stop"><strong>현재 금지:</strong> official readiness, prediction, evaluation, inspect, TEST-label access, dashboard access, promotion, 또는 Exp449 lifecycle 변경. Task 1은 거버넌스 동결만 수행한다.</p>
+<h2>승인 후 readiness 전제조건</h2>
+<ol><li>reviewed commit과 세 governance HTML의 SHA, 공식 RDST source SHA <code>900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2</code>, Exp448 source authority를 확인한다.</li><li>logical CPU와 outer worker <code>max(1, logical_cpus - 1)</code>를 provenance에 둘 다 기록한다. RDST <code>n_jobs=1</code> 및 inner threads=1을 유지한다.</li><li>RDST CPU canonical과 LocalGap backend gate를 평가한다. LocalGap 가속은 finite, alpha=0.005 후보 동일, max normalized error ≤ 1e-5, end-to-end speedup ≥ 1.1을 모두 만족할 때만 허용한다. 그렇지 않으면 CPU fallback 이유를 receipt에 기록한다.</li><li>readiness receipt는 <code>/Users/mac/Documents/Dataset/exp451_readiness_receipt_antigravity.json</code>에 create-only canonical JSON으로 기록한다. failure audit 경로는 <code>/Users/mac/Documents/Dataset/exp451_failure_audit_antigravity.json</code>이다.</li></ol>
+<h2>Prediction 순서</h2>
+<ol><li>순서 고정 8 family, 48 dataset만 처리하고 나머지 1,069개는 Exp448 stable-26 bytes를 재사용한다.</li><li>정상 TRAIN만 사용해 seed 20260721, 20261721 각각 5-fold RDST→LocalGap OOF와 full-train TEST 점수를 만든다.</li><li>두 seed의 위치별 중앙값과 TRAIN-OOF empirical upper p-value로 <code>p ≤ 0.005</code> 후보를 정한다. resolution 부족은 빈 후보로 기록한다.</li><li>48개 모든 label-free prediction leaf, inventory, aggregate SHA를 create-only로 동결한다. 실패를 빈 후보 성공으로 바꾸지 않는다.</li></ol>
+<h2>Label session과 중지 규칙</h2>
+<p>prediction freeze 전에 label access는 0이어야 한다. freeze 뒤 정확히 한 번, 고정된 Exp448 순서의 48 dataset·72,300 TEST 행만 읽는다. 추가 세션·부분 세션·순서 변경·대상 변경은 실패다. 결과는 자격 조건(FN &lt; 1,988; FP ≤ 314; F1 ≥ 0.6264199935; 8 family FN 감소)으로만 해석하며 no-promotion/no-official-run 상태를 뒤집지 않는다.</p>
+</body></html>
