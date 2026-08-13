@@ -23,6 +23,9 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             wrong=copy.deepcopy(public); wrong["runtime"]["rows"] = 72299; malformed.append(wrong)
             wrong=copy.deepcopy(public); wrong["family_fn_deltas"].pop(next(iter(wrong["family_fn_deltas"]))); malformed.append(wrong)
             wrong=copy.deepcopy(public); wrong["status"] = "/tmp/private/database.sqlite"; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["global"]["candidate"]["fp"]=315; wrong["global"]["candidate"]["tn"]-=1; wrong["global"]["candidate"]["f1"]=2*wrong["global"]["candidate"]["tp"]/(2*wrong["global"]["candidate"]["tp"]+wrong["global"]["candidate"]["fp"]+wrong["global"]["candidate"]["fn"]); malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["runtime"]["rows"]=True; malformed.append(wrong)
+            wrong=copy.deepcopy(public); wrong["family_fn_deltas"]["InventedFamily"]=wrong["family_fn_deltas"].pop(next(iter(wrong["family_fn_deltas"]))); malformed.append(wrong)
             for attack in malformed:
                 with self.assertRaises(ValueError): validate_public_result_antigravity(attack)
 

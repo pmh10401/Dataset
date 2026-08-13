@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json, os, tempfile, unittest
 import hashlib
+import stat
 from pathlib import Path
 from unittest.mock import patch
 from .test_evaluation_antigravity import SHA, fixture_antigravity
@@ -45,13 +46,13 @@ class ReplayAntigravityTest(unittest.TestCase):
         from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root)
-            original=evaluation.write_create_only_antigravity
+            original=evaluation._write_leaf_at_antigravity
             calls=0
-            def fail_second(path, payload):
+            def fail_second(directory_fd, name, payload):
                 nonlocal calls; calls += 1
                 if calls == 2: raise OSError("injected write failure")
-                return original(path,payload)
-            with patch.object(evaluation,"write_create_only_antigravity",side_effect=fail_second), self.assertRaises(OSError):
+                return original(directory_fd,name,payload)
+            with patch.object(evaluation,"_write_leaf_at_antigravity",side_effect=fail_second), self.assertRaises(OSError):
                 _evaluate_with_dependencies_antigravity(authority,SHA,deps)
             self.assertFalse(root.exists()); self.assertFalse(root.is_symlink())
 
@@ -62,5 +63,28 @@ class ReplayAntigravityTest(unittest.TestCase):
             root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root); _evaluate_with_dependencies_antigravity(authority,SHA,deps)
             self._rewrite_and_rehash_antigravity(root,"result_antigravity.json",lambda value:value.__setitem__("predecessor_hashes",["9"*64,*value["predecessor_hashes"][1:]]))
             with self.assertRaises(ValueError): inspect_replay_antigravity(root,expected_prediction_authority=authority)
+
+    def test_actual_symlink_leaf_and_rehashed_transition_forgery_are_rejected_antigravity(self):
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.replay_antigravity import inspect_replay_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root); _evaluate_with_dependencies_antigravity(authority,SHA,deps)
+            dataset=root/"datasets_antigravity.json"; outside=Path(directory)/"outside_antigravity.json"; outside.write_bytes(dataset.read_bytes()); dataset.unlink(); dataset.symlink_to(outside)
+            with self.assertRaises((OSError,ValueError)): inspect_replay_antigravity(root,expected_prediction_authority=authority)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root); _evaluate_with_dependencies_antigravity(authority,SHA,deps)
+            self._rewrite_and_rehash_antigravity(root,"datasets_antigravity.json",lambda value:value["rows"][0].__setitem__("new_detections",2))
+            with self.assertRaises(ValueError): inspect_replay_antigravity(root,expected_prediction_authority=authority)
+
+    def test_post_promotion_parent_fsync_failure_moves_exact_root_to_forensic_antigravity(self):
+        from experiments.exp451_rdst_local_gap_qualification_antigravity import evaluation_antigravity as evaluation
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.evaluation_antigravity import _evaluate_with_dependencies_antigravity
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/"evaluation_antigravity"; authority,deps,_=fixture_antigravity(root); original=evaluation.os.fsync
+            def fail_public_parent(fd):
+                if root.exists() and stat.S_ISDIR(os.fstat(fd).st_mode): raise OSError("injected parent fsync failure")
+                return original(fd)
+            with patch.object(evaluation.os,"fsync",side_effect=fail_public_parent), self.assertRaises(OSError): _evaluate_with_dependencies_antigravity(authority,SHA,deps)
+            self.assertFalse(root.exists()); self.assertEqual(len(tuple(Path(directory).glob(".*forensic.*_antigravity"))),1)
 
 if __name__ == "__main__": unittest.main()

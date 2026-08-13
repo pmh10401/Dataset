@@ -6,6 +6,7 @@ import ctypes
 import errno
 import hashlib
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -23,6 +24,8 @@ from .sources_antigravity import LabelSnapshotAntigravity, open_ordered_label_se
 
 OFFICIAL_EVALUATION_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813")
 BASELINE_GLOBAL_ANTIGRAVITY = ConfusionAntigravity(1930, 314, 1988, 191668)
+EXP448_HASHES_ANTIGRAVITY=("ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05","a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c","54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5")
+EXP448_BASELINE_AUTHORITY_SHA256_ANTIGRAVITY="19cbc7f6c52087c71a1637d8ea20d52cb9c332b2439f3338727c186c0f5d5160"
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,42 +125,73 @@ def _remove_private_staging_antigravity(staging: Path) -> None:
         if path.is_file() and not path.is_symlink(): path.unlink()
     staging.rmdir()
 
+def _write_leaf_at_antigravity(directory_fd: int, name: str, payload: bytes) -> None:
+    fd=os.open(name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory_fd)
+    try:
+        offset=0
+        while offset<len(payload):
+            written=os.write(fd,payload[offset:])
+            if written<=0: raise OSError(errno.EIO,"leaf write made no progress")
+            offset+=written
+        os.fsync(fd)
+    finally: os.close(fd)
+
 
 def _publish_antigravity(root: Path, result: FrozenEvaluationAntigravity, authority: FrozenPredictionAuthorityAntigravity) -> None:
     if root.exists() or root.is_symlink(): raise ValueError("evaluation root already exists")
     staging=root.parent/f".{root.name}.{os.getpid()}.staging_antigravity"
     if staging.exists() or staging.is_symlink(): raise ValueError("private staging collision")
-    staging.mkdir(mode=0o700)
+    parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+    os.mkdir(staging.name,mode=0o700,dir_fd=parent_fd)
+    staging_fd=os.open(staging.name,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=parent_fd)
     from .dashboard_export_antigravity import public_result_antigravity
-    leaves = {"context_antigravity.json":{"schema":"exp451.evaluation.context.v1","reviewed_commit":result.reviewed_commit,"prediction_authority":authority.to_payload_antigravity(),"predecessor_hashes":list(result.predecessor_hashes)},"datasets_antigravity.json":{"schema":"exp451.evaluation.datasets.v1","rows":[_dataset_payload_antigravity(x) for x in result.dataset_rows]},"result_antigravity.json":_result_payload_antigravity(result),"dashboard_antigravity.json":public_result_antigravity(result)}
+    leaves = {"context_antigravity.json":{"schema":"exp451.evaluation.context.v1","reviewed_commit":result.reviewed_commit,"prediction_authority":authority.to_payload_antigravity(),"predecessor_hashes":list(result.predecessor_hashes),"exp448_baseline_authority_sha256":EXP448_BASELINE_AUTHORITY_SHA256_ANTIGRAVITY},"datasets_antigravity.json":{"schema":"exp451.evaluation.datasets.v1","rows":[_dataset_payload_antigravity(x) for x in result.dataset_rows]},"result_antigravity.json":_result_payload_antigravity(result),"dashboard_antigravity.json":public_result_antigravity(result)}
     promoted=False
     try:
         hashes={}
         for name,value in leaves.items():
-            payload=canonical_json_bytes_antigravity(value); write_create_only_antigravity(staging/name,payload); hashes[name]=hashlib.sha256(payload).hexdigest()
+            payload=canonical_json_bytes_antigravity(value); _write_leaf_at_antigravity(staging_fd,name,payload); hashes[name]=hashlib.sha256(payload).hexdigest()
         artifact_map={"schema":"exp451.evaluation.artifact_map.v1","leaf_sha256":hashes}
-        map_bytes=canonical_json_bytes_antigravity(artifact_map); write_create_only_antigravity(staging/"artifact_map_antigravity.json",map_bytes)
+        map_bytes=canonical_json_bytes_antigravity(artifact_map); _write_leaf_at_antigravity(staging_fd,"artifact_map_antigravity.json",map_bytes)
         inventory=[*leaves.keys(),"artifact_map_antigravity.json","manifest_antigravity.json"]
         manifest={"schema":"exp451.evaluation.manifest.v1","inventory":inventory,"artifact_map_sha256":hashlib.sha256(map_bytes).hexdigest(),"result_sha256":hashes["result_antigravity.json"],"dashboard_sha256":hashes["dashboard_antigravity.json"]}
-        write_create_only_antigravity(staging/"manifest_antigravity.json",canonical_json_bytes_antigravity(manifest))
-        directory_fd=os.open(staging,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
-        try: os.fsync(directory_fd)
-        finally: os.close(directory_fd)
+        _write_leaf_at_antigravity(staging_fd,"manifest_antigravity.json",canonical_json_bytes_antigravity(manifest))
+        os.fsync(staging_fd)
         from .replay_antigravity import inspect_replay_antigravity
         if inspect_replay_antigravity(staging,expected_prediction_authority=authority)!=result: raise ValueError("private replay differs")
+        staging_identity=os.stat(staging,follow_symlinks=False)
         _rename_no_replace_antigravity(staging,root); promoted=True
-        parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
-        try: os.fsync(parent_fd)
-        finally: os.close(parent_fd)
         try:
+            flush_parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+            try: os.fsync(flush_parent_fd)
+            finally: os.close(flush_parent_fd)
             if inspect_replay_antigravity(root,expected_prediction_authority=authority)!=result: raise ValueError("public replay differs")
-        except BaseException:
-            forensic=root.parent/f".{root.name}.forensic.{os.getpid()}_antigravity"
-            _rename_no_replace_antigravity(root,forensic)
-            raise
+        except BaseException as primary:
+            try:
+                current=os.stat(root,follow_symlinks=False)
+                if (current.st_dev,current.st_ino)!=(staging_identity.st_dev,staging_identity.st_ino): raise ValueError("promoted namespace no longer names retained staging inode")
+                forensic=None
+                for _ in range(32):
+                    candidate=root.parent/f".{root.name}.forensic.{secrets.token_hex(16)}_antigravity"
+                    if not candidate.exists() and not candidate.is_symlink(): forensic=candidate; break
+                if forensic is None: raise FileExistsError("forensic namespace allocation exhausted")
+                _rename_no_replace_antigravity(root,forensic)
+                moved=os.stat(forensic,follow_symlinks=False)
+                if (moved.st_dev,moved.st_ino)!=(staging_identity.st_dev,staging_identity.st_ino) or root.exists() or root.is_symlink(): raise ValueError("forensic move identity differs")
+                recovery_parent_fd=os.open(root.parent,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+                try: os.fsync(recovery_parent_fd)
+                finally: os.close(recovery_parent_fd)
+            except BaseException as recovery:
+                primary.add_note(f"forensic_recovery_error={type(recovery).__name__}: {recovery}")
+            raise primary
     except BaseException:
-        if not promoted: _remove_private_staging_antigravity(staging)
+        if not promoted:
+            held=os.fstat(staging_fd); named=os.stat(staging.name,dir_fd=parent_fd,follow_symlinks=False)
+            if (held.st_dev,held.st_ino)!=(named.st_dev,named.st_ino): raise ValueError("private staging namespace changed")
+            _remove_private_staging_antigravity(staging)
         raise
+    finally:
+        os.close(staging_fd); os.close(parent_fd)
 
 
 def _evaluate_with_dependencies_antigravity(authority: FrozenPredictionAuthorityAntigravity, reviewed_commit: str, dependencies: EvaluationDependenciesAntigravity) -> FrozenEvaluationAntigravity:
@@ -168,7 +202,7 @@ def _evaluate_with_dependencies_antigravity(authority: FrozenPredictionAuthority
     predecessor=dependencies.predecessor_loader()
     identities=tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True))
     exact=tuple(EvaluationEvidenceRowAntigravity(i,identities[i],predecessor.target_test_lengths[i],authority.candidate_indices[i]) for i in range(48))
-    if predecessor.label_access_count != 0 or predecessor.population != 1117 or predecessor.target_dataset_count != 48 or predecessor.target_test_rows != 72300 or predecessor.baseline_confusion != (1930,314,1988,191668) or authority.dataset_identities != identities or authority.target_lengths != predecessor.target_test_lengths or dependencies.evidence_rows != exact:
+    if predecessor.label_access_count != 0 or predecessor.population != 1117 or predecessor.target_dataset_count != 48 or predecessor.target_test_rows != 72300 or predecessor.baseline_confusion != (1930,314,1988,191668) or (predecessor.artifact_map_sha256,predecessor.evaluation_sha256,predecessor.decision_sha256)!=EXP448_HASHES_ANTIGRAVITY or authority.dataset_identities != identities or authority.target_lengths != predecessor.target_test_lengths or dependencies.evidence_rows != exact:
         raise ValueError("pre-label evidence gate differs")
     opener=dependencies.label_opener_factory(); snapshot=opener(authority)
     if type(snapshot) is not LabelSnapshotAntigravity or snapshot.dataset_order != tuple(x[2] for x in identities) or snapshot.lengths != authority.target_lengths or snapshot.row_count != 72300 or snapshot.session_count != 1 or len(snapshot.labels) != 48:
