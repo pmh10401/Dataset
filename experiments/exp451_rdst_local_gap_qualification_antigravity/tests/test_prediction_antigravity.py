@@ -42,6 +42,17 @@ def nonfinite_scorer(train, test, seed, backend):
 
 
 class PredictionTestsAntigravity(unittest.TestCase):
+    def test_public_validator_passes_exact_real_predecessor_snapshot_without_labels_antigravity(self):
+        from unittest.mock import patch
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.contracts_antigravity import FrozenPredictionAuthorityAntigravity
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.predecessor_antigravity import verify_exp448_predecessor_antigravity
+        from experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity import validate_frozen_prediction_authority_antigravity
+        predecessor=verify_exp448_predecessor_antigravity(); identities=tuple((row.dataset_order,row.family,name) for row,name in zip(predecessor.target_baseline_rows,predecessor.target_dataset_names,strict=True)); authority=FrozenPredictionAuthorityAntigravity(SHA,identities,predecessor.target_test_lengths,tuple(() for _ in identities)); captured=[]
+        def validate(root,value,snapshot): captured.append(snapshot); return value
+        with patch("experiments.exp451_rdst_local_gap_qualification_antigravity.prediction_antigravity._validate_frozen_prediction_root_antigravity",side_effect=validate):
+            self.assertEqual(validate_frozen_prediction_authority_antigravity(authority),authority)
+        self.assertEqual(captured,[ExpectedPredecessorSnapshotAntigravity(identities,predecessor.target_test_lengths)])
+
     def dependencies(self, root, fault=None):
         return PredictionDependenciesAntigravity(fault, lambda: None, decision(), root=root, bundles=bundles(), scorer=scorer, logical_cpus=12, expected_snapshot=expected_snapshot())
 

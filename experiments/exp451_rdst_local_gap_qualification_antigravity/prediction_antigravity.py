@@ -791,7 +791,7 @@ def _validate_frozen_prediction_root_antigravity(root: Path, authority: FrozenPr
 
 def validate_frozen_prediction_authority_antigravity(authority: FrozenPredictionAuthorityAntigravity) -> FrozenPredictionAuthorityAntigravity:
     predecessor = verify_exp448_predecessor_antigravity()
-    identities = tuple((row.dataset_order, row.family, row.dataset) for row in predecessor.target_baseline_rows)
+    identities = tuple((row.dataset_order, row.family, name) for row, name in zip(predecessor.target_baseline_rows, predecessor.target_dataset_names, strict=True))
     expected = ExpectedPredecessorSnapshotAntigravity(identities, tuple(predecessor.target_test_lengths))
     return _validate_frozen_prediction_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY, authority, expected)
 
