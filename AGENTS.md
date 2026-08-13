@@ -47,12 +47,16 @@ tensor feature fusion, and neural embeddings when parity and speed gates pass.
 
 ## Native Delegation Policy
 
-For native delegated implementation, use `sol_advisor_terra_implementer`
-(GPT-5.6 Terra / High). For design, commitment-boundary review, and final review,
-use a fresh `sol_advisor_sol_reviewer` (GPT-5.6 Sol / High).
+For native delegated implementation, use the locally installed Grok CLI with
+model `grok-4.6` and reasoning effort `high`. Run it headlessly in the assigned
+worktree with an explicit task brief, and disable memory, web search, and Grok
+subagents unless the user requests them. For design, commitment-boundary
+review, and final review, use a fresh `sol_advisor_sol_reviewer`
+(GPT-5.6 Sol / High).
 
-GPT-5.6 Luna / Max is not used for native delegation. Use it only when the user
-explicitly opts into the separate Luna task lane for that specific request.
+`sol_advisor_terra_implementer` and GPT-5.6 Luna / Max are not used for native
+implementation delegation unless the user explicitly opts into that lane for
+the specific request.
 
 ## File Naming Policy
 
