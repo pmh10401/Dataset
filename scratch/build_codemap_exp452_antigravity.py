@@ -175,7 +175,8 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "task5_cli", "to": "task4_replay", "type": "reads", "evidence": _evidence_antigravity("experiments/exp452_exp449_index_order_repair_antigravity/cli_antigravity.py", "_load_inspect_antigravity")},
     ]
     graph: dict[str, object] = {"schema": "exp452_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "topology_note": "Task 5 map: frozen foundations, stopped predecessor, one-shot label boundary, evaluator, strict source-free replay, and closed CLI are implemented. Official lifecycle invocation remains zero pending separate authorization.", "nodes": nodes, "edges": edges, "unknown_relationships": []}
-    lock: dict[str, object] = {"schema": "exp452_codemap_same_commit_v1", "source_parent_commit": source_commit, "working_tree_dirty": bool(_git_output_antigravity("status", "--porcelain")), "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "fingerprint_algorithm": "sha256-v1: tracked bytes excluding exactly the Exp452 map triplet", "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
+    changed_paths = {line[3:] for line in _git_output_antigravity("status", "--porcelain").splitlines() if line}
+    lock: dict[str, object] = {"schema": "exp452_codemap_same_commit_v1", "source_parent_commit": source_commit, "working_tree_dirty": bool(changed_paths - TRIPLET_ANTIGRAVITY), "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "fingerprint_algorithm": "sha256-v1: tracked bytes excluding exactly the Exp452 map triplet", "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
     return graph, lock, _html_antigravity(graph)
 
 
@@ -231,7 +232,8 @@ def main_antigravity() -> None:
     if args.validate_only:
         validate_map_antigravity(_strict_json_antigravity(JSON_PATH_ANTIGRAVITY.read_text(encoding="utf-8")), _strict_json_antigravity(LOCK_PATH_ANTIGRAVITY.read_text(encoding="utf-8")), HTML_PATH_ANTIGRAVITY.read_text(encoding="utf-8")); return
     if not args.source_commit: parser.error("--source-commit is required unless --validate-only")
-    if _git_output_antigravity("status", "--porcelain"): raise ValueError("map generation requires a clean functional commit")
+    changed_paths = {line[3:] for line in _git_output_antigravity("status", "--porcelain").splitlines() if line}
+    if changed_paths - TRIPLET_ANTIGRAVITY: raise ValueError("map generation requires a clean functional commit")
     graph, lock, rendered = build_map_antigravity(args.source_commit, args.generated_at); validate_map_antigravity(graph, lock, rendered)
     MAP_DIR_ANTIGRAVITY.mkdir(parents=True, exist_ok=True); JSON_PATH_ANTIGRAVITY.write_bytes(_canonical_bytes_antigravity(graph) + b"\n"); LOCK_PATH_ANTIGRAVITY.write_bytes(_canonical_bytes_antigravity(lock) + b"\n"); HTML_PATH_ANTIGRAVITY.write_text(rendered, encoding="utf-8")
 
