@@ -93,6 +93,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
             if task_number in (1, 2, 3, 4):
                 for tag in tags:
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+            elif task_number == 5:
+                self.assertEqual(len(tags), 8)
+                self.assertNotRegex(tags[0], r"\bchecked(?:\s|=|>)")
+                for tag in tags[1:6]:
+                    self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+                self.assertNotRegex(tags[6], r"\bchecked(?:\s|=|>)")
+                self.assertRegex(tags[7], r"\bchecked(?:\s|=|>)")
             else:
                 for tag in tags:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
