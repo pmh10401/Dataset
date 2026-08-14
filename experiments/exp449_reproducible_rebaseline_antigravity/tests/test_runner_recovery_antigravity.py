@@ -196,8 +196,8 @@ class Exp449CompositionGateTests(unittest.TestCase):
         def collector(raw: object, backend: object, **kwargs: object):
             progress = kwargs["progress"]
             progress({
-                "stage": "task4_task5", "phase": "tick", "completed": 1, "total": 2,
-                "dataset": "Alpha", "elapsed_s": 2.0,
+                "stage": "task4_task5", "phase": "start", "completed": 0, "total": 2,
+                "elapsed_s": 0.0,
             })
             return self.sources, self.routes
 
@@ -210,8 +210,8 @@ class Exp449CompositionGateTests(unittest.TestCase):
                 catalog=self.catalog, collector=collector, _progress_callback=received.append,
             )
         self.assertEqual(received, [{
-            "stage": "task4_task5", "phase": "tick", "completed": 1, "total": 2,
-            "dataset": "Alpha", "elapsed_s": 2.0,
+            "stage": "task4_task5", "phase": "start", "completed": 0, "total": 2,
+            "elapsed_s": 0.0,
         }])
 
     def test_complete_fixture_preserves_existing_proposal_score_semantics(self) -> None:
@@ -392,8 +392,10 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
             self.assertEqual(fixture.scheduled_identities, [fixture.names, (fixture.failed_dataset,)])
             events = [json.loads(line) for line in (fixture.operations_root / "operations_progress_antigravity.jsonl").read_text().splitlines()]
             per_dataset = [event for event in events if "dataset" in event]
-            self.assertEqual(tuple(event["dataset"] for event in per_dataset), fixture.names + (fixture.failed_dataset,))
+            self.assertEqual(tuple(event["dataset"] for event in per_dataset), fixture.names)
             self.assertGreater(per_dataset[1]["eta_seconds"], 0.0)
+            first_wave_last = per_dataset[len(fixture.names) - 2]
+            self.assertEqual((first_wave_last["completed"], first_wave_last["failed"], first_wave_last["pending"]), (22, 1, 1))
 
     def test_second_failure_publishes_one_terminal_record_and_third_call_refuses_scoring(self) -> None:
         """Scheduling a third attempt after the frozen retry cap would weaken terminal semantics."""
@@ -432,6 +434,8 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
             (_AttemptFixture(dataset, 1, 2),),
             (_AttemptFixture(dataset, 1, 1), _AttemptFixture(dataset, 1, 2)),
             (_AttemptFixture(dataset, 3, 1),),
+            (_AttemptFixture(dataset, 2, 1),),
+            (_AttemptFixture(dataset, 2, 1), _AttemptFixture(dataset, 1, 2)),
         )
         for attempts in cases:
             with self.subTest(attempts=attempts), TemporaryDirectory() as temporary:

@@ -221,6 +221,11 @@ def _snapshot_antigravity(config: Exp449WaveConfig) -> _RecoverySnapshot:
         raise ValueError("Exp449 verified attempt identities differ")
     if len({(dataset, wave) for dataset, wave, _attempt, _type, _message in attempt_tuples}) != len(attempt_tuples):
         raise ValueError("Exp449 verified attempt identities differ")
+    per_dataset_waves: dict[str, list[int]] = {}
+    for dataset, wave, _attempt, _type, _message in attempt_tuples:
+        per_dataset_waves.setdefault(dataset, []).append(wave)
+    if any(waves[0] != 1 or waves != sorted(waves) or any(wave == 2 and 1 not in waves[:index] for index, wave in enumerate(waves)) for waves in per_dataset_waves.values()):
+        raise ValueError("Exp449 verified attempt identities differ")
     if any(dataset not in names for dataset, _wave, _attempt, _type, _message in attempt_tuples):
         raise ValueError("Exp449 verified attempt namespace differs")
     attempts = _read_verified_attempt_payloads_antigravity(config, attempt_tuples)
@@ -375,9 +380,9 @@ def _emit_progress_antigravity(config: Exp449WaveConfig, *, wave: int, snapshot:
         "wave": wave,
         "completed": completed_count,
         "failed": failed_count,
-        "pending": max(0, total_count - completed_count - failed_count),
+        "pending": max(0, total_count - completed_count),
         "elapsed_seconds": elapsed,
-        "eta_seconds": (max(0, total_count - completed_count - failed_count) / rate) if rate > 0.0 else 0.0,
+        "eta_seconds": (max(0, total_count - completed_count) / rate) if rate > 0.0 else 0.0,
     }
     if dataset is not None:
         event["dataset"] = dataset
@@ -413,14 +418,14 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
     progress_failures = 0
     def fixed_progress(event: Mapping[str, object]) -> None:
         nonlocal progress_failures
-        if event.get("stage") != "task4_task5" or type(event.get("completed")) is not int or type(event.get("total")) is not int:
+        if event.get("stage") != "task4_task5" or event.get("phase") not in {"start", "error", "end"}:
             return
         if event.get("phase") == "error":
             progress_failures += 1
         _emit_progress_antigravity(
             config, wave=next_wave, snapshot=before, started=started,
-            completed=len(before.successes) + event["completed"], total=len(before.successes) + event["total"],
-            failed=progress_failures, dataset=event.get("dataset") if type(event.get("dataset")) is str else None,
+            completed=len(before.successes), total=len(_catalog_datasets_antigravity(config.catalog)),
+            failed=progress_failures, dataset=event.get("dataset") if event.get("phase") == "error" and type(event.get("dataset")) is str else None,
         )
     try:
         compose_exp449_proposal_score_antigravity(
@@ -435,6 +440,8 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
         after = _snapshot_antigravity(config)
         if after.wave_count < next_wave:
             raise ValueError("Exp449 incomplete collection lacks an append-only attempt record")
+        for index, dataset in enumerate((name for name in after.successes if name not in before.successes), len(before.successes) + 1):
+            _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=len(after.failed), dataset=dataset)
         _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started)
         if next_wave == FROZEN_EXP449_CONFIG.maximum_waves:
             return verify_terminal_incomplete_antigravity(config)
@@ -443,6 +450,8 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
     status = _terminal_status_antigravity(config, after)
     if status.status != "dataset_local_complete":
         raise ValueError("Exp449 composition returned before verified dataset-local closure")
+    for index, dataset in enumerate((name for name in after.successes if name not in before.successes), len(before.successes) + 1):
+        _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=0, dataset=dataset)
     _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started)
     return status
 
