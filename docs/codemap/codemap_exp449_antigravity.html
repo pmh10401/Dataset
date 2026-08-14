@@ -2,11 +2,11 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Time Series · Exp449 Code Map</title>
 <style>:root{color-scheme:dark;--bg:#0b1020;--panel:#141b31;--line:#405072;--txt:#e5ebfa;--muted:#9cadca;--paper:#f06f9b}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#1e2b53,var(--bg) 46%);color:var(--txt);font:14px system-ui,sans-serif}header{padding:18px 24px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:21px}small,.muted{color:var(--muted)}main{display:grid;grid-template-columns:minmax(600px,1fr) 320px;gap:12px;padding:12px}#map,aside{background:rgba(20,27,49,.95);border:1px solid var(--line);border-radius:10px}#map{padding:14px;min-height:610px}#graph{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}.node{border:1px solid #516388;border-radius:8px;padding:10px;background:#101a31;cursor:pointer}.node.paper{border-color:var(--paper)}.node.dim{opacity:.2}.node h3{font-size:13px;margin:0 0 6px}.node p{margin:5px 0;color:var(--muted);font-size:12px}aside{padding:14px}aside h2{font-size:15px;margin:0 0 10px}code{word-break:break-word;color:#cbd8ff}select,input{background:#1d2945;color:var(--txt);border:1px solid #516388;border-radius:6px;padding:7px 9px;margin:8px 4px 0 0}@media(max-width:900px){main{grid-template-columns:1fr}}</style></head>
-<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-15T02:40:40+09:00 · source <code>9293a6321ba7ef65072893f99034815a4b82c735</code> · Exp449 is a label-free planning boundary and Exp448 remains immutable</small></header>
+<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-15T02:58:50+09:00 · source <code>c9071b7988361cf5fbbd234f74198a875573c5f5</code> · Exp449 is a label-free planning boundary and Exp448 remains immutable</small></header>
 <main><section id="map"><input id="search" placeholder="module search"><select id="flow"><option value="">all flows</option></select><p class="muted">Exp449 is an approved no-execution boundary. Pink-bordered nodes are retained paper scientific dependencies.</p><div id="graph"></div></section><aside><h2 id="detail">Exp449 map</h2><div id="info" class="muted">Select a node for callers, effects, tests, constraints, and evidence.</div></aside></main>
 <script id="codemap-data" type="application/json">{
-  "generated_at": "2026-08-15T02:40:40+09:00",
-  "generated_from_commit": "9293a6321ba7ef65072893f99034815a4b82c735",
+  "generated_at": "2026-08-15T02:58:50+09:00",
+  "generated_from_commit": "c9071b7988361cf5fbbd234f74198a875573c5f5",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -194,23 +194,32 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Implemented parent-only Exp449 two-wave recovery, result-neutral progress, and the single create-only Smoke B operations comparison receipt.",
+      "role": "Parent-only Exp449 two-wave recovery plus read-only readiness, fixed-root status, and execution-authority refusal gates.",
       "entrypoints": [
         "Exp449WaveConfig",
         "task45_context_payload_antigravity",
         "run_exp449_wave_antigravity",
         "status_exp449_antigravity",
         "verify_terminal_incomplete_antigravity",
-        "record_exp449_smoke_comparison_antigravity"
+        "record_exp449_smoke_comparison_antigravity",
+        "readiness_exp449_antigravity",
+        "status_exp449_read_only_antigravity",
+        "verify_exp449_proposal_read_only_antigravity",
+        "main_antigravity"
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
-        "Derives paper authority only from the canonical frozen-context bridge; rejects duplicate/noncontiguous attempts and all waves outside {1,2}; terminal authority is byte-verified before status or scheduling; only its fixed operations-root callback may write result-neutral progress. Smoke comparison writes only a create-only receipt in the fixed Smoke B operations root after the scorer-free verifier succeeds."
+        "Derives paper authority only from the canonical frozen-context bridge; rejects duplicate/noncontiguous attempts and all waves outside {1,2}; terminal authority is byte-verified before status or scheduling. Readiness requires exact clean reviewed HEAD, the pinned capable interpreter, frozen dependency preflights, read-only verified catalog facts, two distinct preprocessing contracts, raw-component lstat absence for all six roots, and no loaded label module. It records CPU fallback/MLX-MPS facts and never scores, creates roots, creates execution authority, or launches an experiment."
       ],
       "evidence": [
+        {
+          "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+          "symbol": "readiness_exp449_antigravity, status_exp449_read_only_antigravity, main_antigravity"
+        },
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
           "symbol": "Exp449WaveConfig, run_exp449_wave_antigravity, status_exp449_antigravity, record_exp449_smoke_comparison_antigravity"
@@ -218,10 +227,11 @@
       ],
       "callers": [
         "test_runner_recovery_antigravity.py",
-        "future run_exp449_reproducible_rebaseline_antigravity.py"
+        "test_readiness_antigravity.py",
+        "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "revalidates full success and complete attempt records before status/scheduling, makes a matching wave-2 terminal permanent, receives per-dataset Task4/5 progress through the runner private seam, and records a verified Smoke A/B receipt only in Smoke B operations"
+        "revalidates full success and complete attempt records before status/scheduling, makes a matching wave-2 terminal permanent, records a verified Smoke A/B receipt only in Smoke B operations, and returns canonical read-only readiness/status facts while refusing unauthorised execution before any root creation."
       ]
     },
     {
@@ -331,13 +341,15 @@
     {
       "id": "exp449_readiness_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
-      "role": "Planned root safety, dependency, acceleration, label-firewall, and no-execution tests.",
+      "role": "Implemented behavioral root-safety, dependency, acceleration, label-firewall, no-side-effect, and import-safe CLI tests.",
       "entrypoints": [
         "Exp449ReadinessTests"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Temporary fixtures only: no production database, labels, scoring, fixed-root creation, or experiment execution. Proves raw lstat symlink/traversal refusal, 12→11 worker policy, pinned capability/dependency gates, context contract distinction, and execution-authority refusal."
       ],
       "evidence": [
         {
@@ -349,13 +361,15 @@
     {
       "id": "exp449_cli",
       "path": "scratch/run_exp449_reproducible_rebaseline_antigravity.py",
-      "role": "Planned inactive-by-default thin Exp449 CLI entrypoint.",
+      "role": "Implemented import-safe Exp449 CLI entrypoint that imports operations only under __main__.",
       "entrypoints": [
-        "main_antigravity"
+        "__main__ -> main_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Readiness, status, and proposal verification are read-only. Run commands require exact reviewed HEAD plus a separate externally-created execution authority and then remain disabled; caller root overrides are unavailable."
       ],
       "evidence": [
         {
@@ -2061,6 +2075,51 @@
       "from": "exp449_manifest_verifier_tests",
       "to": "exp449_validation",
       "kind": "tests"
+    },
+    {
+      "from": "exp449_readiness_tests",
+      "to": "exp449_operations",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
+        "symbol": "Exp449ReadinessTests"
+      }
+    },
+    {
+      "from": "exp449_cli",
+      "to": "exp449_operations",
+      "type": "calls_under_main",
+      "evidence": {
+        "path": "scratch/run_exp449_reproducible_rebaseline_antigravity.py",
+        "symbol": "__main__ -> main_antigravity"
+      }
+    },
+    {
+      "from": "exp449_operations",
+      "to": "paper_acceleration",
+      "type": "verifies",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "symbol": "build_acceleration_manifest, verify_acceleration_manifest"
+      }
+    },
+    {
+      "from": "exp449_operations",
+      "to": "paper_canonical",
+      "type": "preflights",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "symbol": "verify_pycatch22_environment_paper"
+      }
+    },
+    {
+      "from": "exp449_operations",
+      "to": "paper_multirocket_hydra",
+      "type": "preflights",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "symbol": "verify_exp84_environment_paper"
+      }
     }
   ],
   "flows": [
@@ -2098,10 +2157,12 @@
         "exp449_config",
         "exp449_contracts",
         "exp449_readiness_tests",
+        "exp449_cli",
+        "exp449_operations",
         "exp449_runner_recovery_tests",
         "exp449_manifest_verifier_tests"
       ],
-      "outcome": "Values-only proposal work remains label-free; Task 6 independently verifies both fixed smoke roots and writes its receipt only in Smoke B operations after exact all-policy reproducibility checks."
+      "outcome": "Readiness is a clean-head, capable-interpreter, dependency, CPU/MLX/MPS, label-firewall, and absent-fixed-root gate; no implementation command creates an Exp449 root or launches a run."
     }
   ],
   "unknown_relationships": [],

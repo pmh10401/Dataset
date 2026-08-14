@@ -5,10 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from hashlib import sha256
+import argparse
+import importlib.metadata
+import json
 from math import isfinite
 import os
 from pathlib import Path
+import platform
 import stat
+import subprocess
+import sys
 from time import monotonic, time
 
 from paper.equipment_anomaly_detection.artifacts_paper import (
@@ -20,6 +26,21 @@ from paper.equipment_anomaly_detection.artifacts_paper import (
     write_create_only,
 )
 from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
+from paper.equipment_anomaly_detection.acceleration_paper import (
+    build_acceleration_manifest,
+    verify_acceleration_manifest,
+)
+from paper.equipment_anomaly_detection.catalog_paper import build_catalog, verify_catalog
+from paper.equipment_anomaly_detection.config_paper import (
+    FROZEN_CONFIG as FROZEN_PAPER_CONFIG,
+    LINEAGE_LOCK_PATH,
+)
+from paper.equipment_anomaly_detection.sources_paper.canonical_paper import (
+    verify_pycatch22_environment_paper,
+)
+from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper import (
+    verify_exp84_environment_paper,
+)
 
 from .config_antigravity import FROZEN_EXP449_CONFIG
 from .contracts_antigravity import Exp449Context, Exp449TerminalStatus
@@ -55,6 +76,20 @@ _SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY = {
         FROZEN_EXP449_CONFIG.smoke_b_operations_root.resolve(strict=False),
     ),
 }
+_REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[2]
+_CAPABLE_INTERPRETER_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python"
+)
+_EXECUTION_AUTHORITY_NAME_ANTIGRAVITY = "execution_authority_antigravity.json"
+_LABEL_MODULE_PREFIXES_ANTIGRAVITY = (
+    "paper.equipment_anomaly_detection.label_access_paper",
+    "paper.equipment_anomaly_detection.labels_paper",
+)
+_HISTORICAL_ROOT_TOKENS_ANTIGRAVITY = ("exp448", "r4", "historical")
+_EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY = (
+    "task4_train_only",
+    "task5_label_free_train_test_value_length_transductive",
+)
 
 
 class _Task45ContextPayloadAntigravity(dict[str, object]):
@@ -508,11 +543,334 @@ def record_exp449_smoke_comparison_antigravity(root_a: Path, root_b: Path, autho
     return comparison
 
 
+def _lower_hex_antigravity(value: object, length: int) -> bool:
+    return type(value) is str and len(value) == length and all(character in "0123456789abcdef" for character in value)
+
+
+def _current_clean_head_antigravity() -> str:
+    """Read the sole review identity without inspecting any experiment input."""
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
+    ).stdout
+    if not _lower_hex_antigravity(head, 40) or dirty:
+        raise ValueError("Exp449 readiness requires a clean lowercase 40-hex HEAD")
+    return head
+
+
+def _require_reviewed_head_antigravity(reviewed_commit: str) -> str:
+    if not _lower_hex_antigravity(reviewed_commit, 40):
+        raise ValueError("Exp449 reviewed commit is invalid")
+    if _current_clean_head_antigravity() != reviewed_commit:
+        raise ValueError("Exp449 reviewed commit is not the current clean HEAD")
+    return reviewed_commit
+
+
+def _fixed_roots_antigravity() -> tuple[Path, Path, Path, Path, Path, Path]:
+    """Return only the six config-bound destinations; callers cannot supply roots."""
+    return (
+        FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+        FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+        FROZEN_EXP449_CONFIG.smoke_b_scientific_root,
+        FROZEN_EXP449_CONFIG.smoke_b_operations_root,
+        FROZEN_EXP449_CONFIG.official_scientific_root,
+        FROZEN_EXP449_CONFIG.official_operations_root,
+    )
+
+
+def _lstat_or_none_antigravity(path: Path):
+    try:
+        return Path(path).lstat()
+    except FileNotFoundError:
+        return None
+
+
+def _inspect_fixed_roots_antigravity(roots: tuple[Path, ...]) -> list[dict[str, str]]:
+    """Inspect raw path components only; this review helper never resolves or creates.
+
+    Its private ``roots`` argument exists solely to exercise hostile temporary
+    fixtures.  Every public readiness/status/CLI path obtains the fixed tuple
+    above, so an operator cannot redirect an Exp449 root.
+    """
+    if len(roots) != 6 or len({str(path) for path in roots}) != 6:
+        raise ValueError("Exp449 fixed roots differ")
+    result: list[dict[str, str]] = []
+    for root in roots:
+        raw = Path(root)
+        spelling = raw.as_posix().casefold()
+        if not raw.is_absolute() or ".." in raw.parts:
+            raise ValueError("Exp449 fixed roots differ")
+        if any(token in spelling for token in _HISTORICAL_ROOT_TOKENS_ANTIGRAVITY):
+            raise ValueError("Exp449 historical root is forbidden")
+        current = Path(raw.anchor)
+        for part in raw.parts[1:]:
+            current /= part
+            details = _lstat_or_none_antigravity(current)
+            if details is not None and stat.S_ISLNK(details.st_mode):
+                raise ValueError("Exp449 symlinked root component is forbidden")
+        details = _lstat_or_none_antigravity(raw)
+        if details is not None:
+            raise ValueError("Exp449 fixed root must be absent")
+        result.append({"path": str(raw), "state": "absent"})
+    return result
+
+
+def _status_fixed_roots_antigravity(roots: tuple[Path, ...]) -> list[dict[str, str]]:
+    """Read raw fixed-root lstat facts without treating absent roots as errors."""
+    result: list[dict[str, str]] = []
+    for root in roots:
+        raw = Path(root)
+        if not raw.is_absolute() or ".." in raw.parts:
+            raise ValueError("Exp449 fixed roots differ")
+        current = Path(raw.anchor)
+        for part in raw.parts[1:]:
+            current /= part
+            details = _lstat_or_none_antigravity(current)
+            if details is not None and stat.S_ISLNK(details.st_mode):
+                raise ValueError("Exp449 symlinked root component is forbidden")
+        details = _lstat_or_none_antigravity(raw)
+        state = "absent" if details is None else "symlink" if stat.S_ISLNK(details.st_mode) else "present"
+        result.append({"path": str(raw), "state": state})
+    return result
+
+
+def _require_capable_interpreter_antigravity() -> dict[str, str]:
+    expected = _CAPABLE_INTERPRETER_ANTIGRAVITY
+    if not expected.is_file() or Path(sys.executable).resolve() != expected.resolve() or platform.python_version() != "3.14.6":
+        raise ValueError("Exp449 capable interpreter differs")
+    return {
+        "executable": str(Path(sys.executable).resolve()),
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "prefix": str(Path(sys.prefix).resolve()),
+        "base_prefix": str(Path(sys.base_prefix).resolve()),
+    }
+
+
+def _dependency_facts_antigravity() -> dict[str, str]:
+    """Call the frozen paper preflights instead of recreating their semantics."""
+    pycatch = verify_pycatch22_environment_paper()
+    exp84 = verify_exp84_environment_paper()
+    try:
+        aeon = importlib.metadata.version("aeon")
+    except importlib.metadata.PackageNotFoundError as error:
+        raise ValueError("dependency_unavailable:aeon==1.5.0") from error
+    if aeon != "1.5.0":
+        raise ValueError("dependency_unavailable:aeon==1.5.0")
+    if pycatch.get("pycatch22") != "0.5.0" or exp84.get("hydra") != "constructed" or exp84.get("torch", "").split("+", 1)[0] != "2.13.0":
+        raise ValueError("Exp449 frozen dependency preflight differs")
+    return {"pycatch22": pycatch["pycatch22"], "aeon": aeon, "hydra": exp84["hydra"], "torch": exp84["torch"]}
+
+
+def _readiness_catalogs_antigravity() -> dict[str, dict[str, object]]:
+    """Recompute catalog identities by the paper's read-only SQLite verifier."""
+    database = Path(FROZEN_PAPER_CONFIG.database_path)
+    smoke = build_catalog(database, mode="smoke", smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets)
+    official = build_catalog(database, mode="full")
+    verify_catalog(smoke, database, "smoke", FROZEN_EXP449_CONFIG.smoke_datasets)
+    verify_catalog(official, database, "full")
+    return {"smoke": smoke, "official": official}
+
+
+def _preprocessing_contracts_antigravity() -> tuple[str, str]:
+    contracts = tuple(FROZEN_EXP449_CONFIG.preprocessing_contracts)
+    if contracts != _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY or len(set(contracts)) != 2:
+        raise ValueError("Exp449 preprocessing contracts differ")
+    return contracts
+
+
+def _label_firewall_antigravity() -> None:
+    loaded = tuple(
+        name for name in sys.modules
+        if any(name == prefix or name.startswith(prefix + ".") for prefix in _LABEL_MODULE_PREFIXES_ANTIGRAVITY)
+    )
+    if loaded:
+        raise ValueError("Exp449 label module is loaded")
+
+
+def _sha256_file_antigravity(path: Path) -> str:
+    details = _lstat_or_none_antigravity(path)
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+        raise ValueError("Exp449 closure input is unsafe")
+    return sha256(path.read_bytes()).hexdigest()
+
+
+def _closure_facts_antigravity() -> dict[str, object]:
+    paths = (
+        "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
+        "paper/equipment_anomaly_detection/acceleration_paper.py",
+    )
+    closure = {path: _sha256_file_antigravity(_REPOSITORY_ROOT_ANTIGRAVITY / path) for path in paths}
+    lineage_sha256 = _sha256_file_antigravity(LINEAGE_LOCK_PATH)
+    codemap_path = _REPOSITORY_ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp449_antigravity.json"
+    return {"code_closure": closure, "lineage_sha256": lineage_sha256, "codemap_sha256": _sha256_file_antigravity(codemap_path)}
+
+
+def _plain_json_antigravity(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _plain_json_antigravity(child) for key, child in value.items()}
+    if isinstance(value, tuple):
+        return [_plain_json_antigravity(child) for child in value]
+    if isinstance(value, list):
+        return [_plain_json_antigravity(child) for child in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int | None = None) -> dict[str, object]:
+    """The implementation seam for readonly fixture testing; never creates or scores."""
+    reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
+    interpreter = _require_capable_interpreter_antigravity()
+    _label_firewall_antigravity()
+    dependencies = _dependency_facts_antigravity()
+    contracts = _preprocessing_contracts_antigravity()
+    if contracts != _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY or len(set(contracts)) != 2:
+        raise ValueError("Exp449 preprocessing contracts differ")
+    catalogs = _readiness_catalogs_antigravity()
+    roots = _inspect_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
+    closure = _closure_facts_antigravity()
+    context_seed = sha256(json.dumps({"reviewed_commit": reviewed_commit, "catalogs": catalogs}, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+    manifest = build_acceleration_manifest(context_seed, logical_cpu_count=logical_cpu_count)
+    acceleration = verify_acceleration_manifest(manifest, context_seed)
+    workers = dict(acceleration["workers"])
+    benchmark_requirement = "same_input_and_seed; finite_outputs; identical_candidate_indices_at_every_preregistered_alpha; numerical_tolerance; at_least_1.1x_end_to_end_including_transfer_compilation_and_synchronization"
+    facts: dict[str, object] = {
+        "schema": "exp449-readiness-antigravity.v1",
+        "experiment_id": "Exp449",
+        "reviewed_commit": reviewed_commit,
+        "interpreter": interpreter,
+        "dependencies": dependencies,
+        "database": {"path": FROZEN_PAPER_CONFIG.database_path, "sha256": FROZEN_PAPER_CONFIG.database_sha256, "access": "read_only_verified_catalog"},
+        "catalogs": {mode: {"catalog_sha256": catalog["catalog_sha256"], "dataset_count": len(catalog["datasets"])} for mode, catalog in catalogs.items()},
+        "workers": {"logical_cpu_count": workers["logical_cpu_count"], "dataset_workers": workers["dataset_workers"]},
+        "preprocessing_contracts": list(contracts),
+        "acceleration": {
+            "canonical_backend": acceleration["selected_backend"],
+            "fallback_reason": acceleration["fallback_reason"],
+            "backends": acceleration["backends"],
+            "stages": acceleration["stages"],
+            "benchmark_requirement": benchmark_requirement,
+            "cpu_vs_accelerated_tolerance": FROZEN_EXP449_CONFIG.accelerated_tolerance,
+            "cpu_repeat_tolerance": FROZEN_EXP449_CONFIG.cpu_repeat_tolerance,
+            "minimum_accelerated_speedup": FROZEN_EXP449_CONFIG.minimum_accelerated_speedup,
+            "one_heavy_process_only": True,
+            "no_outer_pool_with_heavy_process": True,
+        },
+        "roots": roots,
+        "label_modules_loaded": [],
+        **closure,
+    }
+    plain = _plain_json_antigravity(facts)
+    try:
+        json.dumps(plain, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError("Exp449 readiness facts are not canonical JSON-ready") from error
+    assert isinstance(plain, dict)
+    return plain
+
+
+def readiness_exp449_antigravity(reviewed_commit: str) -> dict[str, object]:
+    """Return canonical facts only after clean-head, capability, and no-side-effect gates."""
+    return _readiness_facts_antigravity(reviewed_commit)
+
+
+def status_exp449_read_only_antigravity() -> dict[str, object]:
+    """A root-status query deliberately does not invoke recovery status or create roots."""
+    roots = _status_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
+    return {"schema": "exp449-read-only-status-antigravity.v1", "experiment_id": "Exp449", "status": "not_started" if all(item["state"] == "absent" for item in roots) else "root_present", "roots": roots}
+
+
+def verify_exp449_proposal_read_only_antigravity(target: str) -> dict[str, object]:
+    """Report whether a fixed target is available; verification itself remains scorer-free."""
+    names = {"smoke-a": 0, "smoke-b": 2, "official": 4}
+    if target not in names:
+        raise ValueError("Exp449 proposal target is invalid")
+    roots = _status_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
+    root = roots[names[target]]
+    if root["state"] == "absent":
+        return {"schema": "exp449-proposal-verify-status-antigravity.v1", "experiment_id": "Exp449", "target": target, "status": "absent", "root": root["path"]}
+    raise ValueError("Exp449 proposal verification requires separately verified immutable context and catalog inputs")
+
+
+def _require_execution_authority_antigravity(target: str, reviewed_commit: str) -> dict[str, object]:
+    """Require a later, externally-created authority; this module never creates it."""
+    targets = {"smoke_a": (0, 1), "smoke_b": (2, 3), "official": (4, 5)}
+    if target not in targets:
+        raise ValueError("Exp449 execution target is invalid")
+    reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
+    scientific_index, operations_index = targets[target]
+    roots = tuple(_fixed_roots_antigravity())
+    scientific_root, operations_root = roots[scientific_index], roots[operations_index]
+    states = _status_fixed_roots_antigravity(roots)
+    if states[scientific_index]["state"] != "absent":
+        raise ValueError("Exp449 scientific root must be absent before execution")
+    authority_path = operations_root / _EXECUTION_AUTHORITY_NAME_ANTIGRAVITY
+    details = _lstat_or_none_antigravity(authority_path)
+    if details is None:
+        raise ValueError("Exp449 execution authority is absent")
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+        raise ValueError("Exp449 execution authority is unsafe")
+    try:
+        payload = json.loads(authority_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("Exp449 execution authority is invalid") from error
+    required = {"schema", "experiment_id", "target", "reviewed_commit", "scientific_root", "operations_root", "authority_sha256"}
+    bare = {key: value for key, value in payload.items() if key != "authority_sha256"} if isinstance(payload, dict) else {}
+    if not isinstance(payload, dict) or set(payload) != required or payload.get("schema") != "exp449-execution-authority-antigravity.v1" or payload.get("experiment_id") != "Exp449" or payload.get("target") != target or payload.get("reviewed_commit") != reviewed_commit or payload.get("scientific_root") != str(scientific_root) or payload.get("operations_root") != str(operations_root) or payload.get("authority_sha256") != sha256(json.dumps(bare, sort_keys=True, separators=(",", ":"), allow_nan=False).encode() + b"\n").hexdigest():
+        raise ValueError("Exp449 execution authority differs")
+    return payload
+
+
+def main_antigravity(argv: list[str] | None = None) -> int:
+    """Thin non-executing CLI; future authority does not make this implementation launch."""
+    parser = argparse.ArgumentParser(prog="run_exp449_reproducible_rebaseline_antigravity")
+    commands = parser.add_subparsers(dest="command", required=True)
+    readiness = commands.add_parser("readiness")
+    readiness.add_argument("--reviewed-commit", required=True)
+    commands.add_parser("status")
+    verify = commands.add_parser("verify-proposal")
+    verify.add_argument("--target", choices=("smoke-a", "smoke-b", "official"), required=True)
+    for command in ("run-smoke-a", "run-smoke-b", "run-official"):
+        run = commands.add_parser(command)
+        run.add_argument("--reviewed-commit", required=True)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "readiness":
+            payload = readiness_exp449_antigravity(args.reviewed_commit)
+        elif args.command == "status":
+            payload = status_exp449_read_only_antigravity()
+        elif args.command == "verify-proposal":
+            payload = verify_exp449_proposal_read_only_antigravity(args.target)
+        else:
+            target = {"run-smoke-a": "smoke_a", "run-smoke-b": "smoke_b", "run-official": "official"}[args.command]
+            _require_execution_authority_antigravity(target, args.reviewed_commit)
+            raise NotImplementedError("Exp449 execution remains disabled in the implementation-only boundary")
+    except (ValueError, NotImplementedError) as error:
+        parser.error(str(error))
+    print(json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False))
+    return 0
+
+
 __all__ = [
     "Exp449WaveConfig",
+    "main_antigravity",
+    "readiness_exp449_antigravity",
     "run_exp449_wave_antigravity",
     "record_exp449_smoke_comparison_antigravity",
+    "status_exp449_read_only_antigravity",
     "status_exp449_antigravity",
     "task45_context_payload_antigravity",
+    "verify_exp449_proposal_read_only_antigravity",
     "verify_terminal_incomplete_antigravity",
 ]
