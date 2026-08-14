@@ -106,7 +106,7 @@
       ]
     },
     "sources_paper/canonical_paper.py": {
-      "paper_sha256": "8cbc395b2dd6721bd5d8f9707efeaa306ee206d9777202eddfa7ca85cf22133f",
+      "paper_sha256": "4e3b8c85f0aa12f6a59fa79eb9182d6105b081817cca6cb83bc05ddfb5f2bf46",
       "origins": [
         {
           "module": "experiments.exp177_185.core",
@@ -124,7 +124,7 @@
       ]
     },
     "sources_paper/hard_sources_paper.py": {
-      "paper_sha256": "331b4179bc3376fe333992fc5d8250ed28cf5e604cd28ed16485d1ca7ff0b262",
+      "paper_sha256": "c246522224955434c9a0f30a07f7f9bc6ed6c394be2279de3c7ccca04a727afa",
       "origins": [
         {
           "module": "run_experiment_149_150_virtual_run_conformal_policy",

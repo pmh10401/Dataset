@@ -6,13 +6,31 @@ SHA256 49f15e39c39a801842abca43cf67f73b79ded0a273029071e079f29100d2cc43.
 """
 from __future__ import annotations
 
+import importlib.metadata
+
 import numpy as np
 
 from .preprocessing_paper import DependencyUnavailablePaper
 
 
 CANONICAL_SEED_PAPER = 20260718
+PINNED_PYCATCH22_VERSION_PAPER = "0.5.0"
 PROVENANCE_PAPER = {"experiments/exp177_185/core.py": ("canonical_features", "_multiscale_stat_features", "_fold_plan", "_score_fit_query", "crossfit_scores")}
+
+
+def verify_pycatch22_environment_paper() -> dict[str, str]:
+    """Fail closed unless the frozen canonical feature dependency is available."""
+    try:
+        version = importlib.metadata.version("pycatch22")
+    except Exception as exc:
+        raise DependencyUnavailablePaper("dependency_unavailable:pycatch22==0.5.0") from exc
+    if version != PINNED_PYCATCH22_VERSION_PAPER:
+        raise DependencyUnavailablePaper("dependency_unavailable:pycatch22==0.5.0")
+    try:
+        from pycatch22 import catch22_all
+    except ImportError as exc:
+        raise DependencyUnavailablePaper("dependency_unavailable:pycatch22==0.5.0") from exc
+    return {"pycatch22": version}
 
 
 def _sanitize_matrix_paper(matrix: np.ndarray) -> np.ndarray:
@@ -61,3 +79,13 @@ def crossfit_scores_paper(train_features: np.ndarray, test_features: np.ndarray,
     test_scores = _score_fit_query_paper(train, test, backend)
     if not np.all(np.isfinite(oof)) or not np.all(np.isfinite(test_scores)): raise ValueError("non-finite crossfit score")
     return oof, test_scores
+
+
+__all__ = [
+    "CANONICAL_SEED_PAPER",
+    "PINNED_PYCATCH22_VERSION_PAPER",
+    "PROVENANCE_PAPER",
+    "canonical_features_paper",
+    "crossfit_scores_paper",
+    "verify_pycatch22_environment_paper",
+]

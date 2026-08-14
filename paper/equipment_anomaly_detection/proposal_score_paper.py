@@ -17,10 +17,12 @@ from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, Raw
 from .data_paper import PROGRESS_TICK_INTERVAL_S, ProgressCallback, emit_progress_paper
 from .hard_route_paper import HardRouteResult, replay_hard_route
 from .routing_paper import PolicyBundle, build_hard_evidence_surface, build_policies
+from .sources_paper.canonical_paper import verify_pycatch22_environment_paper
 from .sources_paper.hard_sources_paper import HardSourceBundle, score_hard_sources
 from .sources_paper.low_frequency_paper import score_low_frequency
 from .sources_paper.minirocket_paper import MiniRocketResult, score_minirocket_confirmations
 from .sources_paper.multirocket_hydra_paper import verify_exp84_environment_paper
+from .sources_paper.preprocessing_paper import DependencyUnavailablePaper
 from .sources_paper.stability_paper import StabilityPartition, classify_stability
 
 
@@ -177,6 +179,7 @@ def _risk_first_queue(raw: Mapping[str, RawDataset]) -> tuple[str, ...]:
 
 def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, acceleration_manifest: object | None = None, publish_success: Task4Task5SuccessPublisher | None = None, progress: ProgressCallback | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
     verify_exp84_environment_paper()
+    verify_pycatch22_environment_paper()
     recovery_inputs = (root is not None, context is not None, catalog is not None)
     if any(recovery_inputs) and (not all(recovery_inputs) or acceleration_manifest is None):
         raise ValueError("Task4+5 recovery inputs are incomplete")
@@ -219,6 +222,8 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
         for completed, dataset in enumerate(queue, 1):
             try:
                 persist_result(dataset, _score_dataset_task4_task5(raw[dataset]))
+            except DependencyUnavailablePaper:
+                raise
             except Exception as error:
                 persist_failure(dataset, error)
             _progress("Task4+Task5", completed, total, started, dataset)
@@ -243,6 +248,8 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
                 completed += 1
                 try:
                     persist_result(dataset, future.result())
+                except DependencyUnavailablePaper:
+                    raise
                 except Exception as error:
                     persist_failure(dataset, error)
                 _progress("Task4+Task5", completed, total, started, dataset)

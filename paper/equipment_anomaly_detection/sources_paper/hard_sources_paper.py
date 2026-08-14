@@ -118,9 +118,9 @@ def score_hard_sources(values: RawDataset) -> HardSourceBundle:
     try: results["rocket_block_b"] = _completed_paper("rocket_block_b", *crossfit_confirmation_scores_paper(train, test))
     except DependencyUnavailablePaper as exc:
         results["rocket_block_b"] = _abstain_paper("rocket_block_b", len(test), str(exc))
-    try: results["canonical_normal_state"] = _completed_paper("canonical_normal_state", *_canonical_source_paper(train, test))
-    except DependencyUnavailablePaper as exc:
-        results["canonical_normal_state"] = _abstain_paper("canonical_normal_state", len(test), str(exc))
+    results["canonical_normal_state"] = _completed_paper(
+        "canonical_normal_state", *_canonical_source_paper(train, test)
+    )
     return HardSourceBundle(EXPECTED_HARD_SOURCES, results)
 
 

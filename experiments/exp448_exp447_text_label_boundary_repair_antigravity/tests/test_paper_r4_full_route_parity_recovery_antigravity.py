@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import sqlite3
 import sys
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from typing import Mapping, Sequence
 import unittest
@@ -104,10 +105,20 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
             self.assertEqual(meta["pycatch22"], "0.5.0")
 
     def test_pycatch22_dependency_failure_propagates_without_swallowing(self) -> None:
-        """T3 (Error-propagation RED): Missing pycatch22 on eligible dataset raises DependencyUnavailablePaper and propagates through _collect_task4_task5."""
+        """T3: capable preflight preserves typed canonical failures before persistence."""
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
         from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
-        from paper.equipment_anomaly_detection.proposal_score_paper import _collect_task4_task5
+        from paper.equipment_anomaly_detection import proposal_score_paper
+        from paper.equipment_anomaly_detection.sources_paper.canonical_paper import (
+            verify_pycatch22_environment_paper,
+        )
+
+        try:
+            self.assertEqual(
+                verify_pycatch22_environment_paper(), {"pycatch22": "0.5.0"}
+            )
+        except DependencyUnavailablePaper as error:
+            self.skipTest(f"requires capable pycatch22==0.5.0 interpreter: {error}")
 
         rng = np.random.default_rng(20260814)
         train_rows = tuple(rng.normal(0, 1, size=100).astype(np.float32) for _ in range(10))
@@ -123,10 +134,6 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
             test_rows=test_rows,
         )
 
-        manifest = build_acceleration_manifest("a" * 64, logical_cpu_count=2)
-        backend = FrozenTask8BackendDecision.from_acceleration_manifest(manifest)
-
-        # On an eligible dataset, forcing pycatch22 dependency error must raise DependencyUnavailablePaper and propagate
         with patch(
             "paper.equipment_anomaly_detection.sources_paper.hard_sources_paper._canonical_source_paper",
             side_effect=DependencyUnavailablePaper("dependency_unavailable:pycatch22==0.5.0"),
@@ -134,8 +141,116 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
             with self.assertRaises(DependencyUnavailablePaper):
                 score_hard_sources(raw_ds)
 
-            with self.assertRaises(DependencyUnavailablePaper):
-                _collect_task4_task5({"Synthetic_eligible_dataset": raw_ds}, backend)
+        for logical_cpu_count, expected_workers in ((2, 1), (3, 2)):
+            with self.subTest(dataset_workers=expected_workers), TemporaryDirectory() as temporary:
+                manifest = build_acceleration_manifest(
+                    "a" * 64, logical_cpu_count=logical_cpu_count
+                )
+                backend = FrozenTask8BackendDecision.from_acceleration_manifest(manifest)
+                self.assertEqual(backend.dataset_workers, expected_workers)
+                events: list[str] = []
+                success_persist = MagicMock(name="success_persist")
+                typed_error = DependencyUnavailablePaper(
+                    "dependency_unavailable:pycatch22==0.5.0"
+                )
+
+                def capable_preflight() -> dict[str, str]:
+                    events.append("preflight")
+                    return verify_pycatch22_environment_paper()
+
+                class RaisingFuture:
+                    def result(self):
+                        events.append("worker")
+                        raise typed_error
+
+                class InlineProcessPool:
+                    def __init__(self, *, max_workers: int) -> None:
+                        self.max_workers = max_workers
+                        self.submitted: list[tuple[object, RawDataset]] = []
+
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, *_args) -> None:
+                        return None
+
+                    def submit(self, function, values: RawDataset) -> RaisingFuture:
+                        self.submitted.append((function, values))
+                        return RaisingFuture()
+
+                executor = InlineProcessPool(max_workers=expected_workers)
+
+                def serial_worker(_values: RawDataset):
+                    events.append("worker")
+                    raise typed_error
+
+                with patch.object(
+                    proposal_score_paper,
+                    "verify_exp84_environment_paper",
+                    return_value={"torch": "2.13.0"},
+                ), patch.object(
+                    proposal_score_paper,
+                    "verify_pycatch22_environment_paper",
+                    side_effect=capable_preflight,
+                ) as pycatch_preflight, patch.object(
+                    proposal_score_paper.Task4Task5SuccessAuthority,
+                    "from_verified_context",
+                    return_value=object(),
+                ), patch.object(
+                    proposal_score_paper,
+                    "verify_task4_task5_success_namespace",
+                    return_value=(),
+                ), patch.object(
+                    proposal_score_paper,
+                    "verify_task4_task5_attempt_namespace",
+                    return_value=(),
+                ), patch.object(
+                    proposal_score_paper,
+                    "append_task4_task5_attempt_record",
+                ) as append_attempt:
+                    if expected_workers == 1:
+                        with patch.object(
+                            proposal_score_paper,
+                            "_score_dataset_task4_task5",
+                            side_effect=serial_worker,
+                        ):
+                            with self.assertRaises(DependencyUnavailablePaper):
+                                proposal_score_paper._collect_task4_task5(
+                                    {raw_ds.dataset: raw_ds},
+                                    backend,
+                                    root=Path(temporary),
+                                    context={"mode": "smoke"},
+                                    catalog={"datasets": [{"dataset": raw_ds.dataset}]},
+                                    acceleration_manifest=manifest,
+                                    publish_success=success_persist,
+                                )
+                    else:
+                        with patch.object(
+                            proposal_score_paper,
+                            "ProcessPoolExecutor",
+                            return_value=executor,
+                        ), patch.object(
+                            proposal_score_paper,
+                            "as_completed",
+                            side_effect=lambda futures: iter(futures),
+                        ):
+                            with self.assertRaises(DependencyUnavailablePaper):
+                                proposal_score_paper._collect_task4_task5(
+                                    {raw_ds.dataset: raw_ds},
+                                    backend,
+                                    root=Path(temporary),
+                                    context={"mode": "smoke"},
+                                    catalog={"datasets": [{"dataset": raw_ds.dataset}]},
+                                    acceleration_manifest=manifest,
+                                    publish_success=success_persist,
+                                )
+                        self.assertEqual(executor.max_workers, expected_workers)
+                        self.assertEqual(len(executor.submitted), 1)
+
+                self.assertEqual(events, ["preflight", "worker"])
+                pycatch_preflight.assert_called_once_with()
+                append_attempt.assert_not_called()
+                success_persist.assert_not_called()
 
     def test_capable_venv_eligible_canonical_scoring_with_pycatch22(self) -> None:
         """Integration (Capable venv): Eligible dataset scores canonical_normal_state as eligible=True with pycatch22==0.5.0."""
