@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Exp454 구현 기록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.45rem;text-align:left;vertical-align:top}.status{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
 <h1>Exp454 구현 기록</h1>
-<div class="status"><strong>현재 상태:</strong> <code>implementation_verified_awaiting_official_readiness</code>. Task 1–5 구현과 합성 검증은 끝났다. 공식 readiness/evaluate/inspect 횟수는 0, label session/query/row는 0, 결과 hash는 null이다. Task 6 공식 실행은 별도 승인 전까지 하지 않는다.</div>
+<div class="status"><strong>현재 상태:</strong> <code>official_evaluation_inspected_complete_awaiting_routing_research</code>. Task 6까지 끝났다. 공식 readiness, evaluate, inspect는 각각 한 번 실행했고 모두 성공했다. 16개 방법 조합 중 2개가 정해 둔 성능 기준을 통과했다. 자동 routing과 champion 승격은 하지 않고 다음 routing 연구를 기다린다.</div>
 
 <h2>Task 1 map preflight</h2>
 <p>상속된 Exp453 code map의 <code>source_parent_commit</code>는 <code>98a8d045e53f7e86cf27f5a936418470395992db</code>다. 그 뒤 Exp454 설계 commit <code>2a8486c42b385f4e589c7062a1c16f4be4372f4f</code>와 계획 commit이 들어왔으므로 이 map을 검증하면 <code>invalid source parent</code>로 stale이다. 그래서 Exp454는 별도 <code>codemap_exp454_antigravity.*</code> triplet을 만든다.</p>
@@ -15,12 +15,12 @@
 <li>Task 4 실제 authority evaluator와 exact replay</li>
 <li>Task 5 closed CLI: <code>readiness --reviewed-commit</code>, <code>evaluate --reviewed-commit</code>, bare <code>inspect</code></li>
 <li><code>FAILURE_LEDGER.json</code>의 Exp453 기록은 그대로 둔다</li>
-<li>TEST label 0, 공식 명령 0, 결과 SHA null 유지</li>
+<li>Task 6에서 TEST label session 1회, 48개 순차 질의, 72,300행을 평가</li>
 </ul>
 
 <h2>Closed CLI</h2>
 <p>허용 명령은 세 개뿐이다. readiness와 evaluate는 소문자 40-hex <code>--reviewed-commit</code> 하나만 받는다. inspect는 인자가 없다. <code>new</code>, <code>resume</code>, <code>retry</code>, <code>override</code>, <code>-r</code>, <code>--commit</code>, <code>--reviewed</code>, 대문자 hex, 39/41 hex, 빠진 flag, 추가 인자는 거부한다. evaluate는 맵 검증 뒤에만 evaluator를 import하고, production 경로는 Task 2 <code>capture_normalized_target_authority_antigravity()</code>만 load한다. test fixture converter는 import하지 않는다.</p>
-<p>공식 operator 진입점은 아직 실행하지 않았다.</p>
+<p>공식 operator 진입점은 reviewed commit <code>32240c4e71776633249549a3d1d88b0e404d9463</code>에서 readiness, evaluate, bare inspect 순서로 각각 한 번 실행했고 모두 exit 0이었다.</p>
 <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp454_exp453_exp449_authority_boundary_repair_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT</code></pre>
 
 <h2>PyTorch / MLX / MPS 가속 평가</h2>
@@ -49,10 +49,16 @@
 <li>DB: <code>/Users/mac/Documents/Dataset/univariate_ts.db</code>, SHA-256 <code>8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c</code>, inode <code>1048138</code>, nlink 1</li>
 <li>Exp449 prediction aggregate SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>, 96 predictions</li>
 <li>Exp453 readiness receipt SHA-256 <code>38607b6c8cad785ca8cd0830dacd42775d43f9175a67ed01d487657a3c44764e</code>, evaluate receipt <code>caa705be90ddd56a00c53d5eb94a90604768dac0a80274846adce2061349b3b6</code>, stopped <code>1b6b2ea01c0c4dde9128051e57c764d32cbdf8bc1af7fa0115f19c7a10181d97</code>, failure audit <code>97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276</code>. 오류는 <code>ValueError: Exp448 target identity differs</code>, labels 0, no retry, evaluation root 없음</li>
-<li>Exp454 evaluation root, receipt directory, failure audit는 모두 없음</li>
-<li>label session/query/row 0, 공식 Exp454 process 없음</li>
+<li>Exp454 evaluation root는 inode <code>23319659</code>의 immutable 12-leaf 결과다. failure audit는 없다</li>
+<li>label session 1, query 48, row 72,300. 공식 실행 뒤 남은 Exp454 process는 없다</li>
 </ul>
 
 <h2>과학 결과</h2>
-<p>아직 공식 평가를 실행하지 않았으므로 Exp454 성능 결과는 없다. Exp449의 96개 prediction SHA-256과 Exp453 failure audit SHA-256만 고정 입력으로 유지한다. routing, champion, pending candidate와 promotion은 변하지 않았다. 독립 검토(Step 6)는 이 기록이 끝난 뒤 Codex가 fresh Sol final review로 수행한다.</p>
+<p>기준 전체 혼동행렬은 TP 1,930 / FP 314 / FN 1,988 / TN 191,668이고 F1은 0.626420이다. 통과 조건은 전체 FN이 1,988보다 작고, FP가 314 이하이며, F1이 기준 이상이고, 해당 family의 FN도 줄어드는 것이다.</p>
+<table><thead><tr><th>통과한 조합</th><th>전체 FN</th><th>전체 FP</th><th>전체 F1</th><th>해당 family FN 변화</th></tr></thead><tbody>
+<tr><td>ECG5000 + Hydra LocalGap</td><td>1,987</td><td>313</td><td>0.626745</td><td>-1</td></tr>
+<tr><td>ChlorineConcentration + MultiRocket LocalGap</td><td>1,987</td><td>312</td><td>0.626846</td><td>-1</td></tr>
+</tbody></table>
+<p>두 조합은 FN을 1개씩 줄이면서 FP도 늘리지 않아 통과했다. 반면 ECG5000 + MultiRocket은 FN을 12개 줄였지만 FP가 318이어서 탈락했고, FordB + Hydra는 FN을 10개 줄였지만 FP가 315로 기준보다 1개 많아 탈락했다. 즉 다음 연구의 핵심은 <strong>FN 회복량을 유지하면서 새 FP를 1~4개 더 줄이는 routing</strong>이다.</p>
+<p>결과 파일은 12개이며 artifact map SHA-256은 <code>748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65</code>, evaluation SHA-256은 <code>c2b6321d18ba4c98e426be96ea3d3fb0824e75926fa54ba4600634dded68e1ac</code>, decision SHA-256은 <code>3510a426d3ee083ccb3f8599c64d0c91cc56d0b902780c8b6a2136098cd9a595</code>다. 독립 계산과 bare inspect가 같은 2개 통과 결과를 확인했다. routing 연구는 가능하지만 자동 routing, champion, pending candidate, promotion은 아직 바꾸지 않는다.</p>
 </main></body></html>

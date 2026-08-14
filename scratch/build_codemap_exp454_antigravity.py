@@ -95,13 +95,14 @@ def _html_antigravity(graph: dict[str, object]) -> str:
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         "<title>Exp454 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}"
         "code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>"
-        "<h1>Exp454 Task 5 코드맵</h1>"
+        "<h1>Exp454 Task 6 결과 코드맵</h1>"
         "<p>HTML governance, Task 2 foundations/normalize 경계, Task 3 runtime/sources/lifecycle/readiness, "
         "Task 4 evaluator/replay, 그리고 Task 5 closed CLI가 구현되었다. "
         "CLI callers는 official launcher와 CLI regression이다. effect는 readiness/evaluate에 lower 40-hex "
         "--reviewed-commit만, inspect는 인자 없이 허용하고 new/resume/retry/override/abbreviation을 거부한다. "
         "evaluate는 Task 2 capture_normalized_target_authority_antigravity만 load한다. "
-        "tests는 test_cli_antigravity다. Task 6 official lifecycle은 아직 실행하지 않는다.</p>"
+        "tests는 test_cli_antigravity다. Task 6 readiness/evaluate/inspect는 각각 한 번 성공했고, "
+        "16개 조합 중 ECG5000+Hydra와 ChlorineConcentration+MultiRocket 두 조합이 FN/FP/F1 기준을 통과했다.</p>"
         f"<h2>노드</h2><ul>{items}</ul>"
         f'<h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         "</main></body></html>"
@@ -145,7 +146,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "implementation_plan", "path": plan, "role": "Task 1–6의 순차 TDD와 공식 실행 경계.", "tests": [test], "evidence": [_evidence_antigravity(plan, "Task 1: HTML governance")]},
         {"id": "preregistration", "path": "docs/EXP454_PREREGISTRATION_antigravity_KO.html", "role": "고정 runtime과 과학 불변값.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP454_PREREGISTRATION_antigravity_KO.html", "NumPy 2.3.5")]},
         {"id": "runbook", "path": "docs/EXP454_RUNBOOK_antigravity_KO.html", "role": "미래 one-shot 명령 순서.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP454_RUNBOOK_antigravity_KO.html", "readiness --reviewed-commit")]},
-        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp454 implementation_verified_awaiting_official_readiness, zero-label, null-result truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"exp454"')]},
+        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp454 official evaluation and inspect complete; 2 qualified pairs and routing-research-eligible truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"official_evaluation_inspected_complete_awaiting_routing_research"')]},
         {"id": "governance_regression", "path": test, "role": "HTML, ledger, hash, stale-Exp453-map, future-map regression.", "tests": [test], "evidence": [_evidence_antigravity(test, "class GovernanceAntigravityTest")]},
         {"id": "map_builder", "path": "scratch/build_codemap_exp454_antigravity.py", "role": "bounded HTML/JSON/lock generator.", "tests": [test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp454_antigravity.py", "def validate_map_antigravity")]},
         {"id": "task2_regressions", "path": differential, "role": "Caller: Task 2 focused verification. Effect: rejects scientific drift across all foundations.", "tests": [differential], "evidence": [_evidence_antigravity(differential, "class ControlledForkDifferentialAntigravityTest")]},
@@ -159,7 +160,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "task3_runtime_binding", "path": "scratch/exp454_runtime_binding_antigravity.py", "role": "Caller: official launcher and all closed commands. Effect: exact executable/prefix re-exec before any Exp454 import.", "tests": [runtime_test], "evidence": [_evidence_antigravity("scratch/exp454_runtime_binding_antigravity.py", "def ensure_fixed_runtime_antigravity"), _evidence_antigravity(launcher, "ensure_fixed_runtime_antigravity")]},
         {"id": "task3_sources", "path": f"{package}/sources_antigravity.py", "role": "Caller: evaluator. Effect: opens one synthetic or official label session only after Exp453 evidence, Exp449 prediction, and normalized target succeed.", "tests": [sources_test, predecessor_test, evaluation_test], "evidence": [_evidence_antigravity(f"{package}/sources_antigravity.py", "def open_test_labels_once_antigravity")]},
         {"id": "task3_lifecycle_readiness", "path": f"{package}/readiness_antigravity.py", "role": "Caller: closed CLI readiness/evaluate map gate. Effect: label-free readiness with exact runtime, Exp453 terminal hashes, and normalized target 48.", "tests": [lifecycle_test, readiness_test], "evidence": [_evidence_antigravity(f"{package}/lifecycle_antigravity.py", "def run_phase_antigravity"), _evidence_antigravity(f"{package}/readiness_antigravity.py", "def readiness_antigravity")]},
-        {"id": "task4_evaluation_replay", "path": f"{package}/evaluation_antigravity.py", "role": "Caller: closed CLI evaluate/inspect. Effect: consumes Task 2 capture_normalized_target_authority_antigravity and Task 3 label opener to publish the same 12-leaf result and source-free replay.", "tests": [evaluation_test, replay_test], "evidence": [_evidence_antigravity(f"{package}/evaluation_antigravity.py", "capture_normalized_target_authority_antigravity"), _evidence_antigravity(f"{package}/replay_antigravity.py", "def inspect_replay_at_antigravity")]},
+        {"id": "task4_evaluation_replay", "path": f"{package}/evaluation_antigravity.py", "role": "Caller: closed CLI evaluate/inspect. Effect: published and replayed the official 12-leaf result; 2 of 16 family-method pairs passed the frozen FN/FP/F1 gates.", "tests": [evaluation_test, replay_test], "evidence": [_evidence_antigravity(f"{package}/evaluation_antigravity.py", "capture_normalized_target_authority_antigravity"), _evidence_antigravity(f"{package}/replay_antigravity.py", "def inspect_replay_at_antigravity")]},
         {"id": "task5_cli", "path": f"{package}/cli_antigravity.py", "role": "Caller: official launcher and CLI regression. Effect: readiness/evaluate accept one lower 40-hex --reviewed-commit, inspect is bare, and evaluate loads capture_normalized_target_authority_antigravity only.", "tests": [cli_test], "evidence": [_evidence_antigravity(f"{package}/cli_antigravity.py", "def main_antigravity"), _evidence_antigravity(launcher, "main_antigravity")]},
     ]
     future_pairs: list[tuple[str, str]] = []

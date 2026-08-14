@@ -27,6 +27,11 @@ FIXED_EXECUTABLE_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-cov
 FIXED_PREFIX_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314"
 PREDICTION_SHA256_ANTIGRAVITY = "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d"
 FAILURE_AUDIT_SHA256_ANTIGRAVITY = "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276"
+ARTIFACT_MAP_SHA256_ANTIGRAVITY = "748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65"
+EVALUATION_SHA256_ANTIGRAVITY = "c2b6321d18ba4c98e426be96ea3d3fb0824e75926fa54ba4600634dded68e1ac"
+DECISION_SHA256_ANTIGRAVITY = "3510a426d3ee083ccb3f8599c64d0c91cc56d0b902780c8b6a2136098cd9a595"
+INSPECT_SHA256_ANTIGRAVITY = "e76cf5d55af3472fb98c4f0773fe722d3a910667bb068a5df102767c44b9b6c0"
+REVIEWED_COMMIT_ANTIGRAVITY = "32240c4e71776633249549a3d1d88b0e404d9463"
 DESIGN_COMMIT_ANTIGRAVITY = "2a8486c42b385f4e589c7062a1c16f4be4372f4f"
 DESIGN_SHA256_ANTIGRAVITY = "b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f"
 KIND_ANTIGRAVITY = "exp453_exp449_authority_boundary_repair"
@@ -94,8 +99,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 for tag in tags:
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
             else:
-                for tag in tags:
-                    self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+                self.assertEqual(
+                    sum(bool(re.search(r"\bchecked(?:\s|=|>)", tag)) for tag in tags),
+                    6,
+                )
 
     def test_planned_truth_preserves_science_and_champion_antigravity(self) -> None:
         """Break caught: governance changes the frozen experiment or claims an official result."""
@@ -111,7 +118,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(sum(item["experiment"] == "Exp454" for item in champion["history"]), 1)
         self.assertFalse(any(item.get("experiment") == "Exp454" for item in failures["entries"]))
         for record in (exp454, catalog_entry, champion_entry):
-            self.assertEqual(record["status"], "implementation_verified_awaiting_official_readiness")
+            self.assertEqual(record["status"], "official_evaluation_inspected_complete_awaiting_routing_research")
             self.assertEqual(record["kind"] if "kind" in record else KIND_ANTIGRAVITY, KIND_ANTIGRAVITY)
             self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
             self.assertEqual(record["predecessor_prediction_sha256"], PREDICTION_SHA256_ANTIGRAVITY)
@@ -124,20 +131,28 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["fixed_executable"], FIXED_EXECUTABLE_ANTIGRAVITY)
             self.assertEqual(record["fixed_prefix"], FIXED_PREFIX_ANTIGRAVITY)
             self.assertEqual(record["runtime_versions"], {"python": "3.14.6", "numpy": "2.3.5", "aeon": "1.4.0", "scikit_learn": "1.7.2"})
-            self.assertEqual(record["label_access_count"], 0)
-            self.assertFalse(record["official_readiness_started"])
-            self.assertFalse(record["official_evaluate_started"])
-            self.assertFalse(record["official_inspect_started"])
-            self.assertEqual(record["official_readiness_invocations"], 0)
-            self.assertEqual(record["official_evaluate_invocations"], 0)
-            self.assertEqual(record["official_inspect_invocations"], 0)
-            self.assertEqual(record["label_sessions"], 0)
-            self.assertEqual(record["label_queries"], 0)
-            self.assertEqual(record["label_rows"], 0)
-            self.assertIsNone(record["result_sha256"])
-            self.assertIsNone(record["evaluation_sha256"])
-            self.assertIsNone(record["decision_sha256"])
-            self.assertIsNone(record["inspect_sha256"])
+            self.assertEqual(record["official_reviewed_commit"], REVIEWED_COMMIT_ANTIGRAVITY)
+            self.assertEqual(record["label_access_count"], 48)
+            self.assertTrue(record["official_readiness_started"])
+            self.assertTrue(record["official_evaluate_started"])
+            self.assertTrue(record["official_inspect_started"])
+            self.assertEqual(record["official_readiness_invocations"], 1)
+            self.assertEqual(record["official_evaluate_invocations"], 1)
+            self.assertEqual(record["official_inspect_invocations"], 1)
+            self.assertEqual(record["official_readiness_exit_code"], 0)
+            self.assertEqual(record["official_evaluate_exit_code"], 0)
+            self.assertEqual(record["official_inspect_exit_code"], 0)
+            self.assertEqual(record["label_sessions"], 1)
+            self.assertEqual(record["label_queries"], 48)
+            self.assertEqual(record["label_rows"], 72300)
+            self.assertEqual(record["result_sha256"], ARTIFACT_MAP_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["artifact_map_sha256"], ARTIFACT_MAP_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["evaluation_sha256"], EVALUATION_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["decision_sha256"], DECISION_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["inspect_sha256"], INSPECT_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["qualified_count"], 2)
+            self.assertEqual(record["qualified_candidates"], ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"])
+            self.assertTrue(record["routing_research_eligible"])
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["routing_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
