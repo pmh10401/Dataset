@@ -5,6 +5,7 @@ import csv
 import hashlib
 import importlib.metadata
 import inspect
+import io
 import json
 from pathlib import Path
 import sqlite3
@@ -309,16 +310,263 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
         self.assertEqual(route.exp236.hard, frozenset({49}))
         self.assertEqual(route.automatic_hard, frozenset({49}))
 
-    def test_oracle_bundle_adapter_is_available_for_later_task4_diagnostic(self) -> None:
-        """T6 (missing oracle-bundle adapter RED): Task 2 only requires the values-only adapter.
+    def test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence(self) -> None:
+        """T6 (stage-level RED): Exp93→Exp133 input differs before frozen Exp137 tiering.
 
-        Task 4 must run the independent diagnostic harness, commit its report, and
-        replace or extend this test with the exact stage-level primitive RED before
-        any production route-replay repair.
+        The values-only current replay completes before this test opens the
+        historical CSV.  The CSV is used only as a post-score assertion: the
+        frozen Exp137 source's ``run_one`` invariant requires
+        ``high | standard == source_hard`` before ``route_tiers`` creates its
+        disjoint lanes.  Thus this pins the exact stored Exp93 input boundary,
+        rather than feeding any historical coordinate into scoring.
         """
-        from paper.equipment_anomaly_detection.proposal_score_paper import load_hard_route_oracle_bundle
+        from paper.equipment_anomaly_detection.hard_route_paper import (
+            replay_exp74d_89_90_93,
+        )
+        from paper.equipment_anomaly_detection.proposal_score_paper import (
+            load_hard_route_oracle_bundle,
+        )
 
-        self.assertTrue(callable(load_hard_route_oracle_bundle))
+        dataset = "ChlorineConcentration_normal_3"
+        raw = load_dataset_values(DB_PATH, dataset)
+        evidence = build_legacy_route_evidence(raw)
+        _, _, _, current_exp93 = replay_exp74d_89_90_93(evidence)
+
+        authority = _build_test_authority()
+        bundle = load_hard_route_oracle_bundle(
+            authority,
+            selected_population=(dataset,),
+            selected_n_test={dataset: len(raw.test_rows)},
+        )
+        exp137_bytes = authority.exp137_path.read_bytes()
+        self.assertEqual(hashlib.sha256(exp137_bytes).hexdigest(), authority.exp137_sha256)
+        with io.StringIO(exp137_bytes.decode("utf-8"), newline="") as handle:
+            rows = [row for row in csv.DictReader(handle) if row["dataset_name"] == dataset]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        frozen_high = frozenset(
+            int(value) for value in row["hard_alert_indices"].split()
+        )
+        frozen_standard = frozenset(
+            int(value) for value in row["standard_review_indices"].split()
+        )
+        frozen_exp93_input = frozen_high | frozen_standard
+        self.assertEqual(frozen_high, bundle.exp137[dataset])
+        self.assertFalse(frozen_high & frozen_standard)
+        self.assertEqual(len(frozen_exp93_input), int(row["source_exp93_hard_count"]))
+
+        # RED on the current head: 2332 is present only in the recomputed Exp93.
+        self.assertEqual(current_exp93, frozen_exp93_input)
+
+    def test_hard_route_oracle_bundle_is_sha_bound_global_and_directly_projected(self) -> None:
+        """T6a: all four label-free authorities validate globally before direct projection."""
+        from paper.equipment_anomaly_detection.contracts_paper import (
+            HardRouteOracleBundle,
+            HardRouteParityAuthority,
+        )
+        from paper.equipment_anomaly_detection.proposal_score_paper import (
+            load_hard_route_oracle_bundle,
+        )
+
+        authority = _build_test_authority()
+        serialized = authority.to_dict()
+        self.assertEqual(
+            set(serialized),
+            {
+                "exp137_path", "exp137_sha256", "exp236_path", "exp236_sha256",
+                "exp291_path", "exp291_sha256", "exp404_path", "exp404_sha256",
+            },
+        )
+        self.assertEqual(HardRouteParityAuthority.from_dict(serialized), authority)
+        with self.assertRaises(ValueError):
+            HardRouteParityAuthority.from_dict({**serialized, "unexpected": "value"})
+        with self.assertRaises(ValueError):
+            HardRouteParityAuthority.from_dict({**serialized, "exp137_path": "relative.csv"})
+        self.assertFalse(hasattr(HardRouteParityAuthority, "default_verified"))
+
+        full = load_hard_route_oracle_bundle(authority)
+        self.assertIsInstance(full, HardRouteOracleBundle)
+        self.assertEqual(
+            tuple(sorted(full.exp137)),
+            tuple(sorted(full.exp236)),
+        )
+        self.assertEqual(tuple(sorted(full.exp137)), tuple(sorted(full.exp253)))
+        self.assertEqual(tuple(sorted(full.exp137)), tuple(sorted(full.exp404)))
+        self.assertEqual(len(full.exp137), 1117)
+        self.assertEqual(sum(map(len, full.exp137.values())), 2005)
+        self.assertEqual(sum(map(len, full.exp236.values())), 2116)
+        self.assertEqual(sum(map(len, full.exp253.values())), 2253)
+        self.assertEqual(sum(map(len, full.exact_normal_removed.values())), 35)
+        self.assertEqual(sum(map(len, full.automatic_hard.values())), 2218)
+        self.assertEqual(sum(map(len, full.exp404.values())), 2218)
+        self.assertEqual(sum(1 for values in full.exp404.values() if values), 888)
+        self.assertEqual(sum(1 for values in full.exp404.values() if not values), 229)
+
+        selected = ("ACSF1_normal_0", "Phoneme_normal_39")
+        selected_n_test = {
+            dataset: len(load_dataset_values(DB_PATH, dataset).test_rows)
+            for dataset in selected
+        }
+        projected = load_hard_route_oracle_bundle(
+            authority,
+            selected_population=selected,
+            selected_n_test=selected_n_test,
+        )
+        self.assertEqual(tuple(projected.exp137), selected)
+        self.assertEqual(tuple(projected.exp404), selected)
+        self.assertEqual(projected.exp137["ACSF1_normal_0"], full.exp137["ACSF1_normal_0"])
+        self.assertEqual(projected.exp404["Phoneme_normal_39"], full.exp404["Phoneme_normal_39"])
+        with self.assertRaises(KeyError):
+            load_hard_route_oracle_bundle(authority, selected_population=("not_a_verified_dataset",))
+        with self.assertRaises(ValueError):
+            load_hard_route_oracle_bundle(
+                authority,
+                selected_population=selected,
+                selected_n_test={**selected_n_test, "ACSF1_normal_0": selected_n_test["ACSF1_normal_0"] + 1},
+            )
+        with self.assertRaises(ValueError):
+            load_hard_route_oracle_bundle(
+                authority,
+                selected_population=selected,
+                selected_n_test={**selected_n_test, "ChlorineConcentration_normal_3": 2350},
+            )
+
+    def test_hard_route_oracle_bundle_parses_the_verified_byte_snapshot_after_symlink_swap(self) -> None:
+        """T6b: replacing a symlink after its read cannot change the parsed authority."""
+        from paper.equipment_anomaly_detection.contracts_paper import HardRouteParityAuthority
+        from paper.equipment_anomaly_detection.proposal_score_paper import (
+            load_hard_route_oracle_bundle,
+        )
+
+        baseline = _build_test_authority()
+        dataset = "ChlorineConcentration_normal_3"
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            staged_exp137 = root / "exp137.csv"
+            replacement = root / "replacement.csv"
+            staged_exp137.symlink_to(baseline.exp137_path)
+            replacement.write_bytes(b"unverified,replacement\n")
+            serialized = baseline.to_dict()
+            serialized["exp137_path"] = str(staged_exp137)
+            authority = HardRouteParityAuthority.from_dict(serialized)
+
+            original_read_bytes = Path.read_bytes
+            expected_target = baseline.exp137_path.resolve()
+            swapped = False
+
+            def read_then_replace(path: Path) -> bytes:
+                nonlocal swapped
+                payload = original_read_bytes(path)
+                if not swapped and path in {staged_exp137, expected_target}:
+                    staged_exp137.unlink()
+                    staged_exp137.symlink_to(replacement)
+                    swapped = True
+                return payload
+
+            with patch.object(Path, "read_bytes", new=read_then_replace):
+                bundle = load_hard_route_oracle_bundle(
+                    authority,
+                    selected_population=(dataset,),
+                    selected_n_test={dataset: 2350},
+                )
+
+        self.assertTrue(swapped)
+        self.assertEqual(tuple(bundle.exp137), (dataset,))
+
+    def test_diagnostic_frozen_csv_claim_uses_one_verified_byte_snapshot(self) -> None:
+        """T6c: Exp137 diagnostic evidence cannot reopen a swapped authority path."""
+        from scratch import diagnose_paper_r4_mechanism1_parity_antigravity as diagnostic
+        from paper.equipment_anomaly_detection.contracts_paper import HardRouteParityAuthority
+
+        baseline = _build_test_authority()
+        dataset = "ChlorineConcentration_normal_3"
+        expected_high = frozenset({2303, 2305, 2311, 2323, 2324, 2327, 2336, 2338, 2341, 2346})
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            staged_exp137 = root / "exp137.csv"
+            replacement = root / "replacement.csv"
+            staged_exp137.symlink_to(baseline.exp137_path)
+            replacement.write_bytes(b"unverified,replacement\n")
+            serialized = baseline.to_dict()
+            serialized["exp137_path"] = str(staged_exp137)
+            authority = HardRouteParityAuthority.from_dict(serialized)
+
+            original_read_bytes = Path.read_bytes
+            expected_target = baseline.exp137_path.resolve()
+            swapped = False
+
+            def read_then_replace(path: Path) -> bytes:
+                nonlocal swapped
+                payload = original_read_bytes(path)
+                if not swapped and path in {staged_exp137, expected_target}:
+                    staged_exp137.unlink()
+                    staged_exp137.symlink_to(replacement)
+                    swapped = True
+                return payload
+
+            def route_tiers(high, standard, priority, n_test):
+                return {"hard": high, "standard_review": standard, "priority_review": priority}
+
+            with patch.object(diagnostic, "AUTHORITY", authority):
+                with patch.object(Path, "read_bytes", new=read_then_replace):
+                    boundary = diagnostic._frozen_exp93_to_exp133_boundary(
+                        dataset,
+                        expected_high,
+                        route_tiers,
+                    )
+
+        self.assertTrue(swapped)
+        self.assertEqual(boundary["frozen_exp93_input"], [2303, 2305, 2311, 2323, 2324, 2326, 2327, 2336, 2338, 2341, 2346])
+
+    def test_diagnostic_score_cache_claim_uses_one_verified_byte_snapshot(self) -> None:
+        """T6d: a report-only cache is parsed from the SHA-verified bytes, not its path."""
+        from scratch import diagnose_paper_r4_mechanism1_parity_antigravity as diagnostic
+
+        dataset = "Snapshot_normal_0"
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            cache_dir = root / "cache"
+            cache_dir.mkdir()
+            original_cache = root / "original.npz"
+            np.savez(
+                original_cache,
+                legacy_block_b_indices=np.asarray([2332], dtype=np.int64),
+                legacy_block_c_indices=np.asarray([2332], dtype=np.int64),
+            )
+            staged_cache = cache_dir / "antigravity_cache.npz"
+            replacement = root / "replacement.npz"
+            staged_cache.symlink_to(original_cache)
+            replacement.write_bytes(b"unverified cache replacement")
+            cache_sha256 = hashlib.sha256(original_cache.read_bytes()).hexdigest()
+            manifest = root / "manifest.csv"
+            manifest.write_text(
+                "dataset_name,cache_file,cache_sha256\n"
+                f"{dataset},cache.npz,{cache_sha256}\n",
+                encoding="utf-8",
+            )
+            manifest_sha256 = hashlib.sha256(manifest.read_bytes()).hexdigest()
+
+            original_read_bytes = Path.read_bytes
+            expected_target = original_cache.resolve()
+            swapped = False
+
+            def read_then_replace(path: Path) -> bytes:
+                nonlocal swapped
+                payload = original_read_bytes(path)
+                if not swapped and path in {staged_cache, expected_target}:
+                    staged_cache.unlink()
+                    staged_cache.symlink_to(replacement)
+                    swapped = True
+                return payload
+
+            with patch.object(diagnostic, "SCORE_CACHE_MANIFEST", manifest):
+                with patch.object(diagnostic, "SCORE_CACHE_MANIFEST_SHA256", manifest_sha256):
+                    with patch.object(Path, "read_bytes", new=read_then_replace):
+                        report = diagnostic._score_cache_report_only(dataset, {2332})
+
+        self.assertTrue(swapped)
+        self.assertTrue(report["legacy_block_b_contains_compared"]["2332"])
+        self.assertTrue(report["legacy_block_c_contains_compared"]["2332"])
 
     def test_smoke_33_datasets_match_sha_bound_oracles(self) -> None:
         """T7 (Capable Integration): All 33 smoke datasets achieve per-dataset coordinate equality against the 4 SHA-bound oracles; direct indexing works on Exp404."""

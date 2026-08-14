@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping
 
@@ -64,6 +65,133 @@ class FrozenPaperConfig:
     test_row_count: int = 195900
     seed: int = 20260812
     ablation_alert_counts: tuple[int, int, int, int] = (2218, 2248, 2244, 2222)
+
+
+_HARD_ROUTE_PARITY_AUTHORITY_FIELDS = frozenset(
+    {
+        "exp137_path",
+        "exp137_sha256",
+        "exp236_path",
+        "exp236_sha256",
+        "exp291_path",
+        "exp291_sha256",
+        "exp404_path",
+        "exp404_sha256",
+    }
+)
+
+
+def _require_sha256_paper(value: object, name: str) -> str:
+    if type(value) is not str or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+        raise ValueError(f"{name} must be a lowercase SHA-256 digest")
+    return value
+
+
+@dataclass(frozen=True, slots=True)
+class HardRouteParityAuthority:
+    """Data-only, caller-supplied locations and digests for frozen route oracles."""
+
+    exp137_path: Path
+    exp137_sha256: str
+    exp236_path: Path
+    exp236_sha256: str
+    exp291_path: Path
+    exp291_sha256: str
+    exp404_path: Path
+    exp404_sha256: str
+
+    def __post_init__(self) -> None:
+        paths = {
+            "exp137_path": self.exp137_path,
+            "exp236_path": self.exp236_path,
+            "exp291_path": self.exp291_path,
+            "exp404_path": self.exp404_path,
+        }
+        for name, value in paths.items():
+            if not isinstance(value, (str, Path)):
+                raise ValueError(f"{name} must be a path")
+            path = Path(value)
+            if not path.is_absolute():
+                raise ValueError(f"{name} must be an absolute path")
+            object.__setattr__(self, name, path)
+        for name in (
+            "exp137_sha256",
+            "exp236_sha256",
+            "exp291_sha256",
+            "exp404_sha256",
+        ):
+            object.__setattr__(self, name, _require_sha256_paper(getattr(self, name), name))
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "exp137_path": str(self.exp137_path),
+            "exp137_sha256": self.exp137_sha256,
+            "exp236_path": str(self.exp236_path),
+            "exp236_sha256": self.exp236_sha256,
+            "exp291_path": str(self.exp291_path),
+            "exp291_sha256": self.exp291_sha256,
+            "exp404_path": str(self.exp404_path),
+            "exp404_sha256": self.exp404_sha256,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> "HardRouteParityAuthority":
+        if not isinstance(data, Mapping) or set(data) != _HARD_ROUTE_PARITY_AUTHORITY_FIELDS or any(type(value) is not str for value in data.values()):
+            raise ValueError("hard-route parity authority schema is invalid")
+        return cls(
+            exp137_path=Path(data["exp137_path"]),
+            exp137_sha256=data["exp137_sha256"],
+            exp236_path=Path(data["exp236_path"]),
+            exp236_sha256=data["exp236_sha256"],
+            exp291_path=Path(data["exp291_path"]),
+            exp291_sha256=data["exp291_sha256"],
+            exp404_path=Path(data["exp404_path"]),
+            exp404_sha256=data["exp404_sha256"],
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class HardRouteOracleBundle:
+    """Read-only projected coordinates from verified, label-free historical oracles."""
+
+    exp137: Mapping[str, frozenset[int]]
+    exp236: Mapping[str, frozenset[int]]
+    exp253: Mapping[str, frozenset[int]]
+    exact_normal_removed: Mapping[str, frozenset[int]]
+    automatic_hard: Mapping[str, frozenset[int]]
+    exp404: Mapping[str, frozenset[int]]
+
+    def __post_init__(self) -> None:
+        fields = (
+            "exp137",
+            "exp236",
+            "exp253",
+            "exact_normal_removed",
+            "automatic_hard",
+            "exp404",
+        )
+        normalized: dict[str, dict[str, frozenset[int]]] = {}
+        population: set[str] | None = None
+        for name in fields:
+            values = getattr(self, name)
+            if not isinstance(values, Mapping):
+                raise ValueError("hard-route oracle bundle maps are invalid")
+            copied = dict(values)
+            if not copied or any(
+                type(dataset) is not str
+                or not dataset
+                or not isinstance(indices, frozenset)
+                or any(type(index) is not int or index < 0 for index in indices)
+                for dataset, indices in copied.items()
+            ):
+                raise ValueError("hard-route oracle bundle values are invalid")
+            if population is None:
+                population = set(copied)
+            elif set(copied) != population:
+                raise ValueError("hard-route oracle bundle populations differ")
+            normalized[name] = copied
+        for name, copied in normalized.items():
+            object.__setattr__(self, name, MappingProxyType(copied))
 
 
 @dataclass(frozen=True, slots=True)
