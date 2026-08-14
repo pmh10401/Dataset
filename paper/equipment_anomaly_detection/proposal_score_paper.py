@@ -293,19 +293,39 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
     stability = classify_stability(low, raw, progress=progress)
     stability_seconds = float(monotonic() - stability_started)
     print("Task7 finish", file=sys.stderr, flush=True)
-    surface = build_hard_evidence_surface(sources, routes, raw)
-    policies = build_policies(surface, low, stability, raw)
+    surface = build_hard_evidence_surface(sources, routes, raw, progress=progress)
+    policies = build_policies(surface, low, stability, raw, progress=progress)
     _label_firewall()
     return ProposalScore(raw, sources, routes, low, stability, policies, backend, {"task4_task5": hard_seconds, "task6": low_seconds, "task7": stability_seconds, "total": float(monotonic() - started)})
 
 
-def write_and_freeze_proposal_score(root, catalog: dict[str, object], proposal: ProposalScore) -> Task8FrozenManifest:
+def write_and_freeze_proposal_score(root, catalog: dict[str, object], proposal: ProposalScore, *, progress: ProgressCallback | None = None) -> Task8FrozenManifest:
     """Pass only Task4--7 typed values to Task8's create-only shard writer."""
     if not isinstance(proposal, ProposalScore) or tuple(entry["dataset"] for entry in catalog.get("datasets", ())) != tuple(proposal.raw):
         raise ValueError("proposal score catalog identity differs")
-    for dataset in proposal.raw:
-        write_typed_proposal_shard(root, catalog, proposal.raw[dataset], proposal.sources[dataset], proposal.routes[dataset], proposal.low_frequency, proposal.stability, proposal.policies, proposal.backend)
-    return freeze_score_root(root, catalog)
+    names = tuple(proposal.raw)
+    started = monotonic()
+    total = len(names)
+    completed = 0
+    emit_progress_paper(progress, {"stage": "shard_write", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
+    try:
+        for completed, dataset in enumerate(names, 1):
+            write_typed_proposal_shard(
+                root, catalog, proposal.raw[dataset], proposal.sources[dataset],
+                proposal.routes[dataset], proposal.low_frequency, proposal.stability,
+                proposal.policies, proposal.backend,
+            )
+            emit_progress_paper(progress, {
+                "stage": "shard_write", "phase": "tick",
+                "completed": completed, "total": total,
+                "dataset": dataset, "detail": f"{dataset}_paper.json",
+                "elapsed_s": float(monotonic() - started),
+            })
+        emit_progress_paper(progress, {"stage": "shard_write", "phase": "end", "completed": total, "total": total, "elapsed_s": float(monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "shard_write", "phase": "error", "completed": completed if names else 0, "total": total, "elapsed_s": float(monotonic() - started)})
+        raise
+    return freeze_score_root(root, catalog, progress=progress)
 
 
 __all__ = ["ProposalScore", "ProposalScoreIncomplete", "Task4Task5SuccessPublisher", "compose_proposal_score", "make_stderr_progress_sink_paper", "task4_task5_success_publisher", "write_and_freeze_proposal_score"]

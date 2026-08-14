@@ -431,6 +431,136 @@ class ProgressLoggingAntigravityTests(unittest.TestCase):
         for token in ("survived", "agreeing_depths", "excess_ratio", "rank=", "label="):
             self.assertNotIn(token, joined)
 
+    def test_hard_evidence_and_policies_progress_has_no_alert_or_score_payload(self) -> None:
+        import numpy as np
+        from paper.equipment_anomaly_detection.routing_paper import (
+            POLICY_ORDER,
+            build_hard_evidence_surface,
+            build_policies,
+        )
+        from paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper import (
+            Task4Task5SuccessRecordTests,
+        )
+
+        fixture = Task4Task5SuccessRecordTests("run")
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        raw, sources, route, low, stability, _policies, _backend = fixture._task4_task5_values()
+        raw_map = {raw.dataset: raw}
+        sources_map = {raw.dataset: sources}
+        routes_map = {raw.dataset: route}
+        events: list[dict[str, object]] = []
+        surface = build_hard_evidence_surface(sources_map, routes_map, raw_map, progress=events.append)
+        build_policies(surface, low, stability, raw_map, progress=events.append)
+        self.assertEqual({event["stage"] for event in events}, {"hard_evidence", "policies"})
+        policy_events = [event for event in events if event["stage"] == "policies"]
+        self.assertTrue(policy_events and all(event["total"] == 4 for event in policy_events))
+        self.assertEqual(
+            tuple(event.get("detail") for event in policy_events if event["phase"] == "tick"),
+            POLICY_ORDER,
+        )
+        for event in events:
+            self.assertNotIn("alerts", event)
+            self.assertNotIn("pvalue", event)
+            self.assertNotIn("strength", event)
+            for value in event.values():
+                self.assertFalse(isinstance(value, np.ndarray))
+                self.assertFalse(isinstance(value, frozenset) and all(type(item) is int for item in value))
+
+    def test_shard_write_and_freeze_verify_progress(self) -> None:
+        import numpy as np
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.artifacts_paper import (
+            freeze_score_root,
+            verify_score_root,
+            write_typed_proposal_shard,
+        )
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScore, write_and_freeze_proposal_score
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        from paper.equipment_anomaly_detection.sources_paper.stability_paper import StabilityPartition
+        from paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper import Task8LifecycleTests
+
+        fixture = Task8LifecycleTests("run")
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        first, second = fixture._typed("alpha"), fixture._typed("beta")
+        raw = {"alpha": first[0], "beta": second[0]}
+        sources = {"alpha": first[1], "beta": second[1]}
+        routes = {"alpha": first[2], "beta": second[2]}
+        low = LowFrequencyResult(
+            ("alpha", "beta"),
+            tuple(row for values in (first[3], second[3]) for row in values.rows),
+            (), (), 0, {"alpha": frozenset(), "beta": frozenset()},
+        )
+        stability = StabilityPartition((), (), (), {})
+        policies = PolicyBundle(tuple(
+            PolicyRoute(
+                name,
+                {dataset: frozenset() for dataset in raw},
+                {dataset: np.zeros(2) for dataset in raw},
+                {dataset: np.zeros(2) for dataset in raw},
+            )
+            for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
+        ))
+        proposal = ProposalScore(
+            raw, sources, routes, low, stability, policies, first[6],
+            {"task4_task5": 0.0, "task6": 0.0, "task7": 0.0, "total": 0.0},
+        )
+        events: list[dict[str, object]] = []
+        calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+        original = score.write_typed_proposal_shard
+
+        def spy(*args, **kwargs):
+            calls.append((args, dict(kwargs)))
+            return original(*args, **kwargs)
+
+        with patch.object(score, "write_typed_proposal_shard", side_effect=spy):
+            write_and_freeze_proposal_score(fixture.root, fixture.catalog, proposal, progress=events.append)
+        shard_events = [event for event in events if event["stage"] == "shard_write"]
+        freeze_events = [event for event in events if event["stage"] == "freeze_verify"]
+        self.assertEqual([event["phase"] for event in shard_events], ["start", "tick", "tick", "end"])
+        self.assertEqual([event["completed"] for event in shard_events if event["phase"] == "tick"], [1, 2])
+        self.assertTrue(all(event["total"] == 2 for event in shard_events))
+        self.assertEqual(len(calls), 2)
+        for args, kwargs in calls:
+            self.assertNotIn("progress", kwargs)
+            self.assertEqual(len(args), 9)
+        self.assertEqual(freeze_events[0]["phase"], "start")
+        self.assertEqual(freeze_events[-1]["phase"], "end")
+        self.assertEqual([event["completed"] for event in freeze_events if event["phase"] == "tick"], [1, 2])
+
+        direct = Task8LifecycleTests("run")
+        direct.setUp()
+        self.addCleanup(direct.tearDown)
+        direct_events: list[dict[str, object]] = []
+        write_typed_proposal_shard(direct.root, direct.catalog, *direct._typed("alpha"), progress=direct_events.append)
+        self.assertEqual([event["phase"] for event in direct_events], ["tick"])
+        self.assertTrue(all(event["stage"] == "shard_write" for event in direct_events))
+
+        write_typed_proposal_shard(direct.root, direct.catalog, *direct._typed("beta"))
+        freeze_only: list[dict[str, object]] = []
+        freeze_score_root(direct.root, direct.catalog, progress=freeze_only.append)
+        self.assertEqual(freeze_only[0]["phase"], "start")
+        self.assertEqual(freeze_only[-1]["phase"], "end")
+        self.assertTrue(all(event["stage"] == "freeze_verify" for event in freeze_only))
+        self.assertEqual([event["completed"] for event in freeze_only if event["phase"] == "tick"], [1, 2])
+
+        verify_events: list[dict[str, object]] = []
+        verify_score_root(fixture.root, fixture.catalog, progress=verify_events.append)
+        self.assertEqual(verify_events[0]["phase"], "start")
+        self.assertEqual(verify_events[-1]["phase"], "end")
+        self.assertTrue(all(event["stage"] == "freeze_verify" for event in verify_events))
+        self.assertEqual([event["completed"] for event in verify_events if event["phase"] == "tick"], [1, 2])
+
+        for event in events + direct_events + freeze_only + verify_events:
+            detail = event.get("detail")
+            if detail is not None:
+                self.assertTrue(str(detail).endswith("_paper.json"))
+            joined = json.dumps(event)
+            self.assertNotIn("shard_hash", joined)
+            self.assertNotIn("sha256", joined)
+
 
 if __name__ == "__main__":
     unittest.main()

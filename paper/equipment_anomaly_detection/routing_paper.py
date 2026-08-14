@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from time import monotonic
 from types import MappingProxyType
 from typing import Mapping
 
 import numpy as np
 
 from .contracts_paper import LowFrequencyResult, RawDataset
+from .data_paper import ProgressCallback, emit_progress_paper
 from .hard_route_paper import EXP234_SOURCES_PAPER, HardRouteResult
 from .score_adapter_paper import route_preserving_scores
 from .sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
@@ -130,6 +132,8 @@ def build_hard_evidence_surface(
     sources: Mapping[str, HardSourceBundle],
     routes: Mapping[str, HardRouteResult],
     raw: Mapping[str, RawDataset],
+    *,
+    progress: ProgressCallback | None = None,
 ) -> EvidenceSurface:
     """Build Task5's exact five-leaf continuous counterpart without changing its lanes."""
     if not isinstance(sources, Mapping) or not isinstance(routes, Mapping) or not isinstance(raw, Mapping):
@@ -140,31 +144,46 @@ def build_hard_evidence_surface(
     alerts: dict[str, frozenset[int]] = {}
     strength: dict[str, np.ndarray] = {}
     missing: dict[str, np.ndarray] = {}
-    for dataset in sorted(raw_by_dataset):
-        values, bundle, route = raw_by_dataset[dataset], source_by_dataset[dataset], route_by_dataset[dataset]
-        if not isinstance(values, RawDataset) or values.dataset != dataset or not isinstance(bundle, HardSourceBundle) or not isinstance(route, HardRouteResult):
-            raise ValueError("hard evidence typed inputs differ")
-        if tuple(bundle.source_names) != EXPECTED_HARD_SOURCES or tuple(bundle.by_name) != EXPECTED_HARD_SOURCES or set(bundle.by_name) != set(EXPECTED_HARD_SOURCES):
-            raise ValueError("hard evidence source order differs")
-        n_test = len(values.test_rows)
-        if tuple(values.test_indices) != tuple(range(n_test)) or route.n_test != n_test:
-            raise ValueError("hard evidence TEST identity differs")
-        leaves: list[np.ndarray] = []
-        eligible: list[bool] = []
-        for name in EXP234_SOURCES_PAPER:
-            result = bundle.by_name[name]
-            if not isinstance(result, HardSourceResult) or result.name != name or type(result.eligible) is not bool:
-                raise ValueError("hard evidence source result differs")
-            pvalue = np.asarray(result.test_pvalue)
-            if pvalue.ndim != 1 or pvalue.size != n_test or pvalue.dtype.kind not in "iuf" or not np.all(np.isfinite(pvalue)) or np.any((pvalue <= 0.0) | (pvalue > 1.0)):
-                raise ValueError("hard evidence p-value differs")
-            if result.eligible and (np.asarray(result.test_score).ndim != 1 or np.asarray(result.test_score).size != n_test):
-                raise ValueError("hard evidence eligible score differs")
-            leaves.append(np.asarray(1.0 - pvalue if result.eligible else np.zeros(n_test), dtype=np.float64))
-            eligible.append(result.eligible)
-        alerts[dataset] = frozenset(route.automatic_hard)
-        strength[dataset] = combine_evidence(leaves, "k_of_n", k=2)
-        missing[dataset] = np.full(n_test, not any(eligible), dtype=bool)
+    started = monotonic()
+    total = len(raw_by_dataset)
+    finished = 0
+    emit_progress_paper(progress, {"stage": "hard_evidence", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
+    try:
+        for dataset in sorted(raw_by_dataset):
+            values, bundle, route = raw_by_dataset[dataset], source_by_dataset[dataset], route_by_dataset[dataset]
+            if not isinstance(values, RawDataset) or values.dataset != dataset or not isinstance(bundle, HardSourceBundle) or not isinstance(route, HardRouteResult):
+                raise ValueError("hard evidence typed inputs differ")
+            if tuple(bundle.source_names) != EXPECTED_HARD_SOURCES or tuple(bundle.by_name) != EXPECTED_HARD_SOURCES or set(bundle.by_name) != set(EXPECTED_HARD_SOURCES):
+                raise ValueError("hard evidence source order differs")
+            n_test = len(values.test_rows)
+            if tuple(values.test_indices) != tuple(range(n_test)) or route.n_test != n_test:
+                raise ValueError("hard evidence TEST identity differs")
+            leaves: list[np.ndarray] = []
+            eligible: list[bool] = []
+            for name in EXP234_SOURCES_PAPER:
+                result = bundle.by_name[name]
+                if not isinstance(result, HardSourceResult) or result.name != name or type(result.eligible) is not bool:
+                    raise ValueError("hard evidence source result differs")
+                pvalue = np.asarray(result.test_pvalue)
+                if pvalue.ndim != 1 or pvalue.size != n_test or pvalue.dtype.kind not in "iuf" or not np.all(np.isfinite(pvalue)) or np.any((pvalue <= 0.0) | (pvalue > 1.0)):
+                    raise ValueError("hard evidence p-value differs")
+                if result.eligible and (np.asarray(result.test_score).ndim != 1 or np.asarray(result.test_score).size != n_test):
+                    raise ValueError("hard evidence eligible score differs")
+                leaves.append(np.asarray(1.0 - pvalue if result.eligible else np.zeros(n_test), dtype=np.float64))
+                eligible.append(result.eligible)
+            alerts[dataset] = frozenset(route.automatic_hard)
+            strength[dataset] = combine_evidence(leaves, "k_of_n", k=2)
+            missing[dataset] = np.full(n_test, not any(eligible), dtype=bool)
+            finished += 1
+            emit_progress_paper(progress, {
+                "stage": "hard_evidence", "phase": "tick",
+                "completed": finished, "total": total,
+                "dataset": dataset, "elapsed_s": float(monotonic() - started),
+            })
+        emit_progress_paper(progress, {"stage": "hard_evidence", "phase": "end", "completed": total, "total": total, "elapsed_s": float(monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "hard_evidence", "phase": "error", "completed": finished, "total": total, "elapsed_s": float(monotonic() - started)})
+        raise
     return EvidenceSurface(alerts, strength, missing)
 
 
@@ -239,6 +258,8 @@ def build_policies(
     low_frequency: LowFrequencyResult,
     stability: StabilityPartition,
     raw_datasets: Mapping[str, RawDataset],
+    *,
+    progress: ProgressCallback | None = None,
 ) -> PolicyBundle:
     """Construct hard-only/source/stable/unstable routes in the frozen order."""
     if not isinstance(hard, EvidenceSurface) or not isinstance(stability, StabilityPartition):
@@ -260,13 +281,30 @@ def build_policies(
     unstable = frozenset(stability.unstable_coordinates)
     if stable & unstable or stable | unstable != selected:
         raise ValueError("stable/unstable source partition is invalid")
-    routes = (
-        _route("hard_only", hard, source, frozenset()),
-        _route("hard_plus_source", hard, source, selected),
-        _route("hard_plus_stable", hard, source, stable),
-        _route("hard_plus_unstable", hard, source, unstable),
-    )
-    return PolicyBundle(routes)
+    started = monotonic()
+    total = 4
+    finished = 0
+    emit_progress_paper(progress, {"stage": "policies", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
+    try:
+        routes = []
+        for name, coordinates in (
+            ("hard_only", frozenset()),
+            ("hard_plus_source", selected),
+            ("hard_plus_stable", stable),
+            ("hard_plus_unstable", unstable),
+        ):
+            routes.append(_route(name, hard, source, coordinates))
+            finished += 1
+            emit_progress_paper(progress, {
+                "stage": "policies", "phase": "tick",
+                "completed": finished, "total": total,
+                "detail": name, "elapsed_s": float(monotonic() - started),
+            })
+        emit_progress_paper(progress, {"stage": "policies", "phase": "end", "completed": total, "total": total, "elapsed_s": float(monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "policies", "phase": "error", "completed": finished, "total": total, "elapsed_s": float(monotonic() - started)})
+        raise
+    return PolicyBundle(tuple(routes))
 
 
 __all__ = [

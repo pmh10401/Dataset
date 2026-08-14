@@ -10,6 +10,7 @@ import numpy as np
 
 from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, RawDataset, Task8FrozenManifest
 from .calibration_paper import upper_tail_pvalues
+from .data_paper import ProgressCallback, emit_progress_paper
 from .hard_route_paper import EXP234_SOURCES_PAPER, MAX_TOP_PAPER, HardRouteResult, RouteLanes, SourceExpansion
 from .lineage_paper import LINEAGE_NODES, read_strict_json
 from .routing_paper import PolicyBundle
@@ -604,42 +605,77 @@ def _validate_shard(value:object,entry:dict[str,object])->dict[str,object]:
     try: FrozenTask8BackendDecision.from_artifact_record(value["backend"])
     except ValueError as error: raise ValueError("proposal backend differs") from error
     return value
-def write_typed_proposal_shard(root:Path,catalog:dict[str,object],raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,low:LowFrequencyResult,stability:StabilityPartition,policies:PolicyBundle,backend:FrozenTask8BackendDecision)->Path:
+def write_typed_proposal_shard(root:Path,catalog:dict[str,object],raw:RawDataset,sources:HardSourceBundle,hard:HardRouteResult,low:LowFrequencyResult,stability:StabilityPartition,policies:PolicyBundle,backend:FrozenTask8BackendDecision,*,progress:ProgressCallback|None=None)->Path:
     if not isinstance(raw,RawDataset):raise TypeError("typed RawDataset is required")
-    entry=_catalog_entry(catalog,raw.dataset); payload=_typed_payload(raw,sources,hard,low,stability,policies,backend,entry); path=_shard_path(root,raw.dataset);write_create_only(path,canonical_json_bytes(payload));return path
+    entry=_catalog_entry(catalog,raw.dataset); payload=_typed_payload(raw,sources,hard,low,stability,policies,backend,entry); path=_shard_path(root,raw.dataset);write_create_only(path,canonical_json_bytes(payload))
+    if progress is not None:
+        emit_progress_paper(progress, {
+            "stage": "shard_write", "phase": "tick",
+            "completed": 1, "total": 1,
+            "dataset": raw.dataset, "detail": f"{raw.dataset}_paper.json",
+            "elapsed_s": 0.0,
+        })
+    return path
 def _acceptance(path:Path,catalog:dict[str,object]):
     from .catalog_paper import load_acceptance
     accepted=load_acceptance(Path(path),catalog); raw=Path(path).read_bytes(); return accepted,raw
-def freeze_score_root(root:Path,catalog:dict[str,object],acceptance_path:Path|None=None)->Task8FrozenManifest:
+def freeze_score_root(root:Path,catalog:dict[str,object],acceptance_path:Path|None=None,*,progress:ProgressCallback|None=None)->Task8FrozenManifest:
     """Freeze typed score shards before, and independently from, historical parity."""
     root=safe_root(root); names=[entry["dataset"] for entry in catalog["datasets"]]; hashes={}; total=0
-    for entry in catalog["datasets"]:
-        path=_shard_path(root,entry["dataset"]);_validate_shard(read_canonical(path),entry);hashes[entry["dataset"]]=sha256_bytes(path.read_bytes());total+=entry["test"]["count"]
-    shard_dir=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,SHARD_DIRECTORY)
-    if {path.name for path in shard_dir.iterdir()}!={f"{name}_paper.json" for name in names}:raise ValueError("proposal shard namespace differs")
-    if catalog["mode"]=="full" and (len(names)!=1117 or total!=195900):raise ValueError("full proposal inventory differs")
-    payload={"schema":MANIFEST_SCHEMA,"catalog_sha256":catalog["catalog_sha256"],"datasets":names,"test_row_count":total,"shard_hashes":hashes}
-    if acceptance_path is None:
-        payload.update({"parity_status":"not_available","acceptance_path":None,"acceptance_sha256":None,"acceptance_file_sha256":None})
-    else:
-        accepted,raw=_acceptance(acceptance_path,catalog)
-        payload.update({"parity_status":"available_not_run","acceptance_path":str(Path(acceptance_path)),"acceptance_sha256":accepted["acceptance_sha256"],"acceptance_file_sha256":sha256_bytes(raw)})
-    write_create_only(safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME),canonical_json_bytes(payload));return Task8FrozenManifest(**{**payload,"datasets":tuple(names)})
-def verify_score_root(root:Path,catalog:dict[str,object], expected_backend:FrozenTask8BackendDecision|None=None)->Task8FrozenManifest:
+    started=time.monotonic(); dataset_total=len(names); finished=0
+    emit_progress_paper(progress, {"stage": "freeze_verify", "phase": "start", "completed": 0, "total": dataset_total, "elapsed_s": 0.0})
+    try:
+        for entry in catalog["datasets"]:
+            path=_shard_path(root,entry["dataset"]);_validate_shard(read_canonical(path),entry);hashes[entry["dataset"]]=sha256_bytes(path.read_bytes());total+=entry["test"]["count"]
+            finished+=1
+            emit_progress_paper(progress, {
+                "stage": "freeze_verify", "phase": "tick",
+                "completed": finished, "total": dataset_total,
+                "dataset": entry["dataset"], "elapsed_s": float(time.monotonic() - started),
+            })
+        shard_dir=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,SHARD_DIRECTORY)
+        if {path.name for path in shard_dir.iterdir()}!={f"{name}_paper.json" for name in names}:raise ValueError("proposal shard namespace differs")
+        if catalog["mode"]=="full" and (len(names)!=1117 or total!=195900):raise ValueError("full proposal inventory differs")
+        payload={"schema":MANIFEST_SCHEMA,"catalog_sha256":catalog["catalog_sha256"],"datasets":names,"test_row_count":total,"shard_hashes":hashes}
+        if acceptance_path is None:
+            payload.update({"parity_status":"not_available","acceptance_path":None,"acceptance_sha256":None,"acceptance_file_sha256":None})
+        else:
+            accepted,raw=_acceptance(acceptance_path,catalog)
+            payload.update({"parity_status":"available_not_run","acceptance_path":str(Path(acceptance_path)),"acceptance_sha256":accepted["acceptance_sha256"],"acceptance_file_sha256":sha256_bytes(raw)})
+        write_create_only(safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME),canonical_json_bytes(payload))
+        emit_progress_paper(progress, {"stage": "freeze_verify", "phase": "end", "completed": dataset_total, "total": dataset_total, "elapsed_s": float(time.monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "freeze_verify", "phase": "error", "completed": finished, "total": dataset_total, "elapsed_s": float(time.monotonic() - started)})
+        raise
+    return Task8FrozenManifest(**{**payload,"datasets":tuple(names)})
+def verify_score_root(root:Path,catalog:dict[str,object], expected_backend:FrozenTask8BackendDecision|None=None,*,progress:ProgressCallback|None=None)->Task8FrozenManifest:
     root=safe_root(root); path=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,MANIFEST_NAME); value=read_canonical(path); manifest=Task8FrozenManifest(**{**value,"datasets":tuple(value["datasets"])})
     if manifest.catalog_sha256!=catalog["catalog_sha256"]:raise ValueError("proposal manifest authority differs")
     if manifest.parity_status == "available_not_run":
         accepted,raw=_acceptance(Path(manifest.acceptance_path),catalog)
         if manifest.acceptance_sha256!=accepted["acceptance_sha256"] or manifest.acceptance_file_sha256!=sha256_bytes(raw):raise ValueError("proposal manifest authority differs")
     names=[entry["dataset"] for entry in catalog["datasets"]]; total=0
-    for entry in catalog["datasets"]:
-        shard_path=_shard_path(root,entry["dataset"]); shard=_validate_shard(read_canonical(shard_path),entry)
-        if expected_backend is not None and shard["backend"] != expected_backend.artifact_record():raise ValueError("proposal backend differs from verified acceleration assessment")
-        if manifest.shard_hashes[entry["dataset"]]!=sha256_bytes(shard_path.read_bytes()):raise ValueError("proposal shard hash differs")
-        total+=entry["test"]["count"]
-    if manifest.datasets!=tuple(names) or manifest.test_row_count!=total:raise ValueError("proposal manifest total differs")
-    directory=_freeze_root(root); shards=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,SHARD_DIRECTORY)
-    if {item.name for item in directory.iterdir()}!={MANIFEST_NAME,SHARD_DIRECTORY} or {item.name for item in shards.iterdir()}!={f"{name}_paper.json" for name in names}:raise ValueError("proposal freeze namespace differs")
+    started=time.monotonic(); dataset_total=len(names); finished=0
+    emit_progress_paper(progress, {"stage": "freeze_verify", "phase": "start", "completed": 0, "total": dataset_total, "elapsed_s": 0.0})
+    try:
+        for entry in catalog["datasets"]:
+            shard_path=_shard_path(root,entry["dataset"]); shard=_validate_shard(read_canonical(shard_path),entry)
+            if expected_backend is not None and shard["backend"] != expected_backend.artifact_record():raise ValueError("proposal backend differs from verified acceleration assessment")
+            if manifest.shard_hashes[entry["dataset"]]!=sha256_bytes(shard_path.read_bytes()):raise ValueError("proposal shard hash differs")
+            total+=entry["test"]["count"]
+            finished+=1
+            emit_progress_paper(progress, {
+                "stage": "freeze_verify", "phase": "tick",
+                "completed": finished, "total": dataset_total,
+                "dataset": entry["dataset"], "elapsed_s": float(time.monotonic() - started),
+            })
+        if manifest.datasets!=tuple(names) or manifest.test_row_count!=total:raise ValueError("proposal manifest total differs")
+        directory=_freeze_root(root); shards=safe_child(root,ARTIFACT_DIRECTORY,FREEZE_STAGE,SHARD_DIRECTORY)
+        if {item.name for item in directory.iterdir()}!={MANIFEST_NAME,SHARD_DIRECTORY} or {item.name for item in shards.iterdir()}!={f"{name}_paper.json" for name in names}:raise ValueError("proposal freeze namespace differs")
+        emit_progress_paper(progress, {"stage": "freeze_verify", "phase": "end", "completed": dataset_total, "total": dataset_total, "elapsed_s": float(time.monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "freeze_verify", "phase": "error", "completed": finished, "total": dataset_total, "elapsed_s": float(time.monotonic() - started)})
+        raise
     return manifest
 def verify_parity(root:Path,catalog:dict[str,object])->dict[str,object]:
     manifest=verify_score_root(root,catalog)

@@ -91,18 +91,18 @@ def _records(root):
 def _catalog_from_context(context):
     return build_catalog(Path(context["paths"]["db_path"]["unresolved_path"]),mode=context["mode"],smoke_datasets=tuple(context["smoke_datasets"]))
 
-def _proposal_artifact(root,context):
+def _proposal_artifact(root,context,*,progress=None):
     acceleration_path=_artifact_path(root,"acceleration")
     acceleration=verify_acceleration_manifest(read_canonical(acceleration_path),context["context_sha256"])
-    catalog=_catalog_from_context(context); manifest=verify_score_root(root,catalog,FrozenTask8BackendDecision.from_acceleration_manifest(acceleration))
+    catalog=_catalog_from_context(context); manifest=verify_score_root(root,catalog,FrozenTask8BackendDecision.from_acceleration_manifest(acceleration),progress=progress)
     return {"schema":"paper-task9-proposal-score.v1","stage":"proposal_score","context_sha256":context["context_sha256"],"acceleration_sha256":sha256_bytes(acceleration_path.read_bytes()),"catalog_sha256":catalog["catalog_sha256"],"proposal_manifest_sha256":sha256_bytes(safe_child(root,ARTIFACT_DIRECTORY,"proposal_freeze","proposal_manifest_paper.json").read_bytes()),"parity_status":manifest.parity_status}
 
-def _artifact_record(root,stage,context):
+def _artifact_record(root,stage,context,*,progress=None):
     path=_artifact_path(root,stage); raw=path.read_bytes(); value=read_canonical(path)
     if stage=="preflight": expected={"schema":"paper-task8-preflight.v1","stage":stage,"context_sha256":context["context_sha256"]}
     elif stage=="prepare": expected={"schema":"paper-task8-prepare.v1","stage":stage,"context_sha256":context["context_sha256"],"catalog":_catalog_from_context(context),"parity_authority":context["parity_authority"]}
     elif stage=="acceleration": expected=verify_acceleration_manifest(value,context["context_sha256"])
-    elif stage=="proposal_score": expected=_proposal_artifact(root,context)
+    elif stage=="proposal_score": expected=_proposal_artifact(root,context,progress=progress)
     else: raise PipelineStateError("unregistered pipeline stage")
     if value!=expected: raise PipelineStateError("stage semantic verifier failed")
     return {"relative_path":str(path.relative_to(root)),"size":len(raw),"sha256":sha256_bytes(raw),"schema":expected["schema"]}
@@ -191,9 +191,9 @@ def _write_complete(root,stage,context,prior):
         progress=make_stderr_progress_sink_paper()
         raw=_load_catalog_raw(catalog,Path(context["paths"]["db_path"]["unresolved_path"]),progress=progress)
         acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
-        proposal=compose_proposal_score(raw,acceleration,root=root,context=context,catalog=catalog,progress=progress); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
+        proposal=compose_proposal_score(raw,acceleration,root=root,context=context,catalog=catalog,progress=progress); write_and_freeze_proposal_score(root,catalog,proposal,progress=progress); payload=_proposal_artifact(root,context,progress=progress)
     else: raise PipelineStateError("unregistered pipeline stage")
-    path=_artifact_path(root,stage); write_create_only(path,canonical_json_bytes(payload)); artifact=_artifact_record(root,stage,context)
+    path=_artifact_path(root,stage); write_create_only(path,canonical_json_bytes(payload)); artifact=_artifact_record(root,stage,context,progress=progress)
     index=("preflight","prepare","acceleration","proposal_score").index(stage)+1
     emit_progress_paper(progress, {
         "stage": "journal_exit", "phase": "start", "completed": 0, "total": 1,
