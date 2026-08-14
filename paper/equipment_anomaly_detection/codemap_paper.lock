@@ -1,4 +1,5 @@
 {
+  "schema": "paper-codemap-lock.v1",
   "hashes": {
     "acceleration_paper.py": "c420a3f4a8af3e717d651bf9583ca3befd79c0de49eed68e97477ad9c2d84d83",
     "artifact_parity_claim_paper.json": "8e2f7a1b3d3163f2a92857e8dc45a44d8069750ffac486428e679394ac69e881",
@@ -6,7 +7,7 @@
     "calibration_paper.py": "5be62a8e3559581f96920a17d781e8e74870bf5983cf5d7d5068769641fe6710",
     "catalog_paper.py": "d6b0240d7e54ea9fb1c075649d376bc4fabf7ffb4cfd6ca24ed7244d99f379f2",
     "codemap_paper.html": "34b18ce8e6e65fa69ef7f1d4e0ff96b55af35964beebb772d2a37c97f1d83315",
-    "codemap_paper.json": "ae56303df6f6067cc53515a935577cc563874a7898ccb99883f9a067794db544",
+    "codemap_paper.json": "f44570972c980da5f3dc5105a473a30a5312fe7a6aab01b3c191067d728c77b7",
     "config_paper.py": "d1b6b03eda32601365fc77f0c3e9d0f8618f9e310fc45e15974166eff6790a30",
     "contracts_paper.py": "d7899c6e8400b012469c63194455e68121368b573c4544445b1a616f1348f856",
     "data_paper.py": "80b23812860b03a01e11bf0c7be41691f6b907200e94e85a159ee07d527a6999",
@@ -42,6 +43,5 @@
     "tests_paper/test_low_frequency_paper.py": "68efc8aefb1abccc28577037a868ac3c3738644c7965f2d7d7eec272b07c086e",
     "tests_paper/test_minirocket_paper.py": "8e0e44b696dbc6cfd7c94ff047f4b70ed77a38c37ff000334083d7d2a66df231",
     "tests_paper/test_stability_paper.py": "bace1b91e59128bac5d081c6c5d8bf4965adebd69261514abdaf0e2236664bf9"
-  },
-  "schema": "paper-codemap-lock.v1"
+  }
 }
