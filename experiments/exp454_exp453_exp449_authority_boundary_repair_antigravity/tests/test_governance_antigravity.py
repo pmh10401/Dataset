@@ -1,0 +1,231 @@
+"""Governance contract for the planned, label-free Exp454 authority-boundary repair."""
+
+from __future__ import annotations
+
+import hashlib
+import html as html_module
+import importlib.util
+import json
+import re
+import unittest
+from pathlib import Path
+
+
+ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[3]
+PLAN_ANTIGRAVITY = "docs/superpowers/plans/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity.html"
+DOCUMENTS_ANTIGRAVITY = (
+    "docs/EXP454_PREREGISTRATION_antigravity_KO.html",
+    "docs/EXP454_RUNBOOK_antigravity_KO.html",
+    "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html",
+)
+TRIPLET_ANTIGRAVITY = (
+    "docs/codemap/codemap_exp454_antigravity.html",
+    "docs/codemap/codemap_exp454_antigravity.json",
+    "docs/codemap/codemap_exp454_antigravity.lock",
+)
+FIXED_EXECUTABLE_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python"
+FIXED_PREFIX_ANTIGRAVITY = "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314"
+PREDICTION_SHA256_ANTIGRAVITY = "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d"
+FAILURE_AUDIT_SHA256_ANTIGRAVITY = "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276"
+DESIGN_COMMIT_ANTIGRAVITY = "2a8486c42b385f4e589c7062a1c16f4be4372f4f"
+DESIGN_SHA256_ANTIGRAVITY = "b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f"
+KIND_ANTIGRAVITY = "exp453_exp449_authority_boundary_repair"
+RUN_IDENTITY_ANTIGRAVITY = "exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814"
+TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY = (
+    "CHAMPION_LEDGER.json",
+    "EXPERIMENT_CATALOG.json",
+    "RESEARCH_STATE.json",
+    "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html",
+    "docs/EXP454_PREREGISTRATION_antigravity_KO.html",
+    "docs/EXP454_RUNBOOK_antigravity_KO.html",
+    "docs/superpowers/plans/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity.html",
+    "experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity/tests/test_governance_antigravity.py",
+    "scratch/build_codemap_exp454_antigravity.py",
+)
+
+
+def strict_json_antigravity(path: Path) -> object:
+    def reject_duplicates_antigravity(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        value: dict[str, object] = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError(f"duplicate JSON key: {key}")
+            value[key] = item
+        return value
+
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicates_antigravity)
+
+
+def map_builder_antigravity(relative: str, name: str) -> object:
+    path = ROOT_ANTIGRAVITY / relative
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"{relative} is not importable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class GovernanceAntigravityTest(unittest.TestCase):
+    def test_task_one_html_and_checkbox_progress_antigravity(self) -> None:
+        """Break caught: Task 1 is called complete while its HTML or checkboxes are missing."""
+        for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
+            with self.subTest(relative=relative):
+                path = ROOT_ANTIGRAVITY / relative
+                self.assertIn("antigravity", path.name)
+                self.assertTrue(path.is_file())
+        for relative in DOCUMENTS_ANTIGRAVITY:
+            path = ROOT_ANTIGRAVITY / relative
+            self.assertEqual(path.suffix, ".html")
+            self.assertFalse(path.with_suffix(".md").exists())
+            self.assertIn("<!doctype html>", path.read_text(encoding="utf-8").lower())
+
+        plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
+        for task_number in range(1, 7):
+            section = re.search(
+                rf"<section><h2><input\b[^>]*> Task {task_number}:.*?</section>",
+                plan,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+            self.assertIsNotNone(section)
+            assert section is not None
+            tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
+            for tag in tags:
+                if task_number == 1:
+                    self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+                else:
+                    self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+
+    def test_planned_truth_preserves_science_and_champion_antigravity(self) -> None:
+        """Break caught: governance changes the frozen experiment or claims an official result."""
+        state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
+        catalog = strict_json_antigravity(ROOT_ANTIGRAVITY / "EXPERIMENT_CATALOG.json")
+        champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
+        failures = strict_json_antigravity(ROOT_ANTIGRAVITY / "FAILURE_LEDGER.json")
+        assert isinstance(state, dict) and isinstance(catalog, dict) and isinstance(champion, dict) and isinstance(failures, dict)
+        exp454 = state["exp454"]
+        catalog_entry = next(item for item in catalog["experiments"] if item["id"] == "Exp454")
+        champion_entry = next(item for item in champion["history"] if item["experiment"] == "Exp454")
+        self.assertEqual(sum(item["id"] == "Exp454" for item in catalog["experiments"]), 1)
+        self.assertEqual(sum(item["experiment"] == "Exp454" for item in champion["history"]), 1)
+        self.assertFalse(any(item.get("experiment") == "Exp454" for item in failures["entries"]))
+        for record in (exp454, catalog_entry, champion_entry):
+            self.assertEqual(record["status"], "planned_not_started")
+            self.assertEqual(record["kind"] if "kind" in record else KIND_ANTIGRAVITY, KIND_ANTIGRAVITY)
+            self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
+            self.assertEqual(record["predecessor_prediction_sha256"], PREDICTION_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["predecessor_failure_audit_sha256"], FAILURE_AUDIT_SHA256_ANTIGRAVITY)
+            self.assertEqual(record["target_dataset_count"], 48)
+            self.assertEqual(record["target_prediction_count"], 96)
+            self.assertEqual(record["target_family_method_pair_count"], 16)
+            self.assertEqual(record["seeds"], [20260721, 20261721])
+            self.assertEqual(record["alpha"], 0.005)
+            self.assertEqual(record["fixed_executable"], FIXED_EXECUTABLE_ANTIGRAVITY)
+            self.assertEqual(record["fixed_prefix"], FIXED_PREFIX_ANTIGRAVITY)
+            self.assertEqual(record["runtime_versions"], {"python": "3.14.6", "numpy": "2.3.5", "aeon": "1.4.0", "scikit_learn": "1.7.2"})
+            self.assertEqual(record["label_access_count"], 0)
+            self.assertFalse(record["official_readiness_started"])
+            self.assertFalse(record["official_evaluate_started"])
+            self.assertFalse(record["official_inspect_started"])
+            self.assertEqual(record["official_readiness_invocations"], 0)
+            self.assertEqual(record["official_evaluate_invocations"], 0)
+            self.assertEqual(record["official_inspect_invocations"], 0)
+            self.assertEqual(record["label_sessions"], 0)
+            self.assertEqual(record["label_queries"], 0)
+            self.assertEqual(record["label_rows"], 0)
+            self.assertIsNone(record["result_sha256"])
+            self.assertIsNone(record["evaluation_sha256"])
+            self.assertIsNone(record["decision_sha256"])
+            self.assertIsNone(record["inspect_sha256"])
+            self.assertFalse(record["promotion_allowed"])
+            self.assertFalse(record["routing_allowed"])
+            self.assertFalse(record["pending_candidate_changed"])
+            self.assertFalse(record["scientific_winner_selected"])
+        self.assertEqual(exp454["kind"], KIND_ANTIGRAVITY)
+        self.assertEqual(catalog_entry["kind"], KIND_ANTIGRAVITY)
+        self.assertEqual(exp454["reviewed_design_commit"], DESIGN_COMMIT_ANTIGRAVITY)
+        self.assertEqual(exp454["reviewed_design_sha256"], DESIGN_SHA256_ANTIGRAVITY)
+        self.assertEqual(catalog_entry["reviewed_design_commit"], DESIGN_COMMIT_ANTIGRAVITY)
+        self.assertEqual(catalog_entry["reviewed_design_sha256"], DESIGN_SHA256_ANTIGRAVITY)
+        self.assertEqual(champion["pending_candidate"], state["pending_candidate"])
+        self.assertFalse((ROOT_ANTIGRAVITY / "EXPERIMENT_HISTORY.json").exists())
+        exp453_failure = next(item for item in failures["entries"] if item["experiment"] == "Exp453")
+        self.assertEqual(exp453_failure["facts"]["failure_audit_sha256"], FAILURE_AUDIT_SHA256_ANTIGRAVITY)
+
+    def test_document_hash_bindings_are_exact_antigravity(self) -> None:
+        """Break caught: readiness later consumes document bytes different from registered bytes."""
+        state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
+        catalog = strict_json_antigravity(ROOT_ANTIGRAVITY / "EXPERIMENT_CATALOG.json")
+        champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
+        assert isinstance(state, dict) and isinstance(catalog, dict) and isinstance(champion, dict)
+        catalog_entry = next(item for item in catalog["experiments"] if item["id"] == "Exp454")
+        champion_entry = next(item for item in champion["history"] if item["experiment"] == "Exp454")
+        for bindings in (
+            state["exp454"]["document_sha256"],
+            catalog_entry["document_sha256"],
+            champion_entry["document_sha256"],
+        ):
+            for key, relative in zip(("preregistration", "runbook", "implementation_report"), DOCUMENTS_ANTIGRAVITY, strict=True):
+                with self.subTest(record=key, relative=relative):
+                    actual = hashlib.sha256((ROOT_ANTIGRAVITY / relative).read_bytes()).hexdigest()
+                    self.assertEqual(bindings[key], actual)
+
+    def test_inherited_exp453_map_is_stale_invalid_source_parent_antigravity(self) -> None:
+        """Break caught: Task 1 proceeds as if the inherited Exp453 map still binds HEAD."""
+        builder = map_builder_antigravity("scratch/build_codemap_exp453_antigravity.py", "exp453_map_builder_antigravity")
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp453_antigravity.json")
+        lock = strict_json_antigravity(ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp453_antigravity.lock")
+        rendered = (ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp453_antigravity.html").read_text(encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "invalid source parent"):
+            builder.validate_map_antigravity(graph, lock, rendered)
+        report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
+        self.assertIn("invalid source parent", report)
+        self.assertIn("stale", report.lower())
+        self.assertIn("sources", report)
+        self.assertIn("readiness", report)
+        self.assertIn("evaluator", report)
+        self.assertIn("dual authority", report)
+        self.assertIn("predecessor", report)
+
+    def test_map_is_bounded_strict_and_marks_future_product_antigravity(self) -> None:
+        """Break caught: Task 1 map falsely claims not-yet-implemented product code."""
+        builder = map_builder_antigravity("scratch/build_codemap_exp454_antigravity.py", "exp454_map_builder_antigravity")
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
+        rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
+        assert isinstance(graph, dict) and isinstance(lock, dict)
+        self.assertLessEqual(len(graph["nodes"]), 20)
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        for node_id in ("task2_foundations", "task3_runtime_predecessors", "task4_evaluation_replay", "task5_cli"):
+            self.assertEqual(node_by_id[node_id]["status"], "future_unknown")
+            self.assertEqual(node_by_id[node_id]["evidence"], [])
+        self.assertTrue(graph["unknown_relationships"])
+        self.assertIn("tracked_fingerprints", lock)
+        self.assertEqual(len(lock["tracked_fingerprints"]), 9)
+        self.assertEqual(set(lock["tracked_fingerprints"]), set(TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY))
+        match = re.search(r'<pre id="codemap-json-antigravity" type="application/json">(.*?)</pre>', rendered, flags=re.DOTALL)
+        self.assertIsNotNone(match)
+        assert match is not None
+        embedded = json.loads(html_module.unescape(match.group(1)))
+        self.assertEqual(embedded, graph)
+        builder.validate_map_antigravity(graph, lock, rendered)
+
+    def test_map_answers_normalization_boundary_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: future normalization boundary has no callers, effects, or tests."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node = next(item for item in graph["nodes"] if item["id"] == "task2_foundations")
+        role = str(node["role"]).lower()
+        self.assertIn("caller", role)
+        self.assertIn("effect", role)
+        self.assertIn("sources", role)
+        self.assertIn("readiness", role)
+        self.assertIn("evaluator", role)
+        self.assertIn("normalize_exp449_target_authority_antigravity", str(node["role"]))
+        joined_tests = " ".join(str(item) for item in node["tests"]).lower()
+        self.assertTrue("test_predecessor" in role or "test_predecessor" in joined_tests)
+        self.assertTrue("test_evaluation" in role or "test_evaluation" in joined_tests)
+
+
+if __name__ == "__main__":
+    unittest.main()

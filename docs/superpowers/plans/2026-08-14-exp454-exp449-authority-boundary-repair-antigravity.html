@@ -30,20 +30,20 @@
 <tr><td>Result</td><td><code>evaluation/replay/cli_antigravity.py</code> — 동일 계산, 12-leaf publication, exact inspect</td></tr>
 </tbody></table>
 
-<section><h2><input disabled type="checkbox"> Task 1: HTML governance와 Exp454 code map</h2>
+<section><h2><input disabled type="checkbox" checked> Task 1: HTML governance와 Exp454 code map</h2>
 <p><strong>Files:</strong> Create <code>docs/EXP454_PREREGISTRATION_antigravity_KO.html</code>, <code>docs/EXP454_RUNBOOK_antigravity_KO.html</code>, <code>docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html</code>, governance test, map builder, <code>codemap_exp454_antigravity.html/json/lock</code>. Modify only Exp454 entries in the four root ledgers.</p>
 <p><strong>Produces:</strong> planned, labels0, null-result Exp454 truth and a map that marks later product modules as future.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1 — map preflight:</strong> inherited Exp453 map은 새 Exp454 design commit 뒤 <code>invalid source parent</code>로 stale임을 기록한다. JSON에서 predecessor의 callers는 sources/readiness/evaluator, effect는 dual authority, tests는 predecessor/sources임을 확인한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 2 — RED governance:</strong><pre><code>python3 -m unittest experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.tests.test_governance_antigravity -v
+<li><input disabled type="checkbox" checked> <strong>Step 1 — map preflight:</strong> inherited Exp453 map은 새 Exp454 design commit 뒤 <code>invalid source parent</code>로 stale임을 기록한다. JSON에서 predecessor의 callers는 sources/readiness/evaluator, effect는 dual authority, tests는 predecessor/sources임을 확인한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 2 — RED governance:</strong><pre><code>python3 -m unittest experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.tests.test_governance_antigravity -v
 # Expected: missing module or missing HTML/map failure.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 3 — 문서:</strong> preregistration, runbook, implementation report를 작성한다. report status는 <code>not_started</code>이고 공식 counts와 labels는 0, 결과 hash는 null이다.</li>
-<li><input disabled type="checkbox"> <strong>Step 4 — ledgers:</strong> <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>에 Exp454 planned/non-promoted record를 하나씩 추가한다. <code>FAILURE_LEDGER.json</code>의 Exp453 기록은 바꾸지 않는다.</li>
-<li><input disabled type="checkbox"> <strong>Step 5 — map:</strong> Exp454 map builder와 HTML/JSON/lock을 함께 만들고 20 nodes 이하, exact evidence paths, 9 tracked fingerprints를 검사한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 6 — GREEN:</strong><pre><code>python3 -m unittest experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.tests.test_governance_antigravity -v
+<li><input disabled type="checkbox" checked> <strong>Step 3 — 문서:</strong> preregistration, runbook, implementation report를 작성한다. report status는 <code>not_started</code>이고 공식 counts와 labels는 0, 결과 hash는 null이다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4 — ledgers:</strong> <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>에 Exp454 planned/non-promoted record를 하나씩 추가한다. <code>FAILURE_LEDGER.json</code>의 Exp453 기록은 바꾸지 않는다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 5 — map:</strong> Exp454 map builder와 HTML/JSON/lock을 함께 만들고 20 nodes 이하, exact evidence paths, 9 tracked fingerprints를 검사한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — GREEN:</strong><pre><code>python3 -m unittest experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.tests.test_governance_antigravity -v
 python3 scratch/build_codemap_exp454_antigravity.py --validate-only
 git diff --check
 # Expected: all exit 0.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 7 — review/commit:</strong> Grok read-only 문서 검토 후 Codex가 governance commit과 clean map-only child를 만든다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 7 — review/commit:</strong> Grok read-only 문서 검토 후 Codex가 governance commit과 clean map-only child를 만든다.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 2: Controlled fork와 단일 authority 변환</h2>
