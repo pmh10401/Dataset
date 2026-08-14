@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from hashlib import sha256
 import json
-from math import isfinite
+from math import isclose, isfinite
 from pathlib import Path, PurePosixPath
 import stat
 
@@ -20,6 +20,10 @@ _FREEZE_DIRECTORY = "proposal_freeze_antigravity"
 _SHARDS_DIRECTORY = "shards_antigravity"
 _MANIFEST_NAME = "proposal_manifest_antigravity.json"
 _SHARD_SCHEMA = "exp449-proposal-shard-antigravity.v1"
+_TYPED_SHARD_SCHEMA = "paper-task8-proposal-shard.v3"
+_HARD_SOURCES = ("rocket_exp40", "exp55_best", "exp56_best", "exp84", "rocket_block_b", "canonical_normal_state")
+_SOURCE_ALPHA = {"rocket_exp40": .03, "exp55_best": .03, "exp56_best": .02, "exp84": .02, "rocket_block_b": .015, "canonical_normal_state": .02}
+_HARD_STAGE_IDS = ("exp74d", "exp89", "exp90", "exp93", "exp137", "exp234", "exp236", "exp253")
 
 
 def canonical_json_bytes_antigravity(value: object) -> bytes:
@@ -109,14 +113,109 @@ def _scores(value: object, n: int) -> list[float]:
     return [float(x) for x in value]
 
 
+def _bools(value: object, n: int, name: str) -> list[bool]:
+    if not isinstance(value, list) or len(value) != n or any(type(item) is not bool for item in value):
+        raise ValueError(f"Exp449 {name} differs")
+    return value
+
+
+def _lanes(value: object, n: int, name: str) -> dict[str, list[int]]:
+    if not isinstance(value, dict) or set(value) != {"hard", "standard", "priority"}:
+        raise ValueError(f"Exp449 {name} lanes differ")
+    result = {key: _integer_list(value[key], n, f"{name} {key}") for key in value}
+    lanes = [set(result[key]) for key in ("hard", "standard", "priority")]
+    if lanes[0] & lanes[1] or lanes[0] & lanes[2] or lanes[1] & lanes[2]:
+        raise ValueError(f"Exp449 {name} lanes overlap")
+    return result
+
+
+def _low_provisional(value: object, n: int) -> set[int]:
+    """Check the full serialised Task6 row grammar and its local relations."""
+    if not isinstance(value, list) or len(value) != n:
+        raise ValueError("Exp449 low-frequency row coverage differs")
+    provisional: set[int] = set()
+    for index, row in enumerate(value):
+        required = {"index", "evidence_missing", "strict_pass", "provisional", "depths"}
+        if not isinstance(row, dict) or set(row) != required or row["index"] != index:
+            raise ValueError("Exp449 low-frequency row schema differs")
+        if any(type(row[key]) is not bool for key in ("evidence_missing", "strict_pass", "provisional")) or not isinstance(row["depths"], list):
+            raise ValueError("Exp449 low-frequency row flags differ")
+        depths = row["depths"]
+        if row["evidence_missing"]:
+            if depths or row["strict_pass"] or row["provisional"]:
+                raise ValueError("Exp449 missing low-frequency evidence differs")
+            continue
+        if not depths:
+            raise ValueError("Exp449 available low-frequency evidence differs")
+        seen: set[int] = set()
+        passing = 0
+        for depth in depths:
+            needed = {"depth", "score", "threshold", "strict_pass", "excess_ratio", "empirical_rank"}
+            if not isinstance(depth, dict) or set(depth) != needed or type(depth["depth"]) is not int or depth["depth"] < 1 or depth["depth"] in seen or type(depth["strict_pass"]) is not bool:
+                raise ValueError("Exp449 low-frequency depth schema differs")
+            seen.add(depth["depth"])
+            if any(type(depth[key]) not in (int, float) or not isfinite(float(depth[key])) for key in ("score", "threshold", "excess_ratio", "empirical_rank")):
+                raise ValueError("Exp449 low-frequency depth values differ")
+            score, threshold = float(depth["score"]), float(depth["threshold"])
+            ratio, rank = float(depth["excess_ratio"]), float(depth["empirical_rank"])
+            if score < 0 or threshold < 0 or ratio < 0 or not 0 < rank <= 1 or depth["strict_pass"] != (score > threshold) or not isclose(ratio, score / max(threshold, 1e-12), rel_tol=1e-12, abs_tol=1e-12):
+                raise ValueError("Exp449 low-frequency depth relation differs")
+            passing += int(depth["strict_pass"])
+        if [depth["depth"] for depth in depths] != sorted(seen):
+            raise ValueError("Exp449 low-frequency depth order differs")
+        strict = passing >= 2
+        if row["strict_pass"] != strict or row["provisional"] != strict:
+            raise ValueError("Exp449 low-frequency provisional relation differs")
+        if strict:
+            provisional.add(index)
+    return provisional
+
+
 def _scientific(value: object, entry: Mapping[str, object]) -> dict[str, object]:
     required={"schema","dataset","train_identity","test_identity","source_rows","hard_stages","low_frequency_rows","stability","policies","backend"}
-    if not isinstance(value,dict) or set(value)!=required or value["schema"]!="paper-task8-proposal-shard.v3" or value["dataset"]!=entry.get("dataset") or value["train_identity"]!=entry.get("train") or value["test_identity"]!=entry.get("test"): raise ValueError("Exp449 scientific payload differs")
+    if not isinstance(value,dict) or set(value)!=required or value["schema"]!=_TYPED_SHARD_SCHEMA or value["dataset"]!=entry.get("dataset") or value["train_identity"]!=entry.get("train") or value["test_identity"]!=entry.get("test"): raise ValueError("Exp449 scientific payload differs")
     test=entry.get("test"); n=test.get("count") if isinstance(test,Mapping) else None
     if type(n) is not int or n < 0: raise ValueError("Exp449 scientific test count differs")
+
+    source_rows=value["source_rows"]
+    if not isinstance(source_rows,list) or [row.get("source_id") if isinstance(row,dict) else None for row in source_rows] != list(_HARD_SOURCES): raise ValueError("Exp449 source order differs")
+    for order,row in enumerate(source_rows):
+        fields={"source_id","order","test_score","pvalue","native_pass","eligible","reason"}
+        if not isinstance(row,dict) or set(row)!=fields or row["order"]!=order or type(row["eligible"]) is not bool or type(row["reason"]) is not str or not row["reason"]: raise ValueError("Exp449 source schema differs")
+        pvalue=_scores(row["pvalue"],n)
+        if any(item<0 or item>1 for item in pvalue): raise ValueError("Exp449 source pvalue domain differs")
+        native=_bools(row["native_pass"],n,"source native pass")
+        if native != [item <= _SOURCE_ALPHA[row["source_id"]] for item in pvalue]: raise ValueError("Exp449 source native-pass relation differs")
+        if row["eligible"]:
+            _scores(row["test_score"],n)
+            if row["reason"] != "eligible": raise ValueError("Exp449 eligible source reason differs")
+        elif row["test_score"] != [] or pvalue != [1.0]*n or any(native): raise ValueError("Exp449 abstained source relation differs")
+
     stages=value["hard_stages"]
-    if not isinstance(stages,list) or len(stages)!=8 or not isinstance(stages[-1],dict) or stages[-1].get("stage_id")!="exp253" or not isinstance(stages[-1].get("lanes"),dict): raise ValueError("Exp449 hard stages differ")
-    automatic=_integer_list(stages[-1]["lanes"].get("hard"),n,"hard alerts")
+    if not isinstance(stages,list) or [row.get("stage_id") if isinstance(row,dict) else None for row in stages] != list(_HARD_STAGE_IDS): raise ValueError("Exp449 hard stage order differs")
+    lanes: dict[str,dict[str,list[int]]] = {}; indices: dict[str,list[int]] = {}
+    for order,row in enumerate(stages):
+        if not isinstance(row,dict) or row.get("order") != order: raise ValueError("Exp449 hard stage schema differs")
+        stage=_HARD_STAGE_IDS[order]
+        if stage in {"exp74d","exp137","exp236","exp253"}:
+            if set(row)!={"stage_id","order","lanes"}: raise ValueError("Exp449 hard lane stage schema differs")
+            lanes[stage]=_lanes(row["lanes"],n,stage)
+        elif stage == "exp234":
+            if set(row)!={"stage_id","order","minimum_two","minimum_three"}: raise ValueError("Exp449 source expansion schema differs")
+            indices["minimum_two"]=_integer_list(row["minimum_two"],n,"minimum two"); indices["minimum_three"]=_integer_list(row["minimum_three"],n,"minimum three")
+            if not set(indices["minimum_three"]) <= set(indices["minimum_two"]): raise ValueError("Exp449 source expansion relation differs")
+        else:
+            if set(row)!={"stage_id","order","indices"}: raise ValueError("Exp449 hard index stage schema differs")
+            indices[stage]=_integer_list(row["indices"],n,stage)
+    if not set(lanes["exp74d"]["hard"]) <= set(indices["exp89"]) or not set(indices["exp89"]) <= set(indices["exp90"]): raise ValueError("Exp449 early hard-stage relation differs")
+    exp137=lanes["exp137"]
+    if not set().union(*(set(item) for item in exp137.values())) <= set(indices["exp93"]): raise ValueError("Exp449 Exp137 route relation differs")
+    if set(indices["minimum_two"]) & set().union(*(set(item) for item in exp137.values())): raise ValueError("Exp449 source expansion route overlap differs")
+    exp236,exp253=lanes["exp236"],lanes["exp253"]
+    if set(exp236["hard"]) != set(exp137["hard"]) | set(indices["minimum_three"]) or set(exp236["standard"]) != set(exp137["standard"]) | (set(indices["minimum_two"])-set(indices["minimum_three"])) or exp236["priority"] != exp137["priority"]: raise ValueError("Exp449 Exp236 route relation differs")
+    if not set(exp236["hard"]) <= set(exp253["hard"]) or not set(exp253["standard"]) <= set(exp236["standard"]) or exp253["priority"] != exp236["priority"]: raise ValueError("Exp449 Exp253 route relation differs")
+    automatic=_integer_list(exp253["hard"],n,"hard alerts")
+    provisional=_low_provisional(value["low_frequency_rows"],n)
     stability=value["stability"]
     if not isinstance(stability,dict) or set(stability)!={"selected","stable","unstable"}: raise ValueError("Exp449 stability differs")
     def coordinates(name: str) -> list[int]:
@@ -125,6 +224,14 @@ def _scientific(value: object, entry: Mapping[str, object]) -> dict[str, object]
         return _integer_list([row[1] for row in rows],n,"stability coordinates")
     selected,stable,unstable=coordinates("selected"),coordinates("stable"),coordinates("unstable")
     if set(stable)&set(unstable) or set(stable)|set(unstable)!=set(selected): raise ValueError("Exp449 stability partition differs")
+    if len(selected)>1 or any(index not in provisional for index in selected) or (automatic and selected): raise ValueError("Exp449 selected low-frequency row relation differs")
+    if selected:
+        candidates=[]
+        for row in value["low_frequency_rows"]:
+            if row["provisional"]:
+                strict=[item for item in row["depths"] if item["strict_pass"]]
+                candidates.append((-sorted((float(item["excess_ratio"]) for item in strict),reverse=True)[1],sorted(float(item["empirical_rank"]) for item in strict)[1],row["index"]))
+        if selected[0] != min(candidates)[2]: raise ValueError("Exp449 selected low-frequency ranking differs")
     policies=value["policies"]
     if not isinstance(policies,list) or [row.get("policy_id") if isinstance(row,dict) else None for row in policies] != list(FROZEN_EXP449_POLICY_KEYS): raise ValueError("Exp449 policy closure differs")
     expected=(set(automatic),set(automatic)|set(selected),set(automatic)|set(stable),set(automatic)|set(unstable))

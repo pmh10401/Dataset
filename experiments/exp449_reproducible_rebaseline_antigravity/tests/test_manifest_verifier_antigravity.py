@@ -7,6 +7,7 @@ from contextlib import ExitStack
 from hashlib import sha256
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import struct
 import sys
@@ -130,6 +131,36 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
 
     def _manifest_path(self) -> Path:
         return self.root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+
+    def _rewrite_bound_shard(self, mutate) -> None:
+        """Rewrite one shard and every descriptor digest that derives from it.
+
+        The verifier must therefore reach scientific validation; a stale file
+        hash or stale coordinate digest is not allowed to make these tests
+        pass accidentally.
+        """
+        manifest_path = self._manifest_path()
+        manifest = json.loads(manifest_path.read_text())
+        descriptor = manifest["entries"][0]
+        path = manifest_path.parent / descriptor["relative_path"]
+        shard = json.loads(path.read_text())
+        mutate(shard["scientific_payload"])
+        data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        path.write_bytes(data)
+        descriptor["size"] = len(data)
+        descriptor["sha256"] = sha256(data).hexdigest()
+        policies = shard["scientific_payload"]["policies"]
+        descriptor["candidate_c_score_sha256"] = sha256(
+            struct.pack("<" + "d" * len(policies[2]["scores"]), *policies[2]["scores"])
+        ).hexdigest()
+        descriptor["policy_coordinate_sha256"] = {
+            policy["policy_id"]: sha256(json.dumps(
+                [[descriptor["dataset"], index] for index in policy["alerts"]],
+                separators=(",", ":"),
+            ).encode() + b"\n").hexdigest()
+            for policy in policies
+        }
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
 
     def test_float_digest_bytes_are_canonical_little_endian_float64(self) -> None:
         """Host byte order or a non-float64 conversion would change Candidate C digests."""
@@ -271,6 +302,50 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
         with self.assertRaisesRegex(ValueError, "score mask"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_coordinated_source_low_and_route_tampers_reach_pure_semantic_checks(self) -> None:
+        """Rebound descriptors cannot hide malformed typed Task4--7 evidence."""
+        cases = (
+            (
+                "source TEST score",
+                lambda payload: payload["source_rows"][0].__setitem__("test_score", [0.1]),
+            ),
+            (
+                "source TEST score domain",
+                lambda payload: payload["source_rows"][0].__setitem__("test_score", ["not-a-score", 0.2]),
+            ),
+            (
+                "source pvalue domain/native-pass",
+                lambda payload: payload["source_rows"][0].update({"pvalue": [1.25, 0.8], "native_pass": [True, False]}),
+            ),
+            (
+                "low-frequency evidence",
+                lambda payload: payload["low_frequency_rows"][0].__setitem__("depths", [{"depth": 0}]),
+            ),
+            (
+                "hard-stage route",
+                lambda payload: payload["hard_stages"][6]["lanes"].__setitem__("priority", [0]),
+            ),
+            (
+                "selected row",
+                lambda payload: payload["stability"].update({
+                    "selected": [[payload["dataset"], 0]],
+                    "stable": [[payload["dataset"], 0]],
+                }),
+            ),
+        )
+        for label, mutate in cases:
+            with self.subTest(label=label):
+                # Each create-only publication starts from a fresh owned temp
+                # root, so a prior intentionally tampered shard cannot mask
+                # a later semantic assertion.
+                if self.root.exists():
+                    shutil.rmtree(self.root)
+                self.fixture = _TypedProposalFixtureAntigravity(self.root)
+                self._freeze()
+                self._rewrite_bound_shard(mutate)
+                with self.assertRaisesRegex(ValueError, "Exp449"):
+                    verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_full_inventory_is_checked_structurally_without_scoring_1117_datasets(self) -> None:
         """A full catalog with a wrong count or total must fail before any score object is requested."""

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T01:02:16+0900",
-  "generated_from_commit": "48c1295388062b90627d315443648c59b3ffac35",
+  "generated_at": "2026-08-15T01:11:31+0900",
+  "generated_from_commit": "bc92c8be62a703ec9d0941c20737e2e7b3ec92c3",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -173,7 +173,7 @@
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
-          "symbol": "freeze_exp449_manifest_antigravity"
+          "symbol": "freeze_exp449_proposal_antigravity"
         }
       ],
       "callers": [
@@ -314,7 +314,7 @@
         "unittest"
       ],
       "effects": [
-        "protects typed-shard and outer-manifest reproducibility contracts."
+        "proves typed-shard and outer-manifest reproducibility, including coordinated digest-rebound source, low-frequency, route, selected-row, and Candidate C semantic tamper rejection."
       ]
     },
     {
@@ -1497,7 +1497,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "validates full root inventory and Candidate C policy alert/score-mask/threshold equality."
+        "validates the complete typed Task4--7 payload grammar: source score/pvalue/native-pass relations, every Task5 lane/stage relation, Task6 evidence/provisional/selected relations, and Candidate C policy alert/score-mask/threshold equality."
       ]
     }
   ],
