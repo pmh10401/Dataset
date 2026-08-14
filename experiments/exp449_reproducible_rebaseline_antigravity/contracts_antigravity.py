@@ -10,7 +10,6 @@ from math import isfinite
 from pathlib import Path, PurePosixPath
 import re
 from types import MappingProxyType
-from typing import Any
 
 from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
 
@@ -18,6 +17,20 @@ from .config_antigravity import FROZEN_EXP449_CONFIG
 
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_SMOKE_ROOTS = frozenset(
+    (
+        FROZEN_EXP449_CONFIG.smoke_a_scientific_root.resolve(strict=False),
+        FROZEN_EXP449_CONFIG.smoke_a_operations_root.resolve(strict=False),
+        FROZEN_EXP449_CONFIG.smoke_b_scientific_root.resolve(strict=False),
+        FROZEN_EXP449_CONFIG.smoke_b_operations_root.resolve(strict=False),
+    )
+)
+_OFFICIAL_ROOTS = frozenset(
+    (
+        FROZEN_EXP449_CONFIG.official_scientific_root.resolve(strict=False),
+        FROZEN_EXP449_CONFIG.official_operations_root.resolve(strict=False),
+    )
+)
 
 
 def _sha256(value: object, name: str) -> str:
@@ -88,6 +101,18 @@ def _frozen_mapping_of_sha256(value: object, name: str, *, nonempty: bool = True
     return MappingProxyType(dict(sorted(copied.items())))
 
 
+def _frozen_backend_record(value: object, name: str = "backend_record") -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    try:
+        backend = FrozenTask8BackendDecision.from_artifact_record(dict(value))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{name} is invalid") from error
+    frozen = _freeze_json(backend.artifact_record(), name)
+    assert isinstance(frozen, Mapping)
+    return frozen
+
+
 @dataclass(frozen=True, slots=True)
 class Exp449Context:
     """Identity and verified inputs that bind every Exp449 publication."""
@@ -110,8 +135,9 @@ class Exp449Context:
         if self.experiment_id != "Exp449" or self.mode not in {"smoke", "official"}:
             raise ValueError("Exp449 context identity is invalid")
         root = Path(self.run_root).resolve(strict=False)
-        if not root.is_absolute():
-            raise ValueError("Exp449 run root must resolve to an absolute path")
+        allowed_roots = _SMOKE_ROOTS if self.mode == "smoke" else _OFFICIAL_ROOTS
+        if not root.is_absolute() or root not in allowed_roots:
+            raise ValueError("Exp449 run root is not approved for mode")
         if type(self.interpreter) is not str or not self.interpreter:
             raise ValueError("Exp449 interpreter identity is invalid")
         if self.historical_parity_status != "not_used":
@@ -126,14 +152,8 @@ class Exp449Context:
             raise ValueError("Exp449 environment must be a nonempty mapping")
         if not isinstance(constants, Mapping) or not constants:
             raise ValueError("Exp449 seeds and constants must be a nonempty mapping")
-        if not isinstance(self.backend_record, Mapping):
-            raise ValueError("Exp449 backend record must be a mapping")
-        try:
-            backend = FrozenTask8BackendDecision.from_artifact_record(dict(self.backend_record))
-        except (TypeError, ValueError) as error:
-            raise ValueError("Exp449 backend record is invalid") from error
         object.__setattr__(self, "environment", environment)
-        object.__setattr__(self, "backend_record", _freeze_json(backend.artifact_record(), "backend_record"))
+        object.__setattr__(self, "backend_record", _frozen_backend_record(self.backend_record))
         object.__setattr__(self, "seeds_and_constants", constants)
 
     @classmethod
@@ -179,7 +199,7 @@ class Exp449Context:
         return cls(
             experiment_id=FROZEN_EXP449_CONFIG.experiment_id,
             mode=mode,
-            run_root=Path(run_root).resolve(strict=False),
+            run_root=run_root,
             database_sha256=database_sha256,
             catalog_sha256=_canonical_sha256(catalog, "catalog"),
             code_closure=code_closure,
@@ -197,63 +217,78 @@ class Exp449Context:
 class Exp449ShardDescriptor:
     """One create-only Exp449 typed-shard identity."""
 
-    path: str
+    dataset: str
+    relative_path: str
     size: int
     sha256: str
     schema: str
+    policy_coordinate_sha256: Mapping[str, str]
+    candidate_c_score_sha256: str
 
     def __post_init__(self) -> None:
-        if type(self.path) is not str or not self.path or "antigravity" not in self.path:
+        if type(self.dataset) is not str or not self.dataset:
+            raise ValueError("Exp449 shard dataset is invalid")
+        if type(self.relative_path) is not str or not self.relative_path or "antigravity" not in self.relative_path:
             raise ValueError("Exp449 shard path is invalid")
-        relative = PurePosixPath(self.path)
+        relative = PurePosixPath(self.relative_path)
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError("Exp449 shard path must be a confined relative path")
-        if type(self.schema) is not str or not self.schema.startswith("exp449_"):
+        if type(self.schema) is not str or not self.schema.strip():
             raise ValueError("Exp449 shard schema is invalid")
         object.__setattr__(self, "size", _nonnegative_count(self.size, "shard size"))
         object.__setattr__(self, "sha256", _sha256(self.sha256, "shard sha256"))
+        coordinates = _frozen_mapping_of_sha256(self.policy_coordinate_sha256, "policy coordinate digests")
+        if set(coordinates) != {FROZEN_EXP449_CONFIG.policy_id}:
+            raise ValueError("Exp449 policy coordinate closure is invalid")
+        object.__setattr__(self, "policy_coordinate_sha256", coordinates)
+        object.__setattr__(
+            self,
+            "candidate_c_score_sha256",
+            _sha256(self.candidate_c_score_sha256, "Candidate C score sha256"),
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class Exp449ProposalManifest:
     """The typed-shard inventory and proposal-digest closure."""
 
-    schema_version: str
+    schema: str
     context_sha256: str
     catalog_sha256: str
-    shards: Mapping[str, Exp449ShardDescriptor]
-    policy_coordinate_digests: Mapping[str, str]
-    candidate_c_score_digests: Mapping[str, str]
+    backend_record: Mapping[str, object]
+    entries: Sequence[Exp449ShardDescriptor]
+    historical_parity_status: str
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not str or not self.schema_version.startswith("exp449_"):
+        if self.schema != "exp449-proposal-manifest-antigravity.v1":
             raise ValueError("Exp449 manifest schema is invalid")
+        if self.historical_parity_status != "not_used":
+            raise ValueError("Exp449 manifest historical parity status is invalid")
         object.__setattr__(self, "context_sha256", _sha256(self.context_sha256, "context sha256"))
         object.__setattr__(self, "catalog_sha256", _sha256(self.catalog_sha256, "catalog sha256"))
-        if not isinstance(self.shards, Mapping) or not self.shards:
-            raise ValueError("Exp449 shards must be a nonempty mapping")
-        descriptors: dict[str, Exp449ShardDescriptor] = {}
-        for dataset, descriptor in self.shards.items():
-            if type(dataset) is not str or not dataset or not isinstance(descriptor, Exp449ShardDescriptor):
-                raise ValueError("Exp449 shard descriptor is invalid")
-            descriptors[dataset] = descriptor
-        object.__setattr__(self, "shards", MappingProxyType(dict(sorted(descriptors.items()))))
-        object.__setattr__(
-            self,
-            "policy_coordinate_digests",
-            _frozen_mapping_of_sha256(self.policy_coordinate_digests, "policy_coordinate_digests"),
-        )
-        object.__setattr__(
-            self,
-            "candidate_c_score_digests",
-            _frozen_mapping_of_sha256(self.candidate_c_score_digests, "candidate_c_score_digests"),
-        )
+        object.__setattr__(self, "backend_record", _frozen_backend_record(self.backend_record))
+        if not isinstance(self.entries, Sequence) or isinstance(self.entries, (str, bytes, bytearray)):
+            raise ValueError("Exp449 manifest entries must be an ordered sequence")
+        entries = tuple(self.entries)
+        if not entries or any(not isinstance(entry, Exp449ShardDescriptor) for entry in entries):
+            raise ValueError("Exp449 manifest entries are invalid")
+        datasets = tuple(entry.dataset for entry in entries)
+        if datasets != tuple(sorted(datasets)) or len(set(datasets)) != len(datasets):
+            raise ValueError("Exp449 manifest entries must be ordered and unique")
+        paths = tuple(entry.relative_path for entry in entries)
+        if len(set(paths)) != len(paths):
+            raise ValueError("Exp449 manifest entry paths must be unique")
+        coordinate_closure = entries[0].policy_coordinate_sha256
+        if any(entry.policy_coordinate_sha256 != coordinate_closure for entry in entries[1:]):
+            raise ValueError("Exp449 manifest policy coordinate closure mismatches entries")
+        object.__setattr__(self, "entries", entries)
 
 
 @dataclass(frozen=True, slots=True)
 class Exp449TerminalStatus:
     """The only terminal outcomes allowed after at most two dataset-local waves."""
 
+    mode: str
     status: str
     completed_dataset_count: int
     failed_dataset_count: int
@@ -261,7 +296,7 @@ class Exp449TerminalStatus:
     wave_count: int
 
     def __post_init__(self) -> None:
-        if self.status not in {"dataset_local_complete", "proposal_score_incomplete"}:
+        if self.mode not in {"smoke", "official"} or self.status not in {"dataset_local_complete", "proposal_score_incomplete"}:
             raise ValueError("Exp449 terminal status is invalid")
         for field_name in (
             "completed_dataset_count",
@@ -272,9 +307,10 @@ class Exp449TerminalStatus:
             object.__setattr__(self, field_name, _nonnegative_count(getattr(self, field_name), field_name))
         if self.wave_count > FROZEN_EXP449_CONFIG.maximum_waves:
             raise ValueError("Exp449 terminal status exceeds the maximum wave count")
-        incomplete = self.failed_dataset_count > 0 or self.pending_dataset_count > 0
-        if (self.status == "dataset_local_complete") == incomplete:
-            raise ValueError("Exp449 terminal status does not match dataset completion")
+        if self.status == "dataset_local_complete":
+            expected = len(FROZEN_EXP449_CONFIG.smoke_datasets) if self.mode == "smoke" else FROZEN_EXP449_CONFIG.dataset_count
+            if (self.completed_dataset_count, self.failed_dataset_count, self.pending_dataset_count) != (expected, 0, 0):
+                raise ValueError("Exp449 terminal completion count is invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,4 +337,6 @@ class SmokeComparison:
             self.coordinate_identity and delta <= FROZEN_EXP449_CONFIG.cpu_repeat_tolerance
         ):
             raise ValueError("Exp449 smoke comparison pass state is inconsistent")
+        if self.passed and self.compared_dataset_count != len(FROZEN_EXP449_CONFIG.smoke_datasets):
+            raise ValueError("a passing Exp449 smoke comparison must cover exactly 23 datasets")
         object.__setattr__(self, "maximum_score_delta", delta)

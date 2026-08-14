@@ -186,10 +186,10 @@ class Exp449ImmutableContractTests(unittest.TestCase):
             outer_execution_mode="parallel_task4_task5",
         )
 
-    def _context(self) -> Exp449Context:
+    def _context(self, *, run_root: Path | None = None, mode: str = "smoke") -> Exp449Context:
         return Exp449Context.from_verified_inputs(
-            run_root=Path("/tmp/exp449_contract_fixture_antigravity"),
-            mode="smoke",
+            run_root=(run_root or FROZEN_EXP449_CONFIG.smoke_a_scientific_root),
+            mode=mode,
             database_sha256=self._SHA_A,
             catalog={"Dataset_normal_1": {"raw_sha256": self._SHA_B, "rows": (1, 2)}},
             code_closure={"module_antigravity.py": self._SHA_C},
@@ -233,7 +233,10 @@ class Exp449ImmutableContractTests(unittest.TestCase):
         )
         self.assertEqual(context.experiment_id, "Exp449")
         self.assertEqual(context.mode, "smoke")
-        self.assertEqual(context.run_root, Path("/tmp/exp449_contract_fixture_antigravity").resolve())
+        self.assertEqual(
+            context.run_root,
+            FROZEN_EXP449_CONFIG.smoke_a_scientific_root.resolve(),
+        )
         self.assertEqual(context.historical_parity_status, "not_used")
         self.assertIsInstance(context.code_closure, MappingProxyType)
         self.assertIsInstance(context.code_closure["module_antigravity.py"], str)
@@ -257,44 +260,68 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                 seeds_and_constants={"seed": 449},
             )
 
+    def test_context_rejects_alternate_or_mode_incompatible_frozen_roots(self) -> None:
+        with self.assertRaisesRegex(ValueError, "run root"):
+            self._context(run_root=Path("/tmp/alternate_absolute_root_antigravity"))
+        with self.assertRaisesRegex(ValueError, "run root"):
+            self._context(
+                run_root=FROZEN_EXP449_CONFIG.official_scientific_root,
+                mode="smoke",
+            )
+        self.assertEqual(
+            self._context(
+                run_root=FROZEN_EXP449_CONFIG.official_operations_root,
+                mode="official",
+            ).run_root,
+            FROZEN_EXP449_CONFIG.official_operations_root.resolve(),
+        )
+
     def test_manifest_terminal_and_smoke_contracts_are_exact_and_fail_closed(self) -> None:
         context = self._context()
         manifest = Exp449ProposalManifest(
-            schema_version="exp449_proposal_manifest_v1",
+            schema="exp449-proposal-manifest-antigravity.v1",
             context_sha256=self._SHA_A,
             catalog_sha256=context.catalog_sha256,
-            shards={
-                "Dataset_normal_1": Exp449ShardDescriptor(
-                    path="shards/Dataset_normal_1_antigravity.json",
+            backend_record=self._backend().artifact_record(),
+            entries=(
+                Exp449ShardDescriptor(
+                    dataset="Dataset_normal_1",
+                    relative_path="shards/Dataset_normal_1_antigravity.json",
                     size=17,
                     sha256=self._SHA_B,
-                    schema="exp449_typed_shard_v1",
-                )
-            },
-            policy_coordinate_digests={"hard_plus_stable": self._SHA_C},
-            candidate_c_score_digests={"Dataset_normal_1": self._SHA_D},
+                    schema="paper-proposal-typed-shard.v1",
+                    policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+                    candidate_c_score_sha256=self._SHA_D,
+                ),
+            ),
+            historical_parity_status="not_used",
         )
         self.assertEqual(
             tuple(field.name for field in fields(Exp449ProposalManifest)),
             (
-                "schema_version",
+                "schema",
                 "context_sha256",
                 "catalog_sha256",
-                "shards",
-                "policy_coordinate_digests",
-                "candidate_c_score_digests",
+                "backend_record",
+                "entries",
+                "historical_parity_status",
             ),
         )
-        self.assertIsInstance(manifest.shards, MappingProxyType)
-        self.assertEqual(manifest.shards["Dataset_normal_1"].size, 17)
+        self.assertEqual(manifest.schema, "exp449-proposal-manifest-antigravity.v1")
+        self.assertIsInstance(manifest.entries, tuple)
+        self.assertEqual(manifest.entries[0].size, 17)
         with self.assertRaises(ValueError):
             Exp449ShardDescriptor(
-                path="shards/Dataset_normal_1_antigravity.json",
+                dataset="Dataset_normal_1",
+                relative_path="shards/Dataset_normal_1_antigravity.json",
                 size=-1,
                 sha256="not-a-sha",
-                schema="exp449_typed_shard_v1",
+                schema="paper-proposal-typed-shard.v1",
+                policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+                candidate_c_score_sha256=self._SHA_D,
             )
         status = Exp449TerminalStatus(
+            mode="official",
             status="proposal_score_incomplete",
             completed_dataset_count=1116,
             failed_dataset_count=1,
@@ -303,7 +330,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
         )
         self.assertEqual(status.status, "proposal_score_incomplete")
         with self.assertRaises(ValueError):
-            Exp449TerminalStatus("complete", 0, 0, 0, 0)
+            Exp449TerminalStatus("official", "dataset_local_complete", 0, 0, 0, 0)
         comparison = SmokeComparison(
             smoke_a_manifest_sha256=self._SHA_A,
             smoke_b_manifest_sha256=self._SHA_B,
@@ -315,3 +342,73 @@ class Exp449ImmutableContractTests(unittest.TestCase):
         self.assertTrue(comparison.passed)
         with self.assertRaises(ValueError):
             SmokeComparison(self._SHA_A, self._SHA_B, 23, True, float("nan"), False)
+
+    def test_manifest_rejects_schema_and_entry_digest_closure_mismatches(self) -> None:
+        entry = Exp449ShardDescriptor(
+            dataset="Dataset_normal_1",
+            relative_path="shards/Dataset_normal_1_antigravity.json",
+            size=17,
+            sha256=self._SHA_B,
+            schema="paper-proposal-typed-shard.v1",
+            policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+            candidate_c_score_sha256=self._SHA_D,
+        )
+        with self.assertRaisesRegex(ValueError, "manifest schema"):
+            Exp449ProposalManifest(
+                schema="exp449_proposal_manifest_v1",
+                context_sha256=self._SHA_A,
+                catalog_sha256=self._SHA_B,
+                backend_record=self._backend().artifact_record(),
+                entries=(entry,),
+                historical_parity_status="not_used",
+            )
+        with self.assertRaisesRegex(ValueError, "coordinate"):
+            Exp449ShardDescriptor(
+                dataset="Dataset_normal_1",
+                relative_path="shards/Dataset_normal_1_antigravity.json",
+                size=17,
+                sha256=self._SHA_B,
+                schema="paper-proposal-typed-shard.v1",
+                policy_coordinate_sha256={"wrong_policy": self._SHA_C},
+                candidate_c_score_sha256=self._SHA_D,
+            )
+        with self.assertRaisesRegex(ValueError, "ordered"):
+            Exp449ProposalManifest(
+                schema="exp449-proposal-manifest-antigravity.v1",
+                context_sha256=self._SHA_A,
+                catalog_sha256=self._SHA_B,
+                backend_record=self._backend().artifact_record(),
+                entries=(
+                    Exp449ShardDescriptor(
+                        dataset="Z_normal_1",
+                        relative_path="shards/Z_normal_1_antigravity.json",
+                        size=17,
+                        sha256=self._SHA_B,
+                        schema="paper-proposal-typed-shard.v1",
+                        policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+                        candidate_c_score_sha256=self._SHA_D,
+                    ),
+                    entry,
+                ),
+                historical_parity_status="not_used",
+            )
+
+    def test_terminal_completion_and_smoke_pass_require_exact_inventory_counts(self) -> None:
+        self.assertEqual(
+            Exp449TerminalStatus("smoke", "dataset_local_complete", 23, 0, 0, 1).completed_dataset_count,
+            23,
+        )
+        self.assertEqual(
+            Exp449TerminalStatus("official", "dataset_local_complete", 1117, 0, 0, 2).completed_dataset_count,
+            1117,
+        )
+        with self.assertRaisesRegex(ValueError, "completion"):
+            Exp449TerminalStatus("smoke", "dataset_local_complete", 0, 0, 0, 0)
+        with self.assertRaisesRegex(ValueError, "completion"):
+            Exp449TerminalStatus("official", "dataset_local_complete", 23, 0, 0, 1)
+        self.assertEqual(
+            Exp449TerminalStatus("smoke", "proposal_score_incomplete", 0, 0, 23, 0).status,
+            "proposal_score_incomplete",
+        )
+        with self.assertRaisesRegex(ValueError, "23"):
+            SmokeComparison(self._SHA_A, self._SHA_B, 0, True, 0.0, True)
