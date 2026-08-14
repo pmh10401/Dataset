@@ -133,6 +133,20 @@ class Exp449CompositionGateTests(unittest.TestCase):
             patch.object(runner, "build_policies", return_value=self.policies),
         )
 
+    def _assert_proposal_score_semantic_parity(self, actual, expected) -> None:
+        self.assertEqual(tuple(actual.raw), tuple(expected.raw))
+        self.assertEqual(tuple(actual.sources), tuple(expected.sources))
+        self.assertEqual(tuple(actual.routes), tuple(expected.routes))
+        for dataset in actual.raw:
+            self.assertIs(actual.raw[dataset], expected.raw[dataset])
+            self.assertIs(actual.sources[dataset], expected.sources[dataset])
+            self.assertIs(actual.routes[dataset], expected.routes[dataset])
+        self.assertIs(actual.low_frequency, expected.low_frequency)
+        self.assertIs(actual.stability, expected.stability)
+        self.assertIs(actual.policies, expected.policies)
+        self.assertEqual(actual.backend, expected.backend)
+        self.assertEqual(dict(actual.stage_seconds), dict(expected.stage_seconds))
+
     def test_missing_success_blocks_task6_and_task7(self) -> None:
         """A local omission fails before either population-global scientific task starts."""
         def missing_collector(raw: object, backend: object, **kwargs: object):
@@ -195,14 +209,21 @@ class Exp449CompositionGateTests(unittest.TestCase):
         ):
             existing = proposal_score_paper.compose_proposal_score(self.raw, self.acceleration)
 
-        self.assertEqual(tuple(exp449.raw), tuple(existing.raw))
-        self.assertEqual(tuple(exp449.sources), tuple(existing.sources))
-        self.assertEqual(tuple(exp449.routes), tuple(existing.routes))
-        self.assertIs(exp449.low_frequency, existing.low_frequency)
-        self.assertIs(exp449.stability, existing.stability)
-        self.assertIs(exp449.policies, existing.policies)
-        self.assertEqual(exp449.backend, existing.backend)
-        self.assertEqual(dict(exp449.stage_seconds), dict(existing.stage_seconds))
+        self._assert_proposal_score_semantic_parity(exp449, existing)
+        mutated_sources = dict(existing.sources)
+        mutated_sources["Alpha"] = HardSourceBundle(("mutated",), {})
+        mutated = proposal_score_paper.ProposalScore(
+            existing.raw,
+            mutated_sources,
+            existing.routes,
+            existing.low_frequency,
+            existing.stability,
+            existing.policies,
+            existing.backend,
+            existing.stage_seconds,
+        )
+        with self.assertRaises(AssertionError):
+            self._assert_proposal_score_semantic_parity(exp449, mutated)
 
 
 if __name__ == "__main__":
