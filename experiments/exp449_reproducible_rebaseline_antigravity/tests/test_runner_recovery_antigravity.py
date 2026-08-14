@@ -486,6 +486,41 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
                 (resumed.scientific_root / "fixture_proposal_payload_antigravity.json").read_bytes(),
             )
 
+    def test_real_paper_collector_reuses_verified_success_after_one_failure(self) -> None:
+        """The actual checkpoint collector, not a composition fake, must avoid rescoring success."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as paper_score
+        from paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper import Task4Task5FailureBatchingTests
+
+        fixture = Task4Task5FailureBatchingTests("run")
+        fixture.setUp()
+        try:
+            manifest, context, backend = fixture._backend()
+            calls: list[str] = []
+            failed = [True]
+
+            def score(raw):
+                calls.append(raw.dataset)
+                if raw.dataset == "alpha" and failed[0]:
+                    failed[0] = False
+                    raise RuntimeError("fail alpha once")
+                return fixture.values[raw.dataset]
+
+            with patch.object(paper_score, "verify_pycatch22_environment_paper", return_value={"pycatch22": "fixture"}), \
+                 patch.object(paper_score, "_score_dataset_task4_task5", side_effect=score):
+                with self.assertRaises(paper_score.ProposalScoreIncomplete):
+                    paper_score._collect_task4_task5(
+                        fixture.raw, backend, root=fixture.fixture.root, context=context,
+                        catalog=fixture.fixture.catalog, acceleration_manifest=manifest,
+                    )
+                sources, routes = paper_score._collect_task4_task5(
+                    fixture.raw, backend, root=fixture.fixture.root, context=context,
+                    catalog=fixture.fixture.catalog, acceleration_manifest=manifest,
+                )
+            self.assertEqual(calls, ["alpha", "beta", "alpha"])
+            self.assertEqual((tuple(sources), tuple(routes)), (("alpha", "beta"), ("alpha", "beta")))
+        finally:
+            fixture.tearDown()
+
 
 if __name__ == "__main__":
     unittest.main()
