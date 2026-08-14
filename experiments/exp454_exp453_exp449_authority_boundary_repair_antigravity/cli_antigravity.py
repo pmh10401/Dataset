@@ -11,6 +11,15 @@ import re
 _COMMIT_ANTIGRAVITY = re.compile(r"^[0-9a-f]{40}$")
 
 
+class _SingleValueActionAntigravity(argparse.Action):
+    """Reject repeated values instead of silently accepting the last one."""
+
+    def __call__(self, parser, namespace, values, option_string=None) -> None:
+        if getattr(namespace, self.dest, None) is not None:
+            parser.error(f"{option_string} may be specified exactly once")
+        setattr(namespace, self.dest, values)
+
+
 def _reviewed_commit_antigravity(value: str) -> str:
     if _COMMIT_ANTIGRAVITY.fullmatch(value) is None:
         raise argparse.ArgumentTypeError("reviewed commit must be lowercase 40-hex")
@@ -25,7 +34,12 @@ def build_parser_antigravity() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("readiness", "evaluate"):
         command = commands.add_parser(name, allow_abbrev=False)
-        command.add_argument("--reviewed-commit", type=_reviewed_commit_antigravity, required=True)
+        command.add_argument(
+            "--reviewed-commit",
+            action=_SingleValueActionAntigravity,
+            type=_reviewed_commit_antigravity,
+            required=True,
+        )
     commands.add_parser("inspect", allow_abbrev=False)
     return parser
 
