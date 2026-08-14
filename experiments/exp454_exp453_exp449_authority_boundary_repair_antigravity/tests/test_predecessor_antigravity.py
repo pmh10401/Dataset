@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import hashlib
 from pathlib import Path
 import ast
 import inspect
 import sqlite3
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -206,6 +208,278 @@ class PredecessorAntigravityTest(unittest.TestCase):
         forbidden = {"sqlite3", "tests", "mlx", "torch"}
         self.assertFalse(any(name == blocked or f".{blocked}" in name or name.endswith(".tests") for name in imported for blocked in forbidden))
         self.assertFalse(any("test_fixture" in name or "tests." in name for name in imported))
+
+
+_COMMIT_ANTIGRAVITY = "a" * 40
+
+
+def _canonical_antigravity(value: object) -> bytes:
+    from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.artifacts_antigravity import (
+        canonical_json_bytes_antigravity,
+    )
+
+    return canonical_json_bytes_antigravity(value)
+
+
+class SyntheticExp453PredecessorFixtureAntigravity:
+    """Build label-free Exp453 terminal evidence, Exp449 prediction bytes, and normalized target."""
+
+    def __init__(self) -> None:
+        from experiments.exp449_residual_fn_method_qualification_antigravity import (
+            prediction_antigravity as old_prediction,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.contracts_antigravity import (
+            ConfusionAntigravity,
+            DatasetBaselineAntigravity,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.predecessor_antigravity import (
+            NormalizedTargetAuthorityAntigravity,
+        )
+
+        self.temporary = tempfile.TemporaryDirectory(prefix="exp454_predecessor_antigravity_")
+        self.parent = Path(self.temporary.name)
+        self.prediction = self.parent / "prediction_antigravity"
+        self.receipts = self.parent / "receipts_antigravity"
+        self.audit = self.parent / "failure_audit_antigravity.json"
+        self.published_evaluation = self.parent / "published_evaluation_antigravity"
+        old_prediction.run_synthetic_lifecycle_antigravity(self.prediction, _COMMIT_ANTIGRAVITY)
+        capture = old_prediction.capture_frozen_prediction_authority_antigravity(root=self.prediction)
+        self.prediction_aggregate = capture.authority.aggregate_sha256
+        self.receipts.mkdir(mode=0o700)
+        readiness = {
+            "aeon_version": "1.4.0",
+            "evaluation_root_identity": None,
+            "event": "complete",
+            "executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+            "experiment_id": "Exp453",
+            "numpy_version": "2.3.5",
+            "ordinal": 0,
+            "permanent_stop": False,
+            "phase": "readiness",
+            "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+            "previous_leaf_sha256": None,
+            "python_version": "3.14.6",
+            "reviewed_commit": _COMMIT_ANTIGRAVITY,
+            "run_identity": "exp453-exp452-fixed-interpreter-binding-repair-antigravity-20260813",
+            "schema": "exp453_lifecycle_receipt",
+            "sklearn_version": "1.7.2",
+        }
+        evaluate = {
+            **readiness,
+            "event": "started",
+            "ordinal": 1,
+            "phase": "evaluate",
+            "previous_leaf_sha256": hashlib.sha256(_canonical_antigravity(readiness)).hexdigest(),
+        }
+        stopped = {
+            **evaluate,
+            "event": "stopped",
+            "ordinal": 2,
+            "permanent_stop": True,
+            "previous_leaf_sha256": hashlib.sha256(_canonical_antigravity(evaluate)).hexdigest(),
+        }
+        (self.receipts / "readiness_complete_antigravity.json").write_bytes(_canonical_antigravity(readiness))
+        (self.receipts / "evaluate_started_antigravity.json").write_bytes(_canonical_antigravity(evaluate))
+        (self.receipts / "stopped_antigravity.json").write_bytes(_canonical_antigravity(stopped))
+        self.readiness_sha = hashlib.sha256((self.receipts / "readiness_complete_antigravity.json").read_bytes()).hexdigest()
+        self.evaluate_sha = hashlib.sha256((self.receipts / "evaluate_started_antigravity.json").read_bytes()).hexdigest()
+        self.receipt_sha = hashlib.sha256((self.receipts / "stopped_antigravity.json").read_bytes()).hexdigest()
+        audit = {
+            "evaluation_root": str(self.published_evaluation),
+            "permanent_stop": True,
+            "phase": "evaluate",
+            "primary_error": "ValueError: Exp448 target identity differs",
+            "recovery_state": "stopped",
+            "reviewed_commit": _COMMIT_ANTIGRAVITY,
+            "schema": "exp453.lifecycle.failure",
+        }
+        self.audit.write_bytes(_canonical_antigravity(audit))
+        self.audit_sha = hashlib.sha256(self.audit.read_bytes()).hexdigest()
+        names = tuple(f"dataset_{index}" for index in range(48))
+        rows = tuple(
+            DatasetBaselineAntigravity(index, "Crop", frozenset({0}), ConfusionAntigravity(0, 0, 0, 1))
+            for index in range(48)
+        )
+        self.normalized = NormalizedTargetAuthorityAntigravity(names, rows, ConfusionAntigravity(0, 0, 0, 48))
+        self.events: list[str] = []
+
+    def capture_normalized_target_antigravity(self):  # type: ignore[no-untyped-def]
+        self.events.append("raw_target_capture")
+        self.events.append("normalization")
+        return self.normalized
+
+    def dependencies_antigravity(self):  # type: ignore[no-untyped-def]
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.predecessor_antigravity import (
+            _PredecessorDependenciesAntigravity,
+        )
+
+        return _PredecessorDependenciesAntigravity(
+            prediction_root=self.prediction,
+            exp453_receipt_directory=self.receipts,
+            exp453_failure_audit=self.audit,
+            exp453_evaluation_root=self.published_evaluation,
+            expected_prediction_aggregate_sha256=self.prediction_aggregate,
+            expected_exp453_stopped_receipt_sha256=self.receipt_sha,
+            expected_exp453_readiness_receipt_sha256=self.readiness_sha,
+            expected_exp453_evaluate_receipt_sha256=self.evaluate_sha,
+            expected_exp453_audit_sha256=self.audit_sha,
+            capture_normalized_target=self.capture_normalized_target_antigravity,
+        )
+
+    def close_antigravity(self) -> None:
+        self.temporary.cleanup()
+
+
+class PredecessorCaptureAntigravityTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.fixture = SyntheticExp453PredecessorFixtureAntigravity()
+
+    def tearDown(self) -> None:
+        self.fixture.close_antigravity()
+
+    def test_two_complete_captures_issue_normalized_nonmetric_authority_antigravity(self) -> None:
+        """Break caught: missing normalized target or qualified metrics can authorize labels."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity import (
+            predecessor_antigravity as predecessor,
+        )
+
+        authority = predecessor._capture_predecessors_with_dependencies_antigravity(
+            self.fixture.dependencies_antigravity()
+        )
+        self.assertEqual(authority.dataset_count, 48)
+        self.assertEqual(authority.prediction_count, 96)
+        self.assertEqual(authority.exp453_stopped_receipt_sha256, self.fixture.receipt_sha)
+        self.assertEqual(authority.exp453_failure_audit_sha256, self.fixture.audit_sha)
+        self.assertTrue(authority.exp453_evaluation_root_absent)
+        self.assertEqual(authority.prediction_aggregate_sha256, self.fixture.prediction_aggregate)
+        self.assertEqual(len(authority.dataset_order), 48)
+        self.assertEqual(len(authority.normalized_target.target_dataset_names), 48)
+        self.assertFalse(any("qualified" in name.casefold() for name in dir(authority)))
+        self.assertEqual(
+            predecessor.validate_predecessors_antigravity(authority),
+            authority.dataset_order,
+        )
+
+    def test_exp453_hash_or_present_root_fails_without_prediction_confusion_antigravity(self) -> None:
+        """Break caught: Exp453 evidence drift is reported as an Exp449 prediction failure."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity import (
+            predecessor_antigravity as predecessor,
+        )
+
+        with self.subTest(case="receipt"), self.assertRaisesRegex(ValueError, "Exp453 stopped receipt"):
+            predecessor._capture_predecessors_with_dependencies_antigravity(
+                replace(self.fixture.dependencies_antigravity(), expected_exp453_stopped_receipt_sha256="0" * 64)
+            )
+        with self.subTest(case="audit"), self.assertRaisesRegex(ValueError, "Exp453 failure audit"):
+            predecessor._capture_predecessors_with_dependencies_antigravity(
+                replace(self.fixture.dependencies_antigravity(), expected_exp453_audit_sha256="0" * 64)
+            )
+        self.fixture.published_evaluation.mkdir()
+        with self.subTest(case="root"), self.assertRaisesRegex(ValueError, "evaluation root"):
+            predecessor._capture_predecessors_with_dependencies_antigravity(self.fixture.dependencies_antigravity())
+
+    def test_exp449_prediction_bytes_fail_separately_antigravity(self) -> None:
+        """Break caught: prediction drift is reported as Exp453 failure evidence."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity import (
+            predecessor_antigravity as predecessor,
+        )
+
+        dependencies = replace(
+            self.fixture.dependencies_antigravity(),
+            expected_prediction_aggregate_sha256="1" * 64,
+        )
+        with self.assertRaisesRegex(ValueError, "Exp449 prediction"):
+            predecessor._capture_predecessors_with_dependencies_antigravity(dependencies)
+
+    def test_second_capture_drift_fails_without_issuing_authority_antigravity(self) -> None:
+        """Break caught: the first snapshot alone authorizes labels after predecessor drift."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity import (
+            predecessor_antigravity as predecessor,
+        )
+
+        def drift() -> None:
+            self.fixture.audit.write_bytes(self.fixture.audit.read_bytes() + b" ")
+
+        dependencies = replace(self.fixture.dependencies_antigravity(), between_captures=drift)
+        with self.assertRaisesRegex(ValueError, "independent captures"):
+            predecessor._capture_predecessors_with_dependencies_antigravity(dependencies)
+
+
+class PredecessorLabelBoundaryAntigravityTest(unittest.TestCase):
+    def test_label_opener_is_unreachable_before_evidence_prediction_and_normalization_antigravity(self) -> None:
+        """Break caught: label opener can be called before Exp453 evidence, Exp449 prediction, raw capture, and normalize succeed."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity import (
+            predecessor_antigravity as predecessor,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity import (
+            sources_antigravity as sources,
+        )
+
+        fixture = SyntheticExp453PredecessorFixtureAntigravity()
+        try:
+            reached: list[str] = []
+            dependencies = sources._LabelDependenciesAntigravity(
+                verify_database=lambda: reached.append("database"),  # type: ignore[arg-type,return-value]
+                open_connection=lambda _descriptor: reached.append("connection"),  # type: ignore[arg-type,return-value]
+                assert_database_unchanged=lambda _descriptor, _identity: None,
+                close_descriptor=lambda _descriptor: None,
+                audit_sink=lambda _audit: None,
+            )
+            with self.assertRaisesRegex(ValueError, "authority"):
+                sources._open_test_labels_once_with_dependencies_antigravity(object(), dependencies)
+            self.assertEqual(reached, [])
+            self.assertEqual(fixture.events, [])
+
+            with self.assertRaisesRegex(ValueError, "Exp453"):
+                predecessor._capture_predecessors_with_dependencies_antigravity(
+                    replace(fixture.dependencies_antigravity(), expected_exp453_stopped_receipt_sha256="0" * 64)
+                )
+            self.assertEqual(fixture.events, [])
+            with self.assertRaisesRegex(ValueError, "authority"):
+                sources._open_test_labels_once_with_dependencies_antigravity(object(), dependencies)
+            self.assertEqual(reached, [])
+
+            with self.assertRaisesRegex(ValueError, "Exp449 prediction"):
+                predecessor._capture_predecessors_with_dependencies_antigravity(
+                    replace(fixture.dependencies_antigravity(), expected_prediction_aggregate_sha256="1" * 64)
+                )
+            self.assertEqual(fixture.events, [])
+            with self.assertRaisesRegex(ValueError, "authority"):
+                sources._open_test_labels_once_with_dependencies_antigravity(object(), dependencies)
+            self.assertEqual(reached, [])
+
+            def fail_normalize() -> object:
+                fixture.events.append("raw_target_capture")
+                fixture.events.append("normalization")
+                raise ValueError("Exp449 target authority differs")
+
+            with self.assertRaisesRegex(ValueError, "target authority"):
+                predecessor._capture_predecessors_with_dependencies_antigravity(
+                    replace(fixture.dependencies_antigravity(), capture_normalized_target=fail_normalize)
+                )
+            self.assertEqual(fixture.events, ["raw_target_capture", "normalization"])
+            with self.assertRaisesRegex(ValueError, "authority"):
+                sources._open_test_labels_once_with_dependencies_antigravity(object(), dependencies)
+            self.assertEqual(reached, [])
+
+            fixture.events.clear()
+            authority = predecessor._capture_predecessors_with_dependencies_antigravity(
+                fixture.dependencies_antigravity()
+            )
+            self.assertEqual(fixture.events, ["raw_target_capture", "normalization", "raw_target_capture", "normalization"])
+            with self.assertRaises(Exception):
+                sources._open_test_labels_once_with_dependencies_antigravity(
+                    authority,
+                    sources._LabelDependenciesAntigravity(
+                        verify_database=lambda: (_ for _ in ()).throw(RuntimeError("synthetic setup")),
+                        open_connection=lambda _descriptor: None,
+                        assert_database_unchanged=lambda _descriptor, _identity: None,
+                        close_descriptor=lambda _descriptor: None,
+                    ),
+                )
+            self.assertEqual(len(authority.normalized_target.target_dataset_names), 48)
+        finally:
+            fixture.close_antigravity()
 
 
 if __name__ == "__main__":

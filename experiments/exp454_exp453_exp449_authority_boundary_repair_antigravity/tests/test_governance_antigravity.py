@@ -90,10 +90,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIsNotNone(section)
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
-            for tag in tags:
-                if task_number in (1, 2):
+            if task_number in (1, 2):
+                for tag in tags:
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
-                else:
+            elif task_number == 3:
+                self.assertGreaterEqual(len(tags), 6)
+                for tag in tags[:-1]:
+                    self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+                self.assertNotRegex(tags[-1], r"\bchecked(?:\s|=|>)")
+            else:
+                for tag in tags:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
 
     def test_planned_truth_preserves_science_and_champion_antigravity(self) -> None:
@@ -196,9 +202,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         self.assertLessEqual(len(graph["nodes"]), 20)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("task3_runtime_predecessors", "task4_evaluation_replay", "task5_cli"):
+        for node_id in ("task4_evaluation_replay", "task5_cli"):
             self.assertEqual(node_by_id[node_id]["status"], "future_unknown")
             self.assertEqual(node_by_id[node_id]["evidence"], [])
+        self.assertNotIn("task3_runtime_predecessors", node_by_id)
         self.assertTrue(graph["unknown_relationships"])
         self.assertIn("tracked_fingerprints", lock)
         self.assertEqual(len(lock["tracked_fingerprints"]), 9)
@@ -251,6 +258,45 @@ class GovernanceAntigravityTest(unittest.TestCase):
             )
         )
         self.assertFalse(any(edge["from"] == "task2_regressions" and edge["to"] == "task2_predecessor" for edge in graph["edges"]))
+
+    def test_map_answers_task_three_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: implemented runtime/lifecycle/readiness remain hidden behind the old future node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        expected = {
+            "task3_runtime_binding": "test_runtime_binding_antigravity.py",
+            "task3_sources": "test_sources_antigravity.py",
+            "task3_lifecycle_readiness": "test_readiness_antigravity.py",
+        }
+        for node_id, test_leaf in expected.items():
+            with self.subTest(node_id=node_id):
+                self.assertIn(node_id, node_by_id)
+                self.assertNotEqual(node_by_id[node_id].get("status"), "future_unknown")
+                self.assertIn("caller", node_by_id[node_id]["role"].lower())
+                self.assertIn("effect", node_by_id[node_id]["role"].lower())
+                self.assertTrue(any(path.endswith(test_leaf) for path in node_by_id[node_id]["tests"]))
+        self.assertTrue(any(path.endswith("test_lifecycle_antigravity.py") for path in node_by_id["task3_lifecycle_readiness"]["tests"]))
+        self.assertTrue(
+            any(
+                edge["from"] == "task3_sources"
+                and edge["to"] == "task2_predecessor"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task3_lifecycle_readiness"
+                and edge["to"] == "task2_predecessor"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        predecessor = node_by_id["task2_predecessor"]
+        self.assertIn("sources", predecessor["role"].lower())
+        self.assertIn("readiness", predecessor["role"].lower())
+        self.assertTrue(any(path.endswith("test_sources_antigravity.py") for path in predecessor["tests"]))
 
 
 if __name__ == "__main__":
