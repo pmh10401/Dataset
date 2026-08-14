@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Exp454 구현 기록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.45rem;text-align:left;vertical-align:top}.status{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
 <h1>Exp454 구현 기록</h1>
-<div class="status"><strong>현재 상태:</strong> <code>official_evaluation_inspected_complete_awaiting_routing_research</code>. Task 6까지 끝났다. 공식 readiness, evaluate, inspect는 각각 한 번 실행했고 모두 성공했다. 16개 방법 조합 중 2개가 정해 둔 성능 기준을 통과했다. 자동 routing과 champion 승격은 하지 않고 다음 routing 연구를 기다린다.</div>
+<div class="status"><strong>현재 상태:</strong> <code>official_evaluation_complete_review_reinspection_failed_stopped_immutable</code>. 공식 readiness, evaluate, 첫 inspect는 각각 한 번 성공했다. 그 뒤 독립 검토 도중 두 번째 inspect 시도가 발생해 <code>ValueError: command does not have the exact predecessor</code>로 멈췄다. 유효한 12개 결과 파일은 변하지 않았고 2개 성능 통과 결과도 그대로다. Exp454는 더 실행하지 않으며, 다음 routing 연구는 새 계획으로 진행해야 한다.</div>
 
 <h2>Task 1 map preflight</h2>
 <p>상속된 Exp453 code map의 <code>source_parent_commit</code>는 <code>98a8d045e53f7e86cf27f5a936418470395992db</code>다. 그 뒤 Exp454 설계 commit <code>2a8486c42b385f4e589c7062a1c16f4be4372f4f</code>와 계획 commit이 들어왔으므로 이 map을 검증하면 <code>invalid source parent</code>로 stale이다. 그래서 Exp454는 별도 <code>codemap_exp454_antigravity.*</code> triplet을 만든다.</p>
@@ -20,7 +20,7 @@
 
 <h2>Closed CLI</h2>
 <p>허용 명령은 세 개뿐이다. readiness와 evaluate는 소문자 40-hex <code>--reviewed-commit</code> 하나만 받는다. inspect는 인자가 없다. <code>new</code>, <code>resume</code>, <code>retry</code>, <code>override</code>, <code>-r</code>, <code>--commit</code>, <code>--reviewed</code>, 대문자 hex, 39/41 hex, 빠진 flag, 추가 인자는 거부한다. evaluate는 맵 검증 뒤에만 evaluator를 import하고, production 경로는 Task 2 <code>capture_normalized_target_authority_antigravity()</code>만 load한다. test fixture converter는 import하지 않는다.</p>
-<p>공식 operator 진입점은 reviewed commit <code>32240c4e71776633249549a3d1d88b0e404d9463</code>에서 readiness, evaluate, bare inspect 순서로 각각 한 번 실행했고 모두 exit 0이었다.</p>
+<p>공식 operator 진입점은 reviewed commit <code>32240c4e71776633249549a3d1d88b0e404d9463</code>에서 readiness, evaluate, bare inspect 순서로 각각 한 번 실행했고 모두 exit 0이었다. 이후 독립 검토 도중 두 번째 inspect 시도가 실패해 lifecycle은 영구 stopped가 됐다. 이 추가 시도는 평가 결과를 다시 계산하거나 label을 다시 열지 않았고, 기존 12개 결과 파일도 바꾸지 않았다.</p>
 <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp454_exp453_exp449_authority_boundary_repair_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT</code></pre>
 
 <h2>PyTorch / MLX / MPS 가속 평가</h2>
@@ -49,7 +49,7 @@
 <li>DB: <code>/Users/mac/Documents/Dataset/univariate_ts.db</code>, SHA-256 <code>8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c</code>, inode <code>1048138</code>, nlink 1</li>
 <li>Exp449 prediction aggregate SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>, 96 predictions</li>
 <li>Exp453 readiness receipt SHA-256 <code>38607b6c8cad785ca8cd0830dacd42775d43f9175a67ed01d487657a3c44764e</code>, evaluate receipt <code>caa705be90ddd56a00c53d5eb94a90604768dac0a80274846adce2061349b3b6</code>, stopped <code>1b6b2ea01c0c4dde9128051e57c764d32cbdf8bc1af7fa0115f19c7a10181d97</code>, failure audit <code>97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276</code>. 오류는 <code>ValueError: Exp448 target identity differs</code>, labels 0, no retry, evaluation root 없음</li>
-<li>Exp454 evaluation root는 inode <code>23319659</code>의 immutable 12-leaf 결과다. failure audit는 없다</li>
+<li>Exp454 evaluation root는 inode <code>23319659</code>의 immutable 12-leaf 결과다. 두 번째 inspect 실패 audit SHA-256은 <code>3605405e08270bb7854e0e8d8a68e58760fd9f6f577634d37f029be0c8760b33</code>이다</li>
 <li>label session 1, query 48, row 72,300. 공식 실행 뒤 남은 Exp454 process는 없다</li>
 </ul>
 
@@ -61,4 +61,6 @@
 </tbody></table>
 <p>두 조합은 FN을 1개씩 줄이면서 FP도 늘리지 않아 통과했다. 반면 ECG5000 + MultiRocket은 FN을 12개 줄였지만 FP가 318이어서 탈락했고, FordB + Hydra는 FN을 10개 줄였지만 FP가 315로 기준보다 1개 많아 탈락했다. 즉 다음 연구의 핵심은 <strong>FN 회복량을 유지하면서 새 FP를 1~4개 더 줄이는 routing</strong>이다.</p>
 <p>결과 파일은 12개이며 artifact map SHA-256은 <code>748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65</code>, evaluation SHA-256은 <code>c2b6321d18ba4c98e426be96ea3d3fb0824e75926fa54ba4600634dded68e1ac</code>, decision SHA-256은 <code>3510a426d3ee083ccb3f8599c64d0c91cc56d0b902780c8b6a2136098cd9a595</code>다. 독립 계산과 bare inspect가 같은 2개 통과 결과를 확인했다. routing 연구는 가능하지만 자동 routing, champion, pending candidate, promotion은 아직 바꾸지 않는다.</p>
+<h2>검토 중 두 번째 inspect 실패</h2>
+<p>첫 inspect 성공 뒤 2026-08-14 15:01:35 KST에 두 번째 inspect 시도가 기록됐다. 이 시도는 이전 단계가 이미 <code>inspect_complete</code>라서 실패했고, stopped receipt SHA-256 <code>b6bab58bd99c8857b5476d578c4f8cf4719569b6e58e99cd82bd80628ebb3d3d</code>와 failure audit SHA-256 <code>3605405e08270bb7854e0e8d8a68e58760fd9f6f577634d37f029be0c8760b33</code>를 남겼다. 따라서 실제 명령 횟수는 readiness 1, evaluate 1, inspect 시도 2(성공 1, 실패 1)다. 결과 root의 세 핵심 SHA와 12개 파일 수는 실패 전후 동일하다. Exp454는 영구 중단하며 재시도하지 않는다.</p>
 </main></body></html>

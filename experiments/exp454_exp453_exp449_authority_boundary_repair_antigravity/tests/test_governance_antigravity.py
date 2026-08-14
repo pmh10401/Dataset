@@ -39,6 +39,7 @@ RUN_IDENTITY_ANTIGRAVITY = "exp454-exp453-exp449-authority-boundary-repair-antig
 TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
     "EXPERIMENT_CATALOG.json",
+    "FAILURE_LEDGER.json",
     "RESEARCH_STATE.json",
     "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html",
     "docs/EXP454_PREREGISTRATION_antigravity_KO.html",
@@ -116,9 +117,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         champion_entry = next(item for item in champion["history"] if item["experiment"] == "Exp454")
         self.assertEqual(sum(item["id"] == "Exp454" for item in catalog["experiments"]), 1)
         self.assertEqual(sum(item["experiment"] == "Exp454" for item in champion["history"]), 1)
-        self.assertFalse(any(item.get("experiment") == "Exp454" for item in failures["entries"]))
+        exp454_failure = next(item for item in failures["entries"] if item.get("experiment") == "Exp454")
+        self.assertEqual(sum(item.get("experiment") == "Exp454" for item in failures["entries"]), 1)
         for record in (exp454, catalog_entry, champion_entry):
-            self.assertEqual(record["status"], "official_evaluation_inspected_complete_awaiting_routing_research")
+            self.assertEqual(record["status"], "official_evaluation_complete_review_reinspection_failed_stopped_immutable")
             self.assertEqual(record["kind"] if "kind" in record else KIND_ANTIGRAVITY, KIND_ANTIGRAVITY)
             self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
             self.assertEqual(record["predecessor_prediction_sha256"], PREDICTION_SHA256_ANTIGRAVITY)
@@ -138,10 +140,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertTrue(record["official_inspect_started"])
             self.assertEqual(record["official_readiness_invocations"], 1)
             self.assertEqual(record["official_evaluate_invocations"], 1)
-            self.assertEqual(record["official_inspect_invocations"], 1)
+            self.assertEqual(record["official_inspect_invocations"], 2)
             self.assertEqual(record["official_readiness_exit_code"], 0)
             self.assertEqual(record["official_evaluate_exit_code"], 0)
-            self.assertEqual(record["official_inspect_exit_code"], 0)
+            self.assertEqual(record["official_inspect_exit_codes"], [0, 1])
+            self.assertEqual(record["official_inspect_successes"], 1)
+            self.assertEqual(record["official_inspect_failures"], 1)
             self.assertEqual(record["label_sessions"], 1)
             self.assertEqual(record["label_queries"], 48)
             self.assertEqual(record["label_rows"], 72300)
@@ -153,6 +157,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["qualified_count"], 2)
             self.assertEqual(record["qualified_candidates"], ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"])
             self.assertTrue(record["routing_research_eligible"])
+            self.assertTrue(record["permanent_stop"])
+            self.assertEqual(record["stopped_receipt_sha256"], "b6bab58bd99c8857b5476d578c4f8cf4719569b6e58e99cd82bd80628ebb3d3d")
+            self.assertEqual(record["failure_audit_sha256"], "3605405e08270bb7854e0e8d8a68e58760fd9f6f577634d37f029be0c8760b33")
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["routing_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
@@ -167,6 +174,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse((ROOT_ANTIGRAVITY / "EXPERIMENT_HISTORY.json").exists())
         exp453_failure = next(item for item in failures["entries"] if item["experiment"] == "Exp453")
         self.assertEqual(exp453_failure["facts"]["failure_audit_sha256"], FAILURE_AUDIT_SHA256_ANTIGRAVITY)
+        self.assertEqual(exp454_failure["facts"]["artifact_map_sha256"], ARTIFACT_MAP_SHA256_ANTIGRAVITY)
+        self.assertEqual(exp454_failure["facts"]["inspect_exit_codes"], [0, 1])
+        self.assertTrue(exp454_failure["facts"]["result_root_unchanged_after_failure"])
 
     def test_document_hash_bindings_are_exact_antigravity(self) -> None:
         """Break caught: readiness later consumes document bytes different from registered bytes."""
@@ -220,7 +230,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertNotIn("task3_runtime_predecessors", node_by_id)
         self.assertFalse(graph["unknown_relationships"])
         self.assertIn("tracked_fingerprints", lock)
-        self.assertEqual(len(lock["tracked_fingerprints"]), 9)
+        self.assertEqual(len(lock["tracked_fingerprints"]), 10)
         self.assertEqual(set(lock["tracked_fingerprints"]), set(TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY))
         match = re.search(r'<pre id="codemap-json-antigravity" type="application/json">(.*?)</pre>', rendered, flags=re.DOTALL)
         self.assertIsNotNone(match)

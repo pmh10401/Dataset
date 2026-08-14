@@ -381,6 +381,37 @@
         "post_freeze_forensic_storage_aggregate": {"date": "2026-08-12", "purpose": "failure_analysis_only_not_prediction_or_readiness", "test_label_storage_type": "SQLite TEXT exact values", "label_0_count": 221284, "label_1_count": 4516, "instance_index_storage_type": "integer", "dataset_names_or_positions_used": false}
       },
       "lesson": "The one allowed Exp447 evaluation stopped before a valid TEST-label row or result artifact. Preserve the sibling audit and absent root as immutable engineering failure evidence; never retry Exp447 or use partial label access for metrics, selection, promotion, or dashboard output. A new Exp448 design and preregistration is required before any further failure analysis or evaluation work."
+    },
+    {
+      "experiment": "Exp454",
+      "category": "official_result_succeeded_review_reinspection_failed_terminal_stop",
+      "evidence": "/Users/mac/Documents/Dataset/exp454_authority_boundary_repair_failure_audit_antigravity.json",
+      "facts": {
+        "reviewed_commit": "32240c4e71776633249549a3d1d88b0e404d9463",
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "inspect_invocations": 2,
+        "inspect_exit_codes": [0, 1],
+        "label_sessions": 1,
+        "label_queries": 48,
+        "label_rows": 72300,
+        "result_leaf_count": 12,
+        "artifact_map_sha256": "748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65",
+        "evaluation_sha256": "c2b6321d18ba4c98e426be96ea3d3fb0824e75926fa54ba4600634dded68e1ac",
+        "decision_sha256": "3510a426d3ee083ccb3f8599c64d0c91cc56d0b902780c8b6a2136098cd9a595",
+        "qualified_candidates": ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"],
+        "second_inspect_error": "ValueError: command does not have the exact predecessor",
+        "stopped_receipt_sha256": "b6bab58bd99c8857b5476d578c4f8cf4719569b6e58e99cd82bd80628ebb3d3d",
+        "failure_audit_sha256": "3605405e08270bb7854e0e8d8a68e58760fd9f6f577634d37f029be0c8760b33",
+        "failure_audit_inode": 23326296,
+        "failure_audit_nlink": 1,
+        "result_root_unchanged_after_failure": true,
+        "permanent_stop": true,
+        "retry_permitted": false
+      },
+      "lesson": "The scientific evaluation and first inspect succeeded and the 12-leaf result remains valid. A review-time second inspect violated the one-shot lifecycle and created an immutable terminal stop. Preserve both the successful result and the later failure evidence; never rerun Exp454. Use the two qualified pairs only as input to a newly preregistered routing experiment."
     }
   ]
 }

@@ -130,8 +130,8 @@ $FIXED_PY -m unittest discover -s experiments/exp454_exp453_exp449_authority_bou
 <li><input disabled type="checkbox" checked> <strong>Step 3 — readiness once:</strong><pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp454_exp453_exp449_authority_boundary_repair_antigravity.py readiness --reviewed-commit 32240c4e71776633249549a3d1d88b0e404d9463</code></pre>한 번 실행해 exit 0을 확인했다.</li>
 <li><input disabled type="checkbox" checked> <strong>Step 4 — evaluate once:</strong> label session 1, queries 48, rows 72,300, 12 complete leaves로 한 번 성공했다.</li>
 <li><input disabled type="checkbox" checked> <strong>Step 5 — independent result check:</strong> Codex가 96 ordered indices, confusion/FN/FP/F1, bootstrap, decision와 12 leaf SHA를 독립 재계산해 통과했다.</li>
-<li><input disabled type="checkbox" checked> <strong>Step 6 — inspect once:</strong> bare inspect를 한 번 실행했고 evaluate 및 독립 계산과 같은 결과를 확인했다.</li>
-<li><input disabled type="checkbox"> <strong>Step 7 — closeout:</strong> 성공 또는 실패 truth를 HTML/ledgers/map에 기록한다. Grok 결과 분석, Codex 검증, fresh Sol terminal review 뒤 Task 6을 체크한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — inspect once:</strong> 계획된 bare inspect 한 번은 성공해 evaluate 및 독립 계산과 같은 결과를 확인했다. 이후 독립 검토 중 두 번째 inspect 시도가 실패해 Exp454 lifecycle이 영구 stopped가 됐지만 12-leaf 결과는 변하지 않았다.</li>
+<li><input disabled type="checkbox"> <strong>Step 7 — closeout:</strong> 성공한 결과와 뒤이은 reinspection 실패를 HTML/ledgers/FAILURE_LEDGER/map에 함께 기록한다. Codex 결과 검증과 fresh Sol terminal re-review 뒤 Task 6을 체크한다.</li>
 </ol></section>
 
 <h2>Self-review checklist</h2><ul>

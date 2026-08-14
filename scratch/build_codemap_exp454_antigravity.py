@@ -26,6 +26,7 @@ ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "reads", "tests", "future_unknown"}
 TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
     "EXPERIMENT_CATALOG.json",
+    "FAILURE_LEDGER.json",
     "RESEARCH_STATE.json",
     "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html",
     "docs/EXP454_PREREGISTRATION_antigravity_KO.html",
@@ -101,8 +102,9 @@ def _html_antigravity(graph: dict[str, object]) -> str:
         "CLI callers는 official launcher와 CLI regression이다. effect는 readiness/evaluate에 lower 40-hex "
         "--reviewed-commit만, inspect는 인자 없이 허용하고 new/resume/retry/override/abbreviation을 거부한다. "
         "evaluate는 Task 2 capture_normalized_target_authority_antigravity만 load한다. "
-        "tests는 test_cli_antigravity다. Task 6 readiness/evaluate/inspect는 각각 한 번 성공했고, "
-        "16개 조합 중 ECG5000+Hydra와 ChlorineConcentration+MultiRocket 두 조합이 FN/FP/F1 기준을 통과했다.</p>"
+        "tests는 test_cli_antigravity다. Task 6 readiness/evaluate/첫 inspect가 성공했고, "
+        "16개 조합 중 ECG5000+Hydra와 ChlorineConcentration+MultiRocket 두 조합이 FN/FP/F1 기준을 통과했다. "
+        "검토 중 두 번째 inspect는 lifecycle gate에서 실패해 영구 중단됐지만 12-leaf 결과는 변하지 않았다.</p>"
         f"<h2>노드</h2><ul>{items}</ul>"
         f'<h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         "</main></body></html>"
@@ -146,7 +148,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "implementation_plan", "path": plan, "role": "Task 1–6의 순차 TDD와 공식 실행 경계.", "tests": [test], "evidence": [_evidence_antigravity(plan, "Task 1: HTML governance")]},
         {"id": "preregistration", "path": "docs/EXP454_PREREGISTRATION_antigravity_KO.html", "role": "고정 runtime과 과학 불변값.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP454_PREREGISTRATION_antigravity_KO.html", "NumPy 2.3.5")]},
         {"id": "runbook", "path": "docs/EXP454_RUNBOOK_antigravity_KO.html", "role": "미래 one-shot 명령 순서.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP454_RUNBOOK_antigravity_KO.html", "readiness --reviewed-commit")]},
-        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp454 official evaluation and inspect complete; 2 qualified pairs and routing-research-eligible truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"official_evaluation_inspected_complete_awaiting_routing_research"')]},
+        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp454 valid official result, 2 qualified pairs, then review-time reinspection failure and immutable terminal stop truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"official_evaluation_complete_review_reinspection_failed_stopped_immutable"')]},
         {"id": "governance_regression", "path": test, "role": "HTML, ledger, hash, stale-Exp453-map, future-map regression.", "tests": [test], "evidence": [_evidence_antigravity(test, "class GovernanceAntigravityTest")]},
         {"id": "map_builder", "path": "scratch/build_codemap_exp454_antigravity.py", "role": "bounded HTML/JSON/lock generator.", "tests": [test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp454_antigravity.py", "def validate_map_antigravity")]},
         {"id": "task2_regressions", "path": differential, "role": "Caller: Task 2 focused verification. Effect: rejects scientific drift across all foundations.", "tests": [differential], "evidence": [_evidence_antigravity(differential, "class ControlledForkDifferentialAntigravityTest")]},
