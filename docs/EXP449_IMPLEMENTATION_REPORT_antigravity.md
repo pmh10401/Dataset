@@ -24,6 +24,10 @@ access, AP, AUROC, scientific result는 수행하거나 주장하지 않는다.
 `815cb98a`, `0d8d4cd2`이다. 마지막 Task7 commit `0d8d4cd2`는 execution authority를
 `execution_authority_not_configured`로 fail-close한다.
 
+Task8 documentation/state/test commit은 `2c9646b9d1bcf373a7f7a0b48f9a2f97801b9c69`
+(`docs(exp449): preregister proposal readiness`)이며, 후속 map refresh는 이 clean
+reviewed commit을 source로 bind한다.
+
 ## Task8 검증 closeout
 
 - Exp449 discovery: `81/81 OK`, 9.025초.
@@ -45,8 +49,8 @@ artifacts `279bcb4c1d010f289aab728837975ee89824cbbc61a5167adb575d39bbefefde`,
 operations `cbab8799c09758ac9ebccf415dac83fb263bc05a0af4bdf46957f9aaf2657d6a`,
 validation `7818fe9de5fdf2ff620dcbbe9605c4ab43dbb7a2d9a5e4920916959581f6990d`,
 verifier `dfa7e739cc3f757b3c933c889840bc3a8111a5ead8e573673c3485057ccfad01`이다.
-Current map SHA256은 JSON `d548b01079babd0e3f23f20888e69227d8e15628c46243eb384cc3edf758b2dd`,
-HTML `b0f2e2e24aba3ae94fc6c4be36dc14a598b61bf586a0bfa194481410fc805deb`이며, lock의
+Current map SHA256은 JSON `5e70a5965b825e09abcc67e1467b9e6fe0ef8053e9d6c568facc29aaca544ba7`,
+HTML `39098fc5df56ad97ad218937980bf22e5da928a159bdbfea201199e117c16718`이며, lock의
 sha256-v1 current-tree fingerprints는 closeout에서 별도로 exact 검증한다.
 RESEARCH_STATE SHA256은 `59b6021d02bf5f7d0833b755f69a5bc939abe4232d0ae952688639f80bb35888`이다.
 이 파일의 작성이나 self-hash는 execution authority가 아니다.

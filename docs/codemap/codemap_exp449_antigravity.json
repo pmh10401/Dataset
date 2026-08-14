@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T03:30:33+09:00",
-  "generated_from_commit": "0d8d4cd2c55dd50d15280f1dfcd178ebdea734fc",
+  "generated_at": "2026-08-15T03:43:46+09:00",
+  "generated_from_commit": "2c9646b9d1bcf373a7f7a0b48f9a2f97801b9c69",
   "working_tree_dirty": true,
   "scope": [
     "Completed Exp449 Task1–Task7 implementation plus Task8 evidence-only Korean preregistration, runbook, and implementation report; no root creation, scoring, TEST-label access, smoke, or official run.",
