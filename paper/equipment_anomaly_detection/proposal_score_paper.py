@@ -284,7 +284,7 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
     print("Task6 start", file=sys.stderr, flush=True)
     low_started = monotonic()
     hard_lanes = {dataset: routes[dataset].exp253.hard for dataset in raw}
-    low = score_low_frequency(raw, hard_lanes)
+    low = score_low_frequency(raw, hard_lanes, progress=progress)
     low_seconds = float(monotonic() - low_started)
     print("Task6 finish", file=sys.stderr, flush=True)
     _label_firewall()

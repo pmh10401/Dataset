@@ -14,6 +14,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 import math
+from time import monotonic
 from types import MappingProxyType
 from typing import Iterable, Mapping
 
@@ -26,6 +27,7 @@ from ..contracts_paper import (
     LowFrequencyRow,
     RawDataset,
 )
+from ..data_paper import ProgressCallback, emit_progress_paper
 
 
 # Copied frozen numerical closure and constants.  The Exp439 entries are the
@@ -346,7 +348,14 @@ def _validate_values_paper(values: RawDataset) -> None:
             raise ValueError(f"{split} rows are invalid")
 
 
-def _score_one_dataset_paper(values: RawDataset) -> tuple[tuple[LowFrequencyRow, ...], tuple[LowFrequencyCandidate, ...], int]:
+def _score_one_dataset_paper(
+    values: RawDataset,
+    *,
+    progress: ProgressCallback | None = None,
+    parent_completed: int = 0,
+    parent_total: int = 1,
+    started: float | None = None,
+) -> tuple[tuple[LowFrequencyRow, ...], tuple[LowFrequencyCandidate, ...], int]:
     """Replay all TEST rows for one dataset before the cross-dataset selection."""
     _validate_values_paper(values)
     finite_groups: dict[int, list[np.ndarray]] = defaultdict(list)
@@ -359,6 +368,13 @@ def _score_one_dataset_paper(values: RawDataset) -> tuple[tuple[LowFrequencyRow,
             excluded += 1
     models: dict[int, FittedGroupPaper] = {}
     for length, rows in finite_groups.items():
+        emit_progress_paper(progress, {
+            "stage": "task6", "phase": "tick",
+            "completed": parent_completed, "total": parent_total,
+            "dataset": values.dataset,
+            "detail": f"group_len={len(rows)}",
+            "elapsed_s": float(monotonic() - (started if started is not None else monotonic())),
+        })
         if MINIMUM_TRAIN_ROWS_PAPER <= len(rows) <= MAXIMUM_TRAIN_ROWS_PAPER:
             try:
                 group = fit_group_calibration_paper(np.stack(rows))
@@ -386,7 +402,12 @@ def _score_one_dataset_paper(values: RawDataset) -> tuple[tuple[LowFrequencyRow,
     return tuple(records), tuple(candidates), excluded
 
 
-def score_low_frequency(values: RawDataset | Mapping[str, RawDataset], hard: Mapping[str, frozenset[int]]) -> LowFrequencyResult:
+def score_low_frequency(
+    values: RawDataset | Mapping[str, RawDataset],
+    hard: Mapping[str, frozenset[int]],
+    *,
+    progress: ProgressCallback | None = None,
+) -> LowFrequencyResult:
     """Replay one or many datasets and expose the exact global Hard-empty top 30.
 
     Passing one ``RawDataset`` preserves the primary single-dataset input
@@ -407,11 +428,28 @@ def score_low_frequency(values: RawDataset | Mapping[str, RawDataset], hard: Map
     rows: list[LowFrequencyRow] = []
     candidates: list[LowFrequencyCandidate] = []
     excluded = 0
-    for dataset in sorted(datasets):
-        dataset_rows, dataset_candidates, dataset_excluded = _score_one_dataset_paper(datasets[dataset])
-        rows.extend(dataset_rows)
-        candidates.extend(dataset_candidates)
-        excluded += dataset_excluded
+    started = monotonic()
+    total = len(datasets)
+    finished = 0
+    emit_progress_paper(progress, {"stage": "task6", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
+    try:
+        for dataset in sorted(datasets):
+            dataset_rows, dataset_candidates, dataset_excluded = _score_one_dataset_paper(
+                datasets[dataset], progress=progress, parent_completed=finished, parent_total=total, started=started,
+            )
+            finished += 1
+            emit_progress_paper(progress, {
+                "stage": "task6", "phase": "tick",
+                "completed": finished, "total": total,
+                "dataset": dataset, "elapsed_s": float(monotonic() - started),
+            })
+            rows.extend(dataset_rows)
+            candidates.extend(dataset_candidates)
+            excluded += dataset_excluded
+        emit_progress_paper(progress, {"stage": "task6", "phase": "end", "completed": total, "total": total, "elapsed_s": float(monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "task6", "phase": "error", "completed": finished, "total": total, "elapsed_s": float(monotonic() - started)})
+        raise
     provisional = tuple(candidates)
     scoped_lanes = {dataset: lanes[dataset] for dataset in sorted(datasets)}
     return LowFrequencyResult(tuple(sorted(datasets)), tuple(rows), provisional, select_source_candidates(provisional, scoped_lanes), excluded, scoped_lanes)

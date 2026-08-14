@@ -376,7 +376,7 @@
       ]
     },
     "sources_paper/low_frequency_paper.py": {
-      "paper_sha256": "20231f7a4cd65d7846477e7c041ef67d314683f602182831a0791dc2cc4bce11",
+      "paper_sha256": "8e531db02d3a79974c502bc95b4a62f88346db24cc1f96303d7ea4d8beb3a196",
       "origins": [
         {
           "module": "experiments.exp439_scale_aware_reconstruction_repair_antigravity.aspe_antigravity",

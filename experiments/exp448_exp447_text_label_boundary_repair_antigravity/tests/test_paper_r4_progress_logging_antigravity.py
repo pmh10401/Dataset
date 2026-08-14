@@ -351,6 +351,53 @@ class ProgressLoggingAntigravityTests(unittest.TestCase):
             self.assertEqual(len(args), 1)
             self.assertEqual(kwargs, {})
 
+    def test_task6_dataset_and_group_progress_without_scores(self) -> None:
+        from paper.equipment_anomaly_detection.tests_paper.test_low_frequency_paper import _values
+        from paper.equipment_anomaly_detection.sources_paper.low_frequency_paper import score_low_frequency
+
+        events: list[dict[str, object]] = []
+        values = _values()
+        baseline = score_low_frequency(values, {values.dataset: frozenset()})
+        observed = score_low_frequency(values, {values.dataset: frozenset()}, progress=events.append)
+        self.assertEqual(
+            tuple(candidate.coordinate for candidate in observed.selected_candidates),
+            tuple(candidate.coordinate for candidate in baseline.selected_candidates),
+        )
+        self.assertEqual(observed.rows[1].missing_reason, baseline.rows[1].missing_reason)
+        self.assertTrue(events[0]["phase"] == "start" and events[0]["completed"] == 0 and events[0]["total"] == 1)
+        self.assertTrue(any(event.get("detail", "").startswith("group_len=") and event["completed"] == 0 and event["total"] == 1 for event in events))
+        parent_ticks = [event for event in events if event["phase"] == "tick" and not str(event.get("detail", "")).startswith("group_len=")]
+        self.assertEqual(parent_ticks[-1]["completed"], 1)
+        self.assertEqual(events[-1]["phase"], "end")
+        joined = json.dumps(events)
+        for token in ("excess_ratio", "empirical_rank", "score", "label="):
+            self.assertNotIn(token, joined)
+
+        dual_events: list[dict[str, object]] = []
+        dual = {"A": _values("A"), "B": _values("B")}
+        dual_hard = {"A": frozenset(), "B": frozenset()}
+        dual_baseline = score_low_frequency(dual, dual_hard)
+        dual_observed = score_low_frequency(dual, dual_hard, progress=dual_events.append)
+        self.assertEqual(
+            tuple(candidate.coordinate for candidate in dual_observed.selected_candidates),
+            tuple(candidate.coordinate for candidate in dual_baseline.selected_candidates),
+        )
+        self.assertTrue(dual_events and all(event["total"] == 2 for event in dual_events))
+        self.assertTrue(
+            any(
+                str(event.get("detail", "")).startswith("group_len=")
+                and event["completed"] == 0
+                and event["total"] == 2
+                and event.get("dataset") == "A"
+                for event in dual_events
+            )
+        )
+        dual_parent = [
+            event for event in dual_events
+            if event["phase"] == "tick" and not str(event.get("detail", "")).startswith("group_len=")
+        ]
+        self.assertTrue(any(event["completed"] == 1 and event.get("dataset") == "A" for event in dual_parent))
+
 
 if __name__ == "__main__":
     unittest.main()
