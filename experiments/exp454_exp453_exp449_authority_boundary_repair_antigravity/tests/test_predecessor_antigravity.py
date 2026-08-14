@@ -1,0 +1,212 @@
+"""Label-free real-authority and mutation tests for the Exp454 normalize boundary."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from pathlib import Path
+import ast
+import inspect
+import sqlite3
+import unittest
+from unittest.mock import patch
+
+
+ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[3]
+PACKAGE_ANTIGRAVITY = ROOT_ANTIGRAVITY / "experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity"
+EXP453_STOPPED_SHA256_ANTIGRAVITY = "1b6b2ea01c0c4dde9128051e57c764d32cbdf8bc1af7fa0115f19c7a10181d97"
+EXP453_READINESS_SHA256_ANTIGRAVITY = "38607b6c8cad785ca8cd0830dacd42775d43f9175a67ed01d487657a3c44764e"
+EXP453_EVALUATE_SHA256_ANTIGRAVITY = "caa705be90ddd56a00c53d5eb94a90604768dac0a80274846adce2061349b3b6"
+EXP453_FAILURE_AUDIT_SHA256_ANTIGRAVITY = "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276"
+EXP449_PREDICTION_SHA256_ANTIGRAVITY = "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d"
+
+
+def _block_test_labels_antigravity(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("TEST labels were queried")
+
+
+class PredecessorAntigravityTest(unittest.TestCase):
+    def test_real_exp449_authority_normalizes_without_test_fixture_conversion_antigravity(self) -> None:
+        """Break caught: production conversion is missing or depends on a test fixture."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.predecessor_antigravity import (
+            capture_exp448_authority_antigravity,
+        )
+        from experiments.exp449_residual_fn_method_qualification_antigravity.contracts_antigravity import (
+            DatasetBaselineAntigravity as ForeignBaselineAntigravity,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.contracts_antigravity import (
+            ConfusionAntigravity,
+            DatasetBaselineAntigravity,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.predecessor_antigravity import (
+            NormalizedTargetAuthorityAntigravity,
+            normalize_exp449_target_authority_antigravity,
+        )
+
+        source = inspect.getsource(normalize_exp449_target_authority_antigravity)
+        self.assertNotIn("tests.", source)
+        self.assertNotIn("fixture", source.casefold())
+        self.assertNotIn("TEST", source)
+
+        with patch.object(sqlite3, "connect", _block_test_labels_antigravity):
+            raw = capture_exp448_authority_antigravity()
+            normalized = normalize_exp449_target_authority_antigravity(raw)
+
+        self.assertIs(type(normalized), NormalizedTargetAuthorityAntigravity)
+        self.assertEqual(len(normalized.target_dataset_names), 48)
+        self.assertEqual(len(normalized.target_baseline_rows), 48)
+        self.assertIs(type(normalized.target_baseline_rows[0]), DatasetBaselineAntigravity)
+        self.assertIs(type(normalized.baseline_confusion), ConfusionAntigravity)
+        self.assertIsNot(type(normalized.target_baseline_rows[0]), ForeignBaselineAntigravity)
+        self.assertEqual(normalized.target_dataset_names, raw.target_dataset_names)
+        self.assertEqual(normalized.target_baseline_rows[0].dataset_order, raw.target_baseline_rows[0].dataset_order)
+        self.assertEqual(normalized.target_baseline_rows[0].family, raw.target_baseline_rows[0].family)
+        self.assertEqual(normalized.target_baseline_rows[0].stable_candidates, raw.target_baseline_rows[0].stable_candidates)
+        self.assertEqual(
+            (
+                normalized.baseline_confusion.tp,
+                normalized.baseline_confusion.fp,
+                normalized.baseline_confusion.fn,
+                normalized.baseline_confusion.tn,
+            ),
+            (
+                raw.baseline_confusion.tp,
+                raw.baseline_confusion.fp,
+                raw.baseline_confusion.fn,
+                raw.baseline_confusion.tn,
+            ),
+        )
+        self.assertEqual(
+            (
+                normalized.target_baseline_rows[0].confusion.tp,
+                normalized.target_baseline_rows[0].confusion.fp,
+                normalized.target_baseline_rows[0].confusion.fn,
+                normalized.target_baseline_rows[0].confusion.tn,
+            ),
+            (
+                raw.target_baseline_rows[0].confusion.tp,
+                raw.target_baseline_rows[0].confusion.fp,
+                raw.target_baseline_rows[0].confusion.fn,
+                raw.target_baseline_rows[0].confusion.tn,
+            ),
+        )
+
+    def test_mutated_raw_authority_fields_fail_normalization_antigravity(self) -> None:
+        """Break caught: dataset order, family, candidates, or confusion drift is copied through."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity.predecessor_antigravity import (
+            capture_exp448_authority_antigravity,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.predecessor_antigravity import (
+            normalize_exp449_target_authority_antigravity,
+        )
+
+        with patch.object(sqlite3, "connect", _block_test_labels_antigravity):
+            raw = capture_exp448_authority_antigravity()
+        first = raw.target_baseline_rows[0]
+        other_family = "Yoga" if first.family != "Yoga" else "Crop"
+        cases = (
+            (
+                "dataset order",
+                replace(
+                    raw,
+                    target_dataset_names=(raw.target_dataset_names[1], raw.target_dataset_names[0], *raw.target_dataset_names[2:]),
+                    target_baseline_rows=(raw.target_baseline_rows[1], raw.target_baseline_rows[0], *raw.target_baseline_rows[2:]),
+                ),
+            ),
+            (
+                "family",
+                replace(raw, target_baseline_rows=(replace(first, family=other_family), *raw.target_baseline_rows[1:])),
+            ),
+            (
+                "stable candidates",
+                replace(
+                    raw,
+                    target_baseline_rows=(replace(first, stable_candidates=frozenset({999999})), *raw.target_baseline_rows[1:]),
+                ),
+            ),
+            (
+                "baseline confusion",
+                replace(
+                    raw,
+                    target_baseline_rows=(
+                        replace(first, confusion=replace(first.confusion, fn=first.confusion.fn + 1)),
+                        *raw.target_baseline_rows[1:],
+                    ),
+                ),
+            ),
+            (
+                "global confusion",
+                replace(raw, baseline_confusion=replace(raw.baseline_confusion, fn=raw.baseline_confusion.fn + 1)),
+            ),
+        )
+        for label, mutated in cases:
+            with self.subTest(label=label), patch.object(sqlite3, "connect", _block_test_labels_antigravity):
+                with self.assertRaises(ValueError):
+                    normalize_exp449_target_authority_antigravity(mutated)
+
+    def test_capture_normalized_uses_real_exp449_capture_antigravity(self) -> None:
+        """Break caught: production capture is fixture-only or skips the single normalize boundary."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.contracts_antigravity import (
+            DatasetBaselineAntigravity,
+        )
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.predecessor_antigravity import (
+            capture_normalized_target_authority_antigravity,
+            normalize_exp449_target_authority_antigravity,
+        )
+
+        source = inspect.getsource(capture_normalized_target_authority_antigravity)
+        self.assertIn("capture_exp448_authority_antigravity", source)
+        self.assertIn("normalize_exp449_target_authority_antigravity", source)
+        self.assertNotIn("tests.", source)
+        self.assertNotIn("fixture", source.casefold())
+        with patch.object(sqlite3, "connect", _block_test_labels_antigravity):
+            normalized = capture_normalized_target_authority_antigravity()
+        self.assertEqual(len(normalized.target_dataset_names), 48)
+        self.assertEqual(len(normalized.target_baseline_rows), 48)
+        self.assertIs(type(normalized.target_baseline_rows[0]), DatasetBaselineAntigravity)
+        with patch.object(sqlite3, "connect", _block_test_labels_antigravity):
+            again = normalize_exp449_target_authority_antigravity(
+                __import__(
+                    "experiments.exp449_residual_fn_method_qualification_antigravity.predecessor_antigravity",
+                    fromlist=["capture_exp448_authority_antigravity"],
+                ).capture_exp448_authority_antigravity()
+            )
+        self.assertEqual(normalized, again)
+
+    def test_normalize_function_exists_only_in_predecessor_antigravity(self) -> None:
+        """Break caught: a second conversion is added outside the predecessor boundary."""
+        hits: list[str] = []
+        for path in sorted(PACKAGE_ANTIGRAVITY.rglob("*_antigravity.py")):
+            if "tests" in path.parts:
+                continue
+            if "def normalize_exp449_target_authority_antigravity" in path.read_text(encoding="utf-8"):
+                hits.append(path.name)
+        self.assertEqual(hits, ["predecessor_antigravity.py"])
+
+    def test_predecessor_binds_exp453_and_exp449_hashes_antigravity(self) -> None:
+        """Break caught: predecessor forgets the immutable Exp453 failure or Exp449 prediction hashes."""
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.predecessor_antigravity import (
+            EXP449_PREDICTION_AGGREGATE_SHA256_ANTIGRAVITY,
+            EXP453_EVALUATE_RECEIPT_SHA256_ANTIGRAVITY,
+            EXP453_FAILURE_AUDIT_SHA256_ANTIGRAVITY,
+            EXP453_READINESS_RECEIPT_SHA256_ANTIGRAVITY,
+            EXP453_STOPPED_RECEIPT_SHA256_ANTIGRAVITY,
+        )
+
+        self.assertEqual(EXP453_STOPPED_RECEIPT_SHA256_ANTIGRAVITY, EXP453_STOPPED_SHA256_ANTIGRAVITY)
+        self.assertEqual(EXP453_READINESS_RECEIPT_SHA256_ANTIGRAVITY, EXP453_READINESS_SHA256_ANTIGRAVITY)
+        self.assertEqual(EXP453_EVALUATE_RECEIPT_SHA256_ANTIGRAVITY, EXP453_EVALUATE_SHA256_ANTIGRAVITY)
+        self.assertEqual(EXP453_FAILURE_AUDIT_SHA256_ANTIGRAVITY, EXP453_FAILURE_AUDIT_SHA256_ANTIGRAVITY)
+        self.assertEqual(EXP449_PREDICTION_AGGREGATE_SHA256_ANTIGRAVITY, EXP449_PREDICTION_SHA256_ANTIGRAVITY)
+
+    def test_predecessor_source_does_not_import_test_or_label_modules_antigravity(self) -> None:
+        """Break caught: the normalize boundary imports TEST labels or a fixture converter."""
+        tree = ast.parse((PACKAGE_ANTIGRAVITY / "predecessor_antigravity.py").read_text(encoding="utf-8"))
+        imported = {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
+        imported |= {node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)}
+        forbidden = {"sqlite3", "tests", "mlx", "torch"}
+        self.assertFalse(any(name == blocked or f".{blocked}" in name or name.endswith(".tests") for name in imported for blocked in forbidden))
+        self.assertFalse(any("test_fixture" in name or "tests." in name for name in imported))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -46,18 +46,18 @@ git diff --check
 <li><input disabled type="checkbox" checked> <strong>Step 7 — review/commit:</strong> Grok read-only 문서 검토 후 Codex가 governance commit과 clean map-only child를 만든다.</li>
 </ol></section>
 
-<section><h2><input disabled type="checkbox"> Task 2: Controlled fork와 단일 authority 변환</h2>
+<section><h2><input disabled type="checkbox" checked> Task 2: Controlled fork와 단일 authority 변환</h2>
 <p><strong>Files:</strong> Create Exp454 <code>config</code>, <code>contracts</code>, <code>artifacts</code>, <code>bootstrap</code>, <code>dashboard_export</code>, <code>predecessor</code> and corresponding tests plus <code>test_controlled_fork_differential_antigravity.py</code>.</p>
 <p><strong>Consumes:</strong> Exp453 terminal evidence and Exp449 frozen prediction/target authority. <strong>Produces:</strong> <code>NormalizedTargetAuthorityAntigravity</code>, <code>normalize_exp449_target_authority_antigravity()</code>, <code>capture_normalized_target_authority_antigravity()</code>.</p><ol>
-<li><input disabled type="checkbox"> <strong>Step 1 — fresh map preflight:</strong> Exp454 map에서 새 foundation/boundary의 callers, effects, tests를 확인한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 2 — RED real-authority:</strong><pre><code>def test_real_exp449_authority_normalizes_without_test_fixture_conversion_antigravity():
+<li><input disabled type="checkbox" checked> <strong>Step 1 — fresh map preflight:</strong> Exp454 map에서 새 foundation/boundary의 callers, effects, tests를 확인한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 2 — RED real-authority:</strong><pre><code>def test_real_exp449_authority_normalizes_without_test_fixture_conversion_antigravity():
     raw = capture_exp448_authority_antigravity()
     normalized = normalize_exp449_target_authority_antigravity(raw)
     assert len(normalized.target_dataset_names) == 48
     assert len(normalized.target_baseline_rows) == 48
     assert type(normalized.target_baseline_rows[0]) is DatasetBaselineAntigravity</code></pre><p>Expected before implementation: import/function missing failure. 이 test는 TEST label을 읽지 않는다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 3 — RED mutation table:</strong> dataset order, family, stable candidates, baseline confusion, global confusion을 각각 바꾼 raw authority가 실패하는지 table test한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 4 — minimal implementation:</strong><pre><code>@dataclass(frozen=True, slots=True)
+<li><input disabled type="checkbox" checked> <strong>Step 3 — RED mutation table:</strong> dataset order, family, stable candidates, baseline confusion, global confusion을 각각 바꾼 raw authority가 실패하는지 table test한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 4 — minimal implementation:</strong><pre><code>@dataclass(frozen=True, slots=True)
 class NormalizedTargetAuthorityAntigravity:
     target_dataset_names: tuple[str, ...]
     target_baseline_rows: tuple[DatasetBaselineAntigravity, ...]
@@ -78,11 +78,11 @@ def normalize_exp449_target_authority_antigravity(authority: object) -&gt; Norma
         rows.append(DatasetBaselineAntigravity(expected_order, raw.family, frozenset(raw.stable_candidates), confusion))
     global_confusion = ConfusionAntigravity(raw_global.tp, raw_global.fp, raw_global.fn, raw_global.tn)
     return NormalizedTargetAuthorityAntigravity(datasets, tuple(rows), global_confusion)</code></pre><p>실제 구현은 raw class의 모듈 identity에 의존하지 않고 exact fields, 값, 수, 순서를 확인한 뒤 local frozen records를 만든다. 변환 함수는 이 파일 한 곳에만 둔다.</p></li>
-<li><input disabled type="checkbox"> <strong>Step 5 — differential:</strong> identity/path/schema를 제외한 Exp453/Exp454 config, contracts, artifacts, bootstrap, dashboard AST와 scientific payload SHA가 같아야 한다.</li>
-<li><input disabled type="checkbox"> <strong>Step 6 — GREEN twice:</strong><pre><code>FIXED_PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+<li><input disabled type="checkbox" checked> <strong>Step 5 — differential:</strong> identity/path/schema를 제외한 Exp453/Exp454 config, contracts, artifacts, bootstrap, dashboard AST와 scientific payload SHA가 같아야 한다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 6 — GREEN twice:</strong><pre><code>FIXED_PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
 $FIXED_PY -m unittest discover -s experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity/tests -p 'test_*antigravity.py'
 # Run the Task 2 focused list twice; run Exp453 foundations/predecessor once.</code></pre></li>
-<li><input disabled type="checkbox"> <strong>Step 7 — review/commit/map:</strong> Grok 전용 worktree 구현 diff를 Codex가 검사·통합하거나 Codex가 직접 최소 구현한다. source/tests commit 후 map-only child를 만든다.</li>
+<li><input disabled type="checkbox" checked> <strong>Step 7 — review/commit/map:</strong> Grok 전용 worktree 구현 diff를 Codex가 검사·통합하거나 Codex가 직접 최소 구현한다. source/tests commit 후 map-only child를 만든다.</li>
 </ol></section>
 
 <section><h2><input disabled type="checkbox"> Task 3: Runtime, lifecycle, readiness와 label gate</h2>
