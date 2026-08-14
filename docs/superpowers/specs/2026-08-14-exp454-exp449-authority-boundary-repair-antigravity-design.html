@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp454 Exp449 authority 타입 경계 복구 설계</title>
+<style>body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left;vertical-align:top}.box{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}.warn{border-left-color:#b54708;background:#fff7ed}</style></head><body><main>
+<h1>Exp454 Exp449 authority 타입 경계 복구 설계</h1>
+<div class="box"><strong>한 줄 목표:</strong> 실제 Exp449 authority를 Exp454 내부 타입으로 한 번만 변환해, 과학 계산을 바꾸지 않고 공식 평가가 label 단계까지 도달하게 한다.</div>
+
+<h2>1. 왜 새 실험이 필요한가</h2>
+<p>Exp453 readiness는 고정 Python 환경에서 성공했다. 하지만 evaluate는 label을 열기 전에 <code>ValueError: Exp448 target identity differs</code>로 끝났다. 실제 Exp449 객체와 Exp453가 복사해 만든 클래스는 이름과 값이 같아도 Python에서 서로 다른 타입이다. Exp453가 <code>type(...) is</code>로 비교했기 때문에 실패했다.</p>
+<p>Exp453는 readiness 1회, evaluate 1회, inspect 0회로 영구 종료됐다. 재실행하지 않는다. Exp454는 이 한 가지 타입 경계만 고친다.</p>
+
+<h2>2. 선택한 방법</h2>
+<p><strong>단일 변환 경계</strong>를 사용한다. Exp449에서 실제 target authority를 읽은 직후, baseline과 confusion 값을 Exp454의 immutable dataclass로 한 번 변환한다. 평가기 안쪽에서는 기존 Exp453 계산 코드를 그대로 사용한다.</p>
+<table><thead><tr><th>방법</th><th>판단</th><th>이유</th></tr></thead><tbody>
+<tr><td>단일 변환 경계</td><td>채택</td><td>변경 위치가 한 곳이고 기존 계산·검사를 유지한다.</td></tr>
+<tr><td>필드만 맞으면 허용</td><td>제외</td><td>어떤 클래스든 통과할 수 있어 입력 범위가 넓어진다.</td></tr>
+<tr><td>평가기 전체가 Exp449 타입 사용</td><td>제외</td><td>Exp454 계산 코드가 Exp449 구현에 강하게 묶인다.</td></tr>
+</tbody></table>
+
+<h2>3. 고정 정체성</h2><ul>
+<li>Experiment: <code>Exp454</code></li>
+<li>Kind: <code>exp453_exp449_authority_boundary_repair</code></li>
+<li>Run identity: <code>exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814</code></li>
+<li>Package: <code>experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity</code></li>
+<li>Launcher: <code>scratch/run_exp454_exp453_exp449_authority_boundary_repair_antigravity.py</code></li>
+<li>Evaluation root: <code>/Users/mac/Documents/Dataset/exp454_exp453_exp449_authority_boundary_repair_evaluation_antigravity_20260814</code></li>
+<li>Receipt directory: <code>/Users/mac/Documents/Dataset/exp454_authority_boundary_repair_lifecycle_receipts_antigravity_20260814</code></li>
+<li>Failure audit: <code>/Users/mac/Documents/Dataset/exp454_authority_boundary_repair_failure_audit_antigravity.json</code></li>
+</ul>
+
+<h2>4. 입력과 변환 흐름</h2><ol>
+<li>Exp453의 stopped receipt와 failure audit를 읽어 readiness 성공·evaluate 실패·label 0·root 없음·no-retry 사실을 확인한다.</li>
+<li>Exp449 frozen prediction authority 96개와 aggregate SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>를 그대로 확인한다.</li>
+<li>Exp449의 실제 <code>capture_exp448_authority_antigravity()</code> 결과를 받는다.</li>
+<li><code>normalize_exp449_target_authority_antigravity(authority)</code>가 데이터셋 이름, family, stable candidates, confusion 숫자를 순서대로 Exp454 타입으로 복사한다.</li>
+<li>변환 전후의 canonical 값·순서·48개 inventory가 정확히 같을 때만 local authority를 반환한다.</li>
+<li>평가기는 local authority를 받아 기존 prediction matching, label query, confusion, bootstrap, decision, 12-leaf publication을 그대로 실행한다.</li>
+</ol>
+
+<h2>5. 새 인터페이스</h2>
+<pre><code>def normalize_exp449_target_authority_antigravity(
+    authority: object,
+) -&gt; NormalizedTargetAuthorityAntigravity:
+    """실제 Exp449 authority의 값과 순서를 Exp454 불변 타입으로 한 번 변환한다."""
+
+def capture_normalized_target_authority_antigravity(
+) -&gt; NormalizedTargetAuthorityAntigravity:
+    """실제 Exp449 capture를 호출하고 위 변환을 적용하는 production 경계다."""</code></pre>
+<p><code>NormalizedTargetAuthorityAntigravity</code>는 정확히 <code>target_dataset_names</code>, <code>target_baseline_rows</code>, <code>baseline_confusion</code>만 가진 frozen dataclass다. 변환 함수 외부에서는 Exp449 클래스와 Exp454 클래스를 섞지 않는다.</p>
+
+<h2>6. 절대 바꾸지 않는 과학 값</h2><ul>
+<li>48 datasets, 96 predictions, 16 family-method pairs</li>
+<li>seeds <code>[20260721, 20261721]</code>, alpha <code>0.005</code></li>
+<li>dataset·family·method·prediction index 순서와 <code>sorted(indices)</code></li>
+<li>baseline confusion, candidate confusion, FN, FP, F1 계산</li>
+<li>bootstrap seed·draw bytes·percentile·decision gate</li>
+<li>12-leaf 파일 이름, 순서, canonical JSON/JSONL 형식</li>
+<li>routing은 연구 가능성만 표시하며 자동 routing·promotion은 계속 금지</li>
+<li>고정 runtime: Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2</li>
+</ul>
+
+<h2>7. 가장 중요한 테스트</h2>
+<div class="box"><strong>실제 authority 회귀 테스트:</strong> test-only 변환 fixture를 만들지 않고 실제 Exp449 <code>capture_exp448_authority_antigravity()</code> 결과를 production normalization 함수에 넣는다. 변환된 48 baseline과 global confusion이 기존 합성 fixture와 canonical하게 같고, 평가기가 label opener 직전까지 통과하는지 확인한다.</div>
+<p>추가로 다음을 검사한다.</p><ul>
+<li>baseline 한 숫자, family, 데이터셋 순서, stable candidate가 바뀌면 변환 단계에서 실패한다.</li>
+<li>변환 함수가 두 곳 이상 생기거나 평가 중간에 다시 변환하지 않는다.</li>
+<li>동일 synthetic labels에서 Exp453의 정상화된 순수 계산과 Exp454의 12-leaf payload가 identity/hash 필드 외에는 같다.</li>
+<li>unit/regression test는 실제 TEST label을 읽지 않는다.</li>
+</ul>
+
+<h2>8. 실패 처리와 공식 실행</h2>
+<p>구현 또는 합성 검증이 실패하면 공식 명령을 실행하지 않는다. 구현·Grok 독립 검토·Codex 검증·fresh Sol 최종 검토가 모두 끝난 clean commit만 공식 후보가 된다. 공식 Exp454는 별도 사용자 승인 뒤 readiness → evaluate → 성공 시 inspect 순서로 각각 한 번만 실행한다.</p>
+
+<h2>9. 범위 밖</h2><ul>
+<li>새 모델, 새 특징, 새 score, 새 threshold</li>
+<li>prediction 재생성, 데이터셋 재선택, routing 규칙 변경</li>
+<li>보안·운영 기능 확대, 네트워크·dashboard 구현 변경</li>
+<li>Exp449 또는 Exp453 제품 코드 수정</li>
+</ul>
+
+<h2>10. 검토 결론</h2>
+<p>Grok 4.6/high는 <code>proceed</code> 방향으로 판단했다. 최소 경계는 Exp449→Exp454 adapter 한 곳이며, 가장 큰 위험은 합성 테스트에서만 타입을 미리 바꿔 실제 공식 경로 결함을 다시 숨기는 것이다. Codex의 최종 판단도 동일하다.</p>
+</main></body></html>
