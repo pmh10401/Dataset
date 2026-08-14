@@ -291,6 +291,28 @@ class CliAntigravityTests(unittest.TestCase):
 
     def test_cli_evaluate_subprocess_loads_real_normalized_capture_antigravity(self) -> None:
         """Break caught: production CLI evaluate uses a fixture converter or skips Task 2 capture."""
+        official_paths = tuple(
+            Path(value)
+            for value in (
+                _OFFICIAL_ROOT_ANTIGRAVITY,
+                _OFFICIAL_RECEIPTS_ANTIGRAVITY,
+                _OFFICIAL_AUDIT_ANTIGRAVITY,
+            )
+        )
+
+        def snapshot(path: Path) -> object:
+            if not path.exists():
+                return None
+            stat = path.lstat()
+            contents = (
+                tuple(sorted((leaf.name, leaf.read_bytes()) for leaf in path.iterdir()))
+                if path.is_dir()
+                else path.read_bytes()
+            )
+            return (stat.st_dev, stat.st_ino, stat.st_mode, stat.st_nlink, contents)
+
+        before = tuple(snapshot(path) for path in official_paths)
+        expected_exists = tuple(path.exists() for path in official_paths)
         with tempfile.TemporaryDirectory(prefix="exp454_cli_production_antigravity_") as temporary:
             site = Path(temporary)
             (site / "sitecustomize.py").write_text(
@@ -414,12 +436,15 @@ class CliAntigravityTests(unittest.TestCase):
             self.assertEqual(payload["row_count"], 48)
             self.assertEqual(payload["row_type"], "DatasetBaselineAntigravity")
             self.assertEqual(payload["fixture_converter_modules"], [])
-            self.assertFalse(payload["official_root_exists"])
-            self.assertFalse(payload["official_receipts_exist"])
-            self.assertFalse(payload["official_audit_exists"])
-            self.assertFalse(Path(_OFFICIAL_ROOT_ANTIGRAVITY).exists())
-            self.assertFalse(Path(_OFFICIAL_RECEIPTS_ANTIGRAVITY).exists())
-            self.assertFalse(Path(_OFFICIAL_AUDIT_ANTIGRAVITY).exists())
+            self.assertEqual(
+                (
+                    payload["official_root_exists"],
+                    payload["official_receipts_exist"],
+                    payload["official_audit_exists"],
+                ),
+                expected_exists,
+            )
+            self.assertEqual(tuple(snapshot(path) for path in official_paths), before)
 
 
 if __name__ == "__main__":
