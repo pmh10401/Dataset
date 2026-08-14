@@ -363,7 +363,7 @@ def freeze_exp449_proposal_antigravity(score: object, *, root: Path, context: Ex
         entry = _entry_for_dataset_antigravity(catalog, dataset)
         scientific = _typed_payload(score.raw[dataset], score.sources[dataset], score.routes[dataset], score.low_frequency, score.stability, score.policies, score.backend, entry)
         envelope = _envelope_antigravity(scientific, context, catalog)
-        coordinates, candidate_digest = validate_exp449_proposal_shard_antigravity(envelope, entry=entry, context=context, catalog=catalog)
+        coordinates, candidate_digest = validate_exp449_proposal_shard_antigravity(envelope, entry=entry, context=context, catalog=catalog, automatic_hard=sorted(score.routes[dataset].automatic_hard))
         relative = _shard_relative_path_antigravity(dataset)
         path = _freeze_root_antigravity(root) / relative
         _write_create_only_antigravity(path, canonical_json_bytes(envelope), reuse_identical=True)

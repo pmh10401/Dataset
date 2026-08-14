@@ -65,12 +65,13 @@ class _TypedProposalFixtureAntigravity:
 
     def __init__(self, root: Path) -> None:
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.calibration_paper import upper_tail_pvalues
         from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, LowFrequencyRow, RawDataset
         from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
         from paper.equipment_anomaly_detection.lineage_paper import LINEAGE_NODES
         from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScore
         from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
-        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, HardSourceBundle, HardSourceResult
+        from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import EXPECTED_HARD_SOURCES, SOURCE_ALPHA_PAPER, HardSourceBundle, HardSourceResult
         from paper.equipment_anomaly_detection.sources_paper.stability_paper import StabilityPartition
 
         names = FROZEN_EXP449_CONFIG.smoke_datasets
@@ -90,8 +91,12 @@ class _TypedProposalFixtureAntigravity:
                 "train": _identity_antigravity(typed_raw.train_indices, typed_raw.train_blobs),
                 "test": _identity_antigravity(typed_raw.test_indices, typed_raw.test_blobs),
             })
+        origins = {node.node_id: node for node in LINEAGE_NODES}
+        origin_ids = {"rocket_exp40": "rocket_exp40", "exp55_best": "exp55_best", "exp56_best": "exp56_best", "exp84": "exp84_family_guard", "rocket_block_b": "rocket_block_b", "canonical_normal_state": "canonical_normal_state"}
+        source_scores = np.asarray((0.1, 0.2))
+        source_pvalues = upper_tail_pvalues(source_scores, source_scores)
         sources = HardSourceBundle(EXPECTED_HARD_SOURCES, {
-            name: HardSourceResult(name, LINEAGE_NODES[0], np.asarray((0.1, 0.2)), np.asarray((0.1, 0.2)), np.asarray((0.9, 0.8)), 0.03, np.asarray((False, False)), True, "eligible")
+            name: HardSourceResult(name, origins[origin_ids[name]], source_scores, source_scores, source_pvalues, SOURCE_ALPHA_PAPER[name], source_pvalues <= SOURCE_ALPHA_PAPER[name], True, "eligible")
             for name in EXPECTED_HARD_SOURCES
         })
         lanes = RouteLanes(frozenset(), frozenset(), frozenset())
@@ -103,7 +108,7 @@ class _TypedProposalFixtureAntigravity:
         )
         stability = StabilityPartition((), (), (), {})
         policies = PolicyBundle(tuple(
-            PolicyRoute(policy, {name: frozenset() for name in names}, {name: np.zeros(2) for name in names}, {name: np.zeros(2) for name in names})
+            PolicyRoute(policy, {name: frozenset() for name in names}, {name: np.asarray((0.0, 1.0 / 3.0)) for name in names}, {name: np.asarray((0.0, 0.16666666666666669)) for name in names})
             for policy in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
         ))
         backend = FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest("f" * 64, logical_cpu_count=3))
@@ -131,6 +136,26 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
 
     def _manifest_path(self) -> Path:
         return self.root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+
+    @staticmethod
+    def _publish_real_task45_checkpoints(fixture: _TypedProposalFixtureAntigravity, root: Path) -> None:
+        """Use only the paper test publisher in this temporary fixture root."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import (
+            Task4Task5SuccessAuthority, append_task4_task5_attempt_record,
+            write_task4_task5_success_record,
+        )
+        from experiments.exp449_reproducible_rebaseline_antigravity.operations_antigravity import task45_context_payload_antigravity
+        bridge = task45_context_payload_antigravity(fixture.context)
+        authority = Task4Task5SuccessAuthority.from_verified_context(
+            bridge, fixture.catalog,
+            build_acceleration_manifest(bridge["context_sha256"], logical_cpu_count=3),
+        )
+        first = fixture.catalog["datasets"][0]["dataset"]
+        append_task4_task5_attempt_record(root, fixture.catalog, authority, fixture.score.raw[first], 1, RuntimeError("fixture interruption"))
+        for entry in fixture.catalog["datasets"]:
+            dataset = entry["dataset"]
+            write_task4_task5_success_record(root, fixture.catalog, authority, fixture.score.raw[dataset], fixture.score.sources[dataset], fixture.score.routes[dataset])
 
     def _rewrite_bound_shard(self, mutate) -> None:
         """Rewrite one shard and every descriptor digest that derives from it.
@@ -255,26 +280,27 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
 
     def test_freeze_binds_each_legacy_task45_checkpoint_and_rejects_tamper(self) -> None:
         """A real-root Task4/5 namespace must be declared file-by-file, not broadly allowlisted."""
-        base = self.root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_success"
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, write_task4_task5_success_record
+        from experiments.exp449_reproducible_rebaseline_antigravity.operations_antigravity import task45_context_payload_antigravity
+
+        task45_context = task45_context_payload_antigravity(self.fixture.context)
+        authority = Task4Task5SuccessAuthority.from_verified_context(
+            task45_context, self.fixture.catalog,
+            build_acceleration_manifest(task45_context["context_sha256"], logical_cpu_count=3),
+        )
         for entry in self.fixture.catalog["datasets"]:
             dataset = entry["dataset"]
-            payload = {"sources": [], "route": {}}
-            record = {
-                "schema": "paper-task4-task5-success.v1", "context_sha256": "f" * 64,
-                "catalog_sha256": self.fixture.catalog["catalog_sha256"], "raw_identity": entry,
-                "backend": dict(self.fixture.context.backend_record), "scientific_config_sha256": "a" * 64,
-                "code_closure_sha256": "b" * 64, "dataset": dataset, "payload": payload,
-                "payload_sha256": sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode() + b"\n").hexdigest(),
-            }
-            path = base / f"{sha256(dataset.encode()).hexdigest()}_antigravity" / "task4_task5_success_antigravity.json"
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+            write_task4_task5_success_record(
+                self.root, self.fixture.catalog, authority, self.fixture.score.raw[dataset],
+                self.fixture.score.sources[dataset], self.fixture.score.routes[dataset],
+            )
         manifest = self._freeze()
         self.assertEqual(len(manifest.task45_checkpoints), len(FROZEN_EXP449_CONFIG.smoke_datasets))
         verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
         checkpoint = self.root / manifest.task45_checkpoints[0].relative_path
         checkpoint.unlink()
-        with self.assertRaisesRegex(ValueError, "checkpoint"):
+        with self.assertRaisesRegex(ValueError, "(checkpoint|artifact)"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
@@ -300,7 +326,7 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         for policy in scientific["policies"]:
             descriptor["policy_coordinate_sha256"][policy["policy_id"]] = sha256(json.dumps([[descriptor["dataset"], 0]], separators=(",", ":")).encode() + b"\n").hexdigest()
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
-        with self.assertRaisesRegex(ValueError, "score mask"):
+        with self.assertRaisesRegex(ValueError, "(continuous score|score mask)"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_coordinated_source_low_and_route_tampers_reach_pure_semantic_checks(self) -> None:
@@ -347,6 +373,17 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Exp449"):
                     verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
+    def test_coordinated_continuous_policy_score_drift_fails_pure_recomputation(self) -> None:
+        """A score below .5 can retain its mask while still changing frozen evidence."""
+        self._freeze()
+        self._rewrite_bound_shard(
+            lambda payload: payload["policies"][0]["scores"].__setitem__(0, 0.2)
+        )
+        with self.assertRaisesRegex(ValueError, "Exp449"):
+            verify_exp449_proposal_antigravity(
+                self.root, context=self.fixture.context, catalog=self.fixture.catalog,
+            )
+
     def test_full_inventory_is_checked_structurally_without_scoring_1117_datasets(self) -> None:
         """A full catalog with a wrong count or total must fail before any score object is requested."""
         rows = [{"dataset": f"dataset_{number:04d}_antigravity", "series_length": 2, "train": {}, "test": {"count": 175}} for number in range(1117)]
@@ -369,6 +406,8 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         resumed_root = self.root.parent / "resumed_antigravity"
         uninterrupted = _TypedProposalFixtureAntigravity(uninterrupted_root)
         resumed = _TypedProposalFixtureAntigravity(resumed_root)
+        self._publish_real_task45_checkpoints(uninterrupted, uninterrupted_root)
+        self._publish_real_task45_checkpoints(resumed, resumed_root)
         freeze_exp449_proposal_antigravity(uninterrupted.score, root=uninterrupted_root, context=uninterrupted.context, catalog=uninterrupted.catalog)
         from experiments.exp449_reproducible_rebaseline_antigravity import artifacts_antigravity as artifacts
         real_write = artifacts._write_create_only_antigravity
@@ -389,6 +428,25 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
             # distinct run root.  Shards deliberately contain no root data.
             if "context_sha256" in value:
                 value["context_sha256"] = "0" * 64
+            # The outer manifest binds the root-bound paper checkpoints by
+            # byte descriptor. Normalize each referenced envelope first, then
+            # rebind its descriptor before comparing scientific manifests.
+            if "task45_checkpoints" in value:
+                for descriptor in value["task45_checkpoints"]:
+                    checkpoint = path.parent.parent.parent / descriptor["relative_path"]
+                    record = json.loads(checkpoint.read_text())
+                    record["context_sha256"] = "0" * 64
+                    # The paper acceleration assessment binds the same Task4/5
+                    # bridge context, so its digest is operational/root-bound
+                    # alongside the envelope context hash.
+                    if isinstance(record.get("backend"), dict) and "assessment_sha256" in record["backend"]:
+                        record["backend"]["assessment_sha256"] = "0" * 64
+                    if "record_sha256" in record:
+                        bare = {key: child for key, child in record.items() if key != "record_sha256"}
+                        record["record_sha256"] = sha256(json.dumps(bare, sort_keys=True, separators=(",", ":")).encode() + b"\n").hexdigest()
+                    raw = json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+                    descriptor["size"] = len(raw)
+                    descriptor["sha256"] = sha256(raw).hexdigest()
             return json.dumps(value, sort_keys=True, separators=(",", ":")).encode() + b"\n"
         left_root = uninterrupted_root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity"
         right_root = resumed_root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity"

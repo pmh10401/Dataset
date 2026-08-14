@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T01:11:31+0900",
-  "generated_from_commit": "bc92c8be62a703ec9d0941c20737e2e7b3ec92c3",
+  "generated_at": "2026-08-15T01:32:06+0900",
+  "generated_from_commit": "165deaaa6bd29de096e75a7602e771f794c9906f",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -314,7 +314,7 @@
         "unittest"
       ],
       "effects": [
-        "proves typed-shard and outer-manifest reproducibility, including coordinated digest-rebound source, low-frequency, route, selected-row, and Candidate C semantic tamper rejection."
+        "proves genuine paper test-published Task4/5 checkpoint binding, root-normalized restart equivalence, continuous-score and semantic tamper rejection."
       ]
     },
     {
@@ -1497,7 +1497,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "validates the complete typed Task4--7 payload grammar: source score/pvalue/native-pass relations, every Task5 lane/stage relation, Task6 evidence/provisional/selected relations, and Candidate C policy alert/score-mask/threshold equality."
+        "independently validates typed Task4--7 semantics, exact continuous route-preserving policy scores, Task4/5 bridge/checkpoint authority, global top-30 Candidate C selection, and declared-root integrity without scorer/source/route/writer imports."
       ]
     }
   ],
