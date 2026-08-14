@@ -79,11 +79,48 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
     def test_exp449_state_and_triplet_exist_without_mutating_exp448(self) -> None:
         state = json.loads((REPO_ROOT / "RESEARCH_STATE.json").read_text())
         self.assertEqual(state["active_experiment"], "Exp449")
-        self.assertEqual(state["status"], "design_approved_implementation_planned")
+        self.assertEqual(state["status"], "implementation_verified_awaiting_smoke_authorization")
+        exp449 = state["exp449_reproducible_rebaseline_antigravity"]
+        self.assertEqual(exp449["status"], "implementation_verified_awaiting_smoke_authorization")
+        self.assertEqual(
+            exp449["next_action"],
+            "design_and_review_trusted_smoke_a_execution_authority_then_request_user_approval",
+        )
+        self.assertFalse(exp449["smoke_started"])
+        self.assertFalse(exp449["official_run_started"])
+        self.assertFalse(exp449["test_labels_opened"])
+        self.assertEqual(exp449["official_label_access_count"], 0)
+        self.assertEqual(
+            state["active_documents"]["preregistration"],
+            "docs/EXP449_PREREGISTRATION_antigravity_KO.md",
+        )
+        self.assertEqual(
+            state["active_documents"]["runbook"],
+            "docs/EXP449_RUNBOOK_antigravity_KO.md",
+        )
+        self.assertEqual(
+            state["active_documents"]["implementation_report"],
+            "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",
+        )
+        for root in (
+            FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+            FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+            FROZEN_EXP449_CONFIG.smoke_b_scientific_root,
+            FROZEN_EXP449_CONFIG.smoke_b_operations_root,
+            FROZEN_EXP449_CONFIG.official_scientific_root,
+            FROZEN_EXP449_CONFIG.official_operations_root,
+        ):
+            self.assertFalse(root.exists(), f"Exp449 root must remain absent: {root}")
         for suffix in ("html", "json", "lock"):
             self.assertTrue(
                 (REPO_ROOT / f"docs/codemap/codemap_exp449_antigravity.{suffix}").is_file()
             )
+        for document in (
+            "docs/EXP449_PREREGISTRATION_antigravity_KO.md",
+            "docs/EXP449_RUNBOOK_antigravity_KO.md",
+            "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",
+        ):
+            self.assertTrue((REPO_ROOT / document).is_file(), document)
         frozen = exp448_frozen_blob_inventory_at_design_commit(EXP448_DESIGN_COMMIT)
         self.assertTrue(frozen)
         self.assertEqual(current_exp448_blob_inventory(), frozen)

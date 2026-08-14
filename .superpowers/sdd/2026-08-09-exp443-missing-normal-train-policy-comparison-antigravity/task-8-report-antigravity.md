@@ -88,6 +88,15 @@ parent progress writer advances to the next dataset and publishes its
 dimensions in one atomic JSON replacement, avoiding a dataset/dimensions
 mismatch window.
 
+## Exp449 Task8 append — non-execution documentation closeout
+
+Exp449 Task8 wrote preregistration, runbook, implementation evidence, state,
+and a synchronized codemap only. It did not create any Exp449 root, invoke
+smoke/official execution, open TEST labels, or run the known frozen-DB raw
+smoke test. Current execution authority remains
+`execution_authority_not_configured`; trusted-authority design/review and an
+explicit user approval are required before a future Smoke A command.
+
 ## Boundary
 
 No evaluator, TEST labels, publication security, object-tamper audit, or

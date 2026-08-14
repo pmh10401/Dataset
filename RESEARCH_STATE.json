@@ -1,13 +1,13 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-14T12:00:00+09:00",
+  "updated_at": "2026-08-15T03:30:33+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp444-train-only-stability-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
   "last_verified_commit": "cb46a6bcc233d0cfefe226e1c3054dfaca5081a8",
   "active_experiment": "Exp449",
-  "active_phase": "implementation_planned",
-  "status": "design_approved_implementation_planned",
+  "active_phase": "implementation_verified_awaiting_smoke_authorization",
+  "status": "implementation_verified_awaiting_smoke_authorization",
   "paper_r4_smoke_remediation_antigravity": {
     "status": "verified_v2_smoke_immutable_evidence_v3_absent",
     "failed_smoke_root": "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813",
@@ -49,9 +49,9 @@
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-14-exp449-reproducible-rebaseline-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-14-exp449-proposal-reproducibility-antigravity.md",
-    "preregistration": "docs/EXP448_PREREGISTRATION_antigravity_KO.md",
-    "runbook": "docs/EXP448_RUNBOOK_antigravity_KO.md",
-    "implementation_report": "docs/EXP448_IMPLEMENTATION_REPORT_antigravity.md"
+    "preregistration": "docs/EXP449_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP449_RUNBOOK_antigravity_KO.md",
+    "implementation_report": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md"
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",
@@ -92,7 +92,7 @@
   },
   "exp449_reproducible_rebaseline_antigravity": {
     "experiment": "Exp449",
-    "status": "design_approved_implementation_planned",
+    "status": "implementation_verified_awaiting_smoke_authorization",
     "design": "docs/superpowers/specs/2026-08-14-exp449-reproducible-rebaseline-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-14-exp449-proposal-reproducibility-antigravity.md",
     "dataset_count": 1117,
@@ -102,7 +102,7 @@
     "official_run_started": false,
     "test_labels_opened": false,
     "official_label_access_count": 0,
-    "next_action": "implement_exp449_without_execution"
+    "next_action": "design_and_review_trusted_smoke_a_execution_authority_then_request_user_approval"
   },
   "exp444_train_only_stability_precision_gate": {
     "experiment": "Exp444",
