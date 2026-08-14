@@ -1,8 +1,37 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-13T14:54:00+09:00",
+  "updated_at": "2026-08-14T10:23:05+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
+    {
+      "experiment": "Exp453",
+      "category": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "evidence": "/Users/mac/Documents/Dataset/exp453_fixed_interpreter_binding_repair_failure_audit_antigravity.json",
+      "facts": {
+        "reviewed_commit": "53c4cf16ba981b4177735fdf77081cf025fc0508",
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "inspect_invocations": 0,
+        "label_sessions": 0,
+        "label_queries": 0,
+        "label_rows": 0,
+        "evaluation_root_created": false,
+        "error": "ValueError: Exp448 target identity differs",
+        "readiness_receipt_sha256": "38607b6c8cad785ca8cd0830dacd42775d43f9175a67ed01d487657a3c44764e",
+        "evaluate_receipt_sha256": "caa705be90ddd56a00c53d5eb94a90604768dac0a80274846adce2061349b3b6",
+        "stopped_receipt_sha256": "1b6b2ea01c0c4dde9128051e57c764d32cbdf8bc1af7fa0115f19c7a10181d97",
+        "failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276",
+        "inspect_permitted": false,
+        "retry_permitted": false,
+        "result_sha256": null,
+        "evaluation_sha256": null,
+        "decision_sha256": null,
+        "inspect_sha256": null
+      },
+      "lesson": "The fixed interpreter repair worked, but the evaluator compared real Exp449 authority objects against copied Exp453 classes. Preserve the no-label failure and absent result, never retry Exp453, and require a new experiment with an end-to-end real-authority boundary test."
+    },
     {
       "experiment": "Exp452",
       "category": "official_readiness_failed_immutable_no_retry",

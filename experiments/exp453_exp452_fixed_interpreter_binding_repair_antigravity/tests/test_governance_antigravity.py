@@ -74,11 +74,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIsNotNone(section)
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
-            for tag in tags:
-                if task_number in (1, 2, 3, 4, 5):
-                    self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
-                else:
-                    self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+            checked = [tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)]
+            if task_number in (1, 2, 3, 4, 5):
+                self.assertEqual(len(checked), len(tags))
+            else:
+                self.assertEqual(len(tags), 9)
+                self.assertEqual(len(checked), 7)
 
     def test_verified_candidate_truth_preserves_science_and_champion_antigravity(self) -> None:
         """Break caught: verified implementation truth claims an official result or changes science."""
@@ -92,7 +93,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(sum(item["id"] == "Exp453" for item in catalog["experiments"]), 1)
         self.assertEqual(sum(item["experiment"] == "Exp453" for item in champion["history"]), 1)
         for record in (exp453, catalog_entry, champion_entry):
-            self.assertEqual(record["status"], "implementation_verified_awaiting_official_readiness")
+            self.assertEqual(record["status"], "official_readiness_passed_evaluation_failed_immutable_no_retry")
             self.assertEqual(record["predecessor_prediction_sha256"], PREDICTION_SHA256_ANTIGRAVITY)
             self.assertEqual(record["target_dataset_count"], 48)
             self.assertEqual(record["target_prediction_count"], 96)
@@ -102,9 +103,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["fixed_prefix"], FIXED_PREFIX_ANTIGRAVITY)
             self.assertEqual(record["runtime_versions"], {"python": "3.14.6", "numpy": "2.3.5", "aeon": "1.4.0", "scikit_learn": "1.7.2"})
             self.assertEqual(record["label_access_count"], 0)
-            self.assertFalse(record["official_readiness_started"])
-            self.assertFalse(record["official_evaluate_started"])
+            self.assertTrue(record["official_readiness_started"])
+            self.assertTrue(record["official_evaluate_started"])
             self.assertFalse(record["official_inspect_started"])
+            self.assertEqual(record["official_readiness_invocations"], 1)
+            self.assertEqual(record["official_readiness_exit_code"], 0)
+            self.assertEqual(record["official_evaluate_invocations"], 1)
+            self.assertEqual(record["official_evaluate_exit_code"], 1)
+            self.assertEqual(record["official_inspect_invocations"], 0)
+            self.assertEqual(record["label_sessions"], 0)
+            self.assertEqual(record["label_queries"], 0)
+            self.assertEqual(record["label_rows"], 0)
             self.assertIsNone(record["result_sha256"])
             self.assertIsNone(record["evaluation_sha256"])
             self.assertIsNone(record["decision_sha256"])
@@ -112,6 +121,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["routing_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
+            self.assertEqual(record["official_failure"]["phase"], "evaluate")
+            self.assertFalse(record["official_failure"]["evaluation_root_created"])
+            self.assertFalse(record["official_failure"]["retry_permitted"])
         self.assertEqual(champion["pending_candidate"], state["pending_candidate"])
         self.assertFalse((ROOT_ANTIGRAVITY / "EXPERIMENT_HISTORY.json").exists())
 

@@ -417,10 +417,10 @@
     },
     {
       "experiment": "Exp453",
-      "status": "implementation_verified_awaiting_official_readiness",
-      "reason": "Exp453 implementation and synthetic parity verification are complete. It only repairs the exact interpreter binding that stopped Exp452 before labels. Exp449 frozen predictions and all scientific calculations remain unchanged. No official command, label access, result, routing, champion, pending-candidate change, or promotion has occurred.",
+      "status": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "reason": "Exp453 readiness passed, but evaluate failed before label access because the real Exp449 authority classes did not match copied Exp453 classes. No scientific result exists, so routing, champion, pending candidate, and promotion remain unchanged.",
       "reviewed_design_sha256": "8f76c032c574dc17965a190f547dd51e41743f54cd13d5dbb8e74cdc527bc97a",
-      "document_sha256": {"preregistration": "aef633ec4a34ad71f1ef9d936e89d4cd5c06018d625aa6632276e9cf4b66f879", "runbook": "fcb5f796f3ed95ab5a2e05de1ac43e30c34046a01080983334a507f29301fe4a", "implementation_report": "978b5fdef1a8e9061d65ee929c55787c597d7d54bd1a5db2011b8f75be1b14f7"},
+      "document_sha256": {"preregistration": "aef633ec4a34ad71f1ef9d936e89d4cd5c06018d625aa6632276e9cf4b66f879", "runbook": "fcb5f796f3ed95ab5a2e05de1ac43e30c34046a01080983334a507f29301fe4a", "implementation_report": "72a3ebefa1d9259e8ffd3e71069a8f8ea90b80efdf8967011617b731ce21ea32"},
       "run_identity": "exp453-exp452-fixed-interpreter-binding-repair-antigravity-20260813",
       "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
       "fixed_prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
@@ -438,16 +438,25 @@
       "inspect_sha256": null,
       "label_access_count": 0,
       "test_labels_opened": false,
-      "official_readiness_started": false,
-      "official_evaluate_started": false,
+      "official_readiness_started": true,
+      "official_evaluate_started": true,
       "official_inspect_started": false,
+      "official_readiness_invocations": 1,
+      "official_readiness_exit_code": 0,
+      "official_evaluate_invocations": 1,
+      "official_evaluate_exit_code": 1,
+      "official_inspect_invocations": 0,
+      "label_sessions": 0,
+      "label_queries": 0,
+      "label_rows": 0,
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
       "promotion_allowed": false,
       "routing_allowed": false,
       "pending_candidate_changed": false,
-      "next_action": "fresh_final_review_then_separate_user_approval_for_one_official_readiness"
+      "official_failure": {"reviewed_commit": "53c4cf16ba981b4177735fdf77081cf025fc0508", "phase": "evaluate", "error": "ValueError: Exp448 target identity differs", "failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276", "evaluation_root_created": false, "inspect_permitted": false, "retry_permitted": false},
+      "next_action": "design_new_experiment_with_exp449_authority_type_boundary_fix"
     }
   ]
 }
