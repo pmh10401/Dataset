@@ -150,6 +150,21 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
             for entrypoint in node.get("entrypoints", []):
                 self.assertIn(entrypoint, symbols, f"{node['path']}:{entrypoint}")
 
+    def test_every_implemented_exp449_codemap_node_has_current_semantics(self) -> None:
+        """Task1--8 nodes must answer callers, effects, and coverage without stale planning language."""
+        payload = json.loads((REPO_ROOT / "docs/codemap/codemap_exp449_antigravity.json").read_text())
+        forbidden = ("future", "planned", "implementation planning only", "placeholder")
+        nodes = [node for node in payload["nodes"] if node["id"].startswith("exp449_")]
+        self.assertTrue(nodes)
+        for node in nodes:
+            serialized = json.dumps(node, ensure_ascii=False).casefold()
+            self.assertFalse(any(term in serialized for term in forbidden), node["id"])
+            self.assertTrue(node.get("callers"), f"missing callers: {node['id']}")
+            self.assertTrue(node.get("effects"), f"missing effects: {node['id']}")
+            self.assertTrue(node.get("tests"), f"missing tests: {node['id']}")
+            for test_path in node["tests"]:
+                self.assertTrue((REPO_ROOT / test_path).is_file(), test_path)
+
 
 class Exp449FrozenConfigTests(unittest.TestCase):
     def test_frozen_config_is_exact_and_uses_only_new_absent_roots(self) -> None:

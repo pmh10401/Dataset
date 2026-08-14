@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T04:03:54+09:00",
-  "generated_from_commit": "406767082dd36ea54636f584184267769bff9693",
+  "generated_at": "2026-08-15T04:16:04+09:00",
+  "generated_from_commit": "f97b9766367d73e168f3ea91f7108998ff25aa63",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
@@ -34,7 +34,9 @@
       "entrypoints": [
         "Exp449 Proposal Reproducibility Design"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -43,6 +45,12 @@
           "path": "docs/superpowers/specs/2026-08-14-exp449-reproducible-rebaseline-antigravity-design.md",
           "symbol": "Exp449 Proposal Reproducibility Design"
         }
+      ],
+      "callers": [
+        "research-control state boundary and Task1--8 implementation review"
+      ],
+      "effects": [
+        "defines the approved immutable scientific and execution-authority boundary for Exp449"
       ]
     },
     {
@@ -52,7 +60,9 @@
       "entrypoints": [
         "Task 8: Freeze Documentation, Full Verification, and Independent Review"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "constraints": [
         "Task8 publishes exact documentation and evidence only; it creates no run root and does not access DB, scoring, or TEST labels."
       ],
@@ -61,6 +71,12 @@
           "path": "docs/superpowers/plans/2026-08-14-exp449-proposal-reproducibility-antigravity.md",
           "symbol": "Task 1: Establish Exp449 State and Code Map Before Code Changes"
         }
+      ],
+      "callers": [
+        "Task1--8 implementation work and final-review verification"
+      ],
+      "effects": [
+        "defines the completed file boundaries and verification requirements for Exp449"
       ]
     },
     {
@@ -72,7 +88,9 @@
         "FROZEN_EXP449_CONFIG"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
         "No caller may supply substitute roots, policy, inventory, or tolerance values; importing configuration creates no roots."
@@ -85,10 +103,13 @@
       ],
       "callers": [
         "contracts_antigravity.py",
+        "artifacts_antigravity.py",
+        "validation_antigravity.py",
+        "verifier_antigravity.py",
         "test_config_contracts_antigravity.py"
       ],
       "effects": [
-        "freezes the only accepted Exp449 roots, all four policy-coordinate keys, preprocessing identities, smoke inventory, numerical tolerances, and two-wave limit"
+        "freezes the six approved roots, policy keys, preprocessing contracts, counts, tolerances, and two-wave recovery limit"
       ]
     },
     {
@@ -102,7 +123,10 @@
         "SmokeComparison"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
         "Every SHA is lowercase 64-hex; each shard has exactly the four frozen policy keys; counts are nonnegative and sum to the mode inventory; floats are finite; only six fixed roots are accepted by compatible mode; manifest schema is exp449-proposal-manifest-antigravity.v1; no historical acceptance path is accepted.",
@@ -115,13 +139,16 @@
         }
       ],
       "callers": [
+        "runner_antigravity.py semantic composition boundary",
+        "artifacts_antigravity.py",
+        "operations_antigravity.py",
+        "verifier_antigravity.py",
         "test_config_contracts_antigravity.py",
-        "future runner_antigravity.py",
-        "future artifacts_antigravity.py",
-        "future verifier_antigravity.py"
+        "test_manifest_verifier_antigravity.py",
+        "test_readiness_antigravity.py"
       ],
       "effects": [
-        "binds only frozen mode-compatible roots, canonical hashes, typed CPU backend provenance, complete per-entry policy-coordinate closure without cross-dataset digest equality, exact inventory totals, and smoke reproducibility facts; rejects historical authority before inspecting other inputs"
+        "defines immutable context, typed shards/checkpoints/outer manifest, terminal status, and smoke comparison identities consumed by composition, publication, recovery, and verification"
       ]
     },
     {
@@ -146,12 +173,12 @@
         }
       ],
       "callers": [
+        "operations_antigravity.py",
         "test_runner_recovery_antigravity.py",
-        "test_manifest_verifier_antigravity.py",
-        "operations_antigravity.py"
+        "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "blocks population-global work unless raw/source/route mappings equal the ordered catalog; hands frozen Candidate C values to Exp449-only typed shard publication without calling a paper filesystem writer."
+        "collects Task4/5 values-only evidence, rejects incomplete catalog closure before Task6/7, and composes Candidate C before typed freeze"
       ]
     },
     {
@@ -164,7 +191,8 @@
         "validate_exp449_proposal_shard_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "constraints": [
         "Serializes frozen paper scientific payloads only inside an Exp449 version-bound envelope; never calls a paper filesystem writer, never creates a paper manifest, rejects symlinks, traversal, stale roots, and non-antigravity runtime names.",
@@ -178,10 +206,11 @@
       ],
       "callers": [
         "runner_antigravity.py",
+        "validation_antigravity.py",
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "publishes only typed Exp449 shards and a manifest bound to complete genuine Task4/5 success authority; creates no paper manifest or paper-named shard."
+        "create-only serializes typed Exp449 shards and outer manifest only after complete Task4/5 checkpoint authority"
       ]
     },
     {
@@ -211,12 +240,13 @@
         }
       ],
       "callers": [
+        "scratch/run_exp449_reproducible_rebaseline_antigravity.py",
         "test_runner_recovery_antigravity.py",
-        "test_readiness_antigravity.py",
-        "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
+        "test_manifest_verifier_antigravity.py",
+        "test_readiness_antigravity.py"
       ],
       "effects": [
-        "returns canonical read-only status/readiness context facts; refuses every run command before authority-path I/O or root creation; preserves prior recovery and Smoke B receipt responsibilities."
+        "runs parent-only recovery and scorer-free readiness; binds closure, locks, package inventory, constants, and rejects execution without trusted authority"
       ]
     },
     {
@@ -240,10 +270,11 @@
         }
       ],
       "callers": [
+        "operations_antigravity.py Smoke-B receipt boundary",
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "compares only captured descriptor-bound bytes and identities after complete validation: rejects shared root declarations, hardlinks/inodes, checkpoint reuse, closure mismatch, policy-coordinate drift, score/tie drift, and deltas above 1e-12; receipt hashes bind those exact snapshots."
+        "verifies immutable proposal snapshots and compares independent Smoke A/B roots for closure, coordinate, tie, score, inode, and checkpoint reuse drift"
       ]
     },
     {
@@ -268,7 +299,7 @@
         }
       ],
       "effects": [
-        "proves independent per-dataset policy digests, rejects missing/extra policy keys, and prevents partial or vacuous completion certification"
+        "covers state/map boundary, frozen roots/configuration, immutable context, manifest, terminal, smoke, and codemap semantic contracts"
       ],
       "callers": [
         "unittest discovery"
@@ -296,7 +327,7 @@
         }
       ],
       "effects": [
-        "proves incomplete recovery cannot unlock Task6/7, verified successes are revalidated across resume, the second failed wave is terminal, a third call refuses scoring, progress rejects scientific fields, and deterministic final scientific bytes match uninterrupted execution"
+        "covers Task4/5 exact local gate, Task6/7 blocking, two-wave recovery, progress boundary, and interrupted/resumed byte equality"
       ],
       "callers": [
         "unittest discovery"
@@ -323,10 +354,10 @@
         }
       ],
       "callers": [
-        "unittest"
+        "unittest discovery"
       ],
       "effects": [
-        "proves genuine paper test-published Task4/5 checkpoint binding, semantic tamper rejection, and two complete temporary smoke roots with no shared inode/checkpoint; it uses independently valid rebound closure/typed-coordinate/score/tie roots, adversarial post-snapshot mutation, and exact create-only receipt binding only in temporary Smoke B operations."
+        "covers typed shard/outer manifest/checkpoint authority, semantic tamper rejection, and independent Smoke A/B snapshot comparison"
       ]
     },
     {
@@ -352,7 +383,7 @@
         "unittest discovery"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "covers closure/package/constants context bindings, interpreter/dependency/root/label firewalls, acceleration evidence, and fail-closed CLI execution"
       ]
     },
     {
@@ -366,12 +397,18 @@
       "constraints": [
         "Readiness, status, and proposal verification are read-only. Run commands require exact reviewed HEAD plus a separate externally-created execution authority and then remain disabled; caller root overrides are unavailable."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "scratch/run_exp449_reproducible_rebaseline_antigravity.py",
+          "symbol": ""
+        }
+      ],
       "callers": [
-        "unittest discovery"
+        "external CLI user invoking scratch/run_exp449_reproducible_rebaseline_antigravity.py",
+        "test_readiness_antigravity.py"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "imports operations only under __main__ and dispatches read-only status/readiness/verify commands while run commands remain fail-closed"
       ]
     },
     {
@@ -381,7 +418,10 @@
       "entrypoints": [
         "Exp449 preregistration"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -390,6 +430,12 @@
           "path": "docs/EXP449_PREREGISTRATION_antigravity_KO.md",
           "symbol": "Exp449 preregistration"
         }
+      ],
+      "callers": [
+        "research-state readers, reviewers, and execution-authority designers"
+      ],
+      "effects": [
+        "records the immutable scientific definition, provenance closure, acceleration policy, and no-execution boundary"
       ]
     },
     {
@@ -399,7 +445,10 @@
       "entrypoints": [
         "Exp449 runbook"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -408,6 +457,12 @@
           "path": "docs/EXP449_RUNBOOK_antigravity_KO.md",
           "symbol": "Exp449 runbook"
         }
+      ],
+      "callers": [
+        "external operators and independent reviewers"
+      ],
+      "effects": [
+        "documents read-only commands and the separate trusted-authority/user-approval requirement for every run command"
       ]
     },
     {
@@ -417,7 +472,10 @@
       "entrypoints": [
         "Exp449 implementation report"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -426,6 +484,12 @@
           "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",
           "symbol": "Exp449 implementation report"
         }
+      ],
+      "callers": [
+        "independent reviewers and research-state readers"
+      ],
+      "effects": [
+        "records no-execution implementation evidence and test scope without performance-result claims"
       ]
     },
     {
@@ -435,7 +499,9 @@
       "entrypoints": [
         "nodes"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -444,6 +510,14 @@
           "path": "docs/codemap/codemap_exp449_antigravity.json",
           "symbol": "nodes"
         }
+      ],
+      "callers": [
+        "operations_antigravity.py closure facts",
+        "codemap HTML renderer",
+        "codemap semantic test"
+      ],
+      "effects": [
+        "maps current Exp449 nodes, callers, effects, flows, and test coverage for review"
       ]
     },
     {
@@ -453,7 +527,9 @@
       "entrypoints": [
         "codemap-data"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -462,6 +538,12 @@
           "path": "docs/codemap/codemap_exp449_antigravity.html",
           "symbol": "codemap-data"
         }
+      ],
+      "callers": [
+        "human reviewers and codemap semantic test"
+      ],
+      "effects": [
+        "renders the exact embedded JSON map for visual review"
       ]
     },
     {
@@ -471,7 +553,10 @@
       "entrypoints": [
         "module_fingerprints"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
+      ],
       "constraints": [
         "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -480,6 +565,13 @@
           "path": "docs/codemap/codemap_exp449_antigravity.lock",
           "symbol": "module_fingerprints"
         }
+      ],
+      "callers": [
+        "operations_antigravity.py closure facts",
+        "codemap semantic test"
+      ],
+      "effects": [
+        "records sha256-v1 fingerprints for the tracked repository scope used by Exp449 provenance"
       ]
     },
     {
@@ -491,7 +583,8 @@
         "compose_exp449_proposal_score_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
         "Forwards only caller-bound root/context/catalog/acceleration inputs to the paper collector; Task6/7 remain unreachable until verify_dataset_local_bijection_antigravity succeeds."
@@ -503,10 +596,11 @@
         }
       ],
       "callers": [
-        "unittest discovery"
+        "operations_antigravity.py run_exp449_wave_antigravity",
+        "test_runner_recovery_antigravity.py"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "forwards caller-bound root/context/catalog/acceleration inputs to the Task4/5 collector and retains exact catalog order"
       ]
     },
     {
@@ -529,10 +623,11 @@
         }
       ],
       "callers": [
-        "unittest discovery"
+        "compose_exp449_proposal_score_antigravity",
+        "test_runner_recovery_antigravity.py"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "rejects missing, extra, duplicate, reordered, source, or route mappings before any population-global calculation"
       ]
     },
     {
@@ -543,7 +638,8 @@
         "compose_exp449_proposal_score_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
         "Implemented final no-execution boundary; this Task 1 boundary creates no run root and does not access TEST labels."
@@ -555,10 +651,11 @@
         }
       ],
       "callers": [
-        "unittest discovery"
+        "compose_exp449_proposal_score_antigravity",
+        "test_runner_recovery_antigravity.py"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "invokes low-frequency selection exactly once after the complete Task4/5 catalog gate"
       ]
     },
     {
@@ -569,7 +666,8 @@
         "compose_exp449_proposal_score_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
         "Implemented final no-execution boundary; this Task 1 boundary creates no run root and does not access TEST labels."
@@ -581,10 +679,11 @@
         }
       ],
       "callers": [
-        "unittest discovery"
+        "compose_exp449_proposal_score_antigravity",
+        "test_runner_recovery_antigravity.py"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "classifies stability, builds route-preserving policies, and carries hard_plus_stable Candidate C after Task6"
       ]
     },
     {
@@ -595,6 +694,7 @@
         "FROZEN_EXP449_CONFIG"
       ],
       "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
@@ -607,10 +707,14 @@
         }
       ],
       "callers": [
-        "unittest discovery"
+        "contracts_antigravity.py",
+        "artifacts_antigravity.py",
+        "validation_antigravity.py",
+        "verifier_antigravity.py",
+        "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "pins hard_plus_stable as Candidate C and requires its per-dataset score digest in typed publication and verification"
       ]
     },
     {
@@ -620,7 +724,10 @@
       "entrypoints": [
         "freeze_exp449_proposal_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
         "Implemented final no-execution boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -630,9 +737,13 @@
           "symbol": "freeze_exp449_proposal_antigravity"
         }
       ],
-      "callers": [],
+      "callers": [
+        "runner_antigravity.py freeze_exp449_proposal_antigravity export",
+        "validation_antigravity.py",
+        "test_manifest_verifier_antigravity.py"
+      ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "writes create-only Exp449 envelopes around paper typed scientific payloads with catalog/context/backend/policy digest authority"
       ]
     },
     {
@@ -642,7 +753,10 @@
       "entrypoints": [
         "freeze_exp449_proposal_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
         "Implemented final no-execution boundary; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -652,9 +766,14 @@
           "symbol": "freeze_exp449_proposal_antigravity"
         }
       ],
-      "callers": [],
+      "callers": [
+        "runner_antigravity.py freeze_exp449_proposal_antigravity export",
+        "validation_antigravity.py",
+        "verifier_antigravity.py",
+        "test_manifest_verifier_antigravity.py"
+      ],
       "effects": [
-        "provides the implemented Exp449 boundary recorded by this node"
+        "binds every typed shard and the complete Task4/5 success/attempt checkpoint descriptor inventory into one immutable outer manifest"
       ]
     },
     {
@@ -1514,7 +1633,8 @@
         "validate_exp449_catalog_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "constraints": [
         "Imports only Exp449 config/contracts plus standard runtime/package metadata and optional backend capability probes; accepts no labels, database, paper artifact writer, scorer, source, or route module."
@@ -1531,7 +1651,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "reads each manifest/checkpoint/shard once through a confined no-follow descriptor and retains exact bytes/inodes while independently validating typed Task4--7 semantics, all three Exp236→Exp253 promotion relations, complete bridge-bound Task4/5 success inventory, exact continuous route-preserving policy scores, global top-30 Candidate C selection, and declared-root integrity without scorer/source/route/writer imports."
+        "performs scorer-free no-follow snapshot verification of typed shards, checkpoints, outer manifest, global Candidate C, and declared root integrity"
       ]
     }
   ],
