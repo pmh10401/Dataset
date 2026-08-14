@@ -14,6 +14,7 @@ import numpy as np
 
 from .artifacts_paper import Task4Task5SuccessAuthority, append_task4_task5_attempt_record, freeze_score_root, read_task4_task5_success_record, verify_task4_task5_attempt_namespace, verify_task4_task5_success_namespace, write_task4_task5_success_record, write_typed_proposal_shard
 from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, RawDataset, Task8FrozenManifest
+from .data_paper import PROGRESS_TICK_INTERVAL_S, ProgressCallback
 from .hard_route_paper import HardRouteResult, replay_hard_route
 from .routing_paper import PolicyBundle, build_hard_evidence_surface, build_policies
 from .sources_paper.hard_sources_paper import HardSourceBundle, score_hard_sources
@@ -100,6 +101,49 @@ def _progress(stage: str, completed: int, total: int, started: float, dataset: s
     eta = remaining / rate if rate > 0.0 else 0.0
     suffix = f" dataset={dataset}" if dataset is not None else ""
     print(f"{stage} {completed}/{total} {100.0 * completed / total:.1f}% elapsed={elapsed:.1f}s rate={rate:.2f}/s eta={eta:.1f}s{suffix}", file=sys.stderr, flush=True)
+
+
+def make_stderr_progress_sink_paper(
+    *,
+    min_tick_interval_s: float = PROGRESS_TICK_INTERVAL_S,
+    clock=monotonic,
+    stream=None,
+) -> ProgressCallback:
+    """Format one flushed stderr line. Rate-gate ticks only."""
+    output = sys.stderr if stream is None else stream
+    last_tick: dict[str, float] = {}
+
+    def sink(event: Mapping[str, object]) -> None:
+        stage = str(event["stage"])
+        phase = str(event["phase"])
+        now = float(clock())
+        if phase == "start":
+            last_tick.pop(stage, None)
+        elif phase == "tick":
+            previous = last_tick.get(stage)
+            if previous is not None and (now - previous) < min_tick_interval_s:
+                return
+            last_tick[stage] = now
+        completed = int(event["completed"])
+        total = int(event["total"])
+        elapsed = float(event.get("elapsed_s", 0.0))
+        pct = (100.0 * completed / total) if total > 0 else 0.0
+        rate = (completed / elapsed) if elapsed > 0.0 else 0.0
+        eta = ((total - completed) / rate) if rate > 0.0 else 0.0
+        suffix = ""
+        dataset = event.get("dataset")
+        if type(dataset) is str:
+            suffix += f" dataset={dataset}"
+        detail = event.get("detail")
+        if type(detail) is str:
+            suffix += f" {detail}"
+        print(
+            f"{stage} {completed}/{total} {pct:.1f}% elapsed={elapsed:.1f}s rate={rate:.2f}/s eta={eta:.1f}s{suffix}",
+            file=output,
+            flush=True,
+        )
+
+    return sink
 
 
 Task4Task5SuccessPublisher = Callable[[RawDataset, HardSourceBundle, HardRouteResult], None]
@@ -253,4 +297,4 @@ def write_and_freeze_proposal_score(root, catalog: dict[str, object], proposal: 
     return freeze_score_root(root, catalog)
 
 
-__all__ = ["ProposalScore", "ProposalScoreIncomplete", "Task4Task5SuccessPublisher", "compose_proposal_score", "task4_task5_success_publisher", "write_and_freeze_proposal_score"]
+__all__ = ["ProposalScore", "ProposalScoreIncomplete", "Task4Task5SuccessPublisher", "compose_proposal_score", "make_stderr_progress_sink_paper", "task4_task5_success_publisher", "write_and_freeze_proposal_score"]

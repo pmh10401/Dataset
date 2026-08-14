@@ -1,13 +1,14 @@
 """Descriptor-pinned, values-only SQLite loading for paper scoring stages."""
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from hashlib import sha256
 import os
 from pathlib import Path
 import sqlite3
 import stat
+from typing import Any
 
 import numpy as np
 
@@ -16,6 +17,65 @@ from .contracts_paper import FrozenPaperConfig, RawDataset
 
 
 SqlObserver = Callable[[str], None]
+PROGRESS_TICK_INTERVAL_S = 15.0
+ALLOWED_PROGRESS_STAGES = frozenset({
+    "raw_preload", "task4_task5", "task6", "task7",
+    "hard_evidence", "policies", "shard_write", "freeze_verify", "journal_exit",
+})
+ALLOWED_PROGRESS_PHASES = frozenset({"start", "tick", "end", "error"})
+ALLOWED_PROGRESS_KEYS = frozenset({
+    "stage", "phase", "completed", "total", "dataset", "detail", "elapsed_s",
+})
+FORBIDDEN_PROGRESS_SUBSTRINGS = (
+    "label=", "p-value", "pvalue=", "score=", "scores=", "rank=", "ranks=",
+    "excess_ratio", "alert_index", "alerts=", "select i.label", "split='test' and i.label",
+)
+ProgressCallback = Callable[[Mapping[str, Any]], None]
+
+
+def _progress_int(value: object) -> int | None:
+    if type(value) is int:
+        return value
+    if type(value) is float and value.is_integer() and value == value and value not in (float("inf"), float("-inf")):
+        return int(value)
+    return None
+
+
+def emit_progress_paper(callback: ProgressCallback | None, event: Mapping[str, Any]) -> None:
+    """Best-effort, result-neutral emit. Never raises into science."""
+    if callback is None or not isinstance(event, Mapping):
+        return
+    filtered: dict[str, Any] = {key: event[key] for key in ALLOWED_PROGRESS_KEYS if key in event}
+    if filtered.get("stage") not in ALLOWED_PROGRESS_STAGES or filtered.get("phase") not in ALLOWED_PROGRESS_PHASES:
+        return
+    completed = _progress_int(filtered.get("completed"))
+    total = _progress_int(filtered.get("total"))
+    if completed is None or total is None:
+        return
+    filtered["completed"] = completed
+    filtered["total"] = total
+    elapsed = filtered.get("elapsed_s")
+    if type(elapsed) is bool:
+        return
+    try:
+        elapsed_s = float(elapsed)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return
+    if elapsed_s != elapsed_s or elapsed_s in (float("inf"), float("-inf")) or elapsed_s < 0.0:
+        return
+    filtered["elapsed_s"] = elapsed_s
+    if "dataset" in filtered and type(filtered["dataset"]) is not str:
+        filtered.pop("dataset")
+    if "detail" in filtered and type(filtered["detail"]) is not str:
+        filtered.pop("detail")
+    for key in ("dataset", "detail"):
+        value = filtered.get(key)
+        if type(value) is str and any(token in value.lower() for token in FORBIDDEN_PROGRESS_SUBSTRINGS):
+            filtered.pop(key)
+    try:
+        callback(filtered)
+    except BaseException:
+        return
 
 TRAIN_VALUES_SQL = """SELECT i.instance_index, i.values_blob
 FROM instances i JOIN datasets d ON d.id=i.dataset_id
@@ -166,4 +226,7 @@ def load_dataset_values(
     )
 
 
-__all__ = ["RawDataset", "TEST_VALUES_SQL", "load_dataset_values", "load_population"]
+__all__ = [
+    "RawDataset", "TEST_VALUES_SQL", "ProgressCallback", "emit_progress_paper",
+    "load_dataset_values", "load_population",
+]
