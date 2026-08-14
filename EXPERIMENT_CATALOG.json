@@ -1336,11 +1336,11 @@
       "id": "Exp454",
       "experiment": "Exp454",
       "kind": "exp453_exp449_authority_boundary_repair",
-      "status": "planned_not_started",
+      "status": "implementation_verified_awaiting_official_readiness",
       "documents": ["docs/superpowers/specs/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity-design.html", "docs/superpowers/plans/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity.html", "docs/EXP454_PREREGISTRATION_antigravity_KO.html", "docs/EXP454_RUNBOOK_antigravity_KO.html", "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html"],
       "reviewed_design_commit": "2a8486c42b385f4e589c7062a1c16f4be4372f4f",
       "reviewed_design_sha256": "b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f",
-      "document_sha256": {"preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7", "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081", "implementation_report": "ffc31edf528b70c40f7edaa730332abc5f7b2b0b71dfc9dbc380e2f6bf456dfb"},
+      "document_sha256": {"preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7", "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081", "implementation_report": "9c85fd7b3a8fc648e6f169f0e96d58f1680f91e1f7ddb35660c543ecf30aaa10"},
       "run_identity": "exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814",
       "artifact_schema": "exp454",
       "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
@@ -1373,7 +1373,7 @@
       "promotion_allowed": false,
       "routing_allowed": false,
       "pending_candidate_changed": false,
-      "notes": "Planned Exp449 authority-type boundary repair only. Exp453 remains immutable and Exp449 predictions remain the scientific authority. No official command, label access, result, routing, champion, pending-candidate change, or promotion has occurred."
+      "notes": "Implementation verified and awaiting official readiness. Exp453 remains immutable and Exp449 predictions remain the scientific authority. No official command, label access, result, routing, champion, pending-candidate change, or promotion has occurred."
     }
   ]
 }

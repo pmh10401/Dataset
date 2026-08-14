@@ -460,11 +460,11 @@
     },
     {
       "experiment": "Exp454",
-      "status": "planned_not_started",
-      "reason": "Exp454 only repairs the Exp449 authority type boundary that stopped Exp453 before labels. Exp449 frozen predictions and all scientific calculations remain unchanged. No official command, label access, result, routing, champion, pending-candidate change, or promotion has occurred.",
+      "status": "implementation_verified_awaiting_official_readiness",
+      "reason": "Exp454 only repairs the Exp449 authority type boundary that stopped Exp453 before labels. Exp449 frozen predictions and all scientific calculations remain unchanged. Implementation is verified; no official command, label access, result, routing, champion, pending-candidate change, or promotion has occurred.",
       "reviewed_design_commit": "2a8486c42b385f4e589c7062a1c16f4be4372f4f",
       "reviewed_design_sha256": "b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f",
-      "document_sha256": {"preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7", "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081", "implementation_report": "ffc31edf528b70c40f7edaa730332abc5f7b2b0b71dfc9dbc380e2f6bf456dfb"},
+      "document_sha256": {"preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7", "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081", "implementation_report": "9c85fd7b3a8fc648e6f169f0e96d58f1680f91e1f7ddb35660c543ecf30aaa10"},
       "run_identity": "exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814",
       "kind": "exp453_exp449_authority_boundary_repair",
       "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
@@ -500,7 +500,7 @@
       "promotion_allowed": false,
       "routing_allowed": false,
       "pending_candidate_changed": false,
-      "next_action": "implement_task_two_only_after_task_one_review"
+      "next_action": "await_separate_approval_for_official_readiness"
     }
   ]
 }

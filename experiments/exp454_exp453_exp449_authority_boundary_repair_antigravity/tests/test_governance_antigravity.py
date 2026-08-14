@@ -111,7 +111,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(sum(item["experiment"] == "Exp454" for item in champion["history"]), 1)
         self.assertFalse(any(item.get("experiment") == "Exp454" for item in failures["entries"]))
         for record in (exp454, catalog_entry, champion_entry):
-            self.assertEqual(record["status"], "planned_not_started")
+            self.assertEqual(record["status"], "implementation_verified_awaiting_official_readiness")
             self.assertEqual(record["kind"] if "kind" in record else KIND_ANTIGRAVITY, KIND_ANTIGRAVITY)
             self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
             self.assertEqual(record["predecessor_prediction_sha256"], PREDICTION_SHA256_ANTIGRAVITY)
