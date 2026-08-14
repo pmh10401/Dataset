@@ -6,6 +6,21 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
+from dataclasses import FrozenInstanceError, fields, replace
+from types import MappingProxyType
+
+from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import (
+    FROZEN_EXP449_CONFIG,
+    FrozenExp449Config,
+)
+from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import (
+    Exp449Context,
+    Exp449ProposalManifest,
+    Exp449ShardDescriptor,
+    Exp449TerminalStatus,
+    SmokeComparison,
+)
+from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -71,3 +86,232 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         frozen = exp448_frozen_blob_inventory_at_design_commit(EXP448_DESIGN_COMMIT)
         self.assertTrue(frozen)
         self.assertEqual(current_exp448_blob_inventory(), frozen)
+
+
+class Exp449FrozenConfigTests(unittest.TestCase):
+    def test_frozen_config_is_exact_and_uses_only_new_absent_roots(self) -> None:
+        self.assertIsInstance(FROZEN_EXP449_CONFIG, FrozenExp449Config)
+        self.assertEqual(FROZEN_EXP449_CONFIG.experiment_id, "Exp449")
+        self.assertEqual(FROZEN_EXP449_CONFIG.dataset_count, 1117)
+        self.assertEqual(FROZEN_EXP449_CONFIG.test_row_count, 195900)
+        self.assertEqual(FROZEN_EXP449_CONFIG.policy_id, "hard_plus_stable")
+        self.assertEqual(FROZEN_EXP449_CONFIG.cpu_repeat_tolerance, 1e-12)
+        self.assertEqual(FROZEN_EXP449_CONFIG.accelerated_tolerance, 1e-5)
+        self.assertEqual(FROZEN_EXP449_CONFIG.minimum_accelerated_speedup, 1.1)
+        self.assertEqual(FROZEN_EXP449_CONFIG.maximum_waves, 2)
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.preprocessing_contracts,
+            (
+                "task4_train_only",
+                "task5_label_free_train_test_value_length_transductive",
+            ),
+        )
+        self.assertEqual(len(FROZEN_EXP449_CONFIG.smoke_datasets), 23)
+        self.assertIn("MelbournePedestrian_normal_10", FROZEN_EXP449_CONFIG.smoke_datasets)
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.smoke_datasets,
+            tuple(sorted(FROZEN_EXP449_CONFIG.smoke_datasets)),
+        )
+        self.assertEqual(len(set(FROZEN_EXP449_CONFIG.smoke_datasets)), 23)
+        self.assertEqual(
+            tuple(field.name for field in fields(FrozenExp449Config)),
+            (
+                "experiment_id",
+                "dataset_count",
+                "test_row_count",
+                "policy_id",
+                "cpu_repeat_tolerance",
+                "accelerated_tolerance",
+                "minimum_accelerated_speedup",
+                "maximum_waves",
+                "preprocessing_contracts",
+                "smoke_datasets",
+                "smoke_a_scientific_root",
+                "smoke_a_operations_root",
+                "smoke_b_scientific_root",
+                "smoke_b_operations_root",
+                "official_scientific_root",
+                "official_operations_root",
+            ),
+        )
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+            Path("/Users/mac/Documents/Dataset/paper_proposal_exp449_smoke_a_antigravity_20260814"),
+        )
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+            Path("/Users/mac/Documents/Dataset/paper_proposal_exp449_smoke_a_antigravity_20260814_ops_antigravity"),
+        )
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.smoke_b_scientific_root,
+            Path("/Users/mac/Documents/Dataset/paper_proposal_exp449_smoke_b_antigravity_20260814"),
+        )
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.smoke_b_operations_root,
+            Path("/Users/mac/Documents/Dataset/paper_proposal_exp449_smoke_b_antigravity_20260814_ops_antigravity"),
+        )
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.official_scientific_root,
+            Path("/Users/mac/Documents/Dataset/paper_proposal_exp449_official_antigravity_20260814"),
+        )
+        self.assertEqual(
+            FROZEN_EXP449_CONFIG.official_operations_root,
+            Path("/Users/mac/Documents/Dataset/paper_proposal_exp449_official_antigravity_20260814_ops_antigravity"),
+        )
+        with self.assertRaises(FrozenInstanceError):
+            FROZEN_EXP449_CONFIG.policy_id = "mutable"  # type: ignore[misc]
+        with self.assertRaises(ValueError):
+            replace(
+                FROZEN_EXP449_CONFIG,
+                smoke_a_scientific_root=Path("/tmp/not_an_exp449_root_antigravity"),
+            )
+
+
+class Exp449ImmutableContractTests(unittest.TestCase):
+    _SHA_A = "a" * 64
+    _SHA_B = "b" * 64
+    _SHA_C = "c" * 64
+    _SHA_D = "d" * 64
+    _SHA_E = "e" * 64
+    _SHA_F = "f" * 64
+
+    def _backend(self) -> FrozenTask8BackendDecision:
+        return FrozenTask8BackendDecision(
+            selected_backend="cpu",
+            fallback_reason="MLX parity benchmark not yet approved",
+            assessment_sha256=self._SHA_A,
+            logical_cpu_count=2,
+            dataset_workers=1,
+            inner_numerical_threads=1,
+            outer_execution_mode="parallel_task4_task5",
+        )
+
+    def _context(self) -> Exp449Context:
+        return Exp449Context.from_verified_inputs(
+            run_root=Path("/tmp/exp449_contract_fixture_antigravity"),
+            mode="smoke",
+            database_sha256=self._SHA_A,
+            catalog={"Dataset_normal_1": {"raw_sha256": self._SHA_B, "rows": (1, 2)}},
+            code_closure={"module_antigravity.py": self._SHA_C},
+            lineage_sha256=self._SHA_D,
+            codemap_sha256=self._SHA_E,
+            interpreter="/usr/bin/python3",
+            environment={"python": "3.14.6", "numpy": "2.3.1"},
+            acceleration=self._backend(),
+            seeds_and_constants={"seed": 449, "alphas": (0.01, 0.05)},
+        )
+
+    def test_context_rejects_historical_parity_authority_before_other_inputs(self) -> None:
+        with self.assertRaisesRegex(ValueError, "historical authority"):
+            Exp449Context.from_verified_inputs(
+                run_root=Path("/tmp/exp449_fixture_antigravity"),
+                mode="smoke",
+                catalog={},
+                acceleration={},
+                acceptance_path=Path("old.json"),
+            )
+
+    def test_context_copies_nested_provenance_and_has_exact_schema(self) -> None:
+        context = self._context()
+        self.assertEqual(
+            tuple(field.name for field in fields(Exp449Context)),
+            (
+                "experiment_id",
+                "mode",
+                "run_root",
+                "database_sha256",
+                "catalog_sha256",
+                "code_closure",
+                "lineage_sha256",
+                "codemap_sha256",
+                "interpreter",
+                "environment",
+                "backend_record",
+                "seeds_and_constants",
+                "historical_parity_status",
+            ),
+        )
+        self.assertEqual(context.experiment_id, "Exp449")
+        self.assertEqual(context.mode, "smoke")
+        self.assertEqual(context.run_root, Path("/tmp/exp449_contract_fixture_antigravity").resolve())
+        self.assertEqual(context.historical_parity_status, "not_used")
+        self.assertIsInstance(context.code_closure, MappingProxyType)
+        self.assertIsInstance(context.code_closure["module_antigravity.py"], str)
+        self.assertIsInstance(context.environment, MappingProxyType)
+        self.assertIsInstance(context.seeds_and_constants, MappingProxyType)
+        self.assertEqual(context.seeds_and_constants["alphas"], (0.01, 0.05))
+        with self.assertRaises(TypeError):
+            context.environment["python"] = "mutable"  # type: ignore[index]
+        with self.assertRaises(ValueError):
+            Exp449Context.from_verified_inputs(
+                run_root=Path("/tmp/exp449_contract_fixture_antigravity"),
+                mode="smoke",
+                database_sha256="A" * 64,
+                catalog={"Dataset_normal_1": {"raw_sha256": self._SHA_B}},
+                code_closure={"module_antigravity.py": self._SHA_C},
+                lineage_sha256=self._SHA_D,
+                codemap_sha256=self._SHA_E,
+                interpreter="/usr/bin/python3",
+                environment={"python": "3.14.6"},
+                acceleration=self._backend(),
+                seeds_and_constants={"seed": 449},
+            )
+
+    def test_manifest_terminal_and_smoke_contracts_are_exact_and_fail_closed(self) -> None:
+        context = self._context()
+        manifest = Exp449ProposalManifest(
+            schema_version="exp449_proposal_manifest_v1",
+            context_sha256=self._SHA_A,
+            catalog_sha256=context.catalog_sha256,
+            shards={
+                "Dataset_normal_1": Exp449ShardDescriptor(
+                    path="shards/Dataset_normal_1_antigravity.json",
+                    size=17,
+                    sha256=self._SHA_B,
+                    schema="exp449_typed_shard_v1",
+                )
+            },
+            policy_coordinate_digests={"hard_plus_stable": self._SHA_C},
+            candidate_c_score_digests={"Dataset_normal_1": self._SHA_D},
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(Exp449ProposalManifest)),
+            (
+                "schema_version",
+                "context_sha256",
+                "catalog_sha256",
+                "shards",
+                "policy_coordinate_digests",
+                "candidate_c_score_digests",
+            ),
+        )
+        self.assertIsInstance(manifest.shards, MappingProxyType)
+        self.assertEqual(manifest.shards["Dataset_normal_1"].size, 17)
+        with self.assertRaises(ValueError):
+            Exp449ShardDescriptor(
+                path="shards/Dataset_normal_1_antigravity.json",
+                size=-1,
+                sha256="not-a-sha",
+                schema="exp449_typed_shard_v1",
+            )
+        status = Exp449TerminalStatus(
+            status="proposal_score_incomplete",
+            completed_dataset_count=1116,
+            failed_dataset_count=1,
+            pending_dataset_count=0,
+            wave_count=2,
+        )
+        self.assertEqual(status.status, "proposal_score_incomplete")
+        with self.assertRaises(ValueError):
+            Exp449TerminalStatus("complete", 0, 0, 0, 0)
+        comparison = SmokeComparison(
+            smoke_a_manifest_sha256=self._SHA_A,
+            smoke_b_manifest_sha256=self._SHA_B,
+            compared_dataset_count=23,
+            coordinate_identity=True,
+            maximum_score_delta=0.0,
+            passed=True,
+        )
+        self.assertTrue(comparison.passed)
+        with self.assertRaises(ValueError):
+            SmokeComparison(self._SHA_A, self._SHA_B, 23, True, float("nan"), False)

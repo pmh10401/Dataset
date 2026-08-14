@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-14T22:47:57+0900",
-  "generated_from_commit": "6284a7cb9a4425937e778a1ad668f2dc6aa48226",
+  "generated_at": "2026-08-14T23:03:52+0900",
+  "generated_from_commit": "327323d4ac0c70ca1aa0c31c1ea8165cbb70a161",
   "working_tree_dirty": true,
   "scope": [
-    "Exp449 reproducible-rebaseline planning boundary and frozen no-execution state.",
+    "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
     "Planned Task4/5 dataset-local collection through exact catalog gate, population-global Task6/7, Candidate C typed shards, outer manifest, and independent verifier.",
-    "Existing paper/equipment_anomaly_detection dependencies retained as scientific primitives without modification.",
-    "Exp448 design-commit byte inventory is immutable and asserted by the Exp449 version-boundary test."
+    "Existing paper/equipment_anomaly_detection dependencies remain the unmodified scientific primitives.",
+    "Exp448 design-commit byte inventory remains immutable and is asserted by the Exp449 version-boundary test."
   ],
   "nodes": [
     {
@@ -66,37 +66,61 @@
     {
       "id": "exp449_config",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
-      "role": "Planned frozen Exp449 identity, roots, inventory, tolerances, and policy configuration.",
+      "role": "Implemented frozen Exp449 identity, fixed absent roots, smoke inventory, tolerances, and policy configuration.",
       "entrypoints": [
+        "FrozenExp449Config",
         "FROZEN_EXP449_CONFIG"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "No caller may supply substitute roots, policy, inventory, or tolerance values; importing configuration creates no roots."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
-          "symbol": "FROZEN_EXP449_CONFIG"
+          "symbol": "FrozenExp449Config, FROZEN_EXP449_CONFIG"
         }
+      ],
+      "callers": [
+        "contracts_antigravity.py",
+        "test_config_contracts_antigravity.py"
+      ],
+      "effects": [
+        "freezes the only accepted Exp449 roots, preprocessing identities, smoke inventory, numerical tolerances, and two-wave limit"
       ]
     },
     {
       "id": "exp449_contracts",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
-      "role": "Planned immutable context, outer-manifest, terminal-status, and smoke-comparison contracts.",
+      "role": "Implemented immutable Exp449 context, typed-shard manifest, terminal-status, and smoke-comparison contracts.",
       "entrypoints": [
-        "Exp449Context"
+        "Exp449Context.from_verified_inputs",
+        "Exp449ProposalManifest",
+        "Exp449TerminalStatus",
+        "SmokeComparison"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Every SHA is lowercase 64-hex; counts are nonnegative; floats are finite; no historical acceptance path is accepted."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
-          "symbol": "Exp449Context"
+          "symbol": "Exp449Context, Exp449ProposalManifest, Exp449TerminalStatus, SmokeComparison"
         }
+      ],
+      "callers": [
+        "test_config_contracts_antigravity.py",
+        "future runner_antigravity.py",
+        "future artifacts_antigravity.py",
+        "future verifier_antigravity.py"
+      ],
+      "effects": [
+        "binds canonical hashes, exact backend provenance, immutable nested records, shard identities, and smoke reproducibility facts; rejects historical authority before inspecting other inputs"
       ]
     },
     {
@@ -174,20 +198,22 @@
     {
       "id": "exp449_config_contract_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
-      "role": "Version boundary and future configuration/contract regression tests.",
+      "role": "Exp449 frozen-identity, immutable-provenance, exact-schema, and historical-authority regression tests.",
       "entrypoints": [
-        "Exp449VersionBoundaryTests"
+        "Exp449VersionBoundaryTests",
+        "Exp449FrozenConfigTests",
+        "Exp449ImmutableContractTests"
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Preserves the complete immutable Exp448 design-commit byte inventory while testing only the Exp449 boundary."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
-          "symbol": "Exp449VersionBoundaryTests"
+          "symbol": "Exp449FrozenConfigTests, Exp449ImmutableContractTests"
         }
       ]
     },
@@ -1819,6 +1845,33 @@
         "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
         "symbol": "Exp449VersionBoundaryTests"
       }
+    },
+    {
+      "from": "exp449_config_contract_tests",
+      "to": "exp449_config",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "symbol": "Exp449FrozenConfigTests"
+      }
+    },
+    {
+      "from": "exp449_config_contract_tests",
+      "to": "exp449_contracts",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "symbol": "Exp449ImmutableContractTests"
+      }
+    },
+    {
+      "from": "exp449_contracts",
+      "to": "exp449_config",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+        "symbol": "FROZEN_EXP449_CONFIG"
+      }
     }
   ],
   "flows": [
@@ -1864,7 +1917,7 @@
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Task 1 creates no Exp449 run root, performs no scoring, and opens no TEST labels.",
+    "Task 2 creates no Exp449 run root, performs no scoring, and opens no TEST labels.",
     "Future execution remains separately authorized by the Exp449 runbook and readiness contracts.",
     "Exp448 historical sections, codemap triplet, and intentional RED full-route test are immutable evidence."
   ]
