@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T02:19:49+09:00",
-  "generated_from_commit": "7a41dfd234fcdb8f33ee55589d32464eb4537236",
+  "generated_at": "2026-08-15T02:40:40+09:00",
+  "generated_from_commit": "9293a6321ba7ef65072893f99034815a4b82c735",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -221,7 +221,7 @@
     {
       "id": "exp449_verifier",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root and Smoke A/B reproducibility verifier.",
+      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root verifier and immutable-snapshot Smoke A/B comparison boundary.",
       "entrypoints": [
         "verify_exp449_proposal_antigravity",
         "compare_exp449_smokes_antigravity"
@@ -230,7 +230,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
-        "Imports only Exp449 config/contracts/validation and canonical JSON/Numpy support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules. Both roots must independently verify before cross-run comparison; only run-root identity may differ."
+        "Imports only Exp449 config/contracts/validation and canonical JSON/Numpy support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules. Both roots independently snapshot-verify before comparison; comparison and receipt evidence never reread scientific paths, and only preregistered root authority may differ."
       ],
       "evidence": [
         {
@@ -242,7 +242,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "uses only validation_antigravity plus immutable contracts to reject invalid outer/root inventory and semantic tamper, then rejects shared root declarations, inodes, checkpoint reuse, closure mismatch, policy-coordinate drift, score/tie drift, and deltas above 1e-12."
+        "compares only captured descriptor-bound bytes and identities after complete validation: rejects shared root declarations, hardlinks/inodes, checkpoint reuse, closure mismatch, policy-coordinate drift, score/tie drift, and deltas above 1e-12; receipt hashes bind those exact snapshots."
       ]
     },
     {
@@ -319,7 +319,7 @@
         "unittest"
       ],
       "effects": [
-        "proves genuine paper test-published Task4/5 checkpoint binding, semantic tamper rejection, and two complete temporary smoke roots with no shared inode/checkpoint; it rejects root/closure/coordinate/score/tie tamper and permits a receipt only in temporary Smoke B operations."
+        "proves genuine paper test-published Task4/5 checkpoint binding, semantic tamper rejection, and two complete temporary smoke roots with no shared inode/checkpoint; it uses independently valid rebound closure/typed-coordinate/score/tie roots, adversarial post-snapshot mutation, and exact create-only receipt binding only in temporary Smoke B operations."
       ]
     },
     {
@@ -1483,8 +1483,9 @@
     {
       "id": "exp449_validation",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
-      "role": "Paper-writer/scorer/source/route-free Exp449 JSON, catalog, shard semantic, manifest, and whole-root inventory validator.",
+      "role": "Paper-writer/scorer/source/route-free Exp449 JSON, catalog, shard semantic, manifest, whole-root inventory, and immutable descriptor-byte snapshot validator.",
       "entrypoints": [
+        "verify_exp449_proposal_root_snapshot_antigravity",
         "verify_exp449_proposal_root_antigravity",
         "validate_exp449_proposal_shard_antigravity",
         "validate_exp449_catalog_antigravity"
@@ -1498,7 +1499,7 @@
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
-          "symbol": "verify_exp449_proposal_root_antigravity"
+          "symbol": "verify_exp449_proposal_root_snapshot_antigravity, verify_exp449_proposal_root_antigravity"
         }
       ],
       "callers": [
@@ -1507,7 +1508,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "independently validates typed Task4--7 semantics, all three Exp236→Exp253 promotion relations, complete bridge-bound Task4/5 success inventory, exact continuous route-preserving policy scores, global top-30 Candidate C selection, and declared-root integrity without scorer/source/route/writer imports."
+        "reads each manifest/checkpoint/shard once through a confined no-follow descriptor and retains exact bytes/inodes while independently validating typed Task4--7 semantics, all three Exp236→Exp253 promotion relations, complete bridge-bound Task4/5 success inventory, exact continuous route-preserving policy scores, global top-30 Candidate C selection, and declared-root integrity without scorer/source/route/writer imports."
       ]
     }
   ],

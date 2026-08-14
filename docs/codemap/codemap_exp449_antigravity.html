@@ -2,11 +2,11 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Time Series · Exp449 Code Map</title>
 <style>:root{color-scheme:dark;--bg:#0b1020;--panel:#141b31;--line:#405072;--txt:#e5ebfa;--muted:#9cadca;--paper:#f06f9b}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#1e2b53,var(--bg) 46%);color:var(--txt);font:14px system-ui,sans-serif}header{padding:18px 24px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:21px}small,.muted{color:var(--muted)}main{display:grid;grid-template-columns:minmax(600px,1fr) 320px;gap:12px;padding:12px}#map,aside{background:rgba(20,27,49,.95);border:1px solid var(--line);border-radius:10px}#map{padding:14px;min-height:610px}#graph{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}.node{border:1px solid #516388;border-radius:8px;padding:10px;background:#101a31;cursor:pointer}.node.paper{border-color:var(--paper)}.node.dim{opacity:.2}.node h3{font-size:13px;margin:0 0 6px}.node p{margin:5px 0;color:var(--muted);font-size:12px}aside{padding:14px}aside h2{font-size:15px;margin:0 0 10px}code{word-break:break-word;color:#cbd8ff}select,input{background:#1d2945;color:var(--txt);border:1px solid #516388;border-radius:6px;padding:7px 9px;margin:8px 4px 0 0}@media(max-width:900px){main{grid-template-columns:1fr}}</style></head>
-<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-15T02:19:49+09:00 · source <code>7a41dfd234fcdb8f33ee55589d32464eb4537236</code> · Exp449 is a label-free planning boundary and Exp448 remains immutable</small></header>
+<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-15T02:40:40+09:00 · source <code>9293a6321ba7ef65072893f99034815a4b82c735</code> · Exp449 is a label-free planning boundary and Exp448 remains immutable</small></header>
 <main><section id="map"><input id="search" placeholder="module search"><select id="flow"><option value="">all flows</option></select><p class="muted">Exp449 is an approved no-execution boundary. Pink-bordered nodes are retained paper scientific dependencies.</p><div id="graph"></div></section><aside><h2 id="detail">Exp449 map</h2><div id="info" class="muted">Select a node for callers, effects, tests, constraints, and evidence.</div></aside></main>
 <script id="codemap-data" type="application/json">{
-  "generated_at": "2026-08-15T02:19:49+09:00",
-  "generated_from_commit": "7a41dfd234fcdb8f33ee55589d32464eb4537236",
+  "generated_at": "2026-08-15T02:40:40+09:00",
+  "generated_from_commit": "9293a6321ba7ef65072893f99034815a4b82c735",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -227,7 +227,7 @@
     {
       "id": "exp449_verifier",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root and Smoke A/B reproducibility verifier.",
+      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root verifier and immutable-snapshot Smoke A/B comparison boundary.",
       "entrypoints": [
         "verify_exp449_proposal_antigravity",
         "compare_exp449_smokes_antigravity"
@@ -236,7 +236,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
-        "Imports only Exp449 config/contracts/validation and canonical JSON/Numpy support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules. Both roots must independently verify before cross-run comparison; only run-root identity may differ."
+        "Imports only Exp449 config/contracts/validation and canonical JSON/Numpy support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules. Both roots independently snapshot-verify before comparison; comparison and receipt evidence never reread scientific paths, and only preregistered root authority may differ."
       ],
       "evidence": [
         {
@@ -248,7 +248,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "uses only validation_antigravity plus immutable contracts to reject invalid outer/root inventory and semantic tamper, then rejects shared root declarations, inodes, checkpoint reuse, closure mismatch, policy-coordinate drift, score/tie drift, and deltas above 1e-12."
+        "compares only captured descriptor-bound bytes and identities after complete validation: rejects shared root declarations, hardlinks/inodes, checkpoint reuse, closure mismatch, policy-coordinate drift, score/tie drift, and deltas above 1e-12; receipt hashes bind those exact snapshots."
       ]
     },
     {
@@ -325,7 +325,7 @@
         "unittest"
       ],
       "effects": [
-        "proves genuine paper test-published Task4/5 checkpoint binding, semantic tamper rejection, and two complete temporary smoke roots with no shared inode/checkpoint; it rejects root/closure/coordinate/score/tie tamper and permits a receipt only in temporary Smoke B operations."
+        "proves genuine paper test-published Task4/5 checkpoint binding, semantic tamper rejection, and two complete temporary smoke roots with no shared inode/checkpoint; it uses independently valid rebound closure/typed-coordinate/score/tie roots, adversarial post-snapshot mutation, and exact create-only receipt binding only in temporary Smoke B operations."
       ]
     },
     {
@@ -1489,8 +1489,9 @@
     {
       "id": "exp449_validation",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
-      "role": "Paper-writer/scorer/source/route-free Exp449 JSON, catalog, shard semantic, manifest, and whole-root inventory validator.",
+      "role": "Paper-writer/scorer/source/route-free Exp449 JSON, catalog, shard semantic, manifest, whole-root inventory, and immutable descriptor-byte snapshot validator.",
       "entrypoints": [
+        "verify_exp449_proposal_root_snapshot_antigravity",
         "verify_exp449_proposal_root_antigravity",
         "validate_exp449_proposal_shard_antigravity",
         "validate_exp449_catalog_antigravity"
@@ -1504,7 +1505,7 @@
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
-          "symbol": "verify_exp449_proposal_root_antigravity"
+          "symbol": "verify_exp449_proposal_root_snapshot_antigravity, verify_exp449_proposal_root_antigravity"
         }
       ],
       "callers": [
@@ -1513,7 +1514,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "independently validates typed Task4--7 semantics, all three Exp236→Exp253 promotion relations, complete bridge-bound Task4/5 success inventory, exact continuous route-preserving policy scores, global top-30 Candidate C selection, and declared-root integrity without scorer/source/route/writer imports."
+        "reads each manifest/checkpoint/shard once through a confined no-follow descriptor and retains exact bytes/inodes while independently validating typed Task4--7 semantics, all three Exp236→Exp253 promotion relations, complete bridge-bound Task4/5 success inventory, exact continuous route-preserving policy scores, global top-30 Candidate C selection, and declared-root integrity without scorer/source/route/writer imports."
       ]
     }
   ],

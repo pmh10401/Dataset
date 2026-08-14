@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from hashlib import sha256
 import importlib.metadata
 import json
 from math import isclose, isfinite
+import os
 from pathlib import Path, PurePosixPath
 import platform
 import stat
@@ -28,6 +30,37 @@ _HARD_SOURCES = ("rocket_exp40", "exp55_best", "exp56_best", "exp84", "rocket_bl
 _SOURCE_ALPHA = {"rocket_exp40": .03, "exp55_best": .03, "exp56_best": .02, "exp84": .02, "rocket_block_b": .015, "canonical_normal_state": .02}
 _HARD_STAGE_IDS = ("exp74d", "exp89", "exp90", "exp93", "exp137", "exp234", "exp236", "exp253")
 _TASK45_SCIENTIFIC_CONFIG_SHA256 = "6b276d90f5edeb8a49810c9caa062cc8c8d1750f202f56720b9a9df537a2f6e3"
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedExp449FileAntigravity:
+    """One descriptor-bound byte snapshot read through a no-follow descriptor."""
+
+    relative_path: str
+    raw_bytes: bytes
+    device: int
+    inode: int
+    link_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedExp449ShardAntigravity:
+    """Comparison-ready typed-shard facts derived from one verified byte string."""
+
+    dataset: str
+    file: _VerifiedExp449FileAntigravity
+    policies: tuple[tuple[str, tuple[int, ...], tuple[float, ...]], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedExp449ProposalRootSnapshotAntigravity:
+    """Immutable complete root verification result; comparison never rereads paths."""
+
+    root: Path
+    manifest: Exp449ProposalManifest
+    manifest_file: _VerifiedExp449FileAntigravity
+    checkpoint_files: tuple[_VerifiedExp449FileAntigravity, ...]
+    shards: tuple[_VerifiedExp449ShardAntigravity, ...]
 
 
 def canonical_json_bytes_antigravity(value: object) -> bytes:
@@ -353,14 +386,55 @@ def validate_exp449_proposal_shard_antigravity(value: object, *, entry: dict[str
     return _digests(scientific,entry["dataset"])
 
 
-def _strict(path: Path) -> object:
-    details=_lstat(path)
-    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode): raise ValueError("Exp449 artifact is missing or symlinked")
-    raw=path.read_bytes()
-    try: value=json.loads(raw)
-    except (UnicodeDecodeError,json.JSONDecodeError) as error: raise ValueError("Exp449 artifact JSON differs") from error
-    if raw != canonical_json_bytes_antigravity(value): raise ValueError("Exp449 artifact noncanonical")
-    return value
+def _snapshot_strict_file_antigravity(root: Path, relative_path: str) -> tuple[object, _VerifiedExp449FileAntigravity]:
+    """Read one confined regular file exactly once and retain the parsed bytes.
+
+    Parent components are checked before opening and the final component is
+    opened with ``O_NOFOLLOW``.  The file descriptor's own identity and bytes,
+    not a later pathname lookup, are the scientific authority.
+    """
+    relative = PurePosixPath(relative_path)
+    if not relative_path or relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("Exp449 artifact path differs")
+    current = root
+    root_details = _lstat(current)
+    if root_details is None or stat.S_ISLNK(root_details.st_mode) or not stat.S_ISDIR(root_details.st_mode):
+        raise ValueError("Exp449 root authority differs")
+    for part in relative.parts[:-1]:
+        current /= part
+        details = _lstat(current)
+        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+            raise ValueError("Exp449 artifact parent differs")
+    path = current / relative.parts[-1]
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise ValueError("Exp449 artifact is missing or symlinked") from error
+    try:
+        details = os.fstat(descriptor)
+        if not stat.S_ISREG(details.st_mode):
+            raise ValueError("Exp449 artifact is missing or symlinked")
+        chunks: list[bytes] = []
+        remaining = details.st_size
+        while remaining:
+            chunk = os.read(descriptor, min(1024 * 1024, remaining))
+            if not chunk:
+                raise ValueError("Exp449 artifact short read")
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        if os.read(descriptor, 1):
+            raise ValueError("Exp449 artifact changed during read")
+        raw = b"".join(chunks)
+    finally:
+        os.close(descriptor)
+    try:
+        value = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Exp449 artifact JSON differs") from error
+    if raw != canonical_json_bytes_antigravity(value):
+        raise ValueError("Exp449 artifact noncanonical")
+    return value, _VerifiedExp449FileAntigravity(relative_path, raw, details.st_dev, details.st_ino, details.st_nlink)
 
 
 def _manifest(value: object) -> Exp449ProposalManifest:
@@ -457,15 +531,21 @@ def _global_low_candidates(scientific: Mapping[str, object]) -> tuple[tuple[floa
     return (min(candidates),) if candidates else ()
 
 
-def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Context, catalog: dict[str,object]) -> Exp449ProposalManifest:
+def verify_exp449_proposal_root_snapshot_antigravity(
+    root: Path, *, context: Exp449Context, catalog: dict[str, object],
+) -> VerifiedExp449ProposalRootSnapshotAntigravity:
+    """Validate one complete root into immutable descriptor-bound byte snapshots."""
     root=_safe_root(root)
     if "antigravity" not in root.name or Path(context.run_root).resolve(strict=False)!=root.resolve(strict=False): raise ValueError("Exp449 root authority differs")
     freeze=root/_ARTIFACT_DIRECTORY/_FREEZE_DIRECTORY
-    manifest=_manifest(_strict(freeze/_MANIFEST_NAME)); names=_catalog_names(catalog,context.mode,manifest)
+    manifest_relative = f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{_MANIFEST_NAME}"
+    manifest_value, manifest_file = _snapshot_strict_file_antigravity(root, manifest_relative)
+    manifest=_manifest(manifest_value); names=_catalog_names(catalog,context.mode,manifest)
     if manifest.context_sha256!=_context_sha256(context) or manifest.catalog_sha256!=context.catalog_sha256 or manifest.catalog_sha256!=catalog.get("catalog_sha256") or _plain(manifest.backend_record)!=_plain(context.backend_record): raise ValueError("Exp449 proposal manifest authority differs")
-    declared={f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{_MANIFEST_NAME}"}
+    declared={manifest_relative}
     checkpoints = tuple(manifest.task45_checkpoints)
     checkpoint_routes: dict[str, dict[str, object]] = {}
+    checkpoint_files: list[_VerifiedExp449FileAntigravity] = []
     success = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-success.v1")
     attempts = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-attempt.v1")
     expected_success = {
@@ -482,19 +562,22 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
         raise ValueError("Exp449 Task4/5 attempt checkpoint inventory differs")
     attempt_ordinals = {item.relative_path: index for index, item in enumerate(attempts, 1)}
     for descriptor in checkpoints:
-        rel=descriptor.relative_path; declared.add(rel); path=root/rel; details=_lstat(path)
-        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
-        route = _checkpoint(_strict(path), descriptor, context, catalog, attempt_ordinal=attempt_ordinals.get(rel))
+        rel=descriptor.relative_path; declared.add(rel)
+        value, snapshot_file = _snapshot_strict_file_antigravity(root, rel)
+        if len(snapshot_file.raw_bytes)!=descriptor.size or sha256(snapshot_file.raw_bytes).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
+        route = _checkpoint(value, descriptor, context, catalog, attempt_ordinal=attempt_ordinals.get(rel))
         if route is not None:
             assert descriptor.dataset is not None
             checkpoint_routes[descriptor.dataset] = route
+        checkpoint_files.append(snapshot_file)
     global_candidates: list[tuple[float,float,str,int]] = []
     selected_coordinates: list[tuple[str,int]] = []
+    shard_snapshots: list[_VerifiedExp449ShardAntigravity] = []
     for descriptor in manifest.entries:
         if descriptor.relative_path != _relative(descriptor.dataset): raise ValueError("Exp449 shard path differs")
-        rel=f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{descriptor.relative_path}"; declared.add(rel); path=root/rel; details=_lstat(path)
-        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 shard hash differs")
-        shard=_strict(path)
+        rel=f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{descriptor.relative_path}"; declared.add(rel)
+        shard, snapshot_file = _snapshot_strict_file_antigravity(root, rel)
+        if len(snapshot_file.raw_bytes)!=descriptor.size or sha256(snapshot_file.raw_bytes).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 shard hash differs")
         route = checkpoint_routes.get(descriptor.dataset)
         automatic = route["automatic_hard"] if route is not None else None
         coords,candidate=validate_exp449_proposal_shard_antigravity(shard,entry=_entry(catalog,descriptor.dataset),context=context,catalog=catalog,automatic_hard=automatic,checkpoint_route=route)
@@ -505,6 +588,13 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
         stability=scientific["stability"]
         assert isinstance(stability, dict)
         selected_coordinates.extend((str(row[0]),int(row[1])) for row in stability["selected"])
+        policies = scientific["policies"]
+        assert isinstance(policies, list)
+        shard_snapshots.append(_VerifiedExp449ShardAntigravity(
+            descriptor.dataset,
+            snapshot_file,
+            tuple((str(row["policy_id"]), tuple(int(index) for index in row["alerts"]), tuple(float(score) for score in row["scores"])) for row in policies),
+        ))
     expected_selected=tuple((dataset,index) for _ratio,_rank,dataset,index in sorted(global_candidates)[:30])
     if tuple(sorted(selected_coordinates)) != tuple(sorted(expected_selected)):
         raise ValueError("Exp449 global Candidate C selection differs")
@@ -517,7 +607,14 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
     def permitted_name(item: str) -> bool:
         return item in {"stage_artifacts_paper", "stage_artifacts_paper/proposal_work"} or item.startswith("stage_artifacts_paper/proposal_work/") or all("antigravity" in part for part in item.split("/"))
     if found!=declared_nodes or any(not permitted_name(item) for item in found): raise ValueError("Exp449 root inventory differs")
-    return manifest
+    return VerifiedExp449ProposalRootSnapshotAntigravity(
+        root, manifest, manifest_file, tuple(checkpoint_files), tuple(shard_snapshots),
+    )
 
 
-__all__=["canonical_float64_bytes_antigravity","canonical_json_bytes_antigravity","validate_exp449_catalog_antigravity","validate_exp449_proposal_shard_antigravity","verify_exp449_proposal_root_antigravity"]
+def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Context, catalog: dict[str,object]) -> Exp449ProposalManifest:
+    """Compatibility wrapper returning the manifest from a complete immutable snapshot."""
+    return verify_exp449_proposal_root_snapshot_antigravity(root, context=context, catalog=catalog).manifest
+
+
+__all__=["canonical_float64_bytes_antigravity","canonical_json_bytes_antigravity","validate_exp449_catalog_antigravity","validate_exp449_proposal_shard_antigravity","verify_exp449_proposal_root_antigravity","verify_exp449_proposal_root_snapshot_antigravity"]

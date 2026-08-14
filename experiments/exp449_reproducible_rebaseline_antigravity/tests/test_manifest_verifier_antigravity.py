@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from contextlib import ExitStack
+from dataclasses import replace
 from hashlib import sha256
 import json
 import os
@@ -148,7 +149,14 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         return self.root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
 
     @staticmethod
-    def _publish_real_task45_checkpoints(fixture: _TypedProposalFixtureAntigravity, root: Path) -> None:
+    def _publish_real_task45_checkpoints(
+        fixture: _TypedProposalFixtureAntigravity,
+        root: Path,
+        *,
+        score: object | None = None,
+        context: Exp449Context | None = None,
+        catalog: dict[str, object] | None = None,
+    ) -> None:
         """Use only the paper test publisher in this temporary fixture root."""
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
         from paper.equipment_anomaly_detection.artifacts_paper import (
@@ -156,16 +164,19 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
             write_task4_task5_success_record,
         )
         from experiments.exp449_reproducible_rebaseline_antigravity.operations_antigravity import task45_context_payload_antigravity
-        bridge = task45_context_payload_antigravity(fixture.context)
+        score = fixture.score if score is None else score
+        context = fixture.context if context is None else context
+        catalog = fixture.catalog if catalog is None else catalog
+        bridge = task45_context_payload_antigravity(context)
         authority = Task4Task5SuccessAuthority.from_verified_context(
-            bridge, fixture.catalog,
+            bridge, catalog,
             build_acceleration_manifest(bridge["context_sha256"], logical_cpu_count=3),
         )
-        first = fixture.catalog["datasets"][0]["dataset"]
-        append_task4_task5_attempt_record(root, fixture.catalog, authority, fixture.score.raw[first], 1, RuntimeError("fixture interruption"))
-        for entry in fixture.catalog["datasets"]:
+        first = catalog["datasets"][0]["dataset"]
+        append_task4_task5_attempt_record(root, catalog, authority, score.raw[first], 1, RuntimeError("fixture interruption"))
+        for entry in catalog["datasets"]:
             dataset = entry["dataset"]
-            write_task4_task5_success_record(root, fixture.catalog, authority, fixture.score.raw[dataset], fixture.score.sources[dataset], fixture.score.routes[dataset])
+            write_task4_task5_success_record(root, catalog, authority, score.raw[dataset], score.sources[dataset], score.routes[dataset])
 
     def _rewrite_bound_shard(self, mutate) -> None:
         """Rewrite one shard and every descriptor digest that derives from it.
@@ -818,6 +829,45 @@ class Exp449SmokeComparisonTests(unittest.TestCase):
         with self._comparison_seam():
             return compare_exp449_smokes_antigravity(self.root_a, self.root_b, self._authority())
 
+    def _rebuild_smoke_b(self, *, score: object | None = None, context: Exp449Context | None = None) -> None:
+        """Publish a complete, independently verifiable Smoke B fixture root."""
+        if self.root_b.exists():
+            shutil.rmtree(self.root_b)
+        score = self.fixture_b.score if score is None else score
+        context = self.fixture_b.context if context is None else context
+        Exp449ManifestVerifierTests._publish_real_task45_checkpoints(
+            self.fixture_b, self.root_b, score=score, context=context,
+        )
+        freeze_exp449_proposal_antigravity(
+            score, root=self.root_b, context=context, catalog=self.fixture_b.catalog,
+        )
+
+    def _typed_coordinate_drift_score(self):
+        """Return a real ProposalScore whose Task4/5 route selects index zero."""
+        from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
+        from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScore
+        from paper.equipment_anomaly_detection.routing_paper import PolicyBundle, PolicyRoute
+        names = FROZEN_EXP449_CONFIG.smoke_datasets
+        empty = RouteLanes(frozenset(), frozenset(), frozenset())
+        hard = RouteLanes(frozenset({0}), frozenset(), frozenset())
+        route = HardRouteResult(
+            empty, frozenset(), frozenset(), frozenset({0}), hard,
+            SourceExpansion(frozenset(), frozenset()), hard, frozenset(), hard,
+            frozenset(), frozenset({0}), 2,
+        )
+        strengths = {name: np.asarray((0.0, 1.0 / 3.0)) for name in names}
+        scores = {name: np.asarray((0.5, 0.16666666666666669)) for name in names}
+        policies = PolicyBundle(tuple(
+            PolicyRoute(policy, {name: frozenset({0}) for name in names}, strengths, scores)
+            for policy in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
+        ))
+        original = self.fixture_b.score
+        return ProposalScore(
+            original.raw, original.sources, {name: route for name in names},
+            replace(original.low_frequency, hard_lanes={name: frozenset({0}) for name in names}),
+            original.stability, policies, original.backend, original.stage_seconds,
+        )
+
     def test_complete_independent_roots_require_exact_coordinates_and_bounded_scores(self) -> None:
         """Dropping a policy, comparing out of catalog order, or skipping Candidate C must fail."""
         comparison = self._compare()
@@ -841,7 +891,9 @@ class Exp449SmokeComparisonTests(unittest.TestCase):
                 compare_exp449_smokes_antigravity(self.root_a, self.root_b, crossed)
 
     def test_comparison_rejects_hard_linked_scientific_shard(self) -> None:
-        """A byte-equal shard must still have independent file identity."""
+        """Roots first verify independently; cross-run then rejects shared shard inode."""
+        verify_exp449_proposal_antigravity(self.root_a, context=self.fixture_a.context, catalog=self.fixture_a.catalog)
+        verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
         manifest_a = json.loads((self.root_a / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
         manifest_b = json.loads((self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
         shard_a = self.root_a / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / manifest_a["entries"][0]["relative_path"]
@@ -851,35 +903,22 @@ class Exp449SmokeComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "inode|hard link"):
             self._compare()
 
-    def test_comparison_rejects_reused_task45_checkpoint(self) -> None:
-        """A Task4/5 record from Smoke A cannot be reused by Smoke B."""
+    def test_checkpoint_copy_is_rejected_by_root_bound_verification_before_comparison(self) -> None:
+        """Checkpoint copies cannot independently verify, so the file-inode gate is the cross-run proof."""
         manifest_a = json.loads((self.root_a / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
         manifest_b = json.loads((self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
         checkpoint_a = self.root_a / manifest_a["task45_checkpoints"][0]["relative_path"]
         checkpoint_b = self.root_b / manifest_b["task45_checkpoints"][0]["relative_path"]
         checkpoint_b.write_bytes(checkpoint_a.read_bytes())
         with self.assertRaisesRegex(ValueError, "checkpoint|authority"):
-            self._compare()
+            verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
 
-    def test_comparison_rejects_coordinate_score_and_tie_tamper_before_cross_run_acceptance(self) -> None:
-        """One changed alert, score, or equal-score relation cannot be hidden by descriptor bytes."""
-        manifest_path = self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
-        manifest = json.loads(manifest_path.read_text())
-        shard_path = manifest_path.parent / manifest["entries"][0]["relative_path"]
-        original = shard_path.read_bytes()
-        cases = (
-            ("coordinate", lambda shard: shard["scientific_payload"]["policies"][0].__setitem__("alerts", [0])),
-            ("score", lambda shard: shard["scientific_payload"]["policies"][2]["scores"].__setitem__(0, 0.25)),
-            ("tie", lambda shard: shard["scientific_payload"]["policies"][1]["scores"].__setitem__(1, 0.2)),
-        )
-        for label, mutate in cases:
-            with self.subTest(label=label):
-                shard = json.loads(original)
-                mutate(shard)
-                shard_path.write_text(json.dumps(shard, sort_keys=True, separators=(",", ":")) + "\n")
-                with self.assertRaises(ValueError):
-                    self._compare()
-        shard_path.write_bytes(original)
+    def test_comparison_rejects_independently_valid_typed_coordinate_drift(self) -> None:
+        """A new typed Task4/5 route and frozen shards may verify alone but not share coordinates."""
+        self._rebuild_smoke_b(score=self._typed_coordinate_drift_score())
+        verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
+        with self.assertRaisesRegex(ValueError, "coordinates"):
+            self._compare()
 
     def test_comparison_rejects_independently_valid_score_delta_above_tolerance(self) -> None:
         """The cross-run limit is exercised only after Smoke B still passes its own verifier."""
@@ -904,71 +943,78 @@ class Exp449SmokeComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "score reproducibility"):
             self._compare()
 
-    def test_comparison_rejects_independently_valid_tie_partition_drift(self) -> None:
-        """A sub-tolerance ordering change cannot split an exact Smoke A score tie."""
+    def test_comparison_accepts_independently_valid_score_delta_within_tolerance(self) -> None:
+        """The preregistered tolerance admits a fully rebound finite scientific payload below 1e-12."""
         manifest_path = self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
         manifest = json.loads(manifest_path.read_text())
+        pvalue = 2.0 / 3.0 + 1e-13
+        score = 0.5 * (1.0 - pvalue)
         for descriptor in manifest["entries"]:
             shard_path = manifest_path.parent / descriptor["relative_path"]
             shard = json.loads(shard_path.read_text())
             for source in shard["scientific_payload"]["source_rows"]:
-                source["pvalue"] = [2.0 / 3.0, 2.0 / 3.0]
+                source["pvalue"] = [1.0, pvalue]
                 source["native_pass"] = [False, False]
             for policy in shard["scientific_payload"]["policies"]:
-                policy["scores"] = [0.16666666666666669, 0.16666666666666669]
+                policy["scores"] = [0.0, score]
                 policy["score_mask"] = [False, False]
             data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             shard_path.write_bytes(data)
             descriptor["size"] = len(data)
             descriptor["sha256"] = sha256(data).hexdigest()
-            descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.16666666666666669, 0.16666666666666669)).hexdigest()
+            descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.0, score)).hexdigest()
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
+        comparison = self._compare()
+        self.assertTrue(comparison.passed)
+        self.assertGreater(comparison.maximum_score_delta, 0.0)
+        self.assertLessEqual(comparison.maximum_score_delta, 1e-12)
+
+    def test_comparison_rejects_independently_valid_tie_partition_drift(self) -> None:
+        """A sub-tolerance ordering change cannot split an exact Smoke A score tie."""
+        def rebound(root: Path, pvalues: tuple[float, float]) -> None:
+            manifest_path = root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+            manifest = json.loads(manifest_path.read_text())
+            scores = tuple(0.5 * (1.0 - pvalue) for pvalue in pvalues)
+            for descriptor in manifest["entries"]:
+                shard_path = manifest_path.parent / descriptor["relative_path"]
+                shard = json.loads(shard_path.read_text())
+                for source in shard["scientific_payload"]["source_rows"]:
+                    source["pvalue"] = list(pvalues)
+                    source["native_pass"] = [False, False]
+                for policy in shard["scientific_payload"]["policies"]:
+                    policy["scores"] = list(scores)
+                    policy["score_mask"] = [False, False]
+                data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+                shard_path.write_bytes(data)
+                descriptor["size"] = len(data)
+                descriptor["sha256"] = sha256(data).hexdigest()
+                descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", *scores)).hexdigest()
+            manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+
+        rebound(self.root_a, (2.0 / 3.0, 2.0 / 3.0))
+        rebound(self.root_b, (2.0 / 3.0, 2.0 / 3.0 + 1e-13))
+        verify_exp449_proposal_antigravity(self.root_a, context=self.fixture_a.context, catalog=self.fixture_a.catalog)
         verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
         with self.assertRaisesRegex(ValueError, "tie relation"):
             self._compare()
 
-    def test_comparison_rejects_catalog_raw_environment_backend_seed_and_closure_mismatch(self) -> None:
-        """Only preregistered root identity may differ between independently verified smoke runs."""
-        from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import Exp449Context
-
-        cases = (
-            ("catalog", {**self.fixture_b.catalog, "catalog_sha256": "0" * 64}),
-            ("environment", {"environment": {"fixture": "other"}}),
-            ("backend", {"backend_record": {
-                **dict(self.fixture_b.context.backend_record),
-                "logical_cpu_count": 1,
-                "dataset_workers": 1,
-                "outer_execution_mode": "sequential_task4_task5",
-            }}),
-            ("seed", {"seeds_and_constants": {"seed": 9}}),
-            ("closure", {"code_closure": {"fixture_antigravity.py": "f" * 64}}),
-        )
-        for label, replacement in cases:
-            with self.subTest(label=label):
-                authority = self._authority()
-                if label == "catalog":
-                    authority["smoke_b_catalog"] = replacement
-                else:
-                    kwargs = {
-                        "experiment_id": self.fixture_b.context.experiment_id,
-                        "mode": self.fixture_b.context.mode,
-                        "run_root": self.fixture_b.context.run_root,
-                        "database_sha256": self.fixture_b.context.database_sha256,
-                        "catalog_sha256": self.fixture_b.context.catalog_sha256,
-                        "code_closure": self.fixture_b.context.code_closure,
-                        "lineage_sha256": self.fixture_b.context.lineage_sha256,
-                        "codemap_sha256": self.fixture_b.context.codemap_sha256,
-                        "interpreter": self.fixture_b.context.interpreter,
-                        "environment": self.fixture_b.context.environment,
-                        "backend_record": self.fixture_b.context.backend_record,
-                        "seeds_and_constants": self.fixture_b.context.seeds_and_constants,
-                        "historical_parity_status": self.fixture_b.context.historical_parity_status,
-                    }
-                    kwargs.update(replacement)
-                    with patch.object(contracts, "_SMOKE_ROOTS", frozenset({self.root_b.resolve()})):
-                        authority["smoke_b_context"] = Exp449Context(**kwargs)
-                with self.assertRaises(ValueError):
-                    self._compare_with_authority(authority)
+    def test_comparison_rejects_independently_valid_scientific_closure_drift(self) -> None:
+        """A genuinely rebound Smoke B environment/checkpoint/manifest cannot share closure."""
+        original = self.fixture_b.context
+        with patch.object(contracts, "_SMOKE_ROOTS", frozenset({self.root_b.resolve()})):
+            changed = Exp449Context(
+                original.experiment_id, original.mode, original.run_root, original.database_sha256,
+                original.catalog_sha256, original.code_closure, original.lineage_sha256,
+                original.codemap_sha256, original.interpreter, {"fixture": "rebound"},
+                original.backend_record, original.seeds_and_constants, original.historical_parity_status,
+            )
+        self._rebuild_smoke_b(context=changed)
+        verify_exp449_proposal_antigravity(self.root_b, context=changed, catalog=self.fixture_b.catalog)
+        authority = self._authority()
+        authority["smoke_b_context"] = changed
+        with self.assertRaisesRegex(ValueError, "scientific closure"):
+            self._compare_with_authority(authority)
 
     def _compare_with_authority(self, authority: dict[str, object]):
         from experiments.exp449_reproducible_rebaseline_antigravity.verifier_antigravity import (
@@ -982,6 +1028,12 @@ class Exp449SmokeComparisonTests(unittest.TestCase):
         """The comparison receipt belongs only to Smoke B operations after both roots verify."""
         from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
 
+        manifest_paths = tuple(
+            root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+            for root in (self.root_a, self.root_b)
+        )
+        manifest_hashes = tuple(sha256(path.read_bytes()).hexdigest() for path in manifest_paths)
+
         with self._comparison_seam(), patch.object(
             operations,
             "_SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY",
@@ -990,12 +1042,85 @@ class Exp449SmokeComparisonTests(unittest.TestCase):
             comparison = operations.record_exp449_smoke_comparison_antigravity(
                 self.root_a, self.root_b, self._authority(),
             )
+            repeated = operations.record_exp449_smoke_comparison_antigravity(
+                self.root_a, self.root_b, self._authority(),
+            )
         receipt = self.operations_b / "smoke_comparison_antigravity.json"
         self.assertTrue(comparison.passed)
+        self.assertTrue(repeated.passed)
         self.assertTrue(receipt.is_file())
+        payload = json.loads(receipt.read_text())
+        self.assertEqual(
+            set(payload),
+            {
+                "schema", "smoke_a_manifest_sha256", "smoke_b_manifest_sha256",
+                "smoke_a_coordinate_sha256", "smoke_b_coordinate_sha256",
+                "smoke_a_operations_root", "smoke_b_operations_root",
+                "smoke_a_operations_root_sha256", "smoke_b_operations_root_sha256",
+                "maximum_score_delta", "passed",
+            },
+        )
+        self.assertEqual(
+            (payload["smoke_a_manifest_sha256"], payload["smoke_b_manifest_sha256"]),
+            manifest_hashes,
+        )
+        self.assertEqual(payload["smoke_a_operations_root"], str(self.operations_a.resolve()))
+        self.assertEqual(payload["smoke_b_operations_root"], str(self.operations_b.resolve()))
+        self.assertEqual(set(payload["smoke_a_coordinate_sha256"]), {"hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable"})
+        self.assertEqual(set(payload["smoke_b_coordinate_sha256"]), {"hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable"})
+        receipt.write_text(json.dumps({**payload, "passed": False}, sort_keys=True, separators=(",", ":")) + "\n")
+        with self._comparison_seam(), patch.object(
+            operations,
+            "_SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY",
+            {(self.root_a.resolve(), self.root_b.resolve()): (self.operations_a.resolve(), self.operations_b.resolve())},
+        ):
+            with self.assertRaises(ValueError):
+                operations.record_exp449_smoke_comparison_antigravity(
+                    self.root_a, self.root_b, self._authority(),
+                )
         self.assertFalse((self.operations_a / "smoke_comparison_antigravity.json").exists())
         self.assertFalse((self.root_a / "smoke_comparison_antigravity.json").exists())
         self.assertFalse((self.root_b / "smoke_comparison_antigravity.json").exists())
+
+    def test_comparison_receipt_uses_verified_snapshot_after_both_live_roots_tamper(self) -> None:
+        """A post-snapshot path mutation must not change the compared bytes or receipt hashes."""
+        from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
+        from experiments.exp449_reproducible_rebaseline_antigravity import verifier_antigravity as verifier
+
+        manifest_paths = tuple(
+            root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+            for root in (self.root_a, self.root_b)
+        )
+        verified_hashes = tuple(sha256(path.read_bytes()).hexdigest() for path in manifest_paths)
+
+        def mutate_live_roots() -> None:
+            for root, manifest_path in zip((self.root_a, self.root_b), manifest_paths, strict=True):
+                manifest = json.loads(manifest_path.read_text())
+                shard_path = manifest_path.parent / manifest["entries"][0]["relative_path"]
+                shard = json.loads(shard_path.read_text())
+                for policy in shard["scientific_payload"]["policies"]:
+                    policy["alerts"] = [0]
+                    policy["scores"] = [0.9, 0.0]
+                    policy["score_mask"] = [True, False]
+                shard_path.write_text(json.dumps(shard, sort_keys=True, separators=(",", ":")) + "\n")
+                manifest["post_snapshot_tamper"] = root.name
+                manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+
+        with self._comparison_seam(), patch.object(
+            operations,
+            "_SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY",
+            {(self.root_a.resolve(), self.root_b.resolve()): (self.operations_a.resolve(), self.operations_b.resolve())},
+        ), patch.object(verifier, "_AFTER_SMOKE_SNAPSHOTS_ANTIGRAVITY", mutate_live_roots):
+            comparison = operations.record_exp449_smoke_comparison_antigravity(
+                self.root_a, self.root_b, self._authority(),
+            )
+        receipt = json.loads((self.operations_b / "smoke_comparison_antigravity.json").read_text())
+        self.assertTrue(comparison.passed)
+        self.assertEqual(
+            (receipt["smoke_a_manifest_sha256"], receipt["smoke_b_manifest_sha256"]),
+            verified_hashes,
+        )
+        self.assertNotEqual(tuple(sha256(path.read_bytes()).hexdigest() for path in manifest_paths), verified_hashes)
 
 
 if __name__ == "__main__":
