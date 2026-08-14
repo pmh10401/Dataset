@@ -79,7 +79,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(len(checked), len(tags))
             else:
                 self.assertEqual(len(tags), 9)
-                self.assertEqual(len(checked), 7)
+                self.assertEqual(len(checked), 9)
 
     def test_verified_candidate_truth_preserves_science_and_champion_antigravity(self) -> None:
         """Break caught: verified implementation truth claims an official result or changes science."""
