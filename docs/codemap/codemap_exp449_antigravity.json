@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T02:04:30+09:00",
-  "generated_from_commit": "527b497826942cc7893aae1ea34fd49212c19f4f",
+  "generated_at": "2026-08-15T02:19:49+09:00",
+  "generated_from_commit": "7a41dfd234fcdb8f33ee55589d32464eb4537236",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -188,24 +188,26 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Implemented parent-only Exp449 two-wave recovery, strict attempt-ledger reconciliation, permanent terminal authority, and fixed result-neutral operations progress.",
+      "role": "Implemented parent-only Exp449 two-wave recovery, result-neutral progress, and the single create-only Smoke B operations comparison receipt.",
       "entrypoints": [
         "Exp449WaveConfig",
         "task45_context_payload_antigravity",
         "run_exp449_wave_antigravity",
         "status_exp449_antigravity",
-        "verify_terminal_incomplete_antigravity"
+        "verify_terminal_incomplete_antigravity",
+        "record_exp449_smoke_comparison_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
-        "Derives paper authority only from the canonical frozen-context bridge; rejects duplicate/noncontiguous attempts and all waves outside {1,2}; terminal authority is byte-verified before status or scheduling; only its fixed operations-root callback may write result-neutral progress."
+        "Derives paper authority only from the canonical frozen-context bridge; rejects duplicate/noncontiguous attempts and all waves outside {1,2}; terminal authority is byte-verified before status or scheduling; only its fixed operations-root callback may write result-neutral progress. Smoke comparison writes only a create-only receipt in the fixed Smoke B operations root after the scorer-free verifier succeeds."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-          "symbol": "Exp449WaveConfig, run_exp449_wave_antigravity, status_exp449_antigravity"
+          "symbol": "Exp449WaveConfig, run_exp449_wave_antigravity, status_exp449_antigravity, record_exp449_smoke_comparison_antigravity"
         }
       ],
       "callers": [
@@ -213,33 +215,34 @@
         "future run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "revalidates full success and complete attempt records before status/scheduling, makes a matching wave-2 terminal permanent, and receives per-dataset Task4/5 progress through the runner private seam without changing scientific composition"
+        "revalidates full success and complete attempt records before status/scheduling, makes a matching wave-2 terminal permanent, receives per-dataset Task4/5 progress through the runner private seam, and records a verified Smoke A/B receipt only in Smoke B operations"
       ]
     },
     {
       "id": "exp449_verifier",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root verifier.",
+      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root and Smoke A/B reproducibility verifier.",
       "entrypoints": [
-        "verify_exp449_proposal_antigravity"
+        "verify_exp449_proposal_antigravity",
+        "compare_exp449_smokes_antigravity"
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
-        "Imports only Exp449 contracts/artifact validation and canonical JSON support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules."
+        "Imports only Exp449 config/contracts/validation and canonical JSON/Numpy support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules. Both roots must independently verify before cross-run comparison; only run-root identity may differ."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-          "symbol": "verify_exp449_proposal_root_antigravity"
+          "symbol": "verify_exp449_proposal_antigravity, compare_exp449_smokes_antigravity"
         }
       ],
       "callers": [
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "uses only validation_antigravity plus immutable contracts to reject invalid outer/root inventory and semantic tamper."
+        "uses only validation_antigravity plus immutable contracts to reject invalid outer/root inventory and semantic tamper, then rejects shared root declarations, inodes, checkpoint reuse, closure mismatch, policy-coordinate drift, score/tie drift, and deltas above 1e-12."
       ]
     },
     {
@@ -295,9 +298,10 @@
     {
       "id": "exp449_manifest_verifier_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
-      "role": "Task 5 red-green tests for Exp449 outer-manifest publication, tamper rejection, strict inventory, serializer parity, static verifier imports, label firewall, and resumed byte equality.",
+      "role": "Task 5/6 red-green tests for Exp449 outer-manifest publication and independent Smoke A/B reproducibility verification.",
       "entrypoints": [
-        "Exp449ManifestVerifierTests"
+        "Exp449ManifestVerifierTests",
+        "Exp449SmokeComparisonTests"
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
@@ -308,14 +312,14 @@
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
-          "symbol": "Exp449ManifestVerifierTests"
+          "symbol": "Exp449ManifestVerifierTests, Exp449SmokeComparisonTests"
         }
       ],
       "callers": [
         "unittest"
       ],
       "effects": [
-        "proves genuine paper test-published Task4/5 checkpoint binding, zero/deleted checkpoint inventory rejection, promotion demotion rejection, nonempty promotion acceptance, root-normalized restart equivalence, continuous-score, and semantic tamper rejection."
+        "proves genuine paper test-published Task4/5 checkpoint binding, semantic tamper rejection, and two complete temporary smoke roots with no shared inode/checkpoint; it rejects root/closure/coordinate/score/tie tamper and permits a receipt only in temporary Smoke B operations."
       ]
     },
     {
@@ -2028,6 +2032,15 @@
       "kind": "tests"
     },
     {
+      "from": "exp449_operations",
+      "to": "exp449_verifier",
+      "kind": "calls_after_independent_verification",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "symbol": "record_exp449_smoke_comparison_antigravity -> _smoke_comparison_evidence_antigravity"
+      }
+    },
+    {
       "from": "exp449_verifier",
       "to": "exp449_validation",
       "kind": "imports"
@@ -2081,7 +2094,7 @@
         "exp449_runner_recovery_tests",
         "exp449_manifest_verifier_tests"
       ],
-      "outcome": "Future implementation is constrained to values-only proposal work with no run-root creation in Task 1."
+      "outcome": "Values-only proposal work remains label-free; Task 6 independently verifies both fixed smoke roots and writes its receipt only in Smoke B operations after exact all-policy reproducibility checks."
     }
   ],
   "unknown_relationships": [],

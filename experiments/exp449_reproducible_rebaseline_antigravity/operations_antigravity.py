@@ -28,6 +28,7 @@ from .runner_antigravity import compose_exp449_proposal_score_antigravity
 
 _TERMINAL_NAME = "proposal_score_incomplete_antigravity.json"
 _PROGRESS_NAME = "operations_progress_antigravity.jsonl"
+_SMOKE_COMPARISON_NAME = "smoke_comparison_antigravity.json"
 _TERMINAL_SCHEMA = "exp449-proposal-score-incomplete-antigravity.v1"
 _PROGRESS_KEYS = frozenset(
     {
@@ -45,6 +46,15 @@ _PROGRESS_KEYS = frozenset(
 )
 _REQUIRED_PROGRESS_KEYS = _PROGRESS_KEYS - {"dataset"}
 _FORBIDDEN_PROGRESS_KEYS = frozenset({"label", "labels", "score", "scores", "p_value", "p_values", "rank", "ranks", "coordinate", "coordinates"})
+_SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY = {
+    (
+        FROZEN_EXP449_CONFIG.smoke_a_scientific_root.resolve(strict=False),
+        FROZEN_EXP449_CONFIG.smoke_b_scientific_root.resolve(strict=False),
+    ): (
+        FROZEN_EXP449_CONFIG.smoke_a_operations_root.resolve(strict=False),
+        FROZEN_EXP449_CONFIG.smoke_b_operations_root.resolve(strict=False),
+    ),
+}
 
 
 class _Task45ContextPayloadAntigravity(dict[str, object]):
@@ -459,9 +469,49 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
     return status
 
 
+def _smoke_operations_roots_antigravity(root_a: Path, root_b: Path) -> tuple[Path, Path]:
+    """Return the sole fixed operations authorities for an approved smoke pair."""
+    try:
+        operations_a, operations_b = _SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY[
+            (Path(root_a).resolve(strict=False), Path(root_b).resolve(strict=False))
+        ]
+    except KeyError as error:
+        raise ValueError("Exp449 smoke operations authority differs") from error
+    if operations_a == operations_b or operations_a in operations_b.parents or operations_b in operations_a.parents:
+        raise ValueError("Exp449 smoke operations roots must be independent")
+    return operations_a, operations_b
+
+
+def record_exp449_smoke_comparison_antigravity(root_a: Path, root_b: Path, authority: object):
+    """Create the one Smoke B operations receipt after independent comparison.
+
+    The verifier is imported only here, after operations has been imported; the
+    verifier itself therefore remains a fresh scorer-free inspection boundary.
+    """
+    from .verifier_antigravity import _smoke_comparison_evidence_antigravity
+
+    comparison, payload = _smoke_comparison_evidence_antigravity(root_a, root_b, authority)
+    operations_a, operations_b = _smoke_operations_roots_antigravity(root_a, root_b)
+    payload = dict(payload)
+    payload.update({
+        "smoke_a_operations_root": str(operations_a),
+        "smoke_b_operations_root": str(operations_b),
+        "smoke_a_operations_root_sha256": sha256(canonical_json_bytes({"root": str(operations_a)})).hexdigest(),
+        "smoke_b_operations_root_sha256": sha256(canonical_json_bytes({"root": str(operations_b)})).hexdigest(),
+    })
+    _mkdirs_without_symlinks_antigravity(operations_b)
+    write_create_only(
+        operations_b / _SMOKE_COMPARISON_NAME,
+        canonical_json_bytes(payload),
+        reuse_identical=True,
+    )
+    return comparison
+
+
 __all__ = [
     "Exp449WaveConfig",
     "run_exp449_wave_antigravity",
+    "record_exp449_smoke_comparison_antigravity",
     "status_exp449_antigravity",
     "task45_context_payload_antigravity",
     "verify_terminal_incomplete_antigravity",

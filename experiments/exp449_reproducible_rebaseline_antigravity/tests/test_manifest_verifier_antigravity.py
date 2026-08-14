@@ -6,6 +6,7 @@ import ast
 from contextlib import ExitStack
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -766,6 +767,235 @@ print('fresh-import-ok')
         result = subprocess.run([sys.executable, "-c", child], text=True, capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "fresh-import-ok")
+
+
+class Exp449SmokeComparisonTests(unittest.TestCase):
+    """Task 6 smoke fixtures keep both complete scientific roots independent."""
+
+    def setUp(self) -> None:
+        self.directory = TemporaryDirectory(dir=Path.cwd())
+        base = Path(self.directory.name)
+        self.root_a = base / "smoke_a_scientific_antigravity"
+        self.root_b = base / "smoke_b_scientific_antigravity"
+        self.operations_a = base / "smoke_a_operations_antigravity"
+        self.operations_b = base / "smoke_b_operations_antigravity"
+        self.fixture_a = _TypedProposalFixtureAntigravity(self.root_a)
+        self.fixture_b = _TypedProposalFixtureAntigravity(self.root_b)
+        Exp449ManifestVerifierTests._publish_real_task45_checkpoints(self.fixture_a, self.root_a)
+        Exp449ManifestVerifierTests._publish_real_task45_checkpoints(self.fixture_b, self.root_b)
+        freeze_exp449_proposal_antigravity(
+            self.fixture_a.score, root=self.root_a, context=self.fixture_a.context, catalog=self.fixture_a.catalog,
+        )
+        freeze_exp449_proposal_antigravity(
+            self.fixture_b.score, root=self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog,
+        )
+
+    def tearDown(self) -> None:
+        self.directory.cleanup()
+
+    def _authority(self) -> dict[str, object]:
+        return {
+            "smoke_a_context": self.fixture_a.context,
+            "smoke_a_catalog": self.fixture_a.catalog,
+            "smoke_b_context": self.fixture_b.context,
+            "smoke_b_catalog": self.fixture_b.catalog,
+        }
+
+    def _comparison_seam(self):
+        from experiments.exp449_reproducible_rebaseline_antigravity import verifier_antigravity as verifier
+
+        return patch.object(
+            verifier,
+            "_SMOKE_ROOT_PAIRS_ANTIGRAVITY",
+            ((self.root_a.resolve(), self.root_b.resolve()),),
+        )
+
+    def _compare(self):
+        from experiments.exp449_reproducible_rebaseline_antigravity.verifier_antigravity import (
+            compare_exp449_smokes_antigravity,
+        )
+
+        with self._comparison_seam():
+            return compare_exp449_smokes_antigravity(self.root_a, self.root_b, self._authority())
+
+    def test_complete_independent_roots_require_exact_coordinates_and_bounded_scores(self) -> None:
+        """Dropping a policy, comparing out of catalog order, or skipping Candidate C must fail."""
+        comparison = self._compare()
+        self.assertTrue(comparison.passed)
+        self.assertTrue(comparison.coordinate_identity)
+        self.assertEqual(comparison.compared_dataset_count, len(FROZEN_EXP449_CONFIG.smoke_datasets))
+        self.assertLessEqual(comparison.maximum_score_delta, 1e-12)
+
+    def test_comparison_rejects_same_root_and_cross_root_context_declaration(self) -> None:
+        """A run cannot certify itself or declare the peer's scientific root."""
+        from experiments.exp449_reproducible_rebaseline_antigravity.verifier_antigravity import (
+            compare_exp449_smokes_antigravity,
+        )
+
+        with self._comparison_seam():
+            with self.assertRaisesRegex(ValueError, "distinct"):
+                compare_exp449_smokes_antigravity(self.root_a, self.root_a, self._authority())
+            crossed = self._authority()
+            crossed["smoke_b_context"] = self.fixture_a.context
+            with self.assertRaisesRegex(ValueError, "root"):
+                compare_exp449_smokes_antigravity(self.root_a, self.root_b, crossed)
+
+    def test_comparison_rejects_hard_linked_scientific_shard(self) -> None:
+        """A byte-equal shard must still have independent file identity."""
+        manifest_a = json.loads((self.root_a / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
+        manifest_b = json.loads((self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
+        shard_a = self.root_a / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / manifest_a["entries"][0]["relative_path"]
+        shard_b = self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / manifest_b["entries"][0]["relative_path"]
+        shard_b.unlink()
+        os.link(shard_a, shard_b)
+        with self.assertRaisesRegex(ValueError, "inode|hard link"):
+            self._compare()
+
+    def test_comparison_rejects_reused_task45_checkpoint(self) -> None:
+        """A Task4/5 record from Smoke A cannot be reused by Smoke B."""
+        manifest_a = json.loads((self.root_a / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
+        manifest_b = json.loads((self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json").read_text())
+        checkpoint_a = self.root_a / manifest_a["task45_checkpoints"][0]["relative_path"]
+        checkpoint_b = self.root_b / manifest_b["task45_checkpoints"][0]["relative_path"]
+        checkpoint_b.write_bytes(checkpoint_a.read_bytes())
+        with self.assertRaisesRegex(ValueError, "checkpoint|authority"):
+            self._compare()
+
+    def test_comparison_rejects_coordinate_score_and_tie_tamper_before_cross_run_acceptance(self) -> None:
+        """One changed alert, score, or equal-score relation cannot be hidden by descriptor bytes."""
+        manifest_path = self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+        manifest = json.loads(manifest_path.read_text())
+        shard_path = manifest_path.parent / manifest["entries"][0]["relative_path"]
+        original = shard_path.read_bytes()
+        cases = (
+            ("coordinate", lambda shard: shard["scientific_payload"]["policies"][0].__setitem__("alerts", [0])),
+            ("score", lambda shard: shard["scientific_payload"]["policies"][2]["scores"].__setitem__(0, 0.25)),
+            ("tie", lambda shard: shard["scientific_payload"]["policies"][1]["scores"].__setitem__(1, 0.2)),
+        )
+        for label, mutate in cases:
+            with self.subTest(label=label):
+                shard = json.loads(original)
+                mutate(shard)
+                shard_path.write_text(json.dumps(shard, sort_keys=True, separators=(",", ":")) + "\n")
+                with self.assertRaises(ValueError):
+                    self._compare()
+        shard_path.write_bytes(original)
+
+    def test_comparison_rejects_independently_valid_score_delta_above_tolerance(self) -> None:
+        """The cross-run limit is exercised only after Smoke B still passes its own verifier."""
+        manifest_path = self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+        manifest = json.loads(manifest_path.read_text())
+        for descriptor in manifest["entries"]:
+            shard_path = manifest_path.parent / descriptor["relative_path"]
+            shard = json.loads(shard_path.read_text())
+            for source in shard["scientific_payload"]["source_rows"]:
+                source["pvalue"] = [0.5, 2.0 / 3.0]
+                source["native_pass"] = [False, False]
+            for policy in shard["scientific_payload"]["policies"]:
+                policy["scores"] = [0.25, 0.16666666666666669]
+                policy["score_mask"] = [False, False]
+            data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            shard_path.write_bytes(data)
+            descriptor["size"] = len(data)
+            descriptor["sha256"] = sha256(data).hexdigest()
+            descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.25, 0.16666666666666669)).hexdigest()
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
+        with self.assertRaisesRegex(ValueError, "score reproducibility"):
+            self._compare()
+
+    def test_comparison_rejects_independently_valid_tie_partition_drift(self) -> None:
+        """A sub-tolerance ordering change cannot split an exact Smoke A score tie."""
+        manifest_path = self.root_b / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+        manifest = json.loads(manifest_path.read_text())
+        for descriptor in manifest["entries"]:
+            shard_path = manifest_path.parent / descriptor["relative_path"]
+            shard = json.loads(shard_path.read_text())
+            for source in shard["scientific_payload"]["source_rows"]:
+                source["pvalue"] = [2.0 / 3.0, 2.0 / 3.0]
+                source["native_pass"] = [False, False]
+            for policy in shard["scientific_payload"]["policies"]:
+                policy["scores"] = [0.16666666666666669, 0.16666666666666669]
+                policy["score_mask"] = [False, False]
+            data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            shard_path.write_bytes(data)
+            descriptor["size"] = len(data)
+            descriptor["sha256"] = sha256(data).hexdigest()
+            descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.16666666666666669, 0.16666666666666669)).hexdigest()
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        verify_exp449_proposal_antigravity(self.root_b, context=self.fixture_b.context, catalog=self.fixture_b.catalog)
+        with self.assertRaisesRegex(ValueError, "tie relation"):
+            self._compare()
+
+    def test_comparison_rejects_catalog_raw_environment_backend_seed_and_closure_mismatch(self) -> None:
+        """Only preregistered root identity may differ between independently verified smoke runs."""
+        from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import Exp449Context
+
+        cases = (
+            ("catalog", {**self.fixture_b.catalog, "catalog_sha256": "0" * 64}),
+            ("environment", {"environment": {"fixture": "other"}}),
+            ("backend", {"backend_record": {
+                **dict(self.fixture_b.context.backend_record),
+                "logical_cpu_count": 1,
+                "dataset_workers": 1,
+                "outer_execution_mode": "sequential_task4_task5",
+            }}),
+            ("seed", {"seeds_and_constants": {"seed": 9}}),
+            ("closure", {"code_closure": {"fixture_antigravity.py": "f" * 64}}),
+        )
+        for label, replacement in cases:
+            with self.subTest(label=label):
+                authority = self._authority()
+                if label == "catalog":
+                    authority["smoke_b_catalog"] = replacement
+                else:
+                    kwargs = {
+                        "experiment_id": self.fixture_b.context.experiment_id,
+                        "mode": self.fixture_b.context.mode,
+                        "run_root": self.fixture_b.context.run_root,
+                        "database_sha256": self.fixture_b.context.database_sha256,
+                        "catalog_sha256": self.fixture_b.context.catalog_sha256,
+                        "code_closure": self.fixture_b.context.code_closure,
+                        "lineage_sha256": self.fixture_b.context.lineage_sha256,
+                        "codemap_sha256": self.fixture_b.context.codemap_sha256,
+                        "interpreter": self.fixture_b.context.interpreter,
+                        "environment": self.fixture_b.context.environment,
+                        "backend_record": self.fixture_b.context.backend_record,
+                        "seeds_and_constants": self.fixture_b.context.seeds_and_constants,
+                        "historical_parity_status": self.fixture_b.context.historical_parity_status,
+                    }
+                    kwargs.update(replacement)
+                    with patch.object(contracts, "_SMOKE_ROOTS", frozenset({self.root_b.resolve()})):
+                        authority["smoke_b_context"] = Exp449Context(**kwargs)
+                with self.assertRaises(ValueError):
+                    self._compare_with_authority(authority)
+
+    def _compare_with_authority(self, authority: dict[str, object]):
+        from experiments.exp449_reproducible_rebaseline_antigravity.verifier_antigravity import (
+            compare_exp449_smokes_antigravity,
+        )
+
+        with self._comparison_seam():
+            return compare_exp449_smokes_antigravity(self.root_a, self.root_b, authority)
+
+    def test_operations_writes_only_create_only_smoke_b_comparison_artifact(self) -> None:
+        """The comparison receipt belongs only to Smoke B operations after both roots verify."""
+        from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
+
+        with self._comparison_seam(), patch.object(
+            operations,
+            "_SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY",
+            {(self.root_a.resolve(), self.root_b.resolve()): (self.operations_a.resolve(), self.operations_b.resolve())},
+        ):
+            comparison = operations.record_exp449_smoke_comparison_antigravity(
+                self.root_a, self.root_b, self._authority(),
+            )
+        receipt = self.operations_b / "smoke_comparison_antigravity.json"
+        self.assertTrue(comparison.passed)
+        self.assertTrue(receipt.is_file())
+        self.assertFalse((self.operations_a / "smoke_comparison_antigravity.json").exists())
+        self.assertFalse((self.root_a / "smoke_comparison_antigravity.json").exists())
+        self.assertFalse((self.root_b / "smoke_comparison_antigravity.json").exists())
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 {
-  "current_commit": "527b497826942cc7893aae1ea34fd49212c19f4f",
+  "current_commit": "7a41dfd234fcdb8f33ee55589d32464eb4537236",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-15T02:04:30+09:00",
+  "generated_at": "2026-08-15T02:19:49+09:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -33,16 +33,18 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
+    "root": "1e5877b65d76e7e7144962b2d7d2037e46b1612d66f1d9d61a7da4a7e5f52192",
     ".superpowers": "a7e4ca2c671dde5eb461e27a66439a175a8ddc47f5cbc930724b807a509ea65c",
     "docs": "e2fe0edc179d55d3160fcf102ccd681fd3807759a5f0b075ca2469b5c604915e",
-    "experiments": "5d4a2bb1e6678451b3db508e9d85b9b6ea1db60d70abcace84d1857eb704e687",
+    "experiments": "0392f17c3745039c6ed8b4ddd4921c387db36173597fbd9e7ec7df76192ad402",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "440e37698659b2e194dd44e00809e23baf14c425c44e3484d23d799a2538541d",
     "reports": "ea0adf1fa41b3acf6fc660bdf05d8a76816e9c11dc507b681db86c225c32a350",
     "scratch": "beb849c84d3ed243943bba52722818474a6a9b8ae970eabc8c564fa427b1a3c9",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
-    "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d",
-    "root": "1e5877b65d76e7e7144962b2d7d2037e46b1612d66f1d9d61a7da4a7e5f52192"
+    "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
-  "changed_modules_since_prior_lock": []
+  "changed_modules_since_prior_lock": [
+    "experiments"
+  ]
 }
