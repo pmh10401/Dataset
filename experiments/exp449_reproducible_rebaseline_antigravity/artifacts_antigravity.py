@@ -349,6 +349,29 @@ def _task45_checkpoint_descriptors_antigravity(root: Path) -> tuple[Exp449Checkp
     return tuple(descriptors)
 
 
+def _require_complete_task45_success_inventory_antigravity(
+    checkpoints: tuple[Exp449CheckpointDescriptor, ...], names: tuple[str, ...],
+) -> None:
+    """Require parent-published Task4/5 success authority before proposal freeze."""
+    successes = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-success.v1")
+    attempts = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-attempt.v1")
+    expected_success = {
+        dataset: f"stage_artifacts_paper/proposal_work/task4_task5_success/{sha256(dataset.encode()).hexdigest()}_antigravity/task4_task5_success_antigravity.json"
+        for dataset in names
+    }
+    if len(checkpoints) != len(successes) + len(attempts) or len(successes) != len(names) or {item.dataset for item in successes} != set(names) or any(
+        type(item.dataset) is not str or item.relative_path != expected_success[item.dataset]
+        for item in successes
+    ):
+        raise ValueError("Exp449 Task4/5 success checkpoint inventory differs")
+    expected_attempts = tuple(
+        f"stage_artifacts_paper/proposal_work/task4_task5_attempts/attempt_{index:06d}_antigravity.json"
+        for index in range(1, len(attempts) + 1)
+    )
+    if tuple(item.relative_path for item in attempts) != expected_attempts:
+        raise ValueError("Exp449 Task4/5 attempt checkpoint inventory differs")
+
+
 def freeze_exp449_proposal_antigravity(score: object, *, root: Path, context: Exp449Context, catalog: dict[str, object]) -> Exp449ProposalManifest:
     """Create only Exp449 typed shards and the one independently verifiable manifest."""
     root = _root_for_context_antigravity(root, context)
@@ -358,6 +381,8 @@ def freeze_exp449_proposal_antigravity(score: object, *, root: Path, context: Ex
     required = ("raw", "sources", "routes", "low_frequency", "stability", "policies", "backend")
     if any(not hasattr(score, name) for name in required) or score.backend.artifact_record() != _plain_antigravity(context.backend_record):
         raise ValueError("Exp449 typed score authority differs")
+    checkpoints = _task45_checkpoint_descriptors_antigravity(root)
+    _require_complete_task45_success_inventory_antigravity(checkpoints, names)
     entries: list[Exp449ShardDescriptor] = []
     for dataset in names:
         entry = _entry_for_dataset_antigravity(catalog, dataset)
@@ -368,7 +393,6 @@ def freeze_exp449_proposal_antigravity(score: object, *, root: Path, context: Ex
         path = _freeze_root_antigravity(root) / relative
         _write_create_only_antigravity(path, canonical_json_bytes(envelope), reuse_identical=True)
         entries.append(Exp449ShardDescriptor(dataset, relative, path.stat().st_size, _sha256_antigravity(path.read_bytes()), _SHARD_SCHEMA, coordinates, candidate_digest))
-    checkpoints = _task45_checkpoint_descriptors_antigravity(root)
     manifest = Exp449ProposalManifest(_MANIFEST_SCHEMA, context_sha256_antigravity(context), context.catalog_sha256, context.backend_record, tuple(entries), "not_used", checkpoints)
     payload = _manifest_payload_antigravity(manifest)
     _write_create_only_antigravity(_freeze_root_antigravity(root) / _MANIFEST_NAME, canonical_json_bytes(payload), reuse_identical=True)

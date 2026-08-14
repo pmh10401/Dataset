@@ -301,7 +301,10 @@ def _scientific(value: object, entry: Mapping[str, object], automatic_override: 
     if set(indices["minimum_two"]) & set().union(*(set(item) for item in exp137.values())): raise ValueError("Exp449 source expansion route overlap differs")
     exp236,exp253=lanes["exp236"],lanes["exp253"]
     if set(exp236["hard"]) != set(exp137["hard"]) | set(indices["minimum_three"]) or set(exp236["standard"]) != set(exp137["standard"]) | (set(indices["minimum_two"])-set(indices["minimum_three"])) or exp236["priority"] != exp137["priority"]: raise ValueError("Exp449 Exp236 route relation differs")
-    if set(exp253["hard"]) - set(exp236["hard"]) != set(exp236["standard"]) - set(exp253["standard"]) or exp253["priority"] != exp236["priority"]: raise ValueError("Exp449 promotion algebra differs")
+    exp236_hard, exp253_hard = set(exp236["hard"]), set(exp253["hard"])
+    exp236_standard, exp253_standard = set(exp236["standard"]), set(exp253["standard"])
+    if not exp236_hard <= exp253_hard or not exp253_standard <= exp236_standard or exp253_hard - exp236_hard != exp236_standard - exp253_standard or exp253["priority"] != exp236["priority"]:
+        raise ValueError("Exp449 promotion algebra differs")
     automatic=_integer_list(exp253["hard"] if automatic_override is None else automatic_override,n,"hard alerts")
     provisional=_low_provisional(value["low_frequency_rows"],n)
     stability=value["stability"]
@@ -399,7 +402,9 @@ def _task45_payload(value: object, entry: Mapping[str, object]) -> dict[str, obj
     lanes={name:_lanes(route[name],n_test,f"Task4/5 {name}") for name in ("exp74d","exp137","exp236","exp253")}
     values={name:_integer_list(route[name],n_test,f"Task4/5 {name}") for name in ("exp89","exp90","exp93","promoted","exact_normal_removed","automatic_hard")}
     minimum_two=_integer_list(route["exp234"]["minimum_two"],n_test,"Task4/5 minimum two"); minimum_three=_integer_list(route["exp234"]["minimum_three"],n_test,"Task4/5 minimum three")
-    if not set(lanes["exp74d"]["hard"]) <= set(values["exp89"]) or not set(values["exp89"]) <= set(values["exp90"]) or not (set(lanes["exp137"]["hard"]) | set(lanes["exp137"]["standard"])) <= set(values["exp93"]) or not set(minimum_three) <= set(minimum_two) or set(minimum_two) & set().union(*(set(item) for item in lanes["exp137"].values())) or set(lanes["exp236"]["hard"]) != set(lanes["exp137"]["hard"]) | set(minimum_three) or set(lanes["exp236"]["standard"]) != set(lanes["exp137"]["standard"]) | (set(minimum_two) - set(minimum_three)) or lanes["exp236"]["priority"] != lanes["exp137"]["priority"] or not set(values["promoted"]) <= set(lanes["exp236"]["standard"]) or set(lanes["exp253"]["hard"]) != set(lanes["exp236"]["hard"]) | set(values["promoted"]) or set(lanes["exp253"]["standard"]) != set(lanes["exp236"]["standard"]) - set(values["promoted"]) or set(lanes["exp253"]["hard"]) - set(lanes["exp236"]["hard"]) != set(lanes["exp236"]["standard"]) - set(lanes["exp253"]["standard"]) or lanes["exp253"]["priority"] != lanes["exp236"]["priority"] or not set(values["exact_normal_removed"]) <= set(lanes["exp253"]["hard"]) or set(values["automatic_hard"]) != set(lanes["exp253"]["hard"]) - set(values["exact_normal_removed"]):
+    exp236_hard, exp253_hard = set(lanes["exp236"]["hard"]), set(lanes["exp253"]["hard"])
+    exp236_standard, exp253_standard = set(lanes["exp236"]["standard"]), set(lanes["exp253"]["standard"])
+    if not set(lanes["exp74d"]["hard"]) <= set(values["exp89"]) or not set(values["exp89"]) <= set(values["exp90"]) or not (set(lanes["exp137"]["hard"]) | set(lanes["exp137"]["standard"])) <= set(values["exp93"]) or not set(minimum_three) <= set(minimum_two) or set(minimum_two) & set().union(*(set(item) for item in lanes["exp137"].values())) or exp236_hard != set(lanes["exp137"]["hard"]) | set(minimum_three) or exp236_standard != set(lanes["exp137"]["standard"]) | (set(minimum_two) - set(minimum_three)) or lanes["exp236"]["priority"] != lanes["exp137"]["priority"] or not set(values["promoted"]) <= exp236_standard or exp253_hard != exp236_hard | set(values["promoted"]) or exp253_standard != exp236_standard - set(values["promoted"]) or not exp236_hard <= exp253_hard or not exp253_standard <= exp236_standard or exp253_hard - exp236_hard != exp236_standard - exp253_standard or lanes["exp253"]["priority"] != lanes["exp236"]["priority"] or not set(values["exact_normal_removed"]) <= exp253_hard or set(values["automatic_hard"]) != exp253_hard - set(values["exact_normal_removed"]):
         raise ValueError("Exp449 Task4/5 route algebra differs")
     return route
 
@@ -461,29 +466,28 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
     declared={f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{_MANIFEST_NAME}"}
     checkpoints = tuple(manifest.task45_checkpoints)
     checkpoint_routes: dict[str, dict[str, object]] = {}
-    if checkpoints:
-        success = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-success.v1")
-        attempts = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-attempt.v1")
-        expected_success = {
-            dataset: f"stage_artifacts_paper/proposal_work/task4_task5_success/{sha256(dataset.encode()).hexdigest()}_antigravity/task4_task5_success_antigravity.json"
-            for dataset in names
-        }
-        if len(success) != len(names) or {item.dataset for item in success} != set(names) or any(type(item.dataset) is not str or item.relative_path != expected_success[item.dataset] for item in success):
-            raise ValueError("Exp449 Task4/5 success checkpoint path differs")
-        expected_attempts = tuple(
-            f"stage_artifacts_paper/proposal_work/task4_task5_attempts/attempt_{index:06d}_antigravity.json"
-            for index in range(1, len(attempts) + 1)
-        )
-        if tuple(item.relative_path for item in attempts) != expected_attempts:
-            raise ValueError("Exp449 Task4/5 attempt checkpoint inventory differs")
-        attempt_ordinals = {item.relative_path: index for index, item in enumerate(attempts, 1)}
-        for descriptor in checkpoints:
-            rel=descriptor.relative_path; declared.add(rel); path=root/rel; details=_lstat(path)
-            if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
-            route = _checkpoint(_strict(path), descriptor, context, catalog, attempt_ordinal=attempt_ordinals.get(rel))
-            if route is not None:
-                assert descriptor.dataset is not None
-                checkpoint_routes[descriptor.dataset] = route
+    success = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-success.v1")
+    attempts = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-attempt.v1")
+    expected_success = {
+        dataset: f"stage_artifacts_paper/proposal_work/task4_task5_success/{sha256(dataset.encode()).hexdigest()}_antigravity/task4_task5_success_antigravity.json"
+        for dataset in names
+    }
+    if len(checkpoints) != len(success) + len(attempts) or len(success) != len(names) or {item.dataset for item in success} != set(names) or any(type(item.dataset) is not str or item.relative_path != expected_success[item.dataset] for item in success):
+        raise ValueError("Exp449 Task4/5 success checkpoint inventory differs")
+    expected_attempts = tuple(
+        f"stage_artifacts_paper/proposal_work/task4_task5_attempts/attempt_{index:06d}_antigravity.json"
+        for index in range(1, len(attempts) + 1)
+    )
+    if tuple(item.relative_path for item in attempts) != expected_attempts:
+        raise ValueError("Exp449 Task4/5 attempt checkpoint inventory differs")
+    attempt_ordinals = {item.relative_path: index for index, item in enumerate(attempts, 1)}
+    for descriptor in checkpoints:
+        rel=descriptor.relative_path; declared.add(rel); path=root/rel; details=_lstat(path)
+        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
+        route = _checkpoint(_strict(path), descriptor, context, catalog, attempt_ordinal=attempt_ordinals.get(rel))
+        if route is not None:
+            assert descriptor.dataset is not None
+            checkpoint_routes[descriptor.dataset] = route
     global_candidates: list[tuple[float,float,str,int]] = []
     selected_coordinates: list[tuple[str,int]] = []
     for descriptor in manifest.entries:

@@ -31,6 +31,9 @@ from experiments.exp449_reproducible_rebaseline_antigravity.artifacts_antigravit
     freeze_exp449_proposal_antigravity,
     validate_exp449_catalog_antigravity,
 )
+from experiments.exp449_reproducible_rebaseline_antigravity.validation_antigravity import (
+    validate_exp449_proposal_shard_antigravity,
+)
 from experiments.exp449_reproducible_rebaseline_antigravity.verifier_antigravity import (
     verify_exp449_proposal_antigravity,
 )
@@ -130,6 +133,12 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         self.directory.cleanup()
 
     def _freeze(self):
+        # A Task5 freeze models the production parent publisher: every catalog
+        # dataset has one real, typed Task4/5 success before Task6--7 shards
+        # can be made immutable.  Explicit callers may publish a different
+        # valid route first; create-only reuse preserves that authority.
+        if not (self.root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_success").exists():
+            self._publish_real_task45_checkpoints(self.fixture, self.root)
         return freeze_exp449_proposal_antigravity(
             self.fixture.score, root=self.root, context=self.fixture.context, catalog=self.fixture.catalog,
         )
@@ -239,7 +248,26 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         self.assertEqual(tuple(entry.dataset for entry in manifest.entries), FROZEN_EXP449_CONFIG.smoke_datasets)
         self.assertEqual(tuple(entry.dataset for entry in verified.entries), FROZEN_EXP449_CONFIG.smoke_datasets)
         self.assertEqual(self._manifest_path().name, "proposal_manifest_antigravity.json")
-        self.assertFalse((self.root / "stage_artifacts_paper").exists())
+        successes = [item for item in manifest.task45_checkpoints if item.schema == "paper-task4-task5-success.v1"]
+        self.assertEqual({item.dataset for item in successes}, set(FROZEN_EXP449_CONFIG.smoke_datasets))
+
+    def test_freeze_requires_a_genuine_success_for_every_catalog_dataset(self) -> None:
+        """An outer manifest must not stand in for the Task4/5 success publisher."""
+        with self.assertRaisesRegex(ValueError, "success checkpoint inventory"):
+            freeze_exp449_proposal_antigravity(
+                self.fixture.score, root=self.root, context=self.fixture.context, catalog=self.fixture.catalog,
+            )
+
+    def test_rebound_manifest_cannot_delete_the_complete_success_namespace(self) -> None:
+        """Rehashing an empty outer checkpoint list cannot erase catalog-local success authority."""
+        self._freeze()
+        manifest_path = self._manifest_path()
+        manifest = json.loads(manifest_path.read_text())
+        manifest["task45_checkpoints"] = []
+        shutil.rmtree(self.root / "stage_artifacts_paper")
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with self.assertRaisesRegex(ValueError, "success checkpoint inventory"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_constructor_binds_a_build_catalog_style_self_hash_before_freeze(self) -> None:
         """Hashing the catalog including its self-hash accepts neither the paper contract nor tamper rejection."""
@@ -311,7 +339,7 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
     def test_verifier_rejects_root_siblings_outside_the_declared_exp449_namespace(self) -> None:
         """Verifying only proposal_freeze permits a second paper or Exp448 authority under the same root."""
         self._freeze()
-        (self.root / "stage_artifacts_paper").mkdir(parents=True)
+        (self.root / "stage_artifacts_paper" / "proposal_work" / "foreign_namespace").mkdir(parents=True)
         with self.assertRaises(ValueError):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
@@ -340,8 +368,8 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "(checkpoint|artifact)"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
-    def test_exact_normal_removal_and_outside_exp93_priority_are_valid_typed_authority(self) -> None:
-        """The paper route permits a priority coordinate outside Exp93 and removes exact normals after promotion."""
+    def test_valid_nonempty_promotion_with_exact_normal_removal_is_typed_authority(self) -> None:
+        """A genuine nonempty Exp236-standard to Exp253-hard promotion remains valid before exact-normal removal."""
         from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
         route = HardRouteResult(
             RouteLanes(frozenset(), frozenset(), frozenset()), frozenset(), frozenset(), frozenset(),
@@ -413,6 +441,24 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         self._rewrite_bound_shard(mutate)
         with self.assertRaisesRegex(ValueError, "promotion algebra"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_rebound_shard_rejects_an_exp253_demotion_of_exp236_hard(self) -> None:
+        """Changing the shard to `{236 hard 0, 253 standard 0}` must not demote hard evidence."""
+        self._freeze()
+        self._rewrite_bound_shard(
+            lambda payload: (
+                payload["hard_stages"][3].__setitem__("indices", [0]),
+                payload["hard_stages"][4]["lanes"].__setitem__("hard", [0]),
+                payload["hard_stages"][6]["lanes"].__setitem__("hard", [0]),
+                payload["hard_stages"][7]["lanes"].__setitem__("standard", [0]),
+            )
+        )
+        descriptor = json.loads(self._manifest_path().read_text())["entries"][0]
+        shard = json.loads((self._manifest_path().parent / descriptor["relative_path"]).read_text())
+        with self.assertRaisesRegex(ValueError, "promotion algebra"):
+            validate_exp449_proposal_shard_antigravity(
+                shard, entry=self.fixture.catalog["datasets"][0], context=self.fixture.context, catalog=self.fixture.catalog,
+            )
 
     def test_rebound_success_backend_must_equal_the_effective_bridge_backend(self) -> None:
         """A success envelope may not carry a descriptor-rebound bridge backend from another run."""
@@ -486,7 +532,7 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         left["dataset"], left["size"], left["sha256"] = right_dataset, len(right_bytes), sha256(right_bytes).hexdigest()
         right["dataset"], right["size"], right["sha256"] = left_dataset, len(left_bytes), sha256(left_bytes).hexdigest()
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
-        with self.assertRaisesRegex(ValueError, "success checkpoint path"):
+        with self.assertRaisesRegex(ValueError, "success checkpoint inventory"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
@@ -515,7 +561,7 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         for policy in scientific["policies"]:
             descriptor["policy_coordinate_sha256"][policy["policy_id"]] = sha256(json.dumps([[descriptor["dataset"], 0]], separators=(",", ":")).encode() + b"\n").hexdigest()
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
-        with self.assertRaisesRegex(ValueError, "(continuous score|score mask)"):
+        with self.assertRaisesRegex(ValueError, "(policy alerts|continuous score|score mask)"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_coordinated_source_low_and_route_tampers_reach_pure_semantic_checks(self) -> None:
