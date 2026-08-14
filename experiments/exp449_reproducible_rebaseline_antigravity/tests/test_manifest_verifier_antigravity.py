@@ -187,6 +187,32 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         }
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
 
+    def _rewrite_bound_checkpoint(self, descriptor: dict[str, object], mutate) -> None:
+        """Rebind a checkpoint and its outer descriptor after a semantic edit."""
+        manifest_path = self._manifest_path()
+        manifest = json.loads(manifest_path.read_text())
+        target = next(
+            item for item in manifest["task45_checkpoints"]
+            if item["relative_path"] == descriptor["relative_path"]
+        )
+        path = self.root / target["relative_path"]
+        record = json.loads(path.read_text())
+        mutate(record)
+        if record["schema"] == "paper-task4-task5-success.v1":
+            record["payload_sha256"] = sha256(json.dumps(
+                record["payload"], sort_keys=True, separators=(",", ":"),
+            ).encode() + b"\n").hexdigest()
+        else:
+            bare = {key: value for key, value in record.items() if key != "record_sha256"}
+            record["record_sha256"] = sha256(json.dumps(
+                bare, sort_keys=True, separators=(",", ":"),
+            ).encode() + b"\n").hexdigest()
+        data = json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        path.write_bytes(data)
+        target["size"] = len(data)
+        target["sha256"] = sha256(data).hexdigest()
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+
     def _score_with_route(self, route: object, low_frequency: object | None = None):
         """Keep the genuine Task3 typed score while replacing one valid route."""
         from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScore
@@ -360,6 +386,109 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "(route algebra|policy alerts)"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
+    def test_rebound_checkpoint_priority_must_match_the_typed_shard_route(self) -> None:
+        """A checkpoint-only priority route drift must not survive descriptor rebinding."""
+        self._publish_real_task45_checkpoints(self.fixture, self.root)
+        manifest = self._freeze()
+        descriptor = next(item for item in manifest.task45_checkpoints if item.schema == "paper-task4-task5-success.v1")
+        self._rewrite_bound_checkpoint(
+            {"relative_path": descriptor.relative_path},
+            lambda record: (
+                record["payload"]["route"]["exp137"]["priority"].append(0),
+                record["payload"]["route"]["exp236"]["priority"].append(0),
+                record["payload"]["route"]["exp253"]["priority"].append(0),
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "checkpoint route"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_rebound_shard_requires_exact_promotion_set_difference_algebra(self) -> None:
+        """Subset-only promotion checks accept a standard coordinate silently removed at Exp253."""
+        self._freeze()
+        def mutate(payload: dict[str, object]) -> None:
+            stages = payload["hard_stages"]
+            stages[3]["indices"] = [0]
+            stages[4]["lanes"]["standard"] = [0]
+            stages[6]["lanes"]["standard"] = [0]
+        self._rewrite_bound_shard(mutate)
+        with self.assertRaisesRegex(ValueError, "promotion algebra"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_rebound_success_backend_must_equal_the_effective_bridge_backend(self) -> None:
+        """A success envelope may not carry a descriptor-rebound bridge backend from another run."""
+        self._publish_real_task45_checkpoints(self.fixture, self.root)
+        manifest = self._freeze()
+        descriptor = next(item for item in manifest.task45_checkpoints if item.schema == "paper-task4-task5-success.v1")
+        self._rewrite_bound_checkpoint(
+            {"relative_path": descriptor.relative_path},
+            lambda record: record.__setitem__("backend", {"drift": "backend"}),
+        )
+        with self.assertRaisesRegex(ValueError, "checkpoint backend"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_rebound_success_assessment_hash_must_match_the_effective_bridge_backend(self) -> None:
+        """A syntactically valid backend cannot substitute an assessment from another bridge context."""
+        self._publish_real_task45_checkpoints(self.fixture, self.root)
+        manifest = self._freeze()
+        descriptor = next(item for item in manifest.task45_checkpoints if item.schema == "paper-task4-task5-success.v1")
+        self._rewrite_bound_checkpoint(
+            {"relative_path": descriptor.relative_path},
+            lambda record: record["backend"].__setitem__("assessment_sha256", "0" * 64),
+        )
+        with self.assertRaisesRegex(ValueError, "checkpoint backend"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_rebound_attempt_backend_must_match_the_effective_bridge_backend(self) -> None:
+        """Attempt records carry the same bridge-bound backend authority as successes."""
+        self._publish_real_task45_checkpoints(self.fixture, self.root)
+        manifest = self._freeze()
+        descriptor = next(item for item in manifest.task45_checkpoints if item.schema == "paper-task4-task5-attempt.v1")
+        self._rewrite_bound_checkpoint(
+            {"relative_path": descriptor.relative_path},
+            lambda record: record["backend"].__setitem__("assessment_sha256", "0" * 64),
+        )
+        with self.assertRaisesRegex(ValueError, "checkpoint backend"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_rebound_attempt_fields_must_match_the_canonical_attempt_ledger(self) -> None:
+        """Wave, ordinal, and typed exception fields are authenticated operational evidence."""
+        cases = (
+            ("wave zero", lambda record: record.__setitem__("wave", 0)),
+            ("wrong ordinal", lambda record: record.__setitem__("attempt", 99)),
+            ("empty exception type", lambda record: record.__setitem__("exception_type", "")),
+            ("nonstring exception message", lambda record: record.__setitem__("exception_message", 7)),
+        )
+        for label, mutate in cases:
+            with self.subTest(label=label):
+                if self.root.exists():
+                    shutil.rmtree(self.root)
+                self.fixture = _TypedProposalFixtureAntigravity(self.root)
+                self._publish_real_task45_checkpoints(self.fixture, self.root)
+                manifest = self._freeze()
+                descriptor = next(item for item in manifest.task45_checkpoints if item.schema == "paper-task4-task5-attempt.v1")
+                self._rewrite_bound_checkpoint({"relative_path": descriptor.relative_path}, mutate)
+                with self.assertRaisesRegex(ValueError, "attempt checkpoint"):
+                    verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_swapped_success_descriptors_cannot_rebind_to_the_other_dataset_token(self) -> None:
+        """Changing both descriptors and file bytes must not detach a success token from its dataset."""
+        self._publish_real_task45_checkpoints(self.fixture, self.root)
+        self._freeze()
+        manifest_path = self._manifest_path()
+        manifest = json.loads(manifest_path.read_text())
+        successes = [item for item in manifest["task45_checkpoints"] if item["schema"] == "paper-task4-task5-success.v1"]
+        left, right = successes[:2]
+        left_path, right_path = self.root / left["relative_path"], self.root / right["relative_path"]
+        left_bytes, right_bytes = left_path.read_bytes(), right_path.read_bytes()
+        left_dataset, right_dataset = left["dataset"], right["dataset"]
+        left_path.write_bytes(right_bytes)
+        right_path.write_bytes(left_bytes)
+        left["dataset"], left["size"], left["sha256"] = right_dataset, len(right_bytes), sha256(right_bytes).hexdigest()
+        right["dataset"], right["size"], right["sha256"] = left_dataset, len(left_bytes), sha256(left_bytes).hexdigest()
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with self.assertRaisesRegex(ValueError, "success checkpoint path"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
     def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
         """Refreshing every digest must not authorize Candidate C alerts that disagree with scores and masks."""
         self._freeze()
@@ -368,6 +497,9 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         path = manifest_path.parent / manifest["entries"][0]["relative_path"]
         shard = json.loads(path.read_text())
         scientific = shard["scientific_payload"]
+        scientific["hard_stages"][3]["indices"] = [0]
+        scientific["hard_stages"][4]["lanes"]["standard"] = [0]
+        scientific["hard_stages"][6]["lanes"]["standard"] = [0]
         scientific["hard_stages"][-1]["lanes"]["hard"] = [0]
         for policy in scientific["policies"]:
             policy["alerts"] = [0]

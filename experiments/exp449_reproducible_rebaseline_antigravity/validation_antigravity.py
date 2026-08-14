@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from hashlib import sha256
+import importlib.metadata
 import json
 from math import isclose, isfinite
 from pathlib import Path, PurePosixPath
+import platform
 import stat
+import sys
 
 import numpy as np
 
@@ -79,6 +82,50 @@ def _task45_context_sha256(context: Exp449Context) -> str:
 
 def _task45_code_closure_sha256(context: Exp449Context) -> str:
     return sha256(canonical_json_bytes_antigravity(_plain(context.code_closure))).hexdigest()
+
+
+def _runtime_identity_antigravity() -> dict[str, str]:
+    return {"executable": str(Path(sys.executable).resolve()), "python_version": platform.python_version(), "python_build": ".".join(platform.python_build()), "python_implementation": platform.python_implementation(), "prefix": str(Path(sys.prefix).resolve()), "base_prefix": str(Path(sys.base_prefix).resolve()), "platform": platform.platform()}
+
+
+def _package_version_antigravity(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _task45_available_backends_antigravity() -> list[dict[str, object]]:
+    torch_version = _package_version_antigravity("torch")
+    torch_mps_available = False
+    torch_mps_built = False
+    if torch_version is not None:
+        try:
+            import torch
+            torch_mps_available = bool(torch.backends.mps.is_available())
+            torch_mps_built = bool(torch.backends.mps.is_built())
+        except Exception:
+            pass
+    mlx_version = _package_version_antigravity("mlx")
+    mlx_device: str | None = None
+    if mlx_version is not None:
+        try:
+            import mlx.core as mx
+            mlx_device = str(mx.default_device())
+        except Exception:
+            pass
+    return [{"family": "pytorch", "available": torch_version is not None, "version": torch_version, "device": "mps" if torch_mps_available else None}, {"family": "mlx", "available": mlx_version is not None and mlx_device is not None, "version": mlx_version, "mlx_metal_version": _package_version_antigravity("mlx-metal"), "device": mlx_device}, {"family": "mps", "available": torch_mps_available, "version": torch_version, "built": torch_mps_built, "device": "mps" if torch_mps_available else None}]
+
+
+def _effective_task45_backend_record_antigravity(context: Exp449Context) -> dict[str, object]:
+    """Rebuild the publisher's bridge-bound CPU backend without paper imports."""
+    outer = _plain(context.backend_record)
+    if not isinstance(outer, dict) or type(outer.get("logical_cpu_count")) is not int or outer["logical_cpu_count"] < 1:
+        raise ValueError("Exp449 context backend differs")
+    count = outer["logical_cpu_count"]
+    workers = {"logical_cpu_count": count, "dataset_workers": max(1, count - 1), "inner_numerical_threads": 1, "outer_execution_mode": "parallel_task4_task5" if count > 1 else "sequential_task4_task5"}
+    base = {"schema": "paper-task9-acceleration.v2", "context_sha256": _task45_context_sha256(context), "runtime": _runtime_identity_antigravity(), "selected_backend": "cpu", "workers": workers, "deep_method_orchestration": "sequential_non_cpu_parallel_stage; future_cpu_parallel_deep_stage_uses_dataset_workers", "backends": _task45_available_backends_antigravity(), "stages": [{"stage": "hard_sources", "tensor_eligible": False, "decision": "cpu", "reason": "official_third_party_transformers_cpu_comparability"}, {"stage": "minirocket_confirmation", "tensor_eligible": False, "decision": "cpu", "reason": "official_third_party_transformer_cpu_comparability"}, {"stage": "hard_route", "tensor_eligible": False, "decision": "cpu", "reason": "frozen_rule_not_tensor_stage"}, {"stage": "low_frequency", "tensor_eligible": True, "decision": "cpu", "reason": "implementation_unavailable"}, {"stage": "stability", "tensor_eligible": True, "decision": "cpu", "reason": "implementation_unavailable"}, {"stage": "proposal_routes", "tensor_eligible": True, "decision": "cpu", "reason": "implementation_unavailable"}], "benchmark_requirement": "same_input_seed_finite_outputs_identical_candidates_at_all_alphas_numeric_tolerance_and_at_least_1_1x_including_transfer_and_synchronization", "fallback_reason": "no_exact_mlx_dense_implementation_has_been_benchmarked"}
+    return {"selected_backend": "cpu", "fallback_reason": base["fallback_reason"], "assessment_sha256": sha256(canonical_json_bytes_antigravity(base)).hexdigest(), **workers}
 
 
 def _catalog_names(catalog: object, mode: str, manifest: Exp449ProposalManifest | None = None) -> tuple[str, ...]:
@@ -254,7 +301,7 @@ def _scientific(value: object, entry: Mapping[str, object], automatic_override: 
     if set(indices["minimum_two"]) & set().union(*(set(item) for item in exp137.values())): raise ValueError("Exp449 source expansion route overlap differs")
     exp236,exp253=lanes["exp236"],lanes["exp253"]
     if set(exp236["hard"]) != set(exp137["hard"]) | set(indices["minimum_three"]) or set(exp236["standard"]) != set(exp137["standard"]) | (set(indices["minimum_two"])-set(indices["minimum_three"])) or exp236["priority"] != exp137["priority"]: raise ValueError("Exp449 Exp236 route relation differs")
-    if not set(exp236["hard"]) <= set(exp253["hard"]) or not set(exp253["standard"]) <= set(exp236["standard"]) or exp253["priority"] != exp236["priority"]: raise ValueError("Exp449 Exp253 route relation differs")
+    if set(exp253["hard"]) - set(exp236["hard"]) != set(exp236["standard"]) - set(exp253["standard"]) or exp253["priority"] != exp236["priority"]: raise ValueError("Exp449 promotion algebra differs")
     automatic=_integer_list(exp253["hard"] if automatic_override is None else automatic_override,n,"hard alerts")
     provisional=_low_provisional(value["low_frequency_rows"],n)
     stability=value["stability"]
@@ -295,10 +342,11 @@ def _digests(scientific: Mapping[str, object], dataset: str) -> tuple[dict[str,s
     return result,candidate
 
 
-def validate_exp449_proposal_shard_antigravity(value: object, *, entry: dict[str, object], context: Exp449Context, catalog: Mapping[str, object], automatic_hard: object = None) -> tuple[dict[str,str],str]:
+def validate_exp449_proposal_shard_antigravity(value: object, *, entry: dict[str, object], context: Exp449Context, catalog: Mapping[str, object], automatic_hard: object = None, checkpoint_route: Mapping[str, object] | None = None) -> tuple[dict[str,str],str]:
     if not isinstance(value,dict) or set(value)!={"schema","catalog_sha256","backend_record","scientific_payload"} or value["schema"]!=_SHARD_SCHEMA or value["catalog_sha256"]!=context.catalog_sha256 or value["catalog_sha256"]!=catalog.get("catalog_sha256") or value["backend_record"]!=_plain(context.backend_record): raise ValueError("Exp449 proposal shard authority differs")
     scientific=_scientific(value["scientific_payload"],entry,automatic_hard)
     if scientific["backend"] != value["backend_record"]: raise ValueError("Exp449 proposal shard backend differs")
+    if checkpoint_route is not None: _checkpoint_route_matches_shard(checkpoint_route, scientific)
     return _digests(scientific,entry["dataset"])
 
 
@@ -317,7 +365,7 @@ def _manifest(value: object) -> Exp449ProposalManifest:
     return Exp449ProposalManifest(value["schema"],value["context_sha256"],value["catalog_sha256"],value["backend_record"],tuple(Exp449ShardDescriptor(**item) for item in value["entries"]),value["historical_parity_status"],tuple(Exp449CheckpointDescriptor(**item) for item in value["task45_checkpoints"]))
 
 
-def _task45_payload(value: object, entry: Mapping[str, object]) -> None:
+def _task45_payload(value: object, entry: Mapping[str, object]) -> dict[str, object]:
     """Pure structural reconstruction of the paper publisher's typed success payload."""
     if not isinstance(value, dict) or set(value) != {"sources", "route"}:
         raise ValueError("Exp449 Task4/5 success payload differs")
@@ -351,22 +399,42 @@ def _task45_payload(value: object, entry: Mapping[str, object]) -> None:
     lanes={name:_lanes(route[name],n_test,f"Task4/5 {name}") for name in ("exp74d","exp137","exp236","exp253")}
     values={name:_integer_list(route[name],n_test,f"Task4/5 {name}") for name in ("exp89","exp90","exp93","promoted","exact_normal_removed","automatic_hard")}
     minimum_two=_integer_list(route["exp234"]["minimum_two"],n_test,"Task4/5 minimum two"); minimum_three=_integer_list(route["exp234"]["minimum_three"],n_test,"Task4/5 minimum three")
-    if not set(minimum_three)<=set(minimum_two) or not set(values["promoted"])<=set(lanes["exp236"]["standard"]) or set(lanes["exp253"]["hard"]) != set(lanes["exp236"]["hard"]) | set(values["promoted"]) or set(lanes["exp253"]["standard"]) != set(lanes["exp236"]["standard"]) - set(values["promoted"]) or lanes["exp253"]["priority"] != lanes["exp236"]["priority"] or not set(values["exact_normal_removed"])<=set(lanes["exp253"]["hard"]) or set(values["automatic_hard"]) != set(lanes["exp253"]["hard"]) - set(values["exact_normal_removed"]):
+    if not set(lanes["exp74d"]["hard"]) <= set(values["exp89"]) or not set(values["exp89"]) <= set(values["exp90"]) or not (set(lanes["exp137"]["hard"]) | set(lanes["exp137"]["standard"])) <= set(values["exp93"]) or not set(minimum_three) <= set(minimum_two) or set(minimum_two) & set().union(*(set(item) for item in lanes["exp137"].values())) or set(lanes["exp236"]["hard"]) != set(lanes["exp137"]["hard"]) | set(minimum_three) or set(lanes["exp236"]["standard"]) != set(lanes["exp137"]["standard"]) | (set(minimum_two) - set(minimum_three)) or lanes["exp236"]["priority"] != lanes["exp137"]["priority"] or not set(values["promoted"]) <= set(lanes["exp236"]["standard"]) or set(lanes["exp253"]["hard"]) != set(lanes["exp236"]["hard"]) | set(values["promoted"]) or set(lanes["exp253"]["standard"]) != set(lanes["exp236"]["standard"]) - set(values["promoted"]) or set(lanes["exp253"]["hard"]) - set(lanes["exp236"]["hard"]) != set(lanes["exp236"]["standard"]) - set(lanes["exp253"]["standard"]) or lanes["exp253"]["priority"] != lanes["exp236"]["priority"] or not set(values["exact_normal_removed"]) <= set(lanes["exp253"]["hard"]) or set(values["automatic_hard"]) != set(lanes["exp253"]["hard"]) - set(values["exact_normal_removed"]):
         raise ValueError("Exp449 Task4/5 route algebra differs")
+    return route
 
 
-def _checkpoint(value: object, descriptor: Exp449CheckpointDescriptor, context: Exp449Context, catalog: Mapping[str,object]) -> None:
+def _checkpoint_route_matches_shard(route: Mapping[str, object], scientific: Mapping[str, object]) -> None:
+    """Require every route field shared by success and typed-shard evidence to agree."""
+    stages = {row["stage_id"]: row for row in scientific["hard_stages"]}
+    for stage in ("exp74d", "exp137", "exp236", "exp253"):
+        if route[stage] != stages[stage]["lanes"]:
+            raise ValueError("Exp449 checkpoint route differs from typed shard")
+    for stage in ("exp89", "exp90", "exp93"):
+        if route[stage] != stages[stage]["indices"]:
+            raise ValueError("Exp449 checkpoint route differs from typed shard")
+    if route["exp234"] != {"minimum_two": stages["exp234"]["minimum_two"], "minimum_three": stages["exp234"]["minimum_three"]}:
+        raise ValueError("Exp449 checkpoint route differs from typed shard")
+    if route["automatic_hard"] != scientific["policies"][0]["alerts"]:
+        raise ValueError("Exp449 checkpoint route differs from typed shard")
+
+
+def _checkpoint(value: object, descriptor: Exp449CheckpointDescriptor, context: Exp449Context, catalog: Mapping[str,object], *, attempt_ordinal: int | None = None) -> dict[str, object] | None:
     required={"schema","context_sha256","catalog_sha256","raw_identity","backend","scientific_config_sha256","code_closure_sha256","dataset"}
     if not isinstance(value,dict) or not required <= set(value) or value.get("schema") != descriptor.schema or value.get("dataset") != descriptor.dataset or value.get("catalog_sha256") != context.catalog_sha256 or value.get("catalog_sha256") != catalog.get("catalog_sha256") or value.get("context_sha256") != _task45_context_sha256(context) or value.get("scientific_config_sha256") != _TASK45_SCIENTIFIC_CONFIG_SHA256 or value.get("code_closure_sha256") != _task45_code_closure_sha256(context): raise ValueError("Exp449 Task4/5 checkpoint authority differs")
+    if value["backend"] != _effective_task45_backend_record_antigravity(context): raise ValueError("Exp449 Task4/5 checkpoint backend differs")
     entry=_entry(catalog,descriptor.dataset) if descriptor.dataset is not None else None
     if entry is None or value.get("raw_identity") != entry: raise ValueError("Exp449 Task4/5 checkpoint identity differs")
     if descriptor.schema == "paper-task4-task5-success.v1":
         if set(value) != required|{"payload","payload_sha256"} or sha256(canonical_json_bytes_antigravity(value["payload"])).hexdigest()!=value["payload_sha256"]: raise ValueError("Exp449 Task4/5 success checkpoint differs")
-        _task45_payload(value["payload"], entry)
+        return _task45_payload(value["payload"], entry)
     else:
         if set(value) != required|{"wave","attempt","exception_type","exception_message","record_sha256"}: raise ValueError("Exp449 Task4/5 attempt checkpoint differs")
         bare={key:child for key,child in value.items() if key!="record_sha256"}
         if sha256(canonical_json_bytes_antigravity(bare)).hexdigest()!=value["record_sha256"]: raise ValueError("Exp449 Task4/5 attempt checkpoint differs")
+        if type(value["wave"]) is not int or value["wave"] not in {1,2} or type(value["attempt"]) is not int or value["attempt"] < 1 or value["attempt"] != attempt_ordinal or type(value["exception_type"]) is not str or not value["exception_type"] or type(value["exception_message"]) is not str:
+            raise ValueError("Exp449 Task4/5 attempt checkpoint differs")
+    return None
 
 
 def _global_low_candidates(scientific: Mapping[str, object]) -> tuple[tuple[float,float,str,int], ...]:
@@ -391,14 +459,31 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
     manifest=_manifest(_strict(freeze/_MANIFEST_NAME)); names=_catalog_names(catalog,context.mode,manifest)
     if manifest.context_sha256!=_context_sha256(context) or manifest.catalog_sha256!=context.catalog_sha256 or manifest.catalog_sha256!=catalog.get("catalog_sha256") or _plain(manifest.backend_record)!=_plain(context.backend_record): raise ValueError("Exp449 proposal manifest authority differs")
     declared={f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{_MANIFEST_NAME}"}
-    checkpoint_automatic: dict[str,list[int]] = {}
-    for descriptor in manifest.task45_checkpoints:
-        if descriptor.schema == "paper-task4-task5-success.v1":
-            record = _strict(root / descriptor.relative_path)
-            if isinstance(record, dict) and isinstance(record.get("payload"), dict) and isinstance(record["payload"].get("route"), dict):
-                automatic = record["payload"]["route"].get("automatic_hard")
-                if isinstance(automatic, list) and descriptor.dataset is not None:
-                    checkpoint_automatic[descriptor.dataset] = automatic
+    checkpoints = tuple(manifest.task45_checkpoints)
+    checkpoint_routes: dict[str, dict[str, object]] = {}
+    if checkpoints:
+        success = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-success.v1")
+        attempts = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-attempt.v1")
+        expected_success = {
+            dataset: f"stage_artifacts_paper/proposal_work/task4_task5_success/{sha256(dataset.encode()).hexdigest()}_antigravity/task4_task5_success_antigravity.json"
+            for dataset in names
+        }
+        if len(success) != len(names) or {item.dataset for item in success} != set(names) or any(type(item.dataset) is not str or item.relative_path != expected_success[item.dataset] for item in success):
+            raise ValueError("Exp449 Task4/5 success checkpoint path differs")
+        expected_attempts = tuple(
+            f"stage_artifacts_paper/proposal_work/task4_task5_attempts/attempt_{index:06d}_antigravity.json"
+            for index in range(1, len(attempts) + 1)
+        )
+        if tuple(item.relative_path for item in attempts) != expected_attempts:
+            raise ValueError("Exp449 Task4/5 attempt checkpoint inventory differs")
+        attempt_ordinals = {item.relative_path: index for index, item in enumerate(attempts, 1)}
+        for descriptor in checkpoints:
+            rel=descriptor.relative_path; declared.add(rel); path=root/rel; details=_lstat(path)
+            if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
+            route = _checkpoint(_strict(path), descriptor, context, catalog, attempt_ordinal=attempt_ordinals.get(rel))
+            if route is not None:
+                assert descriptor.dataset is not None
+                checkpoint_routes[descriptor.dataset] = route
     global_candidates: list[tuple[float,float,str,int]] = []
     selected_coordinates: list[tuple[str,int]] = []
     for descriptor in manifest.entries:
@@ -406,7 +491,9 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
         rel=f"{_ARTIFACT_DIRECTORY}/{_FREEZE_DIRECTORY}/{descriptor.relative_path}"; declared.add(rel); path=root/rel; details=_lstat(path)
         if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 shard hash differs")
         shard=_strict(path)
-        coords,candidate=validate_exp449_proposal_shard_antigravity(shard,entry=_entry(catalog,descriptor.dataset),context=context,catalog=catalog,automatic_hard=checkpoint_automatic.get(descriptor.dataset))
+        route = checkpoint_routes.get(descriptor.dataset)
+        automatic = route["automatic_hard"] if route is not None else None
+        coords,candidate=validate_exp449_proposal_shard_antigravity(shard,entry=_entry(catalog,descriptor.dataset),context=context,catalog=catalog,automatic_hard=automatic,checkpoint_route=route)
         if dict(descriptor.policy_coordinate_sha256)!=coords or descriptor.candidate_c_score_sha256!=candidate: raise ValueError("Exp449 shard digest differs")
         assert isinstance(shard, dict) and isinstance(shard["scientific_payload"], dict)
         scientific=shard["scientific_payload"]
@@ -417,26 +504,6 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
     expected_selected=tuple((dataset,index) for _ratio,_rank,dataset,index in sorted(global_candidates)[:30])
     if tuple(sorted(selected_coordinates)) != tuple(sorted(expected_selected)):
         raise ValueError("Exp449 global Candidate C selection differs")
-    checkpoints = tuple(manifest.task45_checkpoints)
-    if checkpoints:
-        success = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-success.v1")
-        attempts = tuple(item for item in checkpoints if item.schema == "paper-task4-task5-attempt.v1")
-        expected_success = {
-            f"stage_artifacts_paper/proposal_work/task4_task5_success/{sha256(dataset.encode()).hexdigest()}_antigravity/task4_task5_success_antigravity.json"
-            for dataset in names
-        }
-        if {item.relative_path for item in success} != expected_success or len(success) != len(names):
-            raise ValueError("Exp449 Task4/5 success checkpoint inventory differs")
-        expected_attempts = tuple(
-            f"stage_artifacts_paper/proposal_work/task4_task5_attempts/attempt_{index:06d}_antigravity.json"
-            for index in range(1, len(attempts) + 1)
-        )
-        if tuple(item.relative_path for item in attempts) != expected_attempts:
-            raise ValueError("Exp449 Task4/5 attempt checkpoint inventory differs")
-    for descriptor in checkpoints:
-        rel=descriptor.relative_path; declared.add(rel); path=root/rel; details=_lstat(path)
-        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
-        _checkpoint(_strict(path),descriptor,context,catalog)
     declared_nodes=set(declared)
     for item in tuple(declared):
         parent=PurePosixPath(item).parent
