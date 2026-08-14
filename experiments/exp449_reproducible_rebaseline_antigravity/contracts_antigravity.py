@@ -266,6 +266,28 @@ class Exp449ShardDescriptor:
 
 
 @dataclass(frozen=True, slots=True)
+class Exp449CheckpointDescriptor:
+    """One legacy Task4/5 checkpoint explicitly bound into an Exp449 freeze."""
+
+    relative_path: str
+    size: int
+    sha256: str
+    schema: str
+    dataset: str | None
+
+    def __post_init__(self) -> None:
+        path = PurePosixPath(self.relative_path)
+        if type(self.relative_path) is not str or path.is_absolute() or ".." in path.parts or not self.relative_path.startswith("stage_artifacts_paper/proposal_work/") or "antigravity" not in self.relative_path:
+            raise ValueError("Exp449 Task4/5 checkpoint path is invalid")
+        object.__setattr__(self, "size", _nonnegative_count(self.size, "Task4/5 checkpoint size"))
+        object.__setattr__(self, "sha256", _sha256(self.sha256, "Task4/5 checkpoint sha256"))
+        if self.schema not in {"paper-task4-task5-success.v1", "paper-task4-task5-attempt.v1"}:
+            raise ValueError("Exp449 Task4/5 checkpoint schema is invalid")
+        if self.dataset is not None and (type(self.dataset) is not str or not self.dataset):
+            raise ValueError("Exp449 Task4/5 checkpoint dataset is invalid")
+
+
+@dataclass(frozen=True, slots=True)
 class Exp449ProposalManifest:
     """The typed-shard inventory and proposal-digest closure."""
 
@@ -275,6 +297,7 @@ class Exp449ProposalManifest:
     backend_record: Mapping[str, object]
     entries: Sequence[Exp449ShardDescriptor]
     historical_parity_status: str
+    task45_checkpoints: Sequence[Exp449CheckpointDescriptor] = ()
 
     def __post_init__(self) -> None:
         if self.schema != "exp449-proposal-manifest-antigravity.v1":
@@ -296,6 +319,10 @@ class Exp449ProposalManifest:
         if len(set(paths)) != len(paths):
             raise ValueError("Exp449 manifest entry paths must be unique")
         object.__setattr__(self, "entries", entries)
+        checkpoints = tuple(self.task45_checkpoints)
+        if any(not isinstance(item, Exp449CheckpointDescriptor) for item in checkpoints) or tuple(item.relative_path for item in checkpoints) != tuple(sorted(item.relative_path for item in checkpoints)) or len({item.relative_path for item in checkpoints}) != len(checkpoints):
+            raise ValueError("Exp449 Task4/5 checkpoint inventory is invalid")
+        object.__setattr__(self, "task45_checkpoints", checkpoints)
 
 
 @dataclass(frozen=True, slots=True)

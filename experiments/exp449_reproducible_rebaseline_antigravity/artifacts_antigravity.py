@@ -19,7 +19,7 @@ from paper.equipment_anomaly_detection.artifacts_paper import (
 )
 
 from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
-from .contracts_antigravity import Exp449Context, Exp449ProposalManifest, Exp449ShardDescriptor
+from .contracts_antigravity import Exp449CheckpointDescriptor, Exp449Context, Exp449ProposalManifest, Exp449ShardDescriptor
 from .validation_antigravity import (
     validate_exp449_catalog_antigravity as _pure_validate_catalog_antigravity,
     validate_exp449_proposal_shard_antigravity as _pure_validate_shard_antigravity,
@@ -314,21 +314,39 @@ def _manifest_payload_antigravity(manifest: Exp449ProposalManifest) -> dict[str,
             for entry in manifest.entries
         ],
         "historical_parity_status": manifest.historical_parity_status,
+        "task45_checkpoints": [{"relative_path": item.relative_path, "size": item.size, "sha256": item.sha256, "schema": item.schema, "dataset": item.dataset} for item in manifest.task45_checkpoints],
     }
 
 
 def _manifest_from_payload_antigravity(value: object) -> Exp449ProposalManifest:
-    if not isinstance(value, dict) or set(value) != {"schema", "context_sha256", "catalog_sha256", "backend_record", "entries", "historical_parity_status"} or not isinstance(value.get("entries"), list):
+    if not isinstance(value, dict) or set(value) != {"schema", "context_sha256", "catalog_sha256", "backend_record", "entries", "historical_parity_status", "task45_checkpoints"} or not isinstance(value.get("entries"), list) or not isinstance(value.get("task45_checkpoints"), list):
         raise ValueError("Exp449 proposal manifest schema differs")
     return Exp449ProposalManifest(
         schema=value["schema"], context_sha256=value["context_sha256"], catalog_sha256=value["catalog_sha256"],
         backend_record=value["backend_record"], entries=tuple(Exp449ShardDescriptor(**entry) for entry in value["entries"]),
-        historical_parity_status=value["historical_parity_status"],
+        historical_parity_status=value["historical_parity_status"], task45_checkpoints=tuple(Exp449CheckpointDescriptor(**item) for item in value["task45_checkpoints"]),
     )
 
 
 def _freeze_root_antigravity(root: Path) -> Path:
     return _safe_child_antigravity(root, _ARTIFACT_DIRECTORY, _FREEZE_DIRECTORY)
+
+
+def _task45_checkpoint_descriptors_antigravity(root: Path) -> tuple[Exp449CheckpointDescriptor, ...]:
+    """Bind every existing legacy Task4/5 checkpoint, never an arbitrary paper sibling."""
+    base = Path(root) / "stage_artifacts_paper" / "proposal_work"
+    if not base.exists():
+        return ()
+    allowed = {"task4_task5_success", "task4_task5_attempts"}
+    if {item.name for item in base.iterdir()} - allowed:
+        raise ValueError("Exp449 legacy Task4/5 namespace differs")
+    descriptors: list[Exp449CheckpointDescriptor] = []
+    for path in sorted(base.rglob("*_antigravity.json")):
+        value = _strict_json_antigravity(path)
+        if not isinstance(value, dict) or value.get("schema") not in {"paper-task4-task5-success.v1", "paper-task4-task5-attempt.v1"}:
+            raise ValueError("Exp449 legacy Task4/5 checkpoint differs")
+        descriptors.append(Exp449CheckpointDescriptor(path.relative_to(root).as_posix(), path.stat().st_size, _sha256_antigravity(path.read_bytes()), value["schema"], value.get("dataset")))
+    return tuple(descriptors)
 
 
 def freeze_exp449_proposal_antigravity(score: object, *, root: Path, context: Exp449Context, catalog: dict[str, object]) -> Exp449ProposalManifest:
@@ -350,7 +368,8 @@ def freeze_exp449_proposal_antigravity(score: object, *, root: Path, context: Ex
         path = _freeze_root_antigravity(root) / relative
         _write_create_only_antigravity(path, canonical_json_bytes(envelope), reuse_identical=True)
         entries.append(Exp449ShardDescriptor(dataset, relative, path.stat().st_size, _sha256_antigravity(path.read_bytes()), _SHARD_SCHEMA, coordinates, candidate_digest))
-    manifest = Exp449ProposalManifest(_MANIFEST_SCHEMA, context_sha256_antigravity(context), context.catalog_sha256, context.backend_record, tuple(entries), "not_used")
+    checkpoints = _task45_checkpoint_descriptors_antigravity(root)
+    manifest = Exp449ProposalManifest(_MANIFEST_SCHEMA, context_sha256_antigravity(context), context.catalog_sha256, context.backend_record, tuple(entries), "not_used", checkpoints)
     payload = _manifest_payload_antigravity(manifest)
     _write_create_only_antigravity(_freeze_root_antigravity(root) / _MANIFEST_NAME, canonical_json_bytes(payload), reuse_identical=True)
     verify_exp449_freeze_inventory_antigravity(root, context=context, catalog=catalog, manifest=manifest)

@@ -222,6 +222,30 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
+    def test_freeze_binds_each_legacy_task45_checkpoint_and_rejects_tamper(self) -> None:
+        """A real-root Task4/5 namespace must be declared file-by-file, not broadly allowlisted."""
+        base = self.root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_success"
+        for entry in self.fixture.catalog["datasets"]:
+            dataset = entry["dataset"]
+            payload = {"sources": [], "route": {}}
+            record = {
+                "schema": "paper-task4-task5-success.v1", "context_sha256": "f" * 64,
+                "catalog_sha256": self.fixture.catalog["catalog_sha256"], "raw_identity": entry,
+                "backend": dict(self.fixture.context.backend_record), "scientific_config_sha256": "a" * 64,
+                "code_closure_sha256": "b" * 64, "dataset": dataset, "payload": payload,
+                "payload_sha256": sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode() + b"\n").hexdigest(),
+            }
+            path = base / f"{sha256(dataset.encode()).hexdigest()}_antigravity" / "task4_task5_success_antigravity.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        manifest = self._freeze()
+        self.assertEqual(len(manifest.task45_checkpoints), len(FROZEN_EXP449_CONFIG.smoke_datasets))
+        verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+        checkpoint = self.root / manifest.task45_checkpoints[0].relative_path
+        checkpoint.unlink()
+        with self.assertRaisesRegex(ValueError, "checkpoint"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
     def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
         """Refreshing every digest must not authorize Candidate C alerts that disagree with scores and masks."""
         self._freeze()

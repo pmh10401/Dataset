@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T00:54:53+0900",
-  "generated_from_commit": "ba836ce2aed793ec470f44895a44ead0d4c699ed",
+  "generated_at": "2026-08-15T01:02:16+0900",
+  "generated_from_commit": "48c1295388062b90627d315443648c59b3ffac35",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -158,7 +158,7 @@
     {
       "id": "exp449_artifacts",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
-      "role": "Exp449-only create-only typed shard publication and outer-manifest freeze; delegates all independently consumed validation to the paper-free Exp449 validator.",
+      "role": "Exp449-only create-only typed shards and manifest, including hash-bound Task4/5 legacy checkpoint descriptors.",
       "entrypoints": [
         "canonical_float64_bytes_antigravity",
         "freeze_exp449_proposal_antigravity",
@@ -578,9 +578,10 @@
     {
       "id": "exp449_outer_manifest",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
-      "role": "Planned create-only Exp449 outer manifest.",
+      "role": "Exp449 outer manifest binding typed shards and exact Task4/5 checkpoint descriptors.",
       "entrypoints": [
-        "Exp449ProposalManifest"
+        "Exp449ProposalManifest",
+        "task45_checkpoints"
       ],
       "tests": [],
       "constraints": [

@@ -324,6 +324,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                 "backend_record",
                 "entries",
                 "historical_parity_status",
+                "task45_checkpoints",
             ),
         )
         self.assertEqual(manifest.schema, "exp449-proposal-manifest-antigravity.v1")

@@ -12,7 +12,7 @@ import stat
 import numpy as np
 
 from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
-from .contracts_antigravity import Exp449Context, Exp449ProposalManifest, Exp449ShardDescriptor
+from .contracts_antigravity import Exp449CheckpointDescriptor, Exp449Context, Exp449ProposalManifest, Exp449ShardDescriptor
 
 
 _ARTIFACT_DIRECTORY = "stage_artifacts_antigravity"
@@ -164,8 +164,21 @@ def _strict(path: Path) -> object:
 
 
 def _manifest(value: object) -> Exp449ProposalManifest:
-    if not isinstance(value,dict) or set(value)!={"schema","context_sha256","catalog_sha256","backend_record","entries","historical_parity_status"} or not isinstance(value.get("entries"),list): raise ValueError("Exp449 proposal manifest schema differs")
-    return Exp449ProposalManifest(value["schema"],value["context_sha256"],value["catalog_sha256"],value["backend_record"],tuple(Exp449ShardDescriptor(**item) for item in value["entries"]),value["historical_parity_status"])
+    if not isinstance(value,dict) or set(value)!={"schema","context_sha256","catalog_sha256","backend_record","entries","historical_parity_status","task45_checkpoints"} or not isinstance(value.get("entries"),list) or not isinstance(value.get("task45_checkpoints"),list): raise ValueError("Exp449 proposal manifest schema differs")
+    return Exp449ProposalManifest(value["schema"],value["context_sha256"],value["catalog_sha256"],value["backend_record"],tuple(Exp449ShardDescriptor(**item) for item in value["entries"]),value["historical_parity_status"],tuple(Exp449CheckpointDescriptor(**item) for item in value["task45_checkpoints"]))
+
+
+def _checkpoint(value: object, descriptor: Exp449CheckpointDescriptor, context: Exp449Context, catalog: Mapping[str,object]) -> None:
+    required={"schema","context_sha256","catalog_sha256","raw_identity","backend","scientific_config_sha256","code_closure_sha256","dataset"}
+    if not isinstance(value,dict) or not required <= set(value) or value.get("schema") != descriptor.schema or value.get("dataset") != descriptor.dataset or value.get("catalog_sha256") != context.catalog_sha256 or value.get("catalog_sha256") != catalog.get("catalog_sha256") or value.get("backend") != _plain(context.backend_record): raise ValueError("Exp449 Task4/5 checkpoint authority differs")
+    entry=_entry(catalog,descriptor.dataset) if descriptor.dataset is not None else None
+    if entry is None or value.get("raw_identity") != entry: raise ValueError("Exp449 Task4/5 checkpoint identity differs")
+    if descriptor.schema == "paper-task4-task5-success.v1":
+        if set(value) != required|{"payload","payload_sha256"} or sha256(canonical_json_bytes_antigravity(value["payload"])).hexdigest()!=value["payload_sha256"]: raise ValueError("Exp449 Task4/5 success checkpoint differs")
+    else:
+        if set(value) != required|{"wave","attempt","exception_type","exception_message","record_sha256"}: raise ValueError("Exp449 Task4/5 attempt checkpoint differs")
+        bare={key:child for key,child in value.items() if key!="record_sha256"}
+        if sha256(canonical_json_bytes_antigravity(bare)).hexdigest()!=value["record_sha256"]: raise ValueError("Exp449 Task4/5 attempt checkpoint differs")
 
 
 def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Context, catalog: dict[str,object]) -> Exp449ProposalManifest:
@@ -181,13 +194,19 @@ def verify_exp449_proposal_root_antigravity(root: Path, *, context: Exp449Contex
         if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 shard hash differs")
         coords,candidate=validate_exp449_proposal_shard_antigravity(_strict(path),entry=_entry(catalog,descriptor.dataset),context=context,catalog=catalog)
         if dict(descriptor.policy_coordinate_sha256)!=coords or descriptor.candidate_c_score_sha256!=candidate: raise ValueError("Exp449 shard digest differs")
+    for descriptor in manifest.task45_checkpoints:
+        rel=descriptor.relative_path; declared.add(rel); path=root/rel; details=_lstat(path)
+        if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_size!=descriptor.size or sha256(path.read_bytes()).hexdigest()!=descriptor.sha256: raise ValueError("Exp449 Task4/5 checkpoint hash differs")
+        _checkpoint(_strict(path),descriptor,context,catalog)
     declared_nodes=set(declared)
     for item in tuple(declared):
         parent=PurePosixPath(item).parent
         while parent != PurePosixPath("."):
             declared_nodes.add(parent.as_posix()); parent=parent.parent
     found={item.relative_to(root).as_posix() for item in root.rglob("*")}
-    if found!=declared_nodes or any("antigravity" not in part for item in found for part in item.split("/")): raise ValueError("Exp449 root inventory differs")
+    def permitted_name(item: str) -> bool:
+        return item in {"stage_artifacts_paper", "stage_artifacts_paper/proposal_work"} or item.startswith("stage_artifacts_paper/proposal_work/") or all("antigravity" in part for part in item.split("/"))
+    if found!=declared_nodes or any(not permitted_name(item) for item in found): raise ValueError("Exp449 root inventory differs")
     return manifest
 
 
