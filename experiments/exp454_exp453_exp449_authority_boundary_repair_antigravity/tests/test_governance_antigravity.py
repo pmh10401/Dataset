@@ -90,7 +90,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIsNotNone(section)
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
-            if task_number in (1, 2, 3):
+            if task_number in (1, 2, 3, 4):
                 for tag in tags:
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
             else:
@@ -197,9 +197,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         self.assertLessEqual(len(graph["nodes"]), 20)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("task4_evaluation_replay", "task5_cli"):
-            self.assertEqual(node_by_id[node_id]["status"], "future_unknown")
-            self.assertEqual(node_by_id[node_id]["evidence"], [])
+        self.assertNotEqual(node_by_id["task4_evaluation_replay"].get("status"), "future_unknown")
+        self.assertTrue(node_by_id["task4_evaluation_replay"].get("evidence"))
+        self.assertEqual(node_by_id["task5_cli"]["status"], "future_unknown")
+        self.assertEqual(node_by_id["task5_cli"]["evidence"], [])
         self.assertNotIn("task3_runtime_predecessors", node_by_id)
         self.assertTrue(graph["unknown_relationships"])
         self.assertIn("tracked_fingerprints", lock)
@@ -292,6 +293,47 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("sources", predecessor["role"].lower())
         self.assertIn("readiness", predecessor["role"].lower())
         self.assertTrue(any(path.endswith("test_sources_antigravity.py") for path in predecessor["tests"]))
+
+    def test_map_answers_task_four_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: implemented evaluator/replay remain hidden behind the old future node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node_by_id = {node["id"]: node for node in graph["nodes"]}
+        node = node_by_id["task4_evaluation_replay"]
+        self.assertNotEqual(node.get("status"), "future_unknown")
+        self.assertIn("caller", node["role"].lower())
+        self.assertIn("effect", node["role"].lower())
+        self.assertTrue(any(path.endswith("test_evaluation_antigravity.py") for path in node["tests"]))
+        self.assertTrue(any(path.endswith("test_replay_antigravity.py") for path in node["tests"]))
+        self.assertTrue(node["path"].endswith("evaluation_antigravity.py"))
+        self.assertIn("capture_normalized_target_authority_antigravity", node["role"])
+        self.assertTrue(
+            any(
+                edge["from"] == "task4_evaluation_replay"
+                and edge["to"] == "task2_predecessor"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task4_evaluation_replay"
+                and edge["to"] == "task3_sources"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "implementation_plan"
+                and edge["to"] == "task4_evaluation_replay"
+                and edge["type"] == "governs"
+                for edge in graph["edges"]
+            )
+        )
+        predecessor = node_by_id["task2_predecessor"]
+        self.assertIn("evaluator", predecessor["role"].lower())
+        self.assertTrue(any(path.endswith("test_evaluation_antigravity.py") for path in predecessor["tests"]))
 
 
 if __name__ == "__main__":
