@@ -14,6 +14,7 @@ from time import monotonic, time
 from paper.equipment_anomaly_detection.artifacts_paper import (
     Task4Task5SuccessAuthority,
     canonical_json_bytes,
+    read_canonical,
     verify_task4_task5_attempt_namespace,
     verify_task4_task5_success_namespace,
     write_create_only,
@@ -85,7 +86,7 @@ class Exp449WaveConfig:
 @dataclass(frozen=True, slots=True)
 class _RecoverySnapshot:
     successes: tuple[str, ...]
-    attempts: tuple[tuple[str, int, int], ...]
+    attempts: tuple[dict[str, object], ...]
     failed: tuple[str, ...]
     never_attempted: tuple[str, ...]
     wave_count: int
@@ -169,13 +170,39 @@ def _authority_antigravity(config: Exp449WaveConfig) -> tuple[dict[str, object],
     return context_payload, authority
 
 
-def _attempt_tuple_antigravity(record: object) -> tuple[str, int, int]:
+def _attempt_tuple_antigravity(record: object) -> tuple[str, int, int, str, str]:
     dataset = getattr(record, "dataset", None)
     wave = getattr(record, "wave", None)
     attempt = getattr(record, "attempt", None)
-    if type(dataset) is not str or not dataset or type(wave) is not int or wave < 1 or type(attempt) is not int or attempt < 1:
+    exception_type = getattr(record, "exception_type", None)
+    exception_message = getattr(record, "exception_message", None)
+    if type(dataset) is not str or not dataset or type(wave) is not int or wave not in {1, 2} or type(attempt) is not int or attempt < 1 or type(exception_type) is not str or not exception_type or type(exception_message) is not str:
         raise ValueError("Exp449 verified attempt record differs")
-    return dataset, wave, attempt
+    return dataset, wave, attempt, exception_type, exception_message
+
+
+def _read_verified_attempt_payloads_antigravity(config: Exp449WaveConfig, attempts: tuple[tuple[str, int, int, str, str], ...]) -> tuple[dict[str, object], ...]:
+    """Bind the terminal ledger to every already-verified on-disk record byte."""
+    if not attempts:
+        return ()
+    root = config.context.run_root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts"
+    try:
+        paths = sorted(root.iterdir())
+    except FileNotFoundError as error:
+        raise ValueError("Exp449 verified attempt ledger differs") from error
+    expected_names = [f"attempt_{index:06d}_antigravity.json" for index in range(1, len(attempts) + 1)]
+    if [path.name for path in paths] != expected_names:
+        raise ValueError("Exp449 verified attempt ledger differs")
+    payloads: list[dict[str, object]] = []
+    for expected, path in zip(attempts, paths, strict=True):
+        value = read_canonical(path)
+        if not isinstance(value, dict):
+            raise ValueError("Exp449 verified attempt ledger differs")
+        dataset, wave, attempt, exception_type, exception_message = expected
+        if (value.get("dataset"), value.get("wave"), value.get("attempt"), value.get("exception_type"), value.get("exception_message")) != expected or type(value.get("record_sha256")) is not str:
+            raise ValueError("Exp449 verified attempt ledger differs")
+        payloads.append(dict(value))
+    return tuple(payloads)
 
 
 def _snapshot_antigravity(config: Exp449WaveConfig) -> _RecoverySnapshot:
@@ -187,14 +214,19 @@ def _snapshot_antigravity(config: Exp449WaveConfig) -> _RecoverySnapshot:
     ))
     if verified != tuple(sorted(set(verified))) or any(dataset not in names for dataset in verified):
         raise ValueError("Exp449 verified success namespace differs")
-    attempts = tuple(_attempt_tuple_antigravity(record) for record in verify_task4_task5_attempt_namespace(
+    attempt_tuples = tuple(_attempt_tuple_antigravity(record) for record in verify_task4_task5_attempt_namespace(
         config.context.run_root, config.catalog, authority, dict(config.raw_datasets)
     ))
-    if any(dataset not in names for dataset, _wave, _attempt in attempts):
+    if tuple(attempt for _dataset, _wave, attempt, _type, _message in attempt_tuples) != tuple(range(1, len(attempt_tuples) + 1)):
+        raise ValueError("Exp449 verified attempt identities differ")
+    if len({(dataset, wave) for dataset, wave, _attempt, _type, _message in attempt_tuples}) != len(attempt_tuples):
+        raise ValueError("Exp449 verified attempt identities differ")
+    if any(dataset not in names for dataset, _wave, _attempt, _type, _message in attempt_tuples):
         raise ValueError("Exp449 verified attempt namespace differs")
-    maximum_wave = max((wave for _dataset, wave, _attempt in attempts), default=0)
+    attempts = _read_verified_attempt_payloads_antigravity(config, attempt_tuples)
+    maximum_wave = max((wave for _dataset, wave, _attempt, _type, _message in attempt_tuples), default=0)
     pending = tuple(dataset for dataset in names if dataset not in set(verified))
-    attempted_pending = {dataset for dataset, _wave, _attempt in attempts if dataset in pending}
+    attempted_pending = {dataset for dataset, _wave, _attempt, _type, _message in attempt_tuples if dataset in pending}
     failed = tuple(dataset for dataset in pending if dataset in attempted_pending)
     never_attempted = tuple(dataset for dataset in pending if dataset not in attempted_pending)
     return _RecoverySnapshot(verified, attempts, failed, never_attempted, maximum_wave)
@@ -220,8 +252,8 @@ def _terminal_status_antigravity(config: Exp449WaveConfig, snapshot: _RecoverySn
 def _terminal_record_antigravity(config: Exp449WaveConfig, snapshot: _RecoverySnapshot) -> dict[str, object]:
     context_payload = task45_context_payload_antigravity(config.context)
     ledger = [
-        {"dataset": dataset, "wave": wave, "attempt": attempt}
-        for dataset, wave, attempt in snapshot.attempts
+        _json_plain_antigravity(attempt)
+        for attempt in snapshot.attempts
     ]
     payload: dict[str, object] = {
         "schema": _TERMINAL_SCHEMA,
@@ -244,6 +276,25 @@ def verify_terminal_incomplete_antigravity(config: Exp449WaveConfig) -> Exp449Te
         raise ValueError("Exp449 terminal incomplete state is not established")
     root = _operations_root_for_context_antigravity(config.context)
     write_create_only(root / _TERMINAL_NAME, canonical_json_bytes(_terminal_record_antigravity(config, snapshot)), reuse_identical=True)
+    return status
+
+
+def _existing_terminal_status_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus | None:
+    """Treat any present terminal artifact as permanent, byte-verified authority."""
+    path = _operations_root_for_context_antigravity(config.context) / _TERMINAL_NAME
+    try:
+        details = path.lstat()
+    except FileNotFoundError:
+        return None
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+        raise ValueError("Exp449 terminal authority is unsafe")
+    snapshot = _snapshot_antigravity(config)
+    status = _terminal_status_antigravity(config, snapshot)
+    if status.status != "proposal_score_incomplete" or snapshot.wave_count != FROZEN_EXP449_CONFIG.maximum_waves:
+        raise ValueError("Exp449 terminal authority differs from recovery state")
+    expected = canonical_json_bytes(_terminal_record_antigravity(config, snapshot))
+    if path.read_bytes() != expected:
+        raise ValueError("Exp449 terminal authority differs")
     return status
 
 
@@ -284,7 +335,7 @@ def _validate_progress_event_antigravity(event: Mapping[str, object]) -> dict[st
     return normalized
 
 
-def write_exp449_progress_event_antigravity(operations_root: Path, event: Mapping[str, object]) -> None:
+def _write_exp449_progress_event_antigravity(operations_root: Path, event: Mapping[str, object]) -> None:
     """Append one validated result-neutral event outside the scientific root."""
     normalized = _validate_progress_event_antigravity(event)
     root = Path(operations_root)
@@ -298,43 +349,58 @@ def write_exp449_progress_event_antigravity(operations_root: Path, event: Mappin
         raise ValueError("Exp449 progress log is unsafe")
     descriptor = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0), 0o600)
     try:
-        line = canonical_json_bytes(normalized)
-        if os.write(descriptor, line) != len(line):
-            raise OSError("Exp449 progress log short write")
+        line = memoryview(canonical_json_bytes(normalized))
+        offset = 0
+        while offset < len(line):
+            written = os.write(descriptor, line[offset:])
+            if written <= 0:
+                raise OSError("Exp449 progress log short write")
+            offset += written
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
 
 
-def _emit_progress_antigravity(config: Exp449WaveConfig, *, wave: int, snapshot: _RecoverySnapshot, started: float, dataset: str | None = None) -> None:
+def _emit_progress_antigravity(config: Exp449WaveConfig, *, wave: int, snapshot: _RecoverySnapshot, started: float, completed: int | None = None, total: int | None = None, failed: int | None = None, dataset: str | None = None) -> None:
     """The logging boundary is the sole place where logging errors are swallowed."""
+    completed_count = len(snapshot.successes) if completed is None else completed
+    failed_count = len(snapshot.failed) if failed is None else failed
+    total_count = len(_catalog_datasets_antigravity(config.catalog)) if total is None else total
+    elapsed = float(monotonic() - started)
+    rate = completed_count / elapsed if elapsed > 0.0 else 0.0
     event: dict[str, object] = {
         "timestamp": f"{time():.6f}",
         "experiment": "Exp449",
         "mode": config.context.mode,
         "wave": wave,
-        "completed": len(snapshot.successes),
-        "failed": len(snapshot.failed),
-        "pending": len(snapshot.failed) + len(snapshot.never_attempted),
-        "elapsed_seconds": float(monotonic() - started),
-        "eta_seconds": 0.0,
+        "completed": completed_count,
+        "failed": failed_count,
+        "pending": max(0, total_count - completed_count - failed_count),
+        "elapsed_seconds": elapsed,
+        "eta_seconds": (max(0, total_count - completed_count - failed_count) / rate) if rate > 0.0 else 0.0,
     }
     if dataset is not None:
         event["dataset"] = dataset
     try:
-        write_exp449_progress_event_antigravity(_operations_root_for_context_antigravity(config.context), event)
+        _write_exp449_progress_event_antigravity(_operations_root_for_context_antigravity(config.context), event)
     except Exception:
         return
 
 
 def status_exp449_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus:
     """Return status from freshly verified records; attempts never imply success."""
+    terminal = _existing_terminal_status_antigravity(config)
+    if terminal is not None:
+        return terminal
     return _terminal_status_antigravity(config, _snapshot_antigravity(config))
 
 
 def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus:
     """Execute at most one of the two preregistered dataset-local recovery waves."""
     started = monotonic()
+    terminal = _existing_terminal_status_antigravity(config)
+    if terminal is not None:
+        return terminal
     before = _snapshot_antigravity(config)
     before_status = _terminal_status_antigravity(config, before)
     if before_status.status == "dataset_local_complete":
@@ -344,6 +410,18 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
         return verify_terminal_incomplete_antigravity(config)
     _emit_progress_antigravity(config, wave=next_wave, snapshot=before, started=started)
     context_payload, _authority = _authority_antigravity(config)
+    progress_failures = 0
+    def fixed_progress(event: Mapping[str, object]) -> None:
+        nonlocal progress_failures
+        if event.get("stage") != "task4_task5" or type(event.get("completed")) is not int or type(event.get("total")) is not int:
+            return
+        if event.get("phase") == "error":
+            progress_failures += 1
+        _emit_progress_antigravity(
+            config, wave=next_wave, snapshot=before, started=started,
+            completed=len(before.successes) + event["completed"], total=len(before.successes) + event["total"],
+            failed=progress_failures, dataset=event.get("dataset") if type(event.get("dataset")) is str else None,
+        )
     try:
         compose_exp449_proposal_score_antigravity(
             config.raw_datasets,
@@ -351,6 +429,7 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
             root=config.context.run_root,
             context=context_payload,
             catalog=config.catalog,
+            _progress_callback=fixed_progress,
         )
     except ProposalScoreIncomplete:
         after = _snapshot_antigravity(config)
@@ -374,5 +453,4 @@ __all__ = [
     "status_exp449_antigravity",
     "task45_context_payload_antigravity",
     "verify_terminal_incomplete_antigravity",
-    "write_exp449_progress_event_antigravity",
 ]

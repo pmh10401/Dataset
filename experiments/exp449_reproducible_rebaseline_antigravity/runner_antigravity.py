@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from time import monotonic
-from typing import Protocol
+from typing import Callable, Protocol
 
 from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision, RawDataset
 from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult
@@ -31,6 +31,7 @@ class Task45Collector(Protocol):
         context: object,
         catalog: dict[str, object],
         acceleration_manifest: object,
+        progress: Callable[[Mapping[str, object]], None] | None = None,
     ) -> tuple[Mapping[str, HardSourceBundle], Mapping[str, HardRouteResult]]: ...
 
 
@@ -74,6 +75,7 @@ def compose_exp449_proposal_score_antigravity(
     context: object = None,
     catalog: dict[str, object],
     collector: Task45Collector = _collect_task4_task5,
+    _progress_callback: Callable[[Mapping[str, object]], None] | None = None,
 ) -> ProposalScore:
     """Run Task6/7 only after exact in-memory Task4/5 catalog closure.
 
@@ -94,14 +96,15 @@ def compose_exp449_proposal_score_antigravity(
     backend = FrozenTask8BackendDecision.from_acceleration_manifest(acceleration_manifest)
     expected = tuple(entry["dataset"] for entry in catalog.get("datasets", ()))
     started = monotonic()
-    returned_sources, returned_routes = collector(
-        raw,
-        backend,
-        root=root,
-        context=context,
-        catalog=catalog,
-        acceleration_manifest=acceleration_manifest,
-    )
+    collector_kwargs: dict[str, object] = {
+        "root": root,
+        "context": context,
+        "catalog": catalog,
+        "acceleration_manifest": acceleration_manifest,
+    }
+    if _progress_callback is not None:
+        collector_kwargs["progress"] = _progress_callback
+    returned_sources, returned_routes = collector(raw, backend, **collector_kwargs)
     sources = _in_catalog_order_antigravity(returned_sources, expected)
     routes = _in_catalog_order_antigravity(returned_routes, expected)
     verify_dataset_local_bijection_antigravity(catalog, raw, sources, routes, mode=_gate_mode_antigravity(context))

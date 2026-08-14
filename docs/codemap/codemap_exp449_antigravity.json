@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-14T23:48:15+0900",
-  "generated_from_commit": "201c6334c0503cbb0ea52bed8ad8b85bc90ad5ca",
+  "generated_at": "2026-08-15T00:02:08+0900",
+  "generated_from_commit": "1760bcb5f9cab2935d67605989b156bb49cdb986",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -126,7 +126,7 @@
     {
       "id": "exp449_runner",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Implemented values-only Task4/5 collection adapter, exact catalog-bijection gate, and Task6/7 ProposalScore composition.",
+      "role": "Implemented values-only Task4/5 collection adapter, exact catalog-bijection gate, Task6/7 ProposalScore composition, and private result-neutral progress forwarding.",
       "entrypoints": [
         "compose_exp449_proposal_score_antigravity",
         "verify_dataset_local_bijection_antigravity"
@@ -148,7 +148,7 @@
         "operations_antigravity.py"
       ],
       "effects": [
-        "forwards the exact root, context, catalog, and acceleration manifest to the Task4/5 collector, then blocks every population-global primitive unless raw, source, and route mappings exactly equal the ordered catalog"
+        "forwards exact root/context/catalog/acceleration and an operations-owned private progress callback to Task4/5; blocks population-global primitives unless raw/source/route mappings equal the ordered catalog"
       ]
     },
     {
@@ -172,20 +172,19 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Implemented parent-only Exp449 two-wave recovery, exact paper namespace reconciliation, terminal status, create-only incomplete record, and result-neutral operations logging.",
+      "role": "Implemented parent-only Exp449 two-wave recovery, strict attempt-ledger reconciliation, permanent terminal authority, and fixed result-neutral operations progress.",
       "entrypoints": [
         "Exp449WaveConfig",
         "task45_context_payload_antigravity",
         "run_exp449_wave_antigravity",
         "status_exp449_antigravity",
-        "verify_terminal_incomplete_antigravity",
-        "write_exp449_progress_event_antigravity"
+        "verify_terminal_incomplete_antigravity"
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "constraints": [
-        "Derives Task4/5 authority only from the deterministic frozen-context bridge and exact paper success/attempt verifiers; never counts attempts as successes; schedules at most two waves; does not invoke Task6/7 after incomplete collection; terminal and JSONL records are parent-owned outside the scientific root and reject scientific result fields."
+        "Derives paper authority only from the canonical frozen-context bridge; rejects duplicate/noncontiguous attempts and all waves outside {1,2}; terminal authority is byte-verified before status or scheduling; only its fixed operations-root callback may write result-neutral progress."
       ],
       "evidence": [
         {
@@ -198,7 +197,7 @@
         "future run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "reopens and fully validates every existing Task4/5 success and attempt namespace before status or scheduling; writes a byte-verified create-only terminal incomplete artifact only after wave 2; appends only label-free operational progress outside the scientific root"
+        "revalidates full success and complete attempt records before status/scheduling, makes a matching wave-2 terminal permanent, and receives per-dataset Task4/5 progress through the runner private seam without changing scientific composition"
       ]
     },
     {
@@ -247,7 +246,7 @@
     {
       "id": "exp449_runner_recovery_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
-      "role": "Exp449 exact catalog-gate, Task6/7 blocking, recovery-input forwarding, two-wave terminal, progress-boundary, and deterministic interrupted/resume regression tests.",
+      "role": "Exp449 exact catalog-gate, Task6/7 blocking, recovery forwarding, strict two-wave terminal authority, private progress, and deterministic interrupted/resume regression tests.",
       "entrypoints": [
         "Exp449DatasetLocalBijectionTests",
         "Exp449CompositionGateTests",

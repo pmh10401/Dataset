@@ -189,6 +189,31 @@ class Exp449CompositionGateTests(unittest.TestCase):
         self.assertIs(received["catalog"], self.catalog)
         self.assertIs(received["acceleration_manifest"], self.acceleration)
 
+    def test_collector_progress_is_forwarded_only_through_the_private_operations_seam(self) -> None:
+        """Dropping a result-neutral Task4/5 event would make operations progress opaque."""
+        received: list[dict[str, object]] = []
+
+        def collector(raw: object, backend: object, **kwargs: object):
+            progress = kwargs["progress"]
+            progress({
+                "stage": "task4_task5", "phase": "tick", "completed": 1, "total": 2,
+                "dataset": "Alpha", "elapsed_s": 2.0,
+            })
+            return self.sources, self.routes
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(runner, "_label_firewall"))
+            for stage_patch in self._stage_patches():
+                stack.enter_context(stage_patch)
+            runner.compose_exp449_proposal_score_antigravity(
+                self.raw, self.acceleration, root=Path("/tmp/exp449_fixture_antigravity"), context=object(),
+                catalog=self.catalog, collector=collector, _progress_callback=received.append,
+            )
+        self.assertEqual(received, [{
+            "stage": "task4_task5", "phase": "tick", "completed": 1, "total": 2,
+            "dataset": "Alpha", "elapsed_s": 2.0,
+        }])
+
     def test_complete_fixture_preserves_existing_proposal_score_semantics(self) -> None:
         """A complete catalog retains every in-memory ProposalScore semantic field."""
         paper_low = self.low
@@ -237,6 +262,8 @@ class _AttemptFixture:
     dataset: str
     wave: int
     attempt: int
+    exception_type: str = "RuntimeError"
+    exception_message: str = "fixture failure"
 
 
 def _recovery_context(root: Path) -> Exp449Context:
@@ -280,6 +307,7 @@ class _RecoveryFixture:
         self.revalidated_attempts = 0
         self.composer_calls = 0
         self.global_stage_calls = 0
+        self.scheduled_identities: list[tuple[str, ...]] = []
         self.fail_once = fail_once
         self.fail_twice = fail_twice
 
@@ -299,6 +327,15 @@ class _RecoveryFixture:
     def compose(self, *_args: object, **_kwargs: object) -> object:
         self.composer_calls += 1
         failure = (self.fail_once and self.composer_calls == 1) or (self.fail_twice and self.composer_calls <= 2)
+        scheduled = tuple(name for name in self.names if name not in self.successes)
+        self.scheduled_identities.append(scheduled)
+        progress = _kwargs.get("_progress_callback")
+        if callable(progress):
+            for completed, dataset in enumerate(scheduled, 1):
+                progress({
+                    "stage": "task4_task5", "phase": "tick", "completed": completed,
+                    "total": len(scheduled), "dataset": dataset, "elapsed_s": float(completed),
+                })
         if failure:
             self.successes.update(name for name in self.names if name != self.failed_dataset)
             self.attempts.append(_AttemptFixture(self.failed_dataset, self.composer_calls, len(self.attempts) + 1))
@@ -323,6 +360,19 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
         stack.enter_context(patch.object(operations.Task4Task5SuccessAuthority, "from_verified_context", return_value=object()))
         stack.enter_context(patch.object(operations, "verify_task4_task5_success_namespace", side_effect=fixture.verify_success_namespace))
         stack.enter_context(patch.object(operations, "verify_task4_task5_attempt_namespace", side_effect=fixture.verify_attempt_namespace))
+        stack.enter_context(patch.object(
+            operations,
+            "_read_verified_attempt_payloads_antigravity",
+            side_effect=lambda _config, attempts: tuple({
+                "dataset": dataset,
+                "wave": wave,
+                "attempt": attempt,
+                "exception_type": exception_type,
+                "exception_message": exception_message,
+                "raw_identity": {"dataset": dataset},
+                "record_sha256": f"{attempt:064x}",
+            } for dataset, wave, attempt, exception_type, exception_message in attempts),
+        ))
         stack.enter_context(patch.object(operations, "compose_exp449_proposal_score_antigravity", side_effect=fixture.compose))
         return stack
 
@@ -339,6 +389,11 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
             self.assertGreaterEqual(len(fixture.revalidated_successes), 4)
             self.assertEqual(fixture.revalidated_successes[1], tuple(name for name in fixture.names if name != fixture.failed_dataset))
             self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 1))
+            self.assertEqual(fixture.scheduled_identities, [fixture.names, (fixture.failed_dataset,)])
+            events = [json.loads(line) for line in (fixture.operations_root / "operations_progress_antigravity.jsonl").read_text().splitlines()]
+            per_dataset = [event for event in events if "dataset" in event]
+            self.assertEqual(tuple(event["dataset"] for event in per_dataset), fixture.names + (fixture.failed_dataset,))
+            self.assertGreater(per_dataset[1]["eta_seconds"], 0.0)
 
     def test_second_failure_publishes_one_terminal_record_and_third_call_refuses_scoring(self) -> None:
         """Scheduling a third attempt after the frozen retry cap would weaken terminal semantics."""
@@ -357,6 +412,34 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
             self.assertEqual(terminal["never_attempted"], [])
             self.assertEqual(terminal["context_sha256"], operations.task45_context_payload_antigravity(fixture.context)["context_sha256"])
             self.assertEqual(terminal["catalog_sha256"], "b" * 64)
+
+    def test_terminal_authority_rejects_later_success_or_ledger_mutation_before_scheduling(self) -> None:
+        """A terminal record that permits resumed scoring after mutation is not an authority."""
+        with TemporaryDirectory() as temporary:
+            fixture = _RecoveryFixture(Path(temporary), fail_twice=True)
+            with self._patches(fixture):
+                operations.run_exp449_wave_antigravity(fixture.config)
+                operations.run_exp449_wave_antigravity(fixture.config)
+                fixture.successes.add(fixture.failed_dataset)
+                with self.assertRaisesRegex(ValueError, "terminal"):
+                    operations.run_exp449_wave_antigravity(fixture.config)
+            self.assertEqual(fixture.composer_calls, 2)
+
+    def test_attempt_reconciliation_rejects_duplicate_noncontiguous_and_out_of_range_identities(self) -> None:
+        """Clamping or coalescing malformed ledger identities would create an unauthorized retry."""
+        dataset = FROZEN_EXP449_CONFIG.smoke_datasets[0]
+        cases = (
+            (_AttemptFixture(dataset, 1, 2),),
+            (_AttemptFixture(dataset, 1, 1), _AttemptFixture(dataset, 1, 2)),
+            (_AttemptFixture(dataset, 3, 1),),
+        )
+        for attempts in cases:
+            with self.subTest(attempts=attempts), TemporaryDirectory() as temporary:
+                fixture = _RecoveryFixture(Path(temporary))
+                fixture.attempts.extend(attempts)
+                with self._patches(fixture):
+                    with self.assertRaisesRegex(ValueError, "attempt"):
+                        operations.status_exp449_antigravity(fixture.config)
 
     def test_attempt_records_never_count_as_success_or_unlock_global_composition(self) -> None:
         """Treating an attempt ledger entry as a success would open Task6/7 with a partial catalog."""
@@ -377,12 +460,12 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
                 "completed": 1, "failed": 0, "pending": 22, "elapsed_seconds": 1.0, "eta_seconds": 22.0,
                 "dataset": "Alpha",
             }
-            operations.write_exp449_progress_event_antigravity(root, event)
+            operations._write_exp449_progress_event_antigravity(root, event)
             logged = json.loads((root / "operations_progress_antigravity.jsonl").read_text(encoding="utf-8"))
             self.assertEqual(logged, event)
             unsafe = {**event, "scores": [0.1]}
             with self.assertRaisesRegex(ValueError, "forbidden"):
-                operations.write_exp449_progress_event_antigravity(root, unsafe)
+                operations._write_exp449_progress_event_antigravity(root, unsafe)
 
     def test_interrupted_resume_keeps_fixture_scientific_payload_byte_identical(self) -> None:
         """Retry ordering must not alter the final typed scientific bytes."""
