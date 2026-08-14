@@ -294,7 +294,7 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
     stability_seconds = float(monotonic() - stability_started)
     print("Task7 finish", file=sys.stderr, flush=True)
     surface = build_hard_evidence_surface(sources, routes, raw) if progress is None else build_hard_evidence_surface(sources, routes, raw, progress=progress)
-    policies = build_policies(surface, low, stability, raw) if progress is None else build_policies(surface, low, stability, raw, progress=progress)
+    policies = build_policies(surface, low, stability, raw, routes) if progress is None else build_policies(surface, low, stability, raw, routes, progress=progress)
     _label_firewall()
     return ProposalScore(raw, sources, routes, low, stability, policies, backend, {"task4_task5": hard_seconds, "task6": low_seconds, "task7": stability_seconds, "total": float(monotonic() - started)})
 

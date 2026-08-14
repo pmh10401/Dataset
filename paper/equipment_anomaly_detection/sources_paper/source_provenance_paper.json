@@ -497,7 +497,7 @@
       ]
     },
     "routing_paper.py": {
-      "paper_sha256": "986ba4c343e5d52ba203cbbc21a1ac5b985df2f28e80870e574a331eaee7cbea",
+      "paper_sha256": "c0cfd4bc57a568cadcb996c9c638dd3fc1ae0e713ae82d5f2c33311a030bac6a",
       "origins": [
         {
           "module": "paper.equipment_anomaly_detection.score_adapter_paper",

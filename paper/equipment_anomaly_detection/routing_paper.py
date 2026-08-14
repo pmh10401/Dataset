@@ -258,17 +258,32 @@ def build_policies(
     low_frequency: LowFrequencyResult,
     stability: StabilityPartition,
     raw_datasets: Mapping[str, RawDataset],
+    routes: Mapping[str, HardRouteResult],
     *,
     progress: ProgressCallback | None = None,
 ) -> PolicyBundle:
     """Construct hard-only/source/stable/unstable routes in the frozen order."""
     if not isinstance(hard, EvidenceSurface) or not isinstance(stability, StabilityPartition):
         raise ValueError("policy inputs are invalid")
-    if set(hard.alerts) != set(low_frequency.hard_lanes) or any(
-        hard.alerts[dataset] != low_frequency.hard_lanes[dataset]
-        for dataset in hard.alerts
+    if not isinstance(routes, Mapping):
+        raise ValueError("policy route authority is invalid")
+    route_by_dataset = dict(routes)
+    if (
+        not route_by_dataset
+        or set(hard.alerts) != set(route_by_dataset)
+        or set(low_frequency.hard_lanes) != set(route_by_dataset)
+        or any(not isinstance(route, HardRouteResult) for route in route_by_dataset.values())
     ):
-        raise ValueError("Hard route identities differ from the Task 6 eligibility lanes")
+        raise ValueError("policy route authority identities differ")
+    for dataset, route in route_by_dataset.items():
+        if low_frequency.hard_lanes[dataset] != route.exp253.hard:
+            raise ValueError("Task 6 eligibility lanes differ from the Hard route authority")
+        if hard.alerts[dataset] != route.automatic_hard:
+            raise ValueError("Hard evidence alerts differ from the Hard route authority")
+        if route.automatic_hard != route.exp253.hard - route.exact_normal_removed:
+            raise ValueError("Hard route automatic_hard algebra is inconsistent")
+        if route.n_test != hard.strength[dataset].size:
+            raise ValueError("Hard route TEST identity differs from the evidence surface")
     source = _source_surface(low_frequency, raw_datasets)
     if set(hard.alerts) != set(source.alerts) or any(hard.strength[dataset].size != source.strength[dataset].size for dataset in hard.alerts):
         raise ValueError("Hard and source evidence populations are mismatched")

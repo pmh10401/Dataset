@@ -451,7 +451,7 @@ class ProgressLoggingAntigravityTests(unittest.TestCase):
         routes_map = {raw.dataset: route}
         events: list[dict[str, object]] = []
         surface = build_hard_evidence_surface(sources_map, routes_map, raw_map, progress=events.append)
-        build_policies(surface, low, stability, raw_map, progress=events.append)
+        build_policies(surface, low, stability, raw_map, routes_map, progress=events.append)
         self.assertEqual({event["stage"] for event in events}, {"hard_evidence", "policies"})
         policy_events = [event for event in events if event["stage"] == "policies"]
         self.assertTrue(policy_events and all(event["total"] == 4 for event in policy_events))

@@ -19,6 +19,7 @@ from paper.equipment_anomaly_detection.contracts_paper import (
     LowFrequencyRow,
     RawDataset,
 )
+from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
 from paper.equipment_anomaly_detection.sources_paper.low_frequency_paper import (
     fit_group_calibration_paper,
     score_test_row_paper,
@@ -73,6 +74,16 @@ def _result(*values: RawDataset, hard_lanes: dict[str, frozenset[int]] | None = 
         provisional_candidates=tuple(sorted(candidates, key=lambda candidate: candidate.global_key)),
         selected_candidates=selected,
         excluded_train_rows=0, hard_lanes=lanes,
+    )
+
+
+def _route_authority(n_test: int, hard: frozenset[int], removed: frozenset[int] = frozenset()) -> HardRouteResult:
+    empty = RouteLanes(frozenset(), frozenset(), frozenset())
+    lanes = RouteLanes(hard, frozenset(), frozenset())
+    return HardRouteResult(
+        empty, frozenset(), frozenset(), frozenset(), empty,
+        SourceExpansion(frozenset(), frozenset()),
+        lanes, frozenset(), lanes, removed, hard - removed, n_test,
     )
 
 
@@ -185,7 +196,11 @@ class StabilityPaperTests(unittest.TestCase):
             strength={first.dataset: np.asarray([.01, .2]), second.dataset: np.asarray([.2, .9])},
             evidence_missing={first.dataset: np.asarray([False, False]), second.dataset: np.asarray([False, False])},
         )
-        policies = build_policies(hard, low, partition, {first.dataset: first, second.dataset: second})
+        routes = {
+            first.dataset: _route_authority(2, frozenset()),
+            second.dataset: _route_authority(2, frozenset({1})),
+        }
+        policies = build_policies(hard, low, partition, {first.dataset: first, second.dataset: second}, routes)
         self.assertEqual(policies.order, POLICY_ORDER)
         self.assertEqual(tuple(policy.name for policy in policies.policies), POLICY_ORDER)
         coordinates = [policy.coordinates for policy in policies.policies]
@@ -308,7 +323,8 @@ class StabilityPaperTests(unittest.TestCase):
         low = LowFrequencyResult((values.dataset,), rows, (candidate,), (candidate,), 0, {values.dataset: frozenset()})
         partition = _partition_for(candidate)
         hard = EvidenceSurface({values.dataset: frozenset()}, {values.dataset: np.asarray([0.0, 0.0, 0.0])}, {values.dataset: np.asarray([False, False, True])})
-        policies = build_policies(hard, low, partition, {values.dataset: values})
+        routes = {values.dataset: _route_authority(3, frozenset())}
+        policies = build_policies(hard, low, partition, {values.dataset: values}, routes)
         for policy in policies.policies:
             self.assertGreater(policy.strength[values.dataset][1], 0.0)
             self.assertGreater(policy.scores[values.dataset][1], 0.0)
@@ -319,7 +335,7 @@ class StabilityPaperTests(unittest.TestCase):
 
         mismatched_hard = EvidenceSurface({values.dataset: frozenset({1})}, {values.dataset: np.asarray([0.0, .2, 0.0])}, {values.dataset: np.asarray([False, False, True])})
         with self.assertRaisesRegex(ValueError, "Hard"):
-            build_policies(mismatched_hard, low, partition, {values.dataset: values})
+            build_policies(mismatched_hard, low, partition, {values.dataset: values}, routes)
 
     def test_selected_only_replay_has_stable_unstable_and_missing_view_nonvacuity(self) -> None:
         """Candidate absence is recorded per view and cannot silently become survival."""
