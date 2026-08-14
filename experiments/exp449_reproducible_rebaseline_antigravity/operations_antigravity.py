@@ -26,6 +26,7 @@ from paper.equipment_anomaly_detection.artifacts_paper import (
     write_create_only,
 )
 from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
+from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
 from paper.equipment_anomaly_detection.acceleration_paper import (
     build_acceleration_manifest,
     verify_acceleration_manifest,
@@ -45,6 +46,7 @@ from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper imp
 from .config_antigravity import FROZEN_EXP449_CONFIG
 from .contracts_antigravity import Exp449Context, Exp449TerminalStatus
 from .runner_antigravity import compose_exp449_proposal_score_antigravity
+from .artifacts_antigravity import context_sha256_antigravity
 
 
 _TERMINAL_NAME = "proposal_score_incomplete_antigravity.json"
@@ -80,7 +82,6 @@ _REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[2]
 _CAPABLE_INTERPRETER_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python"
 )
-_EXECUTION_AUTHORITY_NAME_ANTIGRAVITY = "execution_authority_antigravity.json"
 _LABEL_MODULE_PREFIXES_ANTIGRAVITY = (
     "paper.equipment_anomaly_detection.label_access_paper",
     "paper.equipment_anomaly_detection.labels_paper",
@@ -640,10 +641,12 @@ def _status_fixed_roots_antigravity(roots: tuple[Path, ...]) -> list[dict[str, s
 
 def _require_capable_interpreter_antigravity() -> dict[str, str]:
     expected = _CAPABLE_INTERPRETER_ANTIGRAVITY
-    if not expected.is_file() or Path(sys.executable).resolve() != expected.resolve() or platform.python_version() != "3.14.6":
+    observed = os.path.abspath(sys.executable)
+    if not expected.is_file() or observed != str(expected) or platform.python_version() != "3.14.6":
         raise ValueError("Exp449 capable interpreter differs")
     return {
-        "executable": str(Path(sys.executable).resolve()),
+        "executable": observed,
+        "pinned_executable": str(expected),
         "python_version": platform.python_version(),
         "python_implementation": platform.python_implementation(),
         "prefix": str(Path(sys.prefix).resolve()),
@@ -666,14 +669,33 @@ def _dependency_facts_antigravity() -> dict[str, str]:
     return {"pycatch22": pycatch["pycatch22"], "aeon": aeon, "hydra": exp84["hydra"], "torch": exp84["torch"]}
 
 
-def _readiness_catalogs_antigravity() -> dict[str, dict[str, object]]:
-    """Recompute catalog identities by the paper's read-only SQLite verifier."""
+def _readiness_catalog_builder_antigravity(mode: str) -> dict[str, object]:
+    """The sole read-only paper catalog builder; test fixtures replace only this seam."""
     database = Path(FROZEN_PAPER_CONFIG.database_path)
-    smoke = build_catalog(database, mode="smoke", smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets)
-    official = build_catalog(database, mode="full")
-    verify_catalog(smoke, database, "smoke", FROZEN_EXP449_CONFIG.smoke_datasets)
-    verify_catalog(official, database, "full")
-    return {"smoke": smoke, "official": official}
+    if mode == "smoke":
+        value = build_catalog(database, mode="smoke", smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets)
+        return verify_catalog(value, database, "smoke", FROZEN_EXP449_CONFIG.smoke_datasets)
+    if mode == "official":
+        value = build_catalog(database, mode="full")
+        return verify_catalog(value, database, "full")
+    raise ValueError("Exp449 readiness catalog mode is invalid")
+
+
+def _verified_catalogs_antigravity() -> tuple[dict[str, dict[str, object]], dict[str, object]]:
+    catalogs = {"smoke": _readiness_catalog_builder_antigravity("smoke"), "official": _readiness_catalog_builder_antigravity("official")}
+    expected_path = FROZEN_PAPER_CONFIG.database_path
+    expected_resolved = str(Path(expected_path).resolve(strict=False))
+    observed_database: dict[str, object] | None = None
+    for catalog in catalogs.values():
+        database = catalog.get("database") if isinstance(catalog, dict) else None
+        if not isinstance(database, dict) or database.get("unresolved_path") != expected_path or database.get("resolved_path") != expected_resolved or type(database.get("size")) is not int or database["size"] < 0 or database.get("sha256") != FROZEN_PAPER_CONFIG.database_sha256:
+            raise ValueError("Exp449 verified catalog database SHA256 or identity differs")
+        if observed_database is None:
+            observed_database = dict(database)
+        elif database != observed_database:
+            raise ValueError("Exp449 verified catalog database identities differ")
+    assert observed_database is not None
+    return catalogs, observed_database
 
 
 def _preprocessing_contracts_antigravity() -> tuple[str, str]:
@@ -690,6 +712,13 @@ def _label_firewall_antigravity() -> None:
     )
     if loaded:
         raise ValueError("Exp449 label module is loaded")
+
+
+def _validated_dependency_facts_antigravity(value: object) -> dict[str, str]:
+    required = {"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "2.13.0"}
+    if not isinstance(value, dict) or set(value) != set(required) or any(type(value[key]) is not str for key in required) or value != required:
+        raise ValueError("Exp449 dependency facts differ")
+    return dict(value)
 
 
 def _sha256_file_antigravity(path: Path) -> str:
@@ -728,21 +757,69 @@ def _plain_json_antigravity(value: object) -> object:
     return value
 
 
+def _readiness_contexts_antigravity(
+    *, reviewed_commit: str, interpreter: dict[str, str], dependencies: dict[str, str],
+    contracts: tuple[str, str], catalogs: dict[str, dict[str, object]], database: dict[str, object],
+    closure: dict[str, object], logical_cpu_count: int | None,
+) -> tuple[dict[str, dict[str, object]], dict[str, object]]:
+    constants = {
+        "reviewed_commit": reviewed_commit, "policy_id": FROZEN_EXP449_CONFIG.policy_id,
+        "preprocessing_contracts": list(contracts), "cpu_repeat_tolerance": FROZEN_EXP449_CONFIG.cpu_repeat_tolerance,
+        "accelerated_tolerance": FROZEN_EXP449_CONFIG.accelerated_tolerance,
+        "minimum_accelerated_speedup": FROZEN_EXP449_CONFIG.minimum_accelerated_speedup,
+    }
+    entries = (
+        ("smoke_a", "smoke", FROZEN_EXP449_CONFIG.smoke_a_scientific_root, catalogs["smoke"]),
+        ("smoke_b", "smoke", FROZEN_EXP449_CONFIG.smoke_b_scientific_root, catalogs["smoke"]),
+        ("official", "official", FROZEN_EXP449_CONFIG.official_scientific_root, catalogs["official"]),
+    )
+    result: dict[str, dict[str, object]] = {}
+    official_acceleration: dict[str, object] | None = None
+    for name, mode, root, catalog in entries:
+        assessment_inputs = {
+            "schema": "exp449-readiness-assessment-inputs-antigravity.v1", "reviewed_commit": reviewed_commit,
+            "mode": mode, "run_root": str(root), "database": database,
+            "catalog_sha256": catalog["catalog_sha256"], "interpreter": interpreter,
+            "dependencies": dependencies, "closure": closure, "constants": constants,
+        }
+        assessment_sha256 = sha256(json.dumps(assessment_inputs, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+        acceleration = verify_acceleration_manifest(build_acceleration_manifest(assessment_sha256, logical_cpu_count=logical_cpu_count), assessment_sha256)
+        decision = FrozenTask8BackendDecision.from_acceleration_manifest(acceleration)
+        context = Exp449Context.from_verified_inputs(
+            run_root=root, mode=mode, catalog=catalog, acceleration=decision,
+            database_sha256=str(database["sha256"]), code_closure=closure["code_closure"],
+            lineage_sha256=str(closure["lineage_sha256"]), codemap_sha256=str(closure["codemap_sha256"]),
+            interpreter=interpreter["executable"], environment={"interpreter": interpreter, "dependencies": dependencies},
+            seeds_and_constants=constants,
+        )
+        result[name] = {
+            "context_sha256": context_sha256_antigravity(context), "mode": context.mode,
+            "run_root": str(context.run_root), "catalog_sha256": context.catalog_sha256,
+            "database_sha256": context.database_sha256, "historical_parity_status": context.historical_parity_status,
+            "backend_record": _plain_json_antigravity(context.backend_record),
+        }
+        if name == "official":
+            official_acceleration = acceleration
+    assert official_acceleration is not None
+    return result, official_acceleration
+
+
 def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int | None = None) -> dict[str, object]:
     """The implementation seam for readonly fixture testing; never creates or scores."""
     reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
     interpreter = _require_capable_interpreter_antigravity()
     _label_firewall_antigravity()
-    dependencies = _dependency_facts_antigravity()
+    dependencies = _validated_dependency_facts_antigravity(_dependency_facts_antigravity())
     contracts = _preprocessing_contracts_antigravity()
     if contracts != _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY or len(set(contracts)) != 2:
         raise ValueError("Exp449 preprocessing contracts differ")
-    catalogs = _readiness_catalogs_antigravity()
+    catalogs, database = _verified_catalogs_antigravity()
     roots = _inspect_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
     closure = _closure_facts_antigravity()
-    context_seed = sha256(json.dumps({"reviewed_commit": reviewed_commit, "catalogs": catalogs}, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
-    manifest = build_acceleration_manifest(context_seed, logical_cpu_count=logical_cpu_count)
-    acceleration = verify_acceleration_manifest(manifest, context_seed)
+    contexts, acceleration = _readiness_contexts_antigravity(
+        reviewed_commit=reviewed_commit, interpreter=interpreter, dependencies=dependencies, contracts=contracts,
+        catalogs=catalogs, database=database, closure=closure, logical_cpu_count=logical_cpu_count,
+    )
     workers = dict(acceleration["workers"])
     benchmark_requirement = "same_input_and_seed; finite_outputs; identical_candidate_indices_at_every_preregistered_alpha; numerical_tolerance; at_least_1.1x_end_to_end_including_transfer_compilation_and_synchronization"
     facts: dict[str, object] = {
@@ -751,7 +828,7 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
         "reviewed_commit": reviewed_commit,
         "interpreter": interpreter,
         "dependencies": dependencies,
-        "database": {"path": FROZEN_PAPER_CONFIG.database_path, "sha256": FROZEN_PAPER_CONFIG.database_sha256, "access": "read_only_verified_catalog"},
+        "database": {"path": database["unresolved_path"], "resolved_path": database["resolved_path"], "observed_size": database["size"], "sha256": database["sha256"], "access": "read_only_verified_catalog"},
         "catalogs": {mode: {"catalog_sha256": catalog["catalog_sha256"], "dataset_count": len(catalog["datasets"])} for mode, catalog in catalogs.items()},
         "workers": {"logical_cpu_count": workers["logical_cpu_count"], "dataset_workers": workers["dataset_workers"]},
         "preprocessing_contracts": list(contracts),
@@ -768,6 +845,7 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
             "no_outer_pool_with_heavy_process": True,
         },
         "roots": roots,
+        "contexts": contexts,
         "label_modules_loaded": [],
         **closure,
     }
@@ -788,7 +866,7 @@ def readiness_exp449_antigravity(reviewed_commit: str) -> dict[str, object]:
 def status_exp449_read_only_antigravity() -> dict[str, object]:
     """A root-status query deliberately does not invoke recovery status or create roots."""
     roots = _status_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
-    return {"schema": "exp449-read-only-status-antigravity.v1", "experiment_id": "Exp449", "status": "not_started" if all(item["state"] == "absent" for item in roots) else "root_present", "roots": roots}
+    return {"schema": "exp449-read-only-status-antigravity.v1", "experiment_id": "Exp449", "status": "not_started" if all(item["state"] == "absent" for item in roots) else "root_present", "roots": roots, "execution_authority": _execution_authority_status_antigravity()}
 
 
 def verify_exp449_proposal_read_only_antigravity(target: str) -> dict[str, object]:
@@ -803,33 +881,16 @@ def verify_exp449_proposal_read_only_antigravity(target: str) -> dict[str, objec
     raise ValueError("Exp449 proposal verification requires separately verified immutable context and catalog inputs")
 
 
-def _require_execution_authority_antigravity(target: str, reviewed_commit: str) -> dict[str, object]:
-    """Require a later, externally-created authority; this module never creates it."""
-    targets = {"smoke_a": (0, 1), "smoke_b": (2, 3), "official": (4, 5)}
-    if target not in targets:
+def _execution_authority_status_antigravity() -> dict[str, str]:
+    return {"status": "execution_authority_not_configured", "enablement_requirement": "later_separately_reviewed_code_and_config_change_must_pin_a_trusted_authority_digest_or_signature"}
+
+
+def _require_execution_authority_antigravity(target: str, reviewed_commit: str) -> None:
+    """Fail closed: no trusted issuer or pinned digest exists in the frozen contract."""
+    if target not in {"smoke_a", "smoke_b", "official"}:
         raise ValueError("Exp449 execution target is invalid")
-    reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
-    scientific_index, operations_index = targets[target]
-    roots = tuple(_fixed_roots_antigravity())
-    scientific_root, operations_root = roots[scientific_index], roots[operations_index]
-    states = _status_fixed_roots_antigravity(roots)
-    if states[scientific_index]["state"] != "absent":
-        raise ValueError("Exp449 scientific root must be absent before execution")
-    authority_path = operations_root / _EXECUTION_AUTHORITY_NAME_ANTIGRAVITY
-    details = _lstat_or_none_antigravity(authority_path)
-    if details is None:
-        raise ValueError("Exp449 execution authority is absent")
-    if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
-        raise ValueError("Exp449 execution authority is unsafe")
-    try:
-        payload = json.loads(authority_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError("Exp449 execution authority is invalid") from error
-    required = {"schema", "experiment_id", "target", "reviewed_commit", "scientific_root", "operations_root", "authority_sha256"}
-    bare = {key: value for key, value in payload.items() if key != "authority_sha256"} if isinstance(payload, dict) else {}
-    if not isinstance(payload, dict) or set(payload) != required or payload.get("schema") != "exp449-execution-authority-antigravity.v1" or payload.get("experiment_id") != "Exp449" or payload.get("target") != target or payload.get("reviewed_commit") != reviewed_commit or payload.get("scientific_root") != str(scientific_root) or payload.get("operations_root") != str(operations_root) or payload.get("authority_sha256") != sha256(json.dumps(bare, sort_keys=True, separators=(",", ":"), allow_nan=False).encode() + b"\n").hexdigest():
-        raise ValueError("Exp449 execution authority differs")
-    return payload
+    _require_reviewed_head_antigravity(reviewed_commit)
+    raise ValueError(_execution_authority_status_antigravity()["status"])
 
 
 def main_antigravity(argv: list[str] | None = None) -> int:
@@ -855,8 +916,7 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         else:
             target = {"run-smoke-a": "smoke_a", "run-smoke-b": "smoke_b", "run-official": "official"}[args.command]
             _require_execution_authority_antigravity(target, args.reviewed_commit)
-            raise NotImplementedError("Exp449 execution remains disabled in the implementation-only boundary")
-    except (ValueError, NotImplementedError) as error:
+    except ValueError as error:
         parser.error(str(error))
     print(json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False))
     return 0

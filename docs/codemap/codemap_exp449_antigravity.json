@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T02:58:50+09:00",
-  "generated_from_commit": "c9071b7988361cf5fbbd234f74198a875573c5f5",
+  "generated_at": "2026-08-15T03:21:46+09:00",
+  "generated_from_commit": "815cb98a1cc08f92085de813cadb5c155a892b30",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -188,7 +188,7 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Parent-only Exp449 two-wave recovery plus read-only readiness, fixed-root status, and execution-authority refusal gates.",
+      "role": "Parent-only Exp449 recovery plus read-only readiness that constructs verified Exp449 contexts; all execution commands are permanently fail-closed until a later pinned trusted-authority contract exists.",
       "entrypoints": [
         "Exp449WaveConfig",
         "task45_context_payload_antigravity",
@@ -207,7 +207,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
-        "Derives paper authority only from the canonical frozen-context bridge; rejects duplicate/noncontiguous attempts and all waves outside {1,2}; terminal authority is byte-verified before status or scheduling. Readiness requires exact clean reviewed HEAD, the pinned capable interpreter, frozen dependency preflights, read-only verified catalog facts, two distinct preprocessing contracts, raw-component lstat absence for all six roots, and no loaded label module. It records CPU fallback/MLX-MPS facts and never scores, creates roots, creates execution authority, or launches an experiment."
+        "Readiness requires exact clean reviewed HEAD, literal pinned capable interpreter spelling, frozen dependency preflights, observed paper catalog database identity equal to frozen identity, genuine Exp449Context hashes for Smoke A/B/official, distinct preprocessing contracts, raw-component lstat absence for all roots, and no loaded label module. CPU remains canonical with explicit PyTorch/MLX/MPS facts. Execution authority is `execution_authority_not_configured`: no self-hash, filesystem artifact, root creation, or launch is accepted in this revision."
       ],
       "evidence": [
         {
@@ -225,7 +225,7 @@
         "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "revalidates full success and complete attempt records before status/scheduling, makes a matching wave-2 terminal permanent, records a verified Smoke A/B receipt only in Smoke B operations, and returns canonical read-only readiness/status facts while refusing unauthorised execution before any root creation."
+        "returns canonical read-only status/readiness context facts; refuses every run command before authority-path I/O or root creation; preserves prior recovery and Smoke B receipt responsibilities."
       ]
     },
     {
@@ -2156,7 +2156,7 @@
         "exp449_runner_recovery_tests",
         "exp449_manifest_verifier_tests"
       ],
-      "outcome": "Readiness is a clean-head, capable-interpreter, dependency, CPU/MLX/MPS, label-firewall, and absent-fixed-root gate; no implementation command creates an Exp449 root or launches a run."
+      "outcome": "Readiness verifies observed frozen database identity and constructs contract-bound contexts for all three scientific roots. Every execution command is unavailable until later reviewed code/config pins a trusted authority digest or signature."
     }
   ],
   "unknown_relationships": [],
