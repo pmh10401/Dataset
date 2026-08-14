@@ -1,6 +1,6 @@
 """The public Task 8 CLI exposes only run, status, and verify."""
 from __future__ import annotations
-import argparse, json
+import argparse, json, sys
 from collections.abc import Mapping
 from pathlib import Path
 from .runner_paper import PipelineConfig, run_pipeline, verify_completed
@@ -20,7 +20,11 @@ def exit_code_for_result_paper(result: Mapping[str, object]) -> int:
         return 2
     return 1
 def main(argv=None):
-    args=build_parser().parse_args(argv); value=run_pipeline(_config(args)) if args.command=="run" else verify_completed(_config(args))
-    print(json.dumps(value,sort_keys=True,separators=(",",":")))
-    return exit_code_for_result_paper(value)
+    args = build_parser().parse_args(argv)
+    value = run_pipeline(_config(args)) if args.command == "run" else verify_completed(_config(args))
+    status = value["status"] if isinstance(value.get("status"), str) else "unknown"
+    code = exit_code_for_result_paper(value)
+    print(f"journal_exit {status} exit={code}", file=sys.stderr, flush=True)
+    print(json.dumps(value, sort_keys=True, separators=(",", ":")))
+    return code
 if __name__=="__main__": raise SystemExit(main())

@@ -14,7 +14,7 @@ import numpy as np
 
 from .artifacts_paper import Task4Task5SuccessAuthority, append_task4_task5_attempt_record, freeze_score_root, read_task4_task5_success_record, verify_task4_task5_attempt_namespace, verify_task4_task5_success_namespace, write_task4_task5_success_record, write_typed_proposal_shard
 from .contracts_paper import FrozenTask8BackendDecision, LowFrequencyResult, RawDataset, Task8FrozenManifest
-from .data_paper import PROGRESS_TICK_INTERVAL_S, ProgressCallback
+from .data_paper import PROGRESS_TICK_INTERVAL_S, ProgressCallback, emit_progress_paper
 from .hard_route_paper import HardRouteResult, replay_hard_route
 from .routing_paper import PolicyBundle, build_hard_evidence_surface, build_policies
 from .sources_paper.hard_sources_paper import HardSourceBundle, score_hard_sources
@@ -175,7 +175,7 @@ def _risk_first_queue(raw: Mapping[str, RawDataset]) -> tuple[str, ...]:
     return tuple(sorted(raw, key=lambda dataset: risk(raw[dataset])))
 
 
-def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, acceleration_manifest: object | None = None, publish_success: Task4Task5SuccessPublisher | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
+def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, acceleration_manifest: object | None = None, publish_success: Task4Task5SuccessPublisher | None = None, progress: ProgressCallback | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
     verify_exp84_environment_paper()
     recovery_inputs = (root is not None, context is not None, catalog is not None)
     if any(recovery_inputs) and (not all(recovery_inputs) or acceleration_manifest is None):
@@ -204,6 +204,7 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
         return dict(sorted(sources.items())), dict(sorted(routes.items()))
     started, total = monotonic(), len(queue)
     _progress("Task4+Task5 start", 0, total, started)
+    emit_progress_paper(progress, {"stage": "task4_task5", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
     def persist_result(dataset: str, result: tuple[HardSourceBundle, HardRouteResult]) -> None:
         sources[dataset], routes[dataset] = result
         if publish_success is not None:
@@ -221,6 +222,11 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
             except Exception as error:
                 persist_failure(dataset, error)
             _progress("Task4+Task5", completed, total, started, dataset)
+            elapsed = float(monotonic() - started)
+            if dataset in failed:
+                emit_progress_paper(progress, {"stage": "task4_task5", "phase": "error", "completed": completed, "total": total, "dataset": dataset, "elapsed_s": elapsed})
+            elif completed == total and not failed:
+                emit_progress_paper(progress, {"stage": "task4_task5", "phase": "end", "completed": completed, "total": total, "elapsed_s": elapsed})
     elif queue:
       with _pin_inner_numerical_threads():
         with ProcessPoolExecutor(max_workers=backend.dataset_workers) as executor:
@@ -240,6 +246,11 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
                 except Exception as error:
                     persist_failure(dataset, error)
                 _progress("Task4+Task5", completed, total, started, dataset)
+                elapsed = float(monotonic() - started)
+                if dataset in failed:
+                    emit_progress_paper(progress, {"stage": "task4_task5", "phase": "error", "completed": completed, "total": total, "dataset": dataset, "elapsed_s": elapsed})
+                elif completed == total and not failed:
+                    emit_progress_paper(progress, {"stage": "task4_task5", "phase": "end", "completed": completed, "total": total, "elapsed_s": elapsed})
                 try:
                     next_dataset = next(iterator)
                 except StopIteration:
@@ -252,7 +263,7 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
     return dict(sorted(sources.items())), dict(sorted(routes.items()))
 
 
-def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_manifest: object, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None) -> ProposalScore:
+def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_manifest: object, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, progress: ProgressCallback | None = None) -> ProposalScore:
     """Execute Task4+5 independently, then exactly one population-global Task6 and selected-only Task7."""
     _label_firewall()
     raw = dict(raw_datasets)
@@ -267,7 +278,7 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
         authority = Task4Task5SuccessAuthority.from_verified_context(context, catalog, acceleration_manifest)
         publisher = task4_task5_success_publisher(root, catalog, authority)
     started = monotonic()
-    sources, routes = _collect_task4_task5(raw, backend, root=root, context=context, catalog=catalog, acceleration_manifest=acceleration_manifest, publish_success=publisher)
+    sources, routes = _collect_task4_task5(raw, backend, root=root, context=context, catalog=catalog, acceleration_manifest=acceleration_manifest, publish_success=publisher, progress=progress)
     hard_seconds = float(monotonic() - started)
     _label_firewall()
     print("Task6 start", file=sys.stderr, flush=True)

@@ -1,11 +1,137 @@
 """Result-neutral paper r4 progress-callback contracts."""
 from __future__ import annotations
 
+import contextlib
+from inspect import signature
 from io import StringIO
+import json
+from pathlib import Path
 import unittest
-
+from unittest.mock import patch
 
 class ProgressLoggingAntigravityTests(unittest.TestCase):
+    def _parallel_fixture(self):
+        from paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper import (
+            Task9ParallelCompositionTests,
+        )
+
+        fixture = Task9ParallelCompositionTests("run")
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        return fixture
+
+    def _compose_patched(self, fixture, manifest, *, progress=None):
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+
+        events: list[tuple[str, str]] = []
+
+        def hard(raw):
+            events.append(("task4", raw.dataset))
+            return fixture.per_dataset[raw.dataset][0]
+
+        def mini(raw):
+            return object()
+
+        def route(raw, _sources, _mini):
+            events.append(("task5", raw.dataset))
+            return fixture.per_dataset[raw.dataset][1]
+
+        def low(raw, lanes, **_kwargs):
+            events.append(("task6", "global"))
+            return fixture.low
+
+        class Future:
+            def __init__(self, fn, args):
+                try:
+                    self.value, self.error = fn(*args), None
+                except Exception as error:
+                    self.value, self.error = None, error
+
+            def result(self):
+                if self.error is not None:
+                    raise self.error
+                return self.value
+
+            def cancel(self):
+                return False
+
+        class InlineExecutor:
+            def __init__(self, *, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def submit(self, fn, *args):
+                return Future(fn, args)
+
+        patches = (
+            patch.object(score, "score_hard_sources", side_effect=hard),
+            patch.object(score, "score_minirocket_confirmations", side_effect=mini),
+            patch.object(score, "replay_hard_route", side_effect=route),
+            patch.object(score, "score_low_frequency", side_effect=low),
+            patch.object(score, "classify_stability", return_value=fixture.stability),
+            patch.object(score, "build_hard_evidence_surface", return_value=object()),
+            patch.object(score, "build_policies", return_value=fixture.policies),
+            patch.object(score, "ProcessPoolExecutor", InlineExecutor),
+            patch.object(score, "as_completed", side_effect=lambda futures: tuple(futures)),
+        )
+        kwargs = {} if progress is None else {"progress": progress}
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8]:
+            return score.compose_proposal_score(fixture.raw, manifest, **kwargs), events
+
+    def test_progress_callback_default_none_preserves_typed_proposal_and_stderr_contract(self) -> None:
+        fixture = self._parallel_fixture()
+        manifest = fixture._acceleration(3)
+        stderr = StringIO()
+        with contextlib.redirect_stderr(stderr):
+            first, _events = self._compose_patched(fixture, manifest)
+            second, _again = self._compose_patched(fixture, fixture._acceleration(3))
+        text = stderr.getvalue()
+        lines = text.splitlines()
+        self.assertTrue(any("Task4+Task5 start" in line for line in lines))
+        self.assertTrue(any("Task4+Task5" in line and "dataset=alpha" in line for line in lines))
+        self.assertTrue(any("Task4+Task5" in line and "dataset=beta" in line for line in lines))
+        self.assertIn("Task6 start", lines)
+        self.assertIn("Task6 finish", lines)
+        self.assertIn("Task7 start", lines)
+        self.assertIn("Task7 finish", lines)
+        self.assertNotIn("raw_preload", text)
+        self.assertNotIn("task6 0/", text)
+        self.assertNotIn("task7 0/", text)
+        self.assertEqual(tuple(first.sources), tuple(second.sources))
+        self.assertEqual(tuple(first.routes), tuple(second.routes))
+        self.assertEqual(first.low_frequency, second.low_frequency)
+        self.assertEqual(tuple(first.stability.selected_coordinates), tuple(second.stability.selected_coordinates))
+        self.assertEqual(
+            tuple(route.name for route in first.policies.policies),
+            tuple(route.name for route in second.policies.policies),
+        )
+
+    def test_raising_progress_callback_does_not_change_typed_result_or_replace_scientific_error(self) -> None:
+        from paper.equipment_anomaly_detection.proposal_score_paper import compose_proposal_score
+
+        def boom(_event):
+            raise RuntimeError("callback boom")
+
+        fixture = self._parallel_fixture()
+        manifest = fixture._acceleration(3)
+        baseline, _events = self._compose_patched(fixture, manifest)
+        observed, _again = self._compose_patched(fixture, fixture._acceleration(3), progress=boom)
+        self.assertEqual(tuple(baseline.sources), tuple(observed.sources))
+        self.assertEqual(tuple(baseline.routes), tuple(observed.routes))
+        self.assertEqual(baseline.low_frequency, observed.low_frequency)
+        self.assertEqual(
+            tuple(route.name for route in baseline.policies.policies),
+            tuple(route.name for route in observed.policies.policies),
+        )
+        with self.assertRaises(ValueError) as raised:
+            compose_proposal_score({}, object(), progress=boom)
+        self.assertIsInstance(raised.exception, ValueError)
+        self.assertNotIsInstance(raised.exception, RuntimeError)
     def test_rate_gate_emits_start_end_error_immediately_and_ticks_at_most_once_per_15s(self) -> None:
         from paper.equipment_anomaly_detection.proposal_score_paper import (
             make_stderr_progress_sink_paper,
@@ -62,6 +188,168 @@ class ProgressLoggingAntigravityTests(unittest.TestCase):
         text = stream.getvalue().lower()
         for token in ("label=", "p-value", "score=", "alerts=", "rank="):
             self.assertNotIn(token, text)
+
+    def test_raw_preload_emits_dataset_progress_without_label_sql_or_scores(self) -> None:
+        from paper.equipment_anomaly_detection import runner_paper as runner
+
+        events: list[dict[str, object]] = []
+        catalog = {"datasets": [{"dataset": "alpha"}, {"dataset": "beta"}]}
+        with patch.object(runner, "load_dataset_values", side_effect=lambda db_path, name: f"raw-{name}") as loaded:
+            raw = runner._load_catalog_raw(catalog, Path("fixture.sqlite"), progress=events.append)
+        self.assertEqual(tuple(raw), ("alpha", "beta"))
+        self.assertEqual([event["phase"] for event in events], ["start", "tick", "tick", "end"])
+        self.assertEqual([event.get("dataset") for event in events], [None, "alpha", "beta", None])
+        joined = " ".join(str(value) for event in events for value in event.values())
+        for token in ("label", "SELECT", "pvalue", "score", "alert"):
+            self.assertNotIn(token.lower(), joined.lower())
+        for call in loaded.call_args_list:
+            self.assertEqual(call.kwargs, {})
+            self.assertEqual(len(call.args), 2)
+
+    def test_task4_task5_existing_completion_progress_unchanged(self) -> None:
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+
+        fixture = self._parallel_fixture()
+        completed: list[str] = []
+        values = fixture.per_dataset
+
+        class Future:
+            def __init__(self, dataset):
+                self.dataset = dataset
+
+            def result(self):
+                completed.append(self.dataset)
+                return values[self.dataset]
+
+        class CompletionExecutor:
+            def __init__(self, *, max_workers):
+                self.futures = {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def submit(self, _fn, raw):
+                future = Future(raw.dataset)
+                self.futures[raw.dataset] = future
+                return future
+
+        def completed_first(futures):
+            by_dataset = {future.dataset: future for future in futures}
+            return (by_dataset["beta"], by_dataset["alpha"]) if set(by_dataset) == {"alpha", "beta"} else tuple(by_dataset.values())
+
+        class RecordingStderr(StringIO):
+            def __init__(self):
+                super().__init__()
+                self.flush_calls = 0
+
+            def flush(self):
+                self.flush_calls += 1
+                super().flush()
+
+        stderr = RecordingStderr()
+        patches = (
+            patch.object(score, "ProcessPoolExecutor", CompletionExecutor),
+            patch.object(score, "as_completed", side_effect=completed_first),
+            patch.object(score, "score_low_frequency", return_value=fixture.low),
+            patch.object(score, "classify_stability", return_value=fixture.stability),
+            patch.object(score, "build_hard_evidence_surface", return_value=object()),
+            patch.object(score, "build_policies", return_value=fixture.policies),
+        )
+        with contextlib.redirect_stderr(stderr), patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+            proposal = score.compose_proposal_score(fixture.raw, fixture._acceleration(3))
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(completed, ["beta", "alpha"])
+        self.assertEqual(tuple(proposal.sources), ("alpha", "beta"))
+        self.assertGreaterEqual(stderr.flush_calls, 7)
+        self.assertTrue(any("Task4+Task5 start" in line and "0/2" in line for line in lines))
+        self.assertTrue(any("Task4+Task5 1/2" in line and "50.0%" in line and "dataset=beta" in line for line in lines))
+        self.assertTrue(any("Task4+Task5 2/2" in line and "100.0%" in line and "dataset=alpha" in line for line in lines))
+        self.assertTrue(any(line == "Task6 start" for line in lines))
+        self.assertTrue(any(line == "Task6 finish" for line in lines))
+        self.assertTrue(any(line == "Task7 start" for line in lines))
+        self.assertTrue(any(line == "Task7 finish" for line in lines))
+
+    def test_journal_and_exit_progress_does_not_change_stdout_json_or_exit_code(self) -> None:
+        from paper.equipment_anomaly_detection import pipeline_paper as pipeline
+
+        payload = {
+            "status": "completed",
+            "completed_stages": ["preflight", "prepare", "acceleration", "proposal_score"],
+        }
+        stdout, stderr = StringIO(), StringIO()
+        with patch.object(pipeline, "run_pipeline", lambda _config: payload), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            code = pipeline.main([
+                "run", "--db-path", "fixture.sqlite", "--run-root", "run_root_antigravity",
+                "--mode", "smoke", "--smoke-dataset", "alpha",
+            ])
+        self.assertEqual(code, 0)
+        self.assertEqual(stdout.getvalue(), json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+        self.assertIn("journal_exit", stderr.getvalue())
+        self.assertIn("exit=0", stderr.getvalue())
+        self.assertNotIn("{", stderr.getvalue().split("journal_exit", 1)[1].splitlines()[0])
+
+        incomplete = {"status": "proposal_score_incomplete", "completed": 1, "failed": 1, "pending": 1}
+        stdout, stderr = StringIO(), StringIO()
+        with patch.object(pipeline, "run_pipeline", lambda _config: incomplete), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            code = pipeline.main([
+                "run", "--db-path", "fixture.sqlite", "--run-root", "run_root_antigravity",
+                "--mode", "smoke", "--smoke-dataset", "alpha",
+            ])
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout.getvalue(), json.dumps(incomplete, sort_keys=True, separators=(",", ":")) + "\n")
+        self.assertIn("journal_exit", stderr.getvalue())
+        self.assertIn("exit=2", stderr.getvalue())
+        self.assertNotIn("{", stderr.getvalue().split("journal_exit", 1)[1].splitlines()[0])
+
+    def test_worker_submit_signature_unchanged_no_callback_in_process_pool(self) -> None:
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from paper.equipment_anomaly_detection.proposal_score_paper import (
+            _collect_task4_task5,
+            _score_dataset_task4_task5,
+        )
+
+        self.assertEqual(list(signature(_score_dataset_task4_task5).parameters), ["raw"])
+        self.assertEqual(_score_dataset_task4_task5.__code__.co_argcount, 1)
+
+        fixture = self._parallel_fixture()
+        submits: list[tuple[object, tuple[object, ...], dict[str, object]]] = []
+
+        class Future:
+            def __init__(self, dataset):
+                self.dataset = dataset
+
+            def result(self):
+                return fixture.per_dataset[self.dataset]
+
+            def cancel(self):
+                return False
+
+        class RecordingExecutor:
+            def __init__(self, *, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def submit(self, fn, *args, **kwargs):
+                submits.append((fn, args, dict(kwargs)))
+                return Future(args[0].dataset)
+
+        backend = FrozenTask8BackendDecision.from_acceleration_manifest(fixture._acceleration(3))
+        with patch.object(score, "ProcessPoolExecutor", RecordingExecutor), patch.object(score, "as_completed", side_effect=lambda futures: tuple(futures)):
+            _collect_task4_task5(fixture.raw, backend, progress=lambda _event: None)
+        self.assertGreaterEqual(len(submits), 1)
+        for fn, args, kwargs in submits:
+            self.assertIs(fn, _score_dataset_task4_task5)
+            self.assertEqual(len(args), 1)
+            self.assertEqual(kwargs, {})
 
 
 if __name__ == "__main__":

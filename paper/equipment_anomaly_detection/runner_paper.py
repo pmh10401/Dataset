@@ -6,15 +6,16 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import os
 from pathlib import Path
+from time import monotonic
 
 from .acceleration_paper import ACCELERATION_SCHEMA, build_acceleration_manifest, verify_acceleration_manifest
 from .artifacts_paper import Task4Task5SuccessAuthority, canonical_json_bytes, read_canonical, safe_child, safe_root, sha256_bytes, verify_score_root, verify_task4_task5_attempt_namespace, verify_task4_task5_success_namespace, write_create_only
 from .catalog_paper import build_catalog, load_acceptance
 from .config_paper import LINEAGE_LOCK_PATH, PAPER_ROOT
-from .contracts_paper import FrozenTask8BackendDecision
-from .data_paper import load_dataset_values
+from .contracts_paper import FrozenTask8BackendDecision, RawDataset
+from .data_paper import ProgressCallback, emit_progress_paper, load_dataset_values
 from .lineage_paper import read_strict_json, sha256_file
-from .proposal_score_paper import ProposalScoreIncomplete, compose_proposal_score, write_and_freeze_proposal_score
+from .proposal_score_paper import ProposalScoreIncomplete, compose_proposal_score, make_stderr_progress_sink_paper, write_and_freeze_proposal_score
 
 PIPELINE_STAGE_ORDER=("preflight","prepare","acceleration","proposal_score","proposal_freeze","proposal_parity","public_baselines","baseline_bridge","evaluate","report","independent_verify")
 JOURNAL_DIRECTORY="pipeline_journal_paper"; ARTIFACT_DIRECTORY="stage_artifacts_paper"
@@ -106,6 +107,35 @@ def _artifact_record(root,stage,context):
     if value!=expected: raise PipelineStateError("stage semantic verifier failed")
     return {"relative_path":str(path.relative_to(root)),"size":len(raw),"sha256":sha256_bytes(raw),"schema":expected["schema"]}
 
+def _load_catalog_raw(catalog: dict[str, object], db_path: Path, *, progress: ProgressCallback | None = None) -> dict[str, RawDataset]:
+    names = [entry["dataset"] for entry in catalog["datasets"]]
+    started = monotonic()
+    total = len(names)
+    emit_progress_paper(progress, {"stage": "raw_preload", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
+    raw: dict[str, RawDataset] = {}
+    try:
+        for completed, name in enumerate(names, 1):
+            raw[name] = load_dataset_values(db_path, name)
+            emit_progress_paper(progress, {
+                "stage": "raw_preload", "phase": "tick",
+                "completed": completed, "total": total,
+                "dataset": name, "elapsed_s": float(monotonic() - started),
+            })
+        emit_progress_paper(progress, {
+            "stage": "raw_preload", "phase": "end",
+            "completed": total, "total": total,
+            "elapsed_s": float(monotonic() - started),
+        })
+    except Exception:
+        emit_progress_paper(progress, {
+            "stage": "raw_preload", "phase": "error",
+            "completed": len(raw), "total": total,
+            "elapsed_s": float(monotonic() - started),
+        })
+        raise
+    return raw
+
+
 def verify_journal(config):
     root=safe_root(config.run_root)
     if _legacy(root): raise PipelineStateError("legacy_root_requires_new_root")
@@ -127,7 +157,8 @@ def verify_journal(config):
         try:
             acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
             catalog=_catalog_from_context(context)
-            raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
+            progress=make_stderr_progress_sink_paper()
+            raw=_load_catalog_raw(catalog,Path(context["paths"]["db_path"]["unresolved_path"]),progress=progress)
             authority=Task4Task5SuccessAuthority.from_verified_context(context,catalog,acceleration)
             verify_task4_task5_success_namespace(root,catalog,authority,raw)
             verify_task4_task5_attempt_namespace(root,catalog,authority,raw)
@@ -139,7 +170,9 @@ def verify_journal(config):
 
 def _incomplete_status(root, context):
     acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
-    catalog=_catalog_from_context(context); raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
+    catalog=_catalog_from_context(context)
+    progress=make_stderr_progress_sink_paper()
+    raw=_load_catalog_raw(catalog,Path(context["paths"]["db_path"]["unresolved_path"]),progress=progress)
     authority=Task4Task5SuccessAuthority.from_verified_context(context,catalog,acceleration)
     completed=verify_task4_task5_success_namespace(root,catalog,authority,raw)
     attempts=verify_task4_task5_attempt_namespace(root,catalog,authority,raw)
@@ -149,17 +182,28 @@ def _incomplete_status(root, context):
     return {"status":"proposal_score_incomplete","completed":len(completed),"failed":len(failed),"pending":len(pending),"pending_datasets":list(pending),"failed_datasets":list(failed),"attempts_path":attempt_path,"completed_stages":["preflight","prepare","acceleration"],"next_stage":"proposal_score"}
 
 def _write_complete(root,stage,context,prior):
+    progress = None
     if stage=="preflight": payload={"schema":"paper-task8-preflight.v1","stage":stage,"context_sha256":context["context_sha256"]}
     elif stage=="prepare": payload={"schema":"paper-task8-prepare.v1","stage":stage,"context_sha256":context["context_sha256"],"catalog":_catalog_from_context(context),"parity_authority":context["parity_authority"]}
     elif stage=="acceleration": payload=build_acceleration_manifest(context["context_sha256"])
     elif stage=="proposal_score":
-        catalog=_catalog_from_context(context); raw={entry["dataset"]:load_dataset_values(Path(context["paths"]["db_path"]["unresolved_path"]),entry["dataset"]) for entry in catalog["datasets"]}
+        catalog=_catalog_from_context(context)
+        progress=make_stderr_progress_sink_paper()
+        raw=_load_catalog_raw(catalog,Path(context["paths"]["db_path"]["unresolved_path"]),progress=progress)
         acceleration=verify_acceleration_manifest(read_canonical(_artifact_path(root,"acceleration")),context["context_sha256"])
-        proposal=compose_proposal_score(raw,acceleration,root=root,context=context,catalog=catalog); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
+        proposal=compose_proposal_score(raw,acceleration,root=root,context=context,catalog=catalog,progress=progress); write_and_freeze_proposal_score(root,catalog,proposal); payload=_proposal_artifact(root,context)
     else: raise PipelineStateError("unregistered pipeline stage")
     path=_artifact_path(root,stage); write_create_only(path,canonical_json_bytes(payload)); artifact=_artifact_record(root,stage,context)
     index=("preflight","prepare","acceleration","proposal_score").index(stage)+1
-    write_create_only(_journal_path(root,index,stage),canonical_json_bytes(_record({"schema":"paper-task8-journal-complete.v1","stage":stage,"previous_record_sha256":prior,"artifact":artifact,"finished_at":_now()})))
+    emit_progress_paper(progress, {
+        "stage": "journal_exit", "phase": "start", "completed": 0, "total": 1,
+        "elapsed_s": 0.0, "detail": f"journal_stage={stage}",
+    })
+    write_create_only(_journal_path(root, index, stage), canonical_json_bytes(_record({"schema":"paper-task8-journal-complete.v1","stage":stage,"previous_record_sha256":prior,"artifact":artifact,"finished_at":_now()})))
+    emit_progress_paper(progress, {
+        "stage": "journal_exit", "phase": "end", "completed": 1, "total": 1,
+        "elapsed_s": 0.0, "detail": f"journal_stage={stage}",
+    })
 
 def run_pipeline(config: PipelineConfig):
     root=safe_root(config.run_root)
