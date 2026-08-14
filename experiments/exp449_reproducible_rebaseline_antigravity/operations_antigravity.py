@@ -221,10 +221,13 @@ def _snapshot_antigravity(config: Exp449WaveConfig) -> _RecoverySnapshot:
         raise ValueError("Exp449 verified attempt identities differ")
     if len({(dataset, wave) for dataset, wave, _attempt, _type, _message in attempt_tuples}) != len(attempt_tuples):
         raise ValueError("Exp449 verified attempt identities differ")
+    global_waves = [wave for _dataset, wave, _attempt, _type, _message in attempt_tuples]
+    if global_waves and (global_waves[0] != 1 or global_waves != sorted(global_waves)):
+        raise ValueError("Exp449 verified attempt identities differ")
     per_dataset_waves: dict[str, list[int]] = {}
     for dataset, wave, _attempt, _type, _message in attempt_tuples:
         per_dataset_waves.setdefault(dataset, []).append(wave)
-    if any(waves[0] != 1 or waves != sorted(waves) or any(wave == 2 and 1 not in waves[:index] for index, wave in enumerate(waves)) for waves in per_dataset_waves.values()):
+    if any(waves != sorted(waves) for waves in per_dataset_waves.values()):
         raise ValueError("Exp449 verified attempt identities differ")
     if any(dataset not in names for dataset, _wave, _attempt, _type, _message in attempt_tuples):
         raise ValueError("Exp449 verified attempt namespace differs")

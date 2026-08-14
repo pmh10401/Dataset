@@ -445,6 +445,18 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "attempt"):
                         operations.status_exp449_antigravity(fixture.config)
 
+    def test_global_second_wave_allows_a_dataset_first_failure_after_wave_one(self) -> None:
+        """A wave-two retry may be the first attempt for work never reached in wave one."""
+        with TemporaryDirectory() as temporary:
+            fixture = _RecoveryFixture(Path(temporary))
+            fixture.attempts.extend((
+                _AttemptFixture(fixture.names[0], 1, 1),
+                _AttemptFixture(fixture.names[1], 2, 2),
+            ))
+            with self._patches(fixture):
+                status = operations.status_exp449_antigravity(fixture.config)
+            self.assertEqual((status.wave_count, status.failed_dataset_count), (2, 2))
+
     def test_attempt_records_never_count_as_success_or_unlock_global_composition(self) -> None:
         """Treating an attempt ledger entry as a success would open Task6/7 with a partial catalog."""
         with TemporaryDirectory() as temporary:
@@ -518,6 +530,63 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
                 )
             self.assertEqual(calls, ["alpha", "beta", "alpha"])
             self.assertEqual((tuple(sources), tuple(routes)), (("alpha", "beta"), ("alpha", "beta")))
+        finally:
+            fixture.tearDown()
+
+    def test_real_collector_resume_preserves_task3_proposal_score_fields(self) -> None:
+        """A retry must not alter any Task3 scientific object when checkpoints are reused."""
+        from dataclasses import fields, is_dataclass
+        from collections.abc import Mapping
+        from paper.equipment_anomaly_detection import proposal_score_paper as paper_score
+        from paper.equipment_anomaly_detection.artifacts_paper import _typed_payload, canonical_json_bytes
+        from paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper import Task4Task5FailureBatchingTests
+
+        fixture = Task4Task5FailureBatchingTests("run")
+        fixture.setUp()
+        try:
+            manifest, context, _backend = fixture._backend()
+            def compose(root: Path, fail_once: bool):
+                failed = [fail_once]
+                def score(raw):
+                    if raw.dataset == "alpha" and failed[0]:
+                        failed[0] = False
+                        raise RuntimeError("fail once")
+                    return fixture.values[raw.dataset]
+                with patch.object(paper_score, "verify_pycatch22_environment_paper", return_value={"pycatch22": "fixture"}), \
+                     patch.object(paper_score, "_score_dataset_task4_task5", side_effect=score):
+                    try:
+                        return runner.compose_exp449_proposal_score_antigravity(fixture.raw, manifest, root=root, context=context, catalog=fixture.fixture.catalog)
+                    except paper_score.ProposalScoreIncomplete:
+                        return runner.compose_exp449_proposal_score_antigravity(fixture.raw, manifest, root=root, context=context, catalog=fixture.fixture.catalog)
+
+            uninterrupted = compose(fixture.fixture.fixture.base / "uninterrupted_antigravity", False)
+            resumed = compose(fixture.fixture.fixture.base / "resumed_antigravity", True)
+
+            def compare(actual, expected):
+                if isinstance(actual, np.ndarray):
+                    self.assertEqual((actual.dtype, actual.shape, actual.tobytes()), (expected.dtype, expected.shape, expected.tobytes()))
+                elif is_dataclass(actual):
+                    self.assertEqual(type(actual), type(expected))
+                    for field in fields(actual): compare(getattr(actual, field.name), getattr(expected, field.name))
+                elif isinstance(actual, Mapping):
+                    self.assertEqual(tuple(actual), tuple(expected))
+                    for key in actual: compare(actual[key], expected[key])
+                elif isinstance(actual, (tuple, list)):
+                    self.assertEqual(len(actual), len(expected))
+                    for left, right in zip(actual, expected, strict=True): compare(left, right)
+                elif isinstance(actual, (frozenset, set)):
+                    self.assertEqual(actual, expected)
+                else: self.assertEqual(actual, expected)
+
+            for name in ("raw", "sources", "routes", "low_frequency", "stability", "policies", "backend"):
+                compare(getattr(uninterrupted, name), getattr(resumed, name))
+            # stage_seconds is operational timing and is the sole excluded field.
+            for dataset in fixture.raw:
+                entry = next(item for item in fixture.fixture.catalog["datasets"] if item["dataset"] == dataset)
+                self.assertEqual(
+                    canonical_json_bytes(_typed_payload(uninterrupted.raw[dataset], uninterrupted.sources[dataset], uninterrupted.routes[dataset], uninterrupted.low_frequency, uninterrupted.stability, uninterrupted.policies, uninterrupted.backend, entry)),
+                    canonical_json_bytes(_typed_payload(resumed.raw[dataset], resumed.sources[dataset], resumed.routes[dataset], resumed.low_frequency, resumed.stability, resumed.policies, resumed.backend, entry)),
+                )
         finally:
             fixture.tearDown()
 
