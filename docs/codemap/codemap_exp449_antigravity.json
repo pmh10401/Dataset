@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T00:02:08+0900",
-  "generated_from_commit": "1760bcb5f9cab2935d67605989b156bb49cdb986",
+  "generated_at": "2026-08-15T00:38:57+0900",
+  "generated_from_commit": "145b35fcb1d99123a8f15941fce258698e5a3360",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -126,16 +126,18 @@
     {
       "id": "exp449_runner",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Implemented values-only Task4/5 collection adapter, exact catalog-bijection gate, Task6/7 ProposalScore composition, and private result-neutral progress forwarding.",
+      "role": "Implemented values-only Task4/5 collection, exact catalog-bijection gate, Task6/7 Candidate C composition, and Exp449-only proposal-freeze handoff.",
       "entrypoints": [
         "compose_exp449_proposal_score_antigravity",
+        "freeze_exp449_proposal_antigravity",
         "verify_dataset_local_bijection_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "constraints": [
-        "Uses only paper values primitives and the caller-bound Task4/5 collector; imports or calls no filesystem writer, historical oracle, acceptance, or parity API; does not access TEST labels."
+        "Uses no historical oracle, acceptance, or parity authority; has no TEST-label access; its freeze handoff only accepts an already-composed ProposalScore and the caller-bound Exp449 context/catalog."
       ],
       "evidence": [
         {
@@ -145,28 +147,41 @@
       ],
       "callers": [
         "test_runner_recovery_antigravity.py",
+        "test_manifest_verifier_antigravity.py",
         "operations_antigravity.py"
       ],
       "effects": [
-        "forwards exact root/context/catalog/acceleration and an operations-owned private progress callback to Task4/5; blocks population-global primitives unless raw/source/route mappings equal the ordered catalog"
+        "blocks population-global work unless raw/source/route mappings equal the ordered catalog; hands frozen Candidate C values to Exp449-only typed shard publication without calling a paper filesystem writer."
       ]
     },
     {
       "id": "exp449_artifacts",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
-      "role": "Planned Exp449-only typed shard publication and outer-manifest freeze.",
+      "role": "Exp449-only create-only typed shard publication, canonical little-endian score digests, exact antigravity inventory validation, and outer-manifest freeze.",
       "entrypoints": [
-        "freeze_exp449_manifest_antigravity"
+        "canonical_float64_bytes_antigravity",
+        "freeze_exp449_proposal_antigravity",
+        "validate_exp449_proposal_shard_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Serializes frozen paper scientific payloads only inside an Exp449 version-bound envelope; never calls a paper filesystem writer, never creates a paper manifest, rejects symlinks, traversal, stale roots, and non-antigravity runtime names."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
           "symbol": "freeze_exp449_manifest_antigravity"
         }
+      ],
+      "callers": [
+        "runner_antigravity.py",
+        "test_manifest_verifier_antigravity.py",
+        "verifier_antigravity.py"
+      ],
+      "effects": [
+        "creates only dataset-digest antigravity shard paths and proposal_manifest_antigravity.json after exact shard semantic and inventory validation."
       ]
     },
     {
@@ -203,19 +218,27 @@
     {
       "id": "exp449_verifier",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-      "role": "Planned scorer-free proposal-root and smoke A/B verifier.",
+      "role": "Scorer-free independent Exp449 proposal-root verifier.",
       "entrypoints": [
-        "verify_exp449_proposal_root_antigravity"
+        "verify_exp449_proposal_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Imports only Exp449 contracts/artifact validation and canonical JSON support; must not import scorer, source, route, paper filesystem writer, Exp448, database, root, or label modules."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
           "symbol": "verify_exp449_proposal_root_antigravity"
         }
+      ],
+      "callers": [
+        "test_manifest_verifier_antigravity.py"
+      ],
+      "effects": [
+        "rehashes the manifest and every declared shard, verifies context/catalog/backend bindings and digests, and rejects undeclared, missing, symlinked, old-root, or non-antigravity files."
       ]
     },
     {
@@ -271,19 +294,27 @@
     {
       "id": "exp449_manifest_verifier_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
-      "role": "Planned outer-manifest, tamper, inventory, and smoke-comparison tests.",
+      "role": "Task 5 red-green tests for Exp449 outer-manifest publication, tamper rejection, strict inventory, serializer parity, static verifier imports, label firewall, and resumed byte equality.",
       "entrypoints": [
         "Exp449ManifestVerifierTests"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Uses typed in-memory fixtures only; structurally validates full inventory without materializing 1,117 scientific objects; never opens labels, databases, or real scientific roots."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
           "symbol": "Exp449ManifestVerifierTests"
         }
+      ],
+      "callers": [
+        "unittest"
+      ],
+      "effects": [
+        "protects typed-shard and outer-manifest reproducibility contracts."
       ]
     },
     {
@@ -1929,6 +1960,31 @@
         "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
         "symbol": "Exp449TwoWaveRecoveryTests"
       }
+    },
+    {
+      "from": "exp449_runner",
+      "to": "exp449_artifacts",
+      "kind": "calls"
+    },
+    {
+      "from": "exp449_artifacts",
+      "to": "exp449_outer_manifest",
+      "kind": "publishes"
+    },
+    {
+      "from": "exp449_outer_manifest",
+      "to": "exp449_verifier",
+      "kind": "verifies"
+    },
+    {
+      "from": "exp449_manifest_verifier_tests",
+      "to": "exp449_artifacts",
+      "kind": "tests"
+    },
+    {
+      "from": "exp449_manifest_verifier_tests",
+      "to": "exp449_verifier",
+      "kind": "tests"
     }
   ],
   "flows": [

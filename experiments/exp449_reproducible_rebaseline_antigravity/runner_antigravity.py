@@ -18,6 +18,8 @@ from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import H
 from paper.equipment_anomaly_detection.sources_paper.low_frequency_paper import score_low_frequency
 from paper.equipment_anomaly_detection.sources_paper.stability_paper import classify_stability
 
+from .artifacts_antigravity import freeze_exp449_proposal_antigravity
+
 
 class Task45Collector(Protocol):
     """The paper collector boundary, including verified checkpoint inputs."""
@@ -140,5 +142,6 @@ def compose_exp449_proposal_score_antigravity(
 
 __all__ = [
     "compose_exp449_proposal_score_antigravity",
+    "freeze_exp449_proposal_antigravity",
     "verify_dataset_local_bijection_antigravity",
 ]
