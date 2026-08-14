@@ -188,8 +188,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("dual authority", report)
         self.assertIn("predecessor", report)
 
-    def test_map_is_bounded_strict_and_marks_future_product_antigravity(self) -> None:
-        """Break caught: Task 1 map falsely claims not-yet-implemented product code."""
+    def test_map_is_bounded_strict_and_records_task_five_cli_antigravity(self) -> None:
+        """Break caught: Task 5 map hides the closed CLI or keeps a false future node."""
         builder = map_builder_antigravity("scratch/build_codemap_exp454_antigravity.py", "exp454_map_builder_antigravity")
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
@@ -199,10 +199,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
         node_by_id = {node["id"]: node for node in graph["nodes"]}
         self.assertNotEqual(node_by_id["task4_evaluation_replay"].get("status"), "future_unknown")
         self.assertTrue(node_by_id["task4_evaluation_replay"].get("evidence"))
-        self.assertEqual(node_by_id["task5_cli"]["status"], "future_unknown")
-        self.assertEqual(node_by_id["task5_cli"]["evidence"], [])
+        self.assertIn("task5_cli", node_by_id)
+        self.assertNotEqual(node_by_id["task5_cli"].get("status"), "future_unknown")
+        self.assertTrue(node_by_id["task5_cli"]["evidence"])
         self.assertNotIn("task3_runtime_predecessors", node_by_id)
-        self.assertTrue(graph["unknown_relationships"])
+        self.assertFalse(graph["unknown_relationships"])
         self.assertIn("tracked_fingerprints", lock)
         self.assertEqual(len(lock["tracked_fingerprints"]), 9)
         self.assertEqual(set(lock["tracked_fingerprints"]), set(TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY))
@@ -334,6 +335,57 @@ class GovernanceAntigravityTest(unittest.TestCase):
         predecessor = node_by_id["task2_predecessor"]
         self.assertIn("evaluator", predecessor["role"].lower())
         self.assertTrue(any(path.endswith("test_evaluation_antigravity.py") for path in predecessor["tests"]))
+
+    def test_map_answers_task_five_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: Task 5 closed CLI remains hidden behind a future node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node = {item["id"]: item for item in graph["nodes"]}["task5_cli"]
+        self.assertNotEqual(node.get("status"), "future_unknown")
+        self.assertIn("caller", node["role"].lower())
+        self.assertIn("effect", node["role"].lower())
+        self.assertTrue(any(path.endswith("test_cli_antigravity.py") for path in node["tests"]))
+        self.assertTrue(node["path"].endswith("cli_antigravity.py"))
+        self.assertIn("capture_normalized_target_authority_antigravity", node["role"])
+        self.assertTrue(node["evidence"])
+        self.assertTrue(
+            any(
+                edge["from"] == "implementation_plan"
+                and edge["to"] == "task5_cli"
+                and edge["type"] == "governs"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task5_cli"
+                and edge["to"] == "task3_lifecycle_readiness"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task5_cli"
+                and edge["to"] == "task4_evaluation_replay"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task3_runtime_binding"
+                and edge["to"] == "task5_cli"
+                and edge["type"] == "reads"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            (
+                ROOT_ANTIGRAVITY
+                / "experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity/cli_antigravity.py"
+            ).is_file()
+        )
 
 
 if __name__ == "__main__":
