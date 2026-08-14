@@ -2,50 +2,54 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Restore full-population hard-route coordinate parity across all 1,117 datasets (2005 / 2116 / 2253 / 35 / 2218 counts, Candidate C = 2244) against SHA-bound frozen oracles, repairing Mechanism 1 (inexact Exp74d→137 replay) and Mechanism 2 (canonical_normal_state missing pycatch22==0.5.0), restoring general n_train=1 origin replay (Phoneme_normal_39 Hard {49}), validating a 33-dataset coordinate smoke, enforcing a pre-Task6/7 1,117 route-only parity gate, and executing on clean new roots with zero cache reuse.
+**Goal:** Restore full-population hard-route coordinate parity across all 1,117 datasets (2005 / 2116 / 2253 / 35 / 2218 counts, Candidate C = 2244) against SHA-bound frozen oracles, repairing Mechanism 1 (inexact Exp74d→137 replay via systematic diagnostic isolation) and Mechanism 2 (`canonical_normal_state` missing `pycatch22==0.5.0`), restoring general $n_{\text{train}}=1$ origin full-fit replay (`Phoneme_normal_39` Hard `{49}` without special-casing), validating a 33-dataset coordinate smoke (including the 8 known Exp404-empty smoke datasets), enforcing a pre-Task6/7 1,117 route-only parity gate (exact counts, exact key set, exact $n_{\text{test}}$, zero `.get(..., empty)` masking) bound to a typed context authority `HardRouteParityAuthority`, and executing on clean new 20260814 roots with zero cache reuse.
 
-**Architecture:** Fail-closed `verify_pycatch22_environment_paper()` in `canonical_paper.py` called in `_collect_task4_task5`; worker error propagation in `hard_sources_paper.py`; general `n_train=1` support in `legacy_route_sources_paper.py` and `hard_route_paper.py`; diagnostic-isolated exact primitive repair in `hard_route_paper.py`; atomic strict oracle-bundle flow with data-only `HardRouteParityAuthority` in `contracts_paper.py` and label-free oracle loader / `verify_hard_route_parity_paper` in `proposal_score_paper.py` gating Task6/7; explicit `mode` and `authority` propagation from `PipelineConfig` through `context_payload` and `compose_proposal_score`; clean new smoke and official roots, 33-dataset smoke catalog, and destination refusal in `scratch/manage_paper_r4_proposal_antigravity.py`; CPU-canonical ProcessPool execution with `dataset_workers = max(1, logical - 1)`.
+**Architecture:** Fail-closed `verify_pycatch22_environment_paper()` in `canonical_paper.py` called in `_collect_task4_task5`; worker error propagation on eligible datasets in `hard_sources_paper.py`; general $n_{\text{train}}=1$ full-fit support in `legacy_route_sources_paper.py` and `hard_route_paper.py`; diagnostic-isolated exact primitive repair in `hard_route_paper.py` (preceded by diagnostic artifact); typed data-only `HardRouteParityAuthority` with absolute paths and verified SHAs, single strict `load_hard_route_oracle_bundle`, and `verify_hard_route_parity_paper` in `proposal_score_paper.py` gating Task6/7 from explicit runner context; clean new smoke and official roots, 33-dataset smoke catalog, and destination refusal in `scratch/manage_paper_r4_proposal_antigravity.py`; CPU-canonical ProcessPool execution with `dataset_workers = max(1, logical - 1)` and `inner_numerical_threads = 1`.
 
-**Tech Stack:** Python 3.14, `unittest`, `numpy==2.3.5`, `scikit-learn==1.8.0`, `aeon==1.5.0`, `pycatch22==0.5.0`, `torch==2.13.0`, canonical JSON/SHA-256, Exp448 `sha256-v1` fingerprints, paper `static_ast_sha256` triplet.
+**Tech Stack:** Python 3.14, `unittest`, `numpy==2.3.5`, `scikit-learn==1.8.0`, `aeon==1.5.0`, `pycatch22==0.5.0`, `torch==2.13.0`, canonical JSON/SHA-256, Exp448 `sha256-v1` fingerprints, paper `static_ast_sha256` triplet. Capable execution interpreter: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python`.
 
 **Approved spec:** `docs/superpowers/specs/2026-08-14-paper-r4-full-route-parity-recovery-antigravity-design.md` (committed at `ad45f90f`).
 
 ## Global Constraints
 
-- Work only in this dedicated Antigravity worktree (`/Users/mac/Documents/Time Series/.worktrees/grok-paper-r4-operational-antigravity`). Do not edit `/Users/mac/.codex/worktrees/e1be/Time Series` or `/Users/mac/Documents/Time Series`.
-- Do not write to, migrate from, or resume `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813` or any prior smoke/official directories. Zero cache reuse or record migration.
-- All newly created files across all tasks must include `antigravity` in their file name (e.g., `test_paper_r4_full_route_parity_recovery_antigravity.py`). Existing paper production modules keep `*_paper.py` names.
+- Work only in this dedicated Antigravity worktree (`/Users/mac/Documents/Time Series/.worktrees/grok-paper-r4-operational-antigravity`). Do not edit `/Users/mac/.codex/worktrees/e1be/Time Series`, `/Users/mac/Documents/Time Series`, or any other worktree.
+- Do not write to, migrate from, or resume `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813` or any prior smoke/official directories. Zero cache reuse or record migration. Clean create-only execution on 20260814 paths.
+- All newly created files across all tasks must include `antigravity` in their file name (e.g., `test_paper_r4_full_route_parity_recovery_antigravity.py`, `diagnose_paper_r4_mechanism1_parity_antigravity.py`, `paper_r4_mechanism1_parity_diagnosis_antigravity.md`). Existing paper production modules keep `*_paper.py` names.
 - New test file is `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py`.
 - Strict firewall against TEST label access: `_label_firewall()` remains active during Task4–7. `TEST_VALUES_SQL` contains no label columns.
 - Replay and evidence functions accept only values and computed sources. Historical prediction coordinates are strictly oracles in verification helpers and tests; they must never be passed as runtime inputs to replay functions.
+- Gate authority paths and hashes through typed data-only `HardRouteParityAuthority` (no `default_verified`), with launcher explicitly constructing the four path+hash fields, bound into verified `PipelineConfig` and immutable run context, then passed by runner into compose/verification. There are zero cwd-relative paths or implicit module defaults that silently find an oracle by cwd or local machine path.
+- One strict `load_hard_route_oracle_bundle(authority, selected_population, selected_n_test)` SHA-verifies all 4 files, globally parses and validates exact 1,117 Exp137/236/291 populations and builds global $n_{\text{test}}$ maps requiring equality across all three, validates ALL coordinates including unselected rows against global $n_{\text{test}}$, initializes all 1,117 explicit Exp404 keys from sparse 2,218 rows (888 nonempty + 229 implicit-empty datasets) and validates coordinate bounds against global $n_{\text{test}}$, then requires `selected_n_test` (if supplied) matches global values for `selected_population`, and direct-index projects to 33 smoke or 1,117 full datasets. Zero `allow_unselected` and zero `.get(..., empty)` masking anywhere. The 33 smoke must work for the 8 known Exp404-empty smoke datasets.
+- Gate verification is triggered from explicit verified context/mode/authority passed through runner, never from `len(raw)` mode inference. Official context supplies explicit full/smoke mode and authority; direct optional calls require both explicit authority and `route_parity_mode`. Official context without authority fails closed for both full and smoke (`elif context is not None: raise`). Unit/local calls without official context or authority may execute composition ungated, but cannot complete an official journal.
 - CPU worker policy: Concurrency uses `dataset_workers = max(1, logical_cpu_count - 1)` with `inner_numerical_threads = 1`. Record detected logical CPU count and the resulting worker count in acceleration-manifest provenance.
 - Explicit MLX/MPS assessment: CPU ProcessPool is retained as canonical; MLX/MPS acceleration is rejected for discrete route selectors and third-party feature extractors.
-- Candidate C (`hard_plus_stable`) remains unchanged as a rule: Automatic Hard $\cup$ stable-26 from the 30-candidate stability partition; target count formula $2218 + 26 = 2244$.
-- Do not authorize running full 1,117 official scoring during implementation tasks; only bounded fixtures and explicitly named route-only verification after all unit gates pass.
-- Strict RED → GREEN per task. Record the exact failing reason before production edits. Each mergeable commit that changes a mapped module or mapped entrypoint signature includes all six Exp448 + paper map files in that same commit. Do not overwrite `docs/codemap/codemap_exp444_antigravity.*` or earlier version maps.
+- Candidate C (`hard_plus_stable`) remains unchanged as a rule: Automatic Hard $\cup$ stable-26 from the 30-candidate stability partition; target count formula $2218 + 26 = 2244$. Task6 low-frequency filtering consumes pre-guard Exp253 Hard (2253), policy construction consumes post-guard Automatic Hard (2218).
+- Do not authorize running full 1,117 official scoring during implementation tasks; only bounded fixtures, diagnostic harnesses, and explicitly named route-only verification after all unit gates pass.
+- Strict RED → GREEN per task: No production route edits until an isolated RED test demonstrates the exact diagnosed primitive divergence.
+- Each mergeable commit that changes a mapped module or mapped entrypoint signature includes all six Exp448 + paper map files in that same commit. Do not overwrite `docs/codemap/codemap_exp444_antigravity.*` or earlier version maps.
 
 ## Live Verified Authority
 
 Parity oracles are SHA-bound, label-free prediction artifacts:
 
-| Stage | File | SHA-256 | Extracted Field |
+| Stage | File | SHA-256 | Extracted Field & Parsing Schema |
 | --- | --- | --- | --- |
-| Exp137 | `results/exp137/experiment_137_operational_triage_results.csv` | `942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d` | `hard_alert_indices` (space-delimited integers), `test_size` |
-| Exp236 | `outputs/exp236_detection_coverage_expansion/exp236_frozen_predictions.jsonl` | `a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524` | `hard_indices` (JSON list of integers), `n_test` |
-| Exp291 | `/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl` | `73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848` | `automatic_hard_indices`, `automatic_normal_exact_indices`, `n_test` |
-| Exp404 | `/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl` | `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70` | `hard_indices` (2218 automatic Hard coordinates across full population) |
+| Exp137 | `/Users/mac/Documents/Dataset/experiments/exp234_recovery_antigravity/experiment_137_operational_triage_results_antigravity.csv` *(Note: workspace copy `results/exp137/...` has sha `7bedd1bd...` and is not the SHA authority)* | `942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d` | Live full header is exact 54-field tuple (including `dataset_name`, `hard_alert_indices`, `test_size`, `family`, `hard_alert_count`, etc.); parse only `dataset_name`, space-delimited `hard_alert_indices`, and integer `test_size` (1,117 rows, 2,005 coordinates, global $n_{\text{test}}$ map) |
+| Exp236 | `/Users/mac/Documents/Dataset/experiments/exp236_direct_run_antigravity/exp236_frozen_predictions.jsonl` | `a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524` | Exact 15 live row keys (`contains_evaluation_metrics`, `contains_test_labels`, `dataset`, `deployment_eligible`, `experiment_id`, `hard_indices`, `hard_policy`, `n_test`, `new_hard_indices`, `new_standard_review_indices`, `priority_review_indices`, `priority_review_policy`, `retrospective_candidate_packaging`, `standard_review_indices`, `standard_review_policy`); require `contains_test_labels is False` and `contains_evaluation_metrics is False`; parse `dataset`, integer list `hard_indices` (1,117 rows, 2,116 coordinates), and integer `n_test` |
+| Exp291 | `/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl` | `73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848` | Exact 18 live row keys (`automatic_hard_indices`, `automatic_normal_exact_indices`, `automatic_normal_rule`, `contains_evaluation_metrics`, `contains_test_labels`, `dataset`, `default_review_indices`, `experiment_id`, `n_test`, `priority_review_indices`, `prospective_validated`, `recovery_priority_scope`, `recovery_shadow_review_indices`, `research_only_recovery_priority_indices`, `retrospective_integration`, `shadow_review_indices`, `source_baseline_hard_indices`, `standard_review_indices`); require `contains_test_labels is False` and `contains_evaluation_metrics is False`; parse `dataset`, `automatic_hard_indices` (2,218 coordinates), `automatic_normal_exact_indices` (35 coordinates), and integer `n_test`; pre-exact Exp253 = union of both (2,253 coordinates) |
+| Exp404 | `/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl` | `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70` | Sparse exhaustive coordinate authority: 2,218 unique rows across 888 nonempty datasets; 229 implicit-empty datasets (888 + 229 = 1,117 total). Exact 8 row keys (`abstention_reason`, `candidate_index`, `confidence_by_alpha`, `contains_evaluation_metrics`, `contains_test_labels`, `dataset`, `eligibility`, `scores_by_alpha`); require `contains_test_labels is False` and `contains_evaluation_metrics is False`; grouped by `dataset` with `candidate_index`. Explicitly initialized from verified population, checked for $0 \le \text{candidate\_index} < \text{global\_n\_test}$, direct indexing only. |
 
 Supporting frozen authority:
 - Database `/Users/mac/Documents/Dataset/univariate_ts.db` SHA-256: `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`
-- Population: 1,117 datasets, 195,900 TEST rows; excluded: `CornellWhaleChallenge`, `Wafer_normal_1`
-- Frozen count targets: Exp137 Hard = 2005, Exp236 Hard = 2116, Exp253 Hard = 2253, exact-normal removed = 35, Automatic Hard = 2218, Candidate C = 2244.
+- Population: Exactly 1,117 datasets, 195,900 TEST rows; excluded: `CornellWhaleChallenge`, `Wafer_normal_1`
+- Frozen count targets: Exp137 Hard = 2005, Exp236 Hard = 2116, Exp253 Hard = 2253 ($2218 + 35$), exact-normal removed = 35, Automatic Hard = 2218, Candidate C = 2244 ($2218 + 26$).
 
 ## Acceleration Assessment (Mandatory, No-Change)
 
 | Checklist item | Assessment |
 | --- | --- |
 | Tensor-eligible? | No. Route selectors are discrete rank/set/cap operations. `pycatch22.catch22_all` is a frozen third-party C/Python CPU extractor. |
-| Current backend availability? | CPU only. Capable oracle environment provides `pycatch22==0.5.0` on CPU. MLX is absent. |
+| Current backend availability? | CPU only. Capable oracle environment (`/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python`) provides `pycatch22==0.5.0`, `aeon==1.5.0`, `numpy==2.3.5`, `scikit-learn==1.8.0`, `torch==2.13.0` on CPU. MLX is absent. |
 | Transfer / compilation overhead? | Unfavorable. Rewriting feature extractors for GPU would incur high transfer latency across 1,117 small series with no throughput benefit. |
 | Deterministic and numerical parity? | Bit-exact parity against SHA-bound oracles is mandatory. Non-canonical GPU approximations are forbidden. |
 | Canonical CPU fallback? | Retained as canonical. `acceleration_paper.py` designates `hard_sources` and `hard_route` as CPU-canonical. |
@@ -54,6 +58,8 @@ Supporting frozen authority:
 ## File Structure
 
 - Create: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py`
+- Create (Task 4 Diagnostic): `scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py`
+- Create (Task 4 Report): `reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md`
 - Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
 - Modify: `paper/equipment_anomaly_detection/sources_paper/canonical_paper.py`
 - Modify: `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`
@@ -61,6 +67,7 @@ Supporting frozen authority:
 - Modify: `paper/equipment_anomaly_detection/hard_route_paper.py`
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py`
 - Modify: `paper/equipment_anomaly_detection/runner_paper.py`
+- Modify: `paper/equipment_anomaly_detection/pipeline_paper.py`
 - Modify: `paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py`
 - Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py`
 - Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py`
@@ -145,7 +152,7 @@ head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root).decode().
 now = datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%dT%H:%M:%S+0900')
 data['generated_at'] = now
 data['generated_from_commit'] = head
-data['working_tree_dirty'] = True
+data['working_tree_dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root).strip())
 ids = {node['id'] for node in data['nodes']}
 assert len(ids) == len(data['nodes'])
 assert all(edge['from'] in ids and edge['to'] in ids for edge in data['edges'])
@@ -195,7 +202,7 @@ def fingerprint(paths):
 
 lock = json.loads(lock_path.read_text(encoding='utf-8'))
 lock['current_commit'] = head
-lock['working_tree_dirty'] = True
+lock['working_tree_dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root).strip())
 lock['generated_at'] = now
 lock['module_fingerprints'] = {name: fingerprint(paths) for name, paths in modules.items()}
 prior = json.loads(subprocess.check_output(['git', 'show', 'HEAD:docs/codemap/codemap_exp448_antigravity.lock'], cwd=root))
@@ -232,7 +239,7 @@ python3 -m json.tool docs/codemap/codemap_exp448_antigravity.lock >/dev/null
 
 **Interfaces:**
 - Consumes: Active experiment `Exp448` from `RESEARCH_STATE.json`; current paper AST caller graph from `lineage_paper._ast_import_callers`; lock algorithm `sha256-v1`.
-- Produces: Both complete triplets, generated from current HEAD (`ad45f90f`), answering callers / effects / tests for all modified paper modules before production code changes.
+- Produces: Both complete triplets, generated from current `git rev-parse HEAD`, reflecting actual diff and answering callers / effects / tests for all modified paper modules before production code changes.
 
 - [ ] **Step 1: Execute Codemap Preflight Check**
 
@@ -280,42 +287,50 @@ git commit -m "chore(codemap): synchronize Exp448 and paper codemap triplets for
 
 **Interfaces:**
 - Test Class: `FullRouteParityRecoveryAntigravityTests(unittest.TestCase)` in `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py`.
-- Invariant: Zero duplicate `HardRouteParityAuthority` class definitions in test files. Tests import the production `HardRouteParityAuthority` from `paper.equipment_anomaly_detection.contracts_paper`. Missing-interface tests legitimately fail RED in Task 2 and pass once Task 4 creates the production dataclass.
+- Pinned capable interpreter: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python` verified for `pycatch22==0.5.0`, `aeon==1.5.0`, `torch==2.13.0`.
+- Typed Data-Only Authority: `HardRouteParityAuthority` in `contracts_paper.py` (data-only, no `default_verified`), with absolute paths and exact SHA-256 hashes.
+- Single Strict Oracle Bundle Loader: `load_hard_route_oracle_bundle(authority, selected_population=..., selected_n_test=...)` returning `HardRouteOracleBundle`.
+- Module-level imports avoid not-yet-created symbols (`HardRouteParityAuthority`, `HardRouteOracleBundle`, `load_hard_route_oracle_bundle`, `verify_hard_route_parity_paper`); local imports are used inside RED tests (T6, T7, T8), keeping existing regression locks (T4, T9, T12, T13, T14) importable and GREEN at test module load.
 - Methods:
-  - T1: `test_pycatch22_pin_fails_closed_when_missing_or_wrong_version`
-  - T2: `test_pycatch22_0_5_0_is_the_only_accepted_version`
-  - T3: `test_pycatch22_preflight_fails_closed_before_scoring_or_persistence` and `test_score_hard_sources_propagates_dependency_error_on_eligible_dataset` (capable live scoring is an explicit gated integration test)
-  - T4: `test_replay_signature_still_rejects_historical_coordinates` (Lock)
-  - T5: `test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch`
-  - T6: `test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence`
-  - T7: `test_smoke_33_datasets_match_sha_bound_oracles`
-  - T8: `test_full_1117_route_only_parity_gate_blocks_task6_and_task7`
-  - T9: `test_candidate_c_rule_and_target_algebra_unchanged` (Lock)
-  - T10: `test_clean_root_execution_and_rejection_of_live_r4_reuse`
-  - T11: `test_new_smoke_and_official_root_paths_are_distinct_and_refuse_old_destinations`
-  - T12: `test_progress_logging_remains_optional_and_label_free` (Lock)
-  - T13: `test_zero_test_label_access_until_evaluation` (Lock)
-  - T14: `test_frozen_counts_2218_remain_authoritative_target` (Lock)
+  - T1: `test_pycatch22_pin_fails_closed_when_missing_or_wrong_version` (Missing-interface RED)
+  - T2: `test_pycatch22_0_5_0_is_the_only_accepted_version` (Missing-interface RED)
+  - T3: `test_pycatch22_dependency_failure_propagates_without_swallowing` (Error-propagation RED: asserts dependency failure on eligible datasets raises `DependencyUnavailablePaper` and propagates rather than silently swallowing into `eligible=False`)
+  - Integration: `test_capable_venv_eligible_canonical_scoring_with_pycatch22` (Capable-venv GREEN: proves eligible canonical scoring with real `pycatch22==0.5.0`)
+  - T4: `test_replay_signature_still_rejects_historical_coordinates` (Regression Lock: currently GREEN)
+  - T5: `test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch` (Origin Replay RED)
+  - T6: `test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence` (Diagnostic RED: asserts exact diagnosed divergence on representative datasets against frozen origin / SHA authority)
+  - T7: `test_smoke_33_datasets_match_sha_bound_oracles` (Capable integration: 33 smoke datasets match 4 SHA-bound oracles bit-for-bit via `load_hard_route_oracle_bundle`, direct indexing on `bundle.exp404[dataset]` works for all 33 including the 8 empty datasets, zero `allow_unselected` and zero `.get`)
+  - T8: `test_full_1117_route_only_parity_gate_blocks_task6_and_task7` (Missing-interface / Fail-closed RED: official context without authority fails closed for both full and smoke; mismatch fails closed before Task6/7; passes on verified authority)
+  - T9: `test_candidate_c_rule_and_target_algebra_unchanged` (Regression Lock: currently GREEN)
+  - T10: `test_clean_root_execution_and_rejection_of_live_r4_reuse` (Missing-interface RED)
+  - T11: `test_new_smoke_and_official_root_paths_are_distinct_and_refuse_old_destinations` (Missing-interface RED)
+  - T12: `test_progress_logging_remains_optional_and_label_free` (Regression Lock: currently GREEN)
+  - T13: `test_zero_test_label_access_until_evaluation` (Regression Lock: currently GREEN)
+  - T14: `test_frozen_counts_2218_remain_authoritative_target` (Regression Lock: currently GREEN)
 
 - [ ] **Step 1: Write the Full Test Matrix Scaffold**
 
-Write `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py` containing complete typed fixtures for all 14 tests (exercising production imports without duplicate authority classes):
+Write `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py` containing complete typed fixtures for all 14 tests:
 
 ```python
 """Test suite for Paper r4 full-population hard-route parity recovery."""
 from __future__ import annotations
 
-import ast
+import csv
+import hashlib
+import importlib.metadata
 import inspect
 import json
 from pathlib import Path
 import sqlite3
 import sys
+from typing import Mapping, Sequence
 import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 
+from paper.equipment_anomaly_detection.catalog_paper import build_catalog
 from paper.equipment_anomaly_detection.contracts_paper import (
     FROZEN_CONFIG,
     RawDataset,
@@ -330,32 +345,56 @@ from paper.equipment_anomaly_detection.routing_paper import (
     GLOBAL_CANDIDATE_BUDGET_PAPER,
     _MAXIMUM_VIEWS_PAPER,
 )
-from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import (
-    EXPECTED_HARD_SOURCES,
-    HardSourceBundle,
-    HardSourceResult,
-    score_hard_sources,
+from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import score_hard_sources
+from paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper import build_legacy_route_evidence
+from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import score_minirocket_confirmations
+from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import DependencyUnavailablePaper
+
+
+DB_PATH = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
+VERIFIED_EXP137_AUTHORITY_PATH = Path(
+    "/Users/mac/Documents/Dataset/experiments/exp234_recovery_antigravity/experiment_137_operational_triage_results_antigravity.csv"
 )
-from paper.equipment_anomaly_detection.sources_paper.legacy_route_sources_paper import (
-    LegacyRouteEvidence,
-    build_legacy_route_evidence,
+VERIFIED_EXP137_AUTHORITY_SHA256 = "942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d"
+
+VERIFIED_EXP236_AUTHORITY_PATH = Path(
+    "/Users/mac/Documents/Dataset/experiments/exp236_direct_run_antigravity/exp236_frozen_predictions.jsonl"
 )
-from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
-    MiniRocketResult,
-    score_minirocket_confirmations,
+VERIFIED_EXP236_AUTHORITY_SHA256 = "a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524"
+
+VERIFIED_EXP291_AUTHORITY_PATH = Path(
+    "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl"
 )
+VERIFIED_EXP291_AUTHORITY_SHA256 = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
+
+VERIFIED_EXP404_AUTHORITY_PATH = Path(
+    "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl"
+)
+VERIFIED_EXP404_AUTHORITY_SHA256 = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
+
+
+def _build_test_authority():
+    from paper.equipment_anomaly_detection.contracts_paper import HardRouteParityAuthority
+
+    return HardRouteParityAuthority(
+        exp137_path=VERIFIED_EXP137_AUTHORITY_PATH,
+        exp137_sha256=VERIFIED_EXP137_AUTHORITY_SHA256,
+        exp236_path=VERIFIED_EXP236_AUTHORITY_PATH,
+        exp236_sha256=VERIFIED_EXP236_AUTHORITY_SHA256,
+        exp291_path=VERIFIED_EXP291_AUTHORITY_PATH,
+        exp291_sha256=VERIFIED_EXP291_AUTHORITY_SHA256,
+        exp404_path=VERIFIED_EXP404_AUTHORITY_PATH,
+        exp404_sha256=VERIFIED_EXP404_AUTHORITY_SHA256,
+    )
 
 
 class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
     """Parity recovery test matrix T1 through T14."""
 
     def test_pycatch22_pin_fails_closed_when_missing_or_wrong_version(self) -> None:
-        """T1: verify_pycatch22_environment_paper raises DependencyUnavailablePaper on missing or mismatch."""
+        """T1 (Missing-interface RED): verify_pycatch22_environment_paper raises DependencyUnavailablePaper on missing or mismatch."""
         from paper.equipment_anomaly_detection.sources_paper.canonical_paper import (
             verify_pycatch22_environment_paper,
-        )
-        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import (
-            DependencyUnavailablePaper,
         )
 
         with patch("importlib.metadata.version", side_effect=Exception("not found")):
@@ -367,35 +406,59 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
                 verify_pycatch22_environment_paper()
 
     def test_pycatch22_0_5_0_is_the_only_accepted_version(self) -> None:
-        """T2: PINNED_PYCATCH22_VERSION_PAPER is '0.5.0' and returns valid metadata dict."""
+        """T2 (Missing-interface RED): PINNED_PYCATCH22_VERSION_PAPER is '0.5.0' and returns valid metadata dict."""
         from paper.equipment_anomaly_detection.sources_paper import canonical_paper
 
         self.assertTrue(hasattr(canonical_paper, "PINNED_PYCATCH22_VERSION_PAPER"))
         self.assertEqual(canonical_paper.PINNED_PYCATCH22_VERSION_PAPER, "0.5.0")
-        with patch("importlib.metadata.version", return_value="0.5.0"), patch(
-            "pycatch22.catch22_all", create=True
+        with patch("importlib.metadata.version", return_value="0.5.0"), patch.dict(
+            "sys.modules", {"pycatch22": type("m", (), {"catch22_all": lambda *a: ()})()}
         ):
             meta = canonical_paper.verify_pycatch22_environment_paper()
-            self.assertEqual(meta.get("pycatch22"), "0.5.0")
+            self.assertEqual(meta["pycatch22"], "0.5.0")
 
-    def test_pycatch22_preflight_fails_closed_before_scoring_or_persistence(self) -> None:
-        """T3 (Unit RED - Preflight): Environment gate aborts execution before any dataset scoring."""
-        from paper.equipment_anomaly_detection.sources_paper.canonical_paper import (
-            verify_pycatch22_environment_paper,
-        )
-        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import (
-            DependencyUnavailablePaper,
+    def test_pycatch22_dependency_failure_propagates_without_swallowing(self) -> None:
+        """T3 (Error-propagation RED): Missing pycatch22 on eligible dataset raises DependencyUnavailablePaper and propagates through _collect_task4_task5."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from paper.equipment_anomaly_detection.proposal_score_paper import _collect_task4_task5
+
+        rng = np.random.default_rng(20260814)
+        train_rows = tuple(rng.normal(0, 1, size=100).astype(np.float32) for _ in range(10))
+        test_rows = tuple(rng.normal(0, 1, size=100).astype(np.float32) for _ in range(20))
+        raw_ds = RawDataset(
+            dataset="Synthetic_eligible_dataset",
+            metadata_length=100,
+            train_indices=tuple(range(10)),
+            train_blobs=tuple(r.tobytes() for r in train_rows),
+            train_rows=train_rows,
+            test_indices=tuple(range(20)),
+            test_blobs=tuple(r.tobytes() for r in test_rows),
+            test_rows=test_rows,
         )
 
-        with patch("importlib.metadata.version", side_effect=Exception("pycatch22 missing")):
+        manifest = build_acceleration_manifest("a" * 64, logical_cpu_count=2)
+        backend = FrozenTask8BackendDecision.from_acceleration_manifest(manifest)
+
+        # On an eligible dataset, forcing pycatch22 dependency error must raise DependencyUnavailablePaper and propagate
+        with patch(
+            "paper.equipment_anomaly_detection.sources_paper.canonical_paper._canonical_source_paper",
+            side_effect=DependencyUnavailablePaper("dependency_unavailable:pycatch22==0.5.0"),
+        ):
             with self.assertRaises(DependencyUnavailablePaper):
-                verify_pycatch22_environment_paper()
+                score_hard_sources(raw_ds)
 
-    def test_score_hard_sources_propagates_dependency_error_on_eligible_dataset(self) -> None:
-        """T3 (Unit RED - Propagation): score_hard_sources propagates DependencyUnavailablePaper on eligible datasets."""
-        from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import (
-            DependencyUnavailablePaper,
-        )
+            with self.assertRaises(DependencyUnavailablePaper):
+                _collect_task4_task5({"Synthetic_eligible_dataset": raw_ds}, backend)
+
+    def test_capable_venv_eligible_canonical_scoring_with_pycatch22(self) -> None:
+        """Integration (Capable venv): Eligible dataset scores canonical_normal_state as eligible=True with pycatch22==0.5.0."""
+        try:
+            version = importlib.metadata.version("pycatch22")
+        except Exception:
+            self.skipTest("pycatch22 not installed in current interpreter; run under capable venv")
+        if version != "0.5.0":
+            self.skipTest(f"pycatch22 version is {version}, expected 0.5.0")
 
         rng = np.random.default_rng(20260814)
         train_rows = tuple(rng.normal(0, 1, size=100).astype(np.float32) for _ in range(10))
@@ -410,15 +473,15 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
             test_blobs=tuple(r.tobytes() for r in test_rows),
             test_rows=test_rows,
         )
-        with patch(
-            "paper.equipment_anomaly_detection.sources_paper.hard_sources_paper._canonical_source_paper",
-            side_effect=DependencyUnavailablePaper("dependency_unavailable:pycatch22==0.5.0"),
-        ):
-            with self.assertRaises(DependencyUnavailablePaper):
-                score_hard_sources(raw)
+        bundle = score_hard_sources(raw)
+        canonical = bundle.by_name["canonical_normal_state"]
+        self.assertTrue(canonical.eligible)
+        self.assertEqual(canonical.eligibility_reason, "eligible")
+        self.assertEqual(len(canonical.train_oof_score), 10)
+        self.assertEqual(len(canonical.test_score), 20)
 
     def test_replay_signature_still_rejects_historical_coordinates(self) -> None:
-        """T4 (Lock): replay_hard_route accepts only values, sources, and mini (no oracle kwargs)."""
+        """T4 (Regression Lock): replay_hard_route accepts only values, sources, and mini (no oracle kwargs)."""
         sig = inspect.signature(replay_hard_route)
         params = list(sig.parameters.keys())
         self.assertEqual(params, ["values", "sources", "mini"])
@@ -426,8 +489,8 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
         self.assertEqual(list(sig_legacy.parameters.keys()), ["values"])
 
     def test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch(self) -> None:
-        """T5: Phoneme_normal_39 (n_train=1) produces Hard {49} and code contains no dataset name check."""
-        from paper.equipment_anomaly_detection import hard_route_paper, sources_paper
+        """T5 (Origin Replay RED): Phoneme_normal_39 (n_train=1) produces Hard {49} using values-only DB data and zero name branching."""
+        from paper.equipment_anomaly_detection import hard_route_paper
         from paper.equipment_anomaly_detection.sources_paper import legacy_route_sources_paper
 
         hard_route_src = inspect.getsource(hard_route_paper)
@@ -435,112 +498,131 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
         self.assertNotIn("Phoneme_normal_39", hard_route_src)
         self.assertNotIn("Phoneme_normal_39", legacy_src)
 
-        rng = np.random.default_rng(39)
-        train_rows = (rng.normal(0, 1, size=50).astype(np.float32),)
-        test_rows = tuple(rng.normal(0, 1, size=50).astype(np.float32) for _ in range(50))
-        raw = RawDataset(
-            dataset="Phoneme_normal_39",
-            metadata_length=50,
-            train_indices=(0,),
-            train_blobs=tuple(r.tobytes() for r in train_rows),
-            train_rows=train_rows,
-            test_indices=tuple(range(50)),
-            test_blobs=tuple(r.tobytes() for r in test_rows),
-            test_rows=test_rows,
-        )
+        raw = load_dataset_values(DB_PATH, "Phoneme_normal_39")
+        self.assertEqual(len(raw.train_rows), 1)
+        self.assertEqual(len(raw.test_rows), 50)
         sources = score_hard_sources(raw)
         mini = score_minirocket_confirmations(raw)
         route = replay_hard_route(raw, sources, mini)
-        self.assertIn(49, route.exp137.hard | route.exp236.hard | route.automatic_hard)
+        self.assertEqual(route.exp137.hard, frozenset({49}))
+        self.assertEqual(route.exp236.hard, frozenset({49}))
+        self.assertEqual(route.automatic_hard, frozenset({49}))
 
     def test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence(self) -> None:
-        """T6: Stage isolation verifies origin-exact selector behavior against frozen oracle."""
-        from paper.equipment_anomaly_detection.contracts_paper import HardRouteParityAuthority
-        from paper.equipment_anomaly_detection.proposal_score_paper import load_hard_route_parity_authority
-        from scratch.manage_paper_r4_proposal_antigravity import (
-            EXP137_ORACLE_PATH,
-            EXP236_ORACLE_PATH,
-            EXP291_ORACLE_PATH,
-            EXP404_ORACLE_PATH,
-        )
+        """T6 (Diagnostic RED): Diagnostic stage isolation proves exact primitive parity against SHA-bound Exp137 authority."""
+        from paper.equipment_anomaly_detection.proposal_score_paper import load_hard_route_oracle_bundle
 
-        authority = load_hard_route_parity_authority(
-            EXP137_ORACLE_PATH,
-            EXP236_ORACLE_PATH,
-            EXP291_ORACLE_PATH,
-            EXP404_ORACLE_PATH,
-        )
-        self.assertIsInstance(authority, HardRouteParityAuthority)
-        self.assertEqual(authority.population_count, 1117)
-        self.assertEqual(authority.counts["exp137_hard"], 2005)
-        self.assertEqual(authority.counts["exp236_hard"], 2116)
-        self.assertEqual(authority.counts["exp253_hard"], 2253)
-        self.assertEqual(authority.counts["exact_normal_removed"], 35)
-        self.assertEqual(authority.counts["automatic_hard"], 2218)
+        authority = _build_test_authority()
+        self.assertTrue(authority.exp137_path.exists())
+        file_sha = hashlib.sha256(authority.exp137_path.read_bytes()).hexdigest()
+        self.assertEqual(file_sha, authority.exp137_sha256)
 
-    def test_smoke_33_datasets_match_sha_bound_oracles(self) -> None:
-        """T7: All 33 smoke datasets achieve per-dataset coordinate equality against 4 oracles."""
-        from paper.equipment_anomaly_detection.proposal_score_paper import load_hard_route_parity_authority
-        from scratch.manage_paper_r4_proposal_antigravity import (
-            EXP137_ORACLE_PATH,
-            EXP236_ORACLE_PATH,
-            EXP291_ORACLE_PATH,
-            EXP404_ORACLE_PATH,
-            SMOKE_DATASETS,
+        rep_datasets = (
+            "ACSF1_normal_0", "ACSF1_normal_1", "ACSF1_normal_2", "ACSF1_normal_3",
+            "ACSF1_normal_4", "ACSF1_normal_5", "ACSF1_normal_6", "ACSF1_normal_7",
+            "ACSF1_normal_8", "ACSF1_normal_9", "ChlorineConcentration_normal_3",
+            "MelbournePedestrian_normal_10", "Phoneme_normal_39", "PigAirwayPressure_normal_1",
         )
-
-        self.assertEqual(len(SMOKE_DATASETS), 33)
-        authority = load_hard_route_parity_authority(
-            EXP137_ORACLE_PATH,
-            EXP236_ORACLE_PATH,
-            EXP291_ORACLE_PATH,
-            EXP404_ORACLE_PATH,
+        catalog = build_catalog(DB_PATH, mode="smoke", smoke_datasets=rep_datasets)
+        n_test_map = {entry["dataset"]: int(entry["test"]["count"]) for entry in catalog["datasets"]}
+        bundle = load_hard_route_oracle_bundle(
+            authority=authority,
+            selected_population=rep_datasets,
+            selected_n_test=n_test_map,
         )
-        smoke_auth = authority.project(SMOKE_DATASETS)
-        self.assertEqual(smoke_auth.population_count, 33)
-        db_path = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
-        for dataset in SMOKE_DATASETS:
-            raw = load_dataset_values(db_path, dataset)
-            self.assertEqual(len(raw.test_rows), smoke_auth.n_test[dataset])
+        for ds in rep_datasets:
+            raw = load_dataset_values(DB_PATH, ds)
             sources = score_hard_sources(raw)
             mini = score_minirocket_confirmations(raw)
             route = replay_hard_route(raw, sources, mini)
-            self.assertEqual(route.exp137.hard, smoke_auth.exp137_hard[dataset])
-            self.assertEqual(route.exp236.hard, smoke_auth.exp236_hard[dataset])
-            self.assertEqual(route.exp253.hard, smoke_auth.exp291_pre_exact[dataset])
-            self.assertEqual(route.exact_normal_removed, smoke_auth.exp291_exact_removed[dataset])
-            self.assertEqual(route.automatic_hard, smoke_auth.automatic_hard[dataset])
+            self.assertEqual(route.exp137.hard, bundle.exp137[ds], f"Exp137 legacy route replay diverged on {ds}")
+
+    def test_smoke_33_datasets_match_sha_bound_oracles(self) -> None:
+        """T7 (Capable Integration): All 33 smoke datasets achieve per-dataset coordinate equality against the 4 SHA-bound oracles; direct indexing works on Exp404."""
+        from paper.equipment_anomaly_detection.proposal_score_paper import (
+            load_hard_route_oracle_bundle,
+        )
+
+        authority = _build_test_authority()
+        smoke_datasets = (
+            "ACSF1_normal_0", "ACSF1_normal_1", "ACSF1_normal_2", "ACSF1_normal_3",
+            "ACSF1_normal_4", "ACSF1_normal_5", "ACSF1_normal_6", "ACSF1_normal_7",
+            "ACSF1_normal_8", "ACSF1_normal_9", "ChlorineConcentration_normal_3",
+            "DodgerLoopDay_normal_1", "DodgerLoopDay_normal_2", "DodgerLoopDay_normal_4",
+            "DodgerLoopDay_normal_5", "DodgerLoopDay_normal_6", "DodgerLoopDay_normal_7",
+            "DodgerLoopGame_normal_1", "DodgerLoopGame_normal_2", "DodgerLoopWeekend_normal_1",
+            "DodgerLoopWeekend_normal_2", "MelbournePedestrian_normal_1", "MelbournePedestrian_normal_2",
+            "MelbournePedestrian_normal_3", "MelbournePedestrian_normal_4", "MelbournePedestrian_normal_5",
+            "MelbournePedestrian_normal_6", "MelbournePedestrian_normal_7", "MelbournePedestrian_normal_8",
+            "MelbournePedestrian_normal_9", "MelbournePedestrian_normal_10", "Phoneme_normal_39",
+            "PigAirwayPressure_normal_1",
+        )
+        self.assertEqual(len(set(smoke_datasets)), 33)
+
+        catalog = build_catalog(DB_PATH, mode="smoke", smoke_datasets=smoke_datasets)
+        n_test_map = {entry["dataset"]: int(entry["test"]["count"]) for entry in catalog["datasets"]}
+
+        bundle = load_hard_route_oracle_bundle(
+            authority=authority,
+            selected_population=smoke_datasets,
+            selected_n_test=n_test_map,
+        )
+
+        for dataset in smoke_datasets:
+            raw = load_dataset_values(DB_PATH, dataset)
+            sources = score_hard_sources(raw)
+            mini = score_minirocket_confirmations(raw)
+            route = replay_hard_route(raw, sources, mini)
+            self.assertEqual(route.exp137.hard, bundle.exp137[dataset], f"Exp137 mismatch on {dataset}")
+            self.assertEqual(route.exp236.hard, bundle.exp236[dataset], f"Exp236 mismatch on {dataset}")
+            self.assertEqual(route.exp253.hard, bundle.exp253[dataset], f"Exp253 mismatch on {dataset}")
+            self.assertEqual(route.automatic_hard, bundle.automatic_hard[dataset], f"Exp291 auto mismatch on {dataset}")
+            self.assertEqual(route.exact_normal_removed, bundle.exact_normal_removed[dataset], f"Exp291 exact mismatch on {dataset}")
+            self.assertEqual(route.automatic_hard, bundle.exp404[dataset], f"Exp404 mismatch on {dataset}")
 
     def test_full_1117_route_only_parity_gate_blocks_task6_and_task7(self) -> None:
-        """T8: verify_hard_route_parity_paper halts compose_proposal_score on mismatch before Task6."""
+        """T8 (Missing-interface / Fail-closed RED): verify_hard_route_parity_paper halts compose_proposal_score on mismatch before Task6; official context without authority fails for both full and smoke."""
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
-        from paper.equipment_anomaly_detection.contracts_paper import HardRouteParityAuthority
         from paper.equipment_anomaly_detection.proposal_score_paper import (
             compose_proposal_score,
             verify_hard_route_parity_paper,
         )
 
-        # Incomplete inputs must reject with ValueError
-        with self.assertRaises(ValueError):
-            verify_hard_route_parity_paper({}, authority=None, mode="full")
+        authority = _build_test_authority()
+        bad_routes = {"dataset_a": empty_hard_route_result_paper(10)}
+        with self.assertRaises(Exception):
+            verify_hard_route_parity_paper(bad_routes, authority=authority, mode="full")
 
-        fake_routes = {"dataset_a": empty_hard_route_result_paper(10)}
-        fake_auth = HardRouteParityAuthority(
-            exp137_hard={"dataset_a": frozenset({1})},
-            exp236_hard={"dataset_a": frozenset({1})},
-            exp291_pre_exact={"dataset_a": frozenset({1})},
-            exp291_exact_removed={"dataset_a": frozenset()},
-            automatic_hard={"dataset_a": frozenset({1})},
-            n_test={"dataset_a": 10},
-            counts={"exp137_hard": 1, "exp236_hard": 1, "exp253_hard": 1, "exact_normal_removed": 0, "automatic_hard": 1},
-            oracle_sha256={"exp137": "a" * 64, "exp236": "b" * 64, "exp291": "c" * 64, "exp404": "d" * 64},
-            population_count=1,
-        )
+        fake_raw = {
+            f"d_{i}": RawDataset(
+                f"d_{i}", 10, (0,), (b"0",), (np.zeros(10, dtype=np.float32),), (0,), (b"0",), (np.zeros(10, dtype=np.float32),)
+            )
+            for i in range(1117)
+        }
+        manifest = build_acceleration_manifest("a" * 64, logical_cpu_count=2)
+
+        # Official context without authority must fail for both full and smoke
         with self.assertRaises(ValueError):
-            verify_hard_route_parity_paper(fake_routes, authority=fake_auth, mode="smoke")
+            compose_proposal_score(fake_raw, manifest, context={"mode": "full"})
+        with self.assertRaises(ValueError):
+            compose_proposal_score(fake_raw, manifest, context={"mode": "smoke"})
+
+        with patch(
+            "paper.equipment_anomaly_detection.proposal_score_paper._collect_task4_task5",
+            return_value=({}, {f"d_{i}": empty_hard_route_result_paper(10) for i in range(1117)}),
+        ), patch(
+            "paper.equipment_anomaly_detection.proposal_score_paper.score_low_frequency"
+        ) as mock_task6, patch(
+            "paper.equipment_anomaly_detection.proposal_score_paper.classify_stability"
+        ) as mock_task7:
+            context = {"mode": "full", "hard_route_parity_authority": authority.to_dict()}
+            with self.assertRaises(ValueError):
+                compose_proposal_score(fake_raw, manifest, context=context)
+            mock_task6.assert_not_called()
+            mock_task7.assert_not_called()
 
     def test_candidate_c_rule_and_target_algebra_unchanged(self) -> None:
-        """T9 (Lock): Candidate C budget 30, view cap 16, survival 14/16, formula 2218 + 26 = 2244."""
+        """T9 (Regression Lock): Candidate C budget 30, view cap 16, survival 14/16, formula 2218 + 26 = 2244."""
         self.assertEqual(GLOBAL_CANDIDATE_BUDGET_PAPER, 30)
         self.assertEqual(_MAXIMUM_VIEWS_PAPER, 16)
         survival_threshold = 14 / 16
@@ -550,7 +632,7 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
         self.assertEqual(automatic_hard_target + stable_target, 2244)
 
     def test_clean_root_execution_and_rejection_of_live_r4_reuse(self) -> None:
-        """T10: Runner creates fresh records in clean root and rejects live r4 root reuse."""
+        """T10 (Missing-interface RED): Runner creates fresh records in clean root and rejects live r4 root reuse."""
         forbidden_prior = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813")
         from scratch.manage_paper_r4_proposal_antigravity import validate_clean_root_destination_paper
 
@@ -558,7 +640,7 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
             validate_clean_root_destination_paper(forbidden_prior)
 
     def test_new_smoke_and_official_root_paths_are_distinct_and_refuse_old_destinations(self) -> None:
-        """T11: Launcher constants use new clean 20260814 paths and refuse prior roots."""
+        """T11 (Missing-interface RED): Launcher constants use new clean 20260814 paths and refuse prior roots."""
         from scratch.manage_paper_r4_proposal_antigravity import (
             AUTHORIZED_OFFICIAL_ROOT_20260814,
             AUTHORIZED_SMOKE_ROOT_20260814,
@@ -573,7 +655,7 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
         )
 
     def test_progress_logging_remains_optional_and_label_free(self) -> None:
-        """T12 (Lock): Progress logging default None is bit-identical and label-free."""
+        """T12 (Regression Lock): Progress logging default None is bit-identical and label-free."""
         event = {"stage": "task4_task5", "phase": "tick", "completed": 1, "total": 10, "dataset": "Synthetic_dataset"}
         emitted: list[dict] = []
         emit_progress_paper(emitted.append, event)
@@ -583,13 +665,13 @@ class FullRouteParityRecoveryAntigravityTests(unittest.TestCase):
         self.assertNotIn("labels", str(emitted[0]))
 
     def test_zero_test_label_access_until_evaluation(self) -> None:
-        """T13 (Lock): TEST_VALUES_SQL selects no label column; label firewall is intact."""
+        """T13 (Regression Lock): TEST_VALUES_SQL selects no label column; label firewall is intact."""
         self.assertNotIn("y_test", TEST_VALUES_SQL.lower())
         self.assertNotIn("label", TEST_VALUES_SQL.lower())
         self.assertNotIn("is_anomaly", TEST_VALUES_SQL.lower())
 
     def test_frozen_counts_2218_remain_authoritative_target(self) -> None:
-        """T14 (Lock): Target counts remain 2005/2116/2253/35/2218; 2203 is not a target."""
+        """T14 (Regression Lock): Target counts remain 2005/2116/2253/35/2218; 2203 is not a target."""
         self.assertEqual(FROZEN_CONFIG.ablation_alert_counts[0], 2218)
         self.assertNotEqual(FROZEN_CONFIG.ablation_alert_counts[0], 2203)
 
@@ -598,7 +680,7 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
-- [ ] **Step 2: Run the Initial Test Matrix (Observe RED and GREEN Locks)**
+- [ ] **Step 2: Run the Initial Test Matrix (Verify Initial Lock and RED Sequencing)**
 
 Run:
 ```bash
@@ -606,7 +688,10 @@ python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigra
 ```
 Expected output:
 - T4, T9, T12, T13, T14 pass GREEN (Regression Locks).
-- T1, T2, T3, T5, T6, T7, T8, T10, T11 fail RED (Expected initial state before repairs).
+- T1, T2, T8, T10, T11 fail RED (Missing interfaces/constants).
+- T3 fails RED (Current code swallows dependency errors on eligible datasets instead of propagating).
+- T5, T6 fail RED (Current code short-circuits $n_{\text{train}}=1$ and legacy replay is inexact).
+- T7 skipped or fails RED under default interpreter without capable environment.
 
 - [ ] **Step 3: Resynchronize Codemaps and Commit Test Matrix**
 
@@ -628,6 +713,7 @@ git commit -m "test(parity): add 14-test verification matrix for full route pari
 - Modify together: `paper/equipment_anomaly_detection/codemap_paper.*`
 
 **Interfaces:**
+- Pinned interpreter preflight: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python`.
 - `PINNED_PYCATCH22_VERSION_PAPER: str = "0.5.0"` in `sources_paper/canonical_paper.py`.
 - `verify_pycatch22_environment_paper() -> dict[str, str]` in `sources_paper/canonical_paper.py`:
   - Returns `{"pycatch22": version}` when package is present, version equals `"0.5.0"`, and `catch22_all` is importable.
@@ -637,19 +723,31 @@ git commit -m "test(parity): add 14-test verification matrix for full route pari
 - `score_hard_sources(values: RawDataset) -> HardSourceBundle` in `sources_paper/hard_sources_paper.py`:
   - If `values` is eligible ($n_{\text{train}} \ge 5$ and finite), unexpected missing dependencies raise `DependencyUnavailablePaper` instead of being swallowed into silent `eligible=False`. Ordinary abstentions (`unsupported_n_train_lt_5`, `nonfinite_input`) remain intact.
 
-- [ ] **Step 1: Run RED Command for Task 3**
+- [ ] **Step 1: Run Preflight Environment Verification and RED Command for Task 3**
 
-Run:
+Run preflight interpreter check:
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_pin_fails_closed_when_missing_or_wrong_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_0_5_0_is_the_only_accepted_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_preflight_fails_closed_before_scoring_or_persistence experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_score_hard_sources_propagates_dependency_error_on_eligible_dataset
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -c "
+import importlib.metadata, pycatch22
+assert importlib.metadata.version('pycatch22') == '0.5.0'
+assert hasattr(pycatch22, 'catch22_all')
+print('pycatch22-capable-env-ok')
+"
 ```
-Expected failure: `ImportError: cannot import name 'verify_pycatch22_environment_paper'` or `AttributeError: module '...canonical_paper' has no attribute 'PINNED_PYCATCH22_VERSION_PAPER'`.
+Expected: `pycatch22-capable-env-ok`.
+
+Run RED command:
+```bash
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_pin_fails_closed_when_missing_or_wrong_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_0_5_0_is_the_only_accepted_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_dependency_failure_propagates_without_swallowing
+```
+Expected failure: `ImportError: cannot import name 'verify_pycatch22_environment_paper'` or `AttributeError: module '...canonical_paper' has no attribute 'PINNED_PYCATCH22_VERSION_PAPER'` or `AssertionError: DependencyUnavailablePaper not raised`.
 
 - [ ] **Step 2: Implement Fail-Closed pycatch22 Pin in `canonical_paper.py`**
 
 In `paper/equipment_anomaly_detection/sources_paper/canonical_paper.py`, add:
 ```python
 import importlib.metadata
+from .preprocessing_paper import DependencyUnavailablePaper
 
 PINNED_PYCATCH22_VERSION_PAPER = "0.5.0"
 
@@ -684,7 +782,7 @@ In `_collect_task4_task5`:
 
 - [ ] **Step 4: Update Worker Error Handling in `score_hard_sources` in `hard_sources_paper.py`**
 
-In `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`, ensure that on eligible datasets ($n_{\text{train}} \ge 5$, finite), `_canonical_source_paper` and other sources do not silently swallow unexpected dependency errors:
+In `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`, ensure that on eligible datasets ($n_{\text{train}} \ge 5$ and finite), `_canonical_source_paper` and other sources do not silently swallow unexpected dependency errors:
 ```python
     # For canonical_normal_state on eligible datasets:
     try:
@@ -695,11 +793,16 @@ In `paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py`, ensu
 
 - [ ] **Step 5: Run GREEN Verification for Task 3**
 
-Run:
+Run under default interpreter (tests mocking/fail-fast behavior):
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_pin_fails_closed_when_missing_or_wrong_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_0_5_0_is_the_only_accepted_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_preflight_fails_closed_before_scoring_or_persistence experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_score_hard_sources_propagates_dependency_error_on_eligible_dataset
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_pin_fails_closed_when_missing_or_wrong_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_0_5_0_is_the_only_accepted_version experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_pycatch22_dependency_failure_propagates_without_swallowing
 ```
-Expected: `Ran 4 tests in ... OK`.
+
+Run under pinned capable interpreter (tests live package integration):
+```bash
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_capable_venv_eligible_canonical_scoring_with_pycatch22
+```
+Expected: All tests pass GREEN (`OK`).
 
 - [ ] **Step 6: Run Relevant Regression Suite**
 
@@ -719,415 +822,331 @@ git commit -m "feat(sources): enforce fail-closed pycatch22==0.5.0 environment p
 
 ---
 
-### Task 4: Atomic strict oracle-bundle flow, values-only SHA-pinned oracle adapters, and HardRouteParityAuthority
+### Task 4: Values-only SHA-pinned oracle bundle loader and Mechanism 1 diagnostic isolation phase
 
 **Files:**
 - Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py`
+- Create: `scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py`
+- Create: `reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md`
 - Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py`
 - Modify together: `docs/codemap/codemap_exp448_antigravity.*`
 - Modify together: `paper/equipment_anomaly_detection/codemap_paper.*`
 
 **Interfaces:**
-- Data-only `HardRouteParityAuthority` in `contracts_paper.py`:
-  - Frozen slots dataclass holding verified population lane maps (`exp137_hard`, `exp236_hard`, `exp291_pre_exact`, `exp291_exact_removed`, `automatic_hard`, `n_test`), aggregate `counts`, verified `oracle_sha256` digest map, and `population_count`.
-  - Methods: `to_dict() -> dict[str, object]`, `from_dict(payload: dict[str, object]) -> HardRouteParityAuthority`, and `project(datasets: Sequence[str]) -> HardRouteParityAuthority` slicing by direct indexing `self.exp137_hard[d]` (no `.get(empty)`).
-  - Invariant: Zero `default_verified()` method or machine paths in `contracts_paper.py`. The authorized launcher/manager owns the paths and constructs the instance.
-- Atomic Strict Oracle-Bundle Loader in `proposal_score_paper.py`:
-  - `load_hard_route_parity_authority(exp137_path: Path, exp236_path: Path, exp291_path: Path, exp404_path: Path) -> HardRouteParityAuthority`:
-    1. Byte verification: Verify all four files by exact SHA-256 before parsing.
-    2. Exp137 CSV: Exact header tuple check (`tuple(reader.fieldnames) == EXPECTED_EXP137_HEADER_TUPLE`). Extract only `dataset_name`, `hard_alert_indices`, `test_size`. Validate exact full 1117 key set (matching catalog population, no duplicate dataset names).
-    3. Exp236 JSONL: Exact frozen key set check per record (`set(rec.keys()) == EXP236_EXACT_KEYS`). Validate `contains_test_labels is False` and `contains_evaluation_metrics is False`. Extract `dataset`, `hard_indices`, `n_test`. Validate exact full 1117 key set and `n_test == exp137_n_test[dataset]`.
-    4. Exp291 JSONL: Exact frozen key set check per record (`set(rec.keys()) == EXP291_EXACT_KEYS`). Validate `contains_test_labels is False` and `contains_evaluation_metrics is False`. Extract `dataset`, `automatic_hard_indices`, `automatic_normal_exact_indices`, `n_test`. Validate exact full 1117 key set and `n_test == exp137_n_test[dataset]`.
-    5. Construct full 1117 population + n_test authority structure.
-    6. Exp404 JSONL: Sparse exhaustive 2218 rows against that full population. Exact frozen key set check per record (`set(rec.keys()) == EXP404_EXACT_KEYS`), false label/metric flags. Explicitly initialize all 1117 datasets in map (empty frozenset() for non-alert datasets). Validate duplicates, coordinate ranges in `[0, n_test)`, total count == 2218, exact equality with Exp291 `automatic_hard_indices` for all 1117 datasets.
-    7. Construct and return verified `HardRouteParityAuthority`.
-- T6 Sequencing: Adapter-missing RED in Task 4 is `ImportError: cannot import name 'load_hard_route_parity_authority'`, which is separate from the exact diagnostic RED created only after the harness commits its identified dataset/stage/primitive in Task 5.
+- `HardRouteParityAuthority` dataclass (in `contracts_paper.py`):
+  - Pure data-only dataclass (`exp137_path, exp137_sha256, exp236_path, exp236_sha256, exp291_path, exp291_sha256, exp404_path, exp404_sha256`).
+  - No `default_verified` classmethod.
+  - `to_dict() -> dict[str, str]` and `from_dict(data: Mapping[str, object]) -> HardRouteParityAuthority` with exact equality schema check `set(data.keys()) == required`.
+- `HardRouteOracleBundle` dataclass (in `contracts_paper.py`):
+  - Contains projected `{dataset: frozenset(coords)}` mappings for `exp137`, `exp236`, `exp253`, `exact_normal_removed`, `automatic_hard`, and `exp404`.
+- Single Strict Oracle Bundle Loader `load_hard_route_oracle_bundle(authority, *, selected_population=None, selected_n_test=None)` (in `proposal_score_paper.py`):
+  - Validates byte SHA-256 for all 4 files via `_verify_file_sha256`.
+  - Globally parses and validates exact 1,117 populations for Exp137, Exp236, Exp291 against LIVE FULL schemas:
+    - Exp137 CSV: header schema equality `tuple(reader.fieldnames) == EXP137_EXACT_HEADER` (exact 54 live fields), checks no duplicate datasets, parses `dataset_name`, space-delimited `hard_alert_indices`, and integer `test_size`, builds `exp137_n_test`, verifies exact 1,117 rows and 2,005 hard alert count.
+    - Exp236 JSONL: line schema equality `set(record.keys()) == EXP236_EXACT_ROW_KEYS` (exact 15 live keys including `n_test` and flags), requires `contains_test_labels is False` and `contains_evaluation_metrics is False`, checks no duplicate datasets, parses integer list `hard_indices` and integer `n_test`, builds `exp236_n_test`, verifies exact 1,117 rows and 2,116 hard alert count.
+    - Exp291 JSONL: line schema equality `set(record.keys()) == EXP291_EXACT_ROW_KEYS` (exact 18 live keys including `n_test` and flags), requires `contains_test_labels is False` and `contains_evaluation_metrics is False`, checks no duplicate datasets, parses integer lists `automatic_hard_indices`, `automatic_normal_exact_indices`, and integer `n_test`, builds `exp291_n_test`, constructs pre-exact Exp253 as union, verifies exact 1,117 rows and aggregate counts (pre-exact == 2253, exact-removed == 35, auto-hard == 2218).
+    - Checks key set equality: `set(exp137_global.keys()) == set(exp236_global.keys()) == set(auto_global.keys())` (all 1,117 datasets).
+    - Checks global $n_{\text{test}}$ map equality across all three: `exp137_n_test == exp236_n_test == exp291_n_test` and sets `global_n_test = exp137_n_test`.
+    - Validates ALL coordinates across ALL 1,117 datasets (including unselected rows) against `global_n_test`: $0 \le c < \text{global\_n\_test}[ds]$ for Exp137, Exp236, and Exp291.
+  - Globally parses Exp404 JSONL:
+    - Initializes all 1,117 population keys explicitly to empty sets (`{ds: set() for ds in pop_1117}`).
+    - Row schema equality `set(record.keys()) == EXP404_EXACT_ROW_KEYS` (exact 8 live keys), requires `contains_test_labels is False` and `contains_evaluation_metrics is False`.
+    - Validates each coordinate row: `dataset` in 1,117 population, $0 \le cand < \text{global\_n\_test}[dataset]$, no duplicate coordinates per dataset.
+    - Verifies exactly 2,218 rows seen across the entire file (888 nonempty datasets + 229 implicit-empty datasets = 1,117).
+    - Verifies total coordinates == 2218.
+  - Selected population verification and direct-index projection:
+    - If `selected_population` is provided (e.g. 33 smoke datasets or 1,117 full datasets):
+      - If `selected_n_test` is provided, requires `selected_n_test` exactly matches `global_n_test` for every dataset in `selected_population`.
+      - Direct indexing `[dataset]` projects each map. Any unselected dataset is unreachable and missing dataset raises `KeyError`.
+    - If `selected_population` is None, validates `selected_n_test == global_n_test` (if provided) and returns the full 1,117 bundle.
+    - Zero `allow_unselected` and zero `.get(..., empty)` masking anywhere.
+- Diagnostic Isolation Phase:
+  - `scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py` executes values-only against DB, comparing current paper replay intermediate selectors against independently executed frozen-origin AST primitives.
+  - Fail-closed diagnostic execution discovers and records the exact divergent dataset(s), stage(s), and primitive function(s) into `reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md`.
+  - Isolates and locks the failing RED assertion in T6 without guessing.
 
-- [ ] **Step 1: Run RED Command for Task 4**
+- [ ] **Step 1: Run RED Command for Task 4 Adapter Interface**
 
 Run:
 ```bash
 python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence
 ```
-Expected failure: `ImportError: cannot import name 'HardRouteParityAuthority' from 'paper.equipment_anomaly_detection.contracts_paper'` or `load_hard_route_parity_authority`.
+Expected failure: `ImportError: cannot import name 'load_hard_route_oracle_bundle' from 'paper.equipment_anomaly_detection.proposal_score_paper'` (missing adapter RED).
 
-- [ ] **Step 2: Implement Data-Only `HardRouteParityAuthority` in `contracts_paper.py`**
+- [ ] **Step 2: Implement `HardRouteParityAuthority`, `HardRouteOracleBundle`, and `load_hard_route_oracle_bundle`**
 
-In `paper/equipment_anomaly_detection/contracts_paper.py`, add:
-
-```python
-@dataclass(frozen=True, slots=True)
-class HardRouteParityAuthority:
-    """Immutable data-only hard-route parity authority bundle."""
-
-    exp137_hard: Mapping[str, frozenset[int]]
-    exp236_hard: Mapping[str, frozenset[int]]
-    exp291_pre_exact: Mapping[str, frozenset[int]]
-    exp291_exact_removed: Mapping[str, frozenset[int]]
-    automatic_hard: Mapping[str, frozenset[int]]
-    n_test: Mapping[str, int]
-    counts: Mapping[str, int]
-    oracle_sha256: Mapping[str, str]
-    population_count: int
-
-    def __post_init__(self) -> None:
-        exp137 = dict(self.exp137_hard)
-        exp236 = dict(self.exp236_hard)
-        exp291_pre = dict(self.exp291_pre_exact)
-        exp291_rem = dict(self.exp291_exact_removed)
-        auto = dict(self.automatic_hard)
-        n_test = dict(self.n_test)
-        counts = dict(self.counts)
-        sha = dict(self.oracle_sha256)
-
-        keys = set(exp137)
-        if (
-            set(exp236) != keys
-            or set(exp291_pre) != keys
-            or set(exp291_rem) != keys
-            or set(auto) != keys
-            or set(n_test) != keys
-        ):
-            raise ValueError("HardRouteParityAuthority lane key sets must match exactly")
-        if len(keys) != self.population_count or self.population_count < 1:
-            raise ValueError("HardRouteParityAuthority population count mismatch")
-
-        required_counts = {
-            "exp137_hard",
-            "exp236_hard",
-            "exp253_hard",
-            "exact_normal_removed",
-            "automatic_hard",
-        }
-        if set(counts) != required_counts or any(type(c) is not int or c < 0 for c in counts.values()):
-            raise ValueError("HardRouteParityAuthority counts invalid")
-
-        required_oracles = {"exp137", "exp236", "exp291", "exp404"}
-        if set(sha) != required_oracles or any(type(d) is not str or len(d) != 64 for d in sha.values()):
-            raise ValueError("HardRouteParityAuthority oracle digests invalid")
-
-        object.__setattr__(self, "exp137_hard", MappingProxyType(exp137))
-        object.__setattr__(self, "exp236_hard", MappingProxyType(exp236))
-        object.__setattr__(self, "exp291_pre_exact", MappingProxyType(exp291_pre))
-        object.__setattr__(self, "exp291_exact_removed", MappingProxyType(exp291_rem))
-        object.__setattr__(self, "automatic_hard", MappingProxyType(auto))
-        object.__setattr__(self, "n_test", MappingProxyType(n_test))
-        object.__setattr__(self, "counts", MappingProxyType(counts))
-        object.__setattr__(self, "oracle_sha256", MappingProxyType(sha))
-
-    def project(self, datasets: Sequence[str]) -> "HardRouteParityAuthority":
-        """Project authority to an explicit population using direct indexing (raises on missing)."""
-        selected = tuple(datasets)
-        if not selected or len(selected) != len(set(selected)):
-            raise ValueError("projection requires a non-empty sequence of unique datasets")
-
-        p_137 = {d: self.exp137_hard[d] for d in selected}
-        p_236 = {d: self.exp236_hard[d] for d in selected}
-        p_pre = {d: self.exp291_pre_exact[d] for d in selected}
-        p_rem = {d: self.exp291_exact_removed[d] for d in selected}
-        p_auto = {d: self.automatic_hard[d] for d in selected}
-        p_ntest = {d: self.n_test[d] for d in selected}
-
-        p_counts = {
-            "exp137_hard": sum(len(v) for v in p_137.values()),
-            "exp236_hard": sum(len(v) for v in p_236.values()),
-            "exp253_hard": sum(len(v) for v in p_pre.values()),
-            "exact_normal_removed": sum(len(v) for v in p_rem.values()),
-            "automatic_hard": sum(len(v) for v in p_auto.values()),
-        }
-
-        return HardRouteParityAuthority(
-            exp137_hard=p_137,
-            exp236_hard=p_236,
-            exp291_pre_exact=p_pre,
-            exp291_exact_removed=p_rem,
-            automatic_hard=p_auto,
-            n_test=p_ntest,
-            counts=p_counts,
-            oracle_sha256=dict(self.oracle_sha256),
-            population_count=len(selected),
-        )
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "schema": "paper-hard-route-parity-authority.v1",
-            "population_count": self.population_count,
-            "counts": dict(self.counts),
-            "oracle_sha256": dict(self.oracle_sha256),
-            "n_test": dict(self.n_test),
-            "exp137_hard": {k: sorted(v) for k, v in self.exp137_hard.items()},
-            "exp236_hard": {k: sorted(v) for k, v in self.exp236_hard.items()},
-            "exp291_pre_exact": {k: sorted(v) for k, v in self.exp291_pre_exact.items()},
-            "exp291_exact_removed": {k: sorted(v) for k, v in self.exp291_exact_removed.items()},
-            "automatic_hard": {k: sorted(v) for k, v in self.automatic_hard.items()},
-        }
-
-    @classmethod
-    def from_dict(cls, payload: dict[str, object]) -> "HardRouteParityAuthority":
-        if not isinstance(payload, dict) or payload.get("schema") != "paper-hard-route-parity-authority.v1":
-            raise ValueError("invalid HardRouteParityAuthority payload schema")
-        return cls(
-            exp137_hard={k: frozenset(v) for k, v in payload["exp137_hard"].items()},
-            exp236_hard={k: frozenset(v) for k, v in payload["exp236_hard"].items()},
-            exp291_pre_exact={k: frozenset(v) for k, v in payload["exp291_pre_exact"].items()},
-            exp291_exact_removed={k: frozenset(v) for k, v in payload["exp291_exact_removed"].items()},
-            automatic_hard={k: frozenset(v) for k, v in payload["automatic_hard"].items()},
-            n_test={k: int(v) for k, v in payload["n_test"].items()},
-            counts={k: int(v) for k, v in payload["counts"].items()},
-            oracle_sha256={k: str(v) for k, v in payload["oracle_sha256"].items()},
-            population_count=int(payload["population_count"]),
-        )
-```
-
-- [ ] **Step 3: Implement Atomic Strict Oracle-Bundle Loader in `proposal_score_paper.py`**
-
-In `paper/equipment_anomaly_detection/proposal_score_paper.py`, add:
+In `paper/equipment_anomaly_detection/contracts_paper.py`, define `HardRouteParityAuthority` and `HardRouteOracleBundle`.
+In `paper/equipment_anomaly_detection/proposal_score_paper.py`, implement `load_hard_route_oracle_bundle`:
 
 ```python
 import csv
-from hashlib import sha256
+from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from .contracts_paper import HardRouteParityAuthority
+from .contracts_paper import HardRouteOracleBundle, HardRouteParityAuthority
 
-EXP137_ORACLE_SHA256 = "942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d"
-EXP236_ORACLE_SHA256 = "a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524"
-EXP291_ORACLE_SHA256 = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
-EXP404_ORACLE_SHA256 = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
-
-EXPECTED_EXP137_HEADER_TUPLE = (
+EXP137_EXACT_HEADER = (
     "experiment_id", "dataset_name", "family", "config_name", "selector_name",
     "selector_reason", "threshold_method", "score_family", "score_source_name",
     "hard_alert_indices", "standard_review_indices", "priority_review_indices",
-    "hard_alert_count", "standard_review_count", "priority_review_count",
-    "no_alert_count", "hard_tp", "hard_fp", "hard_fn", "hard_precision",
-    "hard_recall", "hard_f1", "standard_review_tp", "standard_review_fp",
-    "standard_review_fn", "standard_review_precision", "standard_review_recall",
-    "standard_review_f1", "priority_review_tp", "priority_review_fp",
-    "priority_review_fn", "priority_review_precision", "priority_review_recall",
-    "priority_review_f1", "combined_tp", "combined_fp", "combined_fn",
-    "combined_precision", "combined_recall", "combined_f1", "combined_metric_scope",
-    "routing_uses_test_labels", "routing_uses_test_position", "routing_uses_family_performance",
-    "priority_review_posthoc_research_rule", "prospective_priority_validation_required",
-    "source_exp133_config", "source_exp135_config", "source_exp93_hard_count",
-    "source_exp135_review_count", "train_normal_count", "sequence_length",
-    "test_size", "anomaly_count",
+    "hard_alert_count", "standard_review_count", "priority_review_count", "no_alert_count",
+    "hard_tp", "hard_fp", "hard_fn", "hard_precision", "hard_recall", "hard_f1",
+    "standard_review_tp", "standard_review_fp", "standard_review_fn", "standard_review_precision",
+    "standard_review_recall", "standard_review_f1", "priority_review_tp", "priority_review_fp",
+    "priority_review_fn", "priority_review_precision", "priority_review_recall", "priority_review_f1",
+    "combined_tp", "combined_fp", "combined_fn", "combined_precision", "combined_recall", "combined_f1",
+    "combined_metric_scope", "routing_uses_test_labels", "routing_uses_test_position",
+    "routing_uses_family_performance", "priority_review_posthoc_research_rule",
+    "prospective_priority_validation_required", "source_exp133_config", "source_exp135_config",
+    "source_exp93_hard_count", "source_exp135_review_count", "train_normal_count",
+    "sequence_length", "test_size", "anomaly_count",
 )
-
-EXP236_EXACT_KEYS = frozenset({
-    "contains_evaluation_metrics", "contains_test_labels", "dataset",
-    "deployment_eligible", "experiment_id", "hard_indices", "hard_policy",
-    "n_test", "new_hard_indices", "new_standard_review_indices",
-    "priority_review_indices", "priority_review_policy",
-    "retrospective_candidate_packaging", "standard_review_indices",
-    "standard_review_policy",
+EXP236_EXACT_ROW_KEYS = frozenset({
+    "contains_evaluation_metrics", "contains_test_labels", "dataset", "deployment_eligible",
+    "experiment_id", "hard_indices", "hard_policy", "n_test", "new_hard_indices",
+    "new_standard_review_indices", "priority_review_indices", "priority_review_policy",
+    "retrospective_candidate_packaging", "standard_review_indices", "standard_review_policy",
 })
-
-EXP291_EXACT_KEYS = frozenset({
+EXP291_EXACT_ROW_KEYS = frozenset({
     "automatic_hard_indices", "automatic_normal_exact_indices", "automatic_normal_rule",
-    "contains_evaluation_metrics", "contains_test_labels", "dataset",
-    "default_review_indices", "experiment_id", "n_test", "priority_review_indices",
-    "prospective_validated", "recovery_priority_scope", "recovery_shadow_review_indices",
-    "research_only_recovery_priority_indices", "retrospective_integration",
-    "shadow_review_indices", "source_baseline_hard_indices", "standard_review_indices",
+    "contains_evaluation_metrics", "contains_test_labels", "dataset", "default_review_indices",
+    "experiment_id", "n_test", "priority_review_indices", "prospective_validated",
+    "recovery_priority_scope", "recovery_shadow_review_indices", "research_only_recovery_priority_indices",
+    "retrospective_integration", "shadow_review_indices", "source_baseline_hard_indices", "standard_review_indices",
 })
-
-EXP404_EXACT_KEYS = frozenset({
-    "abstention_reason", "candidate_index", "confidence_by_alpha",
-    "contains_evaluation_metrics", "contains_test_labels", "dataset",
-    "eligibility", "scores_by_alpha",
+EXP404_EXACT_ROW_KEYS = frozenset({
+    "abstention_reason", "candidate_index", "confidence_by_alpha", "contains_evaluation_metrics",
+    "contains_test_labels", "dataset", "eligibility", "scores_by_alpha",
 })
 
 
-def _verify_bytes_sha(path: Path, expected_sha: str) -> None:
-    raw = Path(path).read_bytes()
-    # Normalize CRLF if needed for git checkout differences on CSV
-    actual_sha = sha256(raw).hexdigest()
-    if actual_sha != expected_sha:
-        crlf_sha = sha256(raw.replace(b"\n", b"\r\n")).hexdigest()
-        if crlf_sha != expected_sha:
-            raise ValueError(f"Oracle SHA-256 mismatch on {path}: expected {expected_sha} got {actual_sha}")
+def _verify_file_sha256(path: Path, expected_sha256: str) -> None:
+    resolved = Path(path).resolve()
+    if not resolved.is_file():
+        raise FileNotFoundError(f"Oracle authority file not found: {resolved}")
+    digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError(
+            f"Oracle authority file SHA-256 mismatch for {resolved}: expected {expected_sha256}, got {digest}"
+        )
 
 
-def load_hard_route_parity_authority(
-    exp137_path: Path,
-    exp236_path: Path,
-    exp291_path: Path,
-    exp404_path: Path,
-) -> HardRouteParityAuthority:
-    """Atomic strict oracle-bundle loader validating 100% exact schemas, keys, n_test, and coordinates."""
-    # 1. Byte verification
-    _verify_bytes_sha(exp137_path, EXP137_ORACLE_SHA256)
-    _verify_bytes_sha(exp236_path, EXP236_ORACLE_SHA256)
-    _verify_bytes_sha(exp291_path, EXP291_ORACLE_SHA256)
-    _verify_bytes_sha(exp404_path, EXP404_ORACLE_SHA256)
+def load_hard_route_oracle_bundle(
+    authority: HardRouteParityAuthority,
+    *,
+    selected_population: Sequence[str] | None = None,
+    selected_n_test: Mapping[str, int] | None = None,
+) -> HardRouteOracleBundle:
+    """Strictly SHA-verifies and parses all 4 frozen oracle files against full live schemas,
+    builds global n_test maps from Exp137/236/291 requiring exact equality, validates ALL coordinates
+    including unselected rows against global n_test, builds all 1117 Exp404 explicit keys from sparse 2218 rows,
+    validates selected_n_test against global values, and direct-index projects to selected_population."""
+    if not isinstance(authority, HardRouteParityAuthority):
+        raise TypeError("HardRouteParityAuthority instance is required")
 
-    # 2. Parse and globally validate Exp137 CSV
-    exp137_hard: dict[str, frozenset[int]] = {}
-    n_test_map: dict[str, int] = {}
-    with Path(exp137_path).open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle)
-        header = tuple(next(reader))
-        if header != EXPECTED_EXP137_HEADER_TUPLE:
-            raise ValueError(f"Exp137 CSV exact header tuple mismatch: {header[:5]}")
-        d_idx = header.index("dataset_name")
-        h_idx = header.index("hard_alert_indices")
-        t_idx = header.index("test_size")
+    # 1. SHA-256 verify all 4 oracle files
+    _verify_file_sha256(authority.exp137_path, authority.exp137_sha256)
+    _verify_file_sha256(authority.exp236_path, authority.exp236_sha256)
+    _verify_file_sha256(authority.exp291_path, authority.exp291_sha256)
+    _verify_file_sha256(authority.exp404_path, authority.exp404_sha256)
+
+    # 2. Parse and validate Exp137 CSV globally
+    exp137_global: dict[str, frozenset[int]] = {}
+    exp137_n_test: dict[str, int] = {}
+    with Path(authority.exp137_path).open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None or tuple(reader.fieldnames) != EXP137_EXACT_HEADER:
+            raise ValueError(f"Exp137 CSV header schema mismatch: expected exact 54 live fields {EXP137_EXACT_HEADER}, got {reader.fieldnames}")
         for row in reader:
-            dataset = str(row[d_idx])
-            if dataset in exp137_hard:
-                raise ValueError(f"Duplicate dataset {dataset} in Exp137 CSV")
-            raw_indices = str(row[h_idx]).strip()
-            indices = frozenset(map(int, raw_indices.split())) if raw_indices else frozenset()
-            exp137_hard[dataset] = indices
-            test_size = int(row[t_idx])
-            if test_size <= 0:
-                raise ValueError(f"Invalid test_size {test_size} on {dataset}")
-            n_test_map[dataset] = test_size
+            dataset = str(row["dataset_name"])
+            if dataset in exp137_global:
+                raise ValueError(f"Exp137 CSV contains duplicate dataset: {dataset}")
+            exp137_n_test[dataset] = int(row["test_size"])
+            raw_indices = str(row["hard_alert_indices"]).strip()
+            exp137_global[dataset] = frozenset(map(int, raw_indices.split())) if raw_indices else frozenset()
 
-    if len(exp137_hard) != 1117:
-        raise ValueError(f"Exp137 row count must be exactly 1117 (got {len(exp137_hard)})")
+    if len(exp137_global) != 1117:
+        raise ValueError(f"Exp137 dataset population count mismatch: expected 1117, got {len(exp137_global)}")
+    if sum(len(v) for v in exp137_global.values()) != 2005:
+        raise ValueError(f"Exp137 total hard alert count mismatch: expected 2005, got {sum(len(v) for v in exp137_global.values())}")
 
-    full_population = set(exp137_hard)
-
-    # 3. Parse and globally validate Exp236 JSONL
-    exp236_hard: dict[str, frozenset[int]] = {}
-    with Path(exp236_path).open("r", encoding="utf-8") as handle:
-        for line in handle:
+    # 3. Parse and validate Exp236 JSONL globally
+    exp236_global: dict[str, frozenset[int]] = {}
+    exp236_n_test: dict[str, int] = {}
+    with Path(authority.exp236_path).open("r", encoding="utf-8") as handle:
+        for line_num, line in enumerate(handle, 1):
             line_str = line.strip()
             if not line_str:
                 continue
-            rec = json.loads(line_str)
-            if set(rec.keys()) != EXP236_EXACT_KEYS:
-                raise ValueError(f"Exp236 JSONL exact key mismatch on record: {sorted(rec.keys())}")
-            if rec["contains_test_labels"] is not False or rec["contains_evaluation_metrics"] is not False:
-                raise ValueError("Exp236 record violates label/metric boundary")
-            dataset = str(rec["dataset"])
-            if dataset in exp236_hard:
-                raise ValueError(f"Duplicate dataset {dataset} in Exp236 JSONL")
-            if dataset not in full_population:
-                raise ValueError(f"Unknown dataset {dataset} in Exp236 JSONL")
-            if int(rec["n_test"]) != n_test_map[dataset]:
-                raise ValueError(f"Exp236 n_test mismatch on {dataset}")
-            exp236_hard[dataset] = frozenset(map(int, rec["hard_indices"]))
+            record = json.loads(line_str)
+            if not isinstance(record, dict) or set(record.keys()) != EXP236_EXACT_ROW_KEYS:
+                raise ValueError(f"Exp236 JSONL line {line_num} schema mismatch: expected exact 15 live keys {EXP236_EXACT_ROW_KEYS}")
+            if record.get("contains_test_labels") is not False or record.get("contains_evaluation_metrics") is not False:
+                raise ValueError(f"Exp236 line {line_num} security violation: contains_test_labels or contains_evaluation_metrics is not False")
+            dataset = str(record["dataset"])
+            if dataset in exp236_global:
+                raise ValueError(f"Exp236 JSONL contains duplicate dataset: {dataset}")
+            raw_indices = record["hard_indices"]
+            if not isinstance(raw_indices, list):
+                raise ValueError(f"Exp236 hard_indices must be a list on line {line_num}")
+            exp236_n_test[dataset] = int(record["n_test"])
+            exp236_global[dataset] = frozenset(map(int, raw_indices))
 
-    if set(exp236_hard) != full_population:
-        raise ValueError("Exp236 JSONL key set differs from full 1117 population")
+    if len(exp236_global) != 1117:
+        raise ValueError(f"Exp236 dataset population count mismatch: expected 1117, got {len(exp236_global)}")
+    if sum(len(v) for v in exp236_global.values()) != 2116:
+        raise ValueError(f"Exp236 total hard alert count mismatch: expected 2116, got {sum(len(v) for v in exp236_global.values())}")
 
-    # 4. Parse and globally validate Exp291 JSONL
-    exp291_auto: dict[str, frozenset[int]] = {}
-    exp291_removed: dict[str, frozenset[int]] = {}
-    exp291_pre: dict[str, frozenset[int]] = {}
-    with Path(exp291_path).open("r", encoding="utf-8") as handle:
-        for line in handle:
+    # 4. Parse and validate Exp291 JSONL globally
+    auto_global: dict[str, frozenset[int]] = {}
+    removed_global: dict[str, frozenset[int]] = {}
+    pre_global: dict[str, frozenset[int]] = {}
+    exp291_n_test: dict[str, int] = {}
+    with Path(authority.exp291_path).open("r", encoding="utf-8") as handle:
+        for line_num, line in enumerate(handle, 1):
             line_str = line.strip()
             if not line_str:
                 continue
-            rec = json.loads(line_str)
-            if set(rec.keys()) != EXP291_EXACT_KEYS:
-                raise ValueError(f"Exp291 JSONL exact key mismatch on record: {sorted(rec.keys())}")
-            if rec["contains_test_labels"] is not False or rec["contains_evaluation_metrics"] is not False:
-                raise ValueError("Exp291 record violates label/metric boundary")
-            dataset = str(rec["dataset"])
-            if dataset in exp291_auto:
-                raise ValueError(f"Duplicate dataset {dataset} in Exp291 JSONL")
-            if dataset not in full_population:
-                raise ValueError(f"Unknown dataset {dataset} in Exp291 JSONL")
-            if int(rec["n_test"]) != n_test_map[dataset]:
-                raise ValueError(f"Exp291 n_test mismatch on {dataset}")
-            hard = frozenset(map(int, rec["automatic_hard_indices"]))
-            removed = frozenset(map(int, rec["automatic_normal_exact_indices"]))
-            exp291_auto[dataset] = hard
-            exp291_removed[dataset] = removed
-            exp291_pre[dataset] = hard | removed
+            record = json.loads(line_str)
+            if not isinstance(record, dict) or set(record.keys()) != EXP291_EXACT_ROW_KEYS:
+                raise ValueError(f"Exp291 JSONL line {line_num} schema mismatch: expected exact 18 live keys {EXP291_EXACT_ROW_KEYS}")
+            if record.get("contains_test_labels") is not False or record.get("contains_evaluation_metrics") is not False:
+                raise ValueError(f"Exp291 line {line_num} security violation: contains_test_labels or contains_evaluation_metrics is not False")
+            dataset = str(record["dataset"])
+            if dataset in auto_global:
+                raise ValueError(f"Exp291 JSONL contains duplicate dataset: {dataset}")
+            raw_hard = record["automatic_hard_indices"]
+            raw_removed = record["automatic_normal_exact_indices"]
+            if not isinstance(raw_hard, list) or not isinstance(raw_removed, list):
+                raise ValueError(f"Exp291 indices must be lists on line {line_num}")
+            exp291_n_test[dataset] = int(record["n_test"])
+            hard = frozenset(map(int, raw_hard))
+            removed = frozenset(map(int, raw_removed))
+            auto_global[dataset] = hard
+            removed_global[dataset] = removed
+            pre_global[dataset] = hard | removed
 
-    if set(exp291_auto) != full_population:
-        raise ValueError("Exp291 JSONL key set differs from full 1117 population")
+    if len(auto_global) != 1117:
+        raise ValueError(f"Exp291 dataset population count mismatch: expected 1117, got {len(auto_global)}")
+    if sum(len(v) for v in pre_global.values()) != 2253:
+        raise ValueError(f"Exp253 pre-exact count mismatch: expected 2253, got {sum(len(v) for v in pre_global.values())}")
+    if sum(len(v) for v in removed_global.values()) != 35:
+        raise ValueError(f"Exp291 exact-normal removed count mismatch: expected 35, got {sum(len(v) for v in removed_global.values())}")
+    if sum(len(v) for v in auto_global.values()) != 2218:
+        raise ValueError(f"Exp291 automatic hard count mismatch: expected 2218, got {sum(len(v) for v in auto_global.values())}")
 
-    # 5. Parse and globally validate Exp404 JSONL
-    exp404_auto_builder: dict[str, set[int]] = {d: set() for d in full_population}
-    exp404_row_count = 0
-    with Path(exp404_path).open("r", encoding="utf-8") as handle:
-        for line in handle:
+    # Check key set and global n_test agreement across Exp137, Exp236, Exp291
+    pop_1117 = set(exp137_global.keys())
+    if set(exp236_global.keys()) != pop_1117 or set(auto_global.keys()) != pop_1117:
+        raise ValueError("Population discrepancy across Exp137, Exp236, and Exp291 oracle files")
+    if exp137_n_test != exp236_n_test or exp137_n_test != exp291_n_test:
+        raise ValueError("Global n_test map mismatch across Exp137, Exp236, and Exp291")
+    global_n_test = exp137_n_test
+
+    # Validate ALL coordinates across ALL 1,117 datasets against global_n_test
+    for ds in pop_1117:
+        limit = global_n_test[ds]
+        if any(idx < 0 or idx >= limit for idx in exp137_global[ds]):
+            raise ValueError(f"Exp137 coordinate out of range for {ds} (n_test={limit})")
+        if any(idx < 0 or idx >= limit for idx in exp236_global[ds]):
+            raise ValueError(f"Exp236 coordinate out of range for {ds} (n_test={limit})")
+        if any(idx < 0 or idx >= limit for idx in pre_global[ds]):
+            raise ValueError(f"Exp291 coordinate out of range for {ds} (n_test={limit})")
+
+    # 5. Parse Exp404 JSONL globally, explicitly initializing all 1,117 population keys
+    exp404_global: dict[str, set[int]] = {ds: set() for ds in pop_1117}
+    seen_rows = 0
+    with Path(authority.exp404_path).open("r", encoding="utf-8") as handle:
+        for line_num, line in enumerate(handle, 1):
             line_str = line.strip()
             if not line_str:
                 continue
-            rec = json.loads(line_str)
-            if set(rec.keys()) != EXP404_EXACT_KEYS:
-                raise ValueError(f"Exp404 JSONL exact key mismatch on record: {sorted(rec.keys())}")
-            if rec["contains_test_labels"] is not False or rec["contains_evaluation_metrics"] is not False:
-                raise ValueError("Exp404 record violates label/metric boundary")
-            dataset = str(rec["dataset"])
-            if dataset not in full_population:
-                raise ValueError(f"Unknown dataset {dataset} in Exp404 JSONL")
-            coord = int(rec["candidate_index"])
-            if coord < 0 or coord >= n_test_map[dataset]:
-                raise ValueError(f"Exp404 coordinate out of bounds on {dataset}: {coord}")
-            if coord in exp404_auto_builder[dataset]:
-                raise ValueError(f"Exp404 duplicate coordinate {coord} on {dataset}")
-            exp404_auto_builder[dataset].add(coord)
-            exp404_row_count += 1
+            record = json.loads(line_str)
+            if not isinstance(record, dict) or set(record.keys()) != EXP404_EXACT_ROW_KEYS:
+                raise ValueError(f"Exp404 JSONL line {line_num} schema mismatch: expected exact 8 live keys {EXP404_EXACT_ROW_KEYS}")
+            if record.get("contains_test_labels") is not False or record.get("contains_evaluation_metrics") is not False:
+                raise ValueError(f"Exp404 line {line_num} security violation: contains_test_labels or contains_evaluation_metrics is not False")
+            dataset = str(record["dataset"])
+            cand = int(record["candidate_index"])
+            seen_rows += 1
+            if dataset not in exp404_global:
+                raise ValueError(f"Exp404 JSONL contains unknown dataset not in verified population: {dataset}")
+            limit = global_n_test[dataset]
+            if cand < 0 or cand >= limit:
+                raise ValueError(f"Exp404 out-of-range candidate_index {cand} for dataset {dataset} (n_test={limit})")
+            if cand in exp404_global[dataset]:
+                raise ValueError(f"Exp404 duplicate coordinate ({dataset}, {cand}) on line {line_num}")
+            exp404_global[dataset].add(cand)
 
-    if exp404_row_count != 2218:
-        raise ValueError(f"Exp404 row count must be exactly 2218 (got {exp404_row_count})")
+    if seen_rows != 2218:
+        raise ValueError(f"Exp404 row count drift: expected 2218 rows, found {seen_rows}")
+    exp404_frozen = {ds: frozenset(coords) for ds, coords in exp404_global.items()}
+    if sum(len(v) for v in exp404_frozen.values()) != 2218:
+        raise ValueError(f"Exp404 total automatic hard count mismatch: expected 2218, got {sum(len(v) for v in exp404_frozen.values())}")
+    nonempty_count = sum(1 for v in exp404_frozen.values() if v)
+    empty_count = sum(1 for v in exp404_frozen.values() if not v)
+    if nonempty_count != 888 or empty_count != 229:
+        raise ValueError(f"Exp404 partition drift: expected 888 nonempty / 229 empty, got {nonempty_count} / {empty_count}")
 
-    exp404_auto = {d: frozenset(v) for d, v in exp404_auto_builder.items()}
-    if exp404_auto != exp291_auto:
-        raise ValueError("Exp404 automatic Hard coordinates differ from Exp291 automatic Hard coordinates")
+    # 6. Direct-index projection
+    if selected_population is not None:
+        if not selected_population:
+            raise ValueError("selected_population cannot be empty")
+        if selected_n_test is not None:
+            for ds in selected_population:
+                if ds not in selected_n_test or selected_n_test[ds] != global_n_test[ds]:
+                    raise ValueError(f"selected_n_test mismatch for {ds}: expected {global_n_test[ds]}, got {selected_n_test.get(ds)}")
+        return HardRouteOracleBundle(
+            exp137={ds: exp137_global[ds] for ds in selected_population},
+            exp236={ds: exp236_global[ds] for ds in selected_population},
+            exp253={ds: pre_global[ds] for ds in selected_population},
+            exact_normal_removed={ds: removed_global[ds] for ds in selected_population},
+            automatic_hard={ds: auto_global[ds] for ds in selected_population},
+            exp404={ds: exp404_frozen[ds] for ds in selected_population},
+        )
 
-    counts = {
-        "exp137_hard": sum(len(v) for v in exp137_hard.values()),
-        "exp236_hard": sum(len(v) for v in exp236_hard.values()),
-        "exp253_hard": sum(len(v) for v in exp291_pre.values()),
-        "exact_normal_removed": sum(len(v) for v in exp291_removed.values()),
-        "automatic_hard": sum(len(v) for v in exp404_auto.values()),
-    }
-    if (
-        counts["exp137_hard"] != 2005
-        or counts["exp236_hard"] != 2116
-        or counts["exp253_hard"] != 2253
-        or counts["exact_normal_removed"] != 35
-        or counts["automatic_hard"] != 2218
-    ):
-        raise ValueError(f"Oracle authority count validation failed: {counts}")
+    if selected_n_test is not None:
+        for ds in pop_1117:
+            if ds not in selected_n_test or selected_n_test[ds] != global_n_test[ds]:
+                raise ValueError(f"selected_n_test mismatch for {ds}: expected {global_n_test[ds]}, got {selected_n_test.get(ds)}")
 
-    oracle_digests = {
-        "exp137": EXP137_ORACLE_SHA256,
-        "exp236": EXP236_ORACLE_SHA256,
-        "exp291": EXP291_ORACLE_SHA256,
-        "exp404": EXP404_ORACLE_SHA256,
-    }
-
-    return HardRouteParityAuthority(
-        exp137_hard=exp137_hard,
-        exp236_hard=exp236_hard,
-        exp291_pre_exact=exp291_pre,
-        exp291_exact_removed=exp291_removed,
-        automatic_hard=exp404_auto,
-        n_test=n_test_map,
-        counts=counts,
-        oracle_sha256=oracle_digests,
-        population_count=1117,
+    return HardRouteOracleBundle(
+        exp137=exp137_global,
+        exp236=exp236_global,
+        exp253=pre_global,
+        exact_normal_removed=removed_global,
+        automatic_hard=auto_global,
+        exp404=exp404_frozen,
     )
 ```
 
-- [ ] **Step 4: Run GREEN Verification for Task 4**
+- [ ] **Step 3: Execute Diagnostic Harness and Commit Diagnostic Report**
 
-Run:
+Create `scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py` to compare intermediate stages (Exp74d, Exp89, Exp90, Exp93, Exp134, Exp137) of `hard_route_paper.py` against origin reference selectors and the SHA-bound Exp137 authority.
+
+Run diagnostic harness:
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence
+python3 scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py
 ```
-Expected: `Ran 1 test in ... OK`.
+Commit the output report as `reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md` documenting:
+1. Exact intermediate stages where paper replay diverges from frozen origin selectors.
+2. The specific primitive functions responsible for the divergence (identified through diagnostic comparison).
+3. The exact per-dataset differences between current paper output (2074) and frozen authority (2005).
+
+- [ ] **Step 4: Lock Mechanism 1 Diagnostic Exact Primitive Assertion in `test_paper_r4_full_route_parity_recovery_antigravity.py`**
+
+In `FullRouteParityRecoveryAntigravityTests.test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence`, assert the exact diagnosed primitive divergence discovered in Step 3 in RED before proceeding to Task 5 production code modifications.
 
 - [ ] **Step 5: Resynchronize Codemaps and Commit Task 4**
 
 Run shared map-resync procedure, then:
 ```bash
-git add paper/equipment_anomaly_detection/contracts_paper.py paper/equipment_anomaly_detection/proposal_score_paper.py experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py docs/codemap/codemap_exp448_antigravity.* paper/equipment_anomaly_detection/codemap_paper.*
-git commit -m "feat(parity): implement data-only HardRouteParityAuthority and atomic strict oracle-bundle flow"
+git add paper/equipment_anomaly_detection/contracts_paper.py paper/equipment_anomaly_detection/proposal_score_paper.py scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py docs/codemap/codemap_exp448_antigravity.* paper/equipment_anomaly_detection/codemap_paper.*
+git commit -m "feat(parity): implement values-only SHA-pinned oracle bundle loader and Mechanism 1 diagnostic isolation"
 ```
 
 ---
@@ -1149,17 +1168,16 @@ git commit -m "feat(parity): implement data-only HardRouteParityAuthority and at
   - In `LegacyRouteEvidence.__post_init__`, require `int(self.n_train) >= 1 and int(self.n_test) >= 1`.
 - `replay_hard_route(values: RawDataset, sources: HardSourceBundle, mini: MiniRocketResult) -> HardRouteResult`:
   - Supports $n_{\text{train}} \ge 1$. Returns `empty_hard_route_result_paper` only if `len(values.train_rows) < 1 or not values.test_rows`.
-  - Replays origin-exact Exp74d through Exp137 selectors matching frozen Exp137/236 oracles.
-- Invariant: Zero dataset-name branches (`if dataset == "Phoneme_normal_39"`) or hard-coded coordinate injections.
-- Mechanism 1 Diagnostic RED Sequencing: Stage isolation diagnostic harness compares intermediate stages (`replay_exp74d_89_90_93`, `_ranked_primary`, `_exp93_order`, `_exp90_top_score_index`, `replay_exp133_134_135_137`) against origin ASTs on representative datasets. Once the harness commits the identified dataset/stage/primitive, a concrete diagnostic RED test records the exact divergence before the selector fix is applied.
+  - Replays origin-exact Exp74d through Exp137 selectors matching frozen Exp137/236 oracles by modifying only the functions identified and documented in the committed Task 4 diagnostic report (`reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md`).
+- Invariant: Zero dataset-name branches (`if dataset == "Phoneme_normal_39"`) or hard-coded coordinate injections. Task 5 edits only diagnosed functions.
 
 - [ ] **Step 1: Run RED Command for Task 5**
 
 Run:
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence
 ```
-Expected failure: `AssertionError: 49 not found in frozenset()` (due to artificial empty route check).
+Expected failure: `AssertionError: 49 not found` (on Phoneme_normal_39) and diagnostic isolation mismatch.
 
 - [ ] **Step 2: Remove Artificial `n_train < 2` Short-Circuit in `legacy_route_sources_paper.py`**
 
@@ -1177,7 +1195,7 @@ In `paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.p
        raise ValueError("legacy full-fit route requires at least one TRAIN and one TEST row")
    ```
 
-- [ ] **Step 3: Remove Artificial `n_train < 2` Short-Circuit and Repair Mechanism 1 Primitives in `hard_route_paper.py`**
+- [ ] **Step 3: Remove Artificial `n_train < 2` Short-Circuit and Apply Diagnosed Primitive Repairs in `hard_route_paper.py`**
 
 In `paper/equipment_anomaly_detection/hard_route_paper.py`:
 1. In `replay_hard_route`:
@@ -1186,7 +1204,7 @@ In `paper/equipment_anomaly_detection/hard_route_paper.py`:
    if len(values.train_rows) < 1 or not values.test_rows:
        return empty_hard_route_result_paper(len(values.test_rows))
    ```
-2. Ensure `replay_exp74d_89_90_93`, `_ranked_primary`, `_exp93_order`, `_exp90_top_score_index`, and `replay_exp133_134_135_137` match the exact origin AST primitives identified during diagnostic isolation.
+2. Apply the exact primitive repair diagnosed in Task 4 only to the diagnosed functions named in `reports/paper_r4_mechanism1_parity_diagnosis_antigravity.md` (no edits to undiagnosed functions).
 
 - [ ] **Step 4: Update Existing Tests in `test_hard_route_paper.py` and `test_paper_r4_smoke_remediation_antigravity.py`**
 
@@ -1213,15 +1231,15 @@ In `paper/equipment_anomaly_detection/hard_route_paper.py`:
        self.assertEqual(result.automatic_hard, frozenset())
    ```
 2. In `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py`:
-   Update the undersized test case so `empty_train = _raw("Empty_normal_0", (), (_row(1.0), _row(2.0)))` tests typed empty, while `Phoneme_normal_39` (`n_train=1`) tests full-fit execution.
+   Update the undersized test case so `empty_train = _raw("Empty_normal_0", (), (_row(1.0), _row(2.0)))` tests typed empty, while `n_train=1` tests full-fit execution.
 
 - [ ] **Step 5: Run GREEN Verification for Task 5**
 
 Run:
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_replay_signature_still_rejects_historical_coordinates
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_phoneme_normal_39_reproduces_historical_hard_49_without_name_branch experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_mechanism1_diagnostic_isolation_reproduces_and_fixes_divergence experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_replay_signature_still_rejects_historical_coordinates
 ```
-Expected: `Ran 2 tests in ... OK`.
+Expected: `Ran 3 tests in ... OK`.
 
 - [ ] **Step 6: Run Regression Suite for Hard Route**
 
@@ -1250,66 +1268,29 @@ git commit -m "fix(route): general n_train=1 origin replay and exact primitive r
 - Modify together: `paper/equipment_anomaly_detection/codemap_paper.*`
 
 **Interfaces:**
-- 33 Smoke Datasets: Catalog-sorted tuple of 14 representative + 19 affected datasets from `manage_paper_r4_proposal_antigravity.py`.
-- Smoke Gate Contract: Validates 100% per-dataset coordinate equality for each of the 33 datasets against the atomic oracle bundle projected via `authority.project(SMOKE_DATASETS)`. Direct indexing is used (`smoke_auth.exp137_hard[dataset]`, etc.). Does NOT assert aggregate full-population counts or execute Task6/7.
-- Catalog Cross-Check: Cross-checks `len(raw.test_rows)` against `smoke_auth.n_test[dataset]` exactly.
+- 33 Smoke Datasets:
+  - 14 Representative: `ACSF1_normal_0` through `ACSF1_normal_9`, `ChlorineConcentration_normal_3`, `MelbournePedestrian_normal_10`, `Phoneme_normal_39`, `PigAirwayPressure_normal_1`.
+  - 19 Nonfinite Repair Affected: `DodgerLoopDay_normal_1,2,4,5,6,7`, `DodgerLoopGame_normal_1,2`, `DodgerLoopWeekend_normal_1,2`, `MelbournePedestrian_normal_1` through `MelbournePedestrian_normal_9`.
+  - Includes exactly 25 nonempty Exp404 datasets and 8 known Exp404-empty datasets (`ACSF1_normal_5`, `DodgerLoopDay_normal_1`, `DodgerLoopDay_normal_2`, `DodgerLoopDay_normal_4`, `DodgerLoopGame_normal_2`, `DodgerLoopWeekend_normal_1`, `MelbournePedestrian_normal_6`, `MelbournePedestrian_normal_8`).
+- Gated Capable Integration Execution:
+  - The real 33-dataset values-only smoke is an explicit gated integration command with progress logging using the capable interpreter (`/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python`).
+  - Validates 100% per-dataset coordinate equality against the 4 SHA-bound oracles via `HardRouteParityAuthority`:
+    - Exp137: `VERIFIED_EXP137_AUTHORITY_PATH` (SHA `942e2f5f...`)
+    - Exp236: `VERIFIED_EXP236_AUTHORITY_PATH` (SHA `a03ce4ea...`)
+    - Exp291: `VERIFIED_EXP291_AUTHORITY_PATH` (SHA `73dff56e...`)
+    - Exp404: `VERIFIED_EXP404_AUTHORITY_PATH` (SHA `437dc637...`)
+  - Direct indexing `exp404[dataset]` works for all 33 smoke datasets without any `.get` fallback.
+  - Smoke contract: Does NOT assert aggregate full-population counts or execute Task6/7.
 
-- [ ] **Step 1: Run RED Command for Task 6**
+- [ ] **Step 1: Execute Gated 33-Dataset Smoke Integration Command**
 
-Run:
+Run with pinned capable interpreter and progress logging:
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_smoke_33_datasets_match_sha_bound_oracles
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_smoke_33_datasets_match_sha_bound_oracles
 ```
-Expected: Fails if any smoke dataset coordinate deviates from the projected SHA-bound oracle authority.
+Expected: `Ran 1 test in ... OK` with all 33 datasets matching Exp137, Exp236, Exp291, and Exp404 coordinates bit-for-bit.
 
-- [ ] **Step 2: Implement Complete 33-Dataset Coordinate Parity Verification in T7**
-
-In `FullRouteParityRecoveryAntigravityTests.test_smoke_33_datasets_match_sha_bound_oracles`:
-
-```python
-    def test_smoke_33_datasets_match_sha_bound_oracles(self) -> None:
-        """T7: All 33 smoke datasets achieve per-dataset coordinate equality against 4 oracles."""
-        from paper.equipment_anomaly_detection.proposal_score_paper import load_hard_route_parity_authority
-        from scratch.manage_paper_r4_proposal_antigravity import (
-            EXP137_ORACLE_PATH,
-            EXP236_ORACLE_PATH,
-            EXP291_ORACLE_PATH,
-            EXP404_ORACLE_PATH,
-            SMOKE_DATASETS,
-        )
-
-        self.assertEqual(len(SMOKE_DATASETS), 33)
-        authority = load_hard_route_parity_authority(
-            EXP137_ORACLE_PATH,
-            EXP236_ORACLE_PATH,
-            EXP291_ORACLE_PATH,
-            EXP404_ORACLE_PATH,
-        )
-        smoke_auth = authority.project(SMOKE_DATASETS)
-        self.assertEqual(smoke_auth.population_count, 33)
-        db_path = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
-        for dataset in SMOKE_DATASETS:
-            raw = load_dataset_values(db_path, dataset)
-            self.assertEqual(len(raw.test_rows), smoke_auth.n_test[dataset], f"n_test mismatch on {dataset}")
-            sources = score_hard_sources(raw)
-            mini = score_minirocket_confirmations(raw)
-            route = replay_hard_route(raw, sources, mini)
-            self.assertEqual(route.exp137.hard, smoke_auth.exp137_hard[dataset], f"Exp137 mismatch on {dataset}")
-            self.assertEqual(route.exp236.hard, smoke_auth.exp236_hard[dataset], f"Exp236 mismatch on {dataset}")
-            self.assertEqual(route.exp253.hard, smoke_auth.exp291_pre_exact[dataset], f"Exp253 mismatch on {dataset}")
-            self.assertEqual(route.exact_normal_removed, smoke_auth.exp291_exact_removed[dataset], f"Exp291 exact mismatch on {dataset}")
-            self.assertEqual(route.automatic_hard, smoke_auth.automatic_hard[dataset], f"Automatic Hard mismatch on {dataset}")
-```
-
-- [ ] **Step 3: Run GREEN Verification for Task 6**
-
-Run:
-```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests.test_smoke_33_datasets_match_sha_bound_oracles
-```
-Expected: `Ran 1 test in ... OK`.
-
-- [ ] **Step 4: Resynchronize Codemaps and Commit Task 6**
+- [ ] **Step 2: Resynchronize Codemaps and Commit Task 6**
 
 Run shared map-resync procedure, then:
 ```bash
@@ -1322,38 +1303,38 @@ git commit -m "test(parity): prove 33-member coordinate-only smoke matches SHA-b
 ### Task 7: Full 1,117 route-only parity gate (2005/2116/2253/35/2218 counts) before Task6/7 and Candidate C regression (PR 3)
 
 **Files:**
-- Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py`
+- Modify: `paper/equipment_anomaly_detection/contracts_paper.py`
 - Modify: `paper/equipment_anomaly_detection/runner_paper.py`
+- Modify: `paper/equipment_anomaly_detection/pipeline_paper.py`
+- Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py`
 - Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py`
 - Modify together: `docs/codemap/codemap_exp448_antigravity.*`
 - Modify together: `paper/equipment_anomaly_detection/codemap_paper.*`
 
 **Interfaces:**
-- `verify_hard_route_parity_paper(routes: Mapping[str, HardRouteResult], *, authority: HardRouteParityAuthority, mode: str) -> dict[str, object]`:
-  - Requires explicit `mode` ("full" or "smoke") and explicit `authority: HardRouteParityAuthority`. Rejects incomplete inputs with `ValueError`.
-  - If `mode == "full"`:
-    - Verifies `len(routes) == 1117` and `set(routes) == set(authority.exp137_hard)`.
-    - Verifies aggregate counts across all 1,117 datasets:
-      - Exp137 Hard count == 2005
-      - Exp236 Hard count == 2116
-      - Exp253 Hard count == 2253 ($2218 + 35$)
-      - Exact-normal removed count == 35
-      - Automatic Hard count == 2218
-    - Verifies 100% per-dataset coordinate equality against `authority` by direct indexing (`authority.exp137_hard[dataset]`, etc.).
-  - If `mode == "smoke"`:
-    - Verifies all datasets in `routes` match `authority` coordinates by direct indexing.
-  - Raises `ValueError` on any count mismatch or coordinate inequality.
-- `compose_proposal_score(raw_datasets, acceleration_manifest, *, root=None, context=None, catalog=None, progress=None) -> ProposalScore`:
-  - Receives `context` for official execution.
-  - When `context` is provided:
-    - Extracts `mode = str(context["mode"])` ("full" or "smoke") and `authority` from context.
-    - Calls `verify_hard_route_parity_paper(routes, authority=authority, mode=mode)` before invoking Task 6 (`score_low_frequency`) and Task 7 (`classify_stability`).
-    - Remove all `len(raw) == 1117` mode inference!
-  - When `context` is None (generic unit test calls): execution stays ungated and cannot be official.
-- `runner_paper.py`:
-  - `PipelineConfig` owns the parity authority for official runs.
-  - `context_payload` binds and hashes the authority into `context["route_parity_authority"]`.
-  - `evaluate_stage("proposal_score")` passes context to `compose_proposal_score`.
+- `verify_hard_route_parity_paper(routes: Mapping[str, HardRouteResult], *, authority: HardRouteParityAuthority, raw: Mapping[str, RawDataset] | None = None, catalog: dict[str, object] | None = None, mode: str) -> dict[str, object]`:
+  - `mode` must be explicitly `"full"` or `"smoke"`.
+  - Invokes `bundle = load_hard_route_oracle_bundle(authority, selected_population=verified_population, selected_n_test=n_test_by_dataset)`.
+  - Enforces exact catalog key set match (all 1,117 datasets in full mode, 33 in smoke mode) and exact $n_{\text{test}}$ agreement per dataset.
+  - Direct indexing without `.get(dataset, empty)` masking anywhere.
+  - In full mode, verifies aggregate counts across all 1,117 datasets:
+    - Exp137 Hard count == 2005
+    - Exp236 Hard count == 2116
+    - Exp253 Hard count == 2253 ($2218 + 35$)
+    - Exact-normal removed count == 35
+    - Automatic Hard count == 2218
+  - Verifies 100% per-dataset coordinate equality against the 4 SHA-bound oracles.
+  - Raises `ValueError` or `RuntimeError` on any count mismatch, key set discrepancy, or coordinate inequality.
+- `compose_proposal_score(...)`:
+  - Triggered from explicit verified `context` / `authority` passed through runner (never inferred from `len(raw)`).
+  - Official context supplies explicit `mode` and `hard_route_parity_authority`.
+  - Direct optional calls require both explicit `route_parity_authority` AND `route_parity_mode`.
+  - Fails closed if official context (full or smoke) lacks verified `HardRouteParityAuthority`.
+  - Executes `verify_hard_route_parity_paper(routes, authority=authority, raw=raw, catalog=catalog, mode=mode)` before invoking `score_low_frequency` (Task6) and `classify_stability` (Task7).
+- Candidate C (`hard_plus_stable`):
+  - Task6 uses pre-guard Exp253 Hard (2253).
+  - Policy construction uses post-guard Automatic Hard (2218) $\cup$ stable-26 = 2244.
+  - Candidate C rule, budget (30), view cap (16), and survival threshold (14/16) remain unchanged.
 
 - [ ] **Step 1: Run RED Command for Task 7**
 
@@ -1363,9 +1344,9 @@ python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigra
 ```
 Expected failure: `ImportError: cannot import name 'verify_hard_route_parity_paper' from 'paper.equipment_anomaly_detection.proposal_score_paper'`.
 
-- [ ] **Step 2: Implement `verify_hard_route_parity_paper` and Context Parity Gating in `proposal_score_paper.py`**
+- [ ] **Step 2: Implement `verify_hard_route_parity_paper` and Wire into `compose_proposal_score` and Runner**
 
-In `paper/equipment_anomaly_detection/proposal_score_paper.py`, add:
+In `paper/equipment_anomaly_detection/proposal_score_paper.py`:
 
 ```python
 FROZEN_PARITY_COUNTS = {
@@ -1381,15 +1362,47 @@ def verify_hard_route_parity_paper(
     routes: Mapping[str, HardRouteResult],
     *,
     authority: HardRouteParityAuthority,
+    raw: Mapping[str, RawDataset] | None = None,
+    catalog: dict[str, object] | None = None,
     mode: str,
 ) -> dict[str, object]:
-    """Verify route parity using explicit mode and context-bound authority before Task6/7."""
-    if not isinstance(authority, HardRouteParityAuthority) or mode not in {"full", "smoke"}:
-        raise ValueError("verify_hard_route_parity_paper requires explicit mode ('full' or 'smoke') and HardRouteParityAuthority")
+    """Verify exact 2005/2116/2253/35/2218 counts, exact key set, and 100% per-dataset coordinate parity before Task6/7."""
+    if not isinstance(authority, HardRouteParityAuthority):
+        raise TypeError("HardRouteParityAuthority instance is required for parity verification")
+    if mode not in ("full", "smoke"):
+        raise ValueError(f"route parity verification mode must be 'full' or 'smoke', got {mode!r}")
+
+    if raw is not None:
+        verified_population = tuple(raw.keys())
+        n_test_by_dataset = {k: len(v.test_rows) for k, v in raw.items()}
+    elif catalog is not None:
+        verified_population = tuple(entry["dataset"] for entry in catalog["datasets"])
+        n_test_by_dataset = {entry["dataset"]: int(entry["test"]["count"]) for entry in catalog["datasets"]}
+    else:
+        verified_population = tuple(routes.keys())
+        n_test_by_dataset = {k: r.n_test for k, r in routes.items()}
+
+    bundle = load_hard_route_oracle_bundle(
+        authority,
+        selected_population=verified_population,
+        selected_n_test=n_test_by_dataset,
+    )
+
+    route_keys = set(routes.keys())
+    pop_set = set(verified_population)
+    if route_keys != pop_set:
+        raise ValueError(f"route parity verifier key set mismatch against verified population: {sorted(route_keys ^ pop_set)}")
 
     if mode == "full":
-        if len(routes) != 1117 or set(routes) != set(authority.exp137_hard):
-            raise ValueError(f"Full-population parity verifier requires exactly 1117 catalog datasets (got {len(routes)})")
+        if len(routes) != 1117:
+            raise ValueError(f"Full mode route parity verifier requires exactly 1117 population datasets (got {len(routes)})")
+        if (
+            route_keys != set(bundle.exp137.keys())
+            or route_keys != set(bundle.exp236.keys())
+            or route_keys != set(bundle.automatic_hard.keys())
+            or route_keys != set(bundle.exp404.keys())
+        ):
+            raise ValueError("route parity verifier catalog key set mismatch with oracle key sets")
 
         c_137 = sum(len(r.exp137.hard) for r in routes.values())
         c_236 = sum(len(r.exp236.hard) for r in routes.values())
@@ -1407,50 +1420,65 @@ def verify_hard_route_parity_paper(
 
         if actual_counts != FROZEN_PARITY_COUNTS:
             raise ValueError(
-                f"Hard route count parity mismatch: expected {FROZEN_PARITY_COUNTS} but got {actual_counts}"
+                f"hard route count parity mismatch: expected {FROZEN_PARITY_COUNTS} but got {actual_counts}"
             )
+    else:
+        if len(routes) != 33:
+            raise ValueError(f"Smoke mode route parity verifier requires exactly 33 smoke datasets (got {len(routes)})")
+        actual_counts = {
+            "exp137_hard": sum(len(r.exp137.hard) for r in routes.values()),
+            "exp236_hard": sum(len(r.exp236.hard) for r in routes.values()),
+            "exp253_hard": sum(len(r.exp253.hard) for r in routes.values()),
+            "exact_normal_removed": sum(len(r.exact_normal_removed) for r in routes.values()),
+            "automatic_hard": sum(len(r.automatic_hard) for r in routes.values()),
+        }
 
     mismatches: list[str] = []
     for dataset, route in routes.items():
-        if dataset not in authority.exp137_hard:
-            mismatches.append(f"{dataset}:unrecognized_dataset")
-            continue
-        if route.exp137.hard != authority.exp137_hard[dataset]:
+        if route.exp137.hard != bundle.exp137[dataset]:
             mismatches.append(f"{dataset}:exp137")
-        if route.exp236.hard != authority.exp236_hard[dataset]:
+        if route.exp236.hard != bundle.exp236[dataset]:
             mismatches.append(f"{dataset}:exp236")
-        if route.exp253.hard != authority.exp291_pre_exact[dataset]:
+        if route.exp253.hard != bundle.exp253[dataset]:
             mismatches.append(f"{dataset}:exp253")
-        if route.exact_normal_removed != authority.exp291_exact_removed[dataset]:
+        if route.exact_normal_removed != bundle.exact_normal_removed[dataset]:
             mismatches.append(f"{dataset}:exact_removed")
-        if route.automatic_hard != authority.automatic_hard[dataset]:
-            mismatches.append(f"{dataset}:automatic_hard")
+        if route.automatic_hard != bundle.automatic_hard[dataset]:
+            mismatches.append(f"{dataset}:exp291_auto")
+        if route.automatic_hard != bundle.exp404[dataset]:
+            mismatches.append(f"{dataset}:exp404")
 
     if mismatches:
         raise ValueError(
-            f"Hard route coordinate parity mismatch on {len(mismatches)} stages/datasets: {mismatches[:10]}"
+            f"hard route coordinate parity mismatch on {len(mismatches)} stages/datasets: {mismatches[:10]}"
         )
 
-    return {"status": "parity_verified", "mode": mode, "datasets_verified": len(routes)}
+    return {"status": "parity_verified", "mode": mode, "counts": actual_counts, "datasets_verified": len(routes)}
 ```
 
-In `compose_proposal_score`:
+In `compose_proposal_score`, gate Task6/7 execution from explicit context authority or explicit optional arguments without `len(raw)` inference:
 ```python
-    # Gate Task6/7 on verified hard-route parity when context provides mode and authority
-    if context is not None and "route_parity_authority" in context:
-        auth_data = context["route_parity_authority"]
-        auth_instance = HardRouteParityAuthority.from_dict(auth_data) if isinstance(auth_data, dict) else auth_data
-        mode = str(context.get("mode", ""))
-        verify_hard_route_parity_paper(routes, authority=auth_instance, mode=mode)
+    if context is not None and "hard_route_parity_authority" in context:
+        authority = HardRouteParityAuthority.from_dict(context["hard_route_parity_authority"])
+        mode = context.get("mode")
+        if mode not in ("full", "smoke"):
+            raise ValueError(f"Official context requires explicit mode ('full' or 'smoke'), got {mode!r}")
+        verify_hard_route_parity_paper(routes, authority=authority, raw=raw, catalog=catalog, mode=mode)
+    elif route_parity_authority is not None or route_parity_mode is not None:
+        if route_parity_authority is None or route_parity_mode is None:
+            raise ValueError("Direct parity verification requires both route_parity_authority and route_parity_mode")
+        if route_parity_mode not in ("full", "smoke"):
+            raise ValueError(f"Explicit route_parity_mode must be 'full' or 'smoke', got {route_parity_mode!r}")
+        verify_hard_route_parity_paper(routes, authority=route_parity_authority, raw=raw, catalog=catalog, mode=route_parity_mode)
+    elif context is not None:
+        raise ValueError(f"Official context ({context.get('mode')!r}) requires verified hard_route_parity_authority in context")
 ```
 
-- [ ] **Step 3: Update `runner_paper.py` for Pipeline Authority Context Binding**
+In `runner_paper.py` & `pipeline_paper.py`:
+- `PipelineConfig` accepts `hard_route_parity_authority: HardRouteParityAuthority | None = None`.
+- `context_payload` serializes `authority.to_dict()` into `context["hard_route_parity_authority"]` and hashes it into `context_sha256`.
 
-In `paper/equipment_anomaly_detection/runner_paper.py`:
-1. In `PipelineConfig`: Add optional `route_parity_authority: HardRouteParityAuthority | None = None`.
-2. In `context_payload`: Include serialized `route_parity_authority.to_dict()` in `context["route_parity_authority"]` when provided, and require it for official full/smoke execution.
-
-- [ ] **Step 4: Run GREEN Verification for Task 7**
+- [ ] **Step 3: Run GREEN Verification for Task 7**
 
 Run:
 ```bash
@@ -1458,7 +1486,7 @@ python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigra
 ```
 Expected: `Ran 2 tests in ... OK`.
 
-- [ ] **Step 5: Run Proposal Composition Regressions**
+- [ ] **Step 4: Run Proposal Composition Regressions**
 
 Run:
 ```bash
@@ -1466,17 +1494,17 @@ python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_artifacts
 ```
 Expected: All tests pass GREEN.
 
-- [ ] **Step 6: Resynchronize Codemaps and Commit PR 3**
+- [ ] **Step 5: Resynchronize Codemaps and Commit PR 3**
 
 Run shared map-resync procedure, then:
 ```bash
-git add paper/equipment_anomaly_detection/proposal_score_paper.py paper/equipment_anomaly_detection/runner_paper.py experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py docs/codemap/codemap_exp448_antigravity.* paper/equipment_anomaly_detection/codemap_paper.*
-git commit -m "feat(composition): insert explicit-mode route-only parity gate before Task6 and Task7"
+git add paper/equipment_anomaly_detection/contracts_paper.py paper/equipment_anomaly_detection/runner_paper.py paper/equipment_anomaly_detection/pipeline_paper.py paper/equipment_anomaly_detection/proposal_score_paper.py experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py docs/codemap/codemap_exp448_antigravity.* paper/equipment_anomaly_detection/codemap_paper.*
+git commit -m "feat(composition): insert full 1117 route-only parity gate before Task6 and Task7"
 ```
 
 ---
 
-### Task 8: Clean new smoke/official roots, destination refusal, PipelineConfig authority, and launcher configuration (PR 4)
+### Task 8: Clean new smoke/official roots, destination refusal, and launcher configuration (PR 4)
 
 **Files:**
 - Modify: `scratch/manage_paper_r4_proposal_antigravity.py`
@@ -1486,24 +1514,17 @@ git commit -m "feat(composition): insert explicit-mode route-only parity gate be
 - Modify together: `paper/equipment_anomaly_detection/codemap_paper.*`
 
 **Interfaces:**
-- Launcher Path Constants (in `scratch/manage_paper_r4_proposal_antigravity.py`):
-  - `EXP137_ORACLE_PATH = REPOSITORY_ROOT / "results/exp137/experiment_137_operational_triage_results.csv"`
-  - `EXP137_ORACLE_SHA256 = "942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d"`
-  - `EXP236_ORACLE_PATH = REPOSITORY_ROOT / "outputs/exp236_detection_coverage_expansion/exp236_frozen_predictions.jsonl"`
-  - `EXP236_ORACLE_SHA256 = "a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524"`
-  - `EXP291_ORACLE_PATH = Path("/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl")`
-  - `EXP291_ORACLE_SHA256 = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"`
-  - `EXP404_ORACLE_PATH = Path("/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl")`
-  - `EXP404_ORACLE_SHA256 = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"`
+- Authorized Path Constants (in `scratch/manage_paper_r4_proposal_antigravity.py`):
   - `AUTHORIZED_SMOKE_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_r4_full_route_parity_smoke_antigravity_20260814")`
   - `AUTHORIZED_SMOKE_OPS_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_r4_full_route_parity_smoke_antigravity_20260814_ops_antigravity")`
   - `AUTHORIZED_OFFICIAL_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_parity_antigravity_20260814")`
   - `AUTHORIZED_OFFICIAL_OPS_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_parity_antigravity_20260814_ops_antigravity")`
   - Rebind active targets: `OFFICIAL_SMOKE_ROOT = AUTHORIZED_SMOKE_ROOT_20260814`, `OFFICIAL_R4_ROOT = AUTHORIZED_OFFICIAL_ROOT_20260814`, `OFFICIAL_OPS_ROOT = AUTHORIZED_OFFICIAL_OPS_ROOT_20260814`.
   - Rebind `SMOKE_DATASETS` to the 33-dataset catalog-sorted tuple.
+- Verified Hard Route Parity Authority Construction (in `scratch/manage_paper_r4_proposal_antigravity.py`):
+  - Explicitly instantiates `OFFICIAL_HARD_ROUTE_PARITY_AUTHORITY = HardRouteParityAuthority(...)` from constant path and SHA strings (no `default_verified`), and binds it to `PipelineConfig`.
 - `FORBIDDEN_DESTINATION_ROOTS`: Set containing all prior 20260813 and earlier roots.
 - `validate_clean_root_destination_paper(path: Path) -> None`: Raises `ValueError` if `path` or its ops companion matches any forbidden prior root.
-- Launcher constructs `HardRouteParityAuthority` using `load_hard_route_parity_authority` and passes it to `PipelineConfig`.
 
 - [ ] **Step 1: Run RED Command for Task 8**
 
@@ -1513,20 +1534,11 @@ python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigra
 ```
 Expected failure: `ImportError: cannot import name 'AUTHORIZED_SMOKE_ROOT_20260814'` or `validate_clean_root_destination_paper`.
 
-- [ ] **Step 2: Update Launcher Paths, Smoke Datasets, Destination Refusal, and PipelineConfig Authority in `manage_paper_r4_proposal_antigravity.py`**
+- [ ] **Step 2: Update Launcher Paths, Smoke Datasets, Authority Binding, and Destination Validation in `manage_paper_r4_proposal_antigravity.py`**
 
 In `scratch/manage_paper_r4_proposal_antigravity.py`:
-1. Define authorized 20260814 paths, oracle constants, and forbidden roots:
+1. Define authorized 20260814 smoke and official paths, rebind official constants, and define forbidden prior roots:
 ```python
-EXP137_ORACLE_PATH = REPOSITORY_ROOT / "results/exp137/experiment_137_operational_triage_results.csv"
-EXP137_ORACLE_SHA256 = "942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d"
-EXP236_ORACLE_PATH = REPOSITORY_ROOT / "outputs/exp236_detection_coverage_expansion/exp236_frozen_predictions.jsonl"
-EXP236_ORACLE_SHA256 = "a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524"
-EXP291_ORACLE_PATH = Path("/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl")
-EXP291_ORACLE_SHA256 = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
-EXP404_ORACLE_PATH = Path("/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl")
-EXP404_ORACLE_SHA256 = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
-
 AUTHORIZED_SMOKE_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_r4_full_route_parity_smoke_antigravity_20260814")
 AUTHORIZED_SMOKE_OPS_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_r4_full_route_parity_smoke_antigravity_20260814_ops_antigravity")
 AUTHORIZED_OFFICIAL_ROOT_20260814 = Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_parity_antigravity_20260814")
@@ -1550,6 +1562,29 @@ SMOKE_DATASETS = (
     "PigAirwayPressure_normal_1",
 )
 
+EXP137_PATH = Path("/Users/mac/Documents/Dataset/experiments/exp234_recovery_antigravity/experiment_137_operational_triage_results_antigravity.csv")
+EXP137_SHA256 = "942e2f5faac41364a0e91fd9dad7c3e45734cd765a080f31d9d149950826735d"
+
+EXP236_PATH = Path("/Users/mac/Documents/Dataset/experiments/exp236_direct_run_antigravity/exp236_frozen_predictions.jsonl")
+EXP236_SHA256 = "a03ce4ea40f36cfa840f2d509c002a01f56fe99db795f60ad78d88bb767e6524"
+
+EXP291_PATH = Path("/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl")
+EXP291_SHA256 = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
+
+EXP404_PATH = Path("/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl")
+EXP404_SHA256 = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
+
+OFFICIAL_HARD_ROUTE_PARITY_AUTHORITY = HardRouteParityAuthority(
+    exp137_path=EXP137_PATH,
+    exp137_sha256=EXP137_SHA256,
+    exp236_path=EXP236_PATH,
+    exp236_sha256=EXP236_SHA256,
+    exp291_path=EXP291_PATH,
+    exp291_sha256=EXP291_SHA256,
+    exp404_path=EXP404_PATH,
+    exp404_sha256=EXP404_SHA256,
+)
+
 FORBIDDEN_DESTINATION_ROOTS = frozenset({
     Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813"),
     Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"),
@@ -1568,7 +1603,7 @@ def validate_clean_root_destination_paper(path: Path) -> None:
         if target == forbidden.resolve():
             raise ValueError(f"Refusing to write to or resume forbidden prior root: {target}")
 ```
-2. In `smoke` and `launch` actions: Load authority via `load_hard_route_parity_authority(EXP137_ORACLE_PATH, EXP236_ORACLE_PATH, EXP291_ORACLE_PATH, EXP404_ORACLE_PATH)` and supply it to `PipelineConfig(..., route_parity_authority=authority)`. Call `validate_clean_root_destination_paper`.
+2. Update default smoke and launch commands to target authorized 20260814 clean paths, pass `hard_route_parity_authority=OFFICIAL_HARD_ROUTE_PARITY_AUTHORITY` to `PipelineConfig`, and call `validate_clean_root_destination_paper`.
 
 - [ ] **Step 3: Update `test_paper_r4_operations_antigravity.py` for Clean Roots and 33-Dataset Smoke**
 
@@ -1612,13 +1647,13 @@ git commit -m "feat(ops): point launcher to clean 20260814 smoke and official ro
 **Interfaces:**
 - Test Suite: All 14 tests in `test_paper_r4_full_route_parity_recovery_antigravity.py` plus all existing paper unit tests pass GREEN.
 - Codemap: Both Exp448 and Paper triplets are completely synchronized and hash-bound against HEAD.
-- Provenance: MLX/MPS assessment, logical CPU worker policy, clean root isolation, zero label leakage, and exact target counts (2005/2116/2253/35/2218, Candidate C = 2244) fully validated.
+- Provenance: MLX/MPS assessment, logical CPU worker policy (`dataset_workers = max(1, logical - 1)`), clean root isolation, zero label leakage, and exact target counts (2005/2116/2253/35/2218, Candidate C = 2244) fully validated.
 
 - [ ] **Step 1: Execute Complete Antigravity Full Route Parity Test Suite**
 
-Run:
+Run under capable interpreter:
 ```bash
-python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_full_route_parity_recovery_antigravity.FullRouteParityRecoveryAntigravityTests
 ```
 Expected: `Ran 14 tests in ... OK`.
 
@@ -1647,9 +1682,4 @@ Run:
 ```bash
 git status --short
 ```
-Expected: Working tree clean or only tracked modifications staged.
-Commit if needed:
-```bash
-git add docs/codemap/codemap_exp448_antigravity.* paper/equipment_anomaly_detection/codemap_paper.*
-git commit -m "chore(provenance): finalize codemap triplets and verify full route parity recovery readiness"
-```
+Expected: Working tree clean.
