@@ -170,7 +170,7 @@ flowchart TD
     Mini["Task4: score_minirocket_confirmations"]
     T5["Task5: replay_hard_route\norigin-exact Exp74d-137, general n_train=1 support"]
     Rec["Create-only fresh Task4+Task5 success record\n(clean new root, zero migration)"]
-    
+
     subgraph Verification["Parity Verification Gates"]
         SmokeGate["33-Dataset Smoke Parity Gate\nPer-dataset coordinate parity against SHA-bound oracles\n(No aggregate counts, no Task6/7)"]
         FullGate["1117 Full-Population Parity Gate\nAggregate 2005/2116/2253/35/2218 counts\n+ 100% per-dataset coordinate parity\n(Must pass before Task6/7)"]
