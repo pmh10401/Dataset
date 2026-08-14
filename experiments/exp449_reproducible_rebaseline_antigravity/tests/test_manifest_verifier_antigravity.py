@@ -343,6 +343,22 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         manifest = freeze_exp449_proposal_antigravity(score, root=self.root, context=self.fixture.context, catalog=self.fixture.catalog)
         self.assertTrue(manifest.task45_checkpoints)
         verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+        # Refresh the success envelope's payload hash, its manifest descriptor,
+        # and the outer manifest after an algebra-only checkpoint mutation.
+        manifest_path = self._manifest_path()
+        outer = json.loads(manifest_path.read_text())
+        descriptor = next(item for item in outer["task45_checkpoints"] if item["schema"] == "paper-task4-task5-success.v1")
+        checkpoint = self.root / descriptor["relative_path"]
+        record = json.loads(checkpoint.read_text())
+        record["payload"]["route"]["automatic_hard"] = [0]
+        record["payload_sha256"] = sha256(json.dumps(record["payload"], sort_keys=True, separators=(",", ":")).encode() + b"\n").hexdigest()
+        raw = json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        checkpoint.write_bytes(raw)
+        descriptor["size"] = len(raw)
+        descriptor["sha256"] = sha256(raw).hexdigest()
+        manifest_path.write_bytes(json.dumps(outer, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with self.assertRaisesRegex(ValueError, "(route algebra|policy alerts)"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
         """Refreshing every digest must not authorize Candidate C alerts that disagree with scores and masks."""
