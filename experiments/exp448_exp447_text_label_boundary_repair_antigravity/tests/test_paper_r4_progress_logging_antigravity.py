@@ -561,6 +561,96 @@ class ProgressLoggingAntigravityTests(unittest.TestCase):
             self.assertNotIn("shard_hash", joined)
             self.assertNotIn("sha256", joined)
 
+    def test_identical_candidate_indices_and_shard_bytes_with_and_without_callback(self) -> None:
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import write_typed_proposal_shard
+        from paper.equipment_anomaly_detection.data_paper import emit_progress_paper
+        from paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper import (
+            Task4Task5SuccessRecordTests,
+        )
+
+        fixture = Task4Task5SuccessRecordTests("run")
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        raw, sources, route, low, stability, policies, backend = fixture._task4_task5_values()
+        raw_map = {raw.dataset: raw}
+        manifest = build_acceleration_manifest("f" * 64, logical_cpu_count=3)
+        received: list[dict[str, object]] = []
+
+        def recording(event):
+            received.append(event)
+            event["stage"] = "mutated"
+
+        class Future:
+            def __init__(self, fn, args):
+                try:
+                    self.value, self.error = fn(*args), None
+                except Exception as error:
+                    self.value, self.error = None, error
+
+            def result(self):
+                if self.error is not None:
+                    raise self.error
+                return self.value
+
+            def cancel(self):
+                return False
+
+        class InlineExecutor:
+            def __init__(self, *, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def submit(self, fn, *args):
+                return Future(fn, args)
+
+        patches = (
+            patch.object(score, "score_hard_sources", side_effect=lambda _raw: sources),
+            patch.object(score, "score_minirocket_confirmations", return_value=object()),
+            patch.object(score, "replay_hard_route", side_effect=lambda _raw, _sources, _mini: route),
+            patch.object(score, "score_low_frequency", return_value=low),
+            patch.object(score, "classify_stability", return_value=stability),
+            patch.object(score, "ProcessPoolExecutor", InlineExecutor),
+            patch.object(score, "as_completed", side_effect=lambda futures: tuple(futures)),
+        )
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+            baseline = score.compose_proposal_score(raw_map, manifest)
+            observed = score.compose_proposal_score(raw_map, manifest, progress=recording)
+        self.assertEqual(
+            tuple(candidate.coordinate for candidate in observed.low_frequency.selected_candidates),
+            tuple(candidate.coordinate for candidate in baseline.low_frequency.selected_candidates),
+        )
+        self.assertEqual(tuple(observed.stability.selected_coordinates), tuple(baseline.stability.selected_coordinates))
+        self.assertEqual(tuple(observed.stability.stable_coordinates), tuple(baseline.stability.stable_coordinates))
+        self.assertEqual(tuple(observed.stability.unstable_coordinates), tuple(baseline.stability.unstable_coordinates))
+        self.assertEqual(
+            tuple(candidate.coordinate for candidate in observed.low_frequency.selected_candidates),
+            tuple(candidate.coordinate for candidate in low.selected_candidates),
+        )
+        self.assertEqual(tuple(observed.stability.selected_coordinates), tuple(stability.selected_coordinates))
+
+        left = fixture.fixture.base / "left_antigravity"
+        right = fixture.fixture.base / "right_antigravity"
+        left.mkdir()
+        right.mkdir()
+        write_typed_proposal_shard(left, fixture.catalog, raw, sources, route, low, stability, policies, backend)
+        write_typed_proposal_shard(
+            right, fixture.catalog, raw, sources, route, low, stability, policies, backend, progress=recording,
+        )
+        left_bytes = (left / "stage_artifacts_paper" / "proposal_freeze" / "shards" / f"{raw.dataset}_paper.json").read_bytes()
+        right_bytes = (right / "stage_artifacts_paper" / "proposal_freeze" / "shards" / f"{raw.dataset}_paper.json").read_bytes()
+        self.assertEqual(left_bytes, right_bytes)
+        self.assertGreater(len(left_bytes), 0)
+        self.assertTrue(received)
+        self.assertTrue(any(event.get("stage") == "mutated" for event in received))
+        emit_progress_paper(recording, {"stage": "shard_write", "phase": "tick", "completed": 1, "total": 1, "elapsed_s": 0.0})
+
 
 if __name__ == "__main__":
     unittest.main()

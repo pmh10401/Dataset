@@ -17,7 +17,7 @@
     "lineage_paper.py": "85a7456943954c725952b40975e21b9e92bbf18e76649a336e09ea8c38f4c541",
     "package_paper.py": "5d81d4c4b742bc6312967dd542f2ac945ea01dc22ab5af9c3bf9198b3a70408a",
     "pipeline_paper.py": "c9a1e72b00e1572ff631a5563a9d5bbe2ee0f839dc846db23e4e7b0e8e48dcc2",
-    "proposal_score_paper.py": "a56fa3e2392b155a6245b921197b80d9aa55f2c61b80c144d26066d551f505d4",
+    "proposal_score_paper.py": "80f87a47abeedf8c08544e190114e92bc259859249e2a89edbd0c01a6ffb39ba",
     "routing_paper.py": "986ba4c343e5d52ba203cbbc21a1ac5b985df2f28e80870e574a331eaee7cbea",
     "runner_paper.py": "7d8572824e7cd4a6838a8989da798e006b8425efd3f64cf2533755f8a9e48b7b",
     "score_adapter_paper.py": "e6b3e9747c9a1696440907a254306e09f50da5103f4d55d4fceeca57fdd27b8a",
