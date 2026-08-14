@@ -441,6 +441,53 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
                 self.root, context=self.fixture.context, catalog=self.fixture.catalog,
             )
 
+    def test_global_candidate_c_rejects_omitted_eligible_coordinate_after_rebinding(self) -> None:
+        """A valid Task6 local winner omitted from Task7 must fail only at population closure."""
+        self._freeze()
+        manifest_path = self._manifest_path(); outer = json.loads(manifest_path.read_text())
+        descriptor = outer["entries"][0]; path = manifest_path.parent / descriptor["relative_path"]
+        shard = json.loads(path.read_text()); scientific = shard["scientific_payload"]
+        scientific["low_frequency_rows"][0] = {
+            "index": 0, "evidence_missing": False, "strict_pass": True, "provisional": True,
+            "depths": [
+                {"depth": 1, "score": 2.0, "threshold": 1.0, "strict_pass": True, "excess_ratio": 2.0, "empirical_rank": 0.2},
+                {"depth": 2, "score": 2.0, "threshold": 1.0, "strict_pass": True, "excess_ratio": 2.0, "empirical_rank": 0.3},
+            ],
+        }
+        # No policy alerts are added: this is a locally valid but globally
+        # omitted Task6 candidate. All four continuous vectors are recomputed.
+        for policy in scientific["policies"]:
+            policy["scores"] = [0.35, 0.16666666666666669]
+            policy["score_mask"] = [False, False]
+            policy["alerts"] = []
+        data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"; path.write_bytes(data)
+        descriptor["size"] = len(data); descriptor["sha256"] = sha256(data).hexdigest()
+        descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.35, 0.16666666666666669)).hexdigest()
+        descriptor["policy_coordinate_sha256"] = {policy["policy_id"]: sha256(b"[]\n").hexdigest() for policy in scientific["policies"]}
+        manifest_path.write_bytes(json.dumps(outer, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with self.assertRaisesRegex(ValueError, "global Candidate C"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_candidate_c_rejects_rebound_ineligible_selected_coordinate(self) -> None:
+        """An added selected coordinate without Task6 evidence cannot enter Candidate C."""
+        self._freeze()
+        manifest_path = self._manifest_path(); outer = json.loads(manifest_path.read_text())
+        descriptor = outer["entries"][0]; path = manifest_path.parent / descriptor["relative_path"]
+        shard = json.loads(path.read_text()); scientific = shard["scientific_payload"]; dataset = descriptor["dataset"]
+        scientific["stability"] = {"selected": [[dataset, 0]], "stable": [[dataset, 0]], "unstable": []}
+        for policy in scientific["policies"]:
+            selected = policy["policy_id"] in {"hard_plus_source", "hard_plus_stable"}
+            policy["alerts"] = [0] if selected else []
+            policy["scores"] = [0.5 if selected else 0.0, 0.16666666666666669]
+            policy["score_mask"] = [selected, False]
+        data = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"; path.write_bytes(data)
+        descriptor["size"] = len(data); descriptor["sha256"] = sha256(data).hexdigest()
+        descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.5, 0.16666666666666669)).hexdigest()
+        descriptor["policy_coordinate_sha256"] = {policy["policy_id"]: sha256(json.dumps([[dataset, 0]] if policy["alerts"] else [], separators=(",", ":")).encode() + b"\n").hexdigest() for policy in scientific["policies"]}
+        manifest_path.write_bytes(json.dumps(outer, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with self.assertRaisesRegex(ValueError, "selected low-frequency"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
     def test_full_inventory_is_checked_structurally_without_scoring_1117_datasets(self) -> None:
         """A full catalog with a wrong count or total must fail before any score object is requested."""
         rows = [{"dataset": f"dataset_{number:04d}_antigravity", "series_length": 2, "train": {}, "test": {"count": 175}} for number in range(1117)]
