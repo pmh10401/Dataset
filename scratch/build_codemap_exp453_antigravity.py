@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp453 Task 4 code map."""
+"""Build and validate the bounded Exp453 Task 5 code map."""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ def _html_antigravity(graph: dict[str, object]) -> str:
         f'<li><code>{html_module.escape(str(node["path"]))}</code> — {html_module.escape(str(node["role"]))}</li>'
         for node in graph["nodes"]
     )
-    return f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp453 코드맵</title><style>body{{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp453 Task 4 코드맵</h1><p>HTML governance, Task 2 foundation, Task 3 exact-runtime binding, dual predecessor, sources, lifecycle, readiness, and Task 4 evaluator/replay가 구현되었다. Task 5 product relation은 아직 future unknown이다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
+    return f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp453 코드맵</title><style>body{{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}}code,pre{{background:#eef2f7;padding:.15rem .3rem;overflow:auto}}</style></head><body><main><h1>Exp453 Task 5 코드맵</h1><p>HTML governance, Task 2 foundation, Task 3 exact-runtime binding, dual predecessor, sources, lifecycle, readiness, Task 4 evaluator/replay, and Task 5 closed CLI가 구현되었다. 공식 lifecycle invocation은 아직 0이며 별도 authorization 전에는 실행하지 않는다.</p><h2>노드</h2><ul>{items}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre></main></body></html>'''
 
 
 def _allowed_source_parent_antigravity(source_parent: str) -> bool:
@@ -112,6 +112,8 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     readiness_test = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_readiness_antigravity.py"
     evaluation_test = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_evaluation_antigravity.py"
     replay_test = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_replay_antigravity.py"
+    cli_test = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/tests/test_cli_antigravity.py"
+    launcher = "scratch/run_exp453_exp452_fixed_interpreter_binding_repair_antigravity.py"
     plan = "docs/superpowers/plans/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity.html"
     future_path = "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity"
     package = future_path
@@ -129,17 +131,15 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "task2_artifacts", "path": f"{future_path}/artifacts_antigravity.py", "role": "Caller: future lifecycle, evaluator and replay. Effect: fixes canonical bytes and artifact-map construction.", "tests": [f"{future_path}/tests/test_artifacts_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/artifacts_antigravity.py", "def canonical_json_bytes_antigravity")]},
         {"id": "task2_bootstrap", "path": f"{future_path}/bootstrap_antigravity.py", "role": "Caller: future evaluator. Effect: fixes the paired draw bytes and FN/FP/F1 intervals.", "tests": [f"{future_path}/tests/test_bootstrap_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/bootstrap_antigravity.py", "def paired_delta_antigravity")]},
         {"id": "task2_dashboard", "path": f"{future_path}/dashboard_export_antigravity.py", "role": "Caller: future evaluator result projection. Effect: exposes only the same aggregate qualification result.", "tests": [f"{future_path}/tests/test_dashboard_export_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/dashboard_export_antigravity.py", "def public_result_antigravity")]},
-        {"id": "task3_runtime_binding", "path": "scratch/exp453_runtime_binding_antigravity.py", "role": "Caller: official launcher and all eventual commands. Effect: exact executable/prefix re-exec before any Exp453 import.", "tests": [runtime_test], "evidence": [_evidence_antigravity("scratch/exp453_runtime_binding_antigravity.py", "def ensure_fixed_runtime_antigravity"), _evidence_antigravity("scratch/run_exp453_exp452_fixed_interpreter_binding_repair_antigravity.py", "ensure_fixed_runtime_antigravity")]},
+        {"id": "task3_runtime_binding", "path": "scratch/exp453_runtime_binding_antigravity.py", "role": "Caller: official launcher and all closed commands. Effect: exact executable/prefix re-exec before any Exp453 import.", "tests": [runtime_test], "evidence": [_evidence_antigravity("scratch/exp453_runtime_binding_antigravity.py", "def ensure_fixed_runtime_antigravity"), _evidence_antigravity(launcher, "ensure_fixed_runtime_antigravity")]},
         {"id": "task3_predecessor", "path": f"{package}/predecessor_antigravity.py", "role": "Caller: sources label opener, readiness, and evaluator. Effect: issues dual Exp452-failure and Exp449-prediction authority only after two equal captures.", "tests": [predecessor_test, sources_test], "evidence": [_evidence_antigravity(f"{package}/predecessor_antigravity.py", "def capture_predecessors_antigravity")]},
         {"id": "task3_sources", "path": f"{package}/sources_antigravity.py", "role": "Caller: evaluator. Effect: opens one synthetic or official label session only from issued dual authority.", "tests": [sources_test, predecessor_test], "evidence": [_evidence_antigravity(f"{package}/sources_antigravity.py", "def open_test_labels_once_antigravity")]},
         {"id": "task3_lifecycle", "path": f"{package}/lifecycle_antigravity.py", "role": "Caller: readiness, evaluate, and inspect. Effect: records literal executable, prefix, and four runtime versions on one-shot receipts.", "tests": [lifecycle_test, readiness_test], "evidence": [_evidence_antigravity(f"{package}/lifecycle_antigravity.py", "def run_phase_antigravity")]},
-        {"id": "task3_readiness", "path": f"{package}/readiness_antigravity.py", "role": "Caller: future closed CLI. Effect: label-free readiness result with exact runtime and dual predecessor hashes.", "tests": [readiness_test], "evidence": [_evidence_antigravity(f"{package}/readiness_antigravity.py", "def readiness_antigravity")]},
-        {"id": "task4_evaluation_replay", "path": f"{package}/evaluation_antigravity.py", "role": "Caller: future closed CLI. Effect: publishes the exact 12-leaf evaluation and source-free replay from dual predecessor authority.", "tests": [evaluation_test, replay_test], "evidence": [_evidence_antigravity(f"{package}/evaluation_antigravity.py", "def evaluate_antigravity"), _evidence_antigravity(f"{package}/replay_antigravity.py", "def inspect_antigravity")]},
-        {"id": "task5_cli", "path": future_path, "role": "Future closed CLI and clean candidate.", "status": "future_unknown", "tests": [], "evidence": []},
+        {"id": "task3_readiness", "path": f"{package}/readiness_antigravity.py", "role": "Caller: closed CLI. Effect: label-free readiness result with exact runtime and dual predecessor hashes.", "tests": [readiness_test], "evidence": [_evidence_antigravity(f"{package}/readiness_antigravity.py", "def readiness_antigravity")]},
+        {"id": "task4_evaluation_replay", "path": f"{package}/evaluation_antigravity.py", "role": "Caller: closed CLI. Effect: publishes the exact 12-leaf evaluation and source-free replay from dual predecessor authority.", "tests": [evaluation_test, replay_test], "evidence": [_evidence_antigravity(f"{package}/evaluation_antigravity.py", "def evaluate_antigravity"), _evidence_antigravity(f"{package}/replay_antigravity.py", "def inspect_antigravity")]},
+        {"id": "task5_cli", "path": f"{package}/cli_antigravity.py", "role": "Caller: official launcher and CLI regression. Effect: closed three-form parser, lazy phase imports, and clean reviewed-map gate before evaluator import.", "tests": [cli_test], "evidence": [_evidence_antigravity(f"{package}/cli_antigravity.py", "def main_antigravity"), _evidence_antigravity(launcher, "main_antigravity")]},
     ]
-    future_pairs = [
-        ("implementation_plan", "task5_cli"),
-    ]
+    future_pairs: list[tuple[str, str]] = []
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP453_PREREGISTRATION_antigravity_KO.html", "고정 Python 실행 경로")},
         {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": _evidence_antigravity(plan, "build_codemap_exp453_antigravity.py")},
@@ -153,7 +153,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
             {"from": "implementation_plan", "to": node_id, "type": "governs", "evidence": _evidence_antigravity(plan, "Task 3: Runtime binding")}
             for node_id in ("task3_runtime_binding", "task3_predecessor", "task3_sources", "task3_lifecycle", "task3_readiness")
         ],
-        {"from": "task3_runtime_binding", "to": "task3_readiness", "type": "reads", "evidence": _evidence_antigravity("scratch/run_exp453_exp452_fixed_interpreter_binding_repair_antigravity.py", "readiness_antigravity")},
+        {"from": "task3_runtime_binding", "to": "task5_cli", "type": "reads", "evidence": _evidence_antigravity(launcher, "cli_antigravity")},
         {"from": "task3_readiness", "to": "task3_predecessor", "type": "reads", "evidence": _evidence_antigravity(f"{package}/readiness_antigravity.py", "capture_predecessors_antigravity")},
         {"from": "task3_sources", "to": "task3_predecessor", "type": "reads", "evidence": _evidence_antigravity(f"{package}/sources_antigravity.py", "_claim_label_capability_antigravity")},
         {"from": "task3_readiness", "to": "task3_lifecycle", "type": "reads", "evidence": _evidence_antigravity(f"{package}/readiness_antigravity.py", "_run_phase_with_paths_antigravity")},
@@ -171,12 +171,12 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "task4_evaluation_replay", "to": "task3_predecessor", "type": "reads", "evidence": _evidence_antigravity(f"{package}/evaluation_antigravity.py", "capture_predecessors_antigravity")},
         {"from": "task4_evaluation_replay", "to": "task3_sources", "type": "reads", "evidence": _evidence_antigravity(f"{package}/evaluation_antigravity.py", "open_test_labels_once_antigravity")},
         {"from": "task4_evaluation_replay", "to": "task3_lifecycle", "type": "reads", "evidence": _evidence_antigravity(f"{package}/evaluation_antigravity.py", "_run_phase_with_paths_antigravity")},
-        *[
-            {"from": left, "to": right, "type": "future_unknown", "evidence": _evidence_antigravity(plan, f"Task {index}")}
-            for index, (left, right) in enumerate(future_pairs, start=5)
-        ],
+        {"from": "implementation_plan", "to": "task5_cli", "type": "governs", "evidence": _evidence_antigravity(plan, "Task 5: Closed CLI")},
+        {"from": "task5_cli", "to": "task3_readiness", "type": "reads", "evidence": _evidence_antigravity(f"{package}/cli_antigravity.py", "_load_readiness_antigravity")},
+        {"from": "task5_cli", "to": "task4_evaluation_replay", "type": "reads", "evidence": _evidence_antigravity(f"{package}/cli_antigravity.py", "_load_evaluate_antigravity")},
+        {"from": "task5_cli", "to": "task4_evaluation_replay", "type": "reads", "evidence": _evidence_antigravity(f"{package}/cli_antigravity.py", "_load_inspect_antigravity")},
     ]
-    unknowns = [{"from": left, "to": right, "reason": "Task 4 does not implement this later product boundary."} for left, right in future_pairs]
+    unknowns = [{"from": left, "to": right, "reason": "Task 5 does not implement this later product boundary."} for left, right in future_pairs]
     graph: dict[str, object] = {"schema": "exp453_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
     lock: dict[str, object] = {"schema": "exp453_codemap_map_child_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
     return graph, lock, _html_antigravity(graph)

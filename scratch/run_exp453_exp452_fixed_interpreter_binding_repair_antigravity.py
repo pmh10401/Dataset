@@ -32,10 +32,10 @@ _REPOSITORY_ANTIGRAVITY = Path(__file__).parent.parent
 if str(_REPOSITORY_ANTIGRAVITY) not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ANTIGRAVITY))
 
-from experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity import (
-    readiness_antigravity as _readiness_antigravity,
+from experiments.exp453_exp452_fixed_interpreter_binding_repair_antigravity.cli_antigravity import (
+    main_antigravity,
 )
 
 
 if __name__ == "__main__":
-    raise SystemExit("Exp453 closed CLI is not implemented")
+    raise SystemExit(main_antigravity())

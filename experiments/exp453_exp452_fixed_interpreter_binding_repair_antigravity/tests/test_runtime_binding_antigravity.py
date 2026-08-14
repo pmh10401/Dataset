@@ -183,7 +183,7 @@ class RuntimeBindingAntigravityTest(unittest.TestCase):
         )
         self.assertLess(bind_at, thread_at)
         self.assertLess(thread_at, package_at)
-        self.assertNotIn("cli_antigravity", source)
+        self.assertLess(thread_at, source.index("cli_antigravity"))
         self.assertNotIn("evaluation_antigravity", source)
         self.assertNotIn("replay_antigravity", source)
         self.assertNotIn(".resolve(", source.split("ensure_fixed_runtime_antigravity", 1)[0])

@@ -125,8 +125,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 actual = hashlib.sha256((ROOT_ANTIGRAVITY / relative).read_bytes()).hexdigest()
                 self.assertEqual(bindings[key], actual)
 
-    def test_map_is_bounded_strict_and_marks_future_product_antigravity(self) -> None:
-        """Break caught: Task 1 map falsely claims not-yet-implemented product code."""
+    def test_map_is_bounded_strict_and_records_task_five_cli_antigravity(self) -> None:
+        """Break caught: Task 5 map hides the closed CLI or keeps a false future node."""
         builder = map_builder_antigravity()
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
@@ -134,10 +134,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict)
         self.assertLessEqual(len(graph["nodes"]), 20)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("task5_cli",):
-            self.assertEqual(node_by_id[node_id]["status"], "future_unknown")
-            self.assertEqual(node_by_id[node_id]["evidence"], [])
-        self.assertTrue(graph["unknown_relationships"])
+        self.assertIn("task5_cli", node_by_id)
+        self.assertNotEqual(node_by_id["task5_cli"].get("status"), "future_unknown")
+        self.assertTrue(node_by_id["task5_cli"]["evidence"])
+        self.assertFalse(graph["unknown_relationships"])
+        self.assertTrue(any(edge["from"] == "task5_cli" and edge["to"] == "task3_readiness" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task5_cli" and edge["to"] == "task4_evaluation_replay" and edge["type"] == "reads" for edge in graph["edges"]))
         match = re.search(r'<pre id="codemap-json-antigravity" type="application/json">(.*?)</pre>', rendered, flags=re.DOTALL)
         self.assertIsNotNone(match)
         assert match is not None
@@ -203,6 +205,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertTrue(any(edge["from"] == "implementation_plan" and edge["to"] == "task4_evaluation_replay" and edge["type"] == "governs" for edge in graph["edges"]))
         self.assertTrue(any(edge["from"] == "task4_evaluation_replay" and edge["to"] == "task3_predecessor" and edge["type"] == "reads" for edge in graph["edges"]))
         self.assertTrue(any(edge["from"] == "task4_evaluation_replay" and edge["to"] == "task3_sources" and edge["type"] == "reads" for edge in graph["edges"]))
+
+    def test_map_answers_task_five_callers_effects_and_tests_antigravity(self) -> None:
+        """Break caught: Task 5 closed CLI remains hidden behind a future node."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        node = {item["id"]: item for item in graph["nodes"]}["task5_cli"]
+        self.assertNotEqual(node.get("status"), "future_unknown")
+        self.assertIn("caller", node["role"].lower())
+        self.assertIn("effect", node["role"].lower())
+        self.assertTrue(any(path.endswith("test_cli_antigravity.py") for path in node["tests"]))
+        self.assertTrue(node["evidence"])
+        self.assertTrue(any(edge["from"] == "implementation_plan" and edge["to"] == "task5_cli" and edge["type"] == "governs" for edge in graph["edges"]))
+        self.assertTrue(any(edge["from"] == "task3_runtime_binding" and edge["to"] == "task5_cli" and edge["type"] == "reads" for edge in graph["edges"]))
+        self.assertTrue((ROOT_ANTIGRAVITY / "experiments/exp453_exp452_fixed_interpreter_binding_repair_antigravity/cli_antigravity.py").is_file())
 
 
 if __name__ == "__main__":
