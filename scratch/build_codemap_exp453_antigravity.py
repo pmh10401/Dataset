@@ -122,8 +122,8 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "implementation_plan", "path": plan, "role": "Task 1–6의 순차 TDD와 공식 실행 경계.", "tests": [test], "evidence": [_evidence_antigravity(plan, "Task 1: HTML governance")]},
         {"id": "preregistration", "path": "docs/EXP453_PREREGISTRATION_antigravity_KO.html", "role": "고정 runtime과 과학 불변값.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP453_PREREGISTRATION_antigravity_KO.html", "NumPy 2.3.5")]},
         {"id": "runbook", "path": "docs/EXP453_RUNBOOK_antigravity_KO.html", "role": "미래 one-shot 명령 순서.", "tests": [test], "evidence": [_evidence_antigravity("docs/EXP453_RUNBOOK_antigravity_KO.html", "readiness --reviewed-commit")]},
-        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp453 planned, zero-label, null-result truth.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"exp453"')]},
-        {"id": "governance_regression", "path": test, "role": "HTML, ledger, hash, future-map regression.", "tests": [test], "evidence": [_evidence_antigravity(test, "class GovernanceAntigravityTest")]},
+        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Exp453 implementation-verified, zero-label, null-result truth awaiting official readiness.", "tests": [test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", '"exp453"')]},
+        {"id": "governance_regression", "path": test, "role": "HTML, ledger, document-hash, and implemented-map regression.", "tests": [test], "evidence": [_evidence_antigravity(test, "class GovernanceAntigravityTest")]},
         {"id": "map_builder", "path": "scratch/build_codemap_exp453_antigravity.py", "role": "bounded HTML/JSON/lock generator.", "tests": [test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp453_antigravity.py", "def validate_map_antigravity")]},
         {"id": "task2_regressions", "path": differential, "role": "Caller: Task 2 focused verification. Effect: rejects scientific drift across all foundations.", "tests": [differential], "evidence": [_evidence_antigravity(differential, "class ControlledForkDifferentialAntigravityTest")]},
         {"id": "task2_config", "path": f"{future_path}/config_antigravity.py", "role": "Caller: future readiness and evaluator. Effect: freezes runtime identity and unchanged scientific profile.", "tests": [f"{future_path}/tests/test_config_antigravity.py", differential], "evidence": [_evidence_antigravity(f"{future_path}/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")]},
@@ -143,7 +143,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP453_PREREGISTRATION_antigravity_KO.html", "고정 Python 실행 경로")},
         {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": _evidence_antigravity(plan, "build_codemap_exp453_antigravity.py")},
-        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_planned_truth_preserves_science_and_champion_antigravity")},
+        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": _evidence_antigravity(test, "test_verified_candidate_truth_preserves_science_and_champion_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": _evidence_antigravity(test, "builder.validate_map_antigravity")},
         *[
             {"from": "implementation_plan", "to": node_id, "type": "governs", "evidence": _evidence_antigravity(plan, "Task 2: Controlled-fork")}

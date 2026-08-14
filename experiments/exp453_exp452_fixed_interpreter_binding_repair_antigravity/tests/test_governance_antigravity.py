@@ -1,4 +1,4 @@
-"""Governance contract for the planned, label-free Exp453 repair."""
+"""Governance contract for the verified, still label-free Exp453 candidate."""
 
 from __future__ import annotations
 
@@ -75,13 +75,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             for tag in tags:
-                if task_number in (1, 2, 3, 4):
+                if task_number in (1, 2, 3, 4, 5):
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
                 else:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
 
-    def test_planned_truth_preserves_science_and_champion_antigravity(self) -> None:
-        """Break caught: governance changes the frozen experiment or claims an official result."""
+    def test_verified_candidate_truth_preserves_science_and_champion_antigravity(self) -> None:
+        """Break caught: verified implementation truth claims an official result or changes science."""
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         catalog = strict_json_antigravity(ROOT_ANTIGRAVITY / "EXPERIMENT_CATALOG.json")
         champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
@@ -92,7 +92,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(sum(item["id"] == "Exp453" for item in catalog["experiments"]), 1)
         self.assertEqual(sum(item["experiment"] == "Exp453" for item in champion["history"]), 1)
         for record in (exp453, catalog_entry, champion_entry):
-            self.assertEqual(record["status"], "planned_not_started")
+            self.assertEqual(record["status"], "implementation_verified_awaiting_official_readiness")
             self.assertEqual(record["predecessor_prediction_sha256"], PREDICTION_SHA256_ANTIGRAVITY)
             self.assertEqual(record["target_dataset_count"], 48)
             self.assertEqual(record["target_prediction_count"], 96)

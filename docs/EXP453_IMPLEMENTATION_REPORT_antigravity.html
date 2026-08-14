@@ -2,8 +2,11 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Exp453 구현 기록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}.status{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
 <h1>Exp453 구현 기록</h1>
-<div class="status"><strong>현재 상태:</strong> <code>planned_not_started</code>. Task 1 governance만 완료 대상으로 삼고 제품 구현은 시작하지 않았다.</div>
+<div class="status"><strong>현재 상태:</strong> <code>implementation_verified_awaiting_official_readiness</code>. 구현과 합성 검증은 끝났으며 공식 성능 평가는 아직 실행하지 않았다.</div>
 <h2>확인된 원인</h2><p>Exp452 공식 readiness는 잘못된 Exp444 가상환경으로 실행됐다. 그 환경의 NumPy는 2.4.6이었다. Exp453가 사용해야 할 detection-coverage 가상환경에는 Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2가 이미 설치되어 있다. 따라서 패키지를 바꾸는 대신 정확한 실행 경로를 묶는다.</p>
-<h2>Task 1 범위</h2><ul><li>사전등록, 실행 안내서, 이 구현 기록을 HTML로 작성</li><li>Exp453를 planned/non-promoted 상태로 세 ledger에 한 번씩 등록</li><li>아직 없는 Task 2–5 제품 코드를 future unknown으로 표시한 Exp453 code map 작성</li><li>TEST label 0, 공식 명령 0, 결과 SHA null 유지</li></ul>
-<h2>과학 결과</h2><p>아직 공식 평가를 실행하지 않았으므로 Exp453 성능 결과는 없다. Exp449의 96개 prediction SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>만 고정 입력으로 등록했다. routing, champion, pending candidate와 promotion은 변하지 않았다.</p>
+<h2>완료된 구현</h2><ul><li>Exp452와 동일한 과학 계산과 12개 결과 파일을 사용하는 evaluator·replay</li><li>정확한 고정 Python 환경을 모든 명령보다 먼저 확인하는 launcher</li><li><code>readiness --reviewed-commit</code>, <code>evaluate --reviewed-commit</code>, <code>inspect</code> 세 명령만 허용하는 closed CLI</li><li>Exp449의 96개 prediction 순서와 Exp452 실패 사실을 함께 확인하는 predecessor 경계</li></ul>
+<h2>검증 결과</h2><ul><li>고정 환경: Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2</li><li>Exp453 전체 테스트: 94/94를 두 번 통과(88.434초, 80.415초)</li><li>CLI/runtime/readiness/replay 집중 테스트: 24/24 통과(43.715초)</li><li>Exp452 evaluator/replay/CLI: 16/16 통과</li><li>Exp449 evaluator/replay/CLI: 32/32 통과</li><li>합성 48개 데이터셋·96개 prediction fixture에서 Exp452와 normalized 12-leaf 결과가 동일함을 확인</li></ul>
+<h2>공식 실행 전 사실</h2><p>공식 readiness, evaluate, inspect는 모두 0회다. TEST label session과 query도 0회이며 evaluation/result/decision/inspect SHA는 모두 null이다. 공식 평가 폴더, receipt 폴더, failure audit 파일은 아직 없다.</p>
+<h2>과학 결과</h2><p>아직 공식 평가를 실행하지 않았으므로 Exp453의 실제 성능 결과는 없다. 고정 입력은 Exp449의 96개 prediction SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>이다. routing, champion, pending candidate와 promotion은 변하지 않았다.</p>
+<h2>다음 단계</h2><p>Grok 독립 검토와 fresh Sol 최종 검토가 모두 통과한 clean map commit만 공식 reviewed commit 후보가 된다. 이후 사용자의 별도 승인으로 Task 6 readiness를 정확히 한 번 실행한다.</p>
 </main></body></html>
