@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp454 Exp449 authority 타입 경계 복구 구현 계획</title>
+<style>body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.68 system-ui;color:#172033}h1,h2,h3{line-height:1.3}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}pre{background:#eef2f7;padding:1rem;white-space:pre-wrap;overflow:auto}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.5rem;text-align:left;vertical-align:top}.box{background:#f5f8fc;border-left:4px solid #4f6bed;padding:1rem}.warn{border-left-color:#b54708;background:#fff7ed}</style></head><body><main>
+<h1>Exp454 Exp449 authority 타입 경계 복구 구현 계획</h1>
+<div class="box"><strong>Agent 실행 규칙:</strong> Task별로 진행하고 완료된 Task와 Step만 체크한다. Grok 4.6/high는 전용 worktree에서 독립 분석·수정안 구현을 맡을 수 있다. Codex가 diff 통합, 테스트, 결과 검증과 최종 판단을 맡는다. 공식 실험 worktree에서 Grok 쓰기는 금지한다.</div>
+<p><strong>Goal:</strong> 실제 Exp449 authority를 Exp454 내부 타입으로 한 번 변환해, 과학 계산을 바꾸지 않고 평가가 label 단계와 실제 결과 계산까지 진행되게 한다.</p>
+<p><strong>Architecture:</strong> Exp454는 Exp453의 controlled fork다. 유일한 동작 변경은 predecessor 경계의 <code>normalize_exp449_target_authority_antigravity()</code>다. 그 뒤 evaluator, bootstrap, replay와 12-leaf 결과 형식은 Exp453와 같다.</p>
+<p><strong>Tech Stack:</strong> Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2, stdlib, SQLite read-only label session, canonical JSON/JSONL, unittest.</p>
+
+<h2>Global Constraints</h2><ul>
+<li>승인 설계는 <code>docs/superpowers/specs/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity-design.html</code>, commit <code>2a8486c42b385f4e589c7062a1c16f4be4372f4f</code>, SHA-256 <code>b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f</code>다.</li>
+<li>Exp453는 readiness 1/exit0, evaluate 1/exit1, inspect0, label session/query/row 0의 immutable no-retry predecessor다.</li>
+<li>Exp453 failure audit SHA-256은 <code>97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276</code>이고 error는 <code>ValueError: Exp448 target identity differs</code>다.</li>
+<li>Exp453 readiness/evaluate/stopped receipt SHA-256은 각각 <code>38607b6c8cad785ca8cd0830dacd42775d43f9175a67ed01d487657a3c44764e</code>, <code>caa705be90ddd56a00c53d5eb94a90604768dac0a80274846adce2061349b3b6</code>, <code>1b6b2ea01c0c4dde9128051e57c764d32cbdf8bc1af7fa0115f19c7a10181d97</code>다.</li>
+<li>Exp449 prediction aggregate <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code>와 96 predictions는 수정하지 않는다.</li>
+<li>48 datasets, 96 predictions, 16 family-method pairs, seeds <code>[20260721, 20261721]</code>, alpha <code>0.005</code>, 모든 순서·confusion·FN·FP·F1·bootstrap·decision·12-leaf 형식을 바꾸지 않는다.</li>
+<li>유일한 과학 경계 변경은 실제 Exp449 baseline/confusion 값을 Exp454 immutable 타입으로 한 번 복사하는 것이다.</li>
+<li>새 score source가 아니므로 MLX 가속은 적용하지 않는다. 기존 CPU 계산과 고정 runtime을 그대로 사용한다.</li>
+<li>사람이 읽는 새 문서는 쉬운 한국어의 self-contained HTML이다. 새 파일명에는 <code>antigravity</code>가 들어가며 Markdown twin과 <code>__init__.py</code>를 만들지 않는다.</li>
+<li>보안·운영 기능을 확대하지 않는다. 실험 결과와 재현성에 직접 필요한 코드와 테스트에만 집중한다.</li>
+<li>공식 Exp454 명령은 fresh final review와 사용자의 별도 승인 뒤 각각 한 번만 실행한다.</li>
+</ul>
+
+<h2>파일 구조</h2><table><thead><tr><th>영역</th><th>파일과 책임</th></tr></thead><tbody>
+<tr><td>Governance</td><td><code>docs/EXP454_*_antigravity*.html</code>, Exp454 plan/spec, ledgers, <code>scratch/build_codemap_exp454_antigravity.py</code>, map triplet</td></tr>
+<tr><td>Foundations</td><td><code>config/contracts/artifacts/bootstrap/dashboard_export_antigravity.py</code> — Exp453 과학 계약을 identity만 바꿔 보존</td></tr>
+<tr><td>Boundary</td><td><code>predecessor_antigravity.py</code> — Exp453 failure + Exp449 prediction 검증, 실제 target authority 단일 변환</td></tr>
+<tr><td>Lifecycle</td><td><code>sources/lifecycle/readiness_antigravity.py</code>, runtime binding helper와 launcher</td></tr>
+<tr><td>Result</td><td><code>evaluation/replay/cli_antigravity.py</code> — 동일 계산, 12-leaf publication, exact inspect</td></tr>
+</tbody></table>
+
+<section><h2><input disabled type="checkbox"> Task 1: HTML governance와 Exp454 code map</h2>
+<p><strong>Files:</strong> Create <code>docs/EXP454_PREREGISTRATION_antigravity_KO.html</code>, <code>docs/EXP454_RUNBOOK_antigravity_KO.html</code>, <code>docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html</code>, governance test, map builder, <code>codemap_exp454_antigravity.html/json/lock</code>. Modify only Exp454 entries in the four root ledgers.</p>
+<p><strong>Produces:</strong> planned, labels0, null-result Exp454 truth and a map that marks later product modules as future.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1 — map preflight:</strong> inherited Exp453 map은 새 Exp454 design commit 뒤 <code>invalid source parent</code>로 stale임을 기록한다. JSON에서 predecessor의 callers는 sources/readiness/evaluator, effect는 dual authority, tests는 predecessor/sources임을 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 2 — RED governance:</strong><pre><code>python3 -m unittest experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.tests.test_governance_antigravity -v
+# Expected: missing module or missing HTML/map failure.</code></pre></li>
+<li><input disabled type="checkbox"> <strong>Step 3 — 문서:</strong> preregistration, runbook, implementation report를 작성한다. report status는 <code>not_started</code>이고 공식 counts와 labels는 0, 결과 hash는 null이다.</li>
+<li><input disabled type="checkbox"> <strong>Step 4 — ledgers:</strong> <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>에 Exp454 planned/non-promoted record를 하나씩 추가한다. <code>FAILURE_LEDGER.json</code>의 Exp453 기록은 바꾸지 않는다.</li>
+<li><input disabled type="checkbox"> <strong>Step 5 — map:</strong> Exp454 map builder와 HTML/JSON/lock을 함께 만들고 20 nodes 이하, exact evidence paths, 9 tracked fingerprints를 검사한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 6 — GREEN:</strong><pre><code>python3 -m unittest experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.tests.test_governance_antigravity -v
+python3 scratch/build_codemap_exp454_antigravity.py --validate-only
+git diff --check
+# Expected: all exit 0.</code></pre></li>
+<li><input disabled type="checkbox"> <strong>Step 7 — review/commit:</strong> Grok read-only 문서 검토 후 Codex가 governance commit과 clean map-only child를 만든다.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 2: Controlled fork와 단일 authority 변환</h2>
+<p><strong>Files:</strong> Create Exp454 <code>config</code>, <code>contracts</code>, <code>artifacts</code>, <code>bootstrap</code>, <code>dashboard_export</code>, <code>predecessor</code> and corresponding tests plus <code>test_controlled_fork_differential_antigravity.py</code>.</p>
+<p><strong>Consumes:</strong> Exp453 terminal evidence and Exp449 frozen prediction/target authority. <strong>Produces:</strong> <code>NormalizedTargetAuthorityAntigravity</code>, <code>normalize_exp449_target_authority_antigravity()</code>, <code>capture_normalized_target_authority_antigravity()</code>.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1 — fresh map preflight:</strong> Exp454 map에서 새 foundation/boundary의 callers, effects, tests를 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 2 — RED real-authority:</strong><pre><code>def test_real_exp449_authority_normalizes_without_test_fixture_conversion_antigravity():
+    raw = capture_exp448_authority_antigravity()
+    normalized = normalize_exp449_target_authority_antigravity(raw)
+    assert len(normalized.target_dataset_names) == 48
+    assert len(normalized.target_baseline_rows) == 48
+    assert type(normalized.target_baseline_rows[0]) is DatasetBaselineAntigravity</code></pre><p>Expected before implementation: import/function missing failure. 이 test는 TEST label을 읽지 않는다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 3 — RED mutation table:</strong> dataset order, family, stable candidates, baseline confusion, global confusion을 각각 바꾼 raw authority가 실패하는지 table test한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 4 — minimal implementation:</strong><pre><code>@dataclass(frozen=True, slots=True)
+class NormalizedTargetAuthorityAntigravity:
+    target_dataset_names: tuple[str, ...]
+    target_baseline_rows: tuple[DatasetBaselineAntigravity, ...]
+    baseline_confusion: ConfusionAntigravity
+
+def normalize_exp449_target_authority_antigravity(authority: object) -&gt; NormalizedTargetAuthorityAntigravity:
+    datasets = getattr(authority, "target_dataset_names", None)
+    raw_rows = getattr(authority, "target_baseline_rows", None)
+    raw_global = getattr(authority, "baseline_confusion", None)
+    if type(datasets) is not tuple or type(raw_rows) is not tuple or len(datasets) != 48 or len(raw_rows) != 48:
+        raise ValueError("Exp449 target inventory differs")
+    rows = []
+    for expected_order, (dataset, raw) in enumerate(zip(datasets, raw_rows, strict=True)):
+        if (type(dataset) is not str or type(raw.dataset_order) is not int or raw.dataset_order != expected_order
+                or type(raw.family) is not str or type(raw.stable_candidates) is not frozenset):
+            raise ValueError("Exp449 target order differs")
+        confusion = ConfusionAntigravity(raw.confusion.tp, raw.confusion.fp, raw.confusion.fn, raw.confusion.tn)
+        rows.append(DatasetBaselineAntigravity(expected_order, raw.family, frozenset(raw.stable_candidates), confusion))
+    global_confusion = ConfusionAntigravity(raw_global.tp, raw_global.fp, raw_global.fn, raw_global.tn)
+    return NormalizedTargetAuthorityAntigravity(datasets, tuple(rows), global_confusion)</code></pre><p>실제 구현은 raw class의 모듈 identity에 의존하지 않고 exact fields, 값, 수, 순서를 확인한 뒤 local frozen records를 만든다. 변환 함수는 이 파일 한 곳에만 둔다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 5 — differential:</strong> identity/path/schema를 제외한 Exp453/Exp454 config, contracts, artifacts, bootstrap, dashboard AST와 scientific payload SHA가 같아야 한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 6 — GREEN twice:</strong><pre><code>FIXED_PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$FIXED_PY -m unittest discover -s experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity/tests -p 'test_*antigravity.py'
+# Run the Task 2 focused list twice; run Exp453 foundations/predecessor once.</code></pre></li>
+<li><input disabled type="checkbox"> <strong>Step 7 — review/commit/map:</strong> Grok 전용 worktree 구현 diff를 Codex가 검사·통합하거나 Codex가 직접 최소 구현한다. source/tests commit 후 map-only child를 만든다.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 3: Runtime, lifecycle, readiness와 label gate</h2>
+<p><strong>Files:</strong> Create runtime binding helper/launcher and Exp454 <code>sources</code>, <code>lifecycle</code>, <code>readiness</code> plus tests.</p>
+<p><strong>Consumes:</strong> Task 2 predecessor and normalized target authority. <strong>Produces:</strong> fixed-runtime three-phase lifecycle and one-session label opener.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1 — RED predecessor truth:</strong> Exp453 stopped receipt/audit/hash/root 사실 중 하나가 다르면 readiness가 labels0/root0 상태로 실패하는 fixture를 만든다.</li>
+<li><input disabled type="checkbox"> <strong>Step 2 — RED boundary order:</strong> Exp453 evidence → Exp449 prediction → raw target capture → normalization이 모두 성공하기 전에는 label opener가 호출되지 않는지 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 3 — GREEN controlled copy:</strong> Exp453 runtime binding, lifecycle, sources, readiness를 identity/path/evidence만 바꿔 복사한다. exact executable/prefix와 네 runtime version은 유지한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 4 — readiness proof:</strong> synthetic readiness가 label query 0, Exp454 root absent, normalized target 48를 반환하는지 검사한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 5 — focused GREEN twice:</strong> Task 3 tests twice, Exp453 runtime/predecessor/sources/lifecycle/readiness once, compile/diff/map checks를 실행한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 6 — review/commit/map:</strong> 결과에 영향을 주는 순서와 identity만 독립 검토하고 functional commit + map child를 만든다.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 4: 실제 authority evaluator와 exact replay</h2>
+<p><strong>Files:</strong> Create Exp454 <code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code> and tests.</p>
+<p><strong>Consumes:</strong> Task 2 <code>capture_normalized_target_authority_antigravity()</code>, Task 3 label opener/lifecycle. <strong>Produces:</strong> same 12-leaf evaluation and source-free inspect.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1 — RED production boundary:</strong><pre><code>def test_real_exp449_authority_reaches_label_opener_antigravity():
+    dependencies.capture_exp448_antigravity = capture_normalized_target_authority_antigravity
+    dependencies.open_labels_antigravity = raise_expected_label_boundary_sentinel
+    with assertRaisesRegex(ExpectedLabelBoundary, "reached"):
+        _evaluate_with_dependencies_antigravity(COMMIT, dependencies)</code></pre><p>기존 Exp453 코드는 sentinel 전에 <code>Exp448 target identity differs</code>로 실패해야 RED다.</p></li>
+<li><input disabled type="checkbox"> <strong>Step 2 — GREEN adapter wiring:</strong> production evaluator가 raw Exp449 capture를 직접 사용하지 않고 Task 2 normalized capture만 사용하게 한다. evaluator 내부에 두 번째 변환을 만들지 않는다.</li>
+<li><input disabled type="checkbox"> <strong>Step 3 — full synthetic parity:</strong> 동일 labels에서 Exp453의 정상화된 순수 계산과 Exp454의 12 leaves를 비교한다. identity/schema/derived hash 외 bytes가 같아야 한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 4 — result assertions:</strong> 48 datasets, 96 ordered predictions, 16 metrics, confusion/FN/FP/F1, bootstrap draw SHA, decision, 12 leaf inventory를 exact 검사한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 5 — replay rejection:</strong> baseline/confusion/order/bootstrap/decision/leaf map을 자체 재해시해도 semantic replay가 거부하는지 검사한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 6 — GREEN twice:</strong> evaluator/replay suite를 fixed interpreter에서 두 번, Exp453 evaluator/replay를 한 번 실행한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 7 — review/commit/map:</strong> Grok parity 분석과 Codex 실제 diff·tests 검증 후 functional commit + map child를 만든다.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 5: Closed CLI와 clean 공식 후보</h2>
+<p><strong>Files:</strong> Create Exp454 <code>cli_antigravity.py</code> and CLI tests. Update Exp454 report/ledgers/plan/map after verification only.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1 — RED/GREEN CLI:</strong> readiness/evaluate는 lower 40-hex commit 하나만, inspect는 인자 없이 허용한다. new/resume/retry/override/abbreviation은 거부한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 2 — production path regression:</strong> CLI evaluate가 실제 normalized target capture를 load하며 test fixture converter를 import하지 않는지 subprocess로 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 3 — full verification:</strong> Exp454 discovery 두 번, Exp453 affected suite와 Exp449 evaluator/predecessor suite 한 번을 순차 실행한다. 공식 root와 TEST labels는 사용하지 않는다.</li>
+<li><input disabled type="checkbox"> <strong>Step 4 — exact invariants:</strong> fixed runtime, DB identity, Exp449 prediction aggregate, Exp453 failure evidence, Exp454 paths absent, labels0, no active Exp454 process를 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 5 — truth:</strong> report/ledgers를 <code>implementation_verified_awaiting_official_readiness</code>, official counts0, labels0, result hashes null, routing/promotion/champion/pending unchanged로 갱신한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 6 — independent reviews:</strong> Grok 4.6/high가 clean candidate를 독립 분석한다. Codex가 결과 관련 finding만 판단·수정하고 fresh Sol final review에서 <code>ship</code>을 받아야 한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 7 — commit/map:</strong> verified truth commit과 clean map-only child를 만든다. final map child만 공식 reviewed commit 후보다.</li>
+</ol></section>
+
+<section><h2><input disabled type="checkbox"> Task 6: 공식 1회 평가와 결과 기록</h2>
+<p><strong>Files:</strong> No product source. Outcome 뒤 report, ledgers, plan checkboxes, map만 수정한다.</p><ol>
+<li><input disabled type="checkbox"> <strong>Step 1 — 별도 승인:</strong> 사용자가 exact Task 5 final map child를 승인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 2 — preflight:</strong> clean commit, exact runtime, predecessor, DB, labels0, absent Exp454 paths, no duplicate process를 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 3 — readiness once:</strong><pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp454_exp453_exp449_authority_boundary_repair_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT</code></pre></li>
+<li><input disabled type="checkbox"> <strong>Step 4 — evaluate once:</strong> readiness exit0일 때만 실행한다. 성공 기준은 label session 1, queries 48, rows 72,300, 12 complete leaves다.</li>
+<li><input disabled type="checkbox"> <strong>Step 5 — independent result check:</strong> Codex가 96 ordered indices, confusion/FN/FP/F1, bootstrap, decision와 12 leaf SHA를 독립 재계산한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 6 — inspect once:</strong> evaluate와 독립 검증이 성공한 경우에만 bare inspect를 한 번 실행해 결과가 같은지 확인한다.</li>
+<li><input disabled type="checkbox"> <strong>Step 7 — closeout:</strong> 성공 또는 실패 truth를 HTML/ledgers/map에 기록한다. Grok 결과 분석, Codex 검증, fresh Sol terminal review 뒤 Task 6을 체크한다.</li>
+</ol></section>
+
+<h2>Self-review checklist</h2><ul>
+<li>설계의 단일 변환 경계는 Task 2와 Task 4에만 연결된다.</li>
+<li>실제 Exp449 authority 회귀가 test fixture 변환보다 먼저 정의됐다.</li>
+<li>과학 값과 12-leaf parity는 Task 2·4·5에서 반복 검증된다.</li>
+<li>공식 실행은 Task 6 별도 승인 전까지 금지된다.</li>
+<li>보안·운영 확장은 계획에 포함하지 않았다.</li>
+</ul>
+</main></body></html>
