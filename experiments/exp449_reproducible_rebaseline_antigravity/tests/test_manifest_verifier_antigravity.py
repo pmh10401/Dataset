@@ -187,6 +187,17 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         }
         manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
 
+    def _score_with_route(self, route: object, low_frequency: object | None = None):
+        """Keep the genuine Task3 typed score while replacing one valid route."""
+        from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScore
+        return ProposalScore(
+            self.fixture.score.raw, self.fixture.score.sources,
+            {entry["dataset"]: route for entry in self.fixture.catalog["datasets"]},
+            self.fixture.score.low_frequency if low_frequency is None else low_frequency, self.fixture.score.stability,
+            self.fixture.score.policies, self.fixture.score.backend,
+            self.fixture.score.stage_seconds,
+        )
+
     def test_float_digest_bytes_are_canonical_little_endian_float64(self) -> None:
         """Host byte order or a non-float64 conversion would change Candidate C digests."""
         self.assertEqual(canonical_float64_bytes_antigravity([1.5, -2.25]), struct.pack("<dd", 1.5, -2.25))
@@ -302,6 +313,36 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         checkpoint.unlink()
         with self.assertRaisesRegex(ValueError, "(checkpoint|artifact)"):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_exact_normal_removal_and_outside_exp93_priority_are_valid_typed_authority(self) -> None:
+        """The paper route permits a priority coordinate outside Exp93 and removes exact normals after promotion."""
+        from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes, SourceExpansion
+        route = HardRouteResult(
+            RouteLanes(frozenset(), frozenset(), frozenset()), frozenset(), frozenset(), frozenset(),
+            RouteLanes(frozenset(), frozenset(), frozenset({0})), SourceExpansion(frozenset({1}), frozenset()),
+            RouteLanes(frozenset(), frozenset({1}), frozenset({0})), frozenset({1}),
+            RouteLanes(frozenset({1}), frozenset(), frozenset({0})), frozenset({1}), frozenset(), 2,
+        )
+        from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
+        low = self.fixture.score.low_frequency
+        score = self._score_with_route(route, LowFrequencyResult(
+            low.datasets, low.rows, low.provisional_candidates, low.selected_candidates,
+            low.excluded_train_rows, {entry["dataset"]: frozenset({1}) for entry in self.fixture.catalog["datasets"]},
+        ))
+        # The publisher records must use the same route as the shard score.
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.artifacts_paper import Task4Task5SuccessAuthority, append_task4_task5_attempt_record, write_task4_task5_success_record
+        from experiments.exp449_reproducible_rebaseline_antigravity.operations_antigravity import task45_context_payload_antigravity
+        bridge = task45_context_payload_antigravity(self.fixture.context)
+        authority = Task4Task5SuccessAuthority.from_verified_context(bridge, self.fixture.catalog, build_acceleration_manifest(bridge["context_sha256"], logical_cpu_count=3))
+        first = self.fixture.catalog["datasets"][0]["dataset"]
+        append_task4_task5_attempt_record(self.root, self.fixture.catalog, authority, score.raw[first], 1, RuntimeError("fixture interruption"))
+        for entry in self.fixture.catalog["datasets"]:
+            dataset = entry["dataset"]
+            write_task4_task5_success_record(self.root, self.fixture.catalog, authority, score.raw[dataset], score.sources[dataset], route)
+        manifest = freeze_exp449_proposal_antigravity(score, root=self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+        self.assertTrue(manifest.task45_checkpoints)
+        verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
         """Refreshing every digest must not authorize Candidate C alerts that disagree with scores and masks."""
