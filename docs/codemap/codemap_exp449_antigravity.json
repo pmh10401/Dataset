@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-14T23:12:53+0900",
-  "generated_from_commit": "4ad53f25508a80bbb4c1a8577dcfd8652dab1aee",
+  "generated_at": "2026-08-14T23:19:04+0900",
+  "generated_from_commit": "123602796d8197ba3385ad8d3d2330eeec2d5dbc",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -66,7 +66,7 @@
     {
       "id": "exp449_config",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
-      "role": "Implemented frozen Exp449 identity, fixed absent roots, smoke inventory, tolerances, and policy configuration.",
+      "role": "Implemented frozen Exp449 identity, six root authorities, full policy-key set, smoke inventory, tolerances, and policy configuration.",
       "entrypoints": [
         "FrozenExp449Config",
         "FROZEN_EXP449_CONFIG"
@@ -80,7 +80,7 @@
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
-          "symbol": "FrozenExp449Config, FROZEN_EXP449_CONFIG"
+          "symbol": "FrozenExp449Config, FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS"
         }
       ],
       "callers": [
@@ -88,13 +88,13 @@
         "test_config_contracts_antigravity.py"
       ],
       "effects": [
-        "freezes the only accepted Exp449 roots, preprocessing identities, smoke inventory, numerical tolerances, and two-wave limit"
+        "freezes the only accepted Exp449 roots, all four policy-coordinate keys, preprocessing identities, smoke inventory, numerical tolerances, and two-wave limit"
       ]
     },
     {
       "id": "exp449_contracts",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
-      "role": "Implemented immutable Exp449 context, Task 5-compatible ordered manifest entries, terminal-status, and smoke-comparison contracts.",
+      "role": "Implemented immutable Exp449 context, ordered Task 5 manifest entries with independent per-dataset coordinate digests, exact-total terminal status, and smoke-comparison contracts.",
       "entrypoints": [
         "Exp449Context.from_verified_inputs",
         "Exp449ProposalManifest",
@@ -105,7 +105,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "constraints": [
-        "Every SHA is lowercase 64-hex; counts are nonnegative; floats are finite; only six fixed roots are accepted by compatible mode; manifest schema is exp449-proposal-manifest-antigravity.v1; no historical acceptance path is accepted."
+        "Every SHA is lowercase 64-hex; each shard has exactly the four frozen policy keys; counts are nonnegative and sum to the mode inventory; floats are finite; only six fixed roots are accepted by compatible mode; manifest schema is exp449-proposal-manifest-antigravity.v1; no historical acceptance path is accepted."
       ],
       "evidence": [
         {
@@ -120,7 +120,7 @@
         "future verifier_antigravity.py"
       ],
       "effects": [
-        "binds only frozen mode-compatible roots, canonical hashes, typed CPU backend provenance, exact Task 5 manifest entries, complete inventory states, and smoke reproducibility facts; rejects historical authority before inspecting other inputs"
+        "binds only frozen mode-compatible roots, canonical hashes, typed CPU backend provenance, complete per-entry policy-coordinate closure without cross-dataset digest equality, exact inventory totals, and smoke reproducibility facts; rejects historical authority before inspecting other inputs"
       ]
     },
     {
@@ -198,7 +198,7 @@
     {
       "id": "exp449_config_contract_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
-      "role": "Exp449 frozen-identity, fixed-root, Task 5 manifest-closure, exact-inventory, immutable-provenance, and historical-authority regression tests.",
+      "role": "Exp449 frozen-identity, fixed-root, full-policy manifest-closure, exact-inventory, immutable-provenance, and historical-authority regression tests.",
       "entrypoints": [
         "Exp449VersionBoundaryTests",
         "Exp449FrozenConfigTests",
@@ -217,7 +217,7 @@
         }
       ],
       "effects": [
-        "proves the early historical-authority refusal, rejects alternate/mode-incompatible roots, and prevents partial completion or smoke success certification"
+        "proves independent per-dataset policy digests, rejects missing/extra policy keys, and prevents partial or vacuous completion certification"
       ]
     },
     {

@@ -13,7 +13,7 @@ from types import MappingProxyType
 
 from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
 
-from .config_antigravity import FROZEN_EXP449_CONFIG
+from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
 
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -238,7 +238,7 @@ class Exp449ShardDescriptor:
         object.__setattr__(self, "size", _nonnegative_count(self.size, "shard size"))
         object.__setattr__(self, "sha256", _sha256(self.sha256, "shard sha256"))
         coordinates = _frozen_mapping_of_sha256(self.policy_coordinate_sha256, "policy coordinate digests")
-        if set(coordinates) != {FROZEN_EXP449_CONFIG.policy_id}:
+        if set(coordinates) != set(FROZEN_EXP449_POLICY_KEYS):
             raise ValueError("Exp449 policy coordinate closure is invalid")
         object.__setattr__(self, "policy_coordinate_sha256", coordinates)
         object.__setattr__(
@@ -278,9 +278,6 @@ class Exp449ProposalManifest:
         paths = tuple(entry.relative_path for entry in entries)
         if len(set(paths)) != len(paths):
             raise ValueError("Exp449 manifest entry paths must be unique")
-        coordinate_closure = entries[0].policy_coordinate_sha256
-        if any(entry.policy_coordinate_sha256 != coordinate_closure for entry in entries[1:]):
-            raise ValueError("Exp449 manifest policy coordinate closure mismatches entries")
         object.__setattr__(self, "entries", entries)
 
 
@@ -307,10 +304,16 @@ class Exp449TerminalStatus:
             object.__setattr__(self, field_name, _nonnegative_count(getattr(self, field_name), field_name))
         if self.wave_count > FROZEN_EXP449_CONFIG.maximum_waves:
             raise ValueError("Exp449 terminal status exceeds the maximum wave count")
+        expected = len(FROZEN_EXP449_CONFIG.smoke_datasets) if self.mode == "smoke" else FROZEN_EXP449_CONFIG.dataset_count
+        total = self.completed_dataset_count + self.failed_dataset_count + self.pending_dataset_count
         if self.status == "dataset_local_complete":
-            expected = len(FROZEN_EXP449_CONFIG.smoke_datasets) if self.mode == "smoke" else FROZEN_EXP449_CONFIG.dataset_count
-            if (self.completed_dataset_count, self.failed_dataset_count, self.pending_dataset_count) != (expected, 0, 0):
+            if total != expected or (self.failed_dataset_count, self.pending_dataset_count) != (0, 0):
                 raise ValueError("Exp449 terminal completion count is invalid")
+        else:
+            if total != expected:
+                raise ValueError("Exp449 terminal incomplete total is invalid")
+            if self.failed_dataset_count == 0 and self.pending_dataset_count == 0:
+                raise ValueError("Exp449 terminal incomplete status requires outstanding work")
 
 
 @dataclass(frozen=True, slots=True)

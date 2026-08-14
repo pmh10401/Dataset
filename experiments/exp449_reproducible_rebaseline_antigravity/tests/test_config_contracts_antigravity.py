@@ -186,6 +186,14 @@ class Exp449ImmutableContractTests(unittest.TestCase):
             outer_execution_mode="parallel_task4_task5",
         )
 
+    def _policy_coordinate_digests(self) -> dict[str, str]:
+        return {
+            "hard_only": self._SHA_A,
+            "hard_plus_source": self._SHA_B,
+            "hard_plus_stable": self._SHA_C,
+            "hard_plus_unstable": self._SHA_D,
+        }
+
     def _context(self, *, run_root: Path | None = None, mode: str = "smoke") -> Exp449Context:
         return Exp449Context.from_verified_inputs(
             run_root=(run_root or FROZEN_EXP449_CONFIG.smoke_a_scientific_root),
@@ -290,7 +298,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                     size=17,
                     sha256=self._SHA_B,
                     schema="paper-proposal-typed-shard.v1",
-                    policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+                    policy_coordinate_sha256=self._policy_coordinate_digests(),
                     candidate_c_score_sha256=self._SHA_D,
                 ),
             ),
@@ -317,7 +325,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                 size=-1,
                 sha256="not-a-sha",
                 schema="paper-proposal-typed-shard.v1",
-                policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+                policy_coordinate_sha256=self._policy_coordinate_digests(),
                 candidate_c_score_sha256=self._SHA_D,
             )
         status = Exp449TerminalStatus(
@@ -350,7 +358,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
             size=17,
             sha256=self._SHA_B,
             schema="paper-proposal-typed-shard.v1",
-            policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+            policy_coordinate_sha256=self._policy_coordinate_digests(),
             candidate_c_score_sha256=self._SHA_D,
         )
         with self.assertRaisesRegex(ValueError, "manifest schema"):
@@ -369,7 +377,11 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                 size=17,
                 sha256=self._SHA_B,
                 schema="paper-proposal-typed-shard.v1",
-                policy_coordinate_sha256={"wrong_policy": self._SHA_C},
+                policy_coordinate_sha256={
+                    "hard_only": self._SHA_A,
+                    "hard_plus_source": self._SHA_B,
+                    "hard_plus_stable": self._SHA_C,
+                },
                 candidate_c_score_sha256=self._SHA_D,
             )
         with self.assertRaisesRegex(ValueError, "ordered"):
@@ -385,7 +397,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                         size=17,
                         sha256=self._SHA_B,
                         schema="paper-proposal-typed-shard.v1",
-                        policy_coordinate_sha256={"hard_plus_stable": self._SHA_C},
+                        policy_coordinate_sha256=self._policy_coordinate_digests(),
                         candidate_c_score_sha256=self._SHA_D,
                     ),
                     entry,
@@ -407,8 +419,75 @@ class Exp449ImmutableContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "completion"):
             Exp449TerminalStatus("official", "dataset_local_complete", 23, 0, 0, 1)
         self.assertEqual(
-            Exp449TerminalStatus("smoke", "proposal_score_incomplete", 0, 0, 23, 0).status,
+            Exp449TerminalStatus("smoke", "proposal_score_incomplete", 22, 1, 0, 1).status,
             "proposal_score_incomplete",
         )
+        with self.assertRaisesRegex(ValueError, "total"):
+            Exp449TerminalStatus("smoke", "proposal_score_incomplete", 0, 0, 0, 0)
+        with self.assertRaisesRegex(ValueError, "total"):
+            Exp449TerminalStatus("official", "proposal_score_incomplete", 1116, 0, 0, 2)
         with self.assertRaisesRegex(ValueError, "23"):
             SmokeComparison(self._SHA_A, self._SHA_B, 0, True, 0.0, True)
+
+    def test_manifest_accepts_distinct_per_dataset_coordinate_digests_and_rejects_key_drift(self) -> None:
+        first = Exp449ShardDescriptor(
+            dataset="A_normal_1",
+            relative_path="shards/A_normal_1_antigravity.json",
+            size=17,
+            sha256=self._SHA_A,
+            schema="paper-proposal-typed-shard.v1",
+            policy_coordinate_sha256=self._policy_coordinate_digests(),
+            candidate_c_score_sha256=self._SHA_E,
+        )
+        second_coordinates = {
+            "hard_only": "0" * 64,
+            "hard_plus_source": "1" * 64,
+            "hard_plus_stable": "2" * 64,
+            "hard_plus_unstable": "3" * 64,
+        }
+        second = Exp449ShardDescriptor(
+            dataset="B_normal_1",
+            relative_path="shards/B_normal_1_antigravity.json",
+            size=23,
+            sha256=self._SHA_B,
+            schema="paper-proposal-typed-shard.v1",
+            policy_coordinate_sha256=second_coordinates,
+            candidate_c_score_sha256=self._SHA_F,
+        )
+        manifest = Exp449ProposalManifest(
+            schema="exp449-proposal-manifest-antigravity.v1",
+            context_sha256=self._SHA_C,
+            catalog_sha256=self._SHA_D,
+            backend_record=self._backend().artifact_record(),
+            entries=(first, second),
+            historical_parity_status="not_used",
+        )
+        self.assertEqual(manifest.entries[0].policy_coordinate_sha256, self._policy_coordinate_digests())
+        self.assertEqual(manifest.entries[1].policy_coordinate_sha256, second_coordinates)
+        with self.assertRaisesRegex(ValueError, "coordinate"):
+            Exp449ShardDescriptor(
+                dataset="C_normal_1",
+                relative_path="shards/C_normal_1_antigravity.json",
+                size=17,
+                sha256=self._SHA_C,
+                schema="paper-proposal-typed-shard.v1",
+                policy_coordinate_sha256={
+                    "hard_only": self._SHA_A,
+                    "hard_plus_source": self._SHA_B,
+                    "hard_plus_stable": self._SHA_C,
+                },
+                candidate_c_score_sha256=self._SHA_D,
+            )
+        with self.assertRaisesRegex(ValueError, "coordinate"):
+            Exp449ShardDescriptor(
+                dataset="D_normal_1",
+                relative_path="shards/D_normal_1_antigravity.json",
+                size=17,
+                sha256=self._SHA_D,
+                schema="paper-proposal-typed-shard.v1",
+                policy_coordinate_sha256={
+                    **self._policy_coordinate_digests(),
+                    "unexpected_policy": self._SHA_E,
+                },
+                candidate_c_score_sha256=self._SHA_F,
+            )

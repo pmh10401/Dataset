@@ -142,3 +142,10 @@ FROZEN_EXP449_CONFIG = FrozenExp449Config(
     official_scientific_root=_APPROVED_ROOTS[4],
     official_operations_root=_APPROVED_ROOTS[5],
 )
+
+FROZEN_EXP449_POLICY_KEYS = (
+    "hard_only",
+    "hard_plus_source",
+    "hard_plus_stable",
+    "hard_plus_unstable",
+)
