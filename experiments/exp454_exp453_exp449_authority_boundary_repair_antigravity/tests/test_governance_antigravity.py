@@ -87,6 +87,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn("<!doctype html>", path.read_text(encoding="utf-8").lower())
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
+        self.assertIn(
+            "공식 실행은 readiness 1회, evaluate 1회, inspect 시도 2회(성공 1, 실패 1)로 끝났고 Exp454는 영구 중단됐다.",
+            plan,
+        )
         for task_number in range(1, 7):
             section = re.search(
                 rf"<section><h2><input\b[^>]*> Task {task_number}:.*?</section>",
