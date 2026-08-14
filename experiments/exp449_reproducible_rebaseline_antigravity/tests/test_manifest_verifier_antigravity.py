@@ -7,6 +7,7 @@ from contextlib import ExitStack
 from hashlib import sha256
 import json
 from pathlib import Path
+import subprocess
 import struct
 import sys
 from tempfile import TemporaryDirectory
@@ -18,8 +19,11 @@ import numpy as np
 from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import (
     FROZEN_EXP449_CONFIG,
 )
+from experiments.exp449_reproducible_rebaseline_antigravity import contracts_antigravity as contracts
 from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import (
     Exp449Context,
+    Exp449ProposalManifest,
+    Exp449ShardDescriptor,
 )
 from experiments.exp449_reproducible_rebaseline_antigravity.artifacts_antigravity import (
     canonical_float64_bytes_antigravity,
@@ -39,26 +43,20 @@ def _identity_antigravity(indices: tuple[int, ...], blobs: tuple[bytes, ...]) ->
     }
 
 
-def _context_antigravity(root: Path, backend_record: dict[str, object]) -> Exp449Context:
-    """Use a typed in-memory context; configured roots are never touched by this test."""
-    context = object.__new__(Exp449Context)
-    for key, value in {
-        "experiment_id": "Exp449",
-        "mode": "smoke",
-        "run_root": root,
-        "database_sha256": "a" * 64,
-        "catalog_sha256": "b" * 64,
-        "code_closure": {"fixture_antigravity.py": "c" * 64},
-        "lineage_sha256": "d" * 64,
-        "codemap_sha256": "e" * 64,
-        "interpreter": "typed-fixture-python",
-        "environment": {"fixture": "typed"},
-        "backend_record": backend_record,
-        "seeds_and_constants": {"seed": 7},
-        "historical_parity_status": "not_used",
-    }.items():
-        object.__setattr__(context, key, value)
-    return context
+def _catalog_sha256_antigravity(bare: dict[str, object]) -> str:
+    return sha256(json.dumps(bare, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode() + b"\n").hexdigest()
+
+
+def _context_antigravity(root: Path, catalog: dict[str, object], backend: object) -> Exp449Context:
+    """Build the real immutable context while redirecting only its test root authority."""
+    with patch.object(contracts, "_SMOKE_ROOTS", frozenset({root.resolve()})):
+        return Exp449Context.from_verified_inputs(
+            run_root=root, mode="smoke", catalog=catalog, acceleration=backend,
+            database_sha256="a" * 64, code_closure={"fixture_antigravity.py": "c" * 64},
+            lineage_sha256="d" * 64, codemap_sha256="e" * 64,
+            interpreter="typed-fixture-python", environment={"fixture": "typed"},
+            seeds_and_constants={"seed": 7},
+        )
 
 
 class _TypedProposalFixtureAntigravity:
@@ -108,9 +106,10 @@ class _TypedProposalFixtureAntigravity:
             for policy in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
         ))
         backend = FrozenTask8BackendDecision.from_acceleration_manifest(build_acceleration_manifest("f" * 64, logical_cpu_count=3))
-        self.catalog = {"catalog_sha256": "b" * 64, "mode": "smoke", "datasets": catalog_entries}
+        bare = {"schema": "paper-task8-catalog.v1", "mode": "smoke", "database": {"fixture": "no-db"}, "datasets": catalog_entries}
+        self.catalog = {**bare, "catalog_sha256": _catalog_sha256_antigravity(bare)}
         self.score = ProposalScore(raw, {name: sources for name in names}, {name: route for name in names}, low, stability, policies, backend, {"task4_task5": 0.0, "task6": 0.0, "task7": 0.0, "total": 0.0})
-        self.context = _context_antigravity(root, backend.artifact_record())
+        self.context = _context_antigravity(root, self.catalog, backend)
 
 
 class Exp449ManifestVerifierTests(unittest.TestCase):
@@ -148,6 +147,15 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         self.assertEqual(tuple(entry.dataset for entry in verified.entries), FROZEN_EXP449_CONFIG.smoke_datasets)
         self.assertEqual(self._manifest_path().name, "proposal_manifest_antigravity.json")
         self.assertFalse((self.root / "stage_artifacts_paper").exists())
+
+    def test_constructor_binds_a_build_catalog_style_self_hash_before_freeze(self) -> None:
+        """Hashing the catalog including its self-hash accepts neither the paper contract nor tamper rejection."""
+        self.assertEqual(self.fixture.context.catalog_sha256, self.fixture.catalog["catalog_sha256"])
+        self._freeze()
+        forged = dict(self.fixture.catalog)
+        forged["catalog_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "catalog"):
+            _context_antigravity(self.root, forged, self.fixture.score.backend)
 
     def test_serializer_keeps_the_frozen_paper_scientific_payload_byte_identical(self) -> None:
         """Changing a scientific field while introducing the Exp449 envelope would break compatibility."""
@@ -203,18 +211,58 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
         old_root = self.root.parent / "exp448_old_root_antigravity"
-        old_context = _context_antigravity(old_root, dict(self.fixture.context.backend_record))
+        old_context = _context_antigravity(old_root, self.fixture.catalog, self.fixture.score.backend)
         with self.assertRaises(ValueError):
             verify_exp449_proposal_antigravity(old_root, context=old_context, catalog=self.fixture.catalog)
+
+    def test_verifier_rejects_root_siblings_outside_the_declared_exp449_namespace(self) -> None:
+        """Verifying only proposal_freeze permits a second paper or Exp448 authority under the same root."""
+        self._freeze()
+        (self.root / "stage_artifacts_paper").mkdir(parents=True)
+        with self.assertRaises(ValueError):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+
+    def test_coordinated_candidate_c_tamper_still_fails_semantic_validation(self) -> None:
+        """Refreshing every digest must not authorize Candidate C alerts that disagree with scores and masks."""
+        self._freeze()
+        manifest_path = self._manifest_path()
+        manifest = json.loads(manifest_path.read_text())
+        path = manifest_path.parent / manifest["entries"][0]["relative_path"]
+        shard = json.loads(path.read_text())
+        scientific = shard["scientific_payload"]
+        scientific["hard_stages"][-1]["lanes"]["hard"] = [0]
+        for policy in scientific["policies"]:
+            policy["alerts"] = [0]
+            policy["scores"] = [0.75, 0.0]
+            policy["score_mask"] = [True, False]
+        scientific["policies"][2]["score_mask"] = [False, False]
+        bytes_ = json.dumps(shard, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        path.write_bytes(bytes_)
+        descriptor = manifest["entries"][0]
+        descriptor["size"] = len(bytes_)
+        descriptor["sha256"] = sha256(bytes_).hexdigest()
+        descriptor["candidate_c_score_sha256"] = sha256(struct.pack("<dd", 0.75, 0.0)).hexdigest()
+        for policy in scientific["policies"]:
+            descriptor["policy_coordinate_sha256"][policy["policy_id"]] = sha256(json.dumps([[descriptor["dataset"], 0]], separators=(",", ":")).encode() + b"\n").hexdigest()
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with self.assertRaisesRegex(ValueError, "score mask"):
+            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
 
     def test_full_inventory_is_checked_structurally_without_scoring_1117_datasets(self) -> None:
         """A full catalog with a wrong count or total must fail before any score object is requested."""
         rows = [{"dataset": f"dataset_{number:04d}_antigravity", "series_length": 2, "train": {}, "test": {"count": 175}} for number in range(1117)]
         rows[-1]["test"]["count"] = 600
-        catalog = {"catalog_sha256": "f" * 64, "mode": "full", "datasets": rows}
-        self.assertEqual(validate_exp449_catalog_antigravity(catalog, mode="official"), tuple(row["dataset"] for row in rows))
+        bare = {"schema": "paper-task8-catalog.v1", "mode": "full", "database": {"fixture": "no-db"}, "datasets": rows}
+        catalog = {**bare, "catalog_sha256": _catalog_sha256_antigravity(bare)}
+        descriptors = tuple(Exp449ShardDescriptor(
+            dataset=row["dataset"], relative_path=f"shards_antigravity/{sha256(row['dataset'].encode()).hexdigest()}_antigravity/{row['dataset']}_proposal_shard_antigravity.json",
+            size=1, sha256="a" * 64, schema="exp449-proposal-shard-antigravity.v1",
+            policy_coordinate_sha256={name: "b" * 64 for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")}, candidate_c_score_sha256="c" * 64,
+        ) for row in rows)
+        manifest = Exp449ProposalManifest("exp449-proposal-manifest-antigravity.v1", "d" * 64, catalog["catalog_sha256"], self.fixture.context.backend_record, descriptors, "not_used")
+        self.assertEqual(validate_exp449_catalog_antigravity(catalog, mode="official", manifest=manifest), tuple(row["dataset"] for row in rows))
         with self.assertRaises(ValueError):
-            validate_exp449_catalog_antigravity({**catalog, "datasets": rows[:-1]}, mode="official")
+            validate_exp449_catalog_antigravity({**catalog, "datasets": rows[:-1]}, mode="official", manifest=manifest)
 
     def test_resume_preserves_complete_shard_and_manifest_bytes_after_only_context_root_normalization(self) -> None:
         """A resumed create-only publication must preserve all science; context_sha256 is the sole root-bound exclusion."""
@@ -250,7 +298,7 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
             relative = left.relative_to(left_root)
             self.assertEqual(normalized(left), normalized(right_root / relative))
 
-    def test_verifier_imports_no_scoring_or_label_capability(self) -> None:
+    def test_verifier_fresh_import_denies_paper_scoring_sources_and_filesystem_writer(self) -> None:
         """A verifier that imports scoring or labels is not independent of proposal production."""
         verifier_path = Path("experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py")
         imported = {
@@ -265,14 +313,20 @@ class Exp449ManifestVerifierTests(unittest.TestCase):
         }
         forbidden = ("proposal_score_paper", "sources_paper", "hard_route_paper", "artifacts_paper", "exp448", "label_access", "catalog_paper")
         self.assertFalse({name for name in imported if any(token in name for token in forbidden)})
-        self._freeze()
-        original_import = __import__
-        def deny_labels(name, *args, **kwargs):
-            if "label_access" in name:
-                raise AssertionError("label capability imported")
-            return original_import(name, *args, **kwargs)
-        with patch("builtins.__import__", side_effect=deny_labels):
-            verify_exp449_proposal_antigravity(self.root, context=self.fixture.context, catalog=self.fixture.catalog)
+        child = """
+import builtins
+real = builtins.__import__
+def deny(name, *args, **kwargs):
+    if any(token in name for token in ('artifacts_paper', 'proposal_score_paper', 'sources_paper', 'hard_route_paper', 'label_access')):
+        raise AssertionError(name)
+    return real(name, *args, **kwargs)
+builtins.__import__ = deny
+from experiments.exp449_reproducible_rebaseline_antigravity.verifier_antigravity import verify_exp449_proposal_antigravity
+print('fresh-import-ok')
+"""
+        result = subprocess.run([sys.executable, "-c", child], text=True, capture_output=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "fresh-import-ok")
 
 
 if __name__ == "__main__":

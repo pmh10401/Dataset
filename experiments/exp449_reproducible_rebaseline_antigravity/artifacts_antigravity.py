@@ -20,6 +20,11 @@ from paper.equipment_anomaly_detection.artifacts_paper import (
 
 from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
 from .contracts_antigravity import Exp449Context, Exp449ProposalManifest, Exp449ShardDescriptor
+from .validation_antigravity import (
+    validate_exp449_catalog_antigravity as _pure_validate_catalog_antigravity,
+    validate_exp449_proposal_shard_antigravity as _pure_validate_shard_antigravity,
+    verify_exp449_proposal_root_antigravity,
+)
 
 
 _ARTIFACT_DIRECTORY = "stage_artifacts_antigravity"
@@ -387,6 +392,19 @@ def verify_exp449_freeze_inventory_antigravity(
         if "antigravity" not in item.name:
             raise ValueError("Exp449 runtime artifact name differs")
     return manifest
+
+
+# The writer may use frozen paper serialization, but all independently consumed
+# verification semantics are supplied by the paper-free validation module.
+validate_exp449_catalog_antigravity = _pure_validate_catalog_antigravity
+validate_exp449_proposal_shard_antigravity = _pure_validate_shard_antigravity
+
+
+def verify_exp449_freeze_inventory_antigravity(
+    root: Path, *, context: Exp449Context, catalog: dict[str, object], manifest: Exp449ProposalManifest | None = None
+) -> Exp449ProposalManifest:
+    del manifest
+    return verify_exp449_proposal_root_antigravity(root, context=context, catalog=catalog)
 
 
 __all__ = [

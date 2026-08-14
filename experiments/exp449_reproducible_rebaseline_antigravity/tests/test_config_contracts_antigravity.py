@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from pathlib import Path
 import subprocess
 import unittest
@@ -195,11 +196,21 @@ class Exp449ImmutableContractTests(unittest.TestCase):
         }
 
     def _context(self, *, run_root: Path | None = None, mode: str = "smoke") -> Exp449Context:
+        bare_catalog = {
+            "schema": "paper-task8-catalog.v1",
+            "mode": mode,
+            "database": {"fixture": "contracts"},
+            "datasets": [{"dataset": "Dataset_normal_1", "raw_sha256": self._SHA_B, "rows": [1, 2]}],
+        }
+        catalog = {
+            **bare_catalog,
+            "catalog_sha256": sha256(json.dumps(bare_catalog, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode() + b"\n").hexdigest(),
+        }
         return Exp449Context.from_verified_inputs(
             run_root=(run_root or FROZEN_EXP449_CONFIG.smoke_a_scientific_root),
             mode=mode,
             database_sha256=self._SHA_A,
-            catalog={"Dataset_normal_1": {"raw_sha256": self._SHA_B, "rows": (1, 2)}},
+            catalog=catalog,
             code_closure={"module_antigravity.py": self._SHA_C},
             lineage_sha256=self._SHA_D,
             codemap_sha256=self._SHA_E,
@@ -258,7 +269,7 @@ class Exp449ImmutableContractTests(unittest.TestCase):
                 run_root=Path("/tmp/exp449_contract_fixture_antigravity"),
                 mode="smoke",
                 database_sha256="A" * 64,
-                catalog={"Dataset_normal_1": {"raw_sha256": self._SHA_B}},
+                catalog={"schema": "paper-task8-catalog.v1", "mode": "smoke", "database": {}, "datasets": [], "catalog_sha256": "0" * 64},
                 code_closure={"module_antigravity.py": self._SHA_C},
                 lineage_sha256=self._SHA_D,
                 codemap_sha256=self._SHA_E,

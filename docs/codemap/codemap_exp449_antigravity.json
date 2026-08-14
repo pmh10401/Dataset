@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T00:38:57+0900",
-  "generated_from_commit": "145b35fcb1d99123a8f15941fce258698e5a3360",
+  "generated_at": "2026-08-15T00:54:53+0900",
+  "generated_from_commit": "ba836ce2aed793ec470f44895a44ead0d4c699ed",
   "working_tree_dirty": true,
   "scope": [
     "Exp449 frozen Task 2 configuration and deep-immutable provenance contracts; no run-root creation, scoring, or TEST-label access.",
@@ -105,7 +105,8 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "constraints": [
-        "Every SHA is lowercase 64-hex; each shard has exactly the four frozen policy keys; counts are nonnegative and sum to the mode inventory; floats are finite; only six fixed roots are accepted by compatible mode; manifest schema is exp449-proposal-manifest-antigravity.v1; no historical acceptance path is accepted."
+        "Every SHA is lowercase 64-hex; each shard has exactly the four frozen policy keys; counts are nonnegative and sum to the mode inventory; floats are finite; only six fixed roots are accepted by compatible mode; manifest schema is exp449-proposal-manifest-antigravity.v1; no historical acceptance path is accepted.",
+        "Exp449Context binds only the verified paper catalog self-hash over its canonical pre-hash payload; mappings including a forged or missing self-hash are rejected."
       ],
       "evidence": [
         {
@@ -157,7 +158,7 @@
     {
       "id": "exp449_artifacts",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
-      "role": "Exp449-only create-only typed shard publication, canonical little-endian score digests, exact antigravity inventory validation, and outer-manifest freeze.",
+      "role": "Exp449-only create-only typed shard publication and outer-manifest freeze; delegates all independently consumed validation to the paper-free Exp449 validator.",
       "entrypoints": [
         "canonical_float64_bytes_antigravity",
         "freeze_exp449_proposal_antigravity",
@@ -177,11 +178,10 @@
       ],
       "callers": [
         "runner_antigravity.py",
-        "test_manifest_verifier_antigravity.py",
-        "verifier_antigravity.py"
+        "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "creates only dataset-digest antigravity shard paths and proposal_manifest_antigravity.json after exact shard semantic and inventory validation."
+        "publishes only typed Exp449 shards and manifest; creates no paper manifest or paper-named shard."
       ]
     },
     {
@@ -218,7 +218,7 @@
     {
       "id": "exp449_verifier",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-      "role": "Scorer-free independent Exp449 proposal-root verifier.",
+      "role": "Fresh-import scorer/source/route/paper-filesystem-writer-free independent proposal-root verifier.",
       "entrypoints": [
         "verify_exp449_proposal_antigravity"
       ],
@@ -238,7 +238,7 @@
         "test_manifest_verifier_antigravity.py"
       ],
       "effects": [
-        "rehashes the manifest and every declared shard, verifies context/catalog/backend bindings and digests, and rejects undeclared, missing, symlinked, old-root, or non-antigravity files."
+        "uses only validation_antigravity plus immutable contracts to reject invalid outer/root inventory and semantic tamper."
       ]
     },
     {
@@ -1468,6 +1468,36 @@
           "symbol": "Exact boundary evidence"
         }
       ]
+    },
+    {
+      "id": "exp449_validation",
+      "path": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
+      "role": "Paper-writer/scorer/source/route-free Exp449 JSON, catalog, shard semantic, manifest, and whole-root inventory validator.",
+      "entrypoints": [
+        "verify_exp449_proposal_root_antigravity",
+        "validate_exp449_proposal_shard_antigravity",
+        "validate_exp449_catalog_antigravity"
+      ],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
+      ],
+      "constraints": [
+        "May import only Exp449 config/contracts and standard NumPy/JSON/filesystem primitives; accepts no labels, database, paper artifact writer, scorer, source, or route module."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
+          "symbol": "verify_exp449_proposal_root_antigravity"
+        }
+      ],
+      "callers": [
+        "artifacts_antigravity.py",
+        "verifier_antigravity.py",
+        "test_manifest_verifier_antigravity.py"
+      ],
+      "effects": [
+        "validates full root inventory and Candidate C policy alert/score-mask/threshold equality."
+      ]
     }
   ],
   "edges": [
@@ -1984,6 +2014,21 @@
     {
       "from": "exp449_manifest_verifier_tests",
       "to": "exp449_verifier",
+      "kind": "tests"
+    },
+    {
+      "from": "exp449_verifier",
+      "to": "exp449_validation",
+      "kind": "imports"
+    },
+    {
+      "from": "exp449_artifacts",
+      "to": "exp449_validation",
+      "kind": "validates"
+    },
+    {
+      "from": "exp449_manifest_verifier_tests",
+      "to": "exp449_validation",
       "kind": "tests"
     }
   ],

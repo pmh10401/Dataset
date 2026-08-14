@@ -92,6 +92,24 @@ def _canonical_sha256(value: object, name: str) -> str:
     return sha256(encoded).hexdigest()
 
 
+def _verified_paper_catalog_sha256_antigravity(catalog: object) -> str:
+    """Bind the paper catalog's self-hash over its canonical pre-hash payload."""
+    if not isinstance(catalog, Mapping) or type(catalog.get("catalog_sha256")) is not str:
+        raise ValueError("Exp449 verified catalog is invalid")
+    declared = _sha256(catalog["catalog_sha256"], "catalog sha256")
+    bare = {key: value for key, value in catalog.items() if key != "catalog_sha256"}
+    try:
+        encoded = json.dumps(
+            _json_plain(_freeze_json(bare, "catalog")), allow_nan=False,
+            ensure_ascii=False, separators=(",", ":"), sort_keys=True,
+        ).encode("utf-8") + b"\n"
+    except (TypeError, ValueError) as error:
+        raise ValueError("Exp449 verified catalog is invalid") from error
+    if sha256(encoded).hexdigest() != declared:
+        raise ValueError("Exp449 verified catalog self-hash differs")
+    return declared
+
+
 def _frozen_mapping_of_sha256(value: object, name: str, *, nonempty: bool = True) -> Mapping[str, str]:
     if not isinstance(value, Mapping):
         raise ValueError(f"{name} must be a mapping")
@@ -181,8 +199,7 @@ class Exp449Context:
 
         if acceptance_path is not None:
             raise ValueError("Exp449 forbids historical authority")
-        if not isinstance(catalog, Mapping) or not catalog:
-            raise ValueError("Exp449 catalog is invalid")
+        catalog_sha256 = _verified_paper_catalog_sha256_antigravity(catalog)
         if not isinstance(acceleration, FrozenTask8BackendDecision):
             raise ValueError("Exp449 acceleration must be a FrozenTask8BackendDecision")
         required = {
@@ -201,7 +218,7 @@ class Exp449Context:
             mode=mode,
             run_root=run_root,
             database_sha256=database_sha256,
-            catalog_sha256=_canonical_sha256(catalog, "catalog"),
+            catalog_sha256=catalog_sha256,
             code_closure=code_closure,
             lineage_sha256=lineage_sha256,
             codemap_sha256=codemap_sha256,
