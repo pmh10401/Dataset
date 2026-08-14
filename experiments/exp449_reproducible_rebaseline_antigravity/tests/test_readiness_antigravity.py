@@ -217,8 +217,8 @@ class Exp449ReadinessTests(unittest.TestCase):
         self._ready()
         self.assertTrue(all(not root.exists() and not root.is_symlink() for root in self.roots))
 
-    def test_root_traversal_symlink_and_historical_destinations_are_refused(self) -> None:
-        """Resolving before checking or accepting an old destination could redirect a future run."""
+    def test_root_inspection_uses_exact_historical_path_authority_not_substrings(self) -> None:
+        """Only an exact former root/component is unsafe; benign temporary spellings remain inspectable."""
         with self.assertRaisesRegex(ValueError, "fixed roots"):
             operations._inspect_fixed_roots_antigravity((self.root / "../escape_antigravity",) * 6)
         target = self.root / "target_antigravity"
@@ -227,9 +227,29 @@ class Exp449ReadinessTests(unittest.TestCase):
         link.symlink_to(target, target_is_directory=True)
         with self.assertRaisesRegex(ValueError, "symlink"):
             operations._inspect_fixed_roots_antigravity((link, *self.roots[1:]))
-        for token in ("exp448", "r4", "historical"):
+
+        for index, name in enumerate((
+            "fixture_r4_suffix_antigravity",
+            "unrelated_exp448ish_antigravity",
+            "historical_notes_only_antigravity",
+            "r4-exp448-long-random-antigravity",
+        )):
+            with self.subTest(benign=name):
+                roots = list(self.roots)
+                roots[0] = self.root / name
+                inspected = operations._inspect_fixed_roots_antigravity(tuple(roots))
+                self.assertEqual(inspected[0], {"path": str(roots[0]), "state": "absent"})
+
+        for historical_root in operations._HISTORICAL_ROOTS_ANTIGRAVITY:
+            for candidate in (historical_root, historical_root / "child_antigravity"):
+                with self.subTest(historical_root=candidate):
+                    roots = list(self.roots)
+                    roots[0] = candidate
+                    with self.assertRaisesRegex(ValueError, "historical"):
+                        operations._inspect_fixed_roots_antigravity(tuple(roots))
+        for component in operations._HISTORICAL_ROOT_COMPONENTS_ANTIGRAVITY:
             roots = list(self.roots)
-            roots[0] = self.root / f"{token}_destination_antigravity"
+            roots[0] = self.root / component / "destination_antigravity"
             with self.assertRaisesRegex(ValueError, "historical"):
                 operations._inspect_fixed_roots_antigravity(tuple(roots))
 

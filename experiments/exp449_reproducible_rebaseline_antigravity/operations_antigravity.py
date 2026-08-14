@@ -88,7 +88,22 @@ _LABEL_MODULE_PREFIXES_ANTIGRAVITY = (
     "paper.equipment_anomaly_detection.label_access_paper",
     "paper.equipment_anomaly_detection.labels_paper",
 )
-_HISTORICAL_ROOT_TOKENS_ANTIGRAVITY = ("exp448", "r4", "historical")
+# These are the formerly authorized Exp448/R4 execution destinations recorded
+# before Exp449.  They are path authorities, not spelling fragments: an
+# unrelated temporary directory may quite legitimately contain e.g. ``r4``.
+# Inspection deliberately compares raw lexical paths and lstat's each component
+# before any resolving operation, so a symlink cannot turn a benign spelling
+# into an old authority between checks.
+_HISTORICAL_ROOTS_ANTIGRAVITY = (
+    Path("/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812"),
+    Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813"),
+    Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813_ops_antigravity"),
+    Path("/Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity"),
+    Path("/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813"),
+    Path("/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v2_antigravity_20260813"),
+    Path("/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_v3_antigravity_20260814"),
+)
+_HISTORICAL_ROOT_COMPONENTS_ANTIGRAVITY = frozenset({"exp448", "r4", "historical"})
 _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY = (
     "task4_train_only",
     "task5_label_free_train_test_value_length_transductive",
@@ -637,10 +652,13 @@ def _inspect_fixed_roots_antigravity(roots: tuple[Path, ...]) -> list[dict[str, 
     result: list[dict[str, str]] = []
     for root in roots:
         raw = Path(root)
-        spelling = raw.as_posix().casefold()
         if not raw.is_absolute() or ".." in raw.parts:
             raise ValueError("Exp449 fixed roots differ")
-        if any(token in spelling for token in _HISTORICAL_ROOT_TOKENS_ANTIGRAVITY):
+        normalized_components = frozenset(part.casefold() for part in raw.parts[1:])
+        if (
+            any(historical_root == raw or historical_root in raw.parents for historical_root in _HISTORICAL_ROOTS_ANTIGRAVITY)
+            or normalized_components & _HISTORICAL_ROOT_COMPONENTS_ANTIGRAVITY
+        ):
             raise ValueError("Exp449 historical root is forbidden")
         current = Path(raw.anchor)
         for part in raw.parts[1:]:

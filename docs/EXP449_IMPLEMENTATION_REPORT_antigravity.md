@@ -44,7 +44,11 @@ reviewed commit을 source로 bind한다.
   route/promotion/top-k/rate, policy/order, preprocessing, counts, tolerances, two-wave,
   typed shard/checkpoint/manifest/parity/acceleration schema와 root-snapshot verifier를 bind한다.
   source-hash-only constant 예외는 없다.
-- Exp449 discovery: `87/87 OK`, 10.163초. paper-public-baselines discovery: `79/79 OK`, 6.187초.
+- Exp449 discovery: `87/87 OK`를 두 번 연속 실행했다 (10.200초, 10.162초). package-inventory/context
+  regression은 fresh interpreter 50회 isolated repeat에서 `50/50 OK`였다. root inspection은 exact
+  historical-root/component authority만 거부하며 benign `r4`/`exp448` substring temporary roots는 허용한다.
+  Codemap 27 Exp449 node의 Python module callers는 independent AST import graph로, logical/external callers와
+  coverage tokens는 explicit verifier table로 확인했다. paper-public-baselines discovery: `79/79 OK`, 6.187초.
 - curated paper discovery: 발견 `161`, 실행 `160/160 OK`. 유일한 의도적 제외는
   `test_hard_route_paper.HardRouteTests.test_capable_ten_frozen_db_raw_smoke_freezes_then_compares_exp137_and_exp236_artifacts`다.
   이 test만 frozen production DB raw smoke를 읽으므로 Task8 비실행 경계에서 실행하지

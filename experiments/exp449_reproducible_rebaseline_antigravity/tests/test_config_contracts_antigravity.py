@@ -36,6 +36,70 @@ EXP448_FROZEN_PATHS = (
     "test_paper_r4_full_route_parity_recovery_antigravity.py",
 )
 
+_EXP449_AST_MODULE_NODE_IDS = frozenset({
+    "exp449_config",
+    "exp449_contracts",
+    "exp449_runner",
+    "exp449_artifacts",
+    "exp449_operations",
+    "exp449_validation",
+    "exp449_verifier",
+})
+
+# These nodes are deliberately not direct import-graph vertices.  The table is
+# the reviewable authority for external entrypoints and a logical flow's actual
+# defining caller; every listed coverage token is checked in the listed test.
+_EXP449_LOGICAL_NODE_VERIFIERS = {
+    "exp449_design": (("RESEARCH_STATE.json active_documents.design", "human reviewers"), ("Exp449 Proposal Reproducibility Design",)),
+    "exp449_plan": (("RESEARCH_STATE.json active_documents.plan", "human reviewers"), ("Task 8: Freeze Documentation, Full Verification, and Independent Review",)),
+    "exp449_config_contract_tests": (("unittest discovery",), ("Exp449VersionBoundaryTests",)),
+    "exp449_runner_recovery_tests": (("unittest discovery",), ("Exp449DatasetLocalBijectionTests",)),
+    "exp449_manifest_verifier_tests": (("unittest discovery",), ("Exp449ManifestVerifierTests",)),
+    "exp449_readiness_tests": (("unittest discovery",), ("Exp449ReadinessTests",)),
+    "exp449_cli": (("external CLI user",), ("run_exp449_reproducible_rebaseline_antigravity.py",)),
+    "exp449_preregistration": (("RESEARCH_STATE.json active_documents.preregistration", "human reviewers"), ("docs/EXP449_PREREGISTRATION_antigravity_KO.md",)),
+    "exp449_runbook": (("RESEARCH_STATE.json active_documents.runbook", "external operators and reviewers"), ("docs/EXP449_RUNBOOK_antigravity_KO.md",)),
+    "exp449_implementation_report": (("RESEARCH_STATE.json active_documents.implementation_report", "independent reviewers"), ("docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",)),
+    "exp449_codemap_json": (("operations_antigravity.py _closure_facts_antigravity", "codemap semantic test"), ("codemap_exp449_antigravity.json",)),
+    "exp449_codemap_html": (("human reviewers", "codemap semantic test"), ("codemap_exp449_antigravity.html",)),
+    "exp449_codemap_lock": (("operations_antigravity.py _closure_facts_antigravity", "codemap semantic test"), ("codemap_exp449_antigravity.lock",)),
+    "exp449_task45_collection": (("runner_antigravity.py compose_exp449_proposal_score_antigravity",), ("compose_exp449_proposal_score_antigravity",)),
+    "exp449_catalog_gate": (("runner_antigravity.py compose_exp449_proposal_score_antigravity",), ("verify_dataset_local_bijection_antigravity",)),
+    "exp449_task6": (("runner_antigravity.py compose_exp449_proposal_score_antigravity",), ("score_low_frequency",)),
+    "exp449_task7": (("runner_antigravity.py compose_exp449_proposal_score_antigravity",), ("classify_stability",)),
+    "exp449_candidate_c": (("runner_antigravity.py compose_exp449_proposal_score_antigravity", "artifacts_antigravity.py freeze_exp449_proposal_antigravity"), ("FROZEN_EXP449_CONFIG",)),
+    "exp449_typed_shards": (("artifacts_antigravity.py freeze_exp449_proposal_antigravity",), ("freeze_exp449_proposal_antigravity",)),
+    "exp449_outer_manifest": (("artifacts_antigravity.py freeze_exp449_proposal_antigravity",), ("freeze_exp449_proposal_antigravity",)),
+}
+
+
+def _module_name_antigravity(path: str) -> str:
+    return path.removesuffix(".py").replace("/", ".")
+
+
+def _ast_import_callers_antigravity(paths: set[str]) -> dict[str, tuple[str, ...]]:
+    """Compute Exp449 importers from source ASTs without consuming codemap edges."""
+    by_module = {_module_name_antigravity(path): path for path in paths}
+    callers: dict[str, set[str]] = {path: set() for path in paths}
+    for importer in paths:
+        current = _module_name_antigravity(importer).split(".")
+        tree = ast.parse((REPO_ROOT / importer).read_text(encoding="utf-8"), filename=importer)
+        candidates: set[str] = set()
+        for child in ast.walk(tree):
+            if isinstance(child, ast.Import):
+                candidates.update(alias.name for alias in child.names)
+            elif isinstance(child, ast.ImportFrom):
+                base = current[:-child.level] if child.level else (child.module or "").split(".")
+                if child.level and child.module:
+                    base += child.module.split(".")
+                candidates.add(".".join(base))
+                candidates.update(".".join((*base, alias.name)) for alias in child.names)
+        for candidate in candidates:
+            target = by_module.get(candidate)
+            if target is not None and target != importer:
+                callers[target].add(importer)
+    return {path: tuple(sorted(value)) for path, value in callers.items()}
+
 
 def _git_stdout(*args: str) -> str:
     return subprocess.run(
@@ -151,11 +215,14 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
                 self.assertIn(entrypoint, symbols, f"{node['path']}:{entrypoint}")
 
     def test_every_implemented_exp449_codemap_node_has_current_semantics(self) -> None:
-        """Task1--8 nodes must answer callers, effects, and coverage without stale planning language."""
+        """Task1--8 callers and coverage must be source-real rather than map prose."""
         payload = json.loads((REPO_ROOT / "docs/codemap/codemap_exp449_antigravity.json").read_text())
         forbidden = ("future", "planned", "implementation planning only", "placeholder")
         nodes = [node for node in payload["nodes"] if node["id"].startswith("exp449_")]
         self.assertTrue(nodes)
+        by_id = {node["id"]: node for node in nodes}
+        python_paths = {node["path"] for node in nodes if node["path"].endswith(".py")}
+        ast_callers = _ast_import_callers_antigravity(python_paths)
         for node in nodes:
             serialized = json.dumps(node, ensure_ascii=False).casefold()
             self.assertFalse(any(term in serialized for term in forbidden), node["id"])
@@ -163,7 +230,21 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
             self.assertTrue(node.get("effects"), f"missing effects: {node['id']}")
             self.assertTrue(node.get("tests"), f"missing tests: {node['id']}")
             for test_path in node["tests"]:
-                self.assertTrue((REPO_ROOT / test_path).is_file(), test_path)
+                source = REPO_ROOT / test_path
+                self.assertTrue(source.is_file(), test_path)
+                coverage_tokens = (*node["entrypoints"], Path(node["path"]).stem)
+                if node["id"] in _EXP449_LOGICAL_NODE_VERIFIERS:
+                    coverage_tokens = _EXP449_LOGICAL_NODE_VERIFIERS[node["id"]][1]
+                self.assertTrue(
+                    any(token in source.read_text(encoding="utf-8") for token in coverage_tokens),
+                    f"coverage is not tied to {node['id']}: {test_path}",
+                )
+        for node_id in _EXP449_AST_MODULE_NODE_IDS:
+            node = by_id[node_id]
+            self.assertEqual(tuple(node["callers"]), ast_callers[node["path"]], node_id)
+        self.assertEqual(set(by_id) - _EXP449_AST_MODULE_NODE_IDS, set(_EXP449_LOGICAL_NODE_VERIFIERS))
+        for node_id, (expected_callers, _coverage_tokens) in _EXP449_LOGICAL_NODE_VERIFIERS.items():
+            self.assertEqual(tuple(by_id[node_id]["callers"]), expected_callers, node_id)
 
 
 class Exp449FrozenConfigTests(unittest.TestCase):
