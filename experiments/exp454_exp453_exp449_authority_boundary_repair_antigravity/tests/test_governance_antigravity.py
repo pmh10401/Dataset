@@ -100,14 +100,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIsNotNone(section)
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
-            if task_number in (1, 2, 3, 4, 5):
-                for tag in tags:
-                    self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
-            else:
-                self.assertEqual(
-                    sum(bool(re.search(r"\bchecked(?:\s|=|>)", tag)) for tag in tags),
-                    6,
-                )
+            for tag in tags:
+                self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
 
     def test_planned_truth_preserves_science_and_champion_antigravity(self) -> None:
         """Break caught: governance changes the frozen experiment or claims an official result."""
