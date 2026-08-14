@@ -53,18 +53,120 @@ class Exp449ReadinessTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.directory.cleanup()
 
-    def _ready(self, *, logical_cpu_count: int = 12, builder=None, interpreter=None, dependencies=None, closure=None, config=None) -> dict[str, object]:
+    def _ready(self, *, logical_cpu_count: int = 12, builder=None, interpreter=None, dependencies=None, inventory=None, closure=None, config=None) -> dict[str, object]:
         builder = builder or (lambda mode: _catalog_antigravity(mode))
         interpreter = interpreter or {"executable": "fixture-python", "python_version": "3.14.6"}
         dependencies = dependencies or {"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "2.13.0"}
+        inventory = inventory or {"schema": "fixture", "algorithm": "fixture", "records": [{"project": "fixture", "version": "1"}], "sha256": "f" * 64}
         closure_patch = patch.object(operations, "_closure_facts_antigravity", return_value=closure) if closure is not None else nullcontext()
         config_patch = patch.object(operations, "FROZEN_EXP449_CONFIG", config) if config is not None else nullcontext()
         with patch.object(operations, "_current_clean_head_antigravity", return_value="c" * 40), \
              patch.object(operations, "_require_capable_interpreter_antigravity", return_value=interpreter), \
              patch.object(operations, "_readiness_catalog_builder_antigravity", side_effect=builder), \
              patch.object(operations, "_dependency_facts_antigravity", return_value=dependencies), \
+             patch.object(operations, "_package_inventory_facts_antigravity", return_value=inventory), \
              patch.object(operations, "_fixed_roots_antigravity", return_value=self.roots), closure_patch, config_patch:
             return operations._readiness_facts_antigravity("c" * 40, logical_cpu_count=logical_cpu_count)
+
+    def test_closure_is_explicit_complete_safe_and_binds_paper_lineage_and_codemap_lock(self) -> None:
+        """A named map or JSON hash cannot substitute for the executable scientific closure."""
+        expected = {
+            "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+            "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
+            "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+            "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+            "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+            "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
+            "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
+            "paper/equipment_anomaly_detection/acceleration_paper.py",
+            "paper/equipment_anomaly_detection/artifacts_paper.py",
+            "paper/equipment_anomaly_detection/calibration_paper.py",
+            "paper/equipment_anomaly_detection/catalog_paper.py",
+            "paper/equipment_anomaly_detection/config_paper.py",
+            "paper/equipment_anomaly_detection/contracts_paper.py",
+            "paper/equipment_anomaly_detection/data_paper.py",
+            "paper/equipment_anomaly_detection/hard_route_paper.py",
+            "paper/equipment_anomaly_detection/lineage_paper.py",
+            "paper/equipment_anomaly_detection/proposal_score_paper.py",
+            "paper/equipment_anomaly_detection/routing_paper.py",
+            "paper/equipment_anomaly_detection/score_adapter_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/canonical_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/knn_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/rocket_paper.py",
+            "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+        }
+        closure = operations._closure_facts_antigravity()
+        self.assertEqual(set(closure["code_closure"]), expected)
+        self.assertEqual(
+            closure["lineage_lock_paper_sha256"],
+            operations._sha256_file_antigravity(operations.LINEAGE_LOCK_PATH),
+        )
+        self.assertEqual(
+            closure["codemap_lock_sha256"],
+            operations._sha256_file_antigravity(
+                operations._REPOSITORY_ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp449_antigravity.lock"
+            ),
+        )
+        self.assertEqual(len(closure["code_closure"]), len(expected))
+
+    def test_normalized_distribution_inventory_is_full_deterministic_and_version_sensitive(self) -> None:
+        """A partial required-package check cannot detect another scientific package drift."""
+        distributions = (
+            SimpleNamespace(metadata={"Name": "Example_Pkg"}, version="1.0"),
+            SimpleNamespace(metadata={"Name": "another.pkg"}, version="2.0"),
+            SimpleNamespace(metadata={"Name": "Example-Pkg"}, version="1.0"),
+        )
+        inventory = operations._package_inventory_facts_antigravity(distributions)
+        self.assertEqual(inventory["records"], [
+            {"project": "another-pkg", "version": "2.0"},
+            {"project": "example-pkg", "version": "1.0"},
+        ])
+        altered = operations._package_inventory_facts_antigravity((distributions[1],
+            SimpleNamespace(metadata={"Name": "Example-Pkg"}, version="1.1"),
+        ))
+        self.assertNotEqual(inventory["sha256"], altered["sha256"])
+        with self.assertRaisesRegex(ValueError, "conflicting"):
+            operations._package_inventory_facts_antigravity(distributions + (
+                SimpleNamespace(metadata={"Name": "example.pkg"}, version="9.9"),
+            ))
+
+    def test_package_inventory_is_bound_in_readiness_and_each_context_hash(self) -> None:
+        """Changing, adding, or removing an installed distribution must describe a different run."""
+        baseline = self._ready()
+        altered_inventory = {"schema": "fixture", "algorithm": "fixture", "records": [{"project": "fixture", "version": "2"}, {"project": "added", "version": "1"}], "sha256": "e" * 64}
+        altered = self._ready(inventory=altered_inventory)
+        self.assertEqual(baseline["package_inventory"]["records"], [{"project": "fixture", "version": "1"}])
+        self.assertNotEqual(baseline["contexts"]["official"]["context_sha256"], altered["contexts"]["official"]["context_sha256"])
+        with self.assertRaisesRegex(ValueError, "dependency"):
+            self._ready(dependencies={"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "2.13.1"})
+
+    def test_constants_manifest_covers_every_scientific_category_and_rejects_each_mutation(self) -> None:
+        """Seeds, alpha/threshold, routing, schemas, and recovery limits are separate frozen facts."""
+        manifest = operations._seeds_and_constants_antigravity()
+        self.assertEqual(manifest["schema"], "exp449-seeds-and-constants-antigravity.v1")
+        for category in (
+            "seeds", "alpha_and_thresholds", "route_promotion_topk_and_rate_rules",
+            "policy_ids_and_order", "preprocessing_contracts", "dataset_and_test_counts",
+            "tolerances", "task4_task5_recovery", "serialization_and_verifier_schemas",
+        ):
+            self.assertIn(category, manifest)
+        for category, key in (
+            ("seeds", "paper_seed"),
+            ("alpha_and_thresholds", "source_alpha"),
+            ("route_promotion_topk_and_rate_rules", "max_top"),
+            ("serialization_and_verifier_schemas", "task45_success_schema"),
+        ):
+            altered = json.loads(json.dumps(manifest))
+            altered[category][key] = "mutated_antigravity"
+            with self.assertRaisesRegex(ValueError, "constants"):
+                operations._validate_seeds_and_constants_antigravity(altered)
 
     @staticmethod
     def _config_with_antigravity(**changes: object) -> SimpleNamespace:

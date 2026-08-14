@@ -28,10 +28,23 @@ Task8 documentation/state/test commit은 `2c9646b9d1bcf373a7f7a0b48f9a2f97801b9c
 (`docs(exp449): preregister proposal readiness`)이며, 후속 map refresh는 이 clean
 reviewed commit을 source로 bind한다.
 
-## Task8 검증 closeout
+## Task8 final-review fix closeout
 
-- Exp449 discovery: `81/81 OK`, 9.025초.
-- paper-public-baselines discovery: `79/79 OK`, 6.460초.
+- 이 final-review fix는 full scientific closure를 명시적인 정렬 30 production-path SHA256
+  mapping으로 교체했다. 범위는 Exp449 config/contracts/operations/runner/artifacts/validation/
+  verifier, paper config/data/contracts/catalog/calibration, Task4/5 source scoring/conformal/
+  preprocessing/MiniRocket/legacy route, hard route, Task6/Task7, routing/proposal composition,
+  typed serialization/freeze, acceleration이다.
+- `lineage_lock_paper.json` SHA256과 actual Exp449 codemap **lock** SHA256을 함께 bind한다.
+  context `codemap_sha256`은 lock SHA256이며 codemap JSON SHA256은 별도 진단 값이다.
+- installed distributions의 normalized name/exact-version full inventory와 canonical-byte SHA256
+  (schema/algorithm 포함)을 readiness facts와 every Exp449Context environment에 bind한다.
+  기존 exact pycatch22/aeon/Hydra/torch preflight는 계속 fail-closed다.
+- `exp449-seeds-and-constants-antigravity.v1`은 source-derived seed, alpha/threshold,
+  route/promotion/top-k/rate, policy/order, preprocessing, counts, tolerances, two-wave,
+  typed shard/checkpoint/manifest/parity/acceleration schema와 root-snapshot verifier를 bind한다.
+  source-hash-only constant 예외는 없다.
+- Exp449 discovery: `86/86 OK`, 10.127초. paper-public-baselines discovery: `79/79 OK`, 6.187초.
 - curated paper discovery: 발견 `161`, 실행 `160/160 OK`. 유일한 의도적 제외는
   `test_hard_route_paper.HardRouteTests.test_capable_ten_frozen_db_raw_smoke_freezes_then_compares_exp137_and_exp236_artifacts`다.
   이 test만 frozen production DB raw smoke를 읽으므로 Task8 비실행 경계에서 실행하지
@@ -42,18 +55,12 @@ reviewed commit을 source로 bind한다.
   design-commit blob inventory equality, `git diff --check`, 및 `py_compile`은 closeout
   verification에 포함된다.
 
-검증 당시 source SHA256은 config `1959f2f06542924605561d9b30c3bf5c9127eb8dc4bceb41f65510e8e797b337`,
-contracts `6a6f80717ecc79881e4e9f973e516c133aace63e9cd2e8105b8da3ef30c75ac4`,
-runner `6a8b6f5636cfad82f970611947e5057a77fbcf7b628ce42d2893812279f2a525`,
-artifacts `279bcb4c1d010f289aab728837975ee89824cbbc61a5167adb575d39bbefefde`,
-operations `cbab8799c09758ac9ebccf415dac83fb263bc05a0af4bdf46957f9aaf2657d6a`,
-validation `7818fe9de5fdf2ff620dcbbe9605c4ab43dbb7a2d9a5e4920916959581f6990d`,
-verifier `dfa7e739cc3f757b3c933c889840bc3a8111a5ead8e573673c3485057ccfad01`이다.
-Current map SHA256은 JSON `5e70a5965b825e09abcc67e1467b9e6fe0ef8053e9d6c568facc29aaca544ba7`,
-HTML `39098fc5df56ad97ad218937980bf22e5da928a159bdbfea201199e117c16718`이며, lock의
-sha256-v1 current-tree fingerprints는 closeout에서 별도로 exact 검증한다.
-RESEARCH_STATE SHA256은 `59b6021d02bf5f7d0833b755f69a5bc939abe4232d0ae952688639f80bb35888`이다.
-이 파일의 작성이나 self-hash는 execution authority가 아니다.
+Final source/map SHA256, test count, HTML embedded-map equality와 lock fingerprint
+recalculation은 fresh commands로 검증했다. complete source SHA256 mapping, paper lineage-lock
+SHA256, codemap JSON diagnostic SHA256, 그리고 actual codemap-lock SHA256은 readiness context가
+canonical JSON으로 bind한다. state flags/status와
+`execution_authority_not_configured`는 변경하지 않았다. 이 파일의 작성이나 self-hash는
+execution authority가 아니다.
 
 ## 고정 runtime facts
 

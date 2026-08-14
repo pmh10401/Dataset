@@ -88,6 +88,26 @@ feature/score/threshold/routing을 바꾸어서는 안 된다. 후보를 canonic
 device, timing, parity, CPU fallback 이유를 manifest에 기록한다. 어느 하나라도
 실패하면 CPU fallback을 유지한다.
 
+## 최종 provenance closure
+
+Readiness context는 `paper/equipment_anomaly_detection/lineage_lock_paper.json` SHA256과
+`docs/codemap/codemap_exp449_antigravity.lock` SHA256을 함께 bind한다. context의
+`codemap_sha256`은 반드시 **lock 파일** SHA256이며 codemap JSON SHA256은 별도 진단값이다.
+과학 closure는 Exp449 config/contracts/operations/runner/artifacts/validation/verifier와 paper
+config/data/contracts/catalog/calibration, Task4/5 sourceㆍpreprocessingㆍconformalㆍMiniRocketㆍ
+legacy route, hard route, Task6 low-frequency, Task7 stability, routing/proposal composition,
+typed shard/freeze, acceleration을 포함한 명시적 정렬 30 production Python path의 exact
+SHA256 mapping이다. map의 파일명만 열거하여 대체하지 않는다.
+
+환경은 required pycatch22/aeon/Hydra/torch preflight와 별개로 `importlib.metadata`의 모든
+installed distribution normalized project name + exact version 정렬 inventory, canonical bytes
+SHA256, algorithm/schema를 context와 readiness에 bind한다. 이름ㆍ버전 추가/제거/변경은 다른
+context가 된다. `seeds_and_constants`는 `exp449-seeds-and-constants-antigravity.v1` manifest로
+seed, alpha/threshold, route/promotion/top-k/rate rule, policy ID/order, preprocessing contracts,
+dataset/TEST counts, tolerances, Task4/5 maximum waves, shard/checkpoint/manifest/parity/
+acceleration schema와 scorer-free root-snapshot verifier identity를 source-derived로 bind한다.
+source-hash-only constant 예외는 없다.
+
 ## label firewall과 실행 권한
 
 proposal freeze와 independent verification 동안 TEST label은 열 수 없다.

@@ -38,6 +38,16 @@ official 각각의 실행 승인보다 먼저 충족해야 한다.
 review에서만, clean reviewed commit에 대해 실행한다. 현재 no-execution Task8은 database,
 scoring, label 접근을 하지 않으므로 readiness를 실행 증거로 사용하지 않았다.
 
+Readiness가 훗날 authority review에서 허용될 때에는 scoring을 호출하지 않지만, read-only
+catalog identity 확인을 위해 production DB를 열 수 있다. 그 record는 full normalized
+installed-distribution inventory (algorithm/schema/canonical SHA256), explicit 30-file scientific
+closure, `lineage_lock_paper.json` SHA256, 그리고 **codemap lock** SHA256를 bind한다.
+`codemap_sha256`은 JSON이 아니라 `docs/codemap/codemap_exp449_antigravity.lock` bytes의
+SHA256이다. `seeds_and_constants`는 `exp449-seeds-and-constants-antigravity.v1`로 all
+seed/alpha/threshold/routing/top-k/policy/preprocessing/count/tolerance/two-wave/schema/verifier
+constants를 source-derived manifest로 bind한다. 이 실행 안내의 문구나 self-hash는 authority가
+아니다.
+
 ## 미래 명령 — 현재 모두 fail-closed
 
 ```bash

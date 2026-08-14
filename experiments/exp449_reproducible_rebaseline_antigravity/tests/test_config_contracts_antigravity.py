@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ast
 from hashlib import sha256
 from pathlib import Path
 import subprocess
@@ -124,6 +125,30 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         frozen = exp448_frozen_blob_inventory_at_design_commit(EXP448_DESIGN_COMMIT)
         self.assertTrue(frozen)
         self.assertEqual(current_exp448_blob_inventory(), frozen)
+
+    def test_exp449_codemap_python_symbols_and_test_paths_are_real(self) -> None:
+        """A final map must point to defining files, not planning-era aliases or phantom symbols."""
+        payload = json.loads((REPO_ROOT / "docs/codemap/codemap_exp449_antigravity.json").read_text())
+        for node in payload["nodes"]:
+            path = REPO_ROOT / node["path"]
+            self.assertTrue(path.is_file(), node["path"])
+            for test_path in node.get("tests", []):
+                self.assertTrue((REPO_ROOT / test_path).is_file(), test_path)
+            if path.suffix != ".py":
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            symbols = {
+                child.name for child in tree.body
+                if isinstance(child, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+            }
+            symbols.update(
+                target.id for child in tree.body
+                if isinstance(child, (ast.Assign, ast.AnnAssign))
+                for target in (child.targets if isinstance(child, ast.Assign) else (child.target,))
+                if isinstance(target, ast.Name)
+            )
+            for entrypoint in node.get("entrypoints", []):
+                self.assertIn(entrypoint, symbols, f"{node['path']}:{entrypoint}")
 
 
 class Exp449FrozenConfigTests(unittest.TestCase):

@@ -6,12 +6,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from hashlib import sha256
 import argparse
+import ast
 import importlib.metadata
 import json
 from math import isfinite
 import os
 from pathlib import Path
 import platform
+import re
 import stat
 import subprocess
 import sys
@@ -43,7 +45,7 @@ from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper imp
     verify_exp84_environment_paper,
 )
 
-from .config_antigravity import FROZEN_EXP449_CONFIG
+from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
 from .contracts_antigravity import Exp449Context, Exp449TerminalStatus
 from .runner_antigravity import compose_exp449_proposal_score_antigravity
 from .artifacts_antigravity import context_sha256_antigravity
@@ -90,6 +92,39 @@ _HISTORICAL_ROOT_TOKENS_ANTIGRAVITY = ("exp448", "r4", "historical")
 _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY = (
     "task4_train_only",
     "task5_label_free_train_test_value_length_transductive",
+)
+_NORMALIZED_PROJECT_NAME_ANTIGRAVITY = re.compile(r"[-_.]+")
+_FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY = (
+    "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+    "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
+    "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+    "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+    "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+    "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
+    "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
+    "paper/equipment_anomaly_detection/acceleration_paper.py",
+    "paper/equipment_anomaly_detection/artifacts_paper.py",
+    "paper/equipment_anomaly_detection/calibration_paper.py",
+    "paper/equipment_anomaly_detection/catalog_paper.py",
+    "paper/equipment_anomaly_detection/config_paper.py",
+    "paper/equipment_anomaly_detection/contracts_paper.py",
+    "paper/equipment_anomaly_detection/data_paper.py",
+    "paper/equipment_anomaly_detection/hard_route_paper.py",
+    "paper/equipment_anomaly_detection/lineage_paper.py",
+    "paper/equipment_anomaly_detection/proposal_score_paper.py",
+    "paper/equipment_anomaly_detection/routing_paper.py",
+    "paper/equipment_anomaly_detection/score_adapter_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/canonical_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/knn_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/rocket_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
 )
 
 
@@ -669,6 +704,39 @@ def _dependency_facts_antigravity() -> dict[str, str]:
     return {"pycatch22": pycatch["pycatch22"], "aeon": aeon, "hydra": exp84["hydra"], "torch": exp84["torch"]}
 
 
+def _package_inventory_facts_antigravity(
+    distributions: object | None = None,
+) -> dict[str, object]:
+    """Return the complete normalized installed-distribution identity, not only required packages."""
+    observed = importlib.metadata.distributions() if distributions is None else distributions
+    try:
+        iterator = iter(observed)
+    except TypeError as error:
+        raise ValueError("Exp449 package inventory is invalid") from error
+    normalized: dict[str, str] = {}
+    for distribution in iterator:
+        metadata = getattr(distribution, "metadata", None)
+        name = metadata.get("Name") if metadata is not None else None
+        version = getattr(distribution, "version", None)
+        if type(name) is not str or not name.strip() or type(version) is not str or not version:
+            raise ValueError("Exp449 package inventory is invalid")
+        project = _NORMALIZED_PROJECT_NAME_ANTIGRAVITY.sub("-", name.strip()).lower()
+        existing = normalized.get(project)
+        if existing is not None and existing != version:
+            raise ValueError("Exp449 package inventory has conflicting normalized project versions")
+        normalized[project] = version
+    if not normalized:
+        raise ValueError("Exp449 package inventory is empty")
+    records = [{"project": project, "version": normalized[project]} for project in sorted(normalized)]
+    canonical = json.dumps(records, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8") + b"\n"
+    return {
+        "schema": "exp449-installed-distributions-antigravity.v1",
+        "algorithm": "packaging-normalized-project-name+canonical-json-sha256.v1",
+        "records": records,
+        "sha256": sha256(canonical).hexdigest(),
+    }
+
+
 def _readiness_catalog_builder_antigravity(mode: str) -> dict[str, object]:
     """The sole read-only paper catalog builder; test fixtures replace only this seam."""
     database = Path(FROZEN_PAPER_CONFIG.database_path)
@@ -729,20 +797,129 @@ def _sha256_file_antigravity(path: Path) -> str:
 
 
 def _closure_facts_antigravity() -> dict[str, object]:
-    paths = (
-        "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py",
-        "paper/equipment_anomaly_detection/acceleration_paper.py",
+    if tuple(sorted(_FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY)) != _FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY:
+        raise ValueError("Exp449 frozen scientific closure order differs")
+    tracked = subprocess.run(
+        ("git", "ls-files", "--", *_FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY),
+        cwd=_REPOSITORY_ROOT_ANTIGRAVITY, check=True, capture_output=True, text=True,
+    ).stdout.splitlines()
+    if tuple(tracked) != _FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY:
+        raise ValueError("Exp449 frozen scientific closure paths are not tracked exactly")
+    closure: dict[str, str] = {}
+    for relative in _FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY:
+        candidate = Path(relative)
+        if candidate.is_absolute() or ".." in candidate.parts or candidate.suffix != ".py":
+            raise ValueError("Exp449 frozen scientific closure path is unsafe")
+        resolved = (_REPOSITORY_ROOT_ANTIGRAVITY / candidate).resolve(strict=False)
+        if _REPOSITORY_ROOT_ANTIGRAVITY not in resolved.parents:
+            raise ValueError("Exp449 frozen scientific closure path escapes repository")
+        closure[relative] = _sha256_file_antigravity(resolved)
+    lineage_lock_paper_sha256 = _sha256_file_antigravity(LINEAGE_LOCK_PATH)
+    codemap_json_path = _REPOSITORY_ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp449_antigravity.json"
+    codemap_lock_path = _REPOSITORY_ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp449_antigravity.lock"
+    return {
+        "code_closure": closure,
+        "lineage_lock_paper_sha256": lineage_lock_paper_sha256,
+        "lineage_sha256": lineage_lock_paper_sha256,
+        "codemap_json_sha256": _sha256_file_antigravity(codemap_json_path),
+        "codemap_lock_sha256": _sha256_file_antigravity(codemap_lock_path),
+        "codemap_sha256": _sha256_file_antigravity(codemap_lock_path),
+    }
+
+
+def _ast_literal_assignments_antigravity(relative: str, names: tuple[str, ...]) -> dict[str, object]:
+    """Read only literal source facts; no score source is imported or invoked."""
+    source = _REPOSITORY_ROOT_ANTIGRAVITY / relative
+    tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+    values: dict[str, object] = {}
+
+    def static_value(node: ast.AST, bindings: Mapping[str, object]) -> object:
+        if isinstance(node, ast.Name) and node.id in bindings:
+            return bindings[node.id]
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            left, right = static_value(node.left, bindings), static_value(node.right, bindings)
+            if type(left) is tuple and type(right) is tuple:
+                return left + right
+        return ast.literal_eval(node)
+
+    for node in tree.body:
+        targets = node.targets if isinstance(node, ast.Assign) else (node.target,) if isinstance(node, ast.AnnAssign) else ()
+        for target in targets:
+            if isinstance(target, ast.Name) and target.id in names:
+                try:
+                    values[target.id] = static_value(node.value, values)
+                except ValueError as error:
+                    raise ValueError(f"Exp449 constants literal is invalid: {relative}:{target.id}") from error
+    if set(values) != set(names):
+        raise ValueError(f"Exp449 constants literal is incomplete: {relative}")
+    return values
+
+
+def _seeds_and_constants_antigravity() -> dict[str, object]:
+    """Bind every scientific literal category using import-safe config and AST-only source reads."""
+    hard = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/hard_route_paper.py",
+        ("MAX_TOP_PAPER", "EXP93_WEIGHTS_PAPER", "EXP234_SOURCES_PAPER"),
     )
-    closure = {path: _sha256_file_antigravity(_REPOSITORY_ROOT_ANTIGRAVITY / path) for path in paths}
-    lineage_sha256 = _sha256_file_antigravity(LINEAGE_LOCK_PATH)
-    codemap_path = _REPOSITORY_ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp449_antigravity.json"
-    return {"code_closure": closure, "lineage_sha256": lineage_sha256, "codemap_sha256": _sha256_file_antigravity(codemap_path)}
+    sources = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+        ("RAW_PRIMARY_SOURCES", "EXPECTED_HARD_SOURCES", "SOURCE_ALPHA_PAPER"),
+    )
+    low = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+        ("MINIMUM_RAW_LENGTH_PAPER", "MAXIMUM_DEPTH_PAPER", "EMBEDDING_DIMENSION_PAPER", "DELAYS_PAPER", "NEAREST_K_PAPER", "QUANTILE_PAPER", "MINIMUM_TRAIN_ROWS_PAPER", "MAXIMUM_TRAIN_ROWS_PAPER", "STABILITY_RATIO_MAX_PAPER", "GLOBAL_CANDIDATE_BUDGET_PAPER"),
+    )
+    mini = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+        ("SEEDS_PAPER", "CROSSFIT_FOLDS_PAPER", "KNN_NEIGHBORS_PAPER", "MAX_TRAIN_REFERENCE_PAPER", "QUERY_CHUNK_SIZE_PAPER", "MINIMUM_TRAIN_PAPER"),
+    )
+    artifact = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        ("SHARD_SCHEMA", "MANIFEST_SCHEMA", "PARITY_SCHEMA", "TASK4_TASK5_SUCCESS_SCHEMA", "TASK4_TASK5_ATTEMPT_SCHEMA"),
+    )
+    preprocessing = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py", ("PAPER_SEED",)
+    )
+    canonical = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/canonical_paper.py", ("CANONICAL_SEED_PAPER", "PINNED_PYCATCH22_VERSION_PAPER")
+    )
+    rocket = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/rocket_paper.py", ("ROCKET_SEED_PAPER", "MAX_TRAIN_REFERENCE_PAPER")
+    )
+    imaging = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py", ("RNG_SEED_PAPER", "EXP55_CONFIG_PAPER", "EXP56_CONFIG_PAPER")
+    )
+    multirocket = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py", ("EXP84_CONFIG_PAPER", "PINNED_TORCH_VERSION_PAPER")
+    )
+    routing = _ast_literal_assignments_antigravity(
+        "paper/equipment_anomaly_detection/routing_paper.py", ("POLICY_ORDER", "EXPECTED_COUNTS"))
+    return {
+        "schema": "exp449-seeds-and-constants-antigravity.v1",
+        "algorithm": "ast-literal-and-import-safe-config.v1",
+        "seeds": {
+            "paper_config_seed": FROZEN_PAPER_CONFIG.seed, "paper_seed": preprocessing["PAPER_SEED"],
+            "canonical_seed": canonical["CANONICAL_SEED_PAPER"], "rocket_seed": rocket["ROCKET_SEED_PAPER"],
+            "imaging_seed": imaging["RNG_SEED_PAPER"], "minirocket_seeds": mini["SEEDS_PAPER"],
+            "multirocket_random_state": multirocket["EXP84_CONFIG_PAPER"]["random_state"],
+        },
+        "alpha_and_thresholds": {"source_alpha": sources["SOURCE_ALPHA_PAPER"], "low_frequency_quantile": low["QUANTILE_PAPER"], "stability_ratio_max": low["STABILITY_RATIO_MAX_PAPER"]},
+        "route_promotion_topk_and_rate_rules": {"max_top": hard["MAX_TOP_PAPER"], "exp93_weights": hard["EXP93_WEIGHTS_PAPER"], "exp234_sources": hard["EXP234_SOURCES_PAPER"], "low_frequency": low, "minirocket": mini},
+        "policy_ids_and_order": {"exp449_policy_id": FROZEN_EXP449_CONFIG.policy_id, "exp449_policy_order": list(FROZEN_EXP449_POLICY_KEYS), "paper_policy_order": routing["POLICY_ORDER"], "paper_expected_counts": routing["EXPECTED_COUNTS"], "hard_sources": sources["EXPECTED_HARD_SOURCES"]},
+        "preprocessing_contracts": list(_preprocessing_contracts_antigravity()),
+        "dataset_and_test_counts": {"exp449_dataset_count": FROZEN_EXP449_CONFIG.dataset_count, "exp449_test_row_count": FROZEN_EXP449_CONFIG.test_row_count, "paper_dataset_count": FROZEN_PAPER_CONFIG.dataset_count, "paper_test_row_count": FROZEN_PAPER_CONFIG.test_row_count, "smoke_dataset_count": len(FROZEN_EXP449_CONFIG.smoke_datasets)},
+        "tolerances": {"cpu_repeat_tolerance": FROZEN_EXP449_CONFIG.cpu_repeat_tolerance, "accelerated_tolerance": FROZEN_EXP449_CONFIG.accelerated_tolerance, "minimum_accelerated_speedup": FROZEN_EXP449_CONFIG.minimum_accelerated_speedup},
+        "task4_task5_recovery": {"maximum_waves": FROZEN_EXP449_CONFIG.maximum_waves, "task4_train_only": "task4_train_only", "task5_value_length_contract": "task5_label_free_train_test_value_length_transductive"},
+        "serialization_and_verifier_schemas": {"exp449_shard_schema": "exp449-proposal-shard-antigravity.v1", "exp449_manifest_schema": "exp449-proposal-manifest-antigravity.v1", "exp449_terminal_schema": _TERMINAL_SCHEMA, "task45_success_schema": artifact["TASK4_TASK5_SUCCESS_SCHEMA"], "task45_attempt_schema": artifact["TASK4_TASK5_ATTEMPT_SCHEMA"], "paper_shard_schema": artifact["SHARD_SCHEMA"], "paper_manifest_schema": artifact["MANIFEST_SCHEMA"], "paper_parity_schema": artifact["PARITY_SCHEMA"], "acceleration_schema": "paper-task9-acceleration.v2", "root_snapshot_verifier": "verify_exp449_proposal_root_snapshot_antigravity"},
+        "source_hash_only_constants": [],
+    }
+
+
+def _validate_seeds_and_constants_antigravity(value: object) -> dict[str, object]:
+    expected = _seeds_and_constants_antigravity()
+    if not isinstance(value, dict) or value != expected:
+        raise ValueError("Exp449 seeds and constants differ")
+    return expected
 
 
 def _plain_json_antigravity(value: object) -> object:
@@ -760,14 +937,9 @@ def _plain_json_antigravity(value: object) -> object:
 def _readiness_contexts_antigravity(
     *, reviewed_commit: str, interpreter: dict[str, str], dependencies: dict[str, str],
     contracts: tuple[str, str], catalogs: dict[str, dict[str, object]], database: dict[str, object],
-    closure: dict[str, object], logical_cpu_count: int | None,
+    closure: dict[str, object], package_inventory: dict[str, object], logical_cpu_count: int | None,
 ) -> tuple[dict[str, dict[str, object]], dict[str, object]]:
-    constants = {
-        "reviewed_commit": reviewed_commit, "policy_id": FROZEN_EXP449_CONFIG.policy_id,
-        "preprocessing_contracts": list(contracts), "cpu_repeat_tolerance": FROZEN_EXP449_CONFIG.cpu_repeat_tolerance,
-        "accelerated_tolerance": FROZEN_EXP449_CONFIG.accelerated_tolerance,
-        "minimum_accelerated_speedup": FROZEN_EXP449_CONFIG.minimum_accelerated_speedup,
-    }
+    constants = _validate_seeds_and_constants_antigravity(_seeds_and_constants_antigravity())
     entries = (
         ("smoke_a", "smoke", FROZEN_EXP449_CONFIG.smoke_a_scientific_root, catalogs["smoke"]),
         ("smoke_b", "smoke", FROZEN_EXP449_CONFIG.smoke_b_scientific_root, catalogs["smoke"]),
@@ -780,7 +952,7 @@ def _readiness_contexts_antigravity(
             "schema": "exp449-readiness-assessment-inputs-antigravity.v1", "reviewed_commit": reviewed_commit,
             "mode": mode, "run_root": str(root), "database": database,
             "catalog_sha256": catalog["catalog_sha256"], "interpreter": interpreter,
-            "dependencies": dependencies, "closure": closure, "constants": constants,
+            "dependencies": dependencies, "package_inventory": package_inventory, "closure": closure, "constants": constants,
         }
         assessment_sha256 = sha256(json.dumps(assessment_inputs, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
         acceleration = verify_acceleration_manifest(build_acceleration_manifest(assessment_sha256, logical_cpu_count=logical_cpu_count), assessment_sha256)
@@ -789,7 +961,7 @@ def _readiness_contexts_antigravity(
             run_root=root, mode=mode, catalog=catalog, acceleration=decision,
             database_sha256=str(database["sha256"]), code_closure=closure["code_closure"],
             lineage_sha256=str(closure["lineage_sha256"]), codemap_sha256=str(closure["codemap_sha256"]),
-            interpreter=interpreter["executable"], environment={"interpreter": interpreter, "dependencies": dependencies},
+            interpreter=interpreter["executable"], environment={"interpreter": interpreter, "dependencies": dependencies, "package_inventory": package_inventory},
             seeds_and_constants=constants,
         )
         result[name] = {
@@ -810,6 +982,7 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
     interpreter = _require_capable_interpreter_antigravity()
     _label_firewall_antigravity()
     dependencies = _validated_dependency_facts_antigravity(_dependency_facts_antigravity())
+    package_inventory = _package_inventory_facts_antigravity()
     contracts = _preprocessing_contracts_antigravity()
     if contracts != _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY or len(set(contracts)) != 2:
         raise ValueError("Exp449 preprocessing contracts differ")
@@ -818,7 +991,7 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
     closure = _closure_facts_antigravity()
     contexts, acceleration = _readiness_contexts_antigravity(
         reviewed_commit=reviewed_commit, interpreter=interpreter, dependencies=dependencies, contracts=contracts,
-        catalogs=catalogs, database=database, closure=closure, logical_cpu_count=logical_cpu_count,
+        catalogs=catalogs, database=database, closure=closure, package_inventory=package_inventory, logical_cpu_count=logical_cpu_count,
     )
     workers = dict(acceleration["workers"])
     benchmark_requirement = "same_input_and_seed; finite_outputs; identical_candidate_indices_at_every_preregistered_alpha; numerical_tolerance; at_least_1.1x_end_to_end_including_transfer_compilation_and_synchronization"
@@ -828,6 +1001,7 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
         "reviewed_commit": reviewed_commit,
         "interpreter": interpreter,
         "dependencies": dependencies,
+        "package_inventory": package_inventory,
         "database": {"path": database["unresolved_path"], "resolved_path": database["resolved_path"], "observed_size": database["size"], "sha256": database["sha256"], "access": "read_only_verified_catalog"},
         "catalogs": {mode: {"catalog_sha256": catalog["catalog_sha256"], "dataset_count": len(catalog["datasets"])} for mode, catalog in catalogs.items()},
         "workers": {"logical_cpu_count": workers["logical_cpu_count"], "dataset_workers": workers["dataset_workers"]},
