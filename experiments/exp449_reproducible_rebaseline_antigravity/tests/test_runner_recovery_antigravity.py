@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 from contextlib import ExitStack
+from dataclasses import dataclass
+import json
 from itertools import count
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
 import numpy as np
 
 from experiments.exp449_reproducible_rebaseline_antigravity import runner_antigravity as runner
+from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
+from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import FROZEN_EXP449_CONFIG
+from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import Exp449Context
 from paper.equipment_anomaly_detection import proposal_score_paper
 from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult, RawDataset
 from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult, RouteLanes
@@ -224,6 +230,174 @@ class Exp449CompositionGateTests(unittest.TestCase):
         )
         with self.assertRaises(AssertionError):
             self._assert_proposal_score_semantic_parity(exp449, mutated)
+
+
+@dataclass(frozen=True)
+class _AttemptFixture:
+    dataset: str
+    wave: int
+    attempt: int
+
+
+def _recovery_context(root: Path) -> Exp449Context:
+    """Build a typed temporary namespace only after the module root guard is patched."""
+    context = object.__new__(Exp449Context)
+    object.__setattr__(context, "experiment_id", "Exp449")
+    object.__setattr__(context, "mode", "smoke")
+    object.__setattr__(context, "run_root", root)
+    object.__setattr__(context, "database_sha256", "a" * 64)
+    object.__setattr__(context, "catalog_sha256", "b" * 64)
+    object.__setattr__(context, "code_closure", {"fixture_antigravity.py": "c" * 64})
+    object.__setattr__(context, "lineage_sha256", "d" * 64)
+    object.__setattr__(context, "codemap_sha256", "e" * 64)
+    object.__setattr__(context, "interpreter", "fixture-python")
+    object.__setattr__(context, "environment", {"fixture": "deterministic"})
+    object.__setattr__(context, "backend_record", {"selected_backend": "cpu"})
+    object.__setattr__(context, "seeds_and_constants", {"seed": 7})
+    object.__setattr__(context, "historical_parity_status", "not_used")
+    return context
+
+
+class _RecoveryFixture:
+    """Real recovery state with only the paper scoring boundary replaced."""
+
+    def __init__(self, directory: Path, *, fail_once: bool = False, fail_twice: bool = False) -> None:
+        self.scientific_root = directory / "scientific_fixture_antigravity"
+        self.operations_root = directory / "operations_fixture_antigravity"
+        self.names = FROZEN_EXP449_CONFIG.smoke_datasets
+        self.catalog = {"catalog_sha256": "b" * 64, "datasets": [{"dataset": name} for name in self.names]}
+        self.raw = {name: object() for name in self.names}
+        self.context = _recovery_context(self.scientific_root)
+        self.config = operations.Exp449WaveConfig(
+            context=self.context,
+            catalog=self.catalog,
+            raw_datasets=self.raw,
+            acceleration_manifest={"fixture": "acceleration"},
+        )
+        self.successes: set[str] = set()
+        self.attempts: list[_AttemptFixture] = []
+        self.revalidated_successes: list[tuple[str, ...]] = []
+        self.revalidated_attempts = 0
+        self.composer_calls = 0
+        self.global_stage_calls = 0
+        self.fail_once = fail_once
+        self.fail_twice = fail_twice
+
+    @property
+    def failed_dataset(self) -> str:
+        return self.names[-1]
+
+    def verify_success_namespace(self, *_args: object) -> tuple[str, ...]:
+        verified = tuple(sorted(self.successes))
+        self.revalidated_successes.append(verified)
+        return verified
+
+    def verify_attempt_namespace(self, *_args: object) -> tuple[_AttemptFixture, ...]:
+        self.revalidated_attempts += 1
+        return tuple(self.attempts)
+
+    def compose(self, *_args: object, **_kwargs: object) -> object:
+        self.composer_calls += 1
+        failure = (self.fail_once and self.composer_calls == 1) or (self.fail_twice and self.composer_calls <= 2)
+        if failure:
+            self.successes.update(name for name in self.names if name != self.failed_dataset)
+            self.attempts.append(_AttemptFixture(self.failed_dataset, self.composer_calls, len(self.attempts) + 1))
+            raise proposal_score_paper.ProposalScoreIncomplete(
+                completed=len(self.successes), failed=1, pending=(self.failed_dataset,), attempts_path=None,
+            )
+        self.successes.update(self.names)
+        self.global_stage_calls += 1
+        self.scientific_root.mkdir(parents=True, exist_ok=True)
+        (self.scientific_root / "fixture_proposal_payload_antigravity.json").write_bytes(
+            json.dumps({"datasets": list(self.names), "scientific": "fixed"}, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        )
+        return object()
+
+
+class Exp449TwoWaveRecoveryTests(unittest.TestCase):
+    """The operations boundary owns retries, never success authority or Task6/7 work."""
+
+    def _patches(self, fixture: _RecoveryFixture) -> ExitStack:
+        stack = ExitStack()
+        stack.enter_context(patch.object(operations, "_operations_root_for_context_antigravity", return_value=fixture.operations_root))
+        stack.enter_context(patch.object(operations.Task4Task5SuccessAuthority, "from_verified_context", return_value=object()))
+        stack.enter_context(patch.object(operations, "verify_task4_task5_success_namespace", side_effect=fixture.verify_success_namespace))
+        stack.enter_context(patch.object(operations, "verify_task4_task5_attempt_namespace", side_effect=fixture.verify_attempt_namespace))
+        stack.enter_context(patch.object(operations, "compose_exp449_proposal_score_antigravity", side_effect=fixture.compose))
+        return stack
+
+    def test_fail_once_revalidates_success_and_retries_only_unverified_dataset(self) -> None:
+        """Recomputing a published success after interruption would change recovery work."""
+        with TemporaryDirectory(dir=Path.cwd()) as temporary:
+            fixture = _RecoveryFixture(Path(temporary), fail_once=True)
+            with self._patches(fixture):
+                first = operations.run_exp449_wave_antigravity(fixture.config)
+                self.assertEqual((first.status, first.completed_dataset_count, first.failed_dataset_count, first.pending_dataset_count, first.wave_count), ("proposal_score_incomplete", 22, 1, 0, 1))
+                self.assertFalse((fixture.operations_root / "proposal_score_incomplete_antigravity.json").exists())
+                second = operations.run_exp449_wave_antigravity(fixture.config)
+            self.assertEqual((second.status, second.completed_dataset_count, second.wave_count), ("dataset_local_complete", 23, 2))
+            self.assertGreaterEqual(len(fixture.revalidated_successes), 4)
+            self.assertEqual(fixture.revalidated_successes[1], tuple(name for name in fixture.names if name != fixture.failed_dataset))
+            self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 1))
+
+    def test_second_failure_publishes_one_terminal_record_and_third_call_refuses_scoring(self) -> None:
+        """Scheduling a third attempt after the frozen retry cap would weaken terminal semantics."""
+        with TemporaryDirectory() as temporary:
+            fixture = _RecoveryFixture(Path(temporary), fail_twice=True)
+            with self._patches(fixture):
+                operations.run_exp449_wave_antigravity(fixture.config)
+                second = operations.run_exp449_wave_antigravity(fixture.config)
+                third = operations.run_exp449_wave_antigravity(fixture.config)
+            self.assertEqual((second.status, second.completed_dataset_count, second.failed_dataset_count, second.pending_dataset_count, second.wave_count), ("proposal_score_incomplete", 22, 1, 0, 2))
+            self.assertEqual(third, second)
+            self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 0))
+            terminal = json.loads((fixture.operations_root / "proposal_score_incomplete_antigravity.json").read_text(encoding="utf-8"))
+            self.assertEqual(terminal["verified_successes"], list(fixture.names[:-1]))
+            self.assertEqual(terminal["failed"], [fixture.failed_dataset])
+            self.assertEqual(terminal["never_attempted"], [])
+            self.assertEqual(terminal["context_sha256"], operations.task45_context_payload_antigravity(fixture.context)["context_sha256"])
+            self.assertEqual(terminal["catalog_sha256"], "b" * 64)
+
+    def test_attempt_records_never_count_as_success_or_unlock_global_composition(self) -> None:
+        """Treating an attempt ledger entry as a success would open Task6/7 with a partial catalog."""
+        with TemporaryDirectory() as temporary:
+            fixture = _RecoveryFixture(Path(temporary))
+            fixture.attempts.append(_AttemptFixture(fixture.failed_dataset, 1, 1))
+            with self._patches(fixture):
+                status = operations.status_exp449_antigravity(fixture.config)
+            self.assertEqual((status.status, status.completed_dataset_count, status.failed_dataset_count, status.pending_dataset_count), ("proposal_score_incomplete", 0, 1, 22))
+            self.assertEqual(fixture.global_stage_calls, 0)
+
+    def test_progress_log_is_exactly_operational_and_rejects_scientific_fields(self) -> None:
+        """A label or score in the operations log would breach the result-neutral boundary."""
+        with TemporaryDirectory(dir=Path.cwd()) as temporary:
+            root = Path(temporary) / "operations_fixture_antigravity"
+            event = {
+                "timestamp": "2026-08-14T00:00:00+00:00", "experiment": "Exp449", "mode": "smoke", "wave": 1,
+                "completed": 1, "failed": 0, "pending": 22, "elapsed_seconds": 1.0, "eta_seconds": 22.0,
+                "dataset": "Alpha",
+            }
+            operations.write_exp449_progress_event_antigravity(root, event)
+            logged = json.loads((root / "operations_progress_antigravity.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual(logged, event)
+            unsafe = {**event, "scores": [0.1]}
+            with self.assertRaisesRegex(ValueError, "forbidden"):
+                operations.write_exp449_progress_event_antigravity(root, unsafe)
+
+    def test_interrupted_resume_keeps_fixture_scientific_payload_byte_identical(self) -> None:
+        """Retry ordering must not alter the final typed scientific bytes."""
+        with TemporaryDirectory() as uninterrupted_dir, TemporaryDirectory() as resumed_dir:
+            uninterrupted = _RecoveryFixture(Path(uninterrupted_dir))
+            resumed = _RecoveryFixture(Path(resumed_dir), fail_once=True)
+            with self._patches(uninterrupted):
+                operations.run_exp449_wave_antigravity(uninterrupted.config)
+            with self._patches(resumed):
+                operations.run_exp449_wave_antigravity(resumed.config)
+                operations.run_exp449_wave_antigravity(resumed.config)
+            self.assertEqual(
+                (uninterrupted.scientific_root / "fixture_proposal_payload_antigravity.json").read_bytes(),
+                (resumed.scientific_root / "fixture_proposal_payload_antigravity.json").read_bytes(),
+            )
 
 
 if __name__ == "__main__":
