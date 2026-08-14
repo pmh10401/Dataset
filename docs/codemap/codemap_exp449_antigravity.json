@@ -126,19 +126,29 @@
     {
       "id": "exp449_runner",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Planned Task4/5 collection, catalog-bijection gate, Task6/7 composition, and freeze wrapper.",
+      "role": "Implemented values-only Task4/5 collection adapter, exact catalog-bijection gate, and Task6/7 ProposalScore composition.",
       "entrypoints": [
-        "run_exp449_proposal_antigravity"
+        "compose_exp449_proposal_score_antigravity",
+        "verify_dataset_local_bijection_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Uses only paper values primitives and the caller-bound Task4/5 collector; imports or calls no filesystem writer, historical oracle, acceptance, or parity API; does not access TEST labels."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-          "symbol": "run_exp449_proposal_antigravity"
+          "symbol": "compose_exp449_proposal_score_antigravity, verify_dataset_local_bijection_antigravity"
         }
+      ],
+      "callers": [
+        "test_runner_recovery_antigravity.py",
+        "future operations_antigravity.py"
+      ],
+      "effects": [
+        "forwards the exact root, context, catalog, and acceleration manifest to the Task4/5 collector, then blocks every population-global primitive unless raw, source, and route mappings exactly equal the ordered catalog"
       ]
     },
     {
@@ -223,19 +233,25 @@
     {
       "id": "exp449_runner_recovery_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
-      "role": "Planned catalog-gate, failure-batching, retry-terminal, and Task6/7 blocking tests.",
+      "role": "Implemented exact catalog-gate, Task6/7 blocking, recovery-input forwarding, and in-memory ProposalScore semantic-parity tests.",
       "entrypoints": [
-        "Exp449RunnerRecoveryTests"
+        "Exp449DatasetLocalBijectionTests",
+        "Exp449CompositionGateTests"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Uses mocked typed Task4--7 fixtures only; creates no roots, invokes no filesystem writer or scorer, and accesses no TEST labels."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
-          "symbol": "Exp449RunnerRecoveryTests"
+          "symbol": "Exp449DatasetLocalBijectionTests, Exp449CompositionGateTests"
         }
+      ],
+      "effects": [
+        "proves missing, duplicate, extra, order-drift, source/route mismatch, and short-full-catalog cases fail before Task6/7; proves complete in-memory composition preserves ProposalScore semantics"
       ]
     },
     {
@@ -421,29 +437,33 @@
     {
       "id": "exp449_catalog_gate",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Planned exact frozen-catalog bijection gate before population-global work.",
+      "role": "Implemented exact ordered catalog bijection gate before population-global work.",
       "entrypoints": [
-        "verify_catalog_bijection_antigravity"
+        "verify_dataset_local_bijection_antigravity"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
-        "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Rejects a non-unique or non-canonical catalog and any missing, extra, or reordered raw/source/route mapping; full mode requires exactly 1,117 datasets."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-          "symbol": "verify_catalog_bijection_antigravity"
+          "symbol": "verify_dataset_local_bijection_antigravity"
         }
       ]
     },
     {
       "id": "exp449_task6",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Planned population-global Task6 selection over the exact catalog.",
+      "role": "Implemented population-global Task6 selection over the exact gated catalog.",
       "entrypoints": [
-        "build_task6_evidence_antigravity"
+        "compose_exp449_proposal_score_antigravity -> score_low_frequency"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
         "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
@@ -457,11 +477,13 @@
     {
       "id": "exp449_task7",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Planned selected-only Task7 stability and route-preserving score composition.",
+      "role": "Implemented selected-only Task7 stability and route-preserving score composition after Task6.",
       "entrypoints": [
-        "build_task7_policies_antigravity"
+        "compose_exp449_proposal_score_antigravity -> classify_stability, build_hard_evidence_surface, build_policies"
       ],
-      "tests": [],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+      ],
       "constraints": [
         "Implementation planning only; this Task 1 boundary creates no run root and does not access TEST labels."
       ],
