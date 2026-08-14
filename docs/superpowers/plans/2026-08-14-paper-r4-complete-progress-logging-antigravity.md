@@ -16,7 +16,7 @@
 - Do not write `/Users/mac/Documents/Dataset/paper_proposal_full_r4_antigravity_20260813` or `/Users/mac/Documents/Dataset/paper_proposal_full_r4_v2_antigravity_20260814_ops_antigravity`.
 - Do not attach to, monkeypatch, resume, or stop PIDs 57778 / 57862. Do not run launcher `status` / `verify` / `resume` / `stop` against those live roots.
 - Any edit to a file hashed by `paper/equipment_anomaly_detection/codemap_paper.lock` changes `runner_paper._closure()` / journal `code_closure`. An instrumented official run requires a **new** scientific root and a **new** ops root. Do not invent those names here. Do not migrate live checkpoints.
-- Every newly created implementation, test, or helper filename contains `antigravity`. Existing paper production modules keep `*_paper.py` names. New test file is `tests_paper/test_progress_logging_antigravity.py`. Do not create a new paper production module. Do not implement `scratch/monitor_paper_r4_live_progress_antigravity.py` in this plan.
+- Every newly created implementation, test, or helper filename contains `antigravity`. Existing paper production modules keep `*_paper.py` names. New test file is `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py`. Do not create a new paper production module. Do not implement `scratch/monitor_paper_r4_live_progress_antigravity.py` in this plan.
 - `load_dataset_values` stays values-only with optional `sql_observer` only. No `progress=` on that function.
 - `_score_dataset_task4_task5(raw)` stays one positional argument. No callback crosses `ProcessPoolExecutor`.
 - Keep exact `Task6 start` / `Task6 finish` / `Task7 start` / `Task7 finish` lines. Structured `task6` / `task7` sink lines appear only when a callback is installed.
@@ -24,6 +24,20 @@
 - CPU worker policy is unchanged: `WorkerRecord.from_logical_cpu_count` at `acceleration_paper.py:28-32` sets `dataset_workers = max(1, logical_cpu_count - 1)` and `inner_numerical_threads = 1`. Record detected logical CPU count and the resulting worker count in existing acceleration-manifest provenance. Do not add a worker override. Do not combine outer multi-process parallelism with an MLX/MPS job.
 - Logging is CPU control-plane only. Do not introduce PyTorch, MLX, or MPS for formatting, allowlisting, or printing. See the acceleration assessment below.
 - Strict RED → GREEN per task. Record the exact failing reason before production edits. Each mergeable commit that changes a mapped module or mapped entrypoint signature includes all six Exp448 + paper map files in that same commit. Do not overwrite `docs/codemap/codemap_exp444_antigravity.*` or earlier version maps.
+
+## Governance resolution (Task-2 blocker, Codex option 3)
+
+`ConfigLineageTests.test_all_new_static_files_use_approved_paper_naming` is a frozen paper-namespace rule: every file under `PAPER_ROOT` must contain `paper` in its filename and must not contain `antigravity`. That test is not weakened and its naming rules are not edited.
+
+AGENTS.md File Naming Policy requires every newly created file to include `antigravity` in its filename.
+
+Those two rules cannot both be satisfied by placing a new `*_antigravity.py` test under `paper/equipment_anomaly_detection/tests_paper/`. Codex evaluated three options; **option 3 is the only path that satisfies both higher-priority constraints**:
+
+1. Keep the test in `tests_paper/` with `antigravity` in the name — fails the frozen paper namespace test.
+2. Rename the test to a `*_paper.py` name without `antigravity` — fails AGENTS.md new-file naming.
+3. Move the new test out of `PAPER_ROOT` to `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` — satisfies AGENTS.md and leaves the frozen paper namespace test unchanged.
+
+The helper (`emit_progress_paper`) and sink (`make_stderr_progress_sink_paper`) remain in existing `*_paper.py` production modules. The test file is an Exp448 operational contract, not a paper-map module. Paper AST callers stay inside `PAPER_ROOT`; `_ast_import_callers` therefore does not list the Exp448 test. Paper-map and Exp448 `tests` fields still cite the Exp448 path. Task 2 already observed RED as `ImportError` for `emit_progress_paper` and/or `make_stderr_progress_sink_paper` before the helper/sink landed; that evidence is preserved and is not re-created by deleting the implemented helper/sink.
 
 ## Acceleration Assessment (mandatory, no-change)
 
@@ -42,7 +56,7 @@ MLX default-use conditions 1–5 all fail. Retain the CPU implementation. Run on
 
 ## File structure
 
-- Create: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py`
+- Create: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py`
 - Modify: `paper/equipment_anomaly_detection/data_paper.py`
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py`
 - Modify: `paper/equipment_anomaly_detection/runner_paper.py`
@@ -399,7 +413,7 @@ Expected: exactly those six files. No production modules. No Dataset writes.
 ### Task 2: Cycle-free ProgressCallback, emit helper, and 15s stderr sink
 
 **Files:**
-- Create: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py`
+- Create: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py`
 - Modify: `paper/equipment_anomaly_detection/data_paper.py` (after `SqlObserver` at line 18; `__all__` at line 169). Do not change `load_dataset_values` at lines 136–166.
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py` (add `make_stderr_progress_sink_paper` immediately after `_progress` at lines 96–102; add `from .data_paper import ProgressCallback, PROGRESS_TICK_INTERVAL_S`; extend `__all__` at line 256). Do not change `compose_proposal_score` yet.
 - Modify together: the six Exp448 + paper map files (new observer edge on `data_paper.py`; new sink entrypoint on `proposal_score_paper.py`; new test file listed under those nodes’ tests).
@@ -435,7 +449,7 @@ def make_stderr_progress_sink_paper(
 
 - [ ] **Step 1: Write failing tests 3 and 11**
 
-Create `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` with class `ProgressLoggingAntigravityTests(unittest.TestCase)` matching `tests_paper` unittest style.
+Create `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` with class `ProgressLoggingAntigravityTests(unittest.TestCase)` matching `tests_paper` unittest style.
 
 ```python
 """Result-neutral paper r4 progress-callback contracts."""
@@ -509,7 +523,7 @@ Do not sleep in real time. Import emit from `data_paper` and the sink from `prop
 - [ ] **Step 2: Run the focused test and capture RED**
 
 ```bash
-python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_rate_gate_emits_start_end_error_immediately_and_ticks_at_most_once_per_15s paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_progress_text_firewall_rejects_label_and_score_fields -v
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_rate_gate_emits_start_end_error_immediately_and_ticks_at_most_once_per_15s experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_progress_text_firewall_rejects_label_and_score_fields -v
 ```
 
 Expected RED: `ImportError` for `emit_progress_paper` and/or `make_stderr_progress_sink_paper`. Record that exact reason. Do not edit production modules before the failure is observed.
@@ -653,14 +667,14 @@ Expected: PASS. `load_dataset_values` still has no `progress` argument.
 
 - [ ] **Step 5: Resync the six maps and commit**
 
-Update Exp448 `paper_data` entrypoints to include `ProgressCallback` and `emit_progress_paper`, and `paper_proposal_score` entrypoints to include `make_stderr_progress_sink_paper`. Add `tests_paper/test_progress_logging_antigravity.py` to those nodes’ tests. Add paper-map tests lists for `data_paper.py` and `proposal_score_paper.py` to include `tests_paper/test_progress_logging_antigravity.py`. Do **not** add the new test file as a paper-map module: inventory is only `*_paper.py`.
+Update Exp448 `paper_data` entrypoints to include `ProgressCallback` and `emit_progress_paper`, and `paper_proposal_score` entrypoints to include `make_stderr_progress_sink_paper`. Add `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` to those nodes’ tests. Add paper-map tests lists for `data_paper.py` and `proposal_score_paper.py` to include `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py`. Do **not** add the new test file as a paper-map module: inventory is only `*_paper.py`.
 
 Run the shared map-resync scripts. Commit:
 
 ```bash
 git add paper/equipment_anomaly_detection/data_paper.py \
   paper/equipment_anomaly_detection/proposal_score_paper.py \
-  paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py \
+  experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py \
   docs/codemap/codemap_exp448_antigravity.html \
   docs/codemap/codemap_exp448_antigravity.json \
   docs/codemap/codemap_exp448_antigravity.lock \
@@ -682,7 +696,7 @@ EOF
 - Modify: `paper/equipment_anomaly_detection/runner_paper.py` (import at line 15; new `_load_catalog_raw`; replace the three identical dict comprehensions at lines 130, 142, and 156; install one sink per official invocation in `_write_complete` / `verify_journal` / `_incomplete_status` / `run_pipeline`)
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py` (`_collect_task4_task5` signature at line 134; `compose_proposal_score` signature at line 211; keep `_progress` at lines 96–102 and the four Task6/Task7 prints at lines 229–240)
 - Modify: `paper/equipment_anomaly_detection/pipeline_paper.py` (`main` at lines 22–25)
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (tests 1, 2, 4, 5, 10, 12)
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (tests 1, 2, 4, 5, 10, 12)
 - Do not modify: `tests_paper/test_artifacts_runner_paper.py` assertions; `PublicCliContractTests` at lines 1137–1198 must stay green
 - Modify together: the six map files
 
@@ -806,7 +820,7 @@ def test_worker_submit_signature_unchanged_no_callback_in_process_pool(self) -> 
 - [ ] **Step 2: Run the new methods and capture RED**
 
 ```bash
-python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity -v
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity -v
 ```
 
 Expected RED: `_load_catalog_raw` missing; `compose_proposal_score` / `_collect_task4_task5` reject unexpected `progress=`; CLI stderr has no `journal_exit` line. Record the first failing method name and exception.
@@ -912,7 +926,7 @@ Add `import sys`. Do not print the JSON payload on stderr. `exit_code_for_result
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity \
   paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper.Task9ParallelCompositionTests.test_parallel_completion_progress_is_flush_visible_and_keeps_sorted_results \
   paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper.PublicCliContractTests \
   -v
@@ -939,7 +953,7 @@ EOF
 **Files:**
 - Modify: `paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py` (import `ProgressCallback, emit_progress_paper` from `..data_paper`; `score_low_frequency` at line 389; `_score_one_dataset_paper` at line 349)
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py` (forward `progress` into `score_low_frequency` at line 232; keep prints at lines 229 and 234)
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (test 6)
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (test 6)
 - Optional only if a default-call-site regression appears: `tests_paper/test_low_frequency_paper.py`
 - Modify together: the six map files
 
@@ -996,7 +1010,7 @@ Also cover a two-dataset mapping: `{"A": _values("A"), "B": _values("B")}` so ev
 - [ ] **Step 2: Run test 6 and capture RED**
 
 ```bash
-python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task6_dataset_and_group_progress_without_scores -v
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task6_dataset_and_group_progress_without_scores -v
 ```
 
 Expected RED: `score_low_frequency() got an unexpected keyword argument 'progress'` or zero events.
@@ -1048,8 +1062,8 @@ Do not walk TEST rows for progress. `compose_proposal_score` line 232 becomes `l
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task6_dataset_and_group_progress_without_scores \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_progress_callback_default_none_preserves_typed_proposal_and_stderr_contract \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task6_dataset_and_group_progress_without_scores \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_progress_callback_default_none_preserves_typed_proposal_and_stderr_contract \
   paper.equipment_anomaly_detection.tests_paper.test_low_frequency_paper \
   -v
 ```
@@ -1075,7 +1089,7 @@ EOF
 **Files:**
 - Modify: `paper/equipment_anomaly_detection/sources_paper/stability_paper.py` (import from `..data_paper`; `classify_stability` at lines 315–342; `_candidate_views` at lines 268–312)
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py` (forward `progress` into `classify_stability` at line 238; keep prints at lines 236 and 240)
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (test 7)
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (test 7)
 - Optional only if a default-call-site regression appears: `tests_paper/test_stability_paper.py`
 - Modify together: the six map files
 
@@ -1146,7 +1160,7 @@ def test_task7_candidate_and_view_progress_is_rate_limited_and_label_free(self) 
 - [ ] **Step 2: Run test 7 and capture RED**
 
 ```bash
-python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task7_candidate_and_view_progress_is_rate_limited_and_label_free -v
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task7_candidate_and_view_progress_is_rate_limited_and_label_free -v
 ```
 
 Expected RED: unexpected keyword `progress` or no `view_index=` events.
@@ -1207,7 +1221,7 @@ emit_progress_paper(progress, {
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task7_candidate_and_view_progress_is_rate_limited_and_label_free \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_task7_candidate_and_view_progress_is_rate_limited_and_label_free \
   paper.equipment_anomaly_detection.tests_paper.test_stability_paper \
   -v
 ```
@@ -1235,7 +1249,7 @@ EOF
 - Modify: `paper/equipment_anomaly_detection/artifacts_paper.py` (`write_typed_proposal_shard` at lines 607–609; `freeze_score_root` at lines 613–627; `verify_score_root` at lines 628–643)
 - Modify: `paper/equipment_anomaly_detection/proposal_score_paper.py` (`write_and_freeze_proposal_score` at lines 247–253; `compose_proposal_score` forwards into evidence/policies)
 - Modify: `paper/equipment_anomaly_detection/runner_paper.py` (pass the same sink into `write_and_freeze_proposal_score` and `verify_score_root` from `_proposal_artifact`)
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (tests 8 and 9)
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (tests 8 and 9)
 - Modify together: the six map files
 
 **Interfaces:**
@@ -1267,8 +1281,8 @@ Test 9 uses the typed shard fixture from `test_artifacts_runner_paper.py`. Asser
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_hard_evidence_and_policies_progress_has_no_alert_or_score_payload \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_shard_write_and_freeze_verify_progress \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_hard_evidence_and_policies_progress_has_no_alert_or_score_payload \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_shard_write_and_freeze_verify_progress \
   -v
 ```
 
@@ -1332,8 +1346,8 @@ return path
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_hard_evidence_and_policies_progress_has_no_alert_or_score_payload \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_shard_write_and_freeze_verify_progress \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_hard_evidence_and_policies_progress_has_no_alert_or_score_payload \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_shard_write_and_freeze_verify_progress \
   paper.equipment_anomaly_detection.tests_paper.test_stability_paper \
   paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper.Task4Task5SuccessRecordTests \
   -v
@@ -1358,7 +1372,7 @@ EOF
 ### Task 7: Result-byte parity, firewall, launcher capture, closure, and regression
 
 **Files:**
-- Modify: `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (test 13; keep tests 11 and 14 as verification)
+- Modify: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (test 13; keep tests 11 and 14 as verification)
 - Modify only if a launcher regression appears: `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py`
 - Do not modify: `scratch/manage_paper_r4_proposal_antigravity.py` unless that regression is observed
 - Modify together: the six map files if this task changes any mapped tests list or if a previous task left map text stale
@@ -1386,7 +1400,7 @@ If the fixture already patches Task6/Task7, still write real shards from the typ
 - [ ] **Step 2: Run test 13 and capture RED if the write path is still unwired; otherwise it should already PASS from Task 6**
 
 ```bash
-python3 -m unittest paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_identical_candidate_indices_and_shard_bytes_with_and_without_callback -v
+python3 -m unittest experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity.ProgressLoggingAntigravityTests.test_identical_candidate_indices_and_shard_bytes_with_and_without_callback -v
 ```
 
 If it fails because shard bytes differ, stop and fix the callback so it cannot mutate event mappings that science later reads (`emit_progress_paper` already copies an allowlisted dict; call sites must pass fresh literals). Do not “fix” science to match a callback.
@@ -1395,7 +1409,7 @@ If it fails because shard bytes differ, stop and fix the callback so it cannot m
 
 ```bash
 python3 -m unittest \
-  paper.equipment_anomaly_detection.tests_paper.test_progress_logging_antigravity \
+  experiments.exp448_exp447_text_label_boundary_repair_antigravity.tests.test_paper_r4_progress_logging_antigravity \
   paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper.Task9ParallelCompositionTests.test_parallel_completion_progress_is_flush_visible_and_keeps_sorted_results \
   paper.equipment_anomaly_detection.tests_paper.test_artifacts_runner_paper.PublicCliContractTests \
   paper.equipment_anomaly_detection.tests_paper.test_data_boundary_paper \
@@ -1436,7 +1450,7 @@ If a launcher test fails solely because new stderr lines appear in a fixture tha
 
 - [ ] **Step 5: Final map sync, compile, and commit**
 
-Confirm Exp448 nodes `paper_data`, `paper_low_frequency`, `paper_stability`, `paper_routing`, `paper_proposal_score`, `paper_runner`, `paper_pipeline_cli`, and `paper_task45_success_records` list `tests_paper/test_progress_logging_antigravity.py` where they grew a progress edge. Confirm paper-map callers for `data_paper.py` are exactly the AST set:
+Confirm Exp448 nodes `paper_data`, `paper_low_frequency`, `paper_stability`, `paper_routing`, `paper_proposal_score`, `paper_runner`, `paper_pipeline_cli`, and `paper_task45_success_records` list `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` where they grew a progress edge. Confirm paper-map callers for `data_paper.py` are exactly the AST set inside `PAPER_ROOT`:
 
 ```text
 artifacts_paper.py
@@ -1447,10 +1461,9 @@ runner_paper.py
 sources_paper/low_frequency_paper.py
 sources_paper/stability_paper.py
 tests_paper/test_data_boundary_paper.py
-tests_paper/test_progress_logging_antigravity.py
 ```
 
-`tests_paper/test_progress_logging_antigravity.py` appears as a caller of `data_paper.py` only if that test file contains `from paper.equipment_anomaly_detection.data_paper import ...` or an equivalent AST import. Keep that import. It does **not** itself become a paper-map module.
+The Exp448 progress-logging test lives outside `PAPER_ROOT`, so `_ast_import_callers` does not list it. Keep `from paper.equipment_anomaly_detection.data_paper import ...` in that test so it exercises the emit helper. It does **not** become a paper-map module or a paper AST caller. Paper-map and Exp448 `tests` lists still cite the Exp448 path.
 
 Run the shared map-resync scripts, then:
 
@@ -1464,7 +1477,7 @@ python3 -m py_compile \
   paper/equipment_anomaly_detection/sources_paper/stability_paper.py \
   paper/equipment_anomaly_detection/routing_paper.py \
   paper/equipment_anomaly_detection/artifacts_paper.py \
-  paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py
+  experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py
 git diff --check
 ```
 

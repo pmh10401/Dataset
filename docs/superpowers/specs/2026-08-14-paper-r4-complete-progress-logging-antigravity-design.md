@@ -654,7 +654,21 @@ No automated alerter in this spec. Operator signal is: no new `task7`/`hard_evid
 - Implementation after this spec lands on a new official scientific root and a new ops root. Names remain user-authorized later.
 - Same-context resume of the live root with new code is forbidden.
 - Checkpoints are never migrated by assumption.
-- Every newly created implementation, test, or helper file includes `antigravity` in the filename. Paper production modules that already exist keep `*_paper.py` names; new test file is `test_progress_logging_antigravity.py`; optional monitor is `scratch/monitor_paper_r4_live_progress_antigravity.py`.
+- Every newly created implementation, test, or helper file includes `antigravity` in the filename. Paper production modules that already exist keep `*_paper.py` names; new test file is `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py`; optional monitor is `scratch/monitor_paper_r4_live_progress_antigravity.py`.
+
+## Governance resolution (Task-2 blocker, Codex option 3)
+
+`ConfigLineageTests.test_all_new_static_files_use_approved_paper_naming` forbids any filename under `PAPER_ROOT` that lacks `paper` or contains `antigravity`. That frozen naming test is not weakened.
+
+AGENTS.md File Naming Policy requires every newly created file to include `antigravity` in its filename.
+
+Codex chose **option 3** because it is the only path that satisfies both higher-priority rules:
+
+1. Place `test_progress_logging_antigravity.py` under `tests_paper/` — violates the frozen paper namespace.
+2. Name the new test `*_paper.py` without `antigravity` — violates AGENTS.md new-file naming.
+3. Move the new test out of `PAPER_ROOT` to `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` — satisfies AGENTS.md and leaves `ConfigLineageTests` unchanged.
+
+The emit helper and 15s sink remain in existing `*_paper.py` modules. The Exp448 test is listed on Exp448 and paper-map `tests` fields; it is not a paper-map module and is not a paper AST caller because `_ast_import_callers` scans only `PAPER_ROOT`.
 
 ## Acceleration Assessment (mandatory)
 
@@ -679,7 +693,7 @@ CPU worker policy remains `WorkerRecord.from_logical_cpu_count`: `dataset_worker
 
 New file:
 
-`paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py`
+`experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py`
 
 Extensions allowed in:
 
@@ -776,7 +790,7 @@ Class name: `ProgressLoggingAntigravityTests` (unittest, matching `tests_paper` 
 
 ### TDD order
 
-1. Add `test_progress_logging_antigravity.py` with tests 1–13 written to the contracts above.
+1. Add `test_paper_r4_progress_logging_antigravity.py` with tests 1–13 written to the contracts above.
 2. Run that file. Observe failures (import errors, missing helpers, missing keywords). Do not edit production modules before the failures are recorded.
 3. Implement `data_paper.emit_progress_paper` + `proposal_score_paper.make_stderr_progress_sink_paper` until tests 3 and 11 pass (PR1). PR 1 also regenerates the six Exp448 + paper map files in that same commit because `data_paper.py` gains a mapped observer edge.
 4. Wire runner / compose / journal until tests 1, 2, 4, 5, 10, 12 pass (PR2). Refresh the same six map files in that same commit.
@@ -795,7 +809,7 @@ Before modifying a module, the implementer answers from the current maps:
 | `proposal_score_paper.py` | `runner_paper.py`, `tests_paper/test_artifacts_runner_paper.py`, `tests_paper/test_hard_sources_paper.py` | Task4–7 composition, parent-only success publication, Task8 freeze entry | `test_artifacts_runner_paper.py` |
 | `runner_paper.py` | `pipeline_paper.py`, `test_artifacts_runner_paper.py` | Stage run/verify, catalog raw load, journal | `test_artifacts_runner_paper.py` |
 | `pipeline_paper.py` | `test_artifacts_runner_paper.py`, `scratch/manage_paper_r4_proposal_antigravity.py` | stdout JSON, exit codes | `test_artifacts_runner_paper.py` |
-| `data_paper.py` | `label_access_paper.py`, `runner_paper.py`, `test_data_boundary_paper.py` (after PR 1 also `proposal_score_paper.py`, `routing_paper.py`, `artifacts_paper.py`, `sources_paper/low_frequency_paper.py`, `sources_paper/stability_paper.py`, `test_progress_logging_antigravity.py`) | Values-only load; after PR 1 also the result-neutral progress emit wrapper next to `SqlObserver` | `test_data_boundary_paper.py`, `test_progress_logging_antigravity.py` |
+| `data_paper.py` | `label_access_paper.py`, `runner_paper.py`, `test_data_boundary_paper.py` (after PR 1 also `proposal_score_paper.py`, `routing_paper.py`, `artifacts_paper.py`, `sources_paper/low_frequency_paper.py`, `sources_paper/stability_paper.py`; the Exp448 progress test is listed under Tests, not as a paper AST caller) | Values-only load; after PR 1 also the result-neutral progress emit wrapper next to `SqlObserver` | `test_data_boundary_paper.py`, `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` |
 | `sources_paper/low_frequency_paper.py` | `proposal_score_paper.py`, `stability_paper.py`, `test_low_frequency_paper.py`, `test_stability_paper.py` | Task6 result | `test_low_frequency_paper.py` |
 | `sources_paper/stability_paper.py` | `artifacts_paper.py`, `proposal_score_paper.py`, `routing_paper.py`, runner tests, `test_stability_paper.py` | Task7 partition | `test_stability_paper.py` |
 | `routing_paper.py` | `artifacts_paper.py`, `proposal_score_paper.py`, runner tests, `test_stability_paper.py` | Evidence surface, four policies | `test_stability_paper.py` |
@@ -895,7 +909,7 @@ PRs remain independently reviewable. Each mergeable PR that changes a mapped mod
 - **Files/components affected:**
   - `paper/equipment_anomaly_detection/data_paper.py` (`ProgressCallback`, `ALLOWED_*`, `FORBIDDEN_*`, `PROGRESS_TICK_INTERVAL_S`, `emit_progress_paper`; `load_dataset_values` unchanged)
   - `paper/equipment_anomaly_detection/proposal_score_paper.py` (`make_stderr_progress_sink_paper` only; no `compose_proposal_score` signature change)
-  - `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (new; tests 3 and 11 must fail then pass; stubs for later tests may remain failing)
+  - `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (new; tests 3 and 11 must fail then pass; stubs for later tests may remain failing)
   - `docs/codemap/codemap_exp448_antigravity.html`
   - `docs/codemap/codemap_exp448_antigravity.json`
   - `docs/codemap/codemap_exp448_antigravity.lock`
@@ -912,7 +926,7 @@ PRs remain independently reviewable. Each mergeable PR that changes a mapped mod
   - `paper/equipment_anomaly_detection/runner_paper.py` (`_load_catalog_raw`; three catalog-load sites; sink install)
   - `paper/equipment_anomaly_detection/proposal_score_paper.py` (`compose_proposal_score` / `_collect_task4_task5` gain `progress=`; `_progress` unchanged)
   - `paper/equipment_anomaly_detection/pipeline_paper.py` (stderr `journal_exit` line before stdout JSON)
-  - `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (tests 1, 2, 4, 5, 10, 12)
+  - `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (tests 1, 2, 4, 5, 10, 12)
   - `paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py` (existing parallel-progress and CLI tests stay green)
   - The same six Exp448 + paper map files, refreshed in this commit
 - **Dependencies:** PR 1
@@ -925,7 +939,7 @@ PRs remain independently reviewable. Each mergeable PR that changes a mapped mod
   - `paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py` (imports `emit_progress_paper` from `data_paper`)
   - `paper/equipment_anomaly_detection/sources_paper/stability_paper.py` (same import)
   - `paper/equipment_anomaly_detection/proposal_score_paper.py` (forward `progress` into Task6/Task7; keep exact start/finish prints)
-  - `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (tests 6, 7, including parent-axis `completed`/`total`)
+  - `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (tests 6, 7, including parent-axis `completed`/`total`)
   - `paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py` and `test_stability_paper.py` if default-call-site regressions appear
   - The same six Exp448 + paper map files, refreshed in this commit
 - **Dependencies:** PR 2
@@ -939,7 +953,7 @@ PRs remain independently reviewable. Each mergeable PR that changes a mapped mod
   - `paper/equipment_anomaly_detection/artifacts_paper.py`
   - `paper/equipment_anomaly_detection/proposal_score_paper.py` (`write_and_freeze_proposal_score` emits `shard_write` ticks and does not forward `progress`)
   - `paper/equipment_anomaly_detection/runner_paper.py` (pass sink through freeze/verify paths)
-  - `paper/equipment_anomaly_detection/tests_paper/test_progress_logging_antigravity.py` (tests 8, 9, 13)
+  - `experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py` (tests 8, 9, 13)
   - The same six Exp448 + paper map files, refreshed in this commit
 - **Dependencies:** PR 3
 - **Brief description:** Optional callbacks on `build_hard_evidence_surface`, `build_policies`, `write_typed_proposal_shard`, `freeze_score_root`, and `verify_score_root`. Official shard-write ticks come only from `write_and_freeze_proposal_score`. Prove no alert/score payload and byte-identical shards with and without a callback.
