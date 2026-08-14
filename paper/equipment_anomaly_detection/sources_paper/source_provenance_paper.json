@@ -458,7 +458,7 @@
       ]
     },
     "sources_paper/stability_paper.py": {
-      "paper_sha256": "0d869666749ec1aaaa9c6f37013451b38b553fa357bf547251126dbe104a81c3",
+      "paper_sha256": "56d90cef14f37580c5bc5d126e7fac8637d27053f5876bccb95681b83136d25e",
       "origins": [
         {
           "module": "experiments.exp444_train_only_stability_precision_gate_antigravity.sources_antigravity",

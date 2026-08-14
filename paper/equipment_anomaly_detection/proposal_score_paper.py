@@ -290,7 +290,7 @@ def compose_proposal_score(raw_datasets: Mapping[str, RawDataset], acceleration_
     _label_firewall()
     print("Task7 start", file=sys.stderr, flush=True)
     stability_started = monotonic()
-    stability = classify_stability(low, raw)
+    stability = classify_stability(low, raw, progress=progress)
     stability_seconds = float(monotonic() - stability_started)
     print("Task7 finish", file=sys.stderr, flush=True)
     surface = build_hard_evidence_surface(sources, routes, raw)

@@ -398,6 +398,39 @@ class ProgressLoggingAntigravityTests(unittest.TestCase):
         ]
         self.assertTrue(any(event["completed"] == 1 and event.get("dataset") == "A" for event in dual_parent))
 
+    def test_task7_candidate_and_view_progress_is_rate_limited_and_label_free(self) -> None:
+        from paper.equipment_anomaly_detection.sources_paper.stability_paper import classify_stability
+        from paper.equipment_anomaly_detection.proposal_score_paper import make_stderr_progress_sink_paper
+        from paper.equipment_anomaly_detection.tests_paper.test_stability_paper import _raw, _result
+
+        values = _raw("fixture")
+        low = _result(values)
+        selected = low.selected_candidates
+        self.assertGreaterEqual(len(selected), 1)
+        events: list[dict[str, object]] = []
+        stamps = iter([0.0] * 8 + [15.0, 30.0, 45.0])
+        stream = StringIO()
+        sink = make_stderr_progress_sink_paper(clock=lambda: next(stamps, 45.0), stream=stream)
+
+        def both(event):
+            events.append(dict(event))
+            sink(event)
+
+        classify_stability(low, {values.dataset: values}, progress=both)
+        total = len(selected)
+        self.assertTrue(all(event["total"] == total for event in events if event["stage"] == "task7"))
+        self.assertTrue(any(str(event.get("detail", "")).startswith("instance_index=") for event in events))
+        self.assertTrue(any(str(event.get("detail", "")).startswith("view_index=") and event["completed"] == 0 for event in events))
+        self.assertEqual(events[0]["phase"], "start")
+        self.assertEqual(events[-1]["phase"], "end")
+        printed = stream.getvalue()
+        self.assertIn("task7 0/", printed)
+        tick_lines = [line for line in printed.splitlines() if "view_index=" in line]
+        self.assertLessEqual(len(tick_lines), 2)
+        joined = json.dumps(events)
+        for token in ("survived", "agreeing_depths", "excess_ratio", "rank=", "label="):
+            self.assertNotIn(token, joined)
+
 
 if __name__ == "__main__":
     unittest.main()

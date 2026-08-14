@@ -11,12 +11,14 @@ from hashlib import sha256
 from itertools import combinations
 import json
 import math
+from time import monotonic
 from types import MappingProxyType
 from typing import Callable, Iterable, Mapping, Sequence
 
 import numpy as np
 
 from ..contracts_paper import LowFrequencyCandidate, LowFrequencyDepthEvidence, LowFrequencyResult, RawDataset
+from ..data_paper import ProgressCallback, emit_progress_paper
 from .low_frequency_paper import fit_group_calibration_paper, score_test_row_paper
 
 
@@ -265,7 +267,16 @@ def _default_replay(dataset: str, index: int, test: np.ndarray, retained: np.nda
     return score_test_row_paper(dataset, index, test, fit_group_calibration_paper(retained))
 
 
-def _candidate_views(candidate: LowFrequencyCandidate, values: RawDataset, replay: Replay) -> tuple[StabilityViewPaper, ...]:
+def _candidate_views(
+    candidate: LowFrequencyCandidate,
+    values: RawDataset,
+    replay: Replay,
+    *,
+    progress: ProgressCallback | None = None,
+    parent_completed: int = 0,
+    parent_total: int = 1,
+    started: float | None = None,
+) -> tuple[StabilityViewPaper, ...]:
     if values.dataset != candidate.dataset or candidate.instance_index >= len(values.test_rows) or values.test_indices[candidate.instance_index] != candidate.instance_index:
         raise ValueError("raw candidate TEST identity is unavailable")
     if values.test_rows[candidate.instance_index].size != candidate.raw_length:
@@ -304,18 +315,27 @@ def _candidate_views(candidate: LowFrequencyCandidate, values: RawDataset, repla
             raise ValueError("omission view returned invalid low-frequency evidence")
         if replayed is None:
             views.append(StabilityViewPaper(mask, retained_indices, copied_evidence, (), False, "candidate_absent"))
-            continue
-        if replayed.coordinate != candidate.coordinate or replayed.raw_length != candidate.raw_length:
+        elif replayed.coordinate != candidate.coordinate or replayed.raw_length != candidate.raw_length:
             raise ValueError("omission view candidate coordinate changed")
-        agreeing = tuple(sorted(item.depth for item in copied_evidence if item.strict_pass and item.depth in candidate.depths))
-        views.append(StabilityViewPaper(mask, retained_indices, copied_evidence, agreeing, len(agreeing) >= _MINIMUM_CONSENSUS_DEPTHS_PAPER, None))
+        else:
+            agreeing = tuple(sorted(item.depth for item in copied_evidence if item.strict_pass and item.depth in candidate.depths))
+            views.append(StabilityViewPaper(mask, retained_indices, copied_evidence, agreeing, len(agreeing) >= _MINIMUM_CONSENSUS_DEPTHS_PAPER, None))
+        emit_progress_paper(progress, {
+            "stage": "task7", "phase": "tick",
+            "completed": parent_completed, "total": parent_total,
+            "dataset": candidate.dataset,
+            "detail": f"view_index={mask.view_index}",
+            "elapsed_s": float(monotonic() - (started if started is not None else monotonic())),
+        })
     return tuple(views)
 
 
 def classify_stability(
     low_frequency: LowFrequencyResult,
     raw_datasets: Mapping[str, RawDataset],
-    *, replay: Replay | None = None,
+    *,
+    replay: Replay | None = None,
+    progress: ProgressCallback | None = None,
 ) -> StabilityPartition:
     """Refit selected candidates only, once per deterministic retained-TRAIN view."""
     if not isinstance(low_frequency, LowFrequencyResult) or not isinstance(raw_datasets, Mapping):
@@ -329,10 +349,37 @@ def classify_stability(
     scorer = _default_replay if replay is None else replay
     if not callable(scorer):
         raise ValueError("replay must be callable")
-    results = tuple(
-        aggregate_stability_views(candidate.coordinate, _candidate_views(candidate, raw[candidate.dataset], scorer))
-        for candidate in selected
-    )
+    started = monotonic()
+    total = len(selected)
+    finished = 0
+    emit_progress_paper(progress, {"stage": "task7", "phase": "start", "completed": 0, "total": total, "elapsed_s": 0.0})
+    try:
+        results = []
+        for candidate in selected:
+            emit_progress_paper(progress, {
+                "stage": "task7", "phase": "tick",
+                "completed": finished, "total": total,
+                "dataset": candidate.dataset,
+                "detail": f"instance_index={candidate.instance_index}",
+                "elapsed_s": float(monotonic() - started),
+            })
+            views = _candidate_views(
+                candidate, raw[candidate.dataset], scorer,
+                progress=progress, parent_completed=finished, parent_total=total, started=started,
+            )
+            results.append(aggregate_stability_views(candidate.coordinate, views))
+            finished += 1
+            emit_progress_paper(progress, {
+                "stage": "task7", "phase": "tick",
+                "completed": finished, "total": total,
+                "dataset": candidate.dataset,
+                "detail": f"instance_index={candidate.instance_index}",
+                "elapsed_s": float(monotonic() - started),
+            })
+        emit_progress_paper(progress, {"stage": "task7", "phase": "end", "completed": total, "total": total, "elapsed_s": float(monotonic() - started)})
+    except Exception:
+        emit_progress_paper(progress, {"stage": "task7", "phase": "error", "completed": finished, "total": total, "elapsed_s": float(monotonic() - started)})
+        raise
     evidence = {result.coordinate: result for result in results}
     return StabilityPartition(
         tuple(candidate.coordinate for candidate in selected),
