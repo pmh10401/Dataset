@@ -189,6 +189,24 @@ class Exp449CompositionGateTests(unittest.TestCase):
         self.assertIs(received["catalog"], self.catalog)
         self.assertIs(received["acceleration_manifest"], self.acceleration)
 
+    def test_private_task45_manifest_reaches_only_the_checkpoint_collector(self) -> None:
+        """Using the outer freeze backend for Task4/5 would recreate the context-hash self-reference."""
+        received: dict[str, object] = {}
+        bridge = {**self.acceleration, "assessment_sha256": "b" * 64}
+        def collector(raw: object, backend: object, **kwargs: object):
+            received.update(kwargs)
+            return self.sources, self.routes
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(runner, "_label_firewall"))
+            for stage_patch in self._stage_patches():
+                stack.enter_context(stage_patch)
+            score = runner.compose_exp449_proposal_score_antigravity(
+                self.raw, self.acceleration, root=Path("/tmp/exp449_fixture_antigravity"), context=object(),
+                catalog=self.catalog, collector=collector, _task45_acceleration_manifest=bridge,
+            )
+        self.assertIs(received["acceleration_manifest"], bridge)
+        self.assertEqual(score.backend.assessment_sha256, self.acceleration["assessment_sha256"])
+
     def test_collector_progress_is_forwarded_only_through_the_private_operations_seam(self) -> None:
         """Dropping a result-neutral Task4/5 event would make operations progress opaque."""
         received: list[dict[str, object]] = []

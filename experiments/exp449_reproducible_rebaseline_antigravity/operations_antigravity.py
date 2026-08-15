@@ -194,6 +194,7 @@ class Exp449WaveConfig:
     catalog: dict[str, object]
     raw_datasets: Mapping[str, object]
     acceleration_manifest: object
+    task45_acceleration_manifest: object | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.context, Exp449Context) or not isinstance(self.catalog, dict):
@@ -205,6 +206,22 @@ class Exp449WaveConfig:
         if tuple(raw) != datasets:
             raise ValueError("Exp449 recovery raw identity differs")
         object.__setattr__(self, "raw_datasets", raw)
+        bridge = self.acceleration_manifest if self.task45_acceleration_manifest is None else self.task45_acceleration_manifest
+        if bridge is not self.acceleration_manifest:
+            try:
+                outer = FrozenTask8BackendDecision.from_acceleration_manifest(self.acceleration_manifest)
+                task45 = FrozenTask8BackendDecision.from_acceleration_manifest(bridge)
+            except (TypeError, ValueError) as error:
+                raise ValueError("Exp449 Task4/5 bridge manifest differs") from error
+            if (
+                outer.selected_backend, outer.fallback_reason, outer.logical_cpu_count,
+                outer.dataset_workers, outer.inner_numerical_threads, outer.outer_execution_mode,
+            ) != (
+                task45.selected_backend, task45.fallback_reason, task45.logical_cpu_count,
+                task45.dataset_workers, task45.inner_numerical_threads, task45.outer_execution_mode,
+            ):
+                raise ValueError("Exp449 Task4/5 bridge decision differs")
+        object.__setattr__(self, "task45_acceleration_manifest", bridge)
 
 
 @dataclass(frozen=True, slots=True)
@@ -532,6 +549,8 @@ def acquire_smoke_a_execution_lease_antigravity(
 def _acquire_smoke_a_resume_lease_antigravity(
     verified: VerifiedExp449SmokeAAuthorityAntigravity,
     config: Exp449WaveConfig,
+    *,
+    _test_paths_antigravity: tuple[Path, Path, Path] | None = None,
 ) -> Exp449SmokeAExecutionLeaseAntigravity:
     """Reclaim only the exact inactive claim and consumed-root identity.
 
@@ -546,12 +565,12 @@ def _acquire_smoke_a_resume_lease_antigravity(
     scientific_root, operations_root, claim_path = (
         Path(grant.scientific_root), Path(grant.operations_root), Path(grant.claim_path),
     )
-    if (
-        scientific_root != FROZEN_EXP449_CONFIG.smoke_a_scientific_root
-        or operations_root != FROZEN_EXP449_CONFIG.smoke_a_operations_root
-        or claim_path != SMOKE_A_CLAIM_PATH_ANTIGRAVITY
-        or context.run_root != scientific_root
-    ):
+    expected_paths = (
+        FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+        FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+        SMOKE_A_CLAIM_PATH_ANTIGRAVITY,
+    ) if _test_paths_antigravity is None else tuple(map(Path, _test_paths_antigravity))
+    if len(expected_paths) != 3 or (scientific_root, operations_root, claim_path) != expected_paths or context.run_root != scientific_root:
         raise ValueError("Exp449 Smoke A resume roots differ")
     readiness_for_authorized_resume_antigravity(verified)
     for root, name in ((scientific_root, "scientific root"), (operations_root, "operations root")):
@@ -620,7 +639,7 @@ def _execution_capability_for_config_antigravity(config: Exp449WaveConfig, capab
 def _authority_antigravity(config: Exp449WaveConfig) -> tuple[dict[str, object], Task4Task5SuccessAuthority]:
     context_payload = task45_context_payload_antigravity(config.context)
     authority = Task4Task5SuccessAuthority.from_verified_context(
-        context_payload, config.catalog, config.acceleration_manifest
+        context_payload, config.catalog, config.task45_acceleration_manifest
     )
     return context_payload, authority
 
@@ -1084,6 +1103,7 @@ def run_exp449_wave_antigravity(
             catalog=config.catalog,
             _progress_callback=fixed_progress,
             _strict_operations_progress=authorized_lease is not None,
+            _task45_acceleration_manifest=config.task45_acceleration_manifest,
         )
     except ProposalScoreIncomplete:
         after = _snapshot_antigravity(config)
@@ -1182,6 +1202,10 @@ def _authorized_smoke_a_wave_config_antigravity(
     return Exp449WaveConfig(
         context=context, catalog=catalog, raw_datasets=raw,
         acceleration_manifest=acceleration,
+        task45_acceleration_manifest=build_acceleration_manifest(
+            task45_context_payload_antigravity(context)["context_sha256"],
+            logical_cpu_count=grant.logical_cpu_count,
+        ),
     )
 
 
@@ -1261,7 +1285,8 @@ def execute_smoke_a_resume_antigravity(
         terminal = _existing_terminal_status_antigravity(config)
         if terminal is not None:
             if terminal.status == "dataset_local_complete":
-                _freeze_exists_antigravity(config)
+                if not _freeze_exists_antigravity(config):
+                    raise ValueError("Exp449 complete terminal lacks a verified freeze")
             elif _freeze_exists_antigravity(config):
                 raise ValueError("Exp449 incomplete terminal must not have a proposal freeze")
             return terminal

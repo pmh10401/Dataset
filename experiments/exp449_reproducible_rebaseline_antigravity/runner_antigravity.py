@@ -80,6 +80,7 @@ def compose_exp449_proposal_score_antigravity(
     collector: Task45Collector = _collect_task4_task5,
     _progress_callback: Callable[[Mapping[str, object]], None] | None = None,
     _strict_operations_progress: bool = False,
+    _task45_acceleration_manifest: object | None = None,
 ) -> ProposalScore:
     """Run Task6/7 only after exact in-memory Task4/5 catalog closure.
 
@@ -104,7 +105,10 @@ def compose_exp449_proposal_score_antigravity(
         "root": root,
         "context": context,
         "catalog": catalog,
-        "acceleration_manifest": acceleration_manifest,
+        # The checkpoint publisher binds this bridge manifest to the Task4/5
+        # context hash.  The outer manifest remains the ProposalScore backend
+        # and therefore the sole Task8 freeze backend authority.
+        "acceleration_manifest": acceleration_manifest if _task45_acceleration_manifest is None else _task45_acceleration_manifest,
     }
     if _strict_operations_progress:
         if _progress_callback is None:

@@ -2,15 +2,154 @@
 
 from __future__ import annotations
 
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, ExitStack
+from collections.abc import Mapping
+from dataclasses import fields, is_dataclass, replace
+from hashlib import sha256
+import json
 from pathlib import Path
 from types import SimpleNamespace
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+
+import numpy as np
 
 from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
 from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import Exp449Context, Exp449TerminalStatus
 from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_antigravity import VerifiedExp449SmokeAAuthorityAntigravity
+from experiments.exp449_reproducible_rebaseline_antigravity import contracts_antigravity as contracts
+from experiments.exp449_reproducible_rebaseline_antigravity import execution_authority_antigravity as authority
+from experiments.exp449_reproducible_rebaseline_antigravity.tests.test_manifest_verifier_antigravity import (
+    _TypedProposalFixtureAntigravity,
+    _context_antigravity as _typed_context_antigravity,
+)
+
+
+def _assert_science_equal_antigravity(test: unittest.TestCase, actual: object, expected: object) -> None:
+    """Compare every ProposalScore scientific field, excluding wall-clock timing only."""
+    if isinstance(actual, np.ndarray) or isinstance(expected, np.ndarray):
+        test.assertIsInstance(actual, np.ndarray); test.assertIsInstance(expected, np.ndarray)
+        test.assertEqual(actual.dtype, expected.dtype); test.assertEqual(actual.shape, expected.shape)
+        test.assertEqual(actual.tobytes(), expected.tobytes()); return
+    if is_dataclass(actual) or is_dataclass(expected):
+        test.assertTrue(is_dataclass(actual) and is_dataclass(expected)); test.assertEqual(type(actual), type(expected))
+        for field in fields(actual):
+            if type(actual).__name__ == "ProposalScore" and field.name == "stage_seconds":
+                continue
+            _assert_science_equal_antigravity(test, getattr(actual, field.name), getattr(expected, field.name))
+        return
+    if isinstance(actual, Mapping) or isinstance(expected, Mapping):
+        test.assertTrue(isinstance(actual, Mapping) and isinstance(expected, Mapping))
+        test.assertEqual(tuple(actual), tuple(expected))
+        for key in actual: _assert_science_equal_antigravity(test, actual[key], expected[key])
+        return
+    if isinstance(actual, (tuple, list)) or isinstance(expected, (tuple, list)):
+        test.assertEqual(type(actual), type(expected)); test.assertEqual(len(actual), len(expected))
+        for left, right in zip(actual, expected, strict=True): _assert_science_equal_antigravity(test, left, right)
+        return
+    if isinstance(actual, (set, frozenset)) or isinstance(expected, (set, frozenset)):
+        test.assertEqual(actual, expected); return
+    test.assertEqual(actual, expected)
+
+
+def _freeze_bytes_antigravity(root: Path) -> tuple[bytes, dict[str, bytes]]:
+    freeze = root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity"
+    outer = json.loads((freeze / "proposal_manifest_antigravity.json").read_text())
+    outer["context_sha256"] = "0" * 64
+    for descriptor in outer["task45_checkpoints"]:
+        record_path = root / descriptor["relative_path"]
+        record = json.loads(record_path.read_text()); record["context_sha256"] = "0" * 64
+        if "assessment_sha256" in record.get("backend", {}): record["backend"]["assessment_sha256"] = "0" * 64
+        if "record_sha256" in record:
+            bare = {key: value for key, value in record.items() if key != "record_sha256"}
+            record["record_sha256"] = sha256(json.dumps(bare, sort_keys=True, separators=(",", ":")).encode() + b"\n").hexdigest()
+        data = json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        descriptor["size"] = len(data); descriptor["sha256"] = sha256(data).hexdigest()
+    normalized = json.dumps(outer, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+    return normalized, {str(path.relative_to(freeze)): path.read_bytes() for path in sorted((freeze / "shards_antigravity").rglob("*_proposal_shard_antigravity.json"))}
+
+
+class _TemporaryAuthorizedSmokeAAntigravity:
+    """Real typed paper recovery in temporary roots; only authority paths and heavy scoring are replaced."""
+
+    def __init__(self) -> None:
+        self.directory = TemporaryDirectory(dir=Path.cwd())
+        root = Path(self.directory.name)
+        self.scientific_root, self.operations_root, self.claim_path = (
+            root / "science_antigravity", root / "operations_antigravity", root / "claim_antigravity.lock",
+        )
+        self.stack = ExitStack(); self.heavy_calls = 0
+
+    def __enter__(self) -> "_TemporaryAuthorizedSmokeAAntigravity":
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from paper.equipment_anomaly_detection import proposal_score_paper
+        from experiments.exp449_reproducible_rebaseline_antigravity.artifacts_antigravity import context_sha256_antigravity
+        from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_antigravity import (
+            Exp449SmokeAGrantAntigravity, VerifiedExp449SmokeAAuthorityAntigravity, canonical_grant_bytes_antigravity,
+        )
+        temporary_config = SimpleNamespace(**{
+            field.name: getattr(operations.FROZEN_EXP449_CONFIG, field.name)
+            for field in fields(operations.FROZEN_EXP449_CONFIG)
+        })
+        temporary_config.smoke_a_scientific_root = self.scientific_root
+        temporary_config.smoke_a_operations_root = self.operations_root
+        self.stack.enter_context(patch.object(operations, "FROZEN_EXP449_CONFIG", temporary_config))
+        self.stack.enter_context(patch.object(operations, "SMOKE_A_CLAIM_PATH_ANTIGRAVITY", self.claim_path))
+        self.stack.enter_context(patch.object(authority, "FROZEN_EXP449_CONFIG", temporary_config))
+        self.stack.enter_context(patch.object(authority, "SMOKE_A_CLAIM_PATH_ANTIGRAVITY", self.claim_path))
+        self.stack.enter_context(patch.object(contracts, "_SMOKE_ROOTS", frozenset({self.scientific_root.resolve()})))
+        self.fixture = _TypedProposalFixtureAntigravity(self.scientific_root)
+        context_acceleration = build_acceleration_manifest("f" * 64, logical_cpu_count=1)
+        backend = FrozenTask8BackendDecision.from_acceleration_manifest(context_acceleration)
+        context = _typed_context_antigravity(self.scientific_root, self.fixture.catalog, backend)
+        acceleration = build_acceleration_manifest(context_sha256_antigravity(context), logical_cpu_count=1)
+        self.config = operations.Exp449WaveConfig(
+            context, self.fixture.catalog, self.fixture.score.raw, context_acceleration,
+            task45_acceleration_manifest=acceleration,
+        )
+        grant = Exp449SmokeAGrantAntigravity(
+            schema="exp449-smoke-a-execution-grant-antigravity.v1", experiment_id="Exp449", target="smoke-a",
+            policy_id=temporary_config.policy_id, implementation_commit="1" * 40,
+            scientific_root=self.scientific_root, operations_root=self.operations_root, claim_path=self.claim_path,
+            nonce="0123456789abcdef0123456789abcdef", maximum_waves=2, label_access=False,
+            logical_cpu_count=authority.EXP449_LOGICAL_CPU_COUNT_ANTIGRAVITY,
+            dataset_workers=authority.EXP449_DATASET_WORKERS_ANTIGRAVITY,
+            database_path="/fixture/temporary-exp449-antigravity.sqlite", database_size=17, database_sha256="a" * 64,
+            smoke_catalog_sha256=self.fixture.catalog["catalog_sha256"], smoke_datasets=temporary_config.smoke_datasets,
+            context_sha256=context_sha256_antigravity(context), scientific_code_closure={"fixture.py": "b" * 64},
+            authority_code_closure={"authority.py": "c" * 64}, lineage_lock_sha256="d" * 64,
+            codemap_lock_sha256="e" * 64, acceleration_assessment_sha256="f" * 64, canonical_backend="cpu",
+            package_inventory={"fixture": "1"}, seeds_and_constants={"seed": 449}, acceleration={"selected_backend": "cpu"},
+            design_facts=authority._DESIGN_FACTS_ANTIGRAVITY, grant_created_at="2026-08-15T00:00:00Z",
+        )
+        grant_bytes = canonical_grant_bytes_antigravity(grant)
+        self.verified = VerifiedExp449SmokeAAuthorityAntigravity(
+            "2" * 40, "1" * 40, grant, sha256(grant_bytes).hexdigest(), grant_bytes, b"fixture digest", (1, 2, 3, 4), (5, 6, 7, 8),
+        )
+        def score_dataset(values: object):
+            self.heavy_calls += 1
+            return self.fixture.score.sources[values.dataset], self.fixture.score.routes[values.dataset]
+        self.stack.enter_context(patch.object(operations, "readiness_for_authorized_implementation_antigravity", return_value={}))
+        self.stack.enter_context(patch.object(operations, "readiness_for_authorized_resume_antigravity", return_value={}))
+        self.stack.enter_context(patch.object(proposal_score_paper, "verify_exp84_environment_paper"))
+        self.stack.enter_context(patch.object(proposal_score_paper, "verify_pycatch22_environment_paper"))
+        self.stack.enter_context(patch.object(proposal_score_paper, "_score_dataset_task4_task5", side_effect=score_dataset))
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.stack.close(); self.directory.cleanup()
+
+    @property
+    def paths(self) -> tuple[Path, Path, Path]:
+        return self.scientific_root, self.operations_root, self.claim_path
+
+    def acquire_fresh(self):
+        return operations.acquire_smoke_a_execution_lease_antigravity(self.verified, self.config.context, _test_paths_antigravity=self.paths)
+
+    def acquire_resume(self):
+        return operations._acquire_smoke_a_resume_lease_antigravity(self.verified, self.config, _test_paths_antigravity=self.paths)
 
 
 def _context_antigravity() -> Exp449Context:
@@ -116,6 +255,109 @@ class Exp449ExecutionLifecycleTests(unittest.TestCase):
         ):
             status = operations.execute_smoke_a_resume_antigravity(self.verified)
         self.assertEqual(status, self.complete)
+
+    def test_resume_rejects_a_complete_terminal_without_a_verified_freeze(self) -> None:
+        """Returning a complete terminal without a freeze would trust an unverified publication."""
+        with (
+            patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=self.config),
+            patch.object(operations, "_acquire_smoke_a_resume_lease_antigravity", return_value=_LeaseAntigravity()),
+            patch.object(operations, "_existing_terminal_status_antigravity", return_value=self.complete),
+            patch.object(operations, "_freeze_exists_antigravity", return_value=False),
+        ):
+            with self.assertRaisesRegex(ValueError, "complete terminal lacks a verified freeze"):
+                operations.execute_smoke_a_resume_antigravity(self.verified)
+
+    def test_real_temporary_direct_wave_reuses_success_checkpoints_without_rescoring(self) -> None:
+        """A completed Task4/5 namespace must reconstruct Task6/7 from typed checkpoints without heavy scoring."""
+        with _TemporaryAuthorizedSmokeAAntigravity() as fixture:
+            with fixture.acquire_fresh() as lease:
+                first = operations.run_exp449_wave_antigravity(
+                    fixture.config, _execution_capability=lease.capability, _execution_lease=lease,
+                )
+                self.assertEqual(first.status.status, "dataset_local_complete")
+                self.assertIsNotNone(first.score)
+                self.assertEqual(fixture.heavy_calls, len(fixture.config.raw_datasets))
+            before = fixture.heavy_calls
+            with fixture.acquire_resume() as lease:
+                recovered = operations.run_exp449_wave_antigravity(
+                    fixture.config, _execution_capability=lease.capability, _execution_lease=lease,
+                )
+            self.assertEqual(recovered.status.status, "dataset_local_complete")
+            self.assertIsNotNone(recovered.score)
+            _assert_science_equal_antigravity(self, recovered.score, first.score)
+            self.assertEqual(fixture.heavy_calls, before)
+
+    def test_real_task45_recovery_freezes_with_the_separate_bridge_manifest(self) -> None:
+        """The bridge manifest binds checkpoints while the outer backend remains freeze-authoritative."""
+        with _TemporaryAuthorizedSmokeAAntigravity() as fixture:
+            with fixture.acquire_fresh() as lease:
+                result = operations.run_exp449_wave_antigravity(
+                    fixture.config, _execution_capability=lease.capability, _execution_lease=lease,
+                )
+                status = operations._finalize_authorized_complete_antigravity(fixture.config, result, lease)
+            self.assertEqual(status.status, "dataset_local_complete")
+
+    def test_real_direct_fresh_and_resume_are_scientifically_byte_identical(self) -> None:
+        """Lifecycle authorization changes only root-bound authority, never ProposalScore science or shard bytes."""
+        scores: list[object] = []; artifacts: list[tuple[bytes, dict[str, bytes]]] = []
+        with _TemporaryAuthorizedSmokeAAntigravity() as direct:
+            with direct.acquire_fresh() as lease:
+                result = operations.run_exp449_wave_antigravity(direct.config, _execution_capability=lease.capability, _execution_lease=lease)
+                scores.append(result.score); operations._finalize_authorized_complete_antigravity(direct.config, result, lease)
+            artifacts.append(_freeze_bytes_antigravity(direct.scientific_root))
+        with _TemporaryAuthorizedSmokeAAntigravity() as fresh:
+            original_acquire = operations.acquire_smoke_a_execution_lease_antigravity
+            original_freeze = operations.freeze_authorized_exp449_proposal_antigravity; captured: list[object] = []
+            def acquire(verified: object, context: object): return original_acquire(verified, context, _test_paths_antigravity=fresh.paths)
+            def freeze(score: object, **kwargs: object): captured.append(score); return original_freeze(score, **kwargs)
+            with patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=fresh.config), patch.object(operations, "acquire_smoke_a_execution_lease_antigravity", side_effect=acquire), patch.object(operations, "freeze_authorized_exp449_proposal_antigravity", side_effect=freeze):
+                self.assertEqual(operations.execute_smoke_a_fresh_antigravity(fresh.verified).status, "dataset_local_complete")
+            scores.append(captured.pop()); artifacts.append(_freeze_bytes_antigravity(fresh.scientific_root))
+        with _TemporaryAuthorizedSmokeAAntigravity() as resumed:
+            with resumed.acquire_fresh() as lease:
+                result = operations.run_exp449_wave_antigravity(resumed.config, _execution_capability=lease.capability, _execution_lease=lease)
+                scores.append(result.score)
+                operations.freeze_authorized_exp449_proposal_antigravity(result.score, config=resumed.config, _execution_capability=lease.capability)
+            before = resumed.heavy_calls; original_resume = operations._acquire_smoke_a_resume_lease_antigravity
+            def acquire_resume(verified: object, config: object): return original_resume(verified, config, _test_paths_antigravity=resumed.paths)
+            with patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=resumed.config), patch.object(operations, "_acquire_smoke_a_resume_lease_antigravity", side_effect=acquire_resume):
+                self.assertEqual(operations.execute_smoke_a_resume_antigravity(resumed.verified).status, "dataset_local_complete")
+            self.assertEqual(resumed.heavy_calls, before); artifacts.append(_freeze_bytes_antigravity(resumed.scientific_root))
+        for score in scores[1:]: _assert_science_equal_antigravity(self, score, scores[0])
+        for artifact in artifacts[1:]: self.assertEqual(artifact, artifacts[0])
+
+    def test_real_resume_acquisition_rejects_authority_and_claim_tampering(self) -> None:
+        """A resumed lease must rebind its exact consumed claim to the verified context authority."""
+        with _TemporaryAuthorizedSmokeAAntigravity() as fixture:
+            with fixture.acquire_fresh() as lease:
+                operations.run_exp449_wave_antigravity(
+                    fixture.config, _execution_capability=lease.capability, _execution_lease=lease,
+                )
+            for field, changed in (
+                ("database_sha256", "b" * 64),
+                ("scientific_code_closure", {"fixture.py": "c" * 64}),
+                ("package_inventory", {"fixture": "2"}),
+                ("acceleration", {"selected_backend": "cpu", "worker_fixture": 2}),
+            ):
+                with self.subTest(field=field):
+                    grant = replace(fixture.verified.grant, **{field: changed})
+                    altered = replace(fixture.verified, grant=grant, grant_sha256="e" * 64)
+                    with self.assertRaisesRegex(ValueError, "resume claim differs"):
+                        operations._acquire_smoke_a_resume_lease_antigravity(altered, fixture.config, _test_paths_antigravity=fixture.paths)
+            original = fixture.claim_path.read_bytes(); fixture.claim_path.write_bytes(original + b" ")
+            with self.assertRaisesRegex(ValueError, "(resume claim differs|persisted authority record is noncanonical)"):
+                fixture.acquire_resume()
+
+    def test_task45_bridge_rejects_worker_decision_drift(self) -> None:
+        """The distinct assessment binding cannot change CPU selection, fallback, or worker policy."""
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        with _TemporaryAuthorizedSmokeAAntigravity() as fixture:
+            drift = build_acceleration_manifest("a" * 64, logical_cpu_count=2)
+            with self.assertRaisesRegex(ValueError, "bridge decision differs"):
+                operations.Exp449WaveConfig(
+                    fixture.config.context, fixture.config.catalog, fixture.config.raw_datasets,
+                    fixture.config.acceleration_manifest, task45_acceleration_manifest=drift,
+                )
 
 
 if __name__ == "__main__":

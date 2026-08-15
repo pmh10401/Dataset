@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-15T17:47:47+09:00",
+  "generated_at": "2026-08-15T18:21:00+09:00",
   "generated_from_commit": "79a189578047087fe3fea8ec6ac00a501d94414e",
   "working_tree_dirty": true,
   "scope": [
@@ -165,7 +165,7 @@
     {
       "id": "exp449_runner",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
-      "role": "Implemented values-only Task4/5 collection, exact catalog-bijection gate, Task6/7 Candidate C composition, and Exp449-only proposal-freeze handoff.",
+      "role": "Implemented values-only Task4/5 collection, exact catalog-bijection gate, Task6/7 Candidate C composition, and Exp449-only proposal-freeze handoff. A private Task4/5 bridge acceleration manifest reaches only checkpoint collection; the outer manifest remains the ProposalScore backend.",
       "entrypoints": [
         "compose_exp449_proposal_score_antigravity",
         "verify_dataset_local_bijection_antigravity"
@@ -174,7 +174,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "constraints": [
-        "Uses no historical oracle, acceptance, or parity authority; has no TEST-label access; its freeze handoff only accepts an already-composed ProposalScore and the caller-bound Exp449 context/catalog."
+        "Uses no historical oracle, acceptance, or parity authority; has no TEST-label access; its private Task4/5 bridge must preserve the outer CPU decision and worker contract, and its freeze handoff only accepts an already-composed ProposalScore and the caller-bound Exp449 context/catalog."
       ],
       "evidence": [
         {
@@ -188,7 +188,8 @@
       ],
       "effects": [
         "collects Task4/5 through the paper collector, rejects non-bijective catalog mappings, then composes low-frequency, stability, routing, and Candidate-C ProposalScore values",
-        "routes private strict operational progress exclusively as strict_progress for the authorized Smoke A parent, never through legacy progress; default paper collection behavior remains unchanged and checkpoint/attempt durability precedes rolling queue replenishment"
+        "routes private strict operational progress exclusively as strict_progress for the authorized Smoke A parent, never through legacy progress; default paper collection behavior remains unchanged and checkpoint/attempt durability precedes rolling queue replenishment",
+        "sends the context-bound Task4/5 bridge manifest only to the paper collector while retaining the outer manifest as the returned ProposalScore backend"
       ]
     },
     {
@@ -226,7 +227,7 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Parent-only authorized Smoke A lifecycle, recovery, scorer-free readiness, and mutation ownership: only a verified one-shot process-local capability may claim fixed paths, consume authority, run up to two waves, freeze, verify, or publish a terminal record.",
+      "role": "Parent-only authorized Smoke A lifecycle, recovery, scorer-free readiness, and mutation ownership. It carries equivalent outer and Task4/5 bridge acceleration manifests so checkpoint authority is context-bound while ProposalScore/freeze authority remains outer-bound.",
       "entrypoints": [
         "Exp449AuthorizedWaveResultAntigravity",
         "Exp449SmokeAExecutionLeaseAntigravity",
@@ -276,7 +277,8 @@
       "effects": [
         "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt, durable result-neutral progress/status metadata, and capability-gated configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged",
         "treats derived status-cache replace/fsync failures as nonauthoritative while durable progress append/fsync failures still stop authorized collection before replenishment or terminal recovery",
-        "retains the genuine completed ProposalScore only until capability-bound freeze and scorer-free verification; complete terminal publication follows verification, while final incomplete waves publish no science"
+        "retains the genuine completed ProposalScore only until capability-bound freeze and scorer-free verification; complete terminal publication follows verification, while final incomplete waves publish no science",
+        "uses the context-bound Task4/5 bridge manifest for checkpoint authority only; outer and bridge CPU decision/worker records must remain identical"
       ]
     },
     {
