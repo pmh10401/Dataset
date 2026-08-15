@@ -263,7 +263,15 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         self.assertIn("docs/authorities", excluded)
         self.assertNotIn("docs", excluded)
         self.assertIn("docs/authorities", lock["fingerprint_algorithm"])
-        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"docs", "root"})
+        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"docs", "experiments", "root"})
+        self.assertEqual(
+            by_id["exp449_runbook"]["evidence"][0]["symbol"],
+            "Exp449 Smoke A 실행 안내서 — grant 승인 대기",
+        )
+        self.assertEqual(
+            by_id["exp449_implementation_report"]["evidence"][0]["symbol"],
+            "Exp449 Smoke A pinned-grant lifecycle — implementation I review evidence",
+        )
         paths_by_module: dict[str, list[Path]] = {}
         excluded = set(lock["excluded_directories"])
         tracked = subprocess.run(

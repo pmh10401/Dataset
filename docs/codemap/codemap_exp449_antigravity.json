@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T19:12:38+09:00",
-  "generated_from_commit": "eb948e869930995ec4ecddf2b654e3e2f5ae840f",
+  "generated_at": "2026-08-15T19:33:46+09:00",
+  "generated_from_commit": "6c1547ea9b208830aa0716175516058a3d77727c",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Smoke A pinned-grant lifecycle review boundary: no authority JSON, root/claim creation, scoring, TEST-label access, smoke, or official run.",
@@ -493,7 +493,7 @@
       "evidence": [
         {
           "path": "docs/EXP449_RUNBOOK_antigravity_KO.md",
-          "symbol": "Exp449 실행 안내서 — 현재 실행 비인가"
+          "symbol": "Exp449 Smoke A 실행 안내서 — grant 승인 대기"
         }
       ],
       "callers": [
@@ -520,7 +520,7 @@
       "evidence": [
         {
           "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "Exp449 구현 증거 보고 — 비실행"
+          "symbol": "Exp449 Smoke A pinned-grant lifecycle — implementation I review evidence"
         }
       ],
       "callers": [
