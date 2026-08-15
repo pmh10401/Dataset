@@ -7,7 +7,7 @@
     "Task4 TRAIN-only and Task5 label-free TRAIN+TEST-value-transductive collection feed the exact catalog gate, Task6 low-frequency selection, Task7 stability/routing, Candidate C, typed shards, outer manifest, and scorer-free verifier.",
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "All execution commands remain fail-closed as execution_authority_not_configured until a separate reviewed code/config change pins trusted authority and the user separately approves execution; codemap callers are derived from the mapped Python AST import graph or explicitly enumerated external/logical entrypoints.",
-    "The Smoke A pinned-grant execution plan is planning evidence only: it is included in the tracked docs fingerprint but introduces no runtime module, authority data, or new Exp449 logical node."
+    "Smoke A grant and digest contracts are pure data only; no authority JSON, claim, production root, readiness invocation, or execution is created in this revision."
   ],
   "nodes": [
     {
@@ -92,6 +92,7 @@
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
@@ -108,8 +109,10 @@
       "callers": [
         "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
@@ -147,6 +150,7 @@
       ],
       "callers": [
         "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
@@ -1637,6 +1641,65 @@
       "effects": [
         "reads no-follow typed shard, checkpoint, and outer-manifest snapshots and verifies catalog, context, policy, digest, and global-candidate invariants"
       ]
+    },
+    {
+      "id": "exp449_execution_authority",
+      "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
+      "role": "Pure immutable Smoke A grant and digest contracts plus fail-closed authorization-directory structural validation.",
+      "entrypoints": [
+        "Exp449SmokeAGrantAntigravity",
+        "Exp449SmokeAGrantDigestAntigravity",
+        "canonical_grant_bytes_antigravity",
+        "parse_grant_bytes_antigravity",
+        "canonical_grant_digest_bytes_antigravity",
+        "parse_grant_digest_bytes_antigravity",
+        "verify_authority_directory_structure_antigravity"
+      ],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py"
+      ],
+      "constraints": [
+        "Has no operations, scorer, readiness, Git, or mutation capability dependency; validates only canonical frozen data and an allowlisted authority-directory shape.",
+        "Authority data is outside source fingerprinting only; the authority module remains in the normal Exp449 code closure."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
+          "symbol": "Exp449SmokeAGrantAntigravity, Exp449SmokeAGrantDigestAntigravity, canonical_grant_bytes_antigravity, parse_grant_bytes_antigravity, canonical_grant_digest_bytes_antigravity, parse_grant_digest_bytes_antigravity, verify_authority_directory_structure_antigravity"
+        }
+      ],
+      "callers": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py"
+      ],
+      "effects": [
+        "binds one Smoke A design, closures, CPU 12-to-11 contract, absent-label constraint, and canonical authority bytes without enabling execution"
+      ]
+    },
+    {
+      "id": "exp449_execution_authority_tests",
+      "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+      "role": "Fixture-only regression coverage for canonical Smoke A grant/digest data and authorization-directory rejection.",
+      "entrypoints": [
+        "Exp449SmokeAAuthorityContractTests"
+      ],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py"
+      ],
+      "constraints": [
+        "Uses only temporary directories and in-memory authority bytes; no production roots, claim, authority JSON, database, scorer, or labels are accessed."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+          "symbol": "Exp449SmokeAAuthorityContractTests"
+        }
+      ],
+      "callers": [
+        "unittest discovery"
+      ],
+      "effects": [
+        "proves malformed, mutable, noncanonical, and structurally unsafe authority inputs fail closed"
+      ]
     }
   ],
   "edges": [
@@ -2269,6 +2332,33 @@
       "from": "exp449_config_contract_tests",
       "to": "exp449_implementation_report",
       "type": "asserts_existence"
+    },
+    {
+      "from": "exp449_execution_authority_tests",
+      "to": "exp449_execution_authority",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+        "symbol": "Exp449SmokeAAuthorityContractTests"
+      }
+    },
+    {
+      "from": "exp449_execution_authority",
+      "to": "exp449_config",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
+        "symbol": "FROZEN_EXP449_CONFIG, fixed authority paths, CPU worker constants"
+      }
+    },
+    {
+      "from": "exp449_execution_authority",
+      "to": "exp449_contracts",
+      "type": "imports",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
+        "symbol": "freeze_canonical_json_mapping_antigravity"
+      }
     }
   ],
   "flows": [
@@ -2326,6 +2416,16 @@
         "exp449_codemap_lock"
       ],
       "outcome": "State and Korean documentation record verified implementation while all six roots stay absent and every execution command remains execution_authority_not_configured pending a separate trusted-authority review and explicit user approval."
+    },
+    {
+      "trigger": "Exp449 Smoke A authority data boundary",
+      "steps": [
+        "exp449_config",
+        "exp449_contracts",
+        "exp449_execution_authority",
+        "exp449_execution_authority_tests"
+      ],
+      "outcome": "A canonical grant binds the Smoke A-only frozen design and code closures while directory validation permits only the two future JSON authorities; no authority JSON, root, claim, readiness, or execution is created."
     }
   ],
   "unknown_relationships": [],

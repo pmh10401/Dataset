@@ -72,6 +72,15 @@ def _freeze_json(value: object, name: str = "value") -> object:
     raise ValueError(f"{name} must contain only canonical JSON values")
 
 
+def freeze_canonical_json_mapping_antigravity(value: object, name: str) -> Mapping[str, object]:
+    """Return an independent recursively immutable canonical JSON mapping."""
+
+    frozen = _freeze_json(value, name)
+    if not isinstance(frozen, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    return frozen
+
+
 def _json_plain(value: object) -> object:
     if isinstance(value, Mapping):
         return {key: _json_plain(nested) for key, nested in value.items()}

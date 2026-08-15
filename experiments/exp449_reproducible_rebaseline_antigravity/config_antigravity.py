@@ -8,6 +8,15 @@ from pathlib import Path
 
 
 _DATASET_ROOT = Path("/Users/mac/Documents/Dataset")
+REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[2]
+SMOKE_A_GRANT_PATH_ANTIGRAVITY = REPOSITORY_ROOT_ANTIGRAVITY / "docs/authorities/smoke_a_execution_grant_antigravity.json"
+SMOKE_A_DIGEST_PATH_ANTIGRAVITY = REPOSITORY_ROOT_ANTIGRAVITY / "docs/authorities/smoke_a_execution_grant_digest_antigravity.json"
+SMOKE_A_CLAIM_PATH_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/"
+    "paper_proposal_exp449_smoke_a_antigravity_20260814_claim_antigravity.lock"
+)
+EXP449_LOGICAL_CPU_COUNT_ANTIGRAVITY = 12
+EXP449_DATASET_WORKERS_ANTIGRAVITY = 11
 _APPROVED_ROOTS = (
     _DATASET_ROOT / "paper_proposal_exp449_smoke_a_antigravity_20260814",
     _DATASET_ROOT / "paper_proposal_exp449_smoke_a_antigravity_20260814_ops_antigravity",

@@ -14,6 +14,8 @@ from types import MappingProxyType
 from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import (
     FROZEN_EXP449_CONFIG,
     FrozenExp449Config,
+    SMOKE_A_DIGEST_PATH_ANTIGRAVITY,
+    SMOKE_A_GRANT_PATH_ANTIGRAVITY,
 )
 from experiments.exp449_reproducible_rebaseline_antigravity.contracts_antigravity import (
     Exp449Context,
@@ -39,6 +41,7 @@ EXP448_FROZEN_PATHS = (
 _EXP449_AST_MODULE_NODE_IDS = frozenset({
     "exp449_config",
     "exp449_contracts",
+    "exp449_execution_authority",
     "exp449_runner",
     "exp449_artifacts",
     "exp449_operations",
@@ -53,6 +56,7 @@ _EXP449_LOGICAL_NODE_VERIFIERS = {
     "exp449_design": (("RESEARCH_STATE.json active_documents.design", "human reviewers"), ("Exp449 Proposal Reproducibility Design",)),
     "exp449_plan": (("RESEARCH_STATE.json active_documents.plan", "human reviewers"), ("Task 8: Freeze Documentation, Full Verification, and Independent Review",)),
     "exp449_config_contract_tests": (("unittest discovery",), ("Exp449VersionBoundaryTests",)),
+    "exp449_execution_authority_tests": (("unittest discovery",), ("Exp449SmokeAAuthorityContractTests",)),
     "exp449_runner_recovery_tests": (("unittest discovery",), ("Exp449DatasetLocalBijectionTests",)),
     "exp449_manifest_verifier_tests": (("unittest discovery",), ("Exp449ManifestVerifierTests",)),
     "exp449_readiness_tests": (("unittest discovery",), ("Exp449ReadinessTests",)),
@@ -245,6 +249,23 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         self.assertEqual(set(by_id) - _EXP449_AST_MODULE_NODE_IDS, set(_EXP449_LOGICAL_NODE_VERIFIERS))
         for node_id, (expected_callers, _coverage_tokens) in _EXP449_LOGICAL_NODE_VERIFIERS.items():
             self.assertEqual(tuple(by_id[node_id]["callers"]), expected_callers, node_id)
+        lock = json.loads((REPO_ROOT / "docs/codemap/codemap_exp449_antigravity.lock").read_text())
+        excluded = set(lock["excluded_directories"])
+        self.assertIn("docs/authorities", excluded)
+        self.assertNotIn("docs", excluded)
+        self.assertIn("docs/authorities", lock["fingerprint_algorithm"])
+        self.assertEqual(
+            {SMOKE_A_GRANT_PATH_ANTIGRAVITY.name, SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name},
+            {
+                "smoke_a_execution_grant_antigravity.json",
+                "smoke_a_execution_grant_digest_antigravity.json",
+            },
+        )
+        self.assertIn("exp449_execution_authority", by_id)
+        self.assertIn(
+            "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
+            by_id["exp449_execution_authority"]["path"],
+        )
 
 
 class Exp449FrozenConfigTests(unittest.TestCase):
