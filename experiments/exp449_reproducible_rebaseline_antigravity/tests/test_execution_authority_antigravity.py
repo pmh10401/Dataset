@@ -11,6 +11,7 @@ import subprocess
 from types import MappingProxyType
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import (
     FROZEN_EXP449_CONFIG,
@@ -28,6 +29,7 @@ from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_
     verify_smoke_a_authorization_commit_antigravity,
     verify_authority_directory_structure_antigravity,
 )
+from experiments.exp449_reproducible_rebaseline_antigravity import execution_authority_antigravity as authority_module
 
 
 class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
@@ -259,6 +261,12 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
     def _authorization_repository_antigravity(
         self, *, extra_authority_path: bool = False, authority_mode: int = 0o644,
         source_delta: tuple[str, bytes] | None = None,
+        initial_authority_paths: tuple[str, ...] = (),
+        remove_initial_authority_paths: tuple[str, ...] = (),
+        grant_payload_transform=None,
+        grant_bytes_transform=None,
+        digest_payload_transform=None,
+        symlink_grant: bool = False,
     ) -> tuple[tempfile.TemporaryDirectory[str], Path, str, str]:
         """Build I -> A from literal Git bytes, never a production authority path."""
         directory = tempfile.TemporaryDirectory(dir=Path.cwd())
@@ -275,6 +283,13 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
         codemap = repository / "docs/codemap/codemap_exp449_antigravity.lock"
         codemap.parent.mkdir(parents=True)
         codemap.write_bytes(b'{"codemap":"I"}\n')
+        if initial_authority_paths:
+            initial_authority = repository / "docs/authorities"
+            initial_authority.mkdir()
+            for relative in initial_authority_paths:
+                candidate = initial_authority / relative
+                candidate.parent.mkdir(parents=True, exist_ok=True)
+                candidate.write_bytes(canonical_grant_bytes_antigravity(self._grant()))
         self._git_antigravity(repository, "add", ".")
         self._git_antigravity(repository, "commit", "--quiet", "-m", "implementation I")
         implementation = self._git_antigravity(repository, "rev-parse", "HEAD")
@@ -295,11 +310,30 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
             grant_size=len(grant_bytes), grant_sha256=sha256(grant_bytes).hexdigest(),
         )
         authority = repository / "docs/authorities"
-        authority.mkdir()
+        authority.mkdir(exist_ok=True)
         grant_path = authority / SMOKE_A_GRANT_PATH_ANTIGRAVITY.name
+        if "renamed_grant_antigravity.json" in initial_authority_paths:
+            (authority / "renamed_grant_antigravity.json").replace(grant_path)
+        if grant_bytes_transform is not None:
+            grant_bytes = grant_bytes_transform(grant_bytes)
+            digest = replace(digest, grant_size=len(grant_bytes), grant_sha256=sha256(grant_bytes).hexdigest())
+        if grant_payload_transform is not None:
+            grant_payload = json.loads(grant_bytes)
+            grant_payload_transform(grant_payload)
+            grant_bytes = json.dumps(grant_payload, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            digest = replace(digest, grant_size=len(grant_bytes), grant_sha256=sha256(grant_bytes).hexdigest())
         grant_path.write_bytes(grant_bytes)
         os.chmod(grant_path, authority_mode)
-        (authority / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name).write_bytes(canonical_grant_digest_bytes_antigravity(digest))
+        digest_payload = json.loads(canonical_grant_digest_bytes_antigravity(digest))
+        if digest_payload_transform is not None:
+            digest_payload_transform(digest_payload)
+        digest_path = authority / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name
+        digest_path.write_bytes(json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        if symlink_grant:
+            grant_path.unlink()
+            grant_path.symlink_to("../../science_antigravity.py")
+        for relative in remove_initial_authority_paths:
+            (authority / relative).unlink()
         if extra_authority_path:
             (authority / "unexpected_antigravity.json").write_bytes(b"{}\n")
         self._git_antigravity(repository, "add", ".")
@@ -368,3 +402,85 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
         digest_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
         with self.assertRaises(ValueError):
             verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+
+    def test_authorization_delta_rejects_deleted_modified_renamed_symlinked_and_untracked_authority_paths(self) -> None:
+        """Relaxing exact two-file A delta permits a path-level authority substitution."""
+        cases = (
+            {
+                "initial_authority_paths": ("deleted_antigravity.json",),
+                "remove_initial_authority_paths": ("deleted_antigravity.json",),
+                "message": "delta",
+            },
+            {
+                "initial_authority_paths": (SMOKE_A_GRANT_PATH_ANTIGRAVITY.name, SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name),
+                "message": "delta",
+            },
+            {
+                "initial_authority_paths": ("renamed_grant_antigravity.json",),
+                "message": "delta",
+            },
+            {"symlink_grant": True, "message": "authority directory"},
+        )
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                directory, repository, implementation, approved = self._authorization_repository_antigravity(
+                    **{key: value for key, value in arguments.items() if key != "message"}
+                )
+                self.addCleanup(directory.cleanup)
+                if arguments.get("initial_authority_paths") == ("renamed_grant_antigravity.json",):
+                    renamed = self._git_antigravity(repository, "diff-tree", "--no-commit-id", "--name-status", "-r", "-M1%", implementation, approved)
+                    self.assertIn("R", renamed)
+                with self.assertRaisesRegex(ValueError, arguments["message"]):
+                    verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+        directory, repository, _implementation, approved = self._authorization_repository_antigravity()
+        self.addCleanup(directory.cleanup)
+        (repository / "docs/authorities/untracked_antigravity.json").write_bytes(b"{}\n")
+        with self.assertRaisesRegex(ValueError, "clean approved HEAD"):
+            verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+
+    def test_authorization_snapshot_keeps_the_opened_grant_when_its_path_is_swapped(self) -> None:
+        """Hashing then reparsing a path would accept a grant replaced between those two reads."""
+        directory, repository, _implementation, approved = self._authorization_repository_antigravity()
+        self.addCleanup(directory.cleanup)
+        grant_path = repository / "docs/authorities" / SMOKE_A_GRANT_PATH_ANTIGRAVITY.name
+        original = grant_path.read_bytes()
+        replacement = json.loads(original)
+        replacement["nonce"] = "f" * 32
+        replacement_bytes = json.dumps(replacement, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        real_read = authority_module.os.read
+        swapped = False
+
+        def swap_after_first_grant_read(descriptor: int, size: int) -> bytes:
+            nonlocal swapped
+            value = real_read(descriptor, size)
+            if not swapped and value == original:
+                replacement_path = grant_path.with_name("replacement_grant_antigravity.json")
+                replacement_path.write_bytes(replacement_bytes)
+                os.replace(replacement_path, grant_path)
+                swapped = True
+            return value
+
+        with patch.object(authority_module.os, "read", side_effect=swap_after_first_grant_read):
+            verified = verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+        self.assertTrue(swapped)
+        self.assertEqual(verified.grant_bytes, original)
+        self.assertEqual(grant_path.read_bytes(), replacement_bytes)
+
+    def test_authorization_parser_reaches_noncanonical_digest_and_closure_lock_gates(self) -> None:
+        """A valid A delta must still reject each independent retained authority binding."""
+        cases = (
+            {"grant_bytes_transform": lambda value: value + b"\n", "message": "not canonical"},
+            {"digest_payload_transform": lambda value: value.__setitem__("grant_size", value["grant_size"] + 1), "message": "does not bind"},
+            {"digest_payload_transform": lambda value: value.__setitem__("grant_path", "/tmp/wrong_antigravity.json"), "message": "digest is invalid"},
+            {"digest_payload_transform": lambda value: value.__setitem__("implementation_commit", "e" * 40), "message": "does not bind"},
+            {"grant_payload_transform": lambda value: value["authority_code_closure"].__setitem__("authority_antigravity.py", "e" * 64), "message": "bound closure"},
+            {"grant_payload_transform": lambda value: value.__setitem__("lineage_lock_sha256", "e" * 64), "message": "bound closure or lock"},
+        )
+        for arguments in cases:
+            with self.subTest(message=arguments["message"]):
+                directory, repository, _implementation, approved = self._authorization_repository_antigravity(
+                    **{key: value for key, value in arguments.items() if key != "message"}
+                )
+                self.addCleanup(directory.cleanup)
+                with self.assertRaisesRegex(ValueError, arguments["message"]):
+                    verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)

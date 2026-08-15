@@ -261,6 +261,7 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         self.assertIn("docs/authorities", excluded)
         self.assertNotIn("docs", excluded)
         self.assertIn("docs/authorities", lock["fingerprint_algorithm"])
+        self.assertIn("experiments", lock["changed_modules_since_prior_lock"])
         self.assertEqual(
             {SMOKE_A_GRANT_PATH_ANTIGRAVITY.name, SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name},
             {

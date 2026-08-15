@@ -17,6 +17,7 @@ from unittest.mock import patch
 from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
 from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import FROZEN_EXP449_CONFIG, SMOKE_A_CLAIM_PATH_ANTIGRAVITY
 from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_antigravity import Exp449SmokeAGrantAntigravity
+from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_antigravity import VerifiedExp449SmokeAAuthorityAntigravity
 
 
 def _catalog_antigravity(mode: str) -> dict[str, object]:
@@ -68,6 +69,82 @@ class Exp449ReadinessTests(unittest.TestCase):
              patch.object(operations, "_package_inventory_facts_antigravity", return_value=inventory), \
              patch.object(operations, "_fixed_roots_antigravity", return_value=self.roots), closure_patch, config_patch:
             return operations._readiness_facts_antigravity("c" * 40, logical_cpu_count=logical_cpu_count)
+
+    def _verified_authority_for_route_antigravity(self) -> VerifiedExp449SmokeAAuthorityAntigravity:
+        grant = Exp449SmokeAGrantAntigravity(
+            schema="exp449-smoke-a-execution-grant-antigravity.v1", experiment_id="Exp449", target="smoke-a",
+            policy_id="hard_plus_stable", implementation_commit="b" * 40,
+            scientific_root=FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+            operations_root=FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+            claim_path=SMOKE_A_CLAIM_PATH_ANTIGRAVITY, nonce="0" * 32,
+            maximum_waves=2, label_access=False, logical_cpu_count=12, dataset_workers=11,
+            database_path="/fixture/dataset.sqlite", database_size=17, database_sha256="a" * 64,
+            smoke_catalog_sha256="b" * 64, smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets,
+            context_sha256="c" * 64, scientific_code_closure={"science_antigravity.py": "a" * 64},
+            authority_code_closure={"authority_antigravity.py": "b" * 64}, lineage_lock_sha256="c" * 64,
+            codemap_lock_sha256="d" * 64, acceleration_assessment_sha256="e" * 64, canonical_backend="cpu",
+            package_inventory={"fixture": "1"}, seeds_and_constants={"fixture": 1}, acceleration={"selected_backend": "cpu"},
+            design_facts={
+                "dataset_count": 1117, "test_row_count": 195900,
+                "preprocessing_contracts": FROZEN_EXP449_CONFIG.preprocessing_contracts,
+                "cpu_repeat_tolerance": 1e-12, "accelerated_tolerance": 1e-5, "minimum_accelerated_speedup": 1.1,
+            }, grant_created_at="2026-08-15T11:45:00Z",
+        )
+        return VerifiedExp449SmokeAAuthorityAntigravity(
+            approved_authority_commit="a" * 40, implementation_commit="b" * 40, grant=grant,
+            grant_sha256="f" * 64, grant_bytes=b"grant", digest_bytes=b"digest",
+            grant_stat_identity=(1, 2, 3, 4), digest_stat_identity=(5, 6, 7, 8),
+        )
+
+    def test_authorized_readiness_route_freshly_reverifies_and_recomputes_implementation(self) -> None:
+        """Skipping fresh A verification or passing a public bypass would let stale I facts through."""
+        verified = self._verified_authority_for_route_antigravity()
+        facts = {"readiness": "recomputed-for-I"}
+        with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified) as reverify, \
+             patch.object(operations, "_readiness_facts_antigravity", return_value=facts) as recompute, \
+             patch.object(operations, "_require_authorized_smoke_a_readiness_facts_antigravity") as compare:
+            self.assertEqual(operations.readiness_for_authorized_implementation_antigravity(verified), facts)
+        reverify.assert_called_once_with("a" * 40)
+        self.assertEqual(recompute.call_args.args, ("b" * 40,))
+        capability = recompute.call_args.kwargs["authorization_delta_capability"]
+        self.assertIs(type(capability), operations._AuthorizationDeltaReadCapabilityAntigravity)
+        self.assertEqual(recompute.call_args.kwargs["authorized_grant"], verified.grant)
+        compare.assert_called_once_with(facts, verified.grant)
+
+    def test_authorized_readiness_route_rejects_wrong_type_and_changed_reverification(self) -> None:
+        """Accepting a fabricated token or an A snapshot that changed after verification is unsafe."""
+        verified = self._verified_authority_for_route_antigravity()
+        with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity") as reverify:
+            with self.assertRaises(TypeError):
+                operations.readiness_for_authorized_implementation_antigravity(object())
+            reverify.assert_not_called()
+        changed = VerifiedExp449SmokeAAuthorityAntigravity(
+            approved_authority_commit=verified.approved_authority_commit, implementation_commit=verified.implementation_commit,
+            grant=verified.grant, grant_sha256="e" * 64, grant_bytes=verified.grant_bytes, digest_bytes=verified.digest_bytes,
+            grant_stat_identity=verified.grant_stat_identity, digest_stat_identity=verified.digest_stat_identity,
+        )
+        with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=changed), \
+             patch.object(operations, "_readiness_facts_antigravity") as recompute:
+            with self.assertRaisesRegex(ValueError, "snapshot changed"):
+                operations.readiness_for_authorized_implementation_antigravity(verified)
+            recompute.assert_not_called()
+
+    def test_authorized_readiness_requires_exact_capability_and_A_parent_I(self) -> None:
+        """A type-compatible object or an authority commit with another parent cannot authorize I readiness."""
+        verified = self._verified_authority_for_route_antigravity()
+        capability = operations._AuthorizationDeltaReadCapabilityAntigravity(
+            verified, issuer=operations._AUTHORIZATION_DELTA_READ_ISSUER_ANTIGRAVITY,
+        )
+        with patch.object(operations, "_current_clean_head_antigravity", return_value="a" * 40), \
+             patch.object(operations.subprocess, "run", return_value=SimpleNamespace(stdout=f"{'a' * 40} {'b' * 40}\n")):
+            self.assertEqual(operations._require_reviewed_head_antigravity("b" * 40, authorization_delta_capability=capability), "b" * 40)
+        with patch.object(operations, "_current_clean_head_antigravity", return_value="a" * 40), \
+             patch.object(operations.subprocess, "run", return_value=SimpleNamespace(stdout=f"{'a' * 40} {'c' * 40}\n")):
+            with self.assertRaisesRegex(ValueError, "commit delta"):
+                operations._require_reviewed_head_antigravity("b" * 40, authorization_delta_capability=capability)
+        with patch.object(operations, "_current_clean_head_antigravity", return_value="a" * 40):
+            with self.assertRaisesRegex(ValueError, "capability"):
+                operations._require_reviewed_head_antigravity("b" * 40, authorization_delta_capability=object())
 
     def test_authorized_readiness_rejects_an_authority_closure_that_does_not_match_recomputed_source(self) -> None:
         """Omitting authority-closure comparison would allow A -> I evidence to bind the wrong verifier source."""
