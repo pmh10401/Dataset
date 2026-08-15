@@ -400,6 +400,26 @@ class Exp449ExecutionLifecycleTests(unittest.TestCase):
                     fixture.config.acceleration_manifest, task45_acceleration_manifest=drift,
                 )
 
+    def test_verified_checkpoint_and_attempt_tampering_block_snapshot_before_resume_scoring(self) -> None:
+        """Resume snapshot verification must reject persisted Task4/5 semantic evidence before composition."""
+        from paper.equipment_anomaly_detection.artifacts_paper import append_task4_task5_attempt_record
+        with _TemporaryAuthorizedSmokeAAntigravity() as fixture:
+            with fixture.acquire_fresh() as lease:
+                result = operations.run_exp449_wave_antigravity(fixture.config, _execution_capability=lease.capability, _execution_lease=lease)
+            success = next((fixture.scientific_root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_success").rglob("task4_task5_success_antigravity.json"))
+            success.write_bytes(success.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "canonical|success"):
+                operations._snapshot_antigravity(fixture.config)
+        with _TemporaryAuthorizedSmokeAAntigravity() as fixture:
+            with fixture.acquire_fresh() as lease:
+                result = operations.run_exp449_wave_antigravity(fixture.config, _execution_capability=lease.capability, _execution_lease=lease)
+            _context, task45 = operations._authority_antigravity(fixture.config)
+            append_task4_task5_attempt_record(fixture.scientific_root, fixture.config.catalog, task45, next(iter(result.score.raw.values())), 1, RuntimeError("fixture"))
+            attempt = next((fixture.scientific_root / "stage_artifacts_paper" / "proposal_work" / "task4_task5_attempts").iterdir())
+            attempt.write_bytes(attempt.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "canonical|attempt"):
+                operations._snapshot_antigravity(fixture.config)
+
     def test_real_resume_readiness_and_lease_reject_current_fact_and_receipt_drift(self) -> None:
         """Unchanged grant/claim evidence must reject drift before scorer or freeze entry."""
         with _ReadinessBoundResumeFixtureAntigravity() as fixture:
@@ -413,6 +433,18 @@ class Exp449ExecutionLifecycleTests(unittest.TestCase):
             closure = operations._closure_facts_antigravity(); closure["code_closure"] = {**closure["code_closure"], "fixture_drift.py": "a" * 64}
             with patch.object(operations, "_closure_facts_antigravity", return_value=closure):
                 with self.assertRaisesRegex(ValueError, "readiness facts differ|context facts differ"):
+                    operations.readiness_for_authorized_resume_antigravity(fixture.verified)
+            altered_catalog = dict(fixture.catalog); altered_catalog["database"] = {**altered_catalog["database"], "sha256": "0" * 64}
+            with patch.object(operations, "_readiness_catalog_builder_antigravity", side_effect=lambda mode: altered_catalog if mode == "smoke" else _catalog_antigravity("full")):
+                with self.assertRaisesRegex(ValueError, "catalog database"):
+                    operations.readiness_for_authorized_resume_antigravity(fixture.verified)
+            original_contexts = operations._readiness_contexts_antigravity
+            def worker_drift(**kwargs: object):
+                contexts, acceleration = original_contexts(**kwargs)
+                changed = dict(acceleration); changed["workers"] = {"logical_cpu_count": 13, "dataset_workers": 12, "inner_numerical_threads": 1, "outer_execution_mode": "parallel_task4_task5"}
+                return contexts, changed
+            with patch.object(operations, "_readiness_contexts_antigravity", side_effect=worker_drift):
+                with self.assertRaisesRegex(ValueError, "readiness facts differ"):
                     operations.readiness_for_authorized_resume_antigravity(fixture.verified)
             receipt = fixture.roots[1] / "execution_authority_consumed_antigravity.json"; receipt.write_bytes(receipt.read_bytes() + b" ")
             with self.assertRaisesRegex(ValueError, "noncanonical|receipt differs"):
