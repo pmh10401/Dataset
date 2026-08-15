@@ -90,3 +90,23 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                     operations._authenticate_inherited_smoke_a_claim_fd_antigravity(descriptor, verified, context)
             finally:
                 os.close(descriptor)
+
+    def test_worker_receipt_validator_rejects_a_claim_identity_mismatch(self) -> None:
+        """Omitting receipt semantics would let a worker reuse another consumed claim."""
+        with TemporaryDirectory(dir=Path.cwd()) as temporary:
+            root = Path(temporary)
+            scientific, operational, claim_path = root / "science_antigravity", root / "operations_antigravity", root / "claim_antigravity.lock"
+            context = _context_antigravity(scientific)
+            verified = _verified_antigravity(scientific, operational, claim_path, context)
+            operational.mkdir()
+            descriptor = os.open(claim_path, os.O_RDWR | os.O_CREAT | os.O_EXCL, 0o600)
+            try:
+                os.write(descriptor, canonical_json_bytes(operations._claim_payload_antigravity(verified, context)))
+                receipt = operations._receipt_payload_antigravity(verified, context, claim_path, os.fstat(descriptor))
+                receipt["claim_inode"] = int(receipt["claim_inode"]) + 1
+                with self.assertRaisesRegex(ValueError, "receipt"):
+                    operations._validate_smoke_a_consumption_receipt_antigravity(
+                        receipt, verified, context, claim_path, os.fstat(descriptor),
+                    )
+            finally:
+                os.close(descriptor)
