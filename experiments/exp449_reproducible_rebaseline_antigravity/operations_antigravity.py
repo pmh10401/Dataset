@@ -28,7 +28,6 @@ from paper.equipment_anomaly_detection.artifacts_paper import (
     verify_task4_task5_success_namespace,
     write_create_only,
 )
-from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
 from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
 from paper.equipment_anomaly_detection.acceleration_paper import (
     build_acceleration_manifest,
@@ -46,7 +45,7 @@ from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper imp
     verify_exp84_environment_paper,
 )
 
-from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
+from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS, SMOKE_A_CLAIM_PATH_ANTIGRAVITY
 from .contracts_antigravity import Exp449Context, Exp449ProposalManifest, Exp449TerminalStatus
 from .execution_authority_antigravity import (
     Exp449SmokeAGrantAntigravity,
@@ -57,34 +56,47 @@ from .execution_authority_antigravity import (
     _revoke_execution_capability_antigravity,
     verify_smoke_a_authorization_commit_antigravity,
 )
-from .runner_antigravity import compose_exp449_proposal_score_antigravity
 from .artifacts_antigravity import (
     context_sha256_antigravity,
     freeze_exp449_proposal_antigravity,
 )
 
 
-_TERMINAL_NAME = "proposal_score_incomplete_antigravity.json"
-_PROGRESS_NAME = "operations_progress_antigravity.jsonl"
+compose_exp449_proposal_score_antigravity = None
+
+
+_TERMINAL_COMPLETE_NAME = "terminal_complete_antigravity.json"
+_TERMINAL_INCOMPLETE_NAME = "terminal_incomplete_antigravity.json"
+_PROGRESS_NAME = "progress_antigravity.jsonl"
+_STATUS_NAME = "status_antigravity.json"
+_WORKER_STDOUT_NAME = "worker_stdout_antigravity.log"
+_WORKER_STDERR_NAME = "worker_stderr_antigravity.log"
 _SMOKE_COMPARISON_NAME = "smoke_comparison_antigravity.json"
 _EXECUTION_AUTHORITY_CONSUMED_NAME = "execution_authority_consumed_antigravity.json"
 _TERMINAL_SCHEMA = "exp449-proposal-score-incomplete-antigravity.v1"
 _PROGRESS_KEYS = frozenset(
     {
+        "schema",
         "timestamp",
-        "experiment",
-        "mode",
+        "event",
         "wave",
+        "dataset",
         "completed",
         "failed",
         "pending",
         "elapsed_seconds",
+        "throughput_per_second",
         "eta_seconds",
-        "dataset",
+        "latest_error",
+        "worker_pid",
     }
 )
-_REQUIRED_PROGRESS_KEYS = _PROGRESS_KEYS - {"dataset"}
-_FORBIDDEN_PROGRESS_KEYS = frozenset({"label", "labels", "score", "scores", "p_value", "p_values", "rank", "ranks", "coordinate", "coordinates"})
+_REQUIRED_PROGRESS_KEYS = _PROGRESS_KEYS
+_FORBIDDEN_PROGRESS_KEYS = frozenset({
+    "label", "labels", "raw", "raw_value", "raw_values", "score", "scores",
+    "p_value", "p_values", "rank", "ranks", "coordinate", "coordinates",
+    "trace", "traceback", "exception_trace", "exception_traceback",
+})
 _SMOKE_OPERATIONS_ROOT_PAIRS_ANTIGRAVITY = {
     (
         FROZEN_EXP449_CONFIG.smoke_a_scientific_root.resolve(strict=False),
@@ -607,22 +619,53 @@ def verify_terminal_incomplete_antigravity(
     if status.status != "proposal_score_incomplete" or snapshot.wave_count < FROZEN_EXP449_CONFIG.maximum_waves:
         raise ValueError("Exp449 terminal incomplete state is not established")
     root = _operations_root_for_context_antigravity(config.context)
-    write_create_only(root / _TERMINAL_NAME, canonical_json_bytes(_terminal_record_antigravity(config, snapshot)), reuse_identical=True)
+    write_create_only(root / _TERMINAL_INCOMPLETE_NAME, canonical_json_bytes(_terminal_record_antigravity(config, snapshot)), reuse_identical=True)
+    return status
+
+
+def _publish_terminal_complete_antigravity(
+    config: Exp449WaveConfig,
+    snapshot: _RecoverySnapshot,
+    *,
+    _execution_capability: object = None,
+) -> Exp449TerminalStatus:
+    """Publish the create-only completion counterpart after verified closure."""
+    _execution_capability_for_config_antigravity(config, _execution_capability)
+    status = _terminal_status_antigravity(config, snapshot)
+    if status.status != "dataset_local_complete":
+        raise ValueError("Exp449 terminal complete state is not established")
+    root = _operations_root_for_context_antigravity(config.context)
+    write_create_only(root / _TERMINAL_COMPLETE_NAME, canonical_json_bytes(_terminal_record_antigravity(config, snapshot)), reuse_identical=True)
     return status
 
 
 def _existing_terminal_status_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus | None:
     """Treat any present terminal artifact as permanent, byte-verified authority."""
-    path = _operations_root_for_context_antigravity(config.context) / _TERMINAL_NAME
-    try:
-        details = path.lstat()
-    except FileNotFoundError:
+    root = _operations_root_for_context_antigravity(config.context)
+    present: list[tuple[Path, str]] = []
+    for name, expected_status in (
+        (_TERMINAL_COMPLETE_NAME, "dataset_local_complete"),
+        (_TERMINAL_INCOMPLETE_NAME, "proposal_score_incomplete"),
+    ):
+        path = root / name
+        try:
+            details = path.lstat()
+        except FileNotFoundError:
+            continue
+        present.append((path, expected_status))
+    if not present:
         return None
+    if len(present) != 1:
+        raise ValueError("Exp449 terminal authority is ambiguous")
+    path, expected_status = present[0]
+    details = path.lstat()
     if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
         raise ValueError("Exp449 terminal authority is unsafe")
     snapshot = _snapshot_antigravity(config)
     status = _terminal_status_antigravity(config, snapshot)
-    if status.status != "proposal_score_incomplete" or snapshot.wave_count != FROZEN_EXP449_CONFIG.maximum_waves:
+    if status.status != expected_status or (
+        expected_status == "proposal_score_incomplete" and snapshot.wave_count != FROZEN_EXP449_CONFIG.maximum_waves
+    ):
         raise ValueError("Exp449 terminal authority differs from recovery state")
     expected = canonical_json_bytes(_terminal_record_antigravity(config, snapshot))
     if path.read_bytes() != expected:
@@ -653,25 +696,42 @@ def _validate_progress_event_antigravity(event: Mapping[str, object]) -> dict[st
     if not (_REQUIRED_PROGRESS_KEYS <= set(event) <= _PROGRESS_KEYS):
         raise ValueError("Exp449 progress event keys differ")
     normalized = dict(event)
-    if type(normalized["timestamp"]) is not str or not normalized["timestamp"] or normalized["experiment"] != "Exp449" or normalized["mode"] not in {"smoke", "official"}:
+    if (
+        normalized["schema"] != "exp449-operations-progress-antigravity.v1"
+        or type(normalized["timestamp"]) is not str
+        or not normalized["timestamp"]
+        or type(normalized["event"]) is not str
+        or not normalized["event"]
+    ):
         raise ValueError("Exp449 progress event identity differs")
     for key in ("wave", "completed", "failed", "pending"):
         if type(normalized[key]) is not int or normalized[key] < 0:
             raise ValueError("Exp449 progress event count differs")
-    for key in ("elapsed_seconds", "eta_seconds"):
+    for key in ("elapsed_seconds", "throughput_per_second", "eta_seconds"):
         if type(normalized[key]) not in (int, float) or not isfinite(float(normalized[key])) or float(normalized[key]) < 0.0:
             raise ValueError("Exp449 progress event timing differs")
         normalized[key] = float(normalized[key])
-    if "dataset" in normalized and (type(normalized["dataset"]) is not str or not normalized["dataset"]):
+    if normalized["dataset"] is not None and (type(normalized["dataset"]) is not str or not normalized["dataset"]):
         raise ValueError("Exp449 progress event dataset differs")
+    if normalized["latest_error"] is not None:
+        latest_error = normalized["latest_error"]
+        if type(latest_error) is not str or not latest_error or len(latest_error) > 256 or "\n" in latest_error or "\r" in latest_error:
+            raise ValueError("Exp449 progress event error differs")
+    if type(normalized["worker_pid"]) is not int or normalized["worker_pid"] < 1:
+        raise ValueError("Exp449 progress event worker differs")
     return normalized
 
 
-def _write_exp449_progress_event_antigravity(operations_root: Path, event: Mapping[str, object]) -> None:
-    """Append one validated result-neutral event outside the scientific root."""
+def _append_progress_event_antigravity(operations_root: Path, event: Mapping[str, object], *, create_root: bool) -> None:
+    """Append and fsync one validated record; callers choose their authority level."""
     normalized = _validate_progress_event_antigravity(event)
     root = Path(operations_root)
-    _mkdirs_without_symlinks_antigravity(root)
+    if create_root:
+        _mkdirs_without_symlinks_antigravity(root)
+    else:
+        details = root.lstat()
+        if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+            raise ValueError("Exp449 operations root is unsafe")
     path = root / _PROGRESS_NAME
     try:
         details = path.lstat()
@@ -684,7 +744,10 @@ def _write_exp449_progress_event_antigravity(operations_root: Path, event: Mappi
         line = memoryview(canonical_json_bytes(normalized))
         offset = 0
         while offset < len(line):
-            written = os.write(descriptor, line[offset:])
+            try:
+                written = os.write(descriptor, line[offset:])
+            except InterruptedError:
+                continue
             if written <= 0:
                 raise OSError("Exp449 progress log short write")
             offset += written
@@ -693,26 +756,108 @@ def _write_exp449_progress_event_antigravity(operations_root: Path, event: Mappi
         os.close(descriptor)
 
 
-def _emit_progress_antigravity(config: Exp449WaveConfig, *, wave: int, snapshot: _RecoverySnapshot, started: float, completed: int | None = None, total: int | None = None, failed: int | None = None, dataset: str | None = None) -> None:
-    """The logging boundary is the sole place where logging errors are swallowed."""
+def _write_exp449_progress_event_antigravity(operations_root: Path, event: Mapping[str, object]) -> None:
+    """Best-effort composition seam; official mutation uses the lease wrapper."""
+    _append_progress_event_antigravity(operations_root, event, create_root=True)
+
+
+def _authorized_operations_root_for_lease_antigravity(lease: Exp449SmokeAExecutionLeaseAntigravity) -> Path:
+    """Recheck the active one-shot capability before every durable operation write."""
+    if type(lease) is not Exp449SmokeAExecutionLeaseAntigravity or lease.claim_fd < 0:
+        raise ValueError("Exp449 active Smoke A execution lease is required")
+    _require_execution_capability_antigravity(
+        lease.capability, target="smoke-a", context=lease.context, claim_fd=lease.claim_fd,
+    )
+    root = Path(lease.verified_authority.grant.operations_root)
+    details = root.lstat()
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("Exp449 operations root is unsafe")
+    return root
+
+
+def append_authorized_progress_antigravity(
+    lease: Exp449SmokeAExecutionLeaseAntigravity,
+    event: Mapping[str, object],
+) -> None:
+    """Durably append one authorized, result-neutral progress event or raise."""
+    _append_progress_event_antigravity(_authorized_operations_root_for_lease_antigravity(lease), event, create_root=False)
+
+
+def _status_cache_payload_antigravity(root: Path) -> dict[str, object]:
+    """Derive mutable monitoring data solely from existing operations metadata."""
+    progress = root / _PROGRESS_NAME
+    tail: object = None
+    try:
+        with progress.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            handle.seek(max(0, handle.tell() - 65536), os.SEEK_SET)
+            lines = handle.read().splitlines()
+        if lines:
+            tail = _validate_progress_event_antigravity(json.loads(lines[-1].decode("utf-8")))
+    except FileNotFoundError:
+        pass
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        tail = {"state": "unreadable"}
+    terminal = next((name for name in (_TERMINAL_COMPLETE_NAME, _TERMINAL_INCOMPLETE_NAME) if (root / name).is_file()), None)
+    return {
+        "schema": "exp449-derived-status-antigravity.v1",
+        "timestamp": f"{time():.6f}",
+        "execution_authority_consumed": (root / _EXECUTION_AUTHORITY_CONSUMED_NAME).is_file(),
+        "progress_tail": tail,
+        "terminal": terminal,
+    }
+
+
+def refresh_derived_status_antigravity(lease: Exp449SmokeAExecutionLeaseAntigravity) -> None:
+    """Atomically replace only the nonauthoritative operational status cache."""
+    root = _authorized_operations_root_for_lease_antigravity(lease)
+    temporary = root / f".{_STATUS_NAME}.{os.getpid()}.tmp_antigravity"
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    try:
+        _write_fd_all_antigravity(descriptor, canonical_json_bytes(_status_cache_payload_antigravity(root)))
+    finally:
+        os.close(descriptor)
+    try:
+        os.replace(temporary, root / _STATUS_NAME)
+        directory_fd = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0))
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except BaseException:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def _emit_progress_antigravity(config: Exp449WaveConfig, *, wave: int, snapshot: _RecoverySnapshot, started: float, completed: int | None = None, total: int | None = None, failed: int | None = None, dataset: str | None = None, _authorized_lease: Exp449SmokeAExecutionLeaseAntigravity | None = None) -> None:
+    """Emit test-composition progress best-effort, but never downgrade lease failures."""
     completed_count = len(snapshot.successes) if completed is None else completed
     failed_count = len(snapshot.failed) if failed is None else failed
     total_count = len(_catalog_datasets_antigravity(config.catalog)) if total is None else total
     elapsed = float(monotonic() - started)
     rate = completed_count / elapsed if elapsed > 0.0 else 0.0
     event: dict[str, object] = {
+        "schema": "exp449-operations-progress-antigravity.v1",
         "timestamp": f"{time():.6f}",
-        "experiment": "Exp449",
-        "mode": config.context.mode,
+        "event": "dataset_progress" if dataset is not None else "wave_progress",
         "wave": wave,
+        "dataset": dataset,
         "completed": completed_count,
         "failed": failed_count,
         "pending": max(0, total_count - completed_count),
         "elapsed_seconds": elapsed,
+        "throughput_per_second": rate,
         "eta_seconds": (max(0, total_count - completed_count) / rate) if rate > 0.0 else 0.0,
+        "latest_error": "dataset_failure" if failed_count else None,
+        "worker_pid": os.getpid(),
     }
-    if dataset is not None:
-        event["dataset"] = dataset
+    if _authorized_lease is not None:
+        append_authorized_progress_antigravity(_authorized_lease, event)
+        refresh_derived_status_antigravity(_authorized_lease)
+        return
     try:
         _write_exp449_progress_event_antigravity(_operations_root_for_context_antigravity(config.context), event)
     except Exception:
@@ -727,13 +872,40 @@ def status_exp449_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus:
     return _terminal_status_antigravity(config, _snapshot_antigravity(config))
 
 
+def _configured_execution_target_antigravity(config: Exp449WaveConfig) -> str | None:
+    return {
+        FROZEN_EXP449_CONFIG.smoke_a_scientific_root: "smoke-a",
+        FROZEN_EXP449_CONFIG.smoke_b_scientific_root: "smoke-b",
+        FROZEN_EXP449_CONFIG.official_scientific_root: "official",
+    }.get(Path(config.context.run_root))
+
+
+def _authorized_lease_for_config_antigravity(
+    config: Exp449WaveConfig,
+    lease: Exp449SmokeAExecutionLeaseAntigravity | None,
+) -> Exp449SmokeAExecutionLeaseAntigravity | None:
+    """Only the Smoke A fixed root can obtain durable progress from its lease."""
+    target = _configured_execution_target_antigravity(config)
+    if target is None:
+        return None
+    if target != "smoke-a" or type(lease) is not Exp449SmokeAExecutionLeaseAntigravity:
+        raise ValueError("Exp449 active Smoke A execution lease is required")
+    if lease.context is not config.context:
+        raise ValueError("Exp449 execution lease context differs")
+    _authorized_operations_root_for_lease_antigravity(lease)
+    return lease
+
+
 def run_exp449_wave_antigravity(
     config: Exp449WaveConfig,
     *,
     _execution_capability: object = None,
+    _execution_lease: Exp449SmokeAExecutionLeaseAntigravity | None = None,
 ) -> Exp449TerminalStatus:
     """Execute at most one of the two preregistered dataset-local recovery waves."""
+    global compose_exp449_proposal_score_antigravity
     _execution_capability_for_config_antigravity(config, _execution_capability)
+    authorized_lease = _authorized_lease_for_config_antigravity(config, _execution_lease)
     started = monotonic()
     terminal = _existing_terminal_status_antigravity(config)
     if terminal is not None:
@@ -745,8 +917,14 @@ def run_exp449_wave_antigravity(
     next_wave = before.wave_count + 1
     if next_wave > FROZEN_EXP449_CONFIG.maximum_waves:
         return verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability)
-    _emit_progress_antigravity(config, wave=next_wave, snapshot=before, started=started)
+    _emit_progress_antigravity(config, wave=next_wave, snapshot=before, started=started, _authorized_lease=authorized_lease)
     context_payload, _authority = _authority_antigravity(config)
+    if compose_exp449_proposal_score_antigravity is None:
+        # Keeping scorer import here makes the public status command a genuine
+        # read-only inspection path rather than a latent scoring import.
+        from .runner_antigravity import compose_exp449_proposal_score_antigravity as composer
+        compose_exp449_proposal_score_antigravity = composer
+    from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
     progress_failures = 0
     def fixed_progress(event: Mapping[str, object]) -> None:
         nonlocal progress_failures
@@ -758,6 +936,7 @@ def run_exp449_wave_antigravity(
             config, wave=next_wave, snapshot=before, started=started,
             completed=len(before.successes), total=len(_catalog_datasets_antigravity(config.catalog)),
             failed=progress_failures, dataset=event.get("dataset") if event.get("phase") == "error" and type(event.get("dataset")) is str else None,
+            _authorized_lease=authorized_lease,
         )
     try:
         compose_exp449_proposal_score_antigravity(
@@ -773,8 +952,8 @@ def run_exp449_wave_antigravity(
         if after.wave_count < next_wave:
             raise ValueError("Exp449 incomplete collection lacks an append-only attempt record")
         for index, dataset in enumerate((name for name in after.successes if name not in before.successes), len(before.successes) + 1):
-            _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=len(after.failed), dataset=dataset)
-        _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started)
+            _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=len(after.failed), dataset=dataset, _authorized_lease=authorized_lease)
+        _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, _authorized_lease=authorized_lease)
         if next_wave == FROZEN_EXP449_CONFIG.maximum_waves:
             return verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability)
         return _terminal_status_antigravity(config, after)
@@ -783,9 +962,9 @@ def run_exp449_wave_antigravity(
     if status.status != "dataset_local_complete":
         raise ValueError("Exp449 composition returned before verified dataset-local closure")
     for index, dataset in enumerate((name for name in after.successes if name not in before.successes), len(before.successes) + 1):
-        _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=0, dataset=dataset)
-    _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started)
-    return status
+        _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=0, dataset=dataset, _authorized_lease=authorized_lease)
+    _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, _authorized_lease=authorized_lease)
+    return _publish_terminal_complete_antigravity(config, after, _execution_capability=_execution_capability)
 
 
 def freeze_authorized_exp449_proposal_antigravity(
@@ -1417,9 +1596,89 @@ def readiness_for_authorized_implementation_antigravity(
 
 
 def status_exp449_read_only_antigravity() -> dict[str, object]:
-    """A root-status query deliberately does not invoke recovery status or create roots."""
+    """Inspect pre-existing Smoke A operations metadata without healing any path."""
     roots = _status_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
-    return {"schema": "exp449-read-only-status-antigravity.v1", "experiment_id": "Exp449", "status": "not_started" if all(item["state"] == "absent" for item in roots) else "root_present", "roots": roots, "execution_authority": _execution_authority_status_antigravity()}
+    smoke_a = _read_only_smoke_a_operations_status_antigravity(roots)
+    return {
+        "schema": "exp449-read-only-status-antigravity.v1",
+        "experiment_id": "Exp449",
+        "status": "not_started" if all(item["state"] == "absent" for item in roots) else "root_present",
+        "roots": roots,
+        "execution_authority": _execution_authority_status_antigravity(),
+        "smoke_a_operations": smoke_a,
+    }
+
+
+def _read_only_path_state_antigravity(path: Path) -> str:
+    """Classify a path with lstat only; status never follows or repairs it."""
+    try:
+        details = Path(path).lstat()
+    except FileNotFoundError:
+        return "absent"
+    if stat.S_ISLNK(details.st_mode):
+        return "symlink"
+    if stat.S_ISREG(details.st_mode):
+        return "file"
+    if stat.S_ISDIR(details.st_mode):
+        return "directory"
+    return "other"
+
+
+def _read_only_count_children_antigravity(directory: Path) -> int | None:
+    """Count only immediate checkpoint records and leave malformed paths observable."""
+    try:
+        details = directory.lstat()
+    except FileNotFoundError:
+        return 0
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        return None
+    try:
+        return sum(1 for child in directory.iterdir() if _read_only_path_state_antigravity(child) == "file")
+    except OSError:
+        return None
+
+
+def _read_only_progress_tail_antigravity(path: Path) -> dict[str, object] | None:
+    """Read at most one bounded trailing line; malformed telemetry is nonauthoritative."""
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+    except FileNotFoundError:
+        return None
+    try:
+        size = os.lseek(descriptor, 0, os.SEEK_END)
+        os.lseek(descriptor, max(0, size - 65536), os.SEEK_SET)
+        tail = os.read(descriptor, min(65536, size)).splitlines()
+    except OSError:
+        return {"state": "unreadable"}
+    finally:
+        os.close(descriptor)
+    if not tail:
+        return None
+    try:
+        return _validate_progress_event_antigravity(json.loads(tail[-1].decode("utf-8")))
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        return {"state": "unreadable"}
+
+
+def _read_only_smoke_a_operations_status_antigravity(roots: list[dict[str, str]]) -> dict[str, object]:
+    """Report presence/count metadata only; no checkpoint payload is opened."""
+    scientific_root = Path(roots[0]["path"])
+    operations_root = Path(roots[1]["path"])
+    work = scientific_root / "stage_artifacts_paper" / "proposal_work"
+    manifest = scientific_root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity" / "proposal_manifest_antigravity.json"
+    return {
+        "claim": _read_only_path_state_antigravity(SMOKE_A_CLAIM_PATH_ANTIGRAVITY),
+        "execution_authority_consumed": _read_only_path_state_antigravity(operations_root / _EXECUTION_AUTHORITY_CONSUMED_NAME),
+        "progress_tail": _read_only_progress_tail_antigravity(operations_root / _PROGRESS_NAME),
+        "checkpoint_counts": {
+            "success": _read_only_count_children_antigravity(work / "task4_task5_success"),
+            "attempt": _read_only_count_children_antigravity(work / "task4_task5_attempts"),
+        },
+        "proposal_manifest": _read_only_path_state_antigravity(manifest),
+        "terminal_complete": _read_only_path_state_antigravity(operations_root / _TERMINAL_COMPLETE_NAME),
+        "terminal_incomplete": _read_only_path_state_antigravity(operations_root / _TERMINAL_INCOMPLETE_NAME),
+        "status_cache": _read_only_path_state_antigravity(operations_root / _STATUS_NAME),
+    }
 
 
 def verify_exp449_proposal_read_only_antigravity(target: str) -> dict[str, object]:
@@ -1479,12 +1738,14 @@ __all__ = [
     "Exp449SmokeAExecutionLeaseAntigravity",
     "Exp449WaveConfig",
     "acquire_smoke_a_execution_lease_antigravity",
+    "append_authorized_progress_antigravity",
     "freeze_authorized_exp449_proposal_antigravity",
     "main_antigravity",
     "readiness_for_authorized_implementation_antigravity",
     "readiness_exp449_antigravity",
     "run_exp449_wave_antigravity",
     "record_exp449_smoke_comparison_antigravity",
+    "refresh_derived_status_antigravity",
     "status_exp449_read_only_antigravity",
     "status_exp449_antigravity",
     "task45_context_payload_antigravity",

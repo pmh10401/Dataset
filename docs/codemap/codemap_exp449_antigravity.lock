@@ -34,9 +34,9 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, docs/authorities (authorization data only), outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    ".superpowers": "98ceb2494e03fa2bb5a40ed8cd6a184f7372f2a8deb03948c9cc9212c4baca15",
+    ".superpowers": "e047fc2f496139ee07dda5474a0ef6c6dac31243de5203e8ad48d32fc70f119d",
     "docs": "b632abc2682164d6b627fa8957444f963e9dd9d52aa3f9f20203a3af6db50355",
-    "experiments": "b6769aa8d04987ed182953ed614b9f811729dbd5c906e4c8e7b274ea895e9315",
+    "experiments": "cacd0c9c55f15204d16402e2b7d13962b7fd94f22482d8cffec5f096ca3af50c",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "440e37698659b2e194dd44e00809e23baf14c425c44e3484d23d799a2538541d",
     "reports": "ea0adf1fa41b3acf6fc660bdf05d8a76816e9c11dc507b681db86c225c32a350",

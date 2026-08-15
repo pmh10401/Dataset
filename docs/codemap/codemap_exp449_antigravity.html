@@ -237,7 +237,9 @@
         "Exp449WaveConfig",
         "Exp449SmokeAExecutionLeaseAntigravity",
         "acquire_smoke_a_execution_lease_antigravity",
+        "append_authorized_progress_antigravity",
         "freeze_authorized_exp449_proposal_antigravity",
+        "refresh_derived_status_antigravity",
         "run_exp449_wave_antigravity",
         "readiness_exp449_antigravity",
         "readiness_for_authorized_implementation_antigravity",
@@ -248,6 +250,7 @@
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_claim_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_progress_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
@@ -255,12 +258,13 @@
       "constraints": [
         "Public readiness requires exact clean reviewed HEAD, pinned interpreter, frozen dependency preflights, observed catalog database identity, genuine contexts, absent fixed roots, and no loaded labels.",
         "Only a freshly reverified exact-type private A -> I capability may recompute readonly Smoke A facts for I while HEAD is A; there is no boolean bypass or caller callback.",
-        "Authorized readonly facts remain exact; independently, the fresh Smoke A lease lstat-checks absent roots/claim, creates and nonblocking-locks a no-follow claim, verifies its inode, creates only the operations root, writes a create-only authenticated consumption receipt, then mints the exact capability. No boolean bypass exists."
+        "Authorized readonly facts remain exact; independently, the fresh Smoke A lease lstat-checks absent roots/claim, creates and nonblocking-locks a no-follow claim, verifies its inode, creates only the operations root, writes a create-only authenticated consumption receipt, then mints the exact capability. No boolean bypass exists.",
+        "Lease-bound progress retries EINTR and short writes, fsyncs each append, and raises before further scheduling; status is an atomic-replace derived cache, while read-only status inspects only existing claim, receipt, bounded progress tail, checkpoint counts, manifest, and terminal metadata without importing the scorer."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-          "symbol": "Exp449WaveConfig, Exp449SmokeAExecutionLeaseAntigravity, acquire_smoke_a_execution_lease_antigravity, freeze_authorized_exp449_proposal_antigravity, run_exp449_wave_antigravity, readiness_exp449_antigravity, readiness_for_authorized_implementation_antigravity, _closure_facts_antigravity, _package_inventory_facts_antigravity, _seeds_and_constants_antigravity, main_antigravity"
+          "symbol": "Exp449WaveConfig, Exp449SmokeAExecutionLeaseAntigravity, acquire_smoke_a_execution_lease_antigravity, append_authorized_progress_antigravity, refresh_derived_status_antigravity, freeze_authorized_exp449_proposal_antigravity, run_exp449_wave_antigravity, readiness_exp449_antigravity, readiness_for_authorized_implementation_antigravity, status_exp449_read_only_antigravity, _closure_facts_antigravity, _package_inventory_facts_antigravity, _seeds_and_constants_antigravity, main_antigravity"
         }
       ],
       "callers": [
@@ -270,7 +274,7 @@
         "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt and gates all configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged"
+        "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt, durable result-neutral progress/status metadata, and capability-gated configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged"
       ]
     },
     {

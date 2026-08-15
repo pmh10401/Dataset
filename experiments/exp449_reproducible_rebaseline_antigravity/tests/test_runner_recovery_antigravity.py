@@ -394,15 +394,15 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
             with self._patches(fixture):
                 first = operations.run_exp449_wave_antigravity(fixture.config)
                 self.assertEqual((first.status, first.completed_dataset_count, first.failed_dataset_count, first.pending_dataset_count, first.wave_count), ("proposal_score_incomplete", 22, 1, 0, 1))
-                self.assertFalse((fixture.operations_root / "proposal_score_incomplete_antigravity.json").exists())
+                self.assertFalse((fixture.operations_root / "terminal_incomplete_antigravity.json").exists())
                 second = operations.run_exp449_wave_antigravity(fixture.config)
             self.assertEqual((second.status, second.completed_dataset_count, second.wave_count), ("dataset_local_complete", 23, 2))
             self.assertGreaterEqual(len(fixture.revalidated_successes), 4)
             self.assertEqual(fixture.revalidated_successes[1], tuple(name for name in fixture.names if name != fixture.failed_dataset))
             self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 1))
             self.assertEqual(fixture.scheduled_identities, [fixture.names, (fixture.failed_dataset,)])
-            events = [json.loads(line) for line in (fixture.operations_root / "operations_progress_antigravity.jsonl").read_text().splitlines()]
-            per_dataset = [event for event in events if "dataset" in event]
+            events = [json.loads(line) for line in (fixture.operations_root / "progress_antigravity.jsonl").read_text().splitlines()]
+            per_dataset = [event for event in events if event["dataset"] is not None]
             self.assertEqual(tuple(event["dataset"] for event in per_dataset), fixture.names)
             self.assertGreater(per_dataset[1]["eta_seconds"], 0.0)
             first_wave_last = per_dataset[len(fixture.names) - 2]
@@ -419,7 +419,11 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
             self.assertEqual((second.status, second.completed_dataset_count, second.failed_dataset_count, second.pending_dataset_count, second.wave_count), ("proposal_score_incomplete", 22, 1, 0, 2))
             self.assertEqual(third, second)
             self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 0))
-            terminal = json.loads((fixture.operations_root / "proposal_score_incomplete_antigravity.json").read_text(encoding="utf-8"))
+            terminal = json.loads((fixture.operations_root / "terminal_incomplete_antigravity.json").read_text(encoding="utf-8"))
+            self.assertEqual(
+                sorted(path.name for path in fixture.operations_root.glob("terminal_*_antigravity.json")),
+                ["terminal_incomplete_antigravity.json"],
+            )
             self.assertEqual(terminal["verified_successes"], list(fixture.names[:-1]))
             self.assertEqual(terminal["failed"], [fixture.failed_dataset])
             self.assertEqual(terminal["never_attempted"], [])
@@ -483,12 +487,13 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
         with TemporaryDirectory(dir=Path.cwd()) as temporary:
             root = Path(temporary) / "operations_fixture_antigravity"
             event = {
-                "timestamp": "2026-08-14T00:00:00+00:00", "experiment": "Exp449", "mode": "smoke", "wave": 1,
-                "completed": 1, "failed": 0, "pending": 22, "elapsed_seconds": 1.0, "eta_seconds": 22.0,
-                "dataset": "Alpha",
+                "schema": "exp449-operations-progress-antigravity.v1", "timestamp": "2026-08-14T00:00:00+00:00",
+                "event": "dataset_progress", "wave": 1, "dataset": "Alpha", "completed": 1,
+                "failed": 0, "pending": 22, "elapsed_seconds": 1.0, "throughput_per_second": 1.0,
+                "eta_seconds": 22.0, "latest_error": None, "worker_pid": 449,
             }
             operations._write_exp449_progress_event_antigravity(root, event)
-            logged = json.loads((root / "operations_progress_antigravity.jsonl").read_text(encoding="utf-8"))
+            logged = json.loads((root / "progress_antigravity.jsonl").read_text(encoding="utf-8"))
             self.assertEqual(logged, event)
             unsafe = {**event, "scores": [0.1]}
             with self.assertRaisesRegex(ValueError, "forbidden"):
