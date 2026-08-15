@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-15T18:35:51+09:00",
-  "generated_from_commit": "0bda87ad16936d165681acee119acf4f8bae5d8f",
+  "generated_from_commit": "5458237011cf7588621df885c97f945845b7b4a3",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
