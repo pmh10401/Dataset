@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 import json
 from pathlib import Path
 import re
@@ -28,14 +29,15 @@ from .contracts_antigravity import freeze_canonical_json_mapping_antigravity
 _SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT_ANTIGRAVITY = re.compile(r"^[0-9a-f]{40}$")
 _NONCE_ANTIGRAVITY = re.compile(r"^[0-9a-f]{32}$")
+_CREATED_AT_ANTIGRAVITY = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 _GRANT_SCHEMA_ANTIGRAVITY = "exp449-smoke-a-execution-grant-antigravity.v1"
 _DIGEST_SCHEMA_ANTIGRAVITY = "exp449-smoke-a-execution-grant-digest-antigravity.v1"
 _GRANT_FIELDS_ANTIGRAVITY = frozenset({
-    "schema", "experiment_id", "target", "policy_id", "scientific_root", "operations_root", "claim_path",
+    "schema", "experiment_id", "target", "policy_id", "implementation_commit", "scientific_root", "operations_root", "claim_path",
     "nonce", "maximum_waves", "label_access", "logical_cpu_count", "dataset_workers", "database_path",
-    "database_size", "database_sha256", "smoke_datasets", "context_sha256", "scientific_code_closure",
-    "authority_code_closure", "lineage_lock_sha256", "codemap_lock_sha256", "package_inventory",
-    "seeds_and_constants", "acceleration", "design_facts",
+    "database_size", "database_sha256", "smoke_catalog_sha256", "smoke_datasets", "context_sha256", "scientific_code_closure",
+    "authority_code_closure", "lineage_lock_sha256", "codemap_lock_sha256", "acceleration_assessment_sha256",
+    "canonical_backend", "package_inventory", "seeds_and_constants", "acceleration", "design_facts", "grant_created_at",
 })
 _DIGEST_FIELDS_ANTIGRAVITY = frozenset({"schema", "implementation_commit", "grant_path", "grant_size", "grant_sha256"})
 _APPROVED_AUTHORITY_FILENAMES_ANTIGRAVITY = frozenset({
@@ -98,6 +100,7 @@ class Exp449SmokeAGrantAntigravity:
     experiment_id: str
     target: str
     policy_id: str
+    implementation_commit: str
     scientific_root: Path
     operations_root: Path
     claim_path: Path
@@ -109,16 +112,20 @@ class Exp449SmokeAGrantAntigravity:
     database_path: str
     database_size: int
     database_sha256: str
+    smoke_catalog_sha256: str
     smoke_datasets: tuple[str, ...]
     context_sha256: str
     scientific_code_closure: Mapping[str, str]
     authority_code_closure: Mapping[str, str]
     lineage_lock_sha256: str
     codemap_lock_sha256: str
+    acceleration_assessment_sha256: str
+    canonical_backend: str
     package_inventory: Mapping[str, object]
     seeds_and_constants: Mapping[str, object]
     acceleration: Mapping[str, object]
     design_facts: Mapping[str, object]
+    grant_created_at: str
 
     def __post_init__(self) -> None:
         if self.schema != _GRANT_SCHEMA_ANTIGRAVITY:
@@ -127,6 +134,8 @@ class Exp449SmokeAGrantAntigravity:
             raise ValueError("Smoke A grant identity is invalid")
         if self.policy_id != FROZEN_EXP449_CONFIG.policy_id:
             raise ValueError("Smoke A grant policy is invalid")
+        if type(self.implementation_commit) is not str or _COMMIT_ANTIGRAVITY.fullmatch(self.implementation_commit) is None:
+            raise ValueError("Smoke A grant implementation commit is invalid")
         if Path(self.scientific_root).resolve(strict=False) != FROZEN_EXP449_CONFIG.smoke_a_scientific_root.resolve(strict=False):
             raise ValueError("Smoke A grant scientific root is invalid")
         if Path(self.operations_root).resolve(strict=False) != FROZEN_EXP449_CONFIG.smoke_a_operations_root.resolve(strict=False):
@@ -135,11 +144,11 @@ class Exp449SmokeAGrantAntigravity:
             raise ValueError("Smoke A grant claim path is invalid")
         if type(self.nonce) is not str or _NONCE_ANTIGRAVITY.fullmatch(self.nonce) is None:
             raise ValueError("Smoke A grant nonce is invalid")
-        if self.maximum_waves != FROZEN_EXP449_CONFIG.maximum_waves:
+        if type(self.maximum_waves) is not int or self.maximum_waves != FROZEN_EXP449_CONFIG.maximum_waves:
             raise ValueError("Smoke A grant wave count is invalid")
         if self.label_access is not False:
             raise ValueError("Smoke A grant label access must be false")
-        if (self.logical_cpu_count, self.dataset_workers) != (
+        if type(self.logical_cpu_count) is not int or type(self.dataset_workers) is not int or (self.logical_cpu_count, self.dataset_workers) != (
             EXP449_LOGICAL_CPU_COUNT_ANTIGRAVITY,
             EXP449_DATASET_WORKERS_ANTIGRAVITY,
         ):
@@ -155,8 +164,10 @@ class Exp449SmokeAGrantAntigravity:
         object.__setattr__(self, "operations_root", FROZEN_EXP449_CONFIG.smoke_a_operations_root)
         object.__setattr__(self, "claim_path", SMOKE_A_CLAIM_PATH_ANTIGRAVITY)
         object.__setattr__(self, "smoke_datasets", datasets)
-        for field_name in ("database_sha256", "context_sha256", "lineage_lock_sha256", "codemap_lock_sha256"):
+        for field_name in ("database_sha256", "smoke_catalog_sha256", "context_sha256", "lineage_lock_sha256", "codemap_lock_sha256", "acceleration_assessment_sha256"):
             object.__setattr__(self, field_name, _sha256_antigravity(getattr(self, field_name), field_name))
+        if self.canonical_backend != "cpu":
+            raise ValueError("Smoke A grant canonical backend is invalid")
         object.__setattr__(self, "scientific_code_closure", _immutable_sha_map_antigravity(self.scientific_code_closure, "scientific_code_closure"))
         object.__setattr__(self, "authority_code_closure", _immutable_sha_map_antigravity(self.authority_code_closure, "authority_code_closure"))
         for field_name in ("package_inventory", "seeds_and_constants", "acceleration"):
@@ -165,6 +176,12 @@ class Exp449SmokeAGrantAntigravity:
         if _plain_json_antigravity(design_facts) != _plain_json_antigravity(_DESIGN_FACTS_ANTIGRAVITY):
             raise ValueError("Smoke A grant frozen design facts are invalid")
         object.__setattr__(self, "design_facts", design_facts)
+        if type(self.grant_created_at) is not str or _CREATED_AT_ANTIGRAVITY.fullmatch(self.grant_created_at) is None:
+            raise ValueError("Smoke A grant creation timestamp is invalid")
+        try:
+            datetime.strptime(self.grant_created_at, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError as error:
+            raise ValueError("Smoke A grant creation timestamp is invalid") from error
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,15 +280,15 @@ def parse_grant_bytes_antigravity(data: bytes) -> Exp449SmokeAGrantAntigravity:
     value = _parse_object_antigravity(data, _GRANT_FIELDS_ANTIGRAVITY, "Smoke A grant")
     try:
         grant = Exp449SmokeAGrantAntigravity(
-            schema=value["schema"], experiment_id=value["experiment_id"], target=value["target"], policy_id=value["policy_id"],
+            schema=value["schema"], experiment_id=value["experiment_id"], target=value["target"], policy_id=value["policy_id"], implementation_commit=value["implementation_commit"],
             scientific_root=Path(value["scientific_root"]), operations_root=Path(value["operations_root"]), claim_path=Path(value["claim_path"]),
             nonce=value["nonce"], maximum_waves=value["maximum_waves"], label_access=value["label_access"],
             logical_cpu_count=value["logical_cpu_count"], dataset_workers=value["dataset_workers"], database_path=value["database_path"],
-            database_size=value["database_size"], database_sha256=value["database_sha256"], smoke_datasets=tuple(value["smoke_datasets"]),
+            database_size=value["database_size"], database_sha256=value["database_sha256"], smoke_catalog_sha256=value["smoke_catalog_sha256"], smoke_datasets=tuple(value["smoke_datasets"]),
             context_sha256=value["context_sha256"], scientific_code_closure=value["scientific_code_closure"],
             authority_code_closure=value["authority_code_closure"], lineage_lock_sha256=value["lineage_lock_sha256"],
-            codemap_lock_sha256=value["codemap_lock_sha256"], package_inventory=value["package_inventory"],
-            seeds_and_constants=value["seeds_and_constants"], acceleration=value["acceleration"], design_facts=value["design_facts"],
+            codemap_lock_sha256=value["codemap_lock_sha256"], acceleration_assessment_sha256=value["acceleration_assessment_sha256"], canonical_backend=value["canonical_backend"], package_inventory=value["package_inventory"],
+            seeds_and_constants=value["seeds_and_constants"], acceleration=value["acceleration"], design_facts=value["design_facts"], grant_created_at=value["grant_created_at"],
         )
     except (TypeError, ValueError) as error:
         raise ValueError("Smoke A grant is invalid") from error

@@ -39,6 +39,7 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
             experiment_id="Exp449",
             target="smoke-a",
             policy_id="hard_plus_stable",
+            implementation_commit="1" * 40,
             scientific_root=FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
             operations_root=FROZEN_EXP449_CONFIG.smoke_a_operations_root,
             claim_path=SMOKE_A_CLAIM_PATH_ANTIGRAVITY,
@@ -50,6 +51,7 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
             database_path="/fixture/dataset.sqlite",
             database_size=17,
             database_sha256=self._SHA_A,
+            smoke_catalog_sha256=self._SHA_B,
             smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets,
             context_sha256=self._SHA_B,
             scientific_code_closure={
@@ -61,6 +63,8 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
             },
             lineage_lock_sha256=self._SHA_A,
             codemap_lock_sha256=self._SHA_B,
+            acceleration_assessment_sha256=self._SHA_C,
+            canonical_backend="cpu",
             package_inventory={"numpy": "2.3.1", "pycatch22": "0.5.0"},
             seeds_and_constants={"seed": 449, "alphas": (0.01, 0.05)},
             acceleration={"selected_backend": "cpu", "mlx_assessed": True, "mps_assessed": True, "pytorch_assessed": True},
@@ -75,6 +79,7 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
                 "accelerated_tolerance": 1e-5,
                 "minimum_accelerated_speedup": 1.1,
             },
+            grant_created_at="2026-08-15T11:45:00Z",
         )
 
     def _digest(self) -> Exp449SmokeAGrantDigestAntigravity:
@@ -107,11 +112,11 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
         self.assertEqual(
             tuple(field.name for field in fields(Exp449SmokeAGrantAntigravity)),
             (
-                "schema", "experiment_id", "target", "policy_id", "scientific_root", "operations_root", "claim_path",
+                "schema", "experiment_id", "target", "policy_id", "implementation_commit", "scientific_root", "operations_root", "claim_path",
                 "nonce", "maximum_waves", "label_access", "logical_cpu_count", "dataset_workers", "database_path",
-                "database_size", "database_sha256", "smoke_datasets", "context_sha256", "scientific_code_closure",
-                "authority_code_closure", "lineage_lock_sha256", "codemap_lock_sha256", "package_inventory",
-                "seeds_and_constants", "acceleration", "design_facts",
+                "database_size", "database_sha256", "smoke_catalog_sha256", "smoke_datasets", "context_sha256", "scientific_code_closure",
+                "authority_code_closure", "lineage_lock_sha256", "codemap_lock_sha256", "acceleration_assessment_sha256",
+                "canonical_backend", "package_inventory", "seeds_and_constants", "acceleration", "design_facts", "grant_created_at",
             ),
         )
         with self.assertRaises(FrozenInstanceError):
@@ -144,15 +149,23 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
             ("experiment_id", "Exp450"),
             ("target", "smoke-b"),
             ("policy_id", "hard_only"),
+            ("implementation_commit", "A" * 40),
             ("scientific_root", FROZEN_EXP449_CONFIG.smoke_b_scientific_root),
             ("operations_root", FROZEN_EXP449_CONFIG.smoke_b_operations_root),
             ("claim_path", Path("/tmp/claim_antigravity.lock")),
             ("nonce", "A" * 32),
             ("maximum_waves", 1),
+            ("maximum_waves", 2.0),
             ("label_access", True),
             ("logical_cpu_count", 11),
+            ("logical_cpu_count", 12.0),
             ("dataset_workers", 12),
+            ("dataset_workers", 11.0),
             ("database_sha256", "A" * 64),
+            ("smoke_catalog_sha256", "A" * 64),
+            ("acceleration_assessment_sha256", "A" * 64),
+            ("canonical_backend", "mlx"),
+            ("grant_created_at", "2026-08-15 11:45:00Z"),
         ):
             with self.subTest(field=field):
                 with self.assertRaises(ValueError):
@@ -213,3 +226,23 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
                         candidate.rmdir()
                     else:
                         candidate.unlink()
+
+    def test_authority_directory_rejects_unsafe_types_even_with_approved_basenames(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            for kind, basename in (
+                ("directory", SMOKE_A_GRANT_PATH_ANTIGRAVITY.name),
+                ("symlink", SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name),
+            ):
+                with self.subTest(kind=kind):
+                    directory = parent / f"{kind}_authority_directory_antigravity"
+                    directory.mkdir()
+                    candidate = directory / basename
+                    if kind == "directory":
+                        candidate.mkdir()
+                    else:
+                        target = directory / SMOKE_A_GRANT_PATH_ANTIGRAVITY.name
+                        target.write_text("{}")
+                        candidate.symlink_to(target.name)
+                    with self.assertRaisesRegex(ValueError, "unapproved"):
+                        verify_authority_directory_structure_antigravity(directory)

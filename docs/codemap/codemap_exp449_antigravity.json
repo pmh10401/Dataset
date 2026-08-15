@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T11:31:46+09:00",
-  "generated_from_commit": "0fcefe11a633dfbb4bea086c8470a3f2e611b57d",
+  "generated_at": "2026-08-15T11:50:00+09:00",
+  "generated_from_commit": "82d2de97bb5b4ac4ff75727e3b31fa3b9e536f34",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
@@ -1645,7 +1645,7 @@
     {
       "id": "exp449_execution_authority",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
-      "role": "Pure immutable Smoke A grant and digest contracts plus fail-closed authorization-directory structural validation.",
+      "role": "Pure immutable Smoke A grant and digest contracts, including implementation/catalog/backend/assessment/timestamp bindings, plus fail-closed authorization-directory structural validation.",
       "entrypoints": [
         "Exp449SmokeAGrantAntigravity",
         "Exp449SmokeAGrantDigestAntigravity",
@@ -1672,7 +1672,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py"
       ],
       "effects": [
-        "binds one Smoke A design, closures, CPU 12-to-11 contract, absent-label constraint, and canonical authority bytes without enabling execution"
+        "binds one Smoke A implementation commit, catalog SHA, closures, CPU 12-to-11 and canonical-CPU contracts, acceleration assessment, audit timestamp, absent-label constraint, and canonical authority bytes without enabling execution"
       ]
     },
     {

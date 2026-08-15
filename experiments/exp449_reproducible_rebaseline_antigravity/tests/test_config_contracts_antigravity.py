@@ -250,6 +250,13 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         for node_id, (expected_callers, _coverage_tokens) in _EXP449_LOGICAL_NODE_VERIFIERS.items():
             self.assertEqual(tuple(by_id[node_id]["callers"]), expected_callers, node_id)
         lock = json.loads((REPO_ROOT / "docs/codemap/codemap_exp449_antigravity.lock").read_text())
+        html = (REPO_ROOT / "docs/codemap/codemap_exp449_antigravity.html").read_text(encoding="utf-8")
+        self.assertEqual(lock["generated_at"], payload["generated_at"])
+        self.assertEqual(lock["current_commit"], payload["generated_from_commit"])
+        self.assertIn(
+            f"Generated {payload['generated_at']} · source <code>{payload['generated_from_commit']}</code>",
+            html,
+        )
         excluded = set(lock["excluded_directories"])
         self.assertIn("docs/authorities", excluded)
         self.assertNotIn("docs", excluded)
