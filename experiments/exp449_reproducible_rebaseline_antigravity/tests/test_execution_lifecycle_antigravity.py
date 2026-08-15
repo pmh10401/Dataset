@@ -24,6 +24,7 @@ from experiments.exp449_reproducible_rebaseline_antigravity.tests.test_manifest_
     _TypedProposalFixtureAntigravity,
     _context_antigravity as _typed_context_antigravity,
 )
+from experiments.exp449_reproducible_rebaseline_antigravity.tests.test_readiness_antigravity import _catalog_antigravity
 
 
 def _assert_science_equal_antigravity(test: unittest.TestCase, actual: object, expected: object) -> None:
@@ -99,7 +100,6 @@ class _TemporaryAuthorizedSmokeAAntigravity:
         self.stack.enter_context(patch.object(operations, "SMOKE_A_CLAIM_PATH_ANTIGRAVITY", self.claim_path))
         self.stack.enter_context(patch.object(authority, "FROZEN_EXP449_CONFIG", temporary_config))
         self.stack.enter_context(patch.object(authority, "SMOKE_A_CLAIM_PATH_ANTIGRAVITY", self.claim_path))
-        self.stack.enter_context(patch.object(contracts, "_SMOKE_ROOTS", frozenset({self.scientific_root.resolve()})))
         self.fixture = _TypedProposalFixtureAntigravity(self.scientific_root)
         context_acceleration = build_acceleration_manifest("f" * 64, logical_cpu_count=1)
         backend = FrozenTask8BackendDecision.from_acceleration_manifest(context_acceleration)
@@ -150,6 +150,47 @@ class _TemporaryAuthorizedSmokeAAntigravity:
 
     def acquire_resume(self):
         return operations._acquire_smoke_a_resume_lease_antigravity(self.verified, self.config, _test_paths_antigravity=self.paths)
+
+
+class _ReadinessBoundResumeFixtureAntigravity:
+    """Temporary claim/receipt whose unchanged grant is derived from real resume facts."""
+    def __enter__(self):
+        from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_antigravity import Exp449SmokeAGrantAntigravity, VerifiedExp449SmokeAAuthorityAntigravity, canonical_grant_bytes_antigravity
+        self.directory = TemporaryDirectory(dir=Path.cwd()); root = Path(self.directory.name)
+        self.roots = tuple(root / f"root_{index}_antigravity" for index in range(6)); self.claim = root / "claim_antigravity.lock"
+        self.stack = ExitStack(); base = operations.FROZEN_EXP449_CONFIG
+        config = SimpleNamespace(**{field.name: getattr(base, field.name) for field in fields(base)})
+        config.smoke_a_scientific_root, config.smoke_a_operations_root = self.roots[:2]
+        config.smoke_b_scientific_root, config.smoke_b_operations_root = self.roots[2:4]
+        config.official_scientific_root, config.official_operations_root = self.roots[4:]
+        for module in (operations, authority, contracts): self.stack.enter_context(patch.object(module, "FROZEN_EXP449_CONFIG", config))
+        self.stack.enter_context(patch.object(contracts, "_SMOKE_ROOTS", frozenset({self.roots[0].resolve(), self.roots[2].resolve()})))
+        self.stack.enter_context(patch.object(contracts, "_OFFICIAL_ROOTS", frozenset({self.roots[4].resolve()})))
+        self.stack.enter_context(patch.object(operations, "SMOKE_A_CLAIM_PATH_ANTIGRAVITY", self.claim)); self.stack.enter_context(patch.object(authority, "SMOKE_A_CLAIM_PATH_ANTIGRAVITY", self.claim))
+        self.catalog = _catalog_antigravity("smoke"); implementation, approved = "1" * 40, "2" * 40
+        package = {"schema": "fixture", "algorithm": "fixture", "records": [{"project": "fixture", "version": "1"}], "sha256": "f" * 64}
+        self.providers = (
+            patch.object(operations, "_require_reviewed_head_antigravity", return_value=implementation),
+            patch.object(operations, "_require_capable_interpreter_antigravity", return_value={"executable": "fixture-python", "python_version": "3.14.6"}),
+            patch.object(operations, "_readiness_catalog_builder_antigravity", side_effect=lambda mode: self.catalog if mode == "smoke" else _catalog_antigravity("full")),
+            patch.object(operations, "_dependency_facts_antigravity", return_value={"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "2.13.0"}),
+            patch.object(operations, "_package_inventory_facts_antigravity", return_value=package),
+            patch.object(operations, "_fixed_roots_antigravity", return_value=self.roots),
+        )
+        for item in self.providers: self.stack.enter_context(item)
+        facts = operations._readiness_facts_antigravity(implementation, logical_cpu_count=12)
+        smoke = facts["contexts"]["smoke_a"]; acceleration = build_acceleration_manifest(smoke["acceleration_assessment_sha256"], logical_cpu_count=12)
+        context = Exp449Context.from_verified_inputs(run_root=self.roots[0], mode="smoke", catalog=self.catalog, acceleration=FrozenTask8BackendDecision.from_acceleration_manifest(acceleration), database_sha256=facts["database"]["sha256"], code_closure=facts["code_closure"], lineage_sha256=facts["lineage_sha256"], codemap_sha256=facts["codemap_sha256"], interpreter=facts["interpreter"]["executable"], environment={"interpreter": facts["interpreter"], "dependencies": facts["dependencies"], "package_inventory": facts["package_inventory"]}, seeds_and_constants=facts["seeds_and_constants"])
+        grant = Exp449SmokeAGrantAntigravity(schema="exp449-smoke-a-execution-grant-antigravity.v1", experiment_id="Exp449", target="smoke-a", policy_id=config.policy_id, implementation_commit=implementation, scientific_root=self.roots[0], operations_root=self.roots[1], claim_path=self.claim, nonce="0123456789abcdef0123456789abcdef", maximum_waves=2, label_access=False, logical_cpu_count=12, dataset_workers=11, database_path=facts["database"]["path"], database_size=facts["database"]["observed_size"], database_sha256=facts["database"]["sha256"], smoke_catalog_sha256=smoke["catalog_sha256"], smoke_datasets=config.smoke_datasets, context_sha256=smoke["context_sha256"], scientific_code_closure=facts["code_closure"], authority_code_closure={"experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py": operations._sha256_file_antigravity(operations._REPOSITORY_ROOT_ANTIGRAVITY / "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py")}, lineage_lock_sha256=facts["lineage_lock_paper_sha256"], codemap_lock_sha256=facts["codemap_lock_sha256"], acceleration_assessment_sha256=smoke["acceleration_assessment_sha256"], canonical_backend="cpu", package_inventory=facts["package_inventory"], seeds_and_constants=facts["seeds_and_constants"], acceleration=facts["acceleration"], design_facts=authority._DESIGN_FACTS_ANTIGRAVITY, grant_created_at="2026-08-15T00:00:00Z")
+        data = canonical_grant_bytes_antigravity(grant); self.verified = VerifiedExp449SmokeAAuthorityAntigravity(approved, implementation, grant, sha256(data).hexdigest(), data, b"digest", (1,2,3,4), (5,6,7,8)); self.context = context; self.config = operations.Exp449WaveConfig(context, self.catalog, {name: object() for name in config.smoke_datasets}, acceleration)
+        self.stack.enter_context(patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=self.verified))
+        with operations.acquire_smoke_a_execution_lease_antigravity(self.verified, context, _test_paths_antigravity=(self.roots[0], self.roots[1], self.claim)): pass
+        self.roots[0].mkdir(); return self
+    def __exit__(self, *_): self.stack.close(); self.directory.cleanup()
+    @property
+    def paths(self): return self.roots[0], self.roots[1], self.claim
 
 
 def _context_antigravity() -> Exp449Context:
@@ -358,6 +399,24 @@ class Exp449ExecutionLifecycleTests(unittest.TestCase):
                     fixture.config.context, fixture.config.catalog, fixture.config.raw_datasets,
                     fixture.config.acceleration_manifest, task45_acceleration_manifest=drift,
                 )
+
+    def test_real_resume_readiness_and_lease_reject_current_fact_and_receipt_drift(self) -> None:
+        """Unchanged grant/claim evidence must reject drift before scorer or freeze entry."""
+        with _ReadinessBoundResumeFixtureAntigravity() as fixture:
+            self.assertEqual(operations.readiness_for_authorized_resume_antigravity(fixture.verified)["reviewed_commit"], fixture.verified.implementation_commit)
+            with patch.object(operations, "_dependency_facts_antigravity", return_value={"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "drift"}):
+                with self.assertRaisesRegex(ValueError, "dependency facts"):
+                    operations.readiness_for_authorized_resume_antigravity(fixture.verified)
+            with patch.object(operations, "_package_inventory_facts_antigravity", return_value={"schema": "fixture", "algorithm": "fixture", "records": [{"project": "fixture", "version": "drift"}], "sha256": "f" * 64}):
+                with self.assertRaisesRegex(ValueError, "readiness facts differ"):
+                    operations.readiness_for_authorized_resume_antigravity(fixture.verified)
+            closure = operations._closure_facts_antigravity(); closure["code_closure"] = {**closure["code_closure"], "fixture_drift.py": "a" * 64}
+            with patch.object(operations, "_closure_facts_antigravity", return_value=closure):
+                with self.assertRaisesRegex(ValueError, "readiness facts differ|context facts differ"):
+                    operations.readiness_for_authorized_resume_antigravity(fixture.verified)
+            receipt = fixture.roots[1] / "execution_authority_consumed_antigravity.json"; receipt.write_bytes(receipt.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "noncanonical|receipt differs"):
+                operations._acquire_smoke_a_resume_lease_antigravity(fixture.verified, fixture.config, _test_paths_antigravity=fixture.paths)
 
 
 if __name__ == "__main__":
