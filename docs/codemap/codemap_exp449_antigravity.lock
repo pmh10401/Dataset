@@ -47,7 +47,6 @@
   },
   "changed_modules_since_prior_lock": [
     "experiments",
-    "docs",
     "scratch"
   ]
 }
