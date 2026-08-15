@@ -34,6 +34,7 @@ from paper.equipment_anomaly_detection.acceleration_paper import (
     verify_acceleration_manifest,
 )
 from paper.equipment_anomaly_detection.catalog_paper import build_catalog, verify_catalog
+from paper.equipment_anomaly_detection.data_paper import load_dataset_values
 from paper.equipment_anomaly_detection.config_paper import (
     FROZEN_CONFIG as FROZEN_PAPER_CONFIG,
     LINEAGE_LOCK_PATH,
@@ -206,6 +207,19 @@ class Exp449WaveConfig:
         object.__setattr__(self, "raw_datasets", raw)
 
 
+@dataclass(frozen=True, slots=True)
+class Exp449AuthorizedWaveResultAntigravity:
+    """Verified dataset-local state plus the only score eligible for a freeze.
+
+    The score remains opaque here: the scientific composer exclusively defines
+    its type and fields.  Incomplete collection must never hand a partial
+    scientific object to an authorized publisher.
+    """
+
+    status: Exp449TerminalStatus
+    score: object | None
+
+
 @dataclass(slots=True)
 class Exp449SmokeAExecutionLeaseAntigravity:
     """Own the one process-local claim descriptor for a fresh Smoke A launch."""
@@ -346,6 +360,28 @@ def _write_fd_all_antigravity(descriptor: int, data: bytes) -> None:
     os.fsync(descriptor)
 
 
+def _read_canonical_fd_mapping_antigravity(descriptor: int) -> dict[str, object]:
+    """Read one already-open regular record without a second pathname lookup."""
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    chunks: list[bytes] = []
+    while True:
+        try:
+            chunk = os.read(descriptor, 65536)
+        except InterruptedError:
+            continue
+        if not chunk:
+            break
+        chunks.append(chunk)
+    data = b"".join(chunks)
+    try:
+        value = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Exp449 persisted authority record is invalid") from error
+    if not isinstance(value, dict) or canonical_json_bytes(value) != data:
+        raise ValueError("Exp449 persisted authority record is noncanonical")
+    return value
+
+
 def _create_execution_receipt_antigravity(
     root: Path,
     verified: VerifiedExp449SmokeAAuthorityAntigravity,
@@ -361,17 +397,7 @@ def _create_execution_receipt_antigravity(
         details = None
     if details is not None:
         raise ValueError("Exp449 execution authority consumption already exists")
-    payload = {
-        "schema": "exp449-smoke-a-execution-consumed-antigravity.v1",
-        "grant_sha256": verified.grant_sha256,
-        "approved_authority_commit": verified.approved_authority_commit,
-        "implementation_commit": verified.implementation_commit,
-        "target": verified.grant.target,
-        "context_sha256": context_sha256_antigravity(context),
-        "claim_path": str(claim_path),
-        "claim_device": claim_details.st_dev,
-        "claim_inode": claim_details.st_ino,
-    }
+    payload = _receipt_payload_antigravity(verified, context, claim_path, claim_details)
     descriptor = os.open(
         receipt,
         os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
@@ -386,6 +412,39 @@ def _create_execution_receipt_antigravity(
         os.fsync(directory_fd)
     finally:
         os.close(directory_fd)
+
+
+def _claim_payload_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    context: Exp449Context,
+) -> dict[str, object]:
+    return {
+        "schema": "exp449-smoke-a-execution-claim-antigravity.v1",
+        "grant_sha256": verified.grant_sha256,
+        "approved_authority_commit": verified.approved_authority_commit,
+        "implementation_commit": verified.implementation_commit,
+        "target": verified.grant.target,
+        "context_sha256": context_sha256_antigravity(context),
+    }
+
+
+def _receipt_payload_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    context: Exp449Context,
+    claim_path: Path,
+    claim_details: os.stat_result,
+) -> dict[str, object]:
+    return {
+        "schema": "exp449-smoke-a-execution-consumed-antigravity.v1",
+        "grant_sha256": verified.grant_sha256,
+        "approved_authority_commit": verified.approved_authority_commit,
+        "implementation_commit": verified.implementation_commit,
+        "target": verified.grant.target,
+        "context_sha256": context_sha256_antigravity(context),
+        "claim_path": str(claim_path),
+        "claim_device": claim_details.st_dev,
+        "claim_inode": claim_details.st_ino,
+    }
 
 
 def acquire_smoke_a_execution_lease_antigravity(
@@ -440,14 +499,7 @@ def acquire_smoke_a_execution_lease_antigravity(
             )
         except FileExistsError as error:
             raise ValueError("Exp449 execution claim already exists") from error
-        claim_payload = {
-            "schema": "exp449-smoke-a-execution-claim-antigravity.v1",
-            "grant_sha256": verified.grant_sha256,
-            "approved_authority_commit": verified.approved_authority_commit,
-            "implementation_commit": verified.implementation_commit,
-            "target": grant.target,
-            "context_sha256": grant.context_sha256,
-        }
+        claim_payload = _claim_payload_antigravity(verified, context)
         _write_fd_all_antigravity(descriptor, canonical_json_bytes(claim_payload))
         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
         claim_details = os.fstat(descriptor)
@@ -463,6 +515,78 @@ def acquire_smoke_a_execution_lease_antigravity(
         if stat.S_ISLNK(root_details.st_mode) or not stat.S_ISDIR(root_details.st_mode):
             raise ValueError("Exp449 operations root is unsafe")
         _create_execution_receipt_antigravity(operations_root, verified, context, claim_path, claim_details)
+        capability = _mint_execution_capability_antigravity(
+            verified, context=context, target="smoke-a", scientific_root=scientific_root,
+            operations_root=operations_root, claim_path=claim_path, claim_fd=descriptor,
+        )
+        return Exp449SmokeAExecutionLeaseAntigravity(verified, context, descriptor, capability)
+    except BaseException:
+        if descriptor >= 0:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            finally:
+                os.close(descriptor)
+        raise
+
+
+def _acquire_smoke_a_resume_lease_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    config: Exp449WaveConfig,
+) -> Exp449SmokeAExecutionLeaseAntigravity:
+    """Reclaim only the exact inactive claim and consumed-root identity.
+
+    This is intentionally private: callers receive no root or claim override,
+    and a mismatched persisted namespace is an error rather than something the
+    lifecycle can heal or migrate.
+    """
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity:
+        raise TypeError("Exp449 verified Smoke A authority is required")
+    context = config.context
+    grant = verified.grant
+    scientific_root, operations_root, claim_path = (
+        Path(grant.scientific_root), Path(grant.operations_root), Path(grant.claim_path),
+    )
+    if (
+        scientific_root != FROZEN_EXP449_CONFIG.smoke_a_scientific_root
+        or operations_root != FROZEN_EXP449_CONFIG.smoke_a_operations_root
+        or claim_path != SMOKE_A_CLAIM_PATH_ANTIGRAVITY
+        or context.run_root != scientific_root
+    ):
+        raise ValueError("Exp449 Smoke A resume roots differ")
+    readiness_for_authorized_resume_antigravity(verified)
+    for root, name in ((scientific_root, "scientific root"), (operations_root, "operations root")):
+        details = root.lstat()
+        if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+            raise ValueError(f"Exp449 Smoke A resume {name} is unsafe")
+    descriptor = -1
+    try:
+        descriptor = os.open(claim_path, os.O_RDWR | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+        details = os.fstat(descriptor)
+        path_details = claim_path.lstat()
+        if (
+            not stat.S_ISREG(details.st_mode) or stat.S_ISLNK(path_details.st_mode)
+            or not stat.S_ISREG(path_details.st_mode)
+            or (details.st_dev, details.st_ino) != (path_details.st_dev, path_details.st_ino)
+            or _read_canonical_fd_mapping_antigravity(descriptor) != _claim_payload_antigravity(verified, context)
+        ):
+            raise ValueError("Exp449 Smoke A resume claim differs")
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            raise ValueError("Exp449 Smoke A resume claim is active") from error
+        receipt = operations_root / _EXECUTION_AUTHORITY_CONSUMED_NAME
+        receipt_fd = os.open(receipt, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            receipt_details = os.fstat(receipt_fd)
+            receipt_path_details = receipt.lstat()
+            if (
+                stat.S_ISLNK(receipt_path_details.st_mode) or not stat.S_ISREG(receipt_details.st_mode)
+                or (receipt_details.st_dev, receipt_details.st_ino) != (receipt_path_details.st_dev, receipt_path_details.st_ino)
+                or _read_canonical_fd_mapping_antigravity(receipt_fd) != _receipt_payload_antigravity(verified, context, claim_path, details)
+            ):
+                raise ValueError("Exp449 Smoke A consumption receipt differs")
+        finally:
+            os.close(receipt_fd)
         capability = _mint_execution_capability_antigravity(
             verified, context=context, target="smoke-a", scientific_root=scientific_root,
             operations_root=operations_root, claim_path=claim_path, claim_fd=descriptor,
@@ -906,7 +1030,7 @@ def run_exp449_wave_antigravity(
     *,
     _execution_capability: object = None,
     _execution_lease: Exp449SmokeAExecutionLeaseAntigravity | None = None,
-) -> Exp449TerminalStatus:
+) -> Exp449AuthorizedWaveResultAntigravity:
     """Execute at most one of the two preregistered dataset-local recovery waves."""
     global compose_exp449_proposal_score_antigravity
     _execution_capability_for_config_antigravity(config, _execution_capability)
@@ -914,14 +1038,17 @@ def run_exp449_wave_antigravity(
     started = monotonic()
     terminal = _existing_terminal_status_antigravity(config)
     if terminal is not None:
-        return terminal
+        return Exp449AuthorizedWaveResultAntigravity(terminal, None)
     before = _snapshot_antigravity(config)
     before_status = _terminal_status_antigravity(config, before)
-    if before_status.status == "dataset_local_complete":
-        return before_status
-    next_wave = before.wave_count + 1
+    # A verified all-success Task4/5 namespace still needs the existing
+    # composer to reconstruct Task6/7 and Candidate C.  Its collector reuses
+    # those verified records and must not re-score any dataset.
+    next_wave = before.wave_count + 1 if before_status.status != "dataset_local_complete" else max(1, before.wave_count)
     if next_wave > FROZEN_EXP449_CONFIG.maximum_waves:
-        return verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability)
+        return Exp449AuthorizedWaveResultAntigravity(
+            verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability), None,
+        )
     _emit_progress_antigravity(config, wave=next_wave, snapshot=before, started=started, _authorized_lease=authorized_lease)
     context_payload, _authority = _authority_antigravity(config)
     if compose_exp449_proposal_score_antigravity is None:
@@ -949,7 +1076,7 @@ def run_exp449_wave_antigravity(
             _authorized_lease=authorized_lease,
         )
     try:
-        compose_exp449_proposal_score_antigravity(
+        score = compose_exp449_proposal_score_antigravity(
             config.raw_datasets,
             config.acceleration_manifest,
             root=config.context.run_root,
@@ -966,8 +1093,10 @@ def run_exp449_wave_antigravity(
             _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=len(after.failed), dataset=dataset, _authorized_lease=authorized_lease)
         _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, _authorized_lease=authorized_lease)
         if next_wave == FROZEN_EXP449_CONFIG.maximum_waves:
-            return verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability)
-        return _terminal_status_antigravity(config, after)
+            return Exp449AuthorizedWaveResultAntigravity(
+                verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability), None,
+            )
+        return Exp449AuthorizedWaveResultAntigravity(_terminal_status_antigravity(config, after), None)
     after = _snapshot_antigravity(config)
     status = _terminal_status_antigravity(config, after)
     if status.status != "dataset_local_complete":
@@ -975,7 +1104,9 @@ def run_exp449_wave_antigravity(
     for index, dataset in enumerate((name for name in after.successes if name not in before.successes), len(before.successes) + 1):
         _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=0, dataset=dataset, _authorized_lease=authorized_lease)
     _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, _authorized_lease=authorized_lease)
-    return _publish_terminal_complete_antigravity(config, after, _execution_capability=_execution_capability)
+    # Completion is deliberately not terminal until the exact returned score
+    # has been frozen and independently verified by the authorized parent.
+    return Exp449AuthorizedWaveResultAntigravity(status, score)
 
 
 def freeze_authorized_exp449_proposal_antigravity(
@@ -989,6 +1120,156 @@ def freeze_authorized_exp449_proposal_antigravity(
     return freeze_exp449_proposal_antigravity(
         score, root=config.context.run_root, context=config.context, catalog=config.catalog,
     )
+
+
+def _authorized_smoke_a_wave_config_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    *,
+    resume: bool,
+) -> Exp449WaveConfig:
+    """Derive the sole Smoke A execution inputs from reverified readonly facts."""
+    facts = (
+        readiness_for_authorized_resume_antigravity(verified)
+        if resume else readiness_for_authorized_implementation_antigravity(verified)
+    )
+    grant = verified.grant
+    catalogs, database = _verified_catalogs_antigravity()
+    catalog = catalogs["smoke"]
+    if (
+        catalog.get("catalog_sha256") != grant.smoke_catalog_sha256
+        or _catalog_datasets_antigravity(catalog) != grant.smoke_datasets
+        or database.get("sha256") != grant.database_sha256
+        or database.get("size") != grant.database_size
+        or database.get("unresolved_path") != grant.database_path
+    ):
+        raise ValueError("Exp449 authorized Smoke A catalog or database drift differs")
+    acceleration = verify_acceleration_manifest(
+        build_acceleration_manifest(
+            grant.acceleration_assessment_sha256,
+            logical_cpu_count=grant.logical_cpu_count,
+        ),
+        grant.acceleration_assessment_sha256,
+    )
+    backend = FrozenTask8BackendDecision.from_acceleration_manifest(acceleration)
+    if backend.selected_backend != grant.canonical_backend:
+        raise ValueError("Exp449 authorized Smoke A backend drift differs")
+    required_facts = ("interpreter", "dependencies", "package_inventory", "seeds_and_constants", "code_closure", "lineage_sha256", "codemap_sha256")
+    if any(name not in facts for name in required_facts):
+        raise ValueError("Exp449 authorized Smoke A readiness facts are incomplete")
+    context = Exp449Context.from_verified_inputs(
+        run_root=FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+        mode="smoke",
+        catalog=catalog,
+        acceleration=backend,
+        database_sha256=grant.database_sha256,
+        code_closure=facts["code_closure"],  # type: ignore[arg-type]
+        lineage_sha256=facts["lineage_sha256"],  # type: ignore[arg-type]
+        codemap_sha256=facts["codemap_sha256"],  # type: ignore[arg-type]
+        interpreter=facts["interpreter"]["executable"],  # type: ignore[index,arg-type]
+        environment={
+            "interpreter": facts["interpreter"],
+            "dependencies": facts["dependencies"],
+            "package_inventory": facts["package_inventory"],
+        },
+        seeds_and_constants=facts["seeds_and_constants"],  # type: ignore[arg-type]
+    )
+    if context_sha256_antigravity(context) != grant.context_sha256:
+        raise ValueError("Exp449 authorized Smoke A context drift differs")
+    raw = {
+        dataset: load_dataset_values(Path(grant.database_path), dataset)
+        for dataset in grant.smoke_datasets
+    }
+    return Exp449WaveConfig(
+        context=context, catalog=catalog, raw_datasets=raw,
+        acceleration_manifest=acceleration,
+    )
+
+
+def _freeze_exists_antigravity(config: Exp449WaveConfig) -> bool:
+    """Accept either a fully verifiable freeze or no freeze directory at all."""
+    freeze_root = config.context.run_root / "stage_artifacts_antigravity" / "proposal_freeze_antigravity"
+    try:
+        details = freeze_root.lstat()
+    except FileNotFoundError:
+        return False
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("Exp449 proposal freeze root is unsafe")
+    from .verifier_antigravity import verify_exp449_proposal_antigravity
+    verify_exp449_proposal_antigravity(config.context.run_root, context=config.context, catalog=config.catalog)
+    return True
+
+
+def _finalize_authorized_complete_antigravity(
+    config: Exp449WaveConfig,
+    result: Exp449AuthorizedWaveResultAntigravity,
+    lease: Exp449SmokeAExecutionLeaseAntigravity,
+) -> Exp449TerminalStatus:
+    """Freeze, independently verify, then publish the sole complete terminal."""
+    if result.status.status != "dataset_local_complete" or result.score is None:
+        raise ValueError("Exp449 authorized completion lacks an exact ProposalScore")
+    freeze_authorized_exp449_proposal_antigravity(
+        result.score, config=config, _execution_capability=lease.capability,
+    )
+    from .verifier_antigravity import verify_exp449_proposal_antigravity
+    verify_exp449_proposal_antigravity(config.context.run_root, context=config.context, catalog=config.catalog)
+    terminal = _publish_terminal_complete_antigravity(
+        config, _snapshot_antigravity(config), _execution_capability=lease.capability,
+    )
+    try:
+        refresh_derived_status_antigravity(lease)
+    except OSError:
+        pass
+    return terminal
+
+
+def _execute_authorized_smoke_a_waves_antigravity(
+    config: Exp449WaveConfig,
+    lease: Exp449SmokeAExecutionLeaseAntigravity,
+) -> Exp449TerminalStatus:
+    """Run no more than the frozen two dataset-local waves in one parent."""
+    result = run_exp449_wave_antigravity(
+        config, _execution_capability=lease.capability, _execution_lease=lease,
+    )
+    if result.status.status == "proposal_score_incomplete" and result.status.wave_count < FROZEN_EXP449_CONFIG.maximum_waves:
+        result = run_exp449_wave_antigravity(
+            config, _execution_capability=lease.capability, _execution_lease=lease,
+        )
+    if result.status.status == "proposal_score_incomplete":
+        return result.status
+    return _finalize_authorized_complete_antigravity(config, result, lease)
+
+
+def execute_smoke_a_fresh_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+) -> Exp449TerminalStatus:
+    """Perform the one permitted fresh Smoke A lifecycle with no caller inputs."""
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity:
+        raise TypeError("Exp449 verified Smoke A authority is required")
+    config = _authorized_smoke_a_wave_config_antigravity(verified, resume=False)
+    with acquire_smoke_a_execution_lease_antigravity(verified, config.context) as lease:
+        return _execute_authorized_smoke_a_waves_antigravity(config, lease)
+
+
+def execute_smoke_a_resume_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+) -> Exp449TerminalStatus:
+    """Resume only an exact inactive consumed Smoke A namespace."""
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity:
+        raise TypeError("Exp449 verified Smoke A authority is required")
+    config = _authorized_smoke_a_wave_config_antigravity(verified, resume=True)
+    with _acquire_smoke_a_resume_lease_antigravity(verified, config) as lease:
+        terminal = _existing_terminal_status_antigravity(config)
+        if terminal is not None:
+            if terminal.status == "dataset_local_complete":
+                _freeze_exists_antigravity(config)
+            elif _freeze_exists_antigravity(config):
+                raise ValueError("Exp449 incomplete terminal must not have a proposal freeze")
+            return terminal
+        if _freeze_exists_antigravity(config):
+            return _publish_terminal_complete_antigravity(
+                config, _snapshot_antigravity(config), _execution_capability=lease.capability,
+            )
+        return _execute_authorized_smoke_a_waves_antigravity(config, lease)
 
 
 def _smoke_operations_roots_antigravity(root_a: Path, root_b: Path) -> tuple[Path, Path]:
@@ -1467,6 +1748,7 @@ def _readiness_facts_antigravity(
     logical_cpu_count: int | None = None,
     authorization_delta_capability: object | None = None,
     authorized_grant: Exp449SmokeAGrantAntigravity | None = None,
+    allow_smoke_a_resume: bool = False,
 ) -> dict[str, object]:
     """The implementation seam for readonly fixture testing; never creates or scores."""
     reviewed_commit = _require_reviewed_head_antigravity(
@@ -1490,7 +1772,10 @@ def _readiness_facts_antigravity(
             or authorized_grant.smoke_datasets != _catalog_datasets_antigravity(catalogs["smoke"])
         ):
             raise ValueError("Exp449 authorized Smoke A database or catalog facts differ")
-    roots = _inspect_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
+    roots = (
+        _status_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
+        if allow_smoke_a_resume else _inspect_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
+    )
     closure = _closure_facts_antigravity()
     contexts, acceleration = _readiness_contexts_antigravity(
         reviewed_commit=reviewed_commit, interpreter=interpreter, dependencies=dependencies, contracts=contracts,
@@ -1543,6 +1828,8 @@ def readiness_exp449_antigravity(reviewed_commit: str) -> dict[str, object]:
 
 def _require_authorized_smoke_a_readiness_facts_antigravity(
     facts: dict[str, object], grant: Exp449SmokeAGrantAntigravity,
+    *,
+    allow_smoke_a_resume: bool = False,
 ) -> None:
     """Require every recomputed readonly fact to match the immutable Smoke A grant."""
     contexts = facts.get("contexts")
@@ -1569,7 +1856,10 @@ def _require_authorized_smoke_a_readiness_facts_antigravity(
         or facts.get("workers") != {"logical_cpu_count": grant.logical_cpu_count, "dataset_workers": grant.dataset_workers}
         or acceleration.get("canonical_backend") != grant.canonical_backend
         or tuple(item.get("path") for item in roots if isinstance(item, dict)) != expected_roots
-        or tuple(item.get("state") for item in roots if isinstance(item, dict)) != ("absent",) * 6
+        or tuple(item.get("state") for item in roots if isinstance(item, dict)) != (
+            ("present", "present", "absent", "absent", "absent", "absent")
+            if allow_smoke_a_resume else ("absent",) * 6
+        )
         or len(roots) != 6 or str(grant.scientific_root) != expected_roots[0] or str(grant.operations_root) != expected_roots[1]
         or grant.maximum_waves != FROZEN_EXP449_CONFIG.maximum_waves or grant.label_access is not False
     ):
@@ -1603,6 +1893,30 @@ def readiness_for_authorized_implementation_antigravity(
         authorized_grant=reverified.grant,
     )
     _require_authorized_smoke_a_readiness_facts_antigravity(facts, reverified.grant)
+    return facts
+
+
+def readiness_for_authorized_resume_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+) -> dict[str, object]:
+    """Recompute the immutable Smoke A identity while its owned root exists."""
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity:
+        raise TypeError("Exp449 verified Smoke A authority is required")
+    reverified = verify_smoke_a_authorization_commit_antigravity(verified.approved_authority_commit)
+    if reverified != verified:
+        raise ValueError("Exp449 verified Smoke A authority snapshot changed")
+    capability = _AuthorizationDeltaReadCapabilityAntigravity(
+        reverified, issuer=_AUTHORIZATION_DELTA_READ_ISSUER_ANTIGRAVITY,
+    )
+    facts = _readiness_facts_antigravity(
+        reverified.implementation_commit,
+        authorization_delta_capability=capability,
+        authorized_grant=reverified.grant,
+        allow_smoke_a_resume=True,
+    )
+    _require_authorized_smoke_a_readiness_facts_antigravity(
+        facts, reverified.grant, allow_smoke_a_resume=True,
+    )
     return facts
 
 

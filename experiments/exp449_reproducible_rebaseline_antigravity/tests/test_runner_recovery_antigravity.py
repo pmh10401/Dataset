@@ -356,6 +356,7 @@ class _RecoveryFixture:
         self.revalidated_attempts = 0
         self.composer_calls = 0
         self.global_stage_calls = 0
+        self.completed_score = object()
         self.scheduled_identities: list[tuple[str, ...]] = []
         self.fail_once = fail_once
         self.fail_twice = fail_twice
@@ -397,7 +398,7 @@ class _RecoveryFixture:
         (self.scientific_root / "fixture_proposal_payload_antigravity.json").write_bytes(
             json.dumps({"datasets": list(self.names), "scientific": "fixed"}, sort_keys=True, separators=(",", ":")).encode("utf-8")
         )
-        return object()
+        return self.completed_score
 
 
 class Exp449TwoWaveRecoveryTests(unittest.TestCase):
@@ -425,16 +426,26 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
         stack.enter_context(patch.object(operations, "compose_exp449_proposal_score_antigravity", side_effect=fixture.compose))
         return stack
 
+    def test_complete_wave_retains_the_genuine_composer_score_for_authorized_freeze(self) -> None:
+        """Discarding the completed composer return would make authorized freeze scientificly incomplete."""
+        with TemporaryDirectory() as temporary:
+            fixture = _RecoveryFixture(Path(temporary))
+            with self._patches(fixture):
+                result = operations.run_exp449_wave_antigravity(fixture.config)
+        self.assertEqual(type(result).__name__, "Exp449AuthorizedWaveResultAntigravity")
+        self.assertEqual(result.status.status, "dataset_local_complete")
+        self.assertIs(result.score, fixture.completed_score)
+
     def test_fail_once_revalidates_success_and_retries_only_unverified_dataset(self) -> None:
         """Recomputing a published success after interruption would change recovery work."""
         with TemporaryDirectory(dir=Path.cwd()) as temporary:
             fixture = _RecoveryFixture(Path(temporary), fail_once=True)
             with self._patches(fixture):
                 first = operations.run_exp449_wave_antigravity(fixture.config)
-                self.assertEqual((first.status, first.completed_dataset_count, first.failed_dataset_count, first.pending_dataset_count, first.wave_count), ("proposal_score_incomplete", 22, 1, 0, 1))
+                self.assertEqual((first.status.status, first.status.completed_dataset_count, first.status.failed_dataset_count, first.status.pending_dataset_count, first.status.wave_count), ("proposal_score_incomplete", 22, 1, 0, 1))
                 self.assertFalse((fixture.operations_root / "terminal_incomplete_antigravity.json").exists())
                 second = operations.run_exp449_wave_antigravity(fixture.config)
-            self.assertEqual((second.status, second.completed_dataset_count, second.wave_count), ("dataset_local_complete", 23, 2))
+            self.assertEqual((second.status.status, second.status.completed_dataset_count, second.status.wave_count), ("dataset_local_complete", 23, 2))
             self.assertGreaterEqual(len(fixture.revalidated_successes), 4)
             self.assertEqual(fixture.revalidated_successes[1], tuple(name for name in fixture.names if name != fixture.failed_dataset))
             self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 1))
@@ -454,7 +465,7 @@ class Exp449TwoWaveRecoveryTests(unittest.TestCase):
                 operations.run_exp449_wave_antigravity(fixture.config)
                 second = operations.run_exp449_wave_antigravity(fixture.config)
                 third = operations.run_exp449_wave_antigravity(fixture.config)
-            self.assertEqual((second.status, second.completed_dataset_count, second.failed_dataset_count, second.pending_dataset_count, second.wave_count), ("proposal_score_incomplete", 22, 1, 0, 2))
+            self.assertEqual((second.status.status, second.status.completed_dataset_count, second.status.failed_dataset_count, second.status.pending_dataset_count, second.status.wave_count), ("proposal_score_incomplete", 22, 1, 0, 2))
             self.assertEqual(third, second)
             self.assertEqual((fixture.composer_calls, fixture.global_stage_calls), (2, 0))
             terminal = json.loads((fixture.operations_root / "terminal_incomplete_antigravity.json").read_text(encoding="utf-8"))
