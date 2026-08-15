@@ -57,6 +57,7 @@ _EXP449_LOGICAL_NODE_VERIFIERS = {
     "exp449_plan": (("RESEARCH_STATE.json active_documents.plan", "human reviewers"), ("Task 8: Freeze Documentation, Full Verification, and Independent Review",)),
     "exp449_config_contract_tests": (("unittest discovery",), ("Exp449VersionBoundaryTests",)),
     "exp449_execution_authority_tests": (("unittest discovery",), ("Exp449SmokeAAuthorityContractTests",)),
+    "exp449_execution_lifecycle_tests": (("unittest discovery",), ("Exp449ExecutionLifecycleTests",)),
     "exp449_runner_recovery_tests": (("unittest discovery",), ("Exp449DatasetLocalBijectionTests",)),
     "exp449_manifest_verifier_tests": (("unittest discovery",), ("Exp449ManifestVerifierTests",)),
     "exp449_readiness_tests": (("unittest discovery",), ("Exp449ReadinessTests",)),
@@ -148,12 +149,13 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
     def test_exp449_state_and_triplet_exist_without_mutating_exp448(self) -> None:
         state = json.loads((REPO_ROOT / "RESEARCH_STATE.json").read_text())
         self.assertEqual(state["active_experiment"], "Exp449")
-        self.assertEqual(state["status"], "implementation_verified_awaiting_smoke_authorization")
+        self.assertEqual(state["active_phase"], "implementation_ready_awaiting_grant_authorization")
+        self.assertEqual(state["status"], "implementation_ready_awaiting_grant_authorization")
         exp449 = state["exp449_reproducible_rebaseline_antigravity"]
-        self.assertEqual(exp449["status"], "implementation_verified_awaiting_smoke_authorization")
+        self.assertEqual(exp449["status"], "implementation_ready_awaiting_grant_authorization")
         self.assertEqual(
             exp449["next_action"],
-            "design_and_review_trusted_smoke_a_execution_authority_then_request_user_approval",
+            "fresh_sol_ship_review_implementation_I_then_prepare_exact_smoke_a_grant_authorization",
         )
         self.assertFalse(exp449["smoke_started"])
         self.assertFalse(exp449["official_run_started"])
@@ -261,7 +263,34 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         self.assertIn("docs/authorities", excluded)
         self.assertNotIn("docs", excluded)
         self.assertIn("docs/authorities", lock["fingerprint_algorithm"])
-        self.assertIn("experiments", lock["changed_modules_since_prior_lock"])
+        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"docs", "root"})
+        paths_by_module: dict[str, list[Path]] = {}
+        excluded = set(lock["excluded_directories"])
+        tracked = subprocess.run(
+            ("git", "ls-files", "-z"), cwd=REPO_ROOT, check=True, capture_output=True,
+        ).stdout.split(b"\0")
+        for raw_path in tracked:
+            if not raw_path:
+                continue
+            relative = Path(raw_path.decode("utf-8"))
+            if any(
+                "/".join(relative.parts[:index]) in excluded
+                or relative.parts[index - 1] in excluded
+                for index in range(1, len(relative.parts) + 1)
+            ):
+                continue
+            module = "root" if len(relative.parts) == 1 else relative.parts[0]
+            paths_by_module.setdefault(module, []).append(relative)
+        actual_fingerprints: dict[str, str] = {}
+        for module, module_paths in paths_by_module.items():
+            digest = sha256()
+            for relative in sorted(module_paths):
+                data = (REPO_ROOT / relative).read_bytes()
+                digest.update(relative.as_posix().encode("utf-8")); digest.update(b"\0")
+                digest.update(str(len(data)).encode("ascii")); digest.update(b"\0")
+                digest.update(data); digest.update(b"\0")
+            actual_fingerprints[module] = digest.hexdigest()
+        self.assertEqual(lock["module_fingerprints"], dict(sorted(actual_fingerprints.items())))
         self.assertEqual(
             {SMOKE_A_GRANT_PATH_ANTIGRAVITY.name, SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name},
             {

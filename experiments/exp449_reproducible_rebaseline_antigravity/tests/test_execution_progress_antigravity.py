@@ -175,12 +175,12 @@ class Exp449ExecutionProgressTests(unittest.TestCase):
             self.assertEqual(result["status"], "not_started")
             self.assertTrue(all(not root.exists() for root in roots))
 
-    def test_exp449_lock_records_only_task6_fingerprint_deltas(self) -> None:
-        """Retaining paper after a worker-only change would misstate the reviewed closure."""
+    def test_exp449_lock_records_only_task7_document_and_state_fingerprint_deltas(self) -> None:
+        """Task 7 changes only documented/state provenance, not scientific or runtime closure."""
         lock_path = Path("docs/codemap/codemap_exp449_antigravity.lock")
         lock = json.loads(lock_path.read_text(encoding="utf-8"))
         self.assertNotIn("paper", lock["changed_modules_since_prior_lock"])
-        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"experiments", "scratch"})
+        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"docs", "root"})
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-15T18:35:51+09:00",
-  "generated_from_commit": "5458237011cf7588621df885c97f945845b7b4a3",
+  "generated_at": "2026-08-15T19:12:38+09:00",
+  "generated_from_commit": "eb948e869930995ec4ecddf2b654e3e2f5ae840f",
   "working_tree_dirty": true,
   "scope": [
-    "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
+    "Implemented Exp449 Smoke A pinned-grant lifecycle review boundary: no authority JSON, root/claim creation, scoring, TEST-label access, smoke, or official run.",
     "Task4 TRAIN-only and Task5 label-free TRAIN+TEST-value-transductive collection feed the exact catalog gate, Task6 low-frequency selection, Task7 stability/routing, Candidate C, typed shards, outer manifest, and scorer-free verifier.",
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "Smoke A lifecycle mutation is internal-only: verified A -> I readiness derives fixed values-only inputs, bounds Task4/5 to two waves, then capability-freezes and scorer-free verifies before complete terminal publication.",
@@ -19,7 +19,7 @@
       ],
       "tests": [],
       "constraints": [
-        "Task8 records no execution: all six roots remain absent, smoke/official flags are false, TEST labels remain unopened, and a separately reviewed trusted authority plus user approval is required before any run."
+        "Task 7 records implementation_ready_awaiting_grant_authorization: all six roots, Smoke A claim, and both authority files remain absent; smoke/official flags are false, TEST labels remain unopened, and I -> A -> independent reviews -> explicit user approval is required before any run."
       ],
       "evidence": [
         {
@@ -153,6 +153,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
@@ -218,6 +219,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
       ],
       "effects": [
@@ -272,6 +274,7 @@
         }
       ],
       "callers": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
@@ -477,7 +480,7 @@
     {
       "id": "exp449_runbook",
       "path": "docs/EXP449_RUNBOOK_antigravity_KO.md",
-      "role": "Implemented current fail-closed execution commands and explicit authorization gates.",
+      "role": "Pinned Smoke A I -> A -> user-approval non-execution runbook and fixed-path operator contract.",
       "entrypoints": [
         "Exp449 runbook"
       ],
@@ -485,7 +488,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "constraints": [
-        "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Task 7 documents the fixed six roots, claim, CPU 12->11 profile, fresh/resume and incomplete behavior; it creates no authority, root, claim, score, or TEST-label access."
       ],
       "evidence": [
         {
@@ -498,13 +501,13 @@
         "external operators and reviewers"
       ],
       "effects": [
-        "gives operators the read-only command contract and trusted-authority/user-approval boundary"
+        "gives operators the exact I -> A -> user approval -> run sequence, fixed-path progress/status observation, and continued Smoke B/official/label block"
       ]
     },
     {
       "id": "exp449_implementation_report",
       "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",
-      "role": "Implemented evidence document without run-result claims.",
+      "role": "Task 7 implementation-I review evidence without grant or run-result claims.",
       "entrypoints": [
         "Exp449 implementation report"
       ],
@@ -512,7 +515,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "constraints": [
-        "Implemented final documentation boundary; this Task 1 boundary creates no run root and does not access TEST labels."
+        "Task 7 records implementation_ready_awaiting_grant_authorization with false/zero execution flags and no authority JSON, root, claim, scoring, or TEST-label access."
       ],
       "evidence": [
         {
@@ -525,7 +528,7 @@
         "independent reviewers"
       ],
       "effects": [
-        "records implementation evidence and no-execution status without a performance claim"
+        "records I-bound lifecycle verification scope, pinned-digest trust limits, and no-execution status without a performance claim"
       ]
     },
     {
@@ -1709,6 +1712,7 @@
       "callers": [
         "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "effects": [
@@ -1739,6 +1743,32 @@
       ],
       "effects": [
         "proves malformed, mutable, noncanonical, and structurally unsafe authority inputs fail closed"
+      ]
+    },
+    {
+      "id": "exp449_execution_lifecycle_tests",
+      "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+      "role": "Fixture-only lifecycle coverage for capability-bound fresh, incomplete, freeze-recovery, and no-recompute resume behavior.",
+      "entrypoints": [
+        "Exp449ExecutionLifecycleTests"
+      ],
+      "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py"
+      ],
+      "constraints": [
+        "Uses temporary roots and verified fixture facts; it creates no fixed production root, claim, authority JSON, database score, or TEST-label access."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+          "symbol": "Exp449ExecutionLifecycleTests"
+        }
+      ],
+      "callers": [
+        "unittest discovery"
+      ],
+      "effects": [
+        "proves exact two-wave incomplete stopping, scorer-free terminal recovery, fresh/resume scientific equivalence, and drift rejection"
       ]
     }
   ],
@@ -2480,7 +2510,7 @@
       "outcome": "Readiness verifies observed frozen database identity and constructs contract-bound contexts for all three scientific roots. Every execution command is unavailable until later reviewed code/config pins a trusted authority digest or signature."
     },
     {
-      "trigger": "Exp449 Task8 documentation and non-execution authorization boundary",
+      "trigger": "Exp449 Smoke A implementation-I review and grant-authorization boundary",
       "steps": [
         "research_control",
         "exp449_preregistration",
@@ -2491,7 +2521,7 @@
         "exp449_codemap_html",
         "exp449_codemap_lock"
       ],
-      "outcome": "State and Korean documentation record verified implementation while all six roots stay absent and every execution command remains execution_authority_not_configured pending a separate trusted-authority review and explicit user approval."
+      "outcome": "State and Korean documentation record implementation_ready_awaiting_grant_authorization while all six roots, Smoke A claim, and both authority files stay absent; I then direct-child A, independent reviews, and explicit user approval are required before the separately executed Smoke A command."
     },
     {
       "trigger": "Exp449 Smoke A authority data boundary",
@@ -2531,8 +2561,8 @@
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Task8 is evidence-only: no Exp449 DB read, scoring, TEST label access, smoke, official run, or fixed-root creation occurred.",
-    "A trusted execution authority cannot be supplied by a self-hash or local artifact; it requires a separately reviewed code/config change and explicit user approval.",
+    "Task 7 is implementation-review evidence only: no Exp449 DB readiness read, grant generation, scoring, TEST-label access, smoke, official run, fixed-root creation, or claim creation occurred.",
+    "A pinned digest is not a signature or self-hash authority: exact I -> direct-child A reviews and explicit user approval are required before Smoke A; Smoke B, official, and labels remain blocked.",
     "Exp448 historical sections, codemap triplet, and intentional RED full-route test are immutable evidence."
   ]
 }

@@ -1,7 +1,7 @@
 {
-  "current_commit": "5458237011cf7588621df885c97f945845b7b4a3",
+  "current_commit": "eb948e869930995ec4ecddf2b654e3e2f5ae840f",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-15T18:35:51+09:00",
+  "generated_at": "2026-08-15T19:12:38+09:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -35,18 +35,18 @@
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, docs/authorities (authorization data only), outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
     ".superpowers": "03aa12b0d92a27a4e75cfab96f3a44e81575520adc114cb42b7dbd92ac54cfc3",
-    "docs": "b632abc2682164d6b627fa8957444f963e9dd9d52aa3f9f20203a3af6db50355",
-    "experiments": "c39a81bf155b65228e8b2ef11d0c219afc221ad91398bc9ee2ae8517ba8095e8",
+    "docs": "dd9e031a6cc620e7754120dfbde4a1721b4671dbec5809a3c087d1efe185140e",
+    "experiments": "9954472724ecad10f0b441483e2ffcd5f39fdea3c8d368623e7eca81bceac40a",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "476a9c55afd329815b21ceb605fd1e311b3ca817a6c7f5461ccc146a7faba237",
     "reports": "ea0adf1fa41b3acf6fc660bdf05d8a76816e9c11dc507b681db86c225c32a350",
-    "root": "67ee98cf89e41fb4ec58fe3ec07ae3b6f1ad18c83923307ffc89c0d75307a5f2",
+    "root": "2fea335266845a9929ba0a423452b7d3da131cc40a4df8571d77c0b5be9c2820",
     "scratch": "dbd237120291226e63531b273d327edf007438fa5af6312c67268724ff94d153",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_prior_lock": [
-    "experiments",
-    "scratch"
+    "docs",
+    "root"
   ]
 }
