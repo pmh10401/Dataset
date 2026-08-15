@@ -856,7 +856,12 @@ def _emit_progress_antigravity(config: Exp449WaveConfig, *, wave: int, snapshot:
     }
     if _authorized_lease is not None:
         append_authorized_progress_antigravity(_authorized_lease, event)
-        refresh_derived_status_antigravity(_authorized_lease)
+        try:
+            refresh_derived_status_antigravity(_authorized_lease)
+        except OSError:
+            # The cache is expressly nonauthoritative: a replace/fsync failure
+            # may leave it stale but must not block checkpoint/terminal truth.
+            pass
         return
     try:
         _write_exp449_progress_event_antigravity(_operations_root_for_context_antigravity(config.context), event)
@@ -926,16 +931,21 @@ def run_exp449_wave_antigravity(
         compose_exp449_proposal_score_antigravity = composer
     from paper.equipment_anomaly_detection.proposal_score_paper import ProposalScoreIncomplete
     progress_failures = 0
+    progress_completed = len(before.successes)
     def fixed_progress(event: Mapping[str, object]) -> None:
-        nonlocal progress_failures
-        if event.get("stage") != "task4_task5" or event.get("phase") not in {"start", "error", "end"}:
+        nonlocal progress_completed, progress_failures
+        if event.get("stage") != "task4_task5" or event.get("phase") not in {"start", "tick", "error", "end"}:
             return
+        if event.get("phase") == "tick" and authorized_lease is None:
+            return
+        if event.get("phase") == "tick":
+            progress_completed += 1
         if event.get("phase") == "error":
             progress_failures += 1
         _emit_progress_antigravity(
             config, wave=next_wave, snapshot=before, started=started,
-            completed=len(before.successes), total=len(_catalog_datasets_antigravity(config.catalog)),
-            failed=progress_failures, dataset=event.get("dataset") if event.get("phase") == "error" and type(event.get("dataset")) is str else None,
+            completed=progress_completed, total=len(_catalog_datasets_antigravity(config.catalog)),
+            failed=progress_failures, dataset=event.get("dataset") if event.get("phase") in {"tick", "error"} and type(event.get("dataset")) is str else None,
             _authorized_lease=authorized_lease,
         )
     try:
@@ -946,6 +956,7 @@ def run_exp449_wave_antigravity(
             context=context_payload,
             catalog=config.catalog,
             _progress_callback=fixed_progress,
+            _strict_operations_progress=authorized_lease is not None,
         )
     except ProposalScoreIncomplete:
         after = _snapshot_antigravity(config)

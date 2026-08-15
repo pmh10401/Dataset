@@ -986,6 +986,46 @@ class Task4Task5FailureBatchingTests(unittest.TestCase):
             score._collect_task4_task5(raw, backend)
         self.assertEqual(max(observed), 2 * backend.dataset_workers)
 
+    def test_strict_operational_progress_failure_stops_before_rolling_replenish(self):
+        """Swallowing a durable parent callback failure would submit an unrecorded next dataset."""
+        from paper.equipment_anomaly_detection import proposal_score_paper as score
+        from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
+        backend = FrozenTask8BackendDecision("cpu", "fixture", "a" * 64, 3, 2, 1, "parallel_task4_task5")
+        raw = {f"d{index}": self.raw["alpha"] for index in range(7)}
+        submitted: list[str] = []
+        active: set[object] = set()
+        values = self.values["alpha"]
+
+        class Future:
+            def __init__(self, dataset: str): self.dataset = dataset
+            def result(self): return values
+
+        class Executor:
+            def __init__(self, *, max_workers: int): self.max_workers = max_workers
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def submit(self, _function, child):
+                future = Future(f"d{len(submitted)}")
+                submitted.append(future.dataset)
+                active.add(future)
+                return future
+
+        def completion(futures):
+            future = tuple(futures)[0]
+            active.remove(future)
+            return (future,)
+
+        observed: list[dict[str, object]] = []
+        def durable(event):
+            observed.append(dict(event))
+            raise OSError("fsync failed")
+
+        with patch.object(score, "ProcessPoolExecutor", Executor), patch.object(score, "as_completed", side_effect=completion):
+            with self.assertRaisesRegex(OSError, "fsync"):
+                score._collect_task4_task5(raw, backend, strict_progress=durable)
+        self.assertEqual(submitted, [f"d{index}" for index in range(4)])
+        self.assertEqual(observed[0]["phase"], "tick")
+
     def test_seven_coordinate_failure_wave_caps_uncommitted_window_and_persists_before_replenish(self):
         """Eagerly queuing seven coordinates can strand more than the four-coordinate worker window."""
         from paper.equipment_anomaly_detection import proposal_score_paper as score

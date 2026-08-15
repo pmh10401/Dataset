@@ -92,9 +92,16 @@ class Exp449ExecutionProgressTests(unittest.TestCase):
         """Swallowing fsync failure could schedule work whose progress is not durable."""
         with TemporaryDirectory(dir=Path.cwd()) as temporary:
             root = Path(temporary) / "operations_fixture_antigravity"
-            with patch.object(operations, "_authorized_operations_root_for_lease_antigravity", return_value=root), patch.object(operations.os, "fsync", side_effect=OSError(errno.EIO, "fsync failed")):
+            root.mkdir()
+            fsync_calls = 0
+            def fsync(descriptor: int) -> None:
+                nonlocal fsync_calls
+                fsync_calls += 1
+                raise OSError(errno.EIO, "fsync failed")
+            with patch.object(operations, "_authorized_operations_root_for_lease_antigravity", return_value=root), patch.object(operations.os, "fsync", side_effect=fsync):
                 with self.assertRaises(OSError):
                     operations.append_authorized_progress_antigravity(self._lease(root), _event_antigravity())
+            self.assertGreaterEqual(fsync_calls, 1)
 
     def test_append_failure_leaves_no_following_progress_event(self) -> None:
         """Continuing after a failed append could replenish a queue without durable recovery evidence."""
@@ -129,6 +136,34 @@ class Exp449ExecutionProgressTests(unittest.TestCase):
                     operations.refresh_derived_status_antigravity(self._lease(root))
             self.assertEqual(receipt.read_bytes(), before)
             self.assertFalse((root / "status_antigravity.json").exists())
+
+    def test_cache_failure_does_not_block_authoritative_complete_terminal(self) -> None:
+        """Letting a derived-cache error suppress terminal publication would make recovery depend on a cache."""
+        with TemporaryDirectory(dir=Path.cwd()) as temporary:
+            root = Path(temporary) / "operations_fixture_antigravity"
+            root.mkdir()
+            names = operations.FROZEN_EXP449_CONFIG.smoke_datasets
+            context = object.__new__(operations.Exp449Context)
+            for name, value in {
+                "experiment_id": "Exp449", "mode": "smoke", "run_root": Path(temporary) / "scientific_fixture_antigravity",
+                "database_sha256": "a" * 64, "catalog_sha256": "b" * 64,
+                "code_closure": {"fixture_antigravity.py": "c" * 64}, "lineage_sha256": "d" * 64,
+                "codemap_sha256": "e" * 64, "interpreter": "fixture-python", "environment": {"fixture": True},
+                "backend_record": {"selected_backend": "cpu"}, "seeds_and_constants": {"seed": 449},
+                "historical_parity_status": "not_used",
+            }.items():
+                object.__setattr__(context, name, value)
+            config = operations.Exp449WaveConfig(
+                context=context,
+                catalog={"catalog_sha256": "b" * 64, "datasets": [{"dataset": name} for name in names]},
+                raw_datasets={name: object() for name in names}, acceleration_manifest={"fixture": True},
+            )
+            snapshot = operations._RecoverySnapshot(names, (), (), (), 1)
+            with patch.object(operations, "append_authorized_progress_antigravity"), patch.object(operations, "refresh_derived_status_antigravity", side_effect=OSError(errno.EIO, "cache failed")), patch.object(operations, "_operations_root_for_context_antigravity", return_value=root):
+                operations._emit_progress_antigravity(config, wave=1, snapshot=snapshot, started=0.0, _authorized_lease=object())
+                status = operations._publish_terminal_complete_antigravity(config, snapshot)
+            self.assertEqual(status.status, "dataset_local_complete")
+            self.assertTrue((root / "terminal_complete_antigravity.json").is_file())
 
     def test_read_only_status_does_not_import_scorer_or_create_fixed_roots(self) -> None:
         """Importing the scorer or mkdir from status would breach its inspection-only contract."""

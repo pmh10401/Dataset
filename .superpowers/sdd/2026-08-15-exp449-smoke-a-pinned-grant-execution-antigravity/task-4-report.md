@@ -45,3 +45,27 @@ owned file set. The configured Smoke A parent boundary now propagates any
 progress append/fsync failure before it invokes composition or processes a
 subsequent parent progress callback; the temporary composition seam retains
 best-effort logging solely for scorer-free fixture coverage.
+
+## Fix round 1
+
+Review found that the paper best-effort progress helper swallowed the
+authorized callback and that the collector had no successful intermediate
+checkpoint callback. The fix adds an explicit opt-in strict operational hook:
+after every create-only success checkpoint or append-only attempt record, and
+before the ProcessPool rolling queue is replenished, it validates and invokes
+the callback without swallowing its exception. Default paper/Exp448 progress
+remains best-effort. Exp449 passes this hook only for an active authorized
+Smoke A lease. The red test first failed because the collector did not accept
+`strict_progress`; green verifies a simulated fsync failure leaves the initial
+window submitted and never submits the next dataset.
+
+Derived cache replace/fsync errors are now caught at the cache-only boundary,
+so authoritative terminal completion can still publish. The fsync regression
+now creates the temporary operations root and asserts the patched fsync is
+actually reached.
+
+Fix-round verification: the full Exp449 test discovery suite passed 126 tests;
+the affected paper artifact/data/lineage suites passed 70 tests; paper and
+Exp449 codemap validators passed; and all four changed production modules
+compiled with the pinned Python interpreter. The affected paper suite emitted
+pre-existing SQLite `ResourceWarning` notices while still passing.

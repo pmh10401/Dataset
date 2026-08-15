@@ -19,7 +19,7 @@ import numpy as np
 
 from .artifacts_paper import Task4Task5SuccessAuthority, append_task4_task5_attempt_record, freeze_score_root, read_task4_task5_success_record, verify_task4_task5_attempt_namespace, verify_task4_task5_success_namespace, write_task4_task5_success_record, write_typed_proposal_shard
 from .contracts_paper import FrozenTask8BackendDecision, HardRouteOracleBundle, HardRouteParityAuthority, LowFrequencyResult, RawDataset, Task8FrozenManifest
-from .data_paper import PROGRESS_TICK_INTERVAL_S, ProgressCallback, emit_progress_paper
+from .data_paper import PROGRESS_TICK_INTERVAL_S, ProgressCallback, emit_progress_paper, emit_strict_progress_paper
 from .hard_route_paper import HardRouteResult, replay_hard_route
 from .routing_paper import PolicyBundle, build_hard_evidence_surface, build_policies
 from .sources_paper.canonical_paper import verify_pycatch22_environment_paper
@@ -517,7 +517,7 @@ def _risk_first_queue(raw: Mapping[str, RawDataset]) -> tuple[str, ...]:
     return tuple(sorted(raw, key=lambda dataset: risk(raw[dataset])))
 
 
-def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, acceleration_manifest: object | None = None, publish_success: Task4Task5SuccessPublisher | None = None, progress: ProgressCallback | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
+def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8BackendDecision, *, root=None, context: dict[str, object] | None = None, catalog: dict[str, object] | None = None, acceleration_manifest: object | None = None, publish_success: Task4Task5SuccessPublisher | None = None, progress: ProgressCallback | None = None, strict_progress: ProgressCallback | None = None) -> tuple[dict[str, HardSourceBundle], dict[str, HardRouteResult]]:
     verify_exp84_environment_paper()
     verify_pycatch22_environment_paper()
     recovery_inputs = (root is not None, context is not None, catalog is not None)
@@ -558,6 +558,15 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
         if authority is not None:
             append_task4_task5_attempt_record(root, catalog, authority, raw[dataset], wave, error)
 
+    def publish_strict_checkpoint(dataset: str, completed: int) -> None:
+        if strict_progress is None:
+            return
+        elapsed = float(monotonic() - started)
+        emit_strict_progress_paper(strict_progress, {
+            "stage": "task4_task5", "phase": "error" if dataset in failed else "tick",
+            "completed": completed, "total": total, "dataset": dataset, "elapsed_s": elapsed,
+        })
+
     if backend.dataset_workers == 1:
         for completed, dataset in enumerate(queue, 1):
             try:
@@ -566,6 +575,7 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
                 raise
             except Exception as error:
                 persist_failure(dataset, error)
+            publish_strict_checkpoint(dataset, completed)
             _progress("Task4+Task5", completed, total, started, dataset)
             elapsed = float(monotonic() - started)
             if dataset in failed:
@@ -592,6 +602,7 @@ def _collect_task4_task5(raw: Mapping[str, RawDataset], backend: FrozenTask8Back
                     raise
                 except Exception as error:
                     persist_failure(dataset, error)
+                publish_strict_checkpoint(dataset, completed)
                 _progress("Task4+Task5", completed, total, started, dataset)
                 elapsed = float(monotonic() - started)
                 if dataset in failed:

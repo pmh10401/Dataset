@@ -41,28 +41,28 @@ def _progress_int(value: object) -> int | None:
     return None
 
 
-def emit_progress_paper(callback: ProgressCallback | None, event: Mapping[str, Any]) -> None:
-    """Best-effort, result-neutral emit. Never raises into science."""
-    if callback is None or not isinstance(event, Mapping):
-        return
+def _filtered_progress_event_paper(event: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return the one result-neutral event shape shared by best-effort and strict sinks."""
+    if not isinstance(event, Mapping):
+        return None
     filtered: dict[str, Any] = {key: event[key] for key in ALLOWED_PROGRESS_KEYS if key in event}
     if filtered.get("stage") not in ALLOWED_PROGRESS_STAGES or filtered.get("phase") not in ALLOWED_PROGRESS_PHASES:
-        return
+        return None
     completed = _progress_int(filtered.get("completed"))
     total = _progress_int(filtered.get("total"))
     if completed is None or total is None:
-        return
+        return None
     filtered["completed"] = completed
     filtered["total"] = total
     elapsed = filtered.get("elapsed_s")
     if type(elapsed) is bool:
-        return
+        return None
     try:
         elapsed_s = float(elapsed)  # type: ignore[arg-type]
     except (TypeError, ValueError):
-        return
+        return None
     if elapsed_s != elapsed_s or elapsed_s in (float("inf"), float("-inf")) or elapsed_s < 0.0:
-        return
+        return None
     filtered["elapsed_s"] = elapsed_s
     if "dataset" in filtered and type(filtered["dataset"]) is not str:
         filtered.pop("dataset")
@@ -72,10 +72,30 @@ def emit_progress_paper(callback: ProgressCallback | None, event: Mapping[str, A
         value = filtered.get(key)
         if type(value) is str and any(token in value.lower() for token in FORBIDDEN_PROGRESS_SUBSTRINGS):
             filtered.pop(key)
+    return filtered
+
+
+def emit_progress_paper(callback: ProgressCallback | None, event: Mapping[str, Any]) -> None:
+    """Best-effort, result-neutral emit. Never raises into paper science."""
+    if callback is None:
+        return
+    filtered = _filtered_progress_event_paper(event)
+    if filtered is None:
+        return
     try:
         callback(filtered)
     except BaseException:
         return
+
+
+def emit_strict_progress_paper(callback: ProgressCallback, event: Mapping[str, Any]) -> None:
+    """Opt-in operational checkpoint hook; callback durability failures must propagate."""
+    if not callable(callback):
+        raise TypeError("strict progress callback is required")
+    filtered = _filtered_progress_event_paper(event)
+    if filtered is None:
+        raise ValueError("strict progress event is invalid")
+    callback(filtered)
 
 TRAIN_VALUES_SQL = """SELECT i.instance_index, i.values_blob
 FROM instances i JOIN datasets d ON d.id=i.dataset_id
@@ -227,6 +247,6 @@ def load_dataset_values(
 
 
 __all__ = [
-    "RawDataset", "TEST_VALUES_SQL", "ProgressCallback", "emit_progress_paper",
+    "RawDataset", "TEST_VALUES_SQL", "ProgressCallback", "emit_progress_paper", "emit_strict_progress_paper",
     "load_dataset_values", "load_population",
 ]

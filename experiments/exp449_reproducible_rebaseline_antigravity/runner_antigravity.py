@@ -34,6 +34,7 @@ class Task45Collector(Protocol):
         catalog: dict[str, object],
         acceleration_manifest: object,
         progress: Callable[[Mapping[str, object]], None] | None = None,
+        strict_progress: Callable[[Mapping[str, object]], None] | None = None,
     ) -> tuple[Mapping[str, HardSourceBundle], Mapping[str, HardRouteResult]]: ...
 
 
@@ -78,6 +79,7 @@ def compose_exp449_proposal_score_antigravity(
     catalog: dict[str, object],
     collector: Task45Collector = _collect_task4_task5,
     _progress_callback: Callable[[Mapping[str, object]], None] | None = None,
+    _strict_operations_progress: bool = False,
 ) -> ProposalScore:
     """Run Task6/7 only after exact in-memory Task4/5 catalog closure.
 
@@ -106,6 +108,10 @@ def compose_exp449_proposal_score_antigravity(
     }
     if _progress_callback is not None:
         collector_kwargs["progress"] = _progress_callback
+    if _strict_operations_progress:
+        if _progress_callback is None:
+            raise ValueError("strict operations progress requires a callback")
+        collector_kwargs["strict_progress"] = _progress_callback
     returned_sources, returned_routes = collector(raw, backend, **collector_kwargs)
     sources = _in_catalog_order_antigravity(returned_sources, expected)
     routes = _in_catalog_order_antigravity(returned_routes, expected)

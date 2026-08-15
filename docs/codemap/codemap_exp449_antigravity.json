@@ -187,7 +187,8 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "effects": [
-        "collects Task4/5 through the paper collector, rejects non-bijective catalog mappings, then composes low-frequency, stability, routing, and Candidate-C ProposalScore values"
+        "collects Task4/5 through the paper collector, rejects non-bijective catalog mappings, then composes low-frequency, stability, routing, and Candidate-C ProposalScore values",
+        "threads private strict operational progress only for the authorized Smoke A parent, preserving default paper collection behavior while forcing checkpoint/attempt durability before rolling queue replenishment"
       ]
     },
     {
@@ -267,7 +268,8 @@
         "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt, durable result-neutral progress/status metadata, and capability-gated configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged"
+        "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt, durable result-neutral progress/status metadata, and capability-gated configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged",
+        "treats derived status-cache replace/fsync failures as nonauthoritative while durable progress append/fsync failures still stop authorized collection before replenishment or terminal recovery"
       ]
     },
     {
