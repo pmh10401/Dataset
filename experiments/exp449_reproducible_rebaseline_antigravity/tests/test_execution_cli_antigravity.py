@@ -145,11 +145,10 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                 os.close(descriptor)
 
     def test_watchdog_parent_mismatch_rejects_before_authority_verification(self) -> None:
-        """A direct hidden worker with another parent must not reach authority verification."""
-        with patch.object(operations.os, "getppid", return_value=999), \
-             patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", side_effect=AssertionError("authority")):
-            with self.assertRaisesRegex(ValueError, "parent differs"):
-                operations._run_smoke_a_worker_antigravity("a" * 40, "b" * 64, 3, "fresh", 998)
+        """A direct hidden worker command is unavailable before authority verification."""
+        with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", side_effect=AssertionError("authority")):
+            with self.assertRaises(SystemExit):
+                operations.main_antigravity(["_worker"])
 
     def test_resume_logs_append_and_parent_installs_group_relay_before_spawn(self) -> None:
         """Resume must preserve prior logs and an early signal must target the worker group."""
@@ -161,17 +160,19 @@ class Exp449ExecutionCliTests(unittest.TestCase):
             lease = SimpleNamespace(claim_fd=descriptor, close=Mock())
             verified = SimpleNamespace(approved_authority_commit="a" * 40, grant_sha256="b" * 64, grant=SimpleNamespace(operations_root=operations_root))
             registered: dict[int, object] = {}; killed: list[tuple[int, int]] = []
-            process = SimpleNamespace(pid=777, poll=lambda: None)
-            process.wait = lambda: (registered[signal.SIGTERM](signal.SIGTERM, None), 0)[1]
             def register(signum, handler):
                 previous = registered.get(signum, signal.SIG_DFL); registered[signum] = handler; return previous
-            def spawn(*_args, **_kwargs):
+            def fork():
                 self.assertIn(signal.SIGINT, registered); self.assertIn(signal.SIGTERM, registered)
-                return process
+                registered[signal.SIGTERM](signal.SIGTERM, None)
+                return 777
             with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified), \
                  patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=SimpleNamespace(context=object())), \
                  patch.object(operations, "_acquire_smoke_a_resume_lease_antigravity", return_value=lease), \
-                 patch.object(operations.subprocess, "Popen", side_effect=spawn), \
+                 patch.object(operations.os, "fork", side_effect=fork), \
+                 patch.object(operations.os, "waitpid", return_value=(777, 0)), \
+                 patch.object(operations.os, "WIFEXITED", return_value=True), \
+                 patch.object(operations.os, "WEXITSTATUS", return_value=0), \
                  patch.object(operations.signal, "signal", side_effect=register), \
                  patch.object(operations.os, "killpg", side_effect=lambda pid, sig: killed.append((pid, sig))):
                 operations._launch_smoke_a_worker_antigravity("a" * 40, resume=True)

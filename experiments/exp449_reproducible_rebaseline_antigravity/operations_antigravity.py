@@ -2252,21 +2252,21 @@ def _start_smoke_a_parent_watchdog_antigravity(parent_pid: int) -> tuple[threadi
 
 
 def _run_smoke_a_worker_antigravity(
-    approved_authority_commit: str,
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
     authority_digest: str,
     claim_fd: int,
     mode: str,
     parent_pid: int,
 ) -> int:
     """Private worker: reauthenticate before minting a PID-bound capability."""
-    if mode not in {"fresh", "resume"}:
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity or mode not in {"fresh", "resume"}:
         raise ValueError("Exp449 Smoke A worker mode is invalid")
     if type(parent_pid) is not int or parent_pid < 2 or os.getppid() != parent_pid:
         raise ValueError("Exp449 Smoke A worker parent differs")
     watchdog_stop, _watchdog = _start_smoke_a_parent_watchdog_antigravity(parent_pid)
     try:
-        verified = verify_smoke_a_authorization_commit_antigravity(approved_authority_commit)
-        if not _lower_hex_antigravity(authority_digest, 64) or verified.grant_sha256 != authority_digest:
+        reverified = verify_smoke_a_authorization_commit_antigravity(verified.approved_authority_commit)
+        if reverified != verified or not _lower_hex_antigravity(authority_digest, 64) or verified.grant_sha256 != authority_digest:
             raise ValueError("Exp449 Smoke A worker authority differs")
         config = _authorized_smoke_a_wave_config_antigravity(verified, resume=mode == "resume")
         _authenticate_inherited_smoke_a_claim_fd_antigravity(claim_fd, verified, config.context)
@@ -2316,30 +2316,46 @@ def _launch_smoke_a_worker_antigravity(
                 details = path.lstat()
             except FileNotFoundError:
                 return os.open(path, base | os.O_CREAT | os.O_EXCL, 0o600)
-            if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+            if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode) or details.st_nlink != 1:
                 raise ValueError("Exp449 Smoke A resume worker log is unsafe")
-            return os.open(path, base | os.O_APPEND)
+            descriptor = os.open(path, base | os.O_APPEND)
+            opened = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1
+                or (opened.st_dev, opened.st_ino, stat.S_IFMT(opened.st_mode))
+                != (details.st_dev, details.st_ino, stat.S_IFMT(details.st_mode))
+            ):
+                os.close(descriptor)
+                raise ValueError("Exp449 Smoke A resume worker log changed")
+            return descriptor
         stdout_fd = open_log(stdout_path)
         stderr_fd = open_log(stderr_path)
-        command = [
-            sys.executable, "-B", "-u", str(_REPOSITORY_ROOT_ANTIGRAVITY / "scratch/run_exp449_reproducible_rebaseline_antigravity.py"),
-            "_worker", "--approved-authority-commit", verified.approved_authority_commit,
-            "--authority-digest", verified.grant_sha256, "--claim-fd", str(lease.claim_fd),
-            "--mode", "resume" if resume else "fresh", "--parent-pid", str(os.getpid()),
-        ]
+        child_pid: int | None = None
+        pending_signals: list[int] = []
         def relay(signum: int, _frame: object) -> None:
-            if process is not None and process.poll() is None:
-                os.killpg(process.pid, signum)
+            if child_pid is None:
+                pending_signals.append(signum)
+            else:
+                os.killpg(child_pid, signum)
         for signum in (signal.SIGINT, signal.SIGTERM):
             previous_handlers[signum] = signal.signal(signum, relay)
-        process = subprocess.Popen(
-            command, cwd=_REPOSITORY_ROOT_ANTIGRAVITY, stdin=subprocess.DEVNULL,
-            stdout=stdout_fd, stderr=stderr_fd, pass_fds=(lease.claim_fd,), start_new_session=True,
-        )
-        returncode = process.wait()
-        if returncode != 0:
+        child_pid = os.fork()
+        if child_pid == 0:
+            try:
+                os.setsid()
+                os.dup2(stdout_fd, 1); os.dup2(stderr_fd, 2)
+                os._exit(_run_smoke_a_worker_antigravity(
+                    verified, verified.grant_sha256, lease.claim_fd, "resume" if resume else "fresh", os.getppid(),
+                ))
+            except BaseException as error:
+                print(f"worker_preauth_failed {type(error).__name__}: {error}", file=sys.stderr)
+                os._exit(1)
+        for pending in pending_signals:
+            os.killpg(child_pid, pending)
+        _pid, wait_status = os.waitpid(child_pid, 0)
+        if not os.WIFEXITED(wait_status) or os.WEXITSTATUS(wait_status) != 0:
             raise ValueError("Exp449 Smoke A worker failed")
-        return {"schema": "exp449-smoke-a-launch-antigravity.v1", "status": "completed", "mode": "resume" if resume else "fresh", "worker_pid": process.pid}
+        return {"schema": "exp449-smoke-a-launch-antigravity.v1", "status": "completed", "mode": "resume" if resume else "fresh", "worker_pid": child_pid}
     finally:
         for signum, handler in previous_handlers.items():
             signal.signal(signum, handler)
@@ -2364,12 +2380,6 @@ def main_antigravity(argv: list[str] | None = None) -> int:
     run_smoke_a.add_argument("--approved-authority-commit", required=True)
     resume_smoke_a = commands.add_parser("resume-smoke-a", allow_abbrev=False)
     resume_smoke_a.add_argument("--approved-authority-commit", required=True)
-    worker = commands.add_parser("_worker", allow_abbrev=False, help=argparse.SUPPRESS)
-    worker.add_argument("--approved-authority-commit", required=True)
-    worker.add_argument("--authority-digest", required=True)
-    worker.add_argument("--claim-fd", required=True, type=int)
-    worker.add_argument("--mode", required=True, choices=("fresh", "resume"))
-    worker.add_argument("--parent-pid", required=True, type=int)
     for command in ("run-smoke-b", "run-official"):
         run = commands.add_parser(command)
         run.add_argument("--reviewed-commit", required=True)
@@ -2388,10 +2398,6 @@ def main_antigravity(argv: list[str] | None = None) -> int:
             payload = _launch_smoke_a_worker_antigravity(args.approved_authority_commit, resume=False)
         elif args.command == "resume-smoke-a":
             payload = _launch_smoke_a_worker_antigravity(args.approved_authority_commit, resume=True)
-        elif args.command == "_worker":
-            return _run_smoke_a_worker_antigravity(
-                args.approved_authority_commit, args.authority_digest, args.claim_fd, args.mode, args.parent_pid,
-            )
         else:
             target = {"run-smoke-a": "smoke_a", "run-smoke-b": "smoke_b", "run-official": "official"}[args.command]
             _require_execution_authority_antigravity(target, args.reviewed_commit)
