@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T04:29:52+09:00",
-  "generated_from_commit": "736e7708268d16bb20b289a940280f5d4c9c294a",
+  "generated_at": "2026-08-15T11:17:37+09:00",
+  "generated_from_commit": "e233a67b7bf9a1eaba65d0a34b6743d2b2f444c3",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
@@ -43,7 +43,7 @@
       "evidence": [
         {
           "path": "docs/superpowers/specs/2026-08-14-exp449-reproducible-rebaseline-antigravity-design.md",
-          "symbol": "Exp449 Proposal Reproducibility Design"
+          "symbol": "Exp449 Reproducible Equipment-Anomaly Rebaseline"
         }
       ],
       "callers": [
@@ -429,7 +429,7 @@
       "evidence": [
         {
           "path": "docs/EXP449_PREREGISTRATION_antigravity_KO.md",
-          "symbol": "Exp449 preregistration"
+          "symbol": "Exp449 재현 가능한 재기준선 사전등록"
         }
       ],
       "callers": [
@@ -456,7 +456,7 @@
       "evidence": [
         {
           "path": "docs/EXP449_RUNBOOK_antigravity_KO.md",
-          "symbol": "Exp449 runbook"
+          "symbol": "Exp449 실행 안내서 — 현재 실행 비인가"
         }
       ],
       "callers": [
@@ -483,7 +483,7 @@
       "evidence": [
         {
           "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "Exp449 implementation report"
+          "symbol": "Exp449 구현 증거 보고 — 비실행"
         }
       ],
       "callers": [
@@ -1798,7 +1798,7 @@
       "type": "requires_via_task5",
       "evidence": {
         "path": "paper/equipment_anomaly_detection/proposal_score_paper.py",
-        "symbol": "replay_hard_route -> exp84_score_pair_paper"
+        "symbol": "verify_exp84_environment_paper"
       }
     },
     {
