@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import nullcontext, redirect_stderr
+from dataclasses import replace
 from hashlib import sha256
 from io import StringIO
 import json
@@ -55,20 +56,20 @@ class Exp449ReadinessTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.directory.cleanup()
 
-    def _ready(self, *, logical_cpu_count: int = 12, builder=None, interpreter=None, dependencies=None, inventory=None, closure=None, config=None) -> dict[str, object]:
+    def _ready(self, *, reviewed_commit: str = "c" * 40, logical_cpu_count: int = 12, builder=None, interpreter=None, dependencies=None, inventory=None, closure=None, config=None) -> dict[str, object]:
         builder = builder or (lambda mode: _catalog_antigravity(mode))
         interpreter = interpreter or {"executable": "fixture-python", "python_version": "3.14.6"}
         dependencies = dependencies or {"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "2.13.0"}
         inventory = inventory or {"schema": "fixture", "algorithm": "fixture", "records": [{"project": "fixture", "version": "1"}], "sha256": "f" * 64}
         closure_patch = patch.object(operations, "_closure_facts_antigravity", return_value=closure) if closure is not None else nullcontext()
         config_patch = patch.object(operations, "FROZEN_EXP449_CONFIG", config) if config is not None else nullcontext()
-        with patch.object(operations, "_current_clean_head_antigravity", return_value="c" * 40), \
+        with patch.object(operations, "_current_clean_head_antigravity", return_value=reviewed_commit), \
              patch.object(operations, "_require_capable_interpreter_antigravity", return_value=interpreter), \
              patch.object(operations, "_readiness_catalog_builder_antigravity", side_effect=builder), \
              patch.object(operations, "_dependency_facts_antigravity", return_value=dependencies), \
              patch.object(operations, "_package_inventory_facts_antigravity", return_value=inventory), \
              patch.object(operations, "_fixed_roots_antigravity", return_value=self.roots), closure_patch, config_patch:
-            return operations._readiness_facts_antigravity("c" * 40, logical_cpu_count=logical_cpu_count)
+            return operations._readiness_facts_antigravity(reviewed_commit, logical_cpu_count=logical_cpu_count)
 
     def _verified_authority_for_route_antigravity(self) -> VerifiedExp449SmokeAAuthorityAntigravity:
         grant = Exp449SmokeAGrantAntigravity(
@@ -145,6 +146,65 @@ class Exp449ReadinessTests(unittest.TestCase):
         with patch.object(operations, "_current_clean_head_antigravity", return_value="a" * 40):
             with self.assertRaisesRegex(ValueError, "capability"):
                 operations._require_reviewed_head_antigravity("b" * 40, authorization_delta_capability=object())
+
+    def test_authorized_readiness_integrates_real_I_fact_collection_and_grant_comparison(self) -> None:
+        """Dropping the private capability or authorized grant must fail the real A -> I readiness route."""
+        implementation = "b" * 40
+        approved = "a" * 40
+        facts = self._ready(reviewed_commit=implementation)
+        database = facts["database"]
+        contexts = facts["contexts"]
+        self.assertIsInstance(database, dict)
+        self.assertIsInstance(contexts, dict)
+        authority_relative = "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py"
+        grant = Exp449SmokeAGrantAntigravity(
+            schema="exp449-smoke-a-execution-grant-antigravity.v1", experiment_id="Exp449", target="smoke-a",
+            policy_id="hard_plus_stable", implementation_commit=implementation,
+            scientific_root=FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+            operations_root=FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+            claim_path=SMOKE_A_CLAIM_PATH_ANTIGRAVITY, nonce="0" * 32,
+            maximum_waves=2, label_access=False, logical_cpu_count=12, dataset_workers=11,
+            database_path=str(database["path"]), database_size=int(database["observed_size"]), database_sha256=str(database["sha256"]),
+            smoke_catalog_sha256=str(contexts["smoke_a"]["catalog_sha256"]), smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets,
+            context_sha256=str(contexts["smoke_a"]["context_sha256"]), scientific_code_closure=facts["code_closure"],
+            authority_code_closure={authority_relative: operations._sha256_file_antigravity(operations._REPOSITORY_ROOT_ANTIGRAVITY / authority_relative)},
+            lineage_lock_sha256=str(facts["lineage_lock_paper_sha256"]), codemap_lock_sha256=str(facts["codemap_lock_sha256"]),
+            acceleration_assessment_sha256=str(contexts["smoke_a"]["acceleration_assessment_sha256"]), canonical_backend="cpu",
+            package_inventory=facts["package_inventory"], seeds_and_constants=facts["seeds_and_constants"], acceleration=facts["acceleration"],
+            design_facts={
+                "dataset_count": 1117, "test_row_count": 195900,
+                "preprocessing_contracts": FROZEN_EXP449_CONFIG.preprocessing_contracts,
+                "cpu_repeat_tolerance": 1e-12, "accelerated_tolerance": 1e-5, "minimum_accelerated_speedup": 1.1,
+            }, grant_created_at="2026-08-15T11:45:00Z",
+        )
+        verified = VerifiedExp449SmokeAAuthorityAntigravity(
+            approved_authority_commit=approved, implementation_commit=implementation, grant=grant,
+            grant_sha256="f" * 64, grant_bytes=b"grant", digest_bytes=b"digest",
+            grant_stat_identity=(1, 2, 3, 4), digest_stat_identity=(5, 6, 7, 8),
+        )
+        real_run = operations.subprocess.run
+
+        def parent_only_git_run(arguments, *args, **kwargs):
+            if tuple(arguments[:4]) == ("git", "rev-list", "--parents", "-n"):
+                return SimpleNamespace(stdout=f"{approved} {implementation}\n")
+            return real_run(arguments, *args, **kwargs)
+
+        environment = (
+            patch.object(operations, "_current_clean_head_antigravity", return_value=approved),
+            patch.object(operations.subprocess, "run", side_effect=parent_only_git_run),
+            patch.object(operations, "_require_capable_interpreter_antigravity", return_value={"executable": "fixture-python", "python_version": "3.14.6"}),
+            patch.object(operations, "_readiness_catalog_builder_antigravity", side_effect=lambda mode: _catalog_antigravity(mode)),
+            patch.object(operations, "_dependency_facts_antigravity", return_value={"pycatch22": "0.5.0", "aeon": "1.5.0", "hydra": "constructed", "torch": "2.13.0"}),
+            patch.object(operations, "_package_inventory_facts_antigravity", return_value=facts["package_inventory"]),
+        )
+        with environment[0], environment[1], environment[2], environment[3], environment[4], environment[5], \
+             patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified):
+            self.assertEqual(operations.readiness_for_authorized_implementation_antigravity(verified)["reviewed_commit"], implementation)
+        mismatched = replace(verified, grant=replace(grant, database_size=grant.database_size + 1))
+        with environment[0], environment[1], environment[2], environment[3], environment[4], environment[5], \
+             patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=mismatched):
+            with self.assertRaisesRegex(ValueError, "database or catalog"):
+                operations.readiness_for_authorized_implementation_antigravity(mismatched)
 
     def test_authorized_readiness_rejects_an_authority_closure_that_does_not_match_recomputed_source(self) -> None:
         """Omitting authority-closure comparison would allow A -> I evidence to bind the wrong verifier source."""

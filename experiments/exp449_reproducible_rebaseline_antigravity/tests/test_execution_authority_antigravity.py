@@ -264,6 +264,7 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
         initial_authority_paths: tuple[str, ...] = (),
         remove_initial_authority_paths: tuple[str, ...] = (),
         grant_payload_transform=None,
+        digest_bytes_transform=None,
         grant_bytes_transform=None,
         digest_payload_transform=None,
         symlink_grant: bool = False,
@@ -328,7 +329,10 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
         if digest_payload_transform is not None:
             digest_payload_transform(digest_payload)
         digest_path = authority / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name
-        digest_path.write_bytes(json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        digest_bytes = json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        if digest_bytes_transform is not None:
+            digest_bytes = digest_bytes_transform(digest_bytes)
+        digest_path.write_bytes(digest_bytes)
         if symlink_grant:
             grant_path.unlink()
             grant_path.symlink_to("../../science_antigravity.py")
@@ -396,11 +400,11 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValueError):
                     verify_smoke_a_authorization_commit_antigravity(invalid, repository_root=repository)
-        digest_path = repository / "docs/authorities" / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name
-        payload = json.loads(digest_path.read_text())
-        payload["grant_sha256"] = "f" * 64
-        digest_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
-        with self.assertRaises(ValueError):
+        directory, repository, _implementation, approved = self._authorization_repository_antigravity(
+            digest_payload_transform=lambda value: value.__setitem__("grant_sha256", "f" * 64),
+        )
+        self.addCleanup(directory.cleanup)
+        with self.assertRaisesRegex(ValueError, "does not bind"):
             verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
 
     def test_authorization_delta_rejects_deleted_modified_renamed_symlinked_and_untracked_authority_paths(self) -> None:
@@ -466,10 +470,39 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
         self.assertEqual(verified.grant_bytes, original)
         self.assertEqual(grant_path.read_bytes(), replacement_bytes)
 
+    def test_authorization_snapshot_keeps_the_opened_digest_when_its_path_is_swapped(self) -> None:
+        """Rereading the digest path after hashing would bind a different on-disk digest."""
+        directory, repository, _implementation, approved = self._authorization_repository_antigravity()
+        self.addCleanup(directory.cleanup)
+        digest_path = repository / "docs/authorities" / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name
+        original = digest_path.read_bytes()
+        replacement = json.loads(original)
+        replacement["grant_sha256"] = "f" * 64
+        replacement_bytes = json.dumps(replacement, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        real_read = authority_module.os.read
+        swapped = False
+
+        def swap_after_first_digest_read(descriptor: int, size: int) -> bytes:
+            nonlocal swapped
+            value = real_read(descriptor, size)
+            if not swapped and value == original:
+                replacement_path = digest_path.with_name("replacement_digest_antigravity.json")
+                replacement_path.write_bytes(replacement_bytes)
+                os.replace(replacement_path, digest_path)
+                swapped = True
+            return value
+
+        with patch.object(authority_module.os, "read", side_effect=swap_after_first_digest_read):
+            verified = verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+        self.assertTrue(swapped)
+        self.assertEqual(verified.digest_bytes, original)
+        self.assertEqual(digest_path.read_bytes(), replacement_bytes)
+
     def test_authorization_parser_reaches_noncanonical_digest_and_closure_lock_gates(self) -> None:
         """A valid A delta must still reject each independent retained authority binding."""
         cases = (
             {"grant_bytes_transform": lambda value: value + b"\n", "message": "not canonical"},
+            {"digest_bytes_transform": lambda value: value + b"\n", "message": "digest bytes are not canonical"},
             {"digest_payload_transform": lambda value: value.__setitem__("grant_size", value["grant_size"] + 1), "message": "does not bind"},
             {"digest_payload_transform": lambda value: value.__setitem__("grant_path", "/tmp/wrong_antigravity.json"), "message": "digest is invalid"},
             {"digest_payload_transform": lambda value: value.__setitem__("implementation_commit", "e" * 40), "message": "does not bind"},
