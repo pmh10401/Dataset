@@ -6,6 +6,7 @@ from dataclasses import fields
 import os
 import fcntl
 import signal
+import select
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -144,11 +145,56 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                 if holder >= 0: os.close(holder)
                 os.close(descriptor)
 
-    def test_watchdog_parent_mismatch_rejects_before_authority_verification(self) -> None:
+    def test_fork_only_worker_command_rejects_before_authority_verification(self) -> None:
         """A direct hidden worker command is unavailable before authority verification."""
         with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", side_effect=AssertionError("authority")):
             with self.assertRaises(SystemExit):
                 operations.main_antigravity(["_worker"])
+
+    def test_fork_child_watchdog_kills_its_group_after_parent_death_before_lifecycle(self) -> None:
+        """A reparented real child must target only its own process group before any lifecycle write."""
+        with TemporaryDirectory(dir=Path.cwd()) as temporary:
+            root = Path(temporary); operations_root = root / "ops_antigravity"; operations_root.mkdir()
+            sentinel = operations_root / "sentinel_ops_antigravity.json"; sentinel.write_bytes(b"unchanged")
+            ready_read, ready_write = os.pipe(); result_read, result_write = os.pipe()
+            supervisor = os.fork()
+            if supervisor == 0:
+                os.close(result_read)
+                worker = os.fork()
+                if worker == 0:
+                    os.close(ready_read)
+                    try:
+                        os.setsid()
+                        expected_parent = os.getppid()
+
+                        def record_group(group: int, received: int) -> None:
+                            os.write(result_write, f"{os.getpgrp()}:{group}:{received}".encode())
+
+                        with patch.object(operations.os, "killpg", side_effect=record_group):
+                            stop, watchdog = operations._start_smoke_a_parent_watchdog_antigravity(expected_parent)
+                            os.write(ready_write, b"ready")
+                            watchdog.join(timeout=1.0)
+                            stop.set()
+                            if watchdog.is_alive():
+                                os._exit(3)
+                        os._exit(0)
+                    except BaseException:
+                        os._exit(4)
+                os.close(ready_write)
+                os.read(ready_read, 5)
+                os._exit(0)
+            os.close(ready_read); os.close(ready_write); os.close(result_write)
+            try:
+                self.assertEqual(os.waitpid(supervisor, 0)[1], 0)
+                readable, _writable, _exceptional = select.select([result_read], [], [], 2.0)
+                self.assertEqual(readable, [result_read], "watchdog did not issue its group termination")
+                payload = os.read(result_read, 128)
+                own_group, targeted_group, received = map(int, payload.decode().split(":"))
+                self.assertEqual(targeted_group, own_group)
+                self.assertEqual(received, signal.SIGTERM)
+                self.assertEqual(sentinel.read_bytes(), b"unchanged")
+            finally:
+                os.close(result_read)
 
     def test_resume_logs_append_and_parent_installs_group_relay_before_spawn(self) -> None:
         """Resume must preserve prior logs and an early signal must target the worker group."""
@@ -164,6 +210,7 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                 previous = registered.get(signum, signal.SIG_DFL); registered[signum] = handler; return previous
             def fork():
                 self.assertIn(signal.SIGINT, registered); self.assertIn(signal.SIGTERM, registered)
+                registered[signal.SIGINT](signal.SIGINT, None)
                 registered[signal.SIGTERM](signal.SIGTERM, None)
                 return 777
             with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified), \
@@ -177,5 +224,5 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                  patch.object(operations.os, "killpg", side_effect=lambda pid, sig: killed.append((pid, sig))):
                 operations._launch_smoke_a_worker_antigravity("a" * 40, resume=True)
             self.assertEqual(stdout.read_bytes(), b"old-out\n"); self.assertEqual(stderr.read_bytes(), b"old-err\n")
-            self.assertEqual(killed, [(777, signal.SIGTERM)])
+            self.assertEqual(killed, [(777, signal.SIGINT), (777, signal.SIGTERM)])
             os.close(descriptor)
