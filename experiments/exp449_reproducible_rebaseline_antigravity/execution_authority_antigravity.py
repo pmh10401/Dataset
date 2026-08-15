@@ -10,6 +10,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
+import errno
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -26,7 +28,8 @@ from .config_antigravity import (
     SMOKE_A_CLAIM_PATH_ANTIGRAVITY,
     SMOKE_A_GRANT_PATH_ANTIGRAVITY,
 )
-from .contracts_antigravity import freeze_canonical_json_mapping_antigravity
+from .contracts_antigravity import Exp449Context, freeze_canonical_json_mapping_antigravity
+from .artifacts_antigravity import context_sha256_antigravity
 
 
 _SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
@@ -332,6 +335,143 @@ class VerifiedExp449SmokeAAuthorityAntigravity:
     digest_bytes: bytes
     grant_stat_identity: tuple[int, int, int, int]
     digest_stat_identity: tuple[int, int, int, int]
+
+
+class _Exp449ExecutionCapabilityAntigravity:
+    """Opaque registry key; it intentionally exposes no mutable authority facts."""
+
+    __slots__ = ()
+
+    def __copy__(self): raise TypeError("Exp449 execution capability cannot be copied")
+    def __deepcopy__(self, memo: object): raise TypeError("Exp449 execution capability cannot be copied")
+    def __reduce__(self): raise TypeError("Exp449 execution capability cannot be serialized")
+    def __reduce_ex__(self, protocol: int): raise TypeError("Exp449 execution capability cannot be serialized")
+
+
+@dataclass(frozen=True, slots=True)
+class _ExecutionCapabilityFactsAntigravity:
+    capability: object
+    grant_sha256: str
+    approved_authority_commit: str
+    implementation_commit: str
+    context_sha256: str
+    target: str
+    scientific_root: Path
+    operations_root: Path
+    claim_path: Path
+    owner_pid: int
+    claim_fd: int
+    claim_device: int
+    claim_inode: int
+    receipt_path: Path
+    receipt_sha256: str
+
+
+def _claim_lock_contended_antigravity(path: Path, *, expected_device: int, expected_inode: int) -> bool:
+    """Observe lock ownership in a fresh process without touching the owner FD."""
+    child = os.fork()
+    if child == 0:
+        try:
+            descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            details = os.fstat(descriptor)
+            path_details = path.lstat()
+            if (not stat.S_ISREG(details.st_mode) or stat.S_ISLNK(path_details.st_mode)
+                or not stat.S_ISREG(path_details.st_mode)
+                or (details.st_dev, details.st_ino) != (expected_device, expected_inode)
+                or (path_details.st_dev, path_details.st_ino) != (expected_device, expected_inode)):
+                os._exit(2)
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as error:
+                os._exit(0 if error.errno in {errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK} else 2)
+            else:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+                os._exit(1)
+            finally:
+                os.close(descriptor)
+        except BaseException:
+            os._exit(2)
+    try:
+        _pid, status = os.waitpid(child, 0)
+    except OSError:
+        return False
+    return os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0
+
+
+def _execution_capability_registry_antigravity():
+    """Keep validation facts in a closure, keyed by the issued object identity."""
+    records: dict[int, _ExecutionCapabilityFactsAntigravity] = {}
+
+    def mint(verified: VerifiedExp449SmokeAAuthorityAntigravity, *, context: Exp449Context, target: str, scientific_root: Path, operations_root: Path, claim_path: Path, claim_fd: int) -> object:
+        if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity or type(context) is not Exp449Context:
+            raise TypeError("Exp449 execution capability inputs are invalid")
+        details = os.fstat(claim_fd)
+        receipt_path = Path(operations_root) / "execution_authority_consumed_antigravity.json"
+        receipt_details = receipt_path.lstat()
+        receipt_bytes = receipt_path.read_bytes()
+        if not stat.S_ISREG(details.st_mode) or stat.S_ISLNK(receipt_details.st_mode) or not stat.S_ISREG(receipt_details.st_mode):
+            raise ValueError("Exp449 execution capability inputs are unsafe")
+        capability = _Exp449ExecutionCapabilityAntigravity()
+        records[id(capability)] = _ExecutionCapabilityFactsAntigravity(
+            capability, verified.grant_sha256, verified.approved_authority_commit, verified.implementation_commit,
+            context_sha256_antigravity(context), target, Path(scientific_root), Path(operations_root), Path(claim_path),
+            os.getpid(), claim_fd, details.st_dev, details.st_ino, receipt_path, sha256(receipt_bytes).hexdigest(),
+        )
+        return capability
+
+    def revoke(capability: object) -> None:
+        facts = records.get(id(capability))
+        if facts is not None and facts.capability is capability:
+            del records[id(capability)]
+
+    def claim_fd(capability: object) -> int:
+        """Return the registered descriptor without making it a capability attribute."""
+        facts = records.get(id(capability))
+        if type(capability) is not _Exp449ExecutionCapabilityAntigravity or facts is None or facts.capability is not capability:
+            return -1
+        return facts.claim_fd
+
+    def require(capability: object, *, target: str, context: Exp449Context, claim_fd: int) -> None:
+        facts = records.get(id(capability))
+        if type(capability) is not _Exp449ExecutionCapabilityAntigravity or facts is None or facts.capability is not capability:
+            raise ValueError("Exp449 execution capability is invalid")
+        if type(context) is not Exp449Context:
+            raise ValueError("Exp449 execution context is invalid")
+        if facts.owner_pid != os.getpid() or facts.claim_fd != claim_fd or facts.target != target or facts.context_sha256 != context_sha256_antigravity(context) or facts.scientific_root != Path(context.run_root):
+            raise ValueError("Exp449 execution capability binding differs")
+        try:
+            details = os.fstat(claim_fd); path_details = facts.claim_path.lstat(); receipt_details = facts.receipt_path.lstat(); receipt_bytes = facts.receipt_path.read_bytes()
+        except OSError as error:
+            raise ValueError("Exp449 execution claim descriptor is closed") from error
+        if (not stat.S_ISREG(details.st_mode) or stat.S_ISLNK(path_details.st_mode) or not stat.S_ISREG(path_details.st_mode) or (details.st_dev, details.st_ino) != (facts.claim_device, facts.claim_inode) or (path_details.st_dev, path_details.st_ino) != (facts.claim_device, facts.claim_inode) or stat.S_ISLNK(receipt_details.st_mode) or not stat.S_ISREG(receipt_details.st_mode) or sha256(receipt_bytes).hexdigest() != facts.receipt_sha256):
+            raise ValueError("Exp449 execution claim or consumption receipt differs")
+        # Same-account replacement while another process deliberately holds the
+        # same claim is outside this process-local capability threat model.
+        if not _claim_lock_contended_antigravity(
+            facts.claim_path, expected_device=facts.claim_device, expected_inode=facts.claim_inode,
+        ):
+            raise ValueError("Exp449 execution claim lock is not live")
+
+    return mint, revoke, require, claim_fd
+
+
+_mint_execution_capability_impl_antigravity, _revoke_execution_capability_impl_antigravity, _require_execution_capability_impl_antigravity, _execution_capability_claim_fd_impl_antigravity = _execution_capability_registry_antigravity()
+
+
+def _mint_execution_capability_antigravity(*args: object, **kwargs: object) -> object:
+    return _mint_execution_capability_impl_antigravity(*args, **kwargs)
+
+
+def _revoke_execution_capability_antigravity(capability: object) -> None:
+    _revoke_execution_capability_impl_antigravity(capability)
+
+
+def _execution_capability_claim_fd_antigravity(capability: object) -> int:
+    return _execution_capability_claim_fd_impl_antigravity(capability)
+
+
+def _require_execution_capability_antigravity(capability: object, *, target: str, context: Exp449Context, claim_fd: int) -> None:
+    _require_execution_capability_impl_antigravity(capability, target=target, context=context, claim_fd=claim_fd)
 
 
 def _git_authority_antigravity(repository_root: Path, *arguments: str) -> bytes:

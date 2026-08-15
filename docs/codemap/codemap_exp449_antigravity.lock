@@ -1,7 +1,7 @@
 {
-  "current_commit": "c9a0c4745afbb4be86a6a746160c30ca6d74c8c9",
+  "current_commit": "c49bb7edfbd0f138e8890219d7caae2cc97c381a",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-15T12:25:08+09:00",
+  "generated_at": "2026-08-15T16:56:06+09:00",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -34,18 +34,19 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, docs/authorities (authorization data only), outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
-    "root": "67ee98cf89e41fb4ec58fe3ec07ae3b6f1ad18c83923307ffc89c0d75307a5f2",
-    ".superpowers": "679349249dbcea43ec5efd8c573f25fc523dcd7e7966f7f4bcadd9fcd720c5da",
+    ".superpowers": "98ceb2494e03fa2bb5a40ed8cd6a184f7372f2a8deb03948c9cc9212c4baca15",
     "docs": "b632abc2682164d6b627fa8957444f963e9dd9d52aa3f9f20203a3af6db50355",
-    "experiments": "6c5d28d59dd212a0dbb9b6084dc35aa4b023c8137fe0ed644449a65b9e30ccb7",
+    "experiments": "b6769aa8d04987ed182953ed614b9f811729dbd5c906e4c8e7b274ea895e9315",
     "operational": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
     "paper": "440e37698659b2e194dd44e00809e23baf14c425c44e3484d23d799a2538541d",
     "reports": "ea0adf1fa41b3acf6fc660bdf05d8a76816e9c11dc507b681db86c225c32a350",
+    "root": "67ee98cf89e41fb4ec58fe3ec07ae3b6f1ad18c83923307ffc89c0d75307a5f2",
     "scratch": "1519c88d260c8ff226698547362ec09b9197c9c3c4e0c844231f6cdbbd26c1a2",
     "scripts": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
     "vercel-dashboard": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d"
   },
   "changed_modules_since_prior_lock": [
+    ".superpowers",
     "experiments"
   ]
 }

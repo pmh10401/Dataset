@@ -214,6 +214,17 @@ class Exp449CompositionGateTests(unittest.TestCase):
             "elapsed_s": 0.0,
         }])
 
+    def test_pure_composition_fixture_requires_no_execution_capability(self) -> None:
+        """A capability check here would wrongly turn scientific composition into publication authority."""
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(runner, "_label_firewall"))
+            for stage_patch in self._stage_patches():
+                stack.enter_context(stage_patch)
+            score = runner.compose_exp449_proposal_score_antigravity(
+                self.raw, self.acceleration, catalog=self.catalog, collector=self._collector,
+            )
+        self.assertEqual(tuple(score.raw), ("Alpha", "Beta"))
+
     def test_complete_fixture_preserves_existing_proposal_score_semantics(self) -> None:
         """A complete catalog retains every in-memory ProposalScore semantic field."""
         paper_low = self.low

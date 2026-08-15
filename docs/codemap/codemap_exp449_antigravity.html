@@ -2,11 +2,12 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Time Series · Exp449 Code Map</title>
 <style>:root{color-scheme:dark;--bg:#0b1020;--panel:#141b31;--line:#405072;--txt:#e5ebfa;--muted:#9cadca;--paper:#f06f9b}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#1e2b53,var(--bg) 46%);color:var(--txt);font:14px system-ui,sans-serif}header{padding:18px 24px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:21px}small,.muted{color:var(--muted)}main{display:grid;grid-template-columns:minmax(600px,1fr) 320px;gap:12px;padding:12px}#map,aside{background:rgba(20,27,49,.95);border:1px solid var(--line);border-radius:10px}#map{padding:14px;min-height:610px}#graph{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}.node{border:1px solid #516388;border-radius:8px;padding:10px;background:#101a31;cursor:pointer}.node.paper{border-color:var(--paper)}.node.dim{opacity:.2}.node h3{font-size:13px;margin:0 0 6px}.node p{margin:5px 0;color:var(--muted);font-size:12px}aside{padding:14px}aside h2{font-size:15px;margin:0 0 10px}code{word-break:break-word;color:#cbd8ff}select,input{background:#1d2945;color:var(--txt);border:1px solid #516388;border-radius:6px;padding:7px 9px;margin:8px 4px 0 0}@media(max-width:900px){main{grid-template-columns:1fr}}</style></head>
-<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-15T12:25:08+09:00 · source <code>c9a0c4745afbb4be86a6a746160c30ca6d74c8c9</code> · Exp449 is implementation-verified but execution-unauthorized; Exp448 remains immutable</small></header>
+<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-15T16:56:06+09:00 · source <code>c49bb7edfbd0f138e8890219d7caae2cc97c381a</code> · Exp449 is implementation-verified but execution-unauthorized; Exp448 remains immutable</small></header>
 <main><section id="map"><input id="search" placeholder="module search"><select id="flow"><option value="">all flows</option></select><p class="muted">Exp449 is implementation-verified and remains a no-execution boundary. Pink-bordered nodes are retained paper scientific dependencies.</p><div id="graph"></div></section><aside><h2 id="detail">Exp449 map</h2><div id="info" class="muted">Select a node for callers, effects, tests, constraints, and evidence.</div></aside></main>
-<script id="codemap-data" type="application/json">{
-  "generated_at": "2026-08-15T12:25:08+09:00",
-  "generated_from_commit": "c9a0c4745afbb4be86a6a746160c30ca6d74c8c9",
+<script id="codemap-data" type="application/json">
+{
+  "generated_at": "2026-08-15T16:56:06+09:00",
+  "generated_from_commit": "c49bb7edfbd0f138e8890219d7caae2cc97c381a",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
@@ -219,6 +220,7 @@
         }
       ],
       "callers": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py"
@@ -230,9 +232,13 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Parent-only recovery and scorer-free readiness, including a private exact-type A -> I read capability that recomputes immutable Smoke A facts for implementation I while public readiness still pins reviewed HEAD.",
+      "role": "Parent-only recovery, scorer-free readiness, and Smoke A mutation ownership: only a verified one-shot process-local capability may claim fixed paths, consume authority, run a wave, freeze, or publish a terminal record.",
       "entrypoints": [
         "Exp449WaveConfig",
+        "Exp449SmokeAExecutionLeaseAntigravity",
+        "acquire_smoke_a_execution_lease_antigravity",
+        "freeze_authorized_exp449_proposal_antigravity",
+        "run_exp449_wave_antigravity",
         "readiness_exp449_antigravity",
         "readiness_for_authorized_implementation_antigravity",
         "_closure_facts_antigravity",
@@ -241,6 +247,7 @@
         "main_antigravity"
       ],
       "tests": [
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_claim_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
@@ -248,12 +255,12 @@
       "constraints": [
         "Public readiness requires exact clean reviewed HEAD, pinned interpreter, frozen dependency preflights, observed catalog database identity, genuine contexts, absent fixed roots, and no loaded labels.",
         "Only a freshly reverified exact-type private A -> I capability may recompute readonly Smoke A facts for I while HEAD is A; there is no boolean bypass or caller callback.",
-        "Authorized facts must exactly bind database, smoke catalog/datasets, context, scientific and authority closures, locks, package inventory, constants, acceleration, CPU 12-to-11 workers, roots, maximum waves, and false label access. Execution remains unavailable."
+        "Authorized readonly facts remain exact; independently, the fresh Smoke A lease lstat-checks absent roots/claim, creates and nonblocking-locks a no-follow claim, verifies its inode, creates only the operations root, writes a create-only authenticated consumption receipt, then mints the exact capability. No boolean bypass exists."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-          "symbol": "Exp449WaveConfig, readiness_exp449_antigravity, readiness_for_authorized_implementation_antigravity, _closure_facts_antigravity, _package_inventory_facts_antigravity, _seeds_and_constants_antigravity, main_antigravity"
+          "symbol": "Exp449WaveConfig, Exp449SmokeAExecutionLeaseAntigravity, acquire_smoke_a_execution_lease_antigravity, freeze_authorized_exp449_proposal_antigravity, run_exp449_wave_antigravity, readiness_exp449_antigravity, readiness_for_authorized_implementation_antigravity, _closure_facts_antigravity, _package_inventory_facts_antigravity, _seeds_and_constants_antigravity, main_antigravity"
         }
       ],
       "callers": [
@@ -263,7 +270,7 @@
         "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "produces scorer-free public readiness under exact HEAD and narrowly authorized readonly Smoke A implementation readiness under verified A -> I evidence; execution commands remain blocked by execution_authority_not_configured"
+        "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt and gates all configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged"
       ]
     },
     {
@@ -335,7 +342,8 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "constraints": [
-        "Uses temporary fixture namespaces and mocked paper collection boundary only; no real Exp449 root, actual scorer, DB, or TEST labels are accessed."
+        "Uses temporary fixture namespaces and mocked paper collection boundary only; no real Exp449 root, actual scorer, DB, or TEST labels are accessed.",
+        "Pure compose fixture coverage intentionally supplies no execution capability because it has no official publication authority."
       ],
       "evidence": [
         {
@@ -1654,7 +1662,7 @@
     {
       "id": "exp449_execution_authority",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
-      "role": "Immutable single-snapshot Smoke A authorization-delta verifier: validates the clean exact A -> I Git delta, retained no-follow grant/digest bytes, and closure/lock blobs without execution capability.",
+      "role": "Immutable Smoke A verifier plus opaque process-local capability registry: frozen facts are keyed only by issued object identity and live lock ownership is observed by a child contention probe without reacquiring the owner FD.",
       "entrypoints": [
         "Exp449SmokeAGrantAntigravity",
         "Exp449SmokeAGrantDigestAntigravity",
@@ -1664,21 +1672,25 @@
         "canonical_grant_digest_bytes_antigravity",
         "parse_grant_digest_bytes_antigravity",
         "verify_authority_directory_structure_antigravity",
-        "verify_smoke_a_authorization_commit_antigravity"
+        "verify_smoke_a_authorization_commit_antigravity",
+        "_Exp449ExecutionCapabilityAntigravity",
+        "_require_execution_capability_antigravity"
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_claim_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
         "The verifier is scorer-free and read-only: it cannot prepare authority JSON, claim a run, create a root, inspect a database, score data, or authorize a mutation.",
         "It accepts only a clean lowercase-hex approved HEAD whose direct parent is the grant implementation and whose exact delta adds two 100644 authority files; retained O_NOFOLLOW bytes must equal committed blobs.",
-        "Authority data remains outside source fingerprinting; the Python verifier remains in the normal Exp449 code closure."
+        "Authority data remains outside source fingerprinting; the Python verifier remains in the normal Exp449 code closure.",
+        "Direct construction, copying, pickle, cross-PID use, context/root/claim inode drift, released/closed/reopened FD, receipt mismatch, and lock loss fail closed; capability facts are not mutable object slots."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
-          "symbol": "Exp449SmokeAGrantAntigravity, Exp449SmokeAGrantDigestAntigravity, VerifiedExp449SmokeAAuthorityAntigravity, canonical_grant_bytes_antigravity, parse_grant_bytes_antigravity, canonical_grant_digest_bytes_antigravity, parse_grant_digest_bytes_antigravity, verify_authority_directory_structure_antigravity, verify_smoke_a_authorization_commit_antigravity"
+          "symbol": "Exp449SmokeAGrantAntigravity, Exp449SmokeAGrantDigestAntigravity, VerifiedExp449SmokeAAuthorityAntigravity, canonical_grant_bytes_antigravity, parse_grant_bytes_antigravity, canonical_grant_digest_bytes_antigravity, parse_grant_digest_bytes_antigravity, verify_authority_directory_structure_antigravity, verify_smoke_a_authorization_commit_antigravity, _Exp449ExecutionCapabilityAntigravity, _require_execution_capability_antigravity"
         }
       ],
       "callers": [
@@ -1687,7 +1699,7 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "effects": [
-        "returns immutable grant/digest snapshot evidence only after exact A -> I delta, tracked mode, canonical digest, closure, lineage-lock, and codemap-lock validation; it never enables mutation"
+        "returns immutable grant/digest evidence and only an operations-minted in-process exact capability; it never creates an authority JSON or performs scoring"
       ]
     },
     {
@@ -2374,6 +2386,24 @@
         "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
         "symbol": "freeze_canonical_json_mapping_antigravity"
       }
+    },
+    {
+      "from": "exp449_operations",
+      "to": "exp449_execution_authority",
+      "type": "requires_private_capability",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "symbol": "acquire_smoke_a_execution_lease_antigravity, _execution_capability_for_config_antigravity"
+      }
+    },
+    {
+      "from": "exp449_operations",
+      "to": "exp449_artifacts",
+      "type": "calls_after_capability_gate",
+      "evidence": {
+        "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "symbol": "freeze_authorized_exp449_proposal_antigravity"
+      }
     }
   ],
   "flows": [
@@ -2443,6 +2473,17 @@
         "exp449_readiness_tests"
       ],
       "outcome": "A clean exact two-file A -> I authority delta yields immutable verification evidence only; a private exact-type capability can recompute and compare readonly Smoke A implementation facts while public readiness remains HEAD-pinned. No authority JSON, root, claim, database scoring, labels, or execution is created."
+    },
+    {
+      "trigger": "Exp449 Smoke A fresh mutation authority",
+      "steps": [
+        "exp449_execution_authority",
+        "exp449_operations",
+        "exp449_task45_collection",
+        "exp449_runner",
+        "exp449_artifacts"
+      ],
+      "outcome": "Verified A -> I evidence plus readonly readiness permits exactly one no-follow claim and authenticated operations receipt; the process-local capability then gates configured-root recovery, terminal publication, and freeze. Pure composition remains capability-free."
     }
   ],
   "unknown_relationships": [],
@@ -2451,5 +2492,6 @@
     "A trusted execution authority cannot be supplied by a self-hash or local artifact; it requires a separately reviewed code/config change and explicit user approval.",
     "Exp448 historical sections, codemap triplet, and intentional RED full-route test are immutable evidence."
   ]
-}</script>
+}
+</script>
 <script>const data=JSON.parse(document.getElementById('codemap-data').textContent),graph=document.getElementById('graph'),info=document.getElementById('info'),detail=document.getElementById('detail'),search=document.getElementById('search'),flow=document.getElementById('flow');for(const f of data.flows){const o=document.createElement('option');o.value=f.trigger;o.textContent=f.trigger;flow.append(o)}const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));function visible(){const q=search.value.toLowerCase(),active=flow.value?data.flows.find(f=>f.trigger===flow.value):null;for(const n of data.nodes){const show=(!q||n.id.toLowerCase().includes(q)||n.role.toLowerCase().includes(q))&&(!active||active.steps.includes(n.id));let e=document.getElementById('node-'+n.id);e.classList.toggle('dim',!show)}}function select(n){detail.textContent=n.id;info.innerHTML='<b>Path</b><p><code>'+esc(n.path)+'</code></p><b>Callers</b><p>'+esc((n.callers||[]).join(', ')||'none')+'</p><b>Effects</b><p>'+esc((n.effects||[]).join(' · ')||n.role)+'</p><b>Tests</b><p>'+esc((n.tests||[]).join(', ')||'none')+'</p><b>Constraints</b><p>'+esc((n.constraints||[]).join(' · ')||'none')+'</p><b>Evidence</b><p><code>'+esc(n.evidence[0].path+' · '+n.evidence[0].symbol)+'</code></p>'}for(const n of data.nodes){const e=document.createElement('article');e.id='node-'+n.id;e.className='node '+(n.id.startsWith('paper_')?'paper':'');e.innerHTML='<h3>'+esc(n.id)+'</h3><p>'+esc(n.role)+'</p><p>tests: '+n.tests.length+'</p>';e.onclick=()=>select(n);graph.append(e)}search.oninput=visible;flow.onchange=visible;</script></body></html>

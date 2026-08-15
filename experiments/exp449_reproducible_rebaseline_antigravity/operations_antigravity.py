@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 import argparse
 import ast
+import fcntl
 import importlib.metadata
 import json
 from math import isfinite
@@ -46,19 +47,27 @@ from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper imp
 )
 
 from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
-from .contracts_antigravity import Exp449Context, Exp449TerminalStatus
+from .contracts_antigravity import Exp449Context, Exp449ProposalManifest, Exp449TerminalStatus
 from .execution_authority_antigravity import (
     Exp449SmokeAGrantAntigravity,
     VerifiedExp449SmokeAAuthorityAntigravity,
+    _execution_capability_claim_fd_antigravity,
+    _mint_execution_capability_antigravity,
+    _require_execution_capability_antigravity,
+    _revoke_execution_capability_antigravity,
     verify_smoke_a_authorization_commit_antigravity,
 )
 from .runner_antigravity import compose_exp449_proposal_score_antigravity
-from .artifacts_antigravity import context_sha256_antigravity
+from .artifacts_antigravity import (
+    context_sha256_antigravity,
+    freeze_exp449_proposal_antigravity,
+)
 
 
 _TERMINAL_NAME = "proposal_score_incomplete_antigravity.json"
 _PROGRESS_NAME = "operations_progress_antigravity.jsonl"
 _SMOKE_COMPARISON_NAME = "smoke_comparison_antigravity.json"
+_EXECUTION_AUTHORITY_CONSUMED_NAME = "execution_authority_consumed_antigravity.json"
 _TERMINAL_SCHEMA = "exp449-proposal-score-incomplete-antigravity.v1"
 _PROGRESS_KEYS = frozenset(
     {
@@ -185,6 +194,33 @@ class Exp449WaveConfig:
         object.__setattr__(self, "raw_datasets", raw)
 
 
+@dataclass(slots=True)
+class Exp449SmokeAExecutionLeaseAntigravity:
+    """Own the one process-local claim descriptor for a fresh Smoke A launch."""
+
+    verified_authority: VerifiedExp449SmokeAAuthorityAntigravity
+    context: Exp449Context
+    claim_fd: int
+    capability: object
+
+    def __enter__(self) -> "Exp449SmokeAExecutionLeaseAntigravity":
+        return self
+
+    def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Release the descriptor only; the consumed claim remains permanent."""
+        if self.claim_fd < 0:
+            return
+        _revoke_execution_capability_antigravity(self.capability)
+        try:
+            fcntl.flock(self.claim_fd, fcntl.LOCK_UN)
+        finally:
+            os.close(self.claim_fd)
+            self.claim_fd = -1
+
+
 @dataclass(frozen=True, slots=True)
 class _RecoverySnapshot:
     successes: tuple[str, ...]
@@ -262,6 +298,187 @@ def _operations_root_for_context_antigravity(context: Exp449Context) -> Path:
     if root == context.run_root or context.run_root in root.parents or root in context.run_root.parents:
         raise ValueError("Exp449 operations root must be separate from scientific root")
     return root
+
+
+def _lstat_absent_path_antigravity(path: Path, *, name: str) -> None:
+    """Reject traversal, symlink components, and every pre-existing destination."""
+    raw = Path(path)
+    if not raw.is_absolute() or ".." in raw.parts:
+        raise ValueError(f"Exp449 {name} path is unsafe")
+    current = Path(raw.anchor)
+    for part in raw.parts[1:]:
+        current /= part
+        try:
+            details = current.lstat()
+        except FileNotFoundError:
+            continue
+        if stat.S_ISLNK(details.st_mode):
+            raise ValueError(f"Exp449 {name} path is unsafe")
+        if current != raw and not stat.S_ISDIR(details.st_mode):
+            raise ValueError(f"Exp449 {name} parent is unsafe")
+        if current == raw:
+            raise ValueError(f"Exp449 {name} must be absent")
+
+
+def _write_fd_all_antigravity(descriptor: int, data: bytes) -> None:
+    view = memoryview(data)
+    offset = 0
+    while offset < len(view):
+        try:
+            written = os.write(descriptor, view[offset:])
+        except InterruptedError:
+            continue
+        if written <= 0:
+            raise OSError("Exp449 create-only write returned no bytes")
+        offset += written
+    os.fsync(descriptor)
+
+
+def _create_execution_receipt_antigravity(
+    root: Path,
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    context: Exp449Context,
+    claim_path: Path,
+    claim_details: os.stat_result,
+) -> None:
+    """Create the authenticated one-shot consumption record without root healing."""
+    receipt = root / _EXECUTION_AUTHORITY_CONSUMED_NAME
+    try:
+        details = receipt.lstat()
+    except FileNotFoundError:
+        details = None
+    if details is not None:
+        raise ValueError("Exp449 execution authority consumption already exists")
+    payload = {
+        "schema": "exp449-smoke-a-execution-consumed-antigravity.v1",
+        "grant_sha256": verified.grant_sha256,
+        "approved_authority_commit": verified.approved_authority_commit,
+        "implementation_commit": verified.implementation_commit,
+        "target": verified.grant.target,
+        "context_sha256": context_sha256_antigravity(context),
+        "claim_path": str(claim_path),
+        "claim_device": claim_details.st_dev,
+        "claim_inode": claim_details.st_ino,
+    }
+    descriptor = os.open(
+        receipt,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
+        0o600,
+    )
+    try:
+        _write_fd_all_antigravity(descriptor, canonical_json_bytes(payload))
+    finally:
+        os.close(descriptor)
+    directory_fd = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0))
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def acquire_smoke_a_execution_lease_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    context: Exp449Context,
+    *,
+    _test_paths_antigravity: tuple[Path, Path, Path] | None = None,
+) -> Exp449SmokeAExecutionLeaseAntigravity:
+    """Verify, exclusively claim, consume, then mint Smoke A mutation authority.
+
+    The optional private path triple exists only for in-memory authority tests.
+    Its normal-public-call value is always the exact grant-bound fixed paths.
+    """
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity or type(context) is not Exp449Context:
+        raise TypeError("Exp449 verified authority and context are required")
+    grant = verified.grant
+    if grant.target != "smoke-a" or context.mode != "smoke":
+        raise ValueError("Exp449 Smoke A lease target differs")
+    if _test_paths_antigravity is None:
+        scientific_root, operations_root, claim_path = (
+            Path(grant.scientific_root), Path(grant.operations_root), Path(grant.claim_path),
+        )
+        if (
+            scientific_root != FROZEN_EXP449_CONFIG.smoke_a_scientific_root
+            or operations_root != FROZEN_EXP449_CONFIG.smoke_a_operations_root
+        ):
+            raise ValueError("Exp449 Smoke A fixed roots differ")
+    else:
+        if len(_test_paths_antigravity) != 3:
+            raise ValueError("Exp449 test path seam is invalid")
+        scientific_root, operations_root, claim_path = map(Path, _test_paths_antigravity)
+        if (
+            scientific_root != Path(grant.scientific_root)
+            or operations_root != Path(grant.operations_root)
+            or claim_path != Path(grant.claim_path)
+        ):
+            raise ValueError("Exp449 test path seam binding differs")
+    if Path(context.run_root) != scientific_root or context_sha256_antigravity(context) != grant.context_sha256:
+        raise ValueError("Exp449 Smoke A context binding differs")
+    # Readiness is deliberately complete before the first claim/root mutation.
+    readiness_for_authorized_implementation_antigravity(verified)
+    _lstat_absent_path_antigravity(scientific_root, name="scientific root")
+    _lstat_absent_path_antigravity(operations_root, name="operations root")
+    _lstat_absent_path_antigravity(claim_path, name="claim")
+    descriptor = -1
+    try:
+        try:
+            descriptor = os.open(
+                claim_path,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+        except FileExistsError as error:
+            raise ValueError("Exp449 execution claim already exists") from error
+        claim_payload = {
+            "schema": "exp449-smoke-a-execution-claim-antigravity.v1",
+            "grant_sha256": verified.grant_sha256,
+            "approved_authority_commit": verified.approved_authority_commit,
+            "implementation_commit": verified.implementation_commit,
+            "target": grant.target,
+            "context_sha256": grant.context_sha256,
+        }
+        _write_fd_all_antigravity(descriptor, canonical_json_bytes(claim_payload))
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        claim_details = os.fstat(descriptor)
+        path_details = claim_path.lstat()
+        if (
+            not stat.S_ISREG(claim_details.st_mode) or stat.S_ISLNK(path_details.st_mode)
+            or not stat.S_ISREG(path_details.st_mode)
+            or (claim_details.st_dev, claim_details.st_ino) != (path_details.st_dev, path_details.st_ino)
+        ):
+            raise ValueError("Exp449 execution claim inode differs")
+        os.mkdir(operations_root, 0o700)
+        root_details = operations_root.lstat()
+        if stat.S_ISLNK(root_details.st_mode) or not stat.S_ISDIR(root_details.st_mode):
+            raise ValueError("Exp449 operations root is unsafe")
+        _create_execution_receipt_antigravity(operations_root, verified, context, claim_path, claim_details)
+        capability = _mint_execution_capability_antigravity(
+            verified, context=context, target="smoke-a", scientific_root=scientific_root,
+            operations_root=operations_root, claim_path=claim_path, claim_fd=descriptor,
+        )
+        return Exp449SmokeAExecutionLeaseAntigravity(verified, context, descriptor, capability)
+    except BaseException:
+        if descriptor >= 0:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            finally:
+                os.close(descriptor)
+        raise
+
+
+def _execution_capability_for_config_antigravity(config: Exp449WaveConfig, capability: object) -> None:
+    """Gate only configured publication destinations; fixture composition stays pure."""
+    configured = {
+        FROZEN_EXP449_CONFIG.smoke_a_scientific_root: "smoke-a",
+        FROZEN_EXP449_CONFIG.smoke_b_scientific_root: "smoke-b",
+        FROZEN_EXP449_CONFIG.official_scientific_root: "official",
+    }
+    target = configured.get(Path(config.context.run_root))
+    if target is None:
+        return
+    claim_fd = _execution_capability_claim_fd_antigravity(capability)
+    _require_execution_capability_antigravity(
+        capability, target=target, context=config.context, claim_fd=claim_fd,
+    )
 
 
 def _authority_antigravity(config: Exp449WaveConfig) -> tuple[dict[str, object], Task4Task5SuccessAuthority]:
@@ -378,8 +595,13 @@ def _terminal_record_antigravity(config: Exp449WaveConfig, snapshot: _RecoverySn
     return payload
 
 
-def verify_terminal_incomplete_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus:
+def verify_terminal_incomplete_antigravity(
+    config: Exp449WaveConfig,
+    *,
+    _execution_capability: object = None,
+) -> Exp449TerminalStatus:
     """Create or byte-verify the only allowed terminal incomplete record."""
+    _execution_capability_for_config_antigravity(config, _execution_capability)
     snapshot = _snapshot_antigravity(config)
     status = _terminal_status_antigravity(config, snapshot)
     if status.status != "proposal_score_incomplete" or snapshot.wave_count < FROZEN_EXP449_CONFIG.maximum_waves:
@@ -505,8 +727,13 @@ def status_exp449_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus:
     return _terminal_status_antigravity(config, _snapshot_antigravity(config))
 
 
-def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatus:
+def run_exp449_wave_antigravity(
+    config: Exp449WaveConfig,
+    *,
+    _execution_capability: object = None,
+) -> Exp449TerminalStatus:
     """Execute at most one of the two preregistered dataset-local recovery waves."""
+    _execution_capability_for_config_antigravity(config, _execution_capability)
     started = monotonic()
     terminal = _existing_terminal_status_antigravity(config)
     if terminal is not None:
@@ -517,7 +744,7 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
         return before_status
     next_wave = before.wave_count + 1
     if next_wave > FROZEN_EXP449_CONFIG.maximum_waves:
-        return verify_terminal_incomplete_antigravity(config)
+        return verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability)
     _emit_progress_antigravity(config, wave=next_wave, snapshot=before, started=started)
     context_payload, _authority = _authority_antigravity(config)
     progress_failures = 0
@@ -549,7 +776,7 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
             _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=len(after.failed), dataset=dataset)
         _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started)
         if next_wave == FROZEN_EXP449_CONFIG.maximum_waves:
-            return verify_terminal_incomplete_antigravity(config)
+            return verify_terminal_incomplete_antigravity(config, _execution_capability=_execution_capability)
         return _terminal_status_antigravity(config, after)
     after = _snapshot_antigravity(config)
     status = _terminal_status_antigravity(config, after)
@@ -559,6 +786,19 @@ def run_exp449_wave_antigravity(config: Exp449WaveConfig) -> Exp449TerminalStatu
         _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started, completed=index, total=len(_catalog_datasets_antigravity(config.catalog)), failed=0, dataset=dataset)
     _emit_progress_antigravity(config, wave=next_wave, snapshot=after, started=started)
     return status
+
+
+def freeze_authorized_exp449_proposal_antigravity(
+    score: object,
+    *,
+    config: Exp449WaveConfig,
+    _execution_capability: object,
+) -> Exp449ProposalManifest:
+    """Capability-gated official wrapper around the unchanged scientific freeze."""
+    _execution_capability_for_config_antigravity(config, _execution_capability)
+    return freeze_exp449_proposal_antigravity(
+        score, root=config.context.run_root, context=config.context, catalog=config.catalog,
+    )
 
 
 def _smoke_operations_roots_antigravity(root_a: Path, root_b: Path) -> tuple[Path, Path]:
@@ -1236,7 +1476,10 @@ def main_antigravity(argv: list[str] | None = None) -> int:
 
 
 __all__ = [
+    "Exp449SmokeAExecutionLeaseAntigravity",
     "Exp449WaveConfig",
+    "acquire_smoke_a_execution_lease_antigravity",
+    "freeze_authorized_exp449_proposal_antigravity",
     "main_antigravity",
     "readiness_for_authorized_implementation_antigravity",
     "readiness_exp449_antigravity",
