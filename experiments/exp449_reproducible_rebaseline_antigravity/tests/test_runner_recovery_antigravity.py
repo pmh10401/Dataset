@@ -214,6 +214,44 @@ class Exp449CompositionGateTests(unittest.TestCase):
             "elapsed_s": 0.0,
         }])
 
+    def test_strict_progress_excludes_legacy_channel_before_a_collector_refill(self) -> None:
+        """Wiring a durable callback as legacy progress could swallow its fsync failure and refill work."""
+        submitted: list[str] = []
+        legacy_failures: list[str] = []
+
+        def durable_progress(event: object) -> None:
+            phase = event["phase"]  # type: ignore[index]
+            if phase in {"start", "error", "end"}:
+                raise OSError(f"legacy {phase} failed")
+            raise OSError("fsync failed")
+
+        def collector(raw: object, backend: object, **kwargs: object):
+            legacy = kwargs.get("progress")
+            if legacy is not None:
+                for phase in ("start", "error", "end"):
+                    try:
+                        legacy({"stage": "task4_task5", "phase": phase})
+                    except OSError:
+                        legacy_failures.append(phase)
+            strict = kwargs["strict_progress"]
+            submitted.extend(("initial-Alpha", "initial-Beta"))
+            strict({"stage": "task4_task5", "phase": "tick"})
+            submitted.append("refill-Gamma")
+            return self.sources, self.routes
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(runner, "_label_firewall"))
+            for stage_patch in self._stage_patches():
+                stack.enter_context(stage_patch)
+            with self.assertRaisesRegex(OSError, "fsync failed"):
+                runner.compose_exp449_proposal_score_antigravity(
+                    self.raw, self.acceleration, root=Path("/tmp/exp449_fixture_antigravity"), context=object(),
+                    catalog=self.catalog, collector=collector, _progress_callback=durable_progress,
+                    _strict_operations_progress=True,
+                )
+        self.assertEqual(submitted, ["initial-Alpha", "initial-Beta"])
+        self.assertEqual(legacy_failures, [])
+
     def test_pure_composition_fixture_requires_no_execution_capability(self) -> None:
         """A capability check here would wrongly turn scientific composition into publication authority."""
         with ExitStack() as stack:

@@ -69,3 +69,30 @@ the affected paper artifact/data/lineage suites passed 70 tests; paper and
 Exp449 codemap validators passed; and all four changed production modules
 compiled with the pinned Python interpreter. The affected paper suite emitted
 pre-existing SQLite `ResourceWarning` notices while still passing.
+
+## Fix round 2
+
+RED first exposed two independent defects: authorized strict mode also supplied
+the durable callback through legacy `progress`, and the Exp449 fingerprint lock
+omitted the already changed `paper` module. GREEN makes the runner branches
+exclusive: authorized mode passes only `strict_progress`; non-strict fixture
+and paper callers retain legacy best-effort `progress`. The new integration
+regression makes legacy start/error/end invoke the callback if it is wired,
+then raises a simulated fsync failure from strict progress. It proves no legacy
+channel is present and the simulated next rolling submission is unreachable.
+
+The Exp449 JSON/HTML/lock triplet was regenerated together. Its lock now
+computes the changed modules against the pinned pre-Task-4 lock and records
+`.superpowers`, `experiments`, and `paper`; the map describes the exclusive
+strict channel and the persisted-checkpoint/attempt hook. Focused Exp449
+progress/runner/codemap coverage passed 43 tests.
+
+Final pinned-interpreter verification used
+`/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python`
+with `pycatch22==0.5.0`: full Exp449 discovery passed 128 tests, and the
+affected paper artifact/data/lineage suites passed 70 tests. The four affected
+production modules compiled; JSON/HTML codemap payload and lock validation,
+`git diff --check`, and a fresh scorer-free read-only status/root-absence probe
+all passed. The unrelated long full paper discovery was intentionally stopped
+after it entered hard-route raw-smoke coverage; it is outside this minimal
+operations-only change.

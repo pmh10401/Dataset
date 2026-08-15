@@ -106,12 +106,12 @@ def compose_exp449_proposal_score_antigravity(
         "catalog": catalog,
         "acceleration_manifest": acceleration_manifest,
     }
-    if _progress_callback is not None:
-        collector_kwargs["progress"] = _progress_callback
     if _strict_operations_progress:
         if _progress_callback is None:
             raise ValueError("strict operations progress requires a callback")
         collector_kwargs["strict_progress"] = _progress_callback
+    elif _progress_callback is not None:
+        collector_kwargs["progress"] = _progress_callback
     returned_sources, returned_routes = collector(raw, backend, **collector_kwargs)
     sources = _in_catalog_order_antigravity(returned_sources, expected)
     routes = _in_catalog_order_antigravity(returned_routes, expected)

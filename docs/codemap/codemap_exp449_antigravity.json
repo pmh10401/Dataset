@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T16:56:06+09:00",
-  "generated_from_commit": "c49bb7edfbd0f138e8890219d7caae2cc97c381a",
+  "generated_at": "2026-08-15T17:37:24+09:00",
+  "generated_from_commit": "47075c6416c5d7c8a7ca6dd042d92449983fe01d",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
@@ -188,7 +188,7 @@
       ],
       "effects": [
         "collects Task4/5 through the paper collector, rejects non-bijective catalog mappings, then composes low-frequency, stability, routing, and Candidate-C ProposalScore values",
-        "threads private strict operational progress only for the authorized Smoke A parent, preserving default paper collection behavior while forcing checkpoint/attempt durability before rolling queue replenishment"
+        "routes private strict operational progress exclusively as strict_progress for the authorized Smoke A parent, never through legacy progress; default paper collection behavior remains unchanged and checkpoint/attempt durability precedes rolling queue replenishment"
       ]
     },
     {
@@ -620,7 +620,7 @@
         "runner_antigravity.py compose_exp449_proposal_score_antigravity"
       ],
       "effects": [
-        "passes the caller-bound root, context, catalog, backend, and progress callback to the paper Task4/5 collector"
+        "passes the caller-bound root, context, catalog, backend, and legacy progress callback to the paper Task4/5 collector; authorized strict mode supplies only strict_progress so legacy start/error/end cannot duplicate or downgrade a durable failure"
       ]
     },
     {
@@ -948,7 +948,8 @@
         "parallelizes only independent Task4+Task5 scoring; production composition derives one parent-only publisher from verified inputs and publishes each worker return before exactly one population-global Task6, selected-only Task7, and typed Task8 v3 shard freeze",
         "invokes the pinned Exp84 and pycatch22 environment gates once before any dataset scoring; rethrows typed DependencyUnavailablePaper from both serial and ProcessPool Task4+Task5 collection paths before attempt or success persistence",
         "SHA-verifies and globally validates label-free Exp137/236/291/404 oracle files before direct selected-population projection; Task4 leaves production scoring, selection, and Task6/7 gates unchanged",
-        "loads all four authority paths as one verified immutable byte snapshot per file and parses only StringIO-backed bytes; no post-hash path reopen is possible"
+        "loads all four authority paths as one verified immutable byte snapshot per file and parses only StringIO-backed bytes; no post-hash path reopen is possible",
+        "keeps legacy progress best-effort while the optional strict operational callback runs after each persisted checkpoint or attempt and before rolling-queue replenishment"
       ],
       "tests": [
         "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
