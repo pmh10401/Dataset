@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inactive outside-CWD entrypoint for the Exp449 read-only operations boundary."""
+"""Lazy outside-CWD entrypoint for Exp449's fixed command boundary."""
 from __future__ import annotations
 
 from pathlib import Path

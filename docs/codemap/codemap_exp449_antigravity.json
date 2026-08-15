@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-15T18:21:00+09:00",
-  "generated_from_commit": "79a189578047087fe3fea8ec6ac00a501d94414e",
+  "generated_at": "2026-08-15T18:35:51+09:00",
+  "generated_from_commit": "0bda87ad16936d165681acee119acf4f8bae5d8f",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
@@ -227,7 +227,7 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Parent-only authorized Smoke A lifecycle, recovery, scorer-free readiness, and mutation ownership. It carries equivalent outer and Task4/5 bridge acceleration manifests so checkpoint authority is context-bound while ProposalScore/freeze authority remains outer-bound.",
+      "role": "Parent-only pinned Smoke A preparation, authenticated worker handoff, recovery, scorer-free readiness, and mutation ownership. It carries equivalent outer and Task4/5 bridge acceleration manifests so checkpoint authority is context-bound while ProposalScore/freeze authority remains outer-bound.",
       "entrypoints": [
         "Exp449AuthorizedWaveResultAntigravity",
         "Exp449SmokeAExecutionLeaseAntigravity",
@@ -241,6 +241,7 @@
         "execute_smoke_a_resume_antigravity",
         "freeze_authorized_exp449_proposal_antigravity",
         "main_antigravity",
+        "prepare_smoke_a_grant_antigravity",
         "readiness_exp449_antigravity",
         "readiness_for_authorized_implementation_antigravity",
         "readiness_for_authorized_resume_antigravity",
@@ -249,6 +250,7 @@
       ],
       "tests": [
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_claim_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_cli_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_progress_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
@@ -260,12 +262,13 @@
         "Only a freshly reverified exact-type private A -> I capability may recompute readonly Smoke A facts for I while HEAD is A; there is no boolean bypass or caller callback.",
         "Authorized readonly facts remain exact; independently, the fresh Smoke A lease lstat-checks absent roots/claim, creates and nonblocking-locks a no-follow claim, verifies its inode, creates only the operations root, writes a create-only authenticated consumption receipt, then mints the exact capability. No boolean bypass exists.",
         "Lease-bound progress retries EINTR and short writes, fsyncs each append, and raises before further scheduling; status is an atomic-replace derived cache, while read-only status inspects only existing claim, receipt, bounded progress tail, checkpoint counts, manifest, and terminal metadata without importing the scorer.",
-        "Fresh and resume derive their configuration only from reverified authority/readiness. Resume accepts only the exact inactive claim and consumed receipt, validates existing checkpoints/attempts/terminal/freeze records, and never repairs or migrates a mismatch."
+        "Fresh and resume derive their configuration only from reverified authority/readiness. Resume accepts only the exact inactive claim and consumed receipt, validates existing checkpoints/attempts/terminal/freeze records, and never repairs or migrates a mismatch.",
+        "Grant preparation may publish only the canonical untracked grant/digest pair after readonly readiness and absent-root checks. The private worker reauthenticates its inherited live claim inode and authority digest before minting its PID-bound capability."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-          "symbol": "Exp449WaveConfig, Exp449AuthorizedWaveResultAntigravity, Exp449SmokeAExecutionLeaseAntigravity, acquire_smoke_a_execution_lease_antigravity, run_exp449_wave_antigravity, execute_smoke_a_fresh_antigravity, execute_smoke_a_resume_antigravity, freeze_authorized_exp449_proposal_antigravity, readiness_for_authorized_implementation_antigravity, readiness_for_authorized_resume_antigravity"
+          "symbol": "Exp449WaveConfig, Exp449AuthorizedWaveResultAntigravity, Exp449SmokeAExecutionLeaseAntigravity, prepare_smoke_a_grant_antigravity, _launch_smoke_a_worker_antigravity, _run_smoke_a_worker_antigravity, acquire_smoke_a_execution_lease_antigravity, run_exp449_wave_antigravity, execute_smoke_a_fresh_antigravity, execute_smoke_a_resume_antigravity, freeze_authorized_exp449_proposal_antigravity, readiness_for_authorized_implementation_antigravity, readiness_for_authorized_resume_antigravity"
         }
       ],
       "callers": [
@@ -278,7 +281,8 @@
         "keeps readiness scorer-free; owns one-shot Smoke A claim/consumption receipt, durable result-neutral progress/status metadata, and capability-gated configured-root recovery, terminal, and freeze mutations while pure composition remains unchanged",
         "treats derived status-cache replace/fsync failures as nonauthoritative while durable progress append/fsync failures still stop authorized collection before replenishment or terminal recovery",
         "retains the genuine completed ProposalScore only until capability-bound freeze and scorer-free verification; complete terminal publication follows verification, while final incomplete waves publish no science",
-        "uses the context-bound Task4/5 bridge manifest for checkpoint authority only; outer and bridge CPU decision/worker records must remain identical"
+        "uses the context-bound Task4/5 bridge manifest for checkpoint authority only; outer and bridge CPU decision/worker records must remain identical",
+        "limits CLI grant preparation to two canonical authority files and transfers only a locked claim FD plus verified digest to the private fixed-path worker"
       ]
     },
     {

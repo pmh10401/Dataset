@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 import argparse
 import ast
+from datetime import datetime, timezone
 import fcntl
 import importlib.metadata
 import json
@@ -15,6 +16,8 @@ import os
 from pathlib import Path
 import platform
 import re
+import secrets
+import signal
 import stat
 import subprocess
 import sys
@@ -46,16 +49,27 @@ from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper imp
     verify_exp84_environment_paper,
 )
 
-from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS, SMOKE_A_CLAIM_PATH_ANTIGRAVITY
+from .config_antigravity import (
+    FROZEN_EXP449_CONFIG,
+    FROZEN_EXP449_POLICY_KEYS,
+    SMOKE_A_CLAIM_PATH_ANTIGRAVITY,
+    SMOKE_A_DIGEST_PATH_ANTIGRAVITY,
+    SMOKE_A_GRANT_PATH_ANTIGRAVITY,
+)
 from .contracts_antigravity import Exp449Context, Exp449ProposalManifest, Exp449TerminalStatus
 from .execution_authority_antigravity import (
+    Exp449SmokeAGrantDigestAntigravity,
     Exp449SmokeAGrantAntigravity,
     VerifiedExp449SmokeAAuthorityAntigravity,
+    _claim_lock_contended_antigravity,
     _execution_capability_claim_fd_antigravity,
     _mint_execution_capability_antigravity,
     _require_execution_capability_antigravity,
     _revoke_execution_capability_antigravity,
+    canonical_grant_bytes_antigravity,
+    canonical_grant_digest_bytes_antigravity,
     verify_smoke_a_authorization_commit_antigravity,
+    verify_authority_directory_structure_antigravity,
 )
 from .artifacts_antigravity import (
     context_sha256_antigravity,
@@ -511,7 +525,7 @@ def acquire_smoke_a_execution_lease_antigravity(
         try:
             descriptor = os.open(
                 claim_path,
-                os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
+                os.O_RDWR | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
                 0o600,
             )
         except FileExistsError as error:
@@ -1355,6 +1369,108 @@ def _current_clean_head_antigravity() -> str:
     return head
 
 
+def _require_untracked_smoke_a_authority_paths_antigravity(
+    grant_path: Path,
+    digest_path: Path,
+) -> None:
+    """Require the just-published authority pair to be the sole untracked state."""
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all"],
+        cwd=_REPOSITORY_ROOT_ANTIGRAVITY, check=True, capture_output=True, text=True,
+    ).stdout.splitlines()
+    try:
+        expected = {
+            f"?? {grant_path.relative_to(_REPOSITORY_ROOT_ANTIGRAVITY).as_posix()}",
+            f"?? {digest_path.relative_to(_REPOSITORY_ROOT_ANTIGRAVITY).as_posix()}",
+        }
+    except ValueError as error:
+        raise ValueError("Exp449 Smoke A authority paths must be inside the repository") from error
+    if set(status) != expected or len(status) != 2:
+        raise ValueError("Exp449 Smoke A authority publication Git state differs")
+
+
+def prepare_smoke_a_grant_antigravity(
+    reviewed_implementation_commit: str,
+) -> tuple[Path, Path]:
+    """Create the two reviewable Smoke A authority records without execution.
+
+    Readiness is the only data access: all configured roots and the claim remain
+    absent, and publication is limited to the canonical grant/digest pair.
+    """
+    facts = readiness_exp449_antigravity(reviewed_implementation_commit)
+    grant_path, digest_path = Path(SMOKE_A_GRANT_PATH_ANTIGRAVITY), Path(SMOKE_A_DIGEST_PATH_ANTIGRAVITY)
+    if grant_path.parent != digest_path.parent:
+        raise ValueError("Exp449 Smoke A authority directory differs")
+    if verify_authority_directory_structure_antigravity(grant_path.parent):
+        raise ValueError("Exp449 Smoke A authority files must be absent")
+    protected_paths = tuple((path, "configured root") for path in _fixed_roots_antigravity()) + (
+        (SMOKE_A_CLAIM_PATH_ANTIGRAVITY, "claim"),
+    )
+    for path, name in protected_paths:
+        _lstat_absent_path_antigravity(Path(path), name=name)
+    database = facts.get("database")
+    contexts = facts.get("contexts")
+    if not isinstance(database, dict) or not isinstance(contexts, dict):
+        raise ValueError("Exp449 Smoke A readiness facts are incomplete")
+    smoke = contexts.get("smoke_a")
+    if not isinstance(smoke, dict):
+        raise ValueError("Exp449 Smoke A readiness context is incomplete")
+    authority_relative = "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py"
+    grant = Exp449SmokeAGrantAntigravity(
+        schema="exp449-smoke-a-execution-grant-antigravity.v1",
+        experiment_id=FROZEN_EXP449_CONFIG.experiment_id,
+        target="smoke-a",
+        policy_id=FROZEN_EXP449_CONFIG.policy_id,
+        implementation_commit=reviewed_implementation_commit,
+        scientific_root=FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+        operations_root=FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+        claim_path=SMOKE_A_CLAIM_PATH_ANTIGRAVITY,
+        nonce=secrets.token_hex(16),
+        maximum_waves=FROZEN_EXP449_CONFIG.maximum_waves,
+        label_access=False,
+        logical_cpu_count=int(facts["workers"]["logical_cpu_count"]),  # type: ignore[index]
+        dataset_workers=int(facts["workers"]["dataset_workers"]),  # type: ignore[index]
+        database_path=str(database["path"]),
+        database_size=int(database["observed_size"]),
+        database_sha256=str(database["sha256"]),
+        smoke_catalog_sha256=str(smoke["catalog_sha256"]),
+        smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets,
+        context_sha256=str(smoke["context_sha256"]),
+        scientific_code_closure=facts["code_closure"],  # type: ignore[arg-type]
+        authority_code_closure={
+            authority_relative: _sha256_file_antigravity(_REPOSITORY_ROOT_ANTIGRAVITY / authority_relative),
+        },
+        lineage_lock_sha256=str(facts["lineage_lock_paper_sha256"]),
+        codemap_lock_sha256=str(facts["codemap_lock_sha256"]),
+        acceleration_assessment_sha256=str(smoke["acceleration_assessment_sha256"]),
+        canonical_backend="cpu",
+        package_inventory=facts["package_inventory"],  # type: ignore[arg-type]
+        seeds_and_constants=facts["seeds_and_constants"],  # type: ignore[arg-type]
+        acceleration=facts["acceleration"],  # type: ignore[arg-type]
+        design_facts={
+            "dataset_count": FROZEN_EXP449_CONFIG.dataset_count,
+            "test_row_count": FROZEN_EXP449_CONFIG.test_row_count,
+            "preprocessing_contracts": FROZEN_EXP449_CONFIG.preprocessing_contracts,
+            "cpu_repeat_tolerance": FROZEN_EXP449_CONFIG.cpu_repeat_tolerance,
+            "accelerated_tolerance": FROZEN_EXP449_CONFIG.accelerated_tolerance,
+            "minimum_accelerated_speedup": FROZEN_EXP449_CONFIG.minimum_accelerated_speedup,
+        },
+        grant_created_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    grant_bytes = canonical_grant_bytes_antigravity(grant)
+    digest = Exp449SmokeAGrantDigestAntigravity(
+        schema="exp449-smoke-a-execution-grant-digest-antigravity.v1",
+        implementation_commit=reviewed_implementation_commit,
+        grant_path=grant_path,
+        grant_size=len(grant_bytes),
+        grant_sha256=sha256(grant_bytes).hexdigest(),
+    )
+    write_create_only(grant_path, grant_bytes)
+    write_create_only(digest_path, canonical_grant_digest_bytes_antigravity(digest))
+    _require_untracked_smoke_a_authority_paths_antigravity(grant_path, digest_path)
+    return grant_path, digest_path
+
+
 class _AuthorizationDeltaReadCapabilityAntigravity:
     """Unforgeable-in-normal-use proof that the verifier approved A -> I evidence."""
 
@@ -2055,26 +2171,164 @@ def _require_execution_authority_antigravity(target: str, reviewed_commit: str) 
     raise ValueError(_execution_authority_status_antigravity()["status"])
 
 
+def _authenticate_inherited_smoke_a_claim_fd_antigravity(
+    claim_fd: int,
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+    context: Exp449Context,
+) -> None:
+    """Authenticate a worker's inherited lease descriptor without creating a path."""
+    if type(claim_fd) is not int or claim_fd < 3:
+        raise ValueError("Exp449 inherited Smoke A claim fd is invalid")
+    try:
+        details = os.fstat(claim_fd)
+        path_details = Path(verified.grant.claim_path).lstat()
+        claim = _read_canonical_fd_mapping_antigravity(claim_fd)
+    except OSError as error:
+        raise ValueError("Exp449 inherited Smoke A claim fd is invalid") from error
+    if (
+        not stat.S_ISREG(details.st_mode) or stat.S_ISLNK(path_details.st_mode)
+        or not stat.S_ISREG(path_details.st_mode)
+        or (details.st_dev, details.st_ino) != (path_details.st_dev, path_details.st_ino)
+        or claim != _claim_payload_antigravity(verified, context)
+    ):
+        raise ValueError("Exp449 inherited Smoke A claim fd differs")
+    if not _claim_lock_contended_antigravity(
+        Path(verified.grant.claim_path), expected_device=details.st_dev, expected_inode=details.st_ino,
+    ):
+        raise ValueError("Exp449 inherited Smoke A claim fd is not live")
+    try:
+        fcntl.flock(claim_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError as error:
+        raise ValueError("Exp449 inherited Smoke A claim fd is contended") from error
+
+
+def _run_smoke_a_worker_antigravity(
+    approved_authority_commit: str,
+    authority_digest: str,
+    claim_fd: int,
+    mode: str,
+) -> int:
+    """Private worker: reauthenticate before minting a PID-bound capability."""
+    if mode not in {"fresh", "resume"}:
+        raise ValueError("Exp449 Smoke A worker mode is invalid")
+    if os.getppid() < 2:
+        raise ValueError("Exp449 Smoke A worker parent is unavailable")
+    verified = verify_smoke_a_authorization_commit_antigravity(approved_authority_commit)
+    if not _lower_hex_antigravity(authority_digest, 64) or verified.grant_sha256 != authority_digest:
+        raise ValueError("Exp449 Smoke A worker authority differs")
+    config = _authorized_smoke_a_wave_config_antigravity(verified, resume=mode == "resume")
+    _authenticate_inherited_smoke_a_claim_fd_antigravity(claim_fd, verified, config.context)
+    capability = _mint_execution_capability_antigravity(
+        verified,
+        context=config.context,
+        target="smoke-a",
+        scientific_root=Path(verified.grant.scientific_root),
+        operations_root=Path(verified.grant.operations_root),
+        claim_path=Path(verified.grant.claim_path),
+        claim_fd=claim_fd,
+    )
+    lease = Exp449SmokeAExecutionLeaseAntigravity(verified, config.context, claim_fd, capability)
+    try:
+        status = _execute_authorized_smoke_a_waves_antigravity(config, lease)
+    finally:
+        # The parent owns the inherited open-file description and releases it
+        # after the worker exits; a worker must never unlock that parent lease.
+        _revoke_execution_capability_antigravity(capability)
+    print(json.dumps({"schema": "exp449-smoke-a-worker-antigravity.v1", "status": status.status, "wave_count": status.wave_count}, sort_keys=True, separators=(",", ":"), allow_nan=False))
+    return 0
+
+
+def _launch_smoke_a_worker_antigravity(
+    approved_authority_commit: str,
+    *,
+    resume: bool,
+) -> dict[str, object]:
+    """Authenticate A in the public parent and hand its locked claim to one worker."""
+    verified = verify_smoke_a_authorization_commit_antigravity(approved_authority_commit)
+    config = _authorized_smoke_a_wave_config_antigravity(verified, resume=resume)
+    lease = (
+        _acquire_smoke_a_resume_lease_antigravity(verified, config)
+        if resume else acquire_smoke_a_execution_lease_antigravity(verified, config.context)
+    )
+    stdout_fd = stderr_fd = -1
+    process = None
+    previous_handlers: dict[int, object] = {}
+    try:
+        operations_root = Path(verified.grant.operations_root)
+        stdout_path, stderr_path = operations_root / _WORKER_STDOUT_NAME, operations_root / _WORKER_STDERR_NAME
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        stdout_fd = os.open(stdout_path, flags, 0o600)
+        stderr_fd = os.open(stderr_path, flags, 0o600)
+        command = [
+            sys.executable, "-B", "-u", str(_REPOSITORY_ROOT_ANTIGRAVITY / "scratch/run_exp449_reproducible_rebaseline_antigravity.py"),
+            "_worker", "--approved-authority-commit", verified.approved_authority_commit,
+            "--authority-digest", verified.grant_sha256, "--claim-fd", str(lease.claim_fd),
+            "--mode", "resume" if resume else "fresh",
+        ]
+        process = subprocess.Popen(
+            command, cwd=_REPOSITORY_ROOT_ANTIGRAVITY, stdin=subprocess.DEVNULL,
+            stdout=stdout_fd, stderr=stderr_fd, pass_fds=(lease.claim_fd,), start_new_session=True,
+        )
+        def relay(signum: int, _frame: object) -> None:
+            if process is not None and process.poll() is None:
+                process.send_signal(signum)
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous_handlers[signum] = signal.signal(signum, relay)
+        returncode = process.wait()
+        if returncode != 0:
+            raise ValueError("Exp449 Smoke A worker failed")
+        return {"schema": "exp449-smoke-a-launch-antigravity.v1", "status": "completed", "mode": "resume" if resume else "fresh", "worker_pid": process.pid}
+    finally:
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
+        for descriptor in (stdout_fd, stderr_fd):
+            if descriptor >= 0:
+                os.close(descriptor)
+        lease.close()
+
+
 def main_antigravity(argv: list[str] | None = None) -> int:
-    """Thin non-executing CLI; future authority does not make this implementation launch."""
-    parser = argparse.ArgumentParser(prog="run_exp449_reproducible_rebaseline_antigravity")
+    """Fixed-path Exp449 command dispatcher; only Smoke A has a grant route."""
+    parser = argparse.ArgumentParser(prog="run_exp449_reproducible_rebaseline_antigravity", allow_abbrev=False)
     commands = parser.add_subparsers(dest="command", required=True)
     readiness = commands.add_parser("readiness")
     readiness.add_argument("--reviewed-commit", required=True)
+    prepare = commands.add_parser("prepare-smoke-a-grant", allow_abbrev=False)
+    prepare.add_argument("--reviewed-implementation-commit", required=True)
     commands.add_parser("status")
     verify = commands.add_parser("verify-proposal")
     verify.add_argument("--target", choices=("smoke-a", "smoke-b", "official"), required=True)
-    for command in ("run-smoke-a", "run-smoke-b", "run-official"):
+    run_smoke_a = commands.add_parser("run-smoke-a", allow_abbrev=False)
+    run_smoke_a.add_argument("--approved-authority-commit", required=True)
+    resume_smoke_a = commands.add_parser("resume-smoke-a", allow_abbrev=False)
+    resume_smoke_a.add_argument("--approved-authority-commit", required=True)
+    worker = commands.add_parser("_worker", allow_abbrev=False, help=argparse.SUPPRESS)
+    worker.add_argument("--approved-authority-commit", required=True)
+    worker.add_argument("--authority-digest", required=True)
+    worker.add_argument("--claim-fd", required=True, type=int)
+    worker.add_argument("--mode", required=True, choices=("fresh", "resume"))
+    for command in ("run-smoke-b", "run-official"):
         run = commands.add_parser(command)
         run.add_argument("--reviewed-commit", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "readiness":
             payload = readiness_exp449_antigravity(args.reviewed_commit)
+        elif args.command == "prepare-smoke-a-grant":
+            grant, digest = prepare_smoke_a_grant_antigravity(args.reviewed_implementation_commit)
+            payload = {"schema": "exp449-smoke-a-grant-preparation-antigravity.v1", "grant_path": str(grant), "digest_path": str(digest)}
         elif args.command == "status":
             payload = status_exp449_read_only_antigravity()
         elif args.command == "verify-proposal":
             payload = verify_exp449_proposal_read_only_antigravity(args.target)
+        elif args.command == "run-smoke-a":
+            payload = _launch_smoke_a_worker_antigravity(args.approved_authority_commit, resume=False)
+        elif args.command == "resume-smoke-a":
+            payload = _launch_smoke_a_worker_antigravity(args.approved_authority_commit, resume=True)
+        elif args.command == "_worker":
+            return _run_smoke_a_worker_antigravity(
+                args.approved_authority_commit, args.authority_digest, args.claim_fd, args.mode,
+            )
         else:
             target = {"run-smoke-a": "smoke_a", "run-smoke-b": "smoke_b", "run-official": "official"}[args.command]
             _require_execution_authority_antigravity(target, args.reviewed_commit)
@@ -2091,6 +2345,7 @@ __all__ = [
     "append_authorized_progress_antigravity",
     "freeze_authorized_exp449_proposal_antigravity",
     "main_antigravity",
+    "prepare_smoke_a_grant_antigravity",
     "readiness_for_authorized_implementation_antigravity",
     "readiness_exp449_antigravity",
     "run_exp449_wave_antigravity",

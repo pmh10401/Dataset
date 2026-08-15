@@ -515,8 +515,9 @@ class Exp449ReadinessTests(unittest.TestCase):
             with self.subTest(authority_shape=authority_shape), \
                  patch.object(operations, "_current_clean_head_antigravity", return_value="c" * 40), \
                  patch.object(operations, "_fixed_roots_antigravity", return_value=self.roots), \
-                 patch.object(operations, "_lstat_or_none_antigravity", side_effect=AssertionError("authority path read")):
-                for command in ("run-smoke-a", "run-smoke-b", "run-official"):
+                 patch.object(operations, "_lstat_or_none_antigravity", side_effect=AssertionError("authority path read")), \
+                 patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", side_effect=AssertionError("authority read")):
+                for command in ("run-smoke-b", "run-official"):
                     with redirect_stderr(StringIO()):
                         with self.assertRaises(SystemExit) as exited:
                             operations.main_antigravity([command, "--reviewed-commit", "c" * 40])
