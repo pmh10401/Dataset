@@ -9,6 +9,7 @@ import signal
 import select
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import time
 from types import SimpleNamespace
 import subprocess
 import unittest
@@ -196,6 +197,59 @@ class Exp449ExecutionCliTests(unittest.TestCase):
             finally:
                 os.close(result_read)
 
+    def test_actual_launcher_handshake_queues_before_ready_and_rejects_captured_parent_mismatch(self) -> None:
+        """The fork launcher gates relays on readiness and kills a mismatched child before lifecycle."""
+        with TemporaryDirectory(dir=Path.cwd()) as temporary:
+            root = Path(temporary); scientific, operations_root, claim = root / "science_antigravity", root / "ops_antigravity", root / "claim_antigravity.lock"
+            operations_root.mkdir(); sentinel = operations_root / "sentinel_ops_antigravity.json"; sentinel.write_bytes(b"unchanged")
+            context = _context_antigravity(scientific); verified = _verified_antigravity(scientific, operations_root, claim, context)
+            descriptor = os.open(claim, os.O_RDWR | os.O_CREAT | os.O_EXCL, 0o600); lease = SimpleNamespace(claim_fd=descriptor, close=Mock())
+            group_read, group_write = os.pipe(); proof_read, proof_write = os.pipe()
+
+            def record_group(group: int, received: int) -> None:
+                os.write(group_write, f"{group}:{received}".encode())
+
+            def delayed_worker(_verified, _digest, _claim_fd, _mode, _parent_pid, ready_fd: int) -> int:
+                os.kill(os.getppid(), signal.SIGTERM)
+                time.sleep(0.1)
+                early = bool(select.select([group_read], [], [], 0)[0])
+                os.write(proof_write, b"early" if early else b"clean")
+                os.write(ready_fd, b"R"); os.close(ready_fd)
+                time.sleep(0.1)
+                return 0
+
+            try:
+                with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified), \
+                     patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=SimpleNamespace(context=context)), \
+                     patch.object(operations, "acquire_smoke_a_execution_lease_antigravity", return_value=lease), \
+                     patch.object(operations, "_run_smoke_a_worker_antigravity", side_effect=delayed_worker), \
+                     patch.object(operations.os, "killpg", side_effect=record_group):
+                    launched = operations._launch_smoke_a_worker_antigravity("a" * 40, resume=False)
+                self.assertEqual(os.read(proof_read, 16), b"clean")
+                ready, _writable, _exceptional = select.select([group_read], [], [], 1.0)
+                self.assertEqual(ready, [group_read])
+                self.assertEqual(os.read(group_read, 64), f"{launched['worker_pid']}:{signal.SIGTERM}".encode())
+                self.assertEqual(sentinel.read_bytes(), b"unchanged")
+
+                parent_pid = os.getpid(); mismatch_read, mismatch_write = os.pipe()
+                def record_mismatch(group: int, received: int) -> None:
+                    os.write(mismatch_write, f"{os.getpgrp()}:{group}:{received}".encode())
+                with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified), \
+                     patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=SimpleNamespace(context=context)), \
+                     patch.object(operations, "_acquire_smoke_a_resume_lease_antigravity", return_value=lease), \
+                     patch.object(operations.os, "getpid", return_value=parent_pid + 1), \
+                     patch.object(operations.os, "killpg", side_effect=record_mismatch):
+                    with self.assertRaisesRegex(ValueError, "group readiness"):
+                        operations._launch_smoke_a_worker_antigravity("a" * 40, resume=True)
+                readable, _writable, _exceptional = select.select([mismatch_read], [], [], 1.0)
+                self.assertEqual(readable, [mismatch_read])
+                own_group, targeted_group, received = map(int, os.read(mismatch_read, 64).decode().split(":"))
+                self.assertEqual(targeted_group, own_group); self.assertEqual(received, signal.SIGTERM)
+                self.assertEqual(sentinel.read_bytes(), b"unchanged")
+                os.close(mismatch_read); os.close(mismatch_write)
+            finally:
+                os.close(group_read); os.close(group_write); os.close(proof_read); os.close(proof_write); os.close(descriptor)
+
     def test_resume_logs_append_and_parent_installs_group_relay_before_spawn(self) -> None:
         """Resume must preserve prior logs and an early signal must target the worker group."""
         with TemporaryDirectory(dir=Path.cwd()) as temporary:
@@ -213,6 +267,12 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                 registered[signal.SIGINT](signal.SIGINT, None)
                 registered[signal.SIGTERM](signal.SIGTERM, None)
                 return 777
+            real_close, real_read = os.close, os.read
+            def close(descriptor: int) -> None:
+                if descriptor not in {901, 902}:
+                    real_close(descriptor)
+            def read(descriptor: int, size: int) -> bytes:
+                return b"R" if descriptor == 901 else real_read(descriptor, size)
             with patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=verified), \
                  patch.object(operations, "_authorized_smoke_a_wave_config_antigravity", return_value=SimpleNamespace(context=object())), \
                  patch.object(operations, "_acquire_smoke_a_resume_lease_antigravity", return_value=lease), \
@@ -221,6 +281,11 @@ class Exp449ExecutionCliTests(unittest.TestCase):
                  patch.object(operations.os, "WIFEXITED", return_value=True), \
                  patch.object(operations.os, "WEXITSTATUS", return_value=0), \
                  patch.object(operations.signal, "signal", side_effect=register), \
+                 patch.object(operations.os, "pipe", return_value=(901, 902)), \
+                 patch.object(operations.os, "set_inheritable", return_value=None), \
+                 patch.object(operations.select, "select", return_value=([901], [], [])), \
+                 patch.object(operations.os, "read", side_effect=read), \
+                 patch.object(operations.os, "close", side_effect=close), \
                  patch.object(operations.os, "killpg", side_effect=lambda pid, sig: killed.append((pid, sig))):
                 operations._launch_smoke_a_worker_antigravity("a" * 40, resume=True)
             self.assertEqual(stdout.read_bytes(), b"old-out\n"); self.assertEqual(stderr.read_bytes(), b"old-err\n")

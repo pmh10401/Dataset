@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import select
 import secrets
 import signal
 import stat
@@ -87,6 +88,7 @@ _PROGRESS_NAME = "progress_antigravity.jsonl"
 _STATUS_NAME = "status_antigravity.json"
 _WORKER_STDOUT_NAME = "worker_stdout_antigravity.log"
 _WORKER_STDERR_NAME = "worker_stderr_antigravity.log"
+_WORKER_GROUP_READY_TIMEOUT_SECONDS = 5.0
 _SMOKE_COMPARISON_NAME = "smoke_comparison_antigravity.json"
 _EXECUTION_AUTHORITY_CONSUMED_NAME = "execution_authority_consumed_antigravity.json"
 _TERMINAL_SCHEMA = "exp449-proposal-score-incomplete-antigravity.v1"
@@ -2257,14 +2259,22 @@ def _run_smoke_a_worker_antigravity(
     claim_fd: int,
     mode: str,
     parent_pid: int,
+    group_ready_fd: int,
 ) -> int:
     """Private worker: reauthenticate before minting a PID-bound capability."""
     if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity or mode not in {"fresh", "resume"}:
         raise ValueError("Exp449 Smoke A worker mode is invalid")
-    if type(parent_pid) is not int or parent_pid < 2 or os.getppid() != parent_pid:
+    if type(parent_pid) is not int or parent_pid < 2:
+        raise ValueError("Exp449 Smoke A worker parent differs")
+    if os.getppid() != parent_pid:
+        os.killpg(os.getpgrp(), signal.SIGTERM)
         raise ValueError("Exp449 Smoke A worker parent differs")
     watchdog_stop, _watchdog = _start_smoke_a_parent_watchdog_antigravity(parent_pid)
     try:
+        if os.write(group_ready_fd, b"R") != 1:
+            raise ValueError("Exp449 Smoke A worker readiness failed")
+        os.close(group_ready_fd)
+        group_ready_fd = -1
         reverified = verify_smoke_a_authorization_commit_antigravity(verified.approved_authority_commit)
         if reverified != verified or not _lower_hex_antigravity(authority_digest, 64) or verified.grant_sha256 != authority_digest:
             raise ValueError("Exp449 Smoke A worker authority differs")
@@ -2288,6 +2298,8 @@ def _run_smoke_a_worker_antigravity(
         return 0
     finally:
         watchdog_stop.set()
+        if group_ready_fd >= 0:
+            os.close(group_ready_fd)
 
 
 def _launch_smoke_a_worker_antigravity(
@@ -2303,7 +2315,7 @@ def _launch_smoke_a_worker_antigravity(
         if resume else acquire_smoke_a_execution_lease_antigravity(verified, config.context)
     )
     stdout_fd = stderr_fd = -1
-    process = None
+    ready_read_fd = ready_write_fd = -1
     previous_handlers: dict[int, object] = {}
     try:
         operations_root = Path(verified.grant.operations_root)
@@ -2331,25 +2343,52 @@ def _launch_smoke_a_worker_antigravity(
         stdout_fd = open_log(stdout_path)
         stderr_fd = open_log(stderr_path)
         child_pid: int | None = None
+        child_group_ready = False
         pending_signals: list[int] = []
         def relay(signum: int, _frame: object) -> None:
-            if child_pid is None:
+            if child_pid is None or not child_group_ready:
                 pending_signals.append(signum)
             else:
                 os.killpg(child_pid, signum)
         for signum in (signal.SIGINT, signal.SIGTERM):
             previous_handlers[signum] = signal.signal(signum, relay)
+        if hasattr(os, "pipe2"):
+            ready_read_fd, ready_write_fd = os.pipe2(getattr(os, "O_CLOEXEC", 0))
+        else:
+            ready_read_fd, ready_write_fd = os.pipe()
+            os.set_inheritable(ready_read_fd, False)
+            os.set_inheritable(ready_write_fd, False)
+        expected_parent_pid = os.getpid()
         child_pid = os.fork()
         if child_pid == 0:
             try:
+                os.close(ready_read_fd)
+                ready_read_fd = -1
                 os.setsid()
                 os.dup2(stdout_fd, 1); os.dup2(stderr_fd, 2)
                 os._exit(_run_smoke_a_worker_antigravity(
-                    verified, verified.grant_sha256, lease.claim_fd, "resume" if resume else "fresh", os.getppid(),
+                    verified, verified.grant_sha256, lease.claim_fd, "resume" if resume else "fresh", expected_parent_pid, ready_write_fd,
                 ))
             except BaseException as error:
                 print(f"worker_preauth_failed {type(error).__name__}: {error}", file=sys.stderr)
                 os._exit(1)
+        os.close(ready_write_fd)
+        ready_write_fd = -1
+        try:
+            ready, _writable, _exceptional = select.select([ready_read_fd], [], [], _WORKER_GROUP_READY_TIMEOUT_SECONDS)
+            handshake = os.read(ready_read_fd, 1) if ready else b""
+        except OSError:
+            handshake = b""
+        os.close(ready_read_fd)
+        ready_read_fd = -1
+        if handshake != b"R":
+            try:
+                os.kill(child_pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            os.waitpid(child_pid, 0)
+            raise ValueError("Exp449 Smoke A worker group readiness failed")
+        child_group_ready = True
         for pending in pending_signals:
             os.killpg(child_pid, pending)
         _pid, wait_status = os.waitpid(child_pid, 0)
@@ -2359,7 +2398,7 @@ def _launch_smoke_a_worker_antigravity(
     finally:
         for signum, handler in previous_handlers.items():
             signal.signal(signum, handler)
-        for descriptor in (stdout_fd, stderr_fd):
+        for descriptor in (ready_read_fd, ready_write_fd, stdout_fd, stderr_fd):
             if descriptor >= 0:
                 os.close(descriptor)
         lease.close()
