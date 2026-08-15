@@ -15,7 +15,8 @@ import unittest
 from unittest.mock import patch
 
 from experiments.exp449_reproducible_rebaseline_antigravity import operations_antigravity as operations
-from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import FROZEN_EXP449_CONFIG
+from experiments.exp449_reproducible_rebaseline_antigravity.config_antigravity import FROZEN_EXP449_CONFIG, SMOKE_A_CLAIM_PATH_ANTIGRAVITY
+from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_antigravity import Exp449SmokeAGrantAntigravity
 
 
 def _catalog_antigravity(mode: str) -> dict[str, object]:
@@ -67,6 +68,42 @@ class Exp449ReadinessTests(unittest.TestCase):
              patch.object(operations, "_package_inventory_facts_antigravity", return_value=inventory), \
              patch.object(operations, "_fixed_roots_antigravity", return_value=self.roots), closure_patch, config_patch:
             return operations._readiness_facts_antigravity("c" * 40, logical_cpu_count=logical_cpu_count)
+
+    def test_authorized_readiness_rejects_an_authority_closure_that_does_not_match_recomputed_source(self) -> None:
+        """Omitting authority-closure comparison would allow A -> I evidence to bind the wrong verifier source."""
+        facts = self._ready()
+        facts["roots"] = [{"path": str(path), "state": "absent"} for path in operations._fixed_roots_antigravity()]
+        facts["seeds_and_constants"] = operations._validate_seeds_and_constants_antigravity(
+            operations._seeds_and_constants_antigravity()
+        )
+        database = facts["database"]
+        contexts = facts["contexts"]
+        acceleration = facts["acceleration"]
+        self.assertIsInstance(database, dict)
+        self.assertIsInstance(contexts, dict)
+        self.assertIsInstance(acceleration, dict)
+        grant = Exp449SmokeAGrantAntigravity(
+            schema="exp449-smoke-a-execution-grant-antigravity.v1", experiment_id="Exp449", target="smoke-a",
+            policy_id="hard_plus_stable", implementation_commit="c" * 40,
+            scientific_root=FROZEN_EXP449_CONFIG.smoke_a_scientific_root,
+            operations_root=FROZEN_EXP449_CONFIG.smoke_a_operations_root,
+            claim_path=SMOKE_A_CLAIM_PATH_ANTIGRAVITY, nonce="0" * 32,
+            maximum_waves=2, label_access=False, logical_cpu_count=12, dataset_workers=11,
+            database_path=str(database["path"]), database_size=int(database["observed_size"]), database_sha256=str(database["sha256"]),
+            smoke_catalog_sha256=str(contexts["smoke_a"]["catalog_sha256"]), smoke_datasets=FROZEN_EXP449_CONFIG.smoke_datasets,
+            context_sha256=str(contexts["smoke_a"]["context_sha256"]), scientific_code_closure=facts["code_closure"],
+            authority_code_closure={"experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py": "f" * 64},
+            lineage_lock_sha256=str(facts["lineage_lock_paper_sha256"]), codemap_lock_sha256=str(facts["codemap_lock_sha256"]),
+            acceleration_assessment_sha256=str(contexts["smoke_a"]["acceleration_assessment_sha256"]), canonical_backend="cpu",
+            package_inventory=facts["package_inventory"], seeds_and_constants=facts["seeds_and_constants"], acceleration=acceleration,
+            design_facts={
+                "dataset_count": 1117, "test_row_count": 195900,
+                "preprocessing_contracts": FROZEN_EXP449_CONFIG.preprocessing_contracts,
+                "cpu_repeat_tolerance": 1e-12, "accelerated_tolerance": 1e-5, "minimum_accelerated_speedup": 1.1,
+            }, grant_created_at="2026-08-15T11:45:00Z",
+        )
+        with self.assertRaisesRegex(ValueError, "authority"):
+            operations._require_authorized_smoke_a_readiness_facts_antigravity(facts, grant)
 
     def test_closure_is_explicit_complete_safe_and_binds_paper_lineage_and_codemap_lock(self) -> None:
         """A named map or JSON hash cannot substitute for the executable scientific closure."""

@@ -47,6 +47,11 @@ from paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper imp
 
 from .config_antigravity import FROZEN_EXP449_CONFIG, FROZEN_EXP449_POLICY_KEYS
 from .contracts_antigravity import Exp449Context, Exp449TerminalStatus
+from .execution_authority_antigravity import (
+    Exp449SmokeAGrantAntigravity,
+    VerifiedExp449SmokeAAuthorityAntigravity,
+    verify_smoke_a_authorization_commit_antigravity,
+)
 from .runner_antigravity import compose_exp449_proposal_score_antigravity
 from .artifacts_antigravity import context_sha256_antigravity
 
@@ -109,6 +114,7 @@ _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY = (
     "task5_label_free_train_test_value_length_transductive",
 )
 _NORMALIZED_PROJECT_NAME_ANTIGRAVITY = re.compile(r"[-_.]+")
+_AUTHORIZATION_DELTA_READ_ISSUER_ANTIGRAVITY = object()
 _FROZEN_SCIENTIFIC_CLOSURE_PATHS_ANTIGRAVITY = (
     "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
     "experiments/exp449_reproducible_rebaseline_antigravity/config_antigravity.py",
@@ -613,11 +619,41 @@ def _current_clean_head_antigravity() -> str:
     return head
 
 
-def _require_reviewed_head_antigravity(reviewed_commit: str) -> str:
+class _AuthorizationDeltaReadCapabilityAntigravity:
+    """Unforgeable-in-normal-use proof that the verifier approved A -> I evidence."""
+
+    __slots__ = ("approved_authority_commit", "implementation_commit")
+
+    def __init__(self, verified: VerifiedExp449SmokeAAuthorityAntigravity, *, issuer: object) -> None:
+        if issuer is not _AUTHORIZATION_DELTA_READ_ISSUER_ANTIGRAVITY or type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity:
+            raise TypeError("Exp449 authorization delta read capability is private")
+        self.approved_authority_commit = verified.approved_authority_commit
+        self.implementation_commit = verified.implementation_commit
+
+
+def _require_reviewed_head_antigravity(
+    reviewed_commit: str,
+    *,
+    authorization_delta_capability: object | None = None,
+) -> str:
     if not _lower_hex_antigravity(reviewed_commit, 40):
         raise ValueError("Exp449 reviewed commit is invalid")
-    if _current_clean_head_antigravity() != reviewed_commit:
+    head = _current_clean_head_antigravity()
+    if authorization_delta_capability is None:
+        if head != reviewed_commit:
+            raise ValueError("Exp449 reviewed commit is not the current clean HEAD")
+        return reviewed_commit
+    if type(authorization_delta_capability) is not _AuthorizationDeltaReadCapabilityAntigravity:
+        raise ValueError("Exp449 authorized readiness capability is invalid")
+    capability = authorization_delta_capability
+    if capability.implementation_commit != reviewed_commit or head != capability.approved_authority_commit:
         raise ValueError("Exp449 reviewed commit is not the current clean HEAD")
+    parents = subprocess.run(
+        ["git", "rev-list", "--parents", "-n", "1", head], cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
+    ).stdout.split()
+    if len(parents) != 2 or parents != [head, reviewed_commit]:
+        raise ValueError("Exp449 authorized readiness commit delta differs")
     return reviewed_commit
 
 
@@ -987,6 +1023,7 @@ def _readiness_contexts_antigravity(
             "run_root": str(context.run_root), "catalog_sha256": context.catalog_sha256,
             "database_sha256": context.database_sha256, "historical_parity_status": context.historical_parity_status,
             "backend_record": _plain_json_antigravity(context.backend_record),
+            "acceleration_assessment_sha256": assessment_sha256,
         }
         if name == "official":
             official_acceleration = acceleration
@@ -994,17 +1031,35 @@ def _readiness_contexts_antigravity(
     return result, official_acceleration
 
 
-def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int | None = None) -> dict[str, object]:
+def _readiness_facts_antigravity(
+    reviewed_commit: str,
+    *,
+    logical_cpu_count: int | None = None,
+    authorization_delta_capability: object | None = None,
+    authorized_grant: Exp449SmokeAGrantAntigravity | None = None,
+) -> dict[str, object]:
     """The implementation seam for readonly fixture testing; never creates or scores."""
-    reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
+    reviewed_commit = _require_reviewed_head_antigravity(
+        reviewed_commit, authorization_delta_capability=authorization_delta_capability,
+    )
     interpreter = _require_capable_interpreter_antigravity()
     _label_firewall_antigravity()
     dependencies = _validated_dependency_facts_antigravity(_dependency_facts_antigravity())
     package_inventory = _package_inventory_facts_antigravity()
     contracts = _preprocessing_contracts_antigravity()
+    constants = _validate_seeds_and_constants_antigravity(_seeds_and_constants_antigravity())
     if contracts != _EXPECTED_PREPROCESSING_CONTRACTS_ANTIGRAVITY or len(set(contracts)) != 2:
         raise ValueError("Exp449 preprocessing contracts differ")
     catalogs, database = _verified_catalogs_antigravity()
+    if authorized_grant is not None:
+        if (
+            authorized_grant.database_path != database["unresolved_path"]
+            or authorized_grant.database_size != database["size"]
+            or authorized_grant.database_sha256 != database["sha256"]
+            or authorized_grant.smoke_catalog_sha256 != catalogs["smoke"].get("catalog_sha256")
+            or authorized_grant.smoke_datasets != _catalog_datasets_antigravity(catalogs["smoke"])
+        ):
+            raise ValueError("Exp449 authorized Smoke A database or catalog facts differ")
     roots = _inspect_fixed_roots_antigravity(tuple(_fixed_roots_antigravity()))
     closure = _closure_facts_antigravity()
     contexts, acceleration = _readiness_contexts_antigravity(
@@ -1024,6 +1079,7 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
         "catalogs": {mode: {"catalog_sha256": catalog["catalog_sha256"], "dataset_count": len(catalog["datasets"])} for mode, catalog in catalogs.items()},
         "workers": {"logical_cpu_count": workers["logical_cpu_count"], "dataset_workers": workers["dataset_workers"]},
         "preprocessing_contracts": list(contracts),
+        "seeds_and_constants": constants,
         "acceleration": {
             "canonical_backend": acceleration["selected_backend"],
             "fallback_reason": acceleration["fallback_reason"],
@@ -1053,6 +1109,71 @@ def _readiness_facts_antigravity(reviewed_commit: str, *, logical_cpu_count: int
 def readiness_exp449_antigravity(reviewed_commit: str) -> dict[str, object]:
     """Return canonical facts only after clean-head, capability, and no-side-effect gates."""
     return _readiness_facts_antigravity(reviewed_commit)
+
+
+def _require_authorized_smoke_a_readiness_facts_antigravity(
+    facts: dict[str, object], grant: Exp449SmokeAGrantAntigravity,
+) -> None:
+    """Require every recomputed readonly fact to match the immutable Smoke A grant."""
+    contexts = facts.get("contexts")
+    roots = facts.get("roots")
+    database = facts.get("database")
+    acceleration = facts.get("acceleration")
+    expected_roots = tuple(str(path) for path in _fixed_roots_antigravity())
+    authority_relative = "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py"
+    expected_authority_closure = {
+        authority_relative: _sha256_file_antigravity(_REPOSITORY_ROOT_ANTIGRAVITY / authority_relative),
+    }
+    if dict(grant.authority_code_closure) != expected_authority_closure:
+        raise ValueError("Exp449 authorized Smoke A authority closure differs from the grant")
+    if (
+        not isinstance(contexts, dict) or not isinstance(roots, list) or not isinstance(database, dict)
+        or not isinstance(acceleration, dict) or facts.get("reviewed_commit") != grant.implementation_commit
+        or database.get("path") != grant.database_path or database.get("observed_size") != grant.database_size
+        or database.get("sha256") != grant.database_sha256 or facts.get("code_closure") != dict(grant.scientific_code_closure)
+        or facts.get("lineage_lock_paper_sha256") != grant.lineage_lock_sha256
+        or facts.get("codemap_lock_sha256") != grant.codemap_lock_sha256
+        or facts.get("package_inventory") != _plain_json_antigravity(grant.package_inventory)
+        or facts.get("seeds_and_constants") != _plain_json_antigravity(grant.seeds_and_constants)
+        or acceleration != _plain_json_antigravity(grant.acceleration)
+        or facts.get("workers") != {"logical_cpu_count": grant.logical_cpu_count, "dataset_workers": grant.dataset_workers}
+        or acceleration.get("canonical_backend") != grant.canonical_backend
+        or tuple(item.get("path") for item in roots if isinstance(item, dict)) != expected_roots
+        or tuple(item.get("state") for item in roots if isinstance(item, dict)) != ("absent",) * 6
+        or len(roots) != 6 or str(grant.scientific_root) != expected_roots[0] or str(grant.operations_root) != expected_roots[1]
+        or grant.maximum_waves != FROZEN_EXP449_CONFIG.maximum_waves or grant.label_access is not False
+    ):
+        raise ValueError("Exp449 authorized Smoke A readiness facts differ from the grant")
+    smoke_context = contexts.get("smoke_a")
+    if (
+        not isinstance(smoke_context, dict)
+        or smoke_context.get("context_sha256") != grant.context_sha256
+        or smoke_context.get("catalog_sha256") != grant.smoke_catalog_sha256
+        or smoke_context.get("acceleration_assessment_sha256") != grant.acceleration_assessment_sha256
+        or facts.get("label_modules_loaded") != []
+    ):
+        raise ValueError("Exp449 authorized Smoke A context facts differ from the grant")
+
+
+def readiness_for_authorized_implementation_antigravity(
+    verified: VerifiedExp449SmokeAAuthorityAntigravity,
+) -> dict[str, object]:
+    """Recompute readonly Smoke A facts for I only after fresh exact A -> I verification."""
+    if type(verified) is not VerifiedExp449SmokeAAuthorityAntigravity:
+        raise TypeError("Exp449 verified Smoke A authority is required")
+    reverified = verify_smoke_a_authorization_commit_antigravity(verified.approved_authority_commit)
+    if reverified != verified:
+        raise ValueError("Exp449 verified Smoke A authority snapshot changed")
+    capability = _AuthorizationDeltaReadCapabilityAntigravity(
+        reverified, issuer=_AUTHORIZATION_DELTA_READ_ISSUER_ANTIGRAVITY,
+    )
+    facts = _readiness_facts_antigravity(
+        reverified.implementation_commit,
+        authorization_delta_capability=capability,
+        authorized_grant=reverified.grant,
+    )
+    _require_authorized_smoke_a_readiness_facts_antigravity(facts, reverified.grant)
+    return facts
 
 
 def status_exp449_read_only_antigravity() -> dict[str, object]:
@@ -1117,6 +1238,7 @@ def main_antigravity(argv: list[str] | None = None) -> int:
 __all__ = [
     "Exp449WaveConfig",
     "main_antigravity",
+    "readiness_for_authorized_implementation_antigravity",
     "readiness_exp449_antigravity",
     "run_exp449_wave_antigravity",
     "record_exp449_smoke_comparison_antigravity",

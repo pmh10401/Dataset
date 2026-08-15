@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-08-15T11:50:00+09:00",
-  "generated_from_commit": "82d2de97bb5b4ac4ff75727e3b31fa3b9e536f34",
+  "generated_at": "2026-08-15T12:07:39+09:00",
+  "generated_from_commit": "b4a68cc7a1c4ce49d1a4f8ce6403f2c092f68d10",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
     "Task4 TRAIN-only and Task5 label-free TRAIN+TEST-value-transductive collection feed the exact catalog gate, Task6 low-frequency selection, Task7 stability/routing, Candidate C, typed shards, outer manifest, and scorer-free verifier.",
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "All execution commands remain fail-closed as execution_authority_not_configured until a separate reviewed code/config change pins trusted authority and the user separately approves execution; codemap callers are derived from the mapped Python AST import graph or explicitly enumerated external/logical entrypoints.",
-    "Smoke A grant and digest contracts are pure data only; no authority JSON, claim, production root, readiness invocation, or execution is created in this revision."
+    "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created."
   ],
   "nodes": [
     {
@@ -224,10 +224,11 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Implemented parent-only recovery and scorer-free readiness: binds complete closure, paper lineage and codemap-lock hashes, full installed package inventory, and source-derived constants while execution remains fail-closed.",
+      "role": "Parent-only recovery and scorer-free readiness, including a private exact-type A -> I read capability that recomputes immutable Smoke A facts for implementation I while public readiness still pins reviewed HEAD.",
       "entrypoints": [
         "Exp449WaveConfig",
         "readiness_exp449_antigravity",
+        "readiness_for_authorized_implementation_antigravity",
         "_closure_facts_antigravity",
         "_package_inventory_facts_antigravity",
         "_seeds_and_constants_antigravity",
@@ -239,12 +240,14 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
       ],
       "constraints": [
-        "Readiness requires exact clean reviewed HEAD, literal pinned capable interpreter spelling, frozen dependency preflights, observed paper catalog database identity equal to frozen identity, genuine Exp449Context hashes for Smoke A/B/official, distinct preprocessing contracts, raw-component lstat absence for all roots, and no loaded label module. CPU remains canonical with explicit PyTorch/MLX/MPS facts. Execution authority is `execution_authority_not_configured`: no self-hash, filesystem artifact, root creation, or launch is accepted in this revision."
+        "Public readiness requires exact clean reviewed HEAD, pinned interpreter, frozen dependency preflights, observed catalog database identity, genuine contexts, absent fixed roots, and no loaded labels.",
+        "Only a freshly reverified exact-type private A -> I capability may recompute readonly Smoke A facts for I while HEAD is A; there is no boolean bypass or caller callback.",
+        "Authorized facts must exactly bind database, smoke catalog/datasets, context, scientific and authority closures, locks, package inventory, constants, acceleration, CPU 12-to-11 workers, roots, maximum waves, and false label access. Execution remains unavailable."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-          "symbol": "Exp449WaveConfig, readiness_exp449_antigravity, _closure_facts_antigravity, _package_inventory_facts_antigravity, _seeds_and_constants_antigravity, main_antigravity"
+          "symbol": "Exp449WaveConfig, readiness_exp449_antigravity, readiness_for_authorized_implementation_antigravity, _closure_facts_antigravity, _package_inventory_facts_antigravity, _seeds_and_constants_antigravity, main_antigravity"
         }
       ],
       "callers": [
@@ -254,7 +257,7 @@
         "scratch/run_exp449_reproducible_rebaseline_antigravity.py"
       ],
       "effects": [
-        "produces scorer-free readiness facts and parent-only two-wave terminal/progress records; execution commands remain blocked by execution_authority_not_configured"
+        "produces scorer-free public readiness under exact HEAD and narrowly authorized readonly Smoke A implementation readiness under verified A -> I evidence; execution commands remain blocked by execution_authority_not_configured"
       ]
     },
     {
@@ -1645,34 +1648,40 @@
     {
       "id": "exp449_execution_authority",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
-      "role": "Pure immutable Smoke A grant and digest contracts, including implementation/catalog/backend/assessment/timestamp bindings, plus fail-closed authorization-directory structural validation.",
+      "role": "Immutable single-snapshot Smoke A authorization-delta verifier: validates the clean exact A -> I Git delta, retained no-follow grant/digest bytes, and closure/lock blobs without execution capability.",
       "entrypoints": [
         "Exp449SmokeAGrantAntigravity",
         "Exp449SmokeAGrantDigestAntigravity",
+        "VerifiedExp449SmokeAAuthorityAntigravity",
         "canonical_grant_bytes_antigravity",
         "parse_grant_bytes_antigravity",
         "canonical_grant_digest_bytes_antigravity",
         "parse_grant_digest_bytes_antigravity",
-        "verify_authority_directory_structure_antigravity"
+        "verify_authority_directory_structure_antigravity",
+        "verify_smoke_a_authorization_commit_antigravity"
       ],
       "tests": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
-        "Has no operations, scorer, readiness, Git, or mutation capability dependency; validates only canonical frozen data and an allowlisted authority-directory shape.",
-        "Authority data is outside source fingerprinting only; the authority module remains in the normal Exp449 code closure."
+        "The verifier is scorer-free and read-only: it cannot prepare authority JSON, claim a run, create a root, inspect a database, score data, or authorize a mutation.",
+        "It accepts only a clean lowercase-hex approved HEAD whose direct parent is the grant implementation and whose exact delta adds two 100644 authority files; retained O_NOFOLLOW bytes must equal committed blobs.",
+        "Authority data remains outside source fingerprinting; the Python verifier remains in the normal Exp449 code closure."
       ],
       "evidence": [
         {
           "path": "experiments/exp449_reproducible_rebaseline_antigravity/execution_authority_antigravity.py",
-          "symbol": "Exp449SmokeAGrantAntigravity, Exp449SmokeAGrantDigestAntigravity, canonical_grant_bytes_antigravity, parse_grant_bytes_antigravity, canonical_grant_digest_bytes_antigravity, parse_grant_digest_bytes_antigravity, verify_authority_directory_structure_antigravity"
+          "symbol": "Exp449SmokeAGrantAntigravity, Exp449SmokeAGrantDigestAntigravity, VerifiedExp449SmokeAAuthorityAntigravity, canonical_grant_bytes_antigravity, parse_grant_bytes_antigravity, canonical_grant_digest_bytes_antigravity, parse_grant_digest_bytes_antigravity, verify_authority_directory_structure_antigravity, verify_smoke_a_authorization_commit_antigravity"
         }
       ],
       "callers": [
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_authority_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_readiness_antigravity.py"
       ],
       "effects": [
-        "binds one Smoke A implementation commit, catalog SHA, closures, CPU 12-to-11 and canonical-CPU contracts, acceleration assessment, audit timestamp, absent-label constraint, and canonical authority bytes without enabling execution"
+        "returns immutable grant/digest snapshot evidence only after exact A -> I delta, tracked mode, canonical digest, closure, lineage-lock, and codemap-lock validation; it never enables mutation"
       ]
     },
     {
@@ -2423,9 +2432,11 @@
         "exp449_config",
         "exp449_contracts",
         "exp449_execution_authority",
-        "exp449_execution_authority_tests"
+        "exp449_operations",
+        "exp449_execution_authority_tests",
+        "exp449_readiness_tests"
       ],
-      "outcome": "A canonical grant binds the Smoke A-only frozen design and code closures while directory validation permits only the two future JSON authorities; no authority JSON, root, claim, readiness, or execution is created."
+      "outcome": "A clean exact two-file A -> I authority delta yields immutable verification evidence only; a private exact-type capability can recompute and compare readonly Smoke A implementation facts while public readiness remains HEAD-pinned. No authority JSON, root, claim, database scoring, labels, or execution is created."
     }
   ],
   "unknown_relationships": [],

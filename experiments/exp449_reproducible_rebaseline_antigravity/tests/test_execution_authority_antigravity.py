@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, fields, replace
+from hashlib import sha256
 import json
+import os
 from pathlib import Path
+import subprocess
 from types import MappingProxyType
 import tempfile
 import unittest
@@ -22,6 +25,7 @@ from experiments.exp449_reproducible_rebaseline_antigravity.execution_authority_
     canonical_grant_digest_bytes_antigravity,
     parse_grant_bytes_antigravity,
     parse_grant_digest_bytes_antigravity,
+    verify_smoke_a_authorization_commit_antigravity,
     verify_authority_directory_structure_antigravity,
 )
 
@@ -246,3 +250,121 @@ class Exp449SmokeAAuthorityContractTests(unittest.TestCase):
                         candidate.symlink_to(target.name)
                     with self.assertRaisesRegex(ValueError, "unapproved"):
                         verify_authority_directory_structure_antigravity(directory)
+
+    def _git_antigravity(self, repository: Path, *arguments: str) -> str:
+        return subprocess.run(
+            ("git", *arguments), cwd=repository, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
+    def _authorization_repository_antigravity(
+        self, *, extra_authority_path: bool = False, authority_mode: int = 0o644,
+        source_delta: tuple[str, bytes] | None = None,
+    ) -> tuple[tempfile.TemporaryDirectory[str], Path, str, str]:
+        """Build I -> A from literal Git bytes, never a production authority path."""
+        directory = tempfile.TemporaryDirectory(dir=Path.cwd())
+        repository = Path(directory.name) / "repository_antigravity"
+        repository.mkdir()
+        self._git_antigravity(repository, "init", "--quiet")
+        self._git_antigravity(repository, "config", "user.email", "fixture@example.invalid")
+        self._git_antigravity(repository, "config", "user.name", "fixture")
+        (repository / "science_antigravity.py").write_bytes(b"scientific closure I\n")
+        (repository / "authority_antigravity.py").write_bytes(b"authority closure I\n")
+        lineage = repository / "paper/equipment_anomaly_detection/lineage_lock_paper.json"
+        lineage.parent.mkdir(parents=True)
+        lineage.write_bytes(b'{"lineage":"I"}\n')
+        codemap = repository / "docs/codemap/codemap_exp449_antigravity.lock"
+        codemap.parent.mkdir(parents=True)
+        codemap.write_bytes(b'{"codemap":"I"}\n')
+        self._git_antigravity(repository, "add", ".")
+        self._git_antigravity(repository, "commit", "--quiet", "-m", "implementation I")
+        implementation = self._git_antigravity(repository, "rev-parse", "HEAD")
+        if source_delta is not None:
+            path, contents = source_delta
+            (repository / path).write_bytes(contents)
+        grant = replace(
+            self._grant(),
+            implementation_commit=implementation,
+            scientific_code_closure={"science_antigravity.py": sha256(b"scientific closure I\n").hexdigest()},
+            authority_code_closure={"authority_antigravity.py": sha256(b"authority closure I\n").hexdigest()},
+            lineage_lock_sha256=sha256(b'{"lineage":"I"}\n').hexdigest(),
+            codemap_lock_sha256=sha256(b'{"codemap":"I"}\n').hexdigest(),
+        )
+        grant_bytes = canonical_grant_bytes_antigravity(grant)
+        digest = replace(
+            self._digest(), implementation_commit=implementation,
+            grant_size=len(grant_bytes), grant_sha256=sha256(grant_bytes).hexdigest(),
+        )
+        authority = repository / "docs/authorities"
+        authority.mkdir()
+        grant_path = authority / SMOKE_A_GRANT_PATH_ANTIGRAVITY.name
+        grant_path.write_bytes(grant_bytes)
+        os.chmod(grant_path, authority_mode)
+        (authority / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name).write_bytes(canonical_grant_digest_bytes_antigravity(digest))
+        if extra_authority_path:
+            (authority / "unexpected_antigravity.json").write_bytes(b"{}\n")
+        self._git_antigravity(repository, "add", ".")
+        self._git_antigravity(repository, "commit", "--quiet", "-m", "authority A")
+        return directory, repository, implementation, self._git_antigravity(repository, "rev-parse", "HEAD")
+
+    def test_authorization_commit_returns_one_immutable_verified_snapshot(self) -> None:
+        """Reading authority bytes from a replaced path instead of retained FD bytes accepts mutable evidence."""
+        directory, repository, implementation, approved = self._authorization_repository_antigravity()
+        self.addCleanup(directory.cleanup)
+
+        verified = verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+
+        self.assertEqual(verified.approved_authority_commit, approved)
+        self.assertEqual(verified.implementation_commit, implementation)
+        self.assertEqual(verified.grant.implementation_commit, implementation)
+        self.assertEqual(verified.grant_bytes, canonical_grant_bytes_antigravity(verified.grant))
+        self.assertEqual(verified.grant_sha256, sha256(verified.grant_bytes).hexdigest())
+        self.assertEqual(len(verified.grant_stat_identity), 4)
+        self.assertEqual(len(verified.digest_stat_identity), 4)
+        with self.assertRaises(FrozenInstanceError):
+            verified.implementation_commit = approved  # type: ignore[misc]
+
+    def test_authorization_commit_rejects_wrong_head_dirty_or_non_direct_history(self) -> None:
+        """Dropping clean A -> I identity checks allows an unreviewed authority state through."""
+        directory, repository, implementation, approved = self._authorization_repository_antigravity()
+        self.addCleanup(directory.cleanup)
+        self._git_antigravity(repository, "checkout", "--quiet", implementation)
+        with self.assertRaises(ValueError):
+            verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+        self._git_antigravity(repository, "checkout", "--quiet", approved)
+        (repository / "dirty_antigravity.txt").write_text("dirty\n")
+        with self.assertRaises(ValueError):
+            verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+        (repository / "dirty_antigravity.txt").unlink()
+        self._git_antigravity(repository, "commit", "--allow-empty", "--quiet", "-m", "not direct")
+        non_direct = self._git_antigravity(repository, "rev-parse", "HEAD")
+        with self.assertRaises(ValueError):
+            verify_smoke_a_authorization_commit_antigravity(non_direct, repository_root=repository)
+
+    def test_authorization_commit_rejects_non_authority_delta_and_unsafe_authority_mode(self) -> None:
+        """Accepting anything besides two added regular authority files expands authorization scope."""
+        for arguments in (
+            {"extra_authority_path": True},
+            {"authority_mode": 0o755},
+            {"source_delta": ("science_antigravity.py", b"scientific closure A\n")},
+            {"source_delta": ("docs/codemap/codemap_exp449_antigravity.lock", b'{"codemap":"A"}\n')},
+        ):
+            with self.subTest(arguments=arguments):
+                directory, repository, _implementation, approved = self._authorization_repository_antigravity(**arguments)
+                self.addCleanup(directory.cleanup)
+                with self.assertRaises(ValueError):
+                    verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)
+
+    def test_authorization_commit_rejects_malformed_identity_and_digest_binding(self) -> None:
+        """Ignoring canonical SHA, size, path, or implementation fields detaches a digest from its grant."""
+        directory, repository, _implementation, approved = self._authorization_repository_antigravity()
+        self.addCleanup(directory.cleanup)
+        for invalid in ("A" * 40, "a" * 39, "not-a-commit"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    verify_smoke_a_authorization_commit_antigravity(invalid, repository_root=repository)
+        digest_path = repository / "docs/authorities" / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name
+        payload = json.loads(digest_path.read_text())
+        payload["grant_sha256"] = "f" * 64
+        digest_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+        with self.assertRaises(ValueError):
+            verify_smoke_a_authorization_commit_antigravity(approved, repository_root=repository)

@@ -1,8 +1,7 @@
-"""Pure canonical contracts for a separately reviewed Exp449 Smoke A grant.
+"""Canonical contracts and scorer-free verification for Exp449 Smoke A authority.
 
-This module deliberately has no operations, scorer, readiness, Git, or file I/O
-dependency.  Later authority consumers can therefore verify retained bytes without
-giving this boundary any execution capability of its own.
+The verifier reads only immutable Git and authority-file evidence.  It cannot
+prepare a grant, claim a run, create a root, inspect a database, or score data.
 """
 
 from __future__ import annotations
@@ -10,15 +9,19 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import stat
+import subprocess
 
 from .config_antigravity import (
     EXP449_DATASET_WORKERS_ANTIGRAVITY,
     EXP449_LOGICAL_CPU_COUNT_ANTIGRAVITY,
     FROZEN_EXP449_CONFIG,
+    REPOSITORY_ROOT_ANTIGRAVITY,
     SMOKE_A_DIGEST_PATH_ANTIGRAVITY,
     SMOKE_A_CLAIM_PATH_ANTIGRAVITY,
     SMOKE_A_GRANT_PATH_ANTIGRAVITY,
@@ -52,6 +55,10 @@ _DESIGN_FACTS_ANTIGRAVITY = {
     "accelerated_tolerance": FROZEN_EXP449_CONFIG.accelerated_tolerance,
     "minimum_accelerated_speedup": FROZEN_EXP449_CONFIG.minimum_accelerated_speedup,
 }
+_SMOKE_A_GRANT_RELATIVE_PATH_ANTIGRAVITY = Path("docs/authorities") / SMOKE_A_GRANT_PATH_ANTIGRAVITY.name
+_SMOKE_A_DIGEST_RELATIVE_PATH_ANTIGRAVITY = Path("docs/authorities") / SMOKE_A_DIGEST_PATH_ANTIGRAVITY.name
+_LINEAGE_LOCK_RELATIVE_PATH_ANTIGRAVITY = Path("paper/equipment_anomaly_detection/lineage_lock_paper.json")
+_CODEMAP_LOCK_RELATIVE_PATH_ANTIGRAVITY = Path("docs/codemap/codemap_exp449_antigravity.lock")
 
 
 def _sha256_antigravity(value: object, name: str) -> str:
@@ -311,3 +318,157 @@ def parse_grant_digest_bytes_antigravity(data: bytes) -> Exp449SmokeAGrantDigest
     if canonical_grant_digest_bytes_antigravity(digest) != data:
         raise ValueError("Smoke A grant digest bytes are not canonical")
     return digest
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedExp449SmokeAAuthorityAntigravity:
+    """Read-only, single-snapshot evidence for a separately reviewed A -> I delta."""
+
+    approved_authority_commit: str
+    implementation_commit: str
+    grant: Exp449SmokeAGrantAntigravity
+    grant_sha256: str
+    grant_bytes: bytes
+    digest_bytes: bytes
+    grant_stat_identity: tuple[int, int, int, int]
+    digest_stat_identity: tuple[int, int, int, int]
+
+
+def _git_authority_antigravity(repository_root: Path, *arguments: str) -> bytes:
+    try:
+        return subprocess.run(
+            ("git", *arguments), cwd=repository_root, check=True, capture_output=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise ValueError("Smoke A authorization Git evidence is unavailable") from error
+
+
+def _git_text_authority_antigravity(repository_root: Path, *arguments: str) -> str:
+    try:
+        return _git_authority_antigravity(repository_root, *arguments).decode("ascii").strip()
+    except UnicodeDecodeError as error:
+        raise ValueError("Smoke A authorization Git text is invalid") from error
+
+
+def _tracked_regular_blob_antigravity(repository_root: Path, commit: str, relative: Path) -> bytes:
+    entry = _git_text_authority_antigravity(repository_root, "ls-tree", commit, "--", str(relative))
+    parts = entry.split("\t", 1)
+    if len(parts) != 2 or parts[1] != str(relative):
+        raise ValueError("Smoke A authorization path is not tracked exactly")
+    metadata = parts[0].split()
+    if len(metadata) != 3 or metadata[0] != "100644" or metadata[1] != "blob" or not _lower_hex_antigravity(metadata[2], 40):
+        raise ValueError("Smoke A authorization path is not a tracked regular file")
+    return _git_authority_antigravity(repository_root, "show", f"{commit}:{relative}")
+
+
+def _lower_hex_antigravity(value: object, length: int) -> bool:
+    return type(value) is str and len(value) == length and all(character in "0123456789abcdef" for character in value)
+
+
+def _read_no_follow_authority_snapshot_antigravity(path: Path) -> tuple[bytes, tuple[int, int, int, int]]:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise ValueError("Smoke A authority file is unsafe") from error
+    try:
+        details = os.fstat(descriptor)
+        if not stat.S_ISREG(details.st_mode) or details.st_nlink != 1:
+            raise ValueError("Smoke A authority file is not a single regular file")
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(descriptor, 65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        return b"".join(chunks), (details.st_dev, details.st_ino, details.st_size, details.st_mtime_ns)
+    finally:
+        os.close(descriptor)
+
+
+def _require_exact_authority_delta_antigravity(repository_root: Path, implementation: str, approved: str) -> None:
+    parents = _git_text_authority_antigravity(repository_root, "rev-list", "--parents", "-n", "1", approved).split()
+    if len(parents) != 2 or parents[0] != approved or parents[1] != implementation:
+        raise ValueError("Smoke A authority commit is not a direct child of its implementation")
+    expected = {
+        f"A\t{_SMOKE_A_GRANT_RELATIVE_PATH_ANTIGRAVITY}",
+        f"A\t{_SMOKE_A_DIGEST_RELATIVE_PATH_ANTIGRAVITY}",
+    }
+    observed = set(_git_text_authority_antigravity(
+        repository_root, "diff-tree", "--no-commit-id", "--name-status", "-r", "--no-renames", implementation, approved,
+    ).splitlines())
+    if observed != expected:
+        raise ValueError("Smoke A authority delta must add exactly the grant and digest")
+
+
+def _require_identical_tree_binding_antigravity(
+    repository_root: Path, implementation: str, approved: str, relative: Path, expected_sha256: str,
+) -> None:
+    if relative.is_absolute() or not relative.parts or ".." in relative.parts:
+        raise ValueError("Smoke A authority closure path is unsafe")
+    implementation_bytes = _tracked_regular_blob_antigravity(repository_root, implementation, relative)
+    approved_bytes = _tracked_regular_blob_antigravity(repository_root, approved, relative)
+    if implementation_bytes != approved_bytes or sha256(implementation_bytes).hexdigest() != expected_sha256:
+        raise ValueError("Smoke A authorization commit changes a bound closure or lock")
+
+
+def verify_smoke_a_authorization_commit_antigravity(
+    approved_authority_commit: str,
+    *,
+    repository_root: Path = REPOSITORY_ROOT_ANTIGRAVITY,
+) -> VerifiedExp449SmokeAAuthorityAntigravity:
+    """Verify only the exact clean two-file authority child commit and retain its bytes.
+
+    This is evidence verification, not a grant issuer or an execution capability.
+    """
+    if not _lower_hex_antigravity(approved_authority_commit, 40):
+        raise ValueError("Smoke A approved authority commit is invalid")
+    repository = Path(repository_root)
+    head = _git_text_authority_antigravity(repository, "rev-parse", "HEAD")
+    dirty = _git_authority_antigravity(repository, "status", "--porcelain", "--untracked-files=all")
+    if head != approved_authority_commit or dirty:
+        raise ValueError("Smoke A authorization requires the clean approved HEAD")
+    authority_directory = repository / _SMOKE_A_GRANT_RELATIVE_PATH_ANTIGRAVITY.parent
+    if verify_authority_directory_structure_antigravity(authority_directory) != tuple(sorted(_APPROVED_AUTHORITY_FILENAMES_ANTIGRAVITY)):
+        raise ValueError("Smoke A authority directory does not contain exactly two approved files")
+    grant_bytes, grant_identity = _read_no_follow_authority_snapshot_antigravity(
+        repository / _SMOKE_A_GRANT_RELATIVE_PATH_ANTIGRAVITY
+    )
+    digest_bytes, digest_identity = _read_no_follow_authority_snapshot_antigravity(
+        repository / _SMOKE_A_DIGEST_RELATIVE_PATH_ANTIGRAVITY
+    )
+    if grant_bytes != _tracked_regular_blob_antigravity(repository, approved_authority_commit, _SMOKE_A_GRANT_RELATIVE_PATH_ANTIGRAVITY):
+        raise ValueError("Smoke A grant snapshot differs from its committed blob")
+    if digest_bytes != _tracked_regular_blob_antigravity(repository, approved_authority_commit, _SMOKE_A_DIGEST_RELATIVE_PATH_ANTIGRAVITY):
+        raise ValueError("Smoke A digest snapshot differs from its committed blob")
+    grant = parse_grant_bytes_antigravity(grant_bytes)
+    digest = parse_grant_digest_bytes_antigravity(digest_bytes)
+    grant_sha256 = sha256(grant_bytes).hexdigest()
+    implementation = grant.implementation_commit
+    if digest.implementation_commit != implementation or digest.grant_size != len(grant_bytes) or digest.grant_sha256 != grant_sha256:
+        raise ValueError("Smoke A digest does not bind the retained grant snapshot")
+    _require_exact_authority_delta_antigravity(repository, implementation, approved_authority_commit)
+    closures = dict(grant.scientific_code_closure)
+    if set(closures).intersection(grant.authority_code_closure):
+        raise ValueError("Smoke A authority closures overlap")
+    closures.update(grant.authority_code_closure)
+    for relative, expected_sha256 in closures.items():
+        _require_identical_tree_binding_antigravity(
+            repository, implementation, approved_authority_commit, Path(relative), expected_sha256,
+        )
+    _require_identical_tree_binding_antigravity(
+        repository, implementation, approved_authority_commit, _LINEAGE_LOCK_RELATIVE_PATH_ANTIGRAVITY, grant.lineage_lock_sha256,
+    )
+    _require_identical_tree_binding_antigravity(
+        repository, implementation, approved_authority_commit, _CODEMAP_LOCK_RELATIVE_PATH_ANTIGRAVITY, grant.codemap_lock_sha256,
+    )
+    return VerifiedExp449SmokeAAuthorityAntigravity(
+        approved_authority_commit=approved_authority_commit,
+        implementation_commit=implementation,
+        grant=grant,
+        grant_sha256=grant_sha256,
+        grant_bytes=grant_bytes,
+        digest_bytes=digest_bytes,
+        grant_stat_identity=grant_identity,
+        digest_stat_identity=digest_identity,
+    )
