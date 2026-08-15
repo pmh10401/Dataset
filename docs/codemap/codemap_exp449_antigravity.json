@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-15T19:33:46+09:00",
-  "generated_from_commit": "6c1547ea9b208830aa0716175516058a3d77727c",
+  "generated_at": "2026-08-15T20:46:11+09:00",
+  "generated_from_commit": "ee642f7cac6c0c355eb69798b07f4bd0bae6388b",
   "working_tree_dirty": true,
   "scope": [
-    "Implemented Exp449 Smoke A pinned-grant lifecycle review boundary: no authority JSON, root/claim creation, scoring, TEST-label access, smoke, or official run.",
+    "Implemented Exp449 I2 bounded Smoke A post-claim recovery: this code change creates no authority JSON, production root/claim, score, TEST-label access, smoke, or official run.",
     "Task4 TRAIN-only and Task5 label-free TRAIN+TEST-value-transductive collection feed the exact catalog gate, Task6 low-frequency selection, Task7 stability/routing, Candidate C, typed shards, outer manifest, and scorer-free verifier.",
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "Smoke A lifecycle mutation is internal-only: verified A -> I readiness derives fixed values-only inputs, bounds Task4/5 to two waves, then capability-freezes and scorer-free verifies before complete terminal publication.",
@@ -229,7 +229,7 @@
     {
       "id": "exp449_operations",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
-      "role": "Parent-only pinned Smoke A preparation, fork-only authenticated worker handoff, receipt validation, recovery, scorer-free readiness, and mutation ownership. It carries equivalent outer and Task4/5 bridge acceleration manifests so checkpoint authority is context-bound while ProposalScore/freeze authority remains outer-bound.",
+      "role": "Parent-only pinned Smoke A preparation, fork-only post-claim authenticated worker handoff, exact pre-science recovery, receipt validation, scorer-free readiness, and mutation ownership. It carries equivalent outer and Task4/5 bridge acceleration manifests so checkpoint authority is context-bound while ProposalScore/freeze authority remains outer-bound.",
       "entrypoints": [
         "Exp449AuthorizedWaveResultAntigravity",
         "Exp449SmokeAExecutionLeaseAntigravity",
@@ -264,8 +264,8 @@
         "Only a freshly reverified exact-type private A -> I capability may recompute readonly Smoke A facts for I while HEAD is A; there is no boolean bypass or caller callback.",
         "Authorized readonly facts remain exact; independently, the fresh Smoke A lease lstat-checks absent roots/claim, creates and nonblocking-locks a no-follow claim, verifies its inode, creates only the operations root, writes a create-only authenticated consumption receipt, then mints the exact capability. No boolean bypass exists.",
         "Lease-bound progress retries EINTR and short writes, fsyncs each append, and raises before further scheduling; status is an atomic-replace derived cache, while read-only status inspects only existing claim, receipt, bounded progress tail, checkpoint counts, manifest, and terminal metadata without importing the scorer.",
-        "Fresh and resume derive their configuration only from reverified authority/readiness. Resume accepts only the exact inactive claim and consumed receipt, validates existing checkpoints/attempts/terminal/freeze records, and never repairs or migrates a mismatch.",
-        "Grant preparation may publish only the canonical untracked grant/digest pair after readonly readiness and absent-root checks. The fork-only worker receives the parent's pre-fork PID, sets its own session, starts a watchdog, then acknowledges a close-on-exec group-ready pipe before reauthenticating its inherited live claim inode and authority digest; the parent queues signals until that acknowledgement and fails closed/reaps EOF or error."
+        "Fresh derives configuration from reverified absent-root readiness. Resume and every forked post-claim worker derive configuration only from reverified recovery readiness, which accepts only an exact inactive claim and consumed receipt with either an absent scientific root plus present operations root or both roots present; it validates checkpoints/attempts/terminal/freeze records and never repairs or migrates an authority mismatch.",
+        "Grant preparation may publish only the canonical untracked grant/digest pair after readonly readiness and absent-root checks. The fork-only worker receives the parent's pre-fork PID, sets its own session, starts a watchdog, then acknowledges a close-on-exec group-ready pipe before reauthenticating its inherited live claim inode, receipt, authority digest, and exact post-claim root state; the parent queues signals until that acknowledgement and fails closed/reaps EOF or error."
       ],
       "evidence": [
         {
@@ -1748,7 +1748,7 @@
     {
       "id": "exp449_execution_lifecycle_tests",
       "path": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
-      "role": "Fixture-only lifecycle coverage for capability-bound fresh, incomplete, freeze-recovery, and no-recompute resume behavior.",
+      "role": "Fixture-only lifecycle coverage for capability-bound fresh, exact parent-claimed pre-science recovery, incomplete, freeze-recovery, and no-recompute resume behavior.",
       "entrypoints": [
         "Exp449ExecutionLifecycleTests"
       ],
@@ -1768,7 +1768,7 @@
         "unittest discovery"
       ],
       "effects": [
-        "proves exact two-wave incomplete stopping, scorer-free terminal recovery, fresh/resume scientific equivalence, and drift rejection"
+        "proves exact parent-created claim/receipt reauthentication before scientific-root creation, two-wave incomplete stopping, scorer-free terminal recovery, fresh/resume scientific equivalence, and drift rejection"
       ]
     }
   ],
@@ -2556,12 +2556,12 @@
         "exp449_artifacts",
         "exp449_verifier"
       ],
-      "outcome": "Fresh derives fixed verified inputs, runs no more than two Task4/5 waves, retains only a complete ProposalScore, then freezes and scorer-free verifies before terminal completion. Resume reauthenticates an inactive consumed claim and can recover only a verified freeze without rescoring."
+      "outcome": "Fresh derives fixed verified inputs, parent-claims only the operations root, and the forked child reauthenticates the exact claimed pre-science state before scoring. Resume accepts that exact absent-science/present-operations state or a fully existing inactive namespace, then runs no more than two Task4/5 waves or recovers a verified freeze without rescoring."
     }
   ],
   "unknown_relationships": [],
   "unknowns": [
-    "Task 7 is implementation-review evidence only: no Exp449 DB readiness read, grant generation, scoring, TEST-label access, smoke, official run, fixed-root creation, or claim creation occurred.",
+    "I2 is a bounded recovery-code review: it does not authorize reuse or migration of any prior A1 claim/receipt under a future A2 authority; archive/reset handling remains external and review-gated.",
     "A pinned digest is not a signature or self-hash authority: exact I -> direct-child A reviews and explicit user approval are required before Smoke A; Smoke B, official, and labels remain blocked.",
     "Exp448 historical sections, codemap triplet, and intentional RED full-route test are immutable evidence."
   ]

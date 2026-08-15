@@ -154,6 +154,9 @@ class _TemporaryAuthorizedSmokeAAntigravity:
 
 class _ReadinessBoundResumeFixtureAntigravity:
     """Temporary claim/receipt whose unchanged grant is derived from real resume facts."""
+    def __init__(self, *, scientific_root_present: bool = True) -> None:
+        self.scientific_root_present = scientific_root_present
+
     def __enter__(self):
         from paper.equipment_anomaly_detection.acceleration_paper import build_acceleration_manifest
         from paper.equipment_anomaly_detection.contracts_paper import FrozenTask8BackendDecision
@@ -187,7 +190,9 @@ class _ReadinessBoundResumeFixtureAntigravity:
         data = canonical_grant_bytes_antigravity(grant); self.verified = VerifiedExp449SmokeAAuthorityAntigravity(approved, implementation, grant, sha256(data).hexdigest(), data, b"digest", (1,2,3,4), (5,6,7,8)); self.context = context; self.config = operations.Exp449WaveConfig(context, self.catalog, {name: object() for name in config.smoke_datasets}, acceleration)
         self.stack.enter_context(patch.object(operations, "verify_smoke_a_authorization_commit_antigravity", return_value=self.verified))
         with operations.acquire_smoke_a_execution_lease_antigravity(self.verified, context, _test_paths_antigravity=(self.roots[0], self.roots[1], self.claim)): pass
-        self.roots[0].mkdir(); return self
+        if self.scientific_root_present:
+            self.roots[0].mkdir()
+        return self
     def __exit__(self, *_): self.stack.close(); self.directory.cleanup()
     @property
     def paths(self): return self.roots[0], self.roots[1], self.claim
@@ -449,6 +454,21 @@ class Exp449ExecutionLifecycleTests(unittest.TestCase):
             receipt = fixture.roots[1] / "execution_authority_consumed_antigravity.json"; receipt.write_bytes(receipt.read_bytes() + b" ")
             with self.assertRaisesRegex(ValueError, "noncanonical|receipt differs"):
                 operations._acquire_smoke_a_resume_lease_antigravity(fixture.verified, fixture.config, _test_paths_antigravity=fixture.paths)
+
+    def test_parent_claimed_pre_science_state_reauthenticates_for_resume(self) -> None:
+        """A worker must recover the parent-created claim/receipt window before science exists."""
+        with _ReadinessBoundResumeFixtureAntigravity(scientific_root_present=False) as fixture:
+            facts = operations.readiness_for_authorized_resume_antigravity(fixture.verified)
+            self.assertEqual(
+                tuple(item["state"] for item in facts["roots"]),
+                ("absent", "present", "absent", "absent", "absent", "absent"),
+            )
+            with operations._acquire_smoke_a_resume_lease_antigravity(
+                fixture.verified, fixture.config, _test_paths_antigravity=fixture.paths,
+            ) as lease:
+                operations._authenticate_inherited_smoke_a_claim_fd_antigravity(
+                    lease.claim_fd, fixture.verified, fixture.context,
+                )
 
 
 if __name__ == "__main__":

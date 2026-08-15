@@ -604,10 +604,14 @@ def _acquire_smoke_a_resume_lease_antigravity(
     if len(expected_paths) != 3 or (scientific_root, operations_root, claim_path) != expected_paths or context.run_root != scientific_root:
         raise ValueError("Exp449 Smoke A resume roots differ")
     readiness_for_authorized_resume_antigravity(verified)
-    for root, name in ((scientific_root, "scientific root"), (operations_root, "operations root")):
-        details = root.lstat()
-        if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
-            raise ValueError(f"Exp449 Smoke A resume {name} is unsafe")
+    scientific_details = _lstat_or_none_antigravity(scientific_root)
+    if scientific_details is not None and (
+        stat.S_ISLNK(scientific_details.st_mode) or not stat.S_ISDIR(scientific_details.st_mode)
+    ):
+        raise ValueError("Exp449 Smoke A resume scientific root is unsafe")
+    operations_details = operations_root.lstat()
+    if stat.S_ISLNK(operations_details.st_mode) or not stat.S_ISDIR(operations_details.st_mode):
+        raise ValueError("Exp449 Smoke A resume operations root is unsafe")
     descriptor = -1
     try:
         descriptor = os.open(claim_path, os.O_RDWR | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
@@ -2016,9 +2020,12 @@ def _require_authorized_smoke_a_readiness_facts_antigravity(
         or facts.get("workers") != {"logical_cpu_count": grant.logical_cpu_count, "dataset_workers": grant.dataset_workers}
         or acceleration.get("canonical_backend") != grant.canonical_backend
         or tuple(item.get("path") for item in roots if isinstance(item, dict)) != expected_roots
-        or tuple(item.get("state") for item in roots if isinstance(item, dict)) != (
-            ("present", "present", "absent", "absent", "absent", "absent")
-            if allow_smoke_a_resume else ("absent",) * 6
+        or tuple(item.get("state") for item in roots if isinstance(item, dict)) not in (
+            {
+                ("present", "present", "absent", "absent", "absent", "absent"),
+                ("absent", "present", "absent", "absent", "absent", "absent"),
+            }
+            if allow_smoke_a_resume else {("absent",) * 6}
         )
         or len(roots) != 6 or str(grant.scientific_root) != expected_roots[0] or str(grant.operations_root) != expected_roots[1]
         or grant.maximum_waves != FROZEN_EXP449_CONFIG.maximum_waves or grant.label_access is not False
@@ -2278,7 +2285,9 @@ def _run_smoke_a_worker_antigravity(
         reverified = verify_smoke_a_authorization_commit_antigravity(verified.approved_authority_commit)
         if reverified != verified or not _lower_hex_antigravity(authority_digest, 64) or verified.grant_sha256 != authority_digest:
             raise ValueError("Exp449 Smoke A worker authority differs")
-        config = _authorized_smoke_a_wave_config_antigravity(verified, resume=mode == "resume")
+        # A forked worker always runs after the parent has consumed the claim
+        # and created the operations root, before science may exist.
+        config = _authorized_smoke_a_wave_config_antigravity(verified, resume=True)
         _authenticate_inherited_smoke_a_claim_fd_antigravity(claim_fd, verified, config.context)
         capability = _mint_execution_capability_antigravity(
             verified,
