@@ -1,12 +1,13 @@
 {
-  "generated_at": "2026-08-15T11:17:37+09:00",
-  "generated_from_commit": "e233a67b7bf9a1eaba65d0a34b6743d2b2f444c3",
+  "generated_at": "2026-08-15T11:31:46+09:00",
+  "generated_from_commit": "0fcefe11a633dfbb4bea086c8470a3f2e611b57d",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 Task1–Task8 final evidence: no root creation, scoring, TEST-label access, smoke, or official run.",
     "Task4 TRAIN-only and Task5 label-free TRAIN+TEST-value-transductive collection feed the exact catalog gate, Task6 low-frequency selection, Task7 stability/routing, Candidate C, typed shards, outer manifest, and scorer-free verifier.",
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
-    "All execution commands remain fail-closed as execution_authority_not_configured until a separate reviewed code/config change pins trusted authority and the user separately approves execution; codemap callers are derived from the mapped Python AST import graph or explicitly enumerated external/logical entrypoints."
+    "All execution commands remain fail-closed as execution_authority_not_configured until a separate reviewed code/config change pins trusted authority and the user separately approves execution; codemap callers are derived from the mapped Python AST import graph or explicitly enumerated external/logical entrypoints.",
+    "The Smoke A pinned-grant execution plan is planning evidence only: it is included in the tracked docs fingerprint but introduces no runtime module, authority data, or new Exp449 logical node."
   ],
   "nodes": [
     {
