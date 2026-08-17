@@ -1448,6 +1448,36 @@
       "comparisons": [{"name": "always_baseline", "fn": 837, "fp": 66, "f1": 0.5742574257425742}, {"name": "family_wide_local_gap", "fn": 835, "fp": 63, "f1": 0.5764150943396227}, {"name": "oracle_per_dataset", "fn": 828, "fp": 64, "f1": 0.5808270676691729}, {"name": "lodo_router", "fn": 843, "fp": 65, "f1": 0.5704824976348155}],
       "family_fn_delta": {"ECG5000": 6, "ChlorineConcentration": 0},
       "notes": "Official evaluate and then inspect each ran exactly once with exit 0 at reviewed commit a45ff019e0736bbf895bb698b8eccfcbc69cd190 and emitted the same aggregate JSON. The immutable 8-leaf non-symlink result root has artifact-map recomputation exact-match evidence. family-wide methods slightly improve FN/FP/F1 and oracle shows theoretical room, but the learned LODO router is worse than baseline by FN +6 and lower F1. Status is routing_candidate_not_qualified_for_external_validation; routing, champion, pending candidate, and promotion remain unchanged."
+    },
+    {
+      "id": "Exp457",
+      "experiment": "Exp457",
+      "kind": "ecg_train_synthetic_confidence_routing",
+      "status": "planned_awaiting_implementation",
+      "implementation_status": "task_1_governance_complete",
+      "documents": ["docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html", "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html", "docs/EXP457_PREREGISTRATION_antigravity_KO.html", "docs/EXP457_RUNBOOK_antigravity_KO.html", "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP457_DASHBOARD_antigravity.html"],
+      "run_identity": "exp457-ecg-train-synthetic-confidence-routing-antigravity-20260818",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp457_ecg_train_synthetic_confidence_routing_antigravity_20260818",
+      "approved_design_sha256": "3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20",
+      "scientific_contract": {"target_family": "ECG5000", "candidate": "hydra_local_gap", "chlorine_route": "multirocket_local_gap_for_all_three_datasets", "hydra_seeds": [20260721, 20261721], "folds": 5, "alpha": 0.005, "knn_k": 3, "kernels": 8, "groups": 64, "synthetic_primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "normal_wilson_upper_max": 0.05, "pooled_sensitivity_min": 0.70, "per_type_sensitivity_min": 0.50, "finite_required": true, "structure_gate": "added_count > removed_count", "final_fn_max": 834, "final_fp_max": 66, "final_f1_strictly_above": 0.5764150943396227, "test_metrics_may_inform_routing": false},
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "notes": "Task 1 registers the approved frozen gates and planned-only dashboard/code-map boundary. No official command or result exists; champion and pending candidate remain unchanged."
     }
   ]
 }

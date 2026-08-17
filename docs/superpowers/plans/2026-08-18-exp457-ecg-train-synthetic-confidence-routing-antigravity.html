@@ -61,7 +61,7 @@
   </table>
 
   <section class="task">
-    <h2><label><input type="checkbox" disabled>Task 1: Exp457 등록, HTML 대시보드, 코드맵</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 1: Exp457 등록, HTML 대시보드, 코드맵</label></h2>
     <p><strong>독립 결과:</strong> 구현 전 상태와 과학 기준을 한눈에 볼 수 있고, 다음 Task가 사용할 정확한 설정·계약 이름이 고정된다.</p>
     <h3>Files</h3>
     <ul class="files">
@@ -76,7 +76,7 @@
     </ul>
     <h3>Interfaces</h3>
     <p><strong>Produces:</strong> experiment id <code>Exp457</code>, status <code>planned_awaiting_implementation</code>, exact design SHA, frozen gates, dashboard Task 1/6 state, and versioned Exp457 code-map.</p>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED governance test 작성</label>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED governance test 작성</label>
       <pre><code>def test_exp457_scientific_contract_antigravity(self):
     self.assertEqual(config["target_family"], "ECG5000")
     self.assertEqual(config["pooled_sensitivity_min"], 0.70)
@@ -85,9 +85,9 @@
     self.assertEqual(config["final_fn_max"], 834)
     self.assertEqual(config["final_fp_max"], 66)</code></pre>
       <p>Run: 고정 Python으로 해당 governance test. Expected: Exp457 문서·상태·map이 없어 FAIL.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: 최소 문서·ledgers·대시보드·map 생성</label><p>대시보드는 Task 1/6, 아직 결과 없음, Exp456 기준값 네 개와 Exp457 합격선을 표시한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: GREEN 및 map 검증</label><p>Run: governance test 두 번, strict JSON parse, map HTML=JSON, 현재 fingerprint 검증.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: 체크박스 갱신·커밋·Task 1 검토</label><p>Commit: <code>docs(exp457): register ECG confidence routing</code>.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: 최소 문서·ledgers·대시보드·map 생성</label><p>대시보드는 Task 1/6, 아직 결과 없음, Exp456 기준값 네 개와 Exp457 합격선을 표시한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: GREEN 및 map 검증</label><p>Run: governance test 두 번, strict JSON parse, map HTML=JSON, 현재 fingerprint 검증.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: 체크박스 갱신·커밋·Task 1 검토</label><p>Commit: <code>docs(exp457): register ECG confidence routing</code>.</p></div>
   </section>
 
   <section class="task">

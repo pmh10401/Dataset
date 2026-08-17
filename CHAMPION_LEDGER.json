@@ -565,6 +565,35 @@
       "family_fn_delta": {"ECG5000": 6, "ChlorineConcentration": 0},
       "review_only": true,
       "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp457",
+      "kind": "ecg_train_synthetic_confidence_routing",
+      "status": "planned_awaiting_implementation",
+      "implementation_status": "task_1_governance_complete",
+      "reason": "Task 1 registers only the approved Exp457 frozen gates, planned dashboard, and code map. No official command or result exists; champion, pending candidate, routing, and promotion are unchanged.",
+      "run_identity": "exp457-ecg-train-synthetic-confidence-routing-antigravity-20260818",
+      "approved_design_sha256": "3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20",
+      "scientific_contract": {"target_family": "ECG5000", "candidate": "hydra_local_gap", "chlorine_route": "multirocket_local_gap_for_all_three_datasets", "hydra_seeds": [20260721, 20261721], "folds": 5, "alpha": 0.005, "knn_k": 3, "kernels": 8, "groups": 64, "synthetic_primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "normal_wilson_upper_max": 0.05, "pooled_sensitivity_min": 0.70, "per_type_sensitivity_min": 0.50, "finite_required": true, "structure_gate": "added_count > removed_count", "final_fn_max": 834, "final_fp_max": 66, "final_f1_strictly_above": 0.5764150943396227, "test_metrics_may_inform_routing": false},
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false
     }
   ]
 }
