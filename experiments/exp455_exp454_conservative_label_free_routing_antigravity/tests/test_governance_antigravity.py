@@ -39,8 +39,8 @@ class HtmlParserAntigravity(html.parser.HTMLParser):
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
-    def test_task_one_governance_is_planned_and_non_promoted_antigravity(self) -> None:
-        """Break caught: Task 1 is marked done without planned, non-promoted governance evidence."""
+    def test_terminal_governance_is_failed_and_non_promoted_antigravity(self) -> None:
+        """Break caught: terminal failure is hidden or represented as a promoted result."""
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             path = ROOT_ANTIGRAVITY / relative
             self.assertTrue(path.is_file(), relative)
