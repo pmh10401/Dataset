@@ -158,7 +158,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "router", "path": router, "role": "Caller: Task 3 fold selection and Task 4 replay. Effect: chooses deterministic family LODO rules from allowed integer features without the held-out outcome.", "tests": [router_test, replay_test], "evidence": [_evidence_antigravity(router, "leave_one_dataset_out_antigravity")]},
         {"id": "evaluation", "path": evaluation, "role": "Caller: Task 4 artifacts and dashboard export. Effect: sums each of 48 rows once for four comparisons and checks gates without activating routing.", "tests": [evaluation_test, artifacts_test, replay_test, dashboard_export_test], "evidence": [_evidence_antigravity(evaluation, "evaluate_routing_antigravity")]},
         {"id": "artifacts", "path": artifacts, "role": "Caller: injected temporary publication and replay. Effect: writes exactly eight canonical create-only leaves with a self-excluding hash map.", "tests": [artifacts_test, replay_test], "evidence": [_evidence_antigravity(artifacts, "publish_evaluation_antigravity")]},
-        {"id": "replay", "path": replay, "role": "Caller: Task 4 artifact inspection. Effect: re-fits LODO rules and recomputes stored aggregate metrics without TEST labels.", "tests": [replay_test], "evidence": [_evidence_antigravity(replay, "inspect_replay_at_antigravity")]},
+        {"id": "replay", "path": replay, "role": "Caller: Task 4 artifact inspection. Effect: captures frozen Task 2 authority once, compares all 48 rows plus eight label-free features, then re-fits LODO and recomputes aggregates without TEST labels.", "tests": [replay_test], "evidence": [_evidence_antigravity(replay, "inspect_replay_at_antigravity")]},
         {"id": "dashboard_export", "path": dashboard_export, "role": "Caller: artifact dashboard snapshot. Effect: limits output to aggregate method and family rows.", "tests": [dashboard_export_test], "evidence": [_evidence_antigravity(dashboard_export, "export_aggregate_dashboard_antigravity")]},
     ]
     edges = [
@@ -177,6 +177,8 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "evaluation", "to": "dashboard_export", "type": "reads", "evidence": _evidence_antigravity(dashboard_export, "RoutingEvaluationAntigravity")},
         {"from": "artifacts", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "_LEAVES_ANTIGRAVITY")},
         {"from": "router", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "leave_one_dataset_out_antigravity")},
+        {"from": "authority", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "capture_routing_authority_antigravity")},
+        {"from": "features", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "build_label_free_features_antigravity")},
     ]
     unknowns: list[dict[str, str]] = []
     graph: dict[str, object] = {"schema": "exp455_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}

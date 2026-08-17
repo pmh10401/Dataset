@@ -49,3 +49,10 @@
 - GREEN: Task 4 focused suite now has 9 tests passing.  The evaluator requires the exact Task 3 recomputed decisions and the named 12-leaf Exp454 inventory, including the three configured immutable hashes.
 - Context now carries the complete authority inventory.  The replay test rewrites the context, recomputes decisions and all semantic leaves, rehashes the map, then mutates the frozen authority binding; replay rejects it.
 - Dashboard export now requires the exact four comparison names/order, exact two families/order, exact integer counts, exact derived float F1, and an actual boolean pass value.
+
+## Follow-up replay authority repair
+
+- RED: the replay suite had 4 expected import errors before the private dependency-injected inspect seam existed.
+- GREEN: the replay-focused suite with all Task 4 modules passed 11 tests in 0.056s.
+- Public replay now captures frozen Task 2 authority once and derives its eight features once.  It compares the canonical stored 48-row context and eight feature rows to those independent values before considering stored decisions or metrics.
+- Tests never call that public capture. They inject synthetic authority/features, then prove that self-consistent context-outcome or feature rewrites (including recomputed decisions, all semantic leaves, and map) are rejected.

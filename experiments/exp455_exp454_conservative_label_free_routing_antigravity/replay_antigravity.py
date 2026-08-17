@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from hashlib import sha256
 import json
 from pathlib import Path
 
-from .artifacts_antigravity import _LEAVES_ANTIGRAVITY, _payloads_antigravity
+from .artifacts_antigravity import (
+    _LEAVES_ANTIGRAVITY,
+    _context_from_authority_antigravity,
+    _feature_rows_antigravity,
+    _json_bytes_antigravity,
+    _jsonl_bytes_antigravity,
+    _payloads_antigravity,
+)
+from .authority_antigravity import capture_routing_authority_antigravity
 from .contracts_antigravity import (
     ConfusionAntigravity,
     DatasetRoutingAuthorityAntigravity,
@@ -17,7 +24,7 @@ from .contracts_antigravity import (
     RouteRuleAntigravity,
     RoutingEvaluationAntigravity,
 )
-from .dashboard_export_antigravity import export_aggregate_dashboard_antigravity
+from .features_antigravity import build_label_free_features_antigravity
 from .evaluation_antigravity import evaluate_routing_antigravity
 from .router_antigravity import leave_one_dataset_out_antigravity
 
@@ -93,22 +100,39 @@ def _reconstruct_antigravity(leaves: dict[str, bytes]) -> tuple[FrozenRoutingAut
     return FrozenRoutingAuthorityAntigravity(tuple(rows), inventory, 0), tuple(feature_rows), tuple(decisions)
 
 
-def inspect_replay_at_antigravity(root: str | Path) -> RoutingEvaluationAntigravity:
-    """Recompute every route/result and require equality with every stored semantic leaf."""
+def _inspect_replay_with_dependencies_antigravity(
+    root: str | Path,
+    expected_authority: FrozenRoutingAuthorityAntigravity,
+    expected_features: tuple[DatasetRoutingFeaturesAntigravity, ...],
+) -> RoutingEvaluationAntigravity:
+    """Private test seam: compare stored evidence to independently frozen Task 2 inputs."""
     leaves = _load_antigravity(Path(root))
-    authority, features, decisions = _reconstruct_antigravity(leaves)
+    expected_context = _json_bytes_antigravity(
+        _context_from_authority_antigravity(expected_authority.rows, expected_authority.exp454_leaf_sha256)
+    )
+    expected_feature_rows = _jsonl_bytes_antigravity(_feature_rows_antigravity(expected_features))
+    if leaves["context_antigravity.json"] != expected_context or leaves["features_antigravity.jsonl"] != expected_feature_rows:
+        raise ValueError("stored authority or label-free features differ from frozen Task 2 inputs")
+    _stored_authority, _stored_features, decisions = _reconstruct_antigravity(leaves)
     outcomes = {
         row.dataset: (row.baseline_confusion, row.candidate_confusion)
-        for row in authority.rows if row.candidate_confusion is not None
+        for row in expected_authority.rows if row.candidate_confusion is not None
     }
-    expected_decisions = leave_one_dataset_out_antigravity(features, outcomes)
+    expected_decisions = leave_one_dataset_out_antigravity(expected_features, outcomes)
     if expected_decisions != decisions:
         raise ValueError("stored fold decisions differ from semantic replay")
-    evaluation = evaluate_routing_antigravity(authority, features, decisions)
+    evaluation = evaluate_routing_antigravity(expected_authority, expected_features, decisions)
     expected_payloads = _payloads_antigravity(evaluation)
     if any(leaves[name] != expected_payloads[name] for name in _LEAVES_ANTIGRAVITY[:-1]):
         raise ValueError("stored evaluation evidence differs from semantic replay")
     return evaluation
+
+
+def inspect_replay_at_antigravity(root: str | Path) -> RoutingEvaluationAntigravity:
+    """Capture frozen Task 2 evidence once, then replay against that immutable authority."""
+    authority = capture_routing_authority_antigravity()
+    features = build_label_free_features_antigravity(authority)
+    return _inspect_replay_with_dependencies_antigravity(root, authority, features)
 
 
 __all__ = ["inspect_replay_at_antigravity"]

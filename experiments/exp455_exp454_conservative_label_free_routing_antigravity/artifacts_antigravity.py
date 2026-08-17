@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from .dashboard_export_antigravity import export_aggregate_dashboard_antigravity
-from .contracts_antigravity import FrozenResultAntigravity, RoutingEvaluationAntigravity
+from .contracts_antigravity import DatasetRoutingAuthorityAntigravity, DatasetRoutingFeaturesAntigravity, FrozenResultAntigravity, RoutingEvaluationAntigravity
 from .evaluation_antigravity import evidence_for_evaluation_antigravity
 
 
@@ -33,11 +33,10 @@ def _jsonl_bytes_antigravity(rows: tuple[object, ...]) -> bytes:
     return b"".join(_json_bytes_antigravity(row) for row in rows)
 
 
-def _context_antigravity(evaluation: RoutingEvaluationAntigravity) -> dict[str, object]:
-    """Store only the minimal label-free row identity and confusion evidence for replay."""
-    # Evaluation deliberately has no authority field.  Task 4 publication receives its
-    # immutable evidence through the private attachment below, set only by evaluator use.
-    evidence, _features, inventory = evidence_for_evaluation_antigravity(evaluation)
+def _context_from_authority_antigravity(
+    evidence: tuple[DatasetRoutingAuthorityAntigravity, ...], inventory: tuple[tuple[str, str], ...],
+) -> dict[str, object]:
+    """Serialize only the frozen authority evidence needed to recreate the four sums."""
     rows = []
     for row in evidence:
         rows.append({
@@ -51,8 +50,18 @@ def _context_antigravity(evaluation: RoutingEvaluationAntigravity) -> dict[str, 
     return {"experiment_id": "Exp455", "exp454_leaf_sha256": inventory, "rows": rows}
 
 
+def _context_antigravity(evaluation: RoutingEvaluationAntigravity) -> dict[str, object]:
+    """Store only the minimal label-free row identity and confusion evidence for replay."""
+    evidence, _features, inventory = evidence_for_evaluation_antigravity(evaluation)
+    return _context_from_authority_antigravity(evidence, inventory)
+
+
 def _features_antigravity(evaluation: RoutingEvaluationAntigravity) -> tuple[dict[str, object], ...]:
     _evidence, features, _inventory = evidence_for_evaluation_antigravity(evaluation)
+    return tuple(asdict(row) for row in features)
+
+
+def _feature_rows_antigravity(features: tuple[DatasetRoutingFeaturesAntigravity, ...]) -> tuple[dict[str, object], ...]:
     return tuple(asdict(row) for row in features)
 
 
