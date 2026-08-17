@@ -175,7 +175,7 @@ class FrozenResultAntigravity:
   </section>
 
   <section>
-    <h2><input disabled type="checkbox">Task 2: Exp454 authority와 정답 없는 특징</h2>
+    <h2><input checked disabled type="checkbox">Task 2: Exp454 authority와 정답 없는 특징</h2>
     <h3>Files</h3>
     <ul class="files">
       <li>Create: <code>authority_antigravity.py</code>, <code>features_antigravity.py</code></li>
@@ -190,9 +190,9 @@ class FrozenResultAntigravity:
       <li>Produces: <code>build_label_free_features_antigravity(authority) -&gt; tuple[DatasetRoutingFeaturesAntigravity, ...]</code>.</li>
     </ul>
     <ol>
-      <li><input disabled type="checkbox">8개 이름, 두 가족·기법, 12-leaf 해시, baseline 좌표가 하나라도 다르면 실패하는 synthetic authority 테스트를 작성한다.</li>
-      <li><input disabled type="checkbox">모듈 부재 RED를 실행하고 예상 실패를 기록한다.</li>
-      <li><input disabled type="checkbox">Exp454에서 후보 위치와 저장된 confusion을 읽고, Exp404 Hard 좌표와 Exp446 stable-26 좌표의 합집합으로 baseline 위치를 구성한다.
+      <li><input checked disabled type="checkbox">8개 이름, 두 가족·기법, 12-leaf 해시, baseline 좌표가 하나라도 다르면 실패하는 synthetic authority 테스트를 작성한다.</li>
+      <li><input checked disabled type="checkbox">모듈 부재 RED를 실행하고 예상 실패를 기록한다.</li>
+      <li><input checked disabled type="checkbox">Exp454에서 후보 위치와 저장된 confusion을 읽고, Exp404 Hard 좌표와 Exp446 stable-26 좌표의 합집합으로 baseline 위치를 구성한다.
 <pre><code>baseline = hard_by_dataset[dataset] | stable_by_dataset[dataset]
 candidate = exp454_candidates[(dataset, method)]
 features = DatasetRoutingFeaturesAntigravity(
@@ -202,10 +202,10 @@ features = DatasetRoutingFeaturesAntigravity(
     added_count=len(candidate - baseline), removed_count=len(baseline - candidate),
     overlap_ppm=(len(baseline &amp; candidate) * 1_000_000) // max(1, len(baseline | candidate)),
 )</code></pre></li>
-      <li><input disabled type="checkbox">특징 객체에 confusion·TP·FP·FN·TN·변형 번호 필드가 없음을 검사하고, 특징을 바꿔도 authority 원본이 변하지 않음을 검사한다.</li>
-      <li><input disabled type="checkbox">실제 동결 source를 한 번 읽어 8개 특징을 만들고 label query가 0임을 확인한다. 공식 Exp455 결과 폴더는 만들지 않는다.</li>
-      <li><input disabled type="checkbox">focused 테스트 두 번, Exp454 predecessor/source 회귀 한 번, map validate와 diff-check를 통과시킨다.</li>
-      <li><input disabled type="checkbox">체크박스·대시보드 진행률을 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): capture label-free routing features</code>.</li>
+      <li><input checked disabled type="checkbox">특징 객체에 confusion·TP·FP·FN·TN·변형 번호 필드가 없음을 검사하고, 특징을 바꿔도 authority 원본이 변하지 않음을 검사한다.</li>
+      <li><input checked disabled type="checkbox">실제 동결 source를 한 번 읽어 8개 특징을 만들고 label query가 0임을 확인한다. 공식 Exp455 결과 폴더는 만들지 않는다.</li>
+      <li><input checked disabled type="checkbox">focused 테스트 두 번, Exp454 predecessor/source 회귀 한 번, map validate와 diff-check를 통과시킨다.</li>
+      <li><input checked disabled type="checkbox">체크박스·대시보드 진행률을 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): capture label-free routing features</code>.</li>
     </ol>
   </section>
 

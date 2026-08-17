@@ -1,7 +1,17 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp455 구현 기록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}</style></head><body><main>
 <h1>Exp455 구현 기록</h1>
-<p>Task 1은 planned-only governance surface를 만들었다. <code>config_antigravity.py</code>는 승인된 identity, candidates, population, gates, Exp454 hashes와 official Python을 동결하고, <code>contracts_antigravity.py</code>는 이후 authority/router/evaluation data shape만 선언한다.</p>
-<p>현재 결과는 <code>not_started</code>다. 공식 명령 실행, TEST-label access, official result-root 생성, routing activation, champion/pending-candidate change, promotion은 하지 않았다.</p>
-<p>검증 상세와 commit은 Task 1 implementation report에 기록한다.</p>
+<p>Task 1은 planned-only governance surface를 만들었다. Task 2는 Exp454의 12개 고정 결과와 Exp446 stable-26, Exp404 Hard 좌표를 읽어 48개 immutable authority row와 8개 label-free 특징 row를 만들었다.</p>
+<p>실제 source는 한 번만 읽었고 <code>label_query_count=0</code>이었다. TEST 정답은 읽지 않았으며, 특징에는 confusion, TP, FP, FN, TN, TEST label, 변형 번호 필드가 없다.</p>
+<table><thead><tr><th>가족</th><th>데이터셋</th><th>길이</th><th>baseline</th><th>candidate</th><th>overlap</th><th>union</th><th>added</th><th>removed</th><th>overlap ppm</th></tr></thead><tbody>
+<tr><td>ECG5000</td><td>ECG5000_normal_1</td><td>2950</td><td>40</td><td>32</td><td>20</td><td>52</td><td>12</td><td>20</td><td>384615</td></tr>
+<tr><td>ECG5000</td><td>ECG5000_normal_2</td><td>1800</td><td>13</td><td>22</td><td>8</td><td>27</td><td>14</td><td>5</td><td>296296</td></tr>
+<tr><td>ECG5000</td><td>ECG5000_normal_3</td><td>50</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>ECG5000</td><td>ECG5000_normal_4</td><td>150</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>ECG5000</td><td>ECG5000_normal_5</td><td>50</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>ChlorineConcentration</td><td>ChlorineConcentration_normal_1</td><td>1000</td><td>9</td><td>8</td><td>4</td><td>13</td><td>4</td><td>5</td><td>307692</td></tr>
+<tr><td>ChlorineConcentration</td><td>ChlorineConcentration_normal_2</td><td>1000</td><td>13</td><td>12</td><td>12</td><td>13</td><td>0</td><td>1</td><td>923076</td></tr>
+<tr><td>ChlorineConcentration</td><td>ChlorineConcentration_normal_3</td><td>2350</td><td>12</td><td>13</td><td>9</td><td>16</td><td>4</td><td>3</td><td>562500</td></tr>
+</tbody></table>
+<p>현재 결과는 계속 <code>not_started</code>다. 공식 명령 실행, official result-root 생성, routing activation, champion/pending-candidate change, promotion은 하지 않았다.</p>
 </main></body></html>

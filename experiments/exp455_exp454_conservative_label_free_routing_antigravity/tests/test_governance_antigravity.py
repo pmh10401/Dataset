@@ -52,7 +52,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             parser.feed(path.read_text(encoding="utf-8"))
             parser.close()
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
-        for value in ("planned", "0/8", "Tasks 1/6", "not_started"):
+        for value in ("planned", "8/8", "Tasks 2/6", "not_started"):
             self.assertIn(value, dashboard)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
@@ -75,7 +75,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-17-exp455-conservative-label-free-routing-antigravity.html").read_text(encoding="utf-8")
         task_one = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 1:.*?</section>", plan, flags=re.DOTALL)
         self.assertIsNotNone(task_one)
-        for task_number in range(2, 7):
+        for task_number in range(3, 7):
             section = re.search(rf"<section>\s*<h2><input\b([^>]*)>Task {task_number}:.*?</section>", plan, flags=re.DOTALL)
             self.assertIsNotNone(section)
             assert section is not None
@@ -90,9 +90,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
         nodes = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("config", "contracts", "future_authority", "future_router", "future_evaluation"):
+        for node_id in ("config", "contracts", "authority", "features", "future_router", "future_evaluation"):
             self.assertIn(node_id, nodes)
-        self.assertEqual(nodes["future_authority"]["status"], "future_unknown")
         self.assertEqual(nodes["future_router"]["status"], "future_unknown")
         self.assertEqual(nodes["future_evaluation"]["status"], "future_unknown")
         builder.validate_map_antigravity(graph, lock, rendered)
