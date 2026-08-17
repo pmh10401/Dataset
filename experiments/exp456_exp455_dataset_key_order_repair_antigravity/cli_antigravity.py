@@ -8,10 +8,23 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 
 _COMMIT_ANTIGRAVITY = re.compile(r"^[0-9a-f]{40}$")
 _ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[2]
+
+
+class _ExactSurfaceParserAntigravity(argparse.ArgumentParser):
+    """Reject every subcommand token sequence outside the two frozen forms."""
+
+    def parse_args(self, args: Sequence[str] | None = None, namespace=None):
+        raw = list(sys.argv[1:] if args is None else args)
+        if raw[:1] == ["inspect"] and raw != ["inspect"]:
+            self.error("inspect accepts no options or arguments")
+        if raw[:1] == ["evaluate"] and (len(raw) != 3 or raw[1] != "--reviewed-commit"):
+            self.error("evaluate accepts exactly --reviewed-commit LOWER40")
+        return super().parse_args(raw, namespace)
 
 
 class _OneReviewedCommitActionAntigravity(argparse.Action):
@@ -31,7 +44,7 @@ def _reviewed_commit_antigravity(value: str) -> str:
 
 def parser_antigravity() -> argparse.ArgumentParser:
     """Expose only one reviewed evaluation form and one bare replay form."""
-    parser = argparse.ArgumentParser(
+    parser = _ExactSurfaceParserAntigravity(
         prog="run_exp456_exp455_dataset_key_order_repair_antigravity", allow_abbrev=False,
     )
     commands = parser.add_subparsers(dest="command", required=True)

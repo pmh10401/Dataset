@@ -62,6 +62,30 @@ class CliAntigravityTests(unittest.TestCase):
             self.assertEqual(cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY]), 0)
             evaluate.assert_called_once_with()
 
+    def test_exact_command_tokens_reject_subcommand_help_and_equals_form_before_loading_antigravity(self) -> None:
+        """Break caught: argparse expands the closed command surface before phase selection."""
+        from experiments.exp456_exp455_dataset_key_order_repair_antigravity import cli_antigravity as cli
+
+        for argv in (
+            ("inspect", "--help"),
+            ("evaluate", "--help"),
+            ("evaluate", f"--reviewed-commit={_COMMIT_ANTIGRAVITY}"),
+        ):
+            with self.subTest(argv=argv):
+                with (
+                    patch.object(cli, "_load_evaluate_antigravity", side_effect=AssertionError("evaluator loaded")),
+                    patch.object(cli, "_load_inspect_antigravity", side_effect=AssertionError("replay loaded")),
+                    redirect_stderr(io.StringIO()),
+                    redirect_stdout(io.StringIO()),
+                    self.assertRaises(SystemExit) as exited,
+                ):
+                    cli.main_antigravity(argv)
+                self.assertNotEqual(exited.exception.code, 0)
+
+        with redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as top_level_help:
+            cli.main_antigravity(["--help"])
+        self.assertEqual(top_level_help.exception.code, 0)
+
     def test_evaluate_orders_authority_features_lodo_evaluation_publication_and_aggregate_without_official_root_antigravity(self) -> None:
         """Break caught: evaluate skips a frozen stage, publishes elsewhere, or emits non-aggregate output."""
         from experiments.exp456_exp455_dataset_key_order_repair_antigravity import cli_antigravity as cli
