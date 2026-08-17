@@ -84,11 +84,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
             "planned_awaiting_implementation",
-            "Task 1/5",
+            "Task 2/5",
             "0회",
             "not_available",
             "result_root_created=false",
-            "Task 2",
+            "Task 3",
         ):
             self.assertIn(value, dashboard)
 
@@ -128,10 +128,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         source_parent = graph["source_parent_commit"]
         self.assertEqual(source_parent, lock["source_parent_commit"])
-        self.assertEqual(source_parent, "17c6ffa100f70368f0c86efaa4a5f04890e4f12d")
+        self.assertEqual(source_parent, "f244659c85c286a6d1ed087cbb3380cff3aaaee1")
         implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        self.assertIn("checked-in map source-parent commit SHA는 <code>17c6ffa100f70368f0c86efaa4a5f04890e4f12d</code>", implementation_report)
-        self.assertIn("<code>24722fabe8ae9f0c89ee4f9c28cb4f3c68f78b7b</code>은 Task 1 implementation base 및 Exp455 deep-equality reference일 뿐 map binding이 아니다.", implementation_report)
+        self.assertIn("checked-in map source-parent commit SHA는 <code>f244659c85c286a6d1ed087cbb3380cff3aaaee1</code>", implementation_report)
+        self.assertIn("<code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>은 Exp455 byte guard reference일 뿐 map binding이 아니다.", implementation_report)
         task_report = (ROOT_ANTIGRAVITY / ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html").read_text(encoding="utf-8")
         self.assertIn("source-parent <code>17c6ffa100f70368f0c86efaa4a5f04890e4f12d</code>", task_report)
         self.assertIn("<code>24722fabe8ae9f0c89ee4f9c28cb4f3c68f78b7b</code> is the Task 1 implementation base and Exp455 deep-equality reference, not the map source-parent binding.", task_report)

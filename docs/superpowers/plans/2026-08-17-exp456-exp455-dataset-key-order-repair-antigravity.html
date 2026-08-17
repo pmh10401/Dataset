@@ -101,7 +101,7 @@ self.assertIsNone(exp456["evaluation_sha256"])</code></pre></li>
   </section>
 
   <section>
-    <h2><input disabled type="checkbox">Task 2: Exp455 통제 복사와 과학 조건 동등성</h2>
+    <h2><input checked disabled type="checkbox">Task 2: Exp455 통제 복사와 과학 조건 동등성</h2>
     <h3>Files</h3>
     <ul>
       <li>Create: <code>experiments/exp456_exp455_dataset_key_order_repair_antigravity/config_antigravity.py</code></li>
@@ -116,18 +116,18 @@ self.assertIsNone(exp456["evaluation_sha256"])</code></pre></li>
       <li>Produces: <code>leave_one_dataset_out_antigravity(features, outcomes) -&gt; tuple[FoldDecisionAntigravity, ...]</code>.</li>
     </ul>
     <ol>
-      <li><input disabled type="checkbox">Exp456 모듈 부재와 Exp455/Exp456 동등성 helper 부재를 확인하는 RED 테스트를 작성·실행한다.</li>
-      <li><input disabled type="checkbox">Exp455의 다섯 모듈을 Exp456으로 복사하고 실험 ID·root·문서 SHA만 바꾼다. 특징과 router 본문은 과학적으로 동일하게 유지한다.</li>
-      <li><input disabled type="checkbox">다음 고정값의 정확한 동등성을 검사한다.
+      <li><input checked disabled type="checkbox">Exp456 모듈 부재와 Exp455/Exp456 동등성 helper 부재를 확인하는 RED 테스트를 작성·실행한다.</li>
+      <li><input checked disabled type="checkbox">Exp455의 다섯 모듈을 Exp456으로 복사하고 실험 ID·root·문서 SHA만 바꾼다. 특징과 router 본문은 과학적으로 동일하게 유지한다.</li>
+      <li><input checked disabled type="checkbox">다음 고정값의 정확한 동등성을 검사한다.
 <pre><code>assert exp456.candidates == exp455.candidates
 assert exp456.target_family_counts == (("ECG5000", 5), ("ChlorineConcentration", 3))
 assert exp456.global_fn_must_be_below == 1988
 assert exp456.global_fp_max == 314
 assert exp456.global_f1_min == 0.6264199935</code></pre></li>
-      <li><input disabled type="checkbox">합성 authority가 Chlorine→ECG 순서여도 특징은 ECG 5개→Chlorine 3개 순서로 나오는 기존 계약을 검사한다.</li>
-      <li><input disabled type="checkbox">Exp455 기준 커밋과 현재 Exp455 package·launcher의 byte diff가 0인지 검사한다.</li>
-      <li><input disabled type="checkbox">focused GREEN을 두 번, Exp455 대응 회귀를 한 번 실행한다.</li>
-      <li><input disabled type="checkbox">map·report·dashboard·체크박스를 동기화하고 커밋한다: <code>feat(exp456): freeze order-repair foundations</code>.</li>
+      <li><input checked disabled type="checkbox">합성 authority가 Chlorine→ECG 순서여도 특징은 ECG 5개→Chlorine 3개 순서로 나오는 기존 계약을 검사한다.</li>
+      <li><input checked disabled type="checkbox">Exp455 기준 커밋과 현재 Exp455 package·launcher의 byte diff가 0인지 검사한다.</li>
+      <li><input checked disabled type="checkbox">focused GREEN을 두 번, Exp455 대응 회귀를 한 번 실행한다.</li>
+      <li><input checked disabled type="checkbox">map·report·dashboard·체크박스를 동기화하고 커밋한다: <code>feat(exp456): freeze order-repair foundations</code>.</li>
     </ol>
   </section>
 
