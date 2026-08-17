@@ -1,0 +1,12 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp456 Task 1 구현 기록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>
+<h1>Exp456 Task 1 구현 기록</h1><p>이 문서는 Task 1의 planned-only governance 기록이다. Exp456 product source, 공식 evaluate/inspect, label query, result root 생성은 하지 않았다.</p>
+<h2>Exp455 map preflight</h2><p>현재 <code>codemap_exp455_antigravity.json</code>을 읽었다. 평가는 닫힌 CLI가 호출하고, evaluation은 artifacts 및 dashboard export에 읽힌다. 효과는 네 aggregate performance와 8개 result leaf이며 coverage는 <code>test_evaluation_antigravity.py</code>와 <code>test_replay_antigravity.py</code>다.</p>
+<h2>TDD evidence</h2><p>RED는 Exp456 preregistration file 부재로 관찰했다.</p><pre>python3 -m unittest experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_governance_antigravity.py; .F; FAIL: test_planned_governance_dashboard_and_map_antigravity; AssertionError: False is not true : docs/EXP456_PREREGISTRATION_antigravity_KO.html; Ran 2 tests in 0.073s; FAILED (failures=1)</pre><p>GREEN exact output:</p><pre id="green-output-antigravity">..
+----------------------------------------------------------------------
+Ran 2 tests in 0.081s
+
+OK</pre>
+<h2>Task 1 bindings</h2><p>세 ledger는 Exp456을 <code>planned_awaiting_implementation</code>, label query 0, <code>official_evaluate_started=false</code>, <code>evaluation_sha256=null</code>로 기록한다. Dashboard는 승인 설계·세 ledger·향후 공식 8 leaves만 source로 지정하고 결과 전 성능은 <code>not_available</code>로 표시한다. Map은 현재 governance surface와 map builder를 증거로 연결하며 미래 source 관계는 <code>future_unknown</code>으로만 기록한다.</p>
+<h2>보존 및 non-actions</h2><p>Exp455 terminal record와 champion/pending candidate는 기준 commit <code>24722fabe8ae9f0c89ee4f9c28cb4f3c68f78b7b</code>와 deep-equal 검증한다. 공식 명령, label query, result-root creation, 모델·점수·MLX 작업은 수행하지 않았다.</p>
+<h2>변경 파일·commit·concerns</h2><p>Task 1 owned files만 추가/수정한다. map source-parent commit SHA는 <code>24722fabe8ae9f0c89ee4f9c28cb4f3c68f78b7b</code>이다. 이 HTML이 포함된 단일 Git commit의 SHA는 commit 내용에 의해 계산되므로 self-embedding할 수 없으며 coordinator closeout에 기록한다. 현재 concern은 없으며, 성능 결과는 의도적으로 unavailable이다.</p>
+</main></body></html>

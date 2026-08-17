@@ -1416,6 +1416,33 @@
       "independent_reviews": {"terra_high": "clean", "agy_gemini_3_7_flash_high": "clean"},
       "official_lifecycle": {"reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613", "evaluate_invocations": 1, "evaluate_exit_code": 1, "evaluate_error_type": "ValueError", "evaluate_error": "features must match authority targets in order", "inspect_invocations": 0, "label_access_count": 0},
       "notes": "The one approved official evaluate failed before aggregation because the approved feature order and frozen authority target order differed. No official result root or performance metrics exist; inspect was not run. Exp455 is immutable and must not be retried. Routing and promotion stay disabled."
+    },
+    {
+      "id": "Exp456",
+      "experiment": "Exp456",
+      "kind": "exp455_dataset_key_order_repair",
+      "status": "planned_awaiting_implementation",
+      "implementation_status": "task_1_governance_complete",
+      "documents": ["docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "docs/EXP456_RUNBOOK_antigravity_KO.html", "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP456_DASHBOARD_antigravity.html"],
+      "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817",
+      "qualified_candidates": ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"],
+      "target_family_counts": {"ECG5000": 5, "ChlorineConcentration": 3},
+      "target_dataset_count": 8,
+      "baseline_dataset_count": 40,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "result_root_created": false,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_lifecycle": {"evaluate_invocations": 0, "inspect_invocations": 0, "label_access_count": 0, "result_root_created": false},
+      "notes": "Planned-only order-contract repair. Task 1 adds governance, dashboard, and initial map only; no Exp456 source implementation, official command, label query, result root, performance, routing, champion, pending-candidate change, or promotion exists."
     }
   ]
 }

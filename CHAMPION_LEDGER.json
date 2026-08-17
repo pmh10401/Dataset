@@ -538,6 +538,28 @@
       "official_lifecycle": {"reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613", "evaluate_invocations": 1, "evaluate_exit_code": 1, "evaluate_error_type": "ValueError", "evaluate_error": "features must match authority targets in order", "inspect_invocations": 0, "label_access_count": 0, "result_root_created": false},
       "review_only": true,
       "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp456",
+      "kind": "exp455_dataset_key_order_repair",
+      "status": "planned_awaiting_implementation",
+      "implementation_status": "task_1_governance_complete",
+      "reason": "Exp456 is a planned-only repair of Exp455's dataset-key order contract. Task 1 has no product implementation, official evaluate/inspect, label query, result, routing, champion selection, pending-candidate change, or promotion.",
+      "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "result_root_created": false,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_lifecycle": {"evaluate_invocations": 0, "inspect_invocations": 0, "label_access_count": 0, "result_root_created": false},
+      "review_only": true,
+      "operational_alert_eligible": false
     }
   ]
 }

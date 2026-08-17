@@ -1,0 +1,16 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp456 사전등록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left;vertical-align:top}.note{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
+<h1>Exp456: Exp455 데이터셋 이름 결합 수정 사전등록</h1>
+<p>Exp456은 Exp455의 공식 평가가 서로 다른 목록 순서 때문에 성능 계산 전에 중단된 것을 새 실험에서 수리한다. 유일한 과학적 변경은 위치 비교를 정확한 <code>dataset</code> 이름의 1:1 결합으로 바꾸는 것이다.</p>
+<h2>고정 정체성</h2><table><tr><th>항목</th><th>고정값</th></tr>
+<tr><td>실험 / 종류</td><td><code>Exp456</code> / <code>exp455_dataset_key_order_repair</code></td></tr>
+<tr><td>실행 이름</td><td><code>exp456-exp455-dataset-key-order-repair-antigravity-20260817</code></td></tr>
+<tr><td>결과 root</td><td><code>/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817</code> (현재 생성 금지)</td></tr>
+<tr><td>패키지</td><td><code>experiments/exp456_exp455_dataset_key_order_repair_antigravity</code> (Task 1에는 governance test만 존재)</td></tr>
+<tr><td>승인 설계</td><td><code>docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html</code><br><code>79c6ad3e8bfad6f7f9b397fc1d20b448ebc656f198de5d449ff897a92de98247</code></td></tr></table>
+<h2>동결된 과학 조건</h2><ul>
+<li>authority 원본 순서는 ChlorineConcentration 3개 → ECG5000 5개로 보존하고, 특징·공개 결과의 순서는 ECG5000 5개 → ChlorineConcentration 3개로 보존한다.</li>
+<li>후보는 <code>ECG5000:hydra_local_gap</code>, <code>ChlorineConcentration:multirocket_local_gap</code>뿐이며, 8개 대상 외 40개는 baseline이다.</li>
+<li>네 비교 방법, LODO 규칙, feature, 모델, FN &lt; 1988, FP &lt;= 314, F1 &gt;= 0.6264199935, 각 대상 family FN 변화 &lt;= 0은 Exp455와 같다.</li>
+<li>중복·누락·추가 이름과 family·method·target length 불일치는 계산 전에 거부한다.</li></ul>
+<div class="note"><strong>방화벽과 gate:</strong> Task 1 상태는 <code>planned_awaiting_implementation</code>이다. TEST label 조회와 공식 evaluate/inspect는 모두 0회이며 결과 root는 없다. 새 학습·새 점수원·MLX 변경·routing·champion·pending candidate·promotion은 없다. 공식 평가는 Task 5의 별도 사용자 승인 뒤에만 가능하다.</div>
+</main></body></html>
