@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-17T17:13:06+09:00",
-  "generated_from_commit": "f53b3f52a1998dd2f3fe5add87d51b1a4ea765b2",
+  "generated_at": "2026-08-17T17:51:21+09:00",
+  "generated_from_commit": "0bcf427f2941a95899f86bde98af821515f38d3e",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 I2 bounded Smoke A post-claim recovery: this code change creates no authority JSON, production root/claim, score, TEST-label access, smoke, or official run.",
@@ -8,7 +8,8 @@
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "Smoke A lifecycle mutation is internal-only: verified A -> I readiness derives fixed values-only inputs, bounds Task4/5 to two waves, then capability-freezes and scorer-free verifies before complete terminal publication.",
     "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created.",
-    "Official six-public-baseline comparison design: reuse frozen classical results, derive a byte-preserving Deep SVDD single-method view, evaluate the user-parity-confirmed DROCC MPS root, and report matched-budget/conformal metrics without inventing proposal AP/AUROC."
+    "Official six-public-baseline comparison design: reuse frozen classical results, derive a byte-preserving Deep SVDD single-method view, evaluate the user-parity-confirmed DROCC MPS root, and report matched-budget/conformal metrics without inventing proposal AP/AUROC.",
+    "Implemented byte-preserving Deep SVDD single-method view: verifies mixed-root run identity and each shard/meta pair, copies scientific shard JSON bytes unchanged, rebinds only metadata to the derived run identity, records provenance, and freezes exact coverage."
   ],
   "nodes": [
     {
@@ -1773,7 +1774,7 @@
       ]
     },
     {
-      "id": "exp449_official_public_baseline_comparison_design",
+      "id": "paper_official_public_baseline_comparison_design",
       "path": "docs/superpowers/specs/2026-08-17-exp449-official-public-baseline-comparison-antigravity-design.md",
       "role": "Approved official paper comparison design for the proposed method and six published public baselines.",
       "entrypoints": [
@@ -1800,7 +1801,7 @@
       ]
     },
     {
-      "id": "exp449_official_public_baseline_comparison_plan",
+      "id": "paper_official_public_baseline_comparison_plan",
       "path": "docs/superpowers/plans/2026-08-17-exp449-official-public-baseline-comparison-antigravity.md",
       "role": "Approved four-task TDD execution plan for the six-method official paper comparison.",
       "entrypoints": [
@@ -1823,6 +1824,58 @@
         {
           "path": "docs/superpowers/plans/2026-08-17-exp449-official-public-baseline-comparison-antigravity.md",
           "symbol": "### Task 3: Run the Official Evaluation and Freeze the Numerical Tables"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_official_view",
+      "path": "experiments/paper_public_baselines/official_view_antigravity.py",
+      "role": "Byte-preserving Deep SVDD single-method derived view and frozen-manifest publisher.",
+      "entrypoints": [
+        "freeze_single_method_view_antigravity"
+      ],
+      "callers": [
+        "scratch/run_official_public_baseline_comparison_antigravity.py"
+      ],
+      "effects": [
+        "verifies completed mixed-root Deep SVDD shards, copies their JSON bytes unchanged, rebinds metadata to a one-method run identity, and freezes an independently evaluable score root"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_official_view_antigravity.py"
+      ],
+      "constraints": [
+        "Only deep_svdd_1d is accepted; score bytes, TEST indices, alerts, and continuous scores are unchanged; TEST labels and evaluation metrics remain absent."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/official_view_antigravity.py",
+          "symbol": "freeze_single_method_view_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_official_view_tests",
+      "path": "experiments/paper_public_baselines/tests/test_official_view_antigravity.py",
+      "role": "TDD coverage for byte preservation, exact freeze, method isolation, and source metadata tamper rejection.",
+      "entrypoints": [
+        "OfficialSingleMethodViewTests"
+      ],
+      "callers": [
+        "python unittest discovery"
+      ],
+      "effects": [
+        "prevents score-byte mutation or acceptance of a tampered source shard during derived-view publication"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_official_view_antigravity.py"
+      ],
+      "constraints": [
+        "Uses temporary values-only fixtures and does not access production TEST labels."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/tests/test_official_view_antigravity.py",
+          "symbol": "OfficialSingleMethodViewTests"
         }
       ]
     }
@@ -2520,6 +2573,15 @@
         "path": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
         "symbol": "_finalize_authorized_complete_antigravity, execute_smoke_a_resume_antigravity"
       }
+    },
+    {
+      "from": "public_baseline_official_view_tests",
+      "to": "public_baseline_official_view",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/tests/test_official_view_antigravity.py",
+        "symbol": "freeze_single_method_view_antigravity"
+      }
     }
   ],
   "flows": [
@@ -2616,8 +2678,8 @@
     {
       "trigger": "Official public-baseline paper comparison",
       "steps": [
-        "exp449_official_public_baseline_comparison_design",
-        "exp449_official_public_baseline_comparison_plan"
+        "paper_official_public_baseline_comparison_design",
+        "paper_official_public_baseline_comparison_plan"
       ],
       "outcome": "A six-public-baseline technical comparison is produced from immutable score evidence, with proposed AP/AUROC intentionally absent and no automatic promotion claim."
     }
