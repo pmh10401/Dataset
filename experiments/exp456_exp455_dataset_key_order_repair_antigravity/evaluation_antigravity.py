@@ -106,6 +106,8 @@ def align_targets_by_dataset_antigravity(
         decision = decision_by_dataset[feature.dataset]
         if (
             target.dataset != feature.dataset or feature.dataset != decision.dataset
+            or type(target.family) is not str or type(feature.family) is not str or type(decision.family) is not str
+            or type(target.method) is not str or type(decision.method) is not str or type(decision.selected_route) is not str
             or target.family != feature.family or feature.family != decision.family
             or target.method != approved.get(target.family) or decision.method != target.method
             or type(target.target_length) is not int or target.target_length < 0
@@ -133,12 +135,14 @@ def _validate_inputs_antigravity(
     targets = []
     for row in rows:
         _valid_confusion_antigravity(row.baseline_confusion)
+        if type(row.family) is not str:
+            raise ValueError("authority family is invalid")
         expected = _TARGET_METHODS_ANTIGRAVITY.get(row.family)
         if expected is None:
             if row.method is not None or row.candidate_confusion is not None:
                 raise ValueError("baseline authority row is invalid")
             continue
-        if row.method != expected or row.candidate_confusion is None or type(row.target_length) is not int or row.target_length < 0:
+        if type(row.method) is not str or row.method != expected or row.candidate_confusion is None or type(row.target_length) is not int or row.target_length < 0:
             raise ValueError("target authority row is invalid")
         _valid_confusion_antigravity(row.candidate_confusion)
         targets.append(row)

@@ -100,6 +100,28 @@ class DatasetKeyJoinAntigravityTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     evaluate_routing_antigravity(broken_authority, broken_features, broken_decisions)
 
+    def test_rejects_string_subclasses_in_join_identity_fields_antigravity(self) -> None:
+        """Break caught: equality-compatible string subclasses enter frozen dataset-key evidence."""
+        from experiments.exp456_exp455_dataset_key_order_repair_antigravity.evaluation_antigravity import evaluate_routing_antigravity
+
+        class StringSubclassAntigravity(str):
+            pass
+
+        authority, features, decisions = self._inputs_antigravity(True)
+        target_index = next(index for index, row in enumerate(authority.rows) if row.method is not None)
+        cases = (
+            (replace(authority, rows=authority.rows[:target_index] + (replace(authority.rows[target_index], family=StringSubclassAntigravity(authority.rows[target_index].family)),) + authority.rows[target_index + 1:]), features, decisions),
+            (replace(authority, rows=authority.rows[:target_index] + (replace(authority.rows[target_index], method=StringSubclassAntigravity(authority.rows[target_index].method)),) + authority.rows[target_index + 1:]), features, decisions),
+            (authority, (replace(features[0], family=StringSubclassAntigravity(features[0].family)),) + features[1:], decisions),
+            (authority, features, (replace(decisions[0], family=StringSubclassAntigravity(decisions[0].family)),) + decisions[1:]),
+            (authority, features, (replace(decisions[0], method=StringSubclassAntigravity(decisions[0].method)),) + decisions[1:]),
+            (authority, features, (replace(decisions[0], selected_route=StringSubclassAntigravity(decisions[0].selected_route)),) + decisions[1:]),
+        )
+        for broken_authority, broken_features, broken_decisions in cases:
+            with self.subTest():
+                with self.assertRaises(ValueError):
+                    evaluate_routing_antigravity(broken_authority, broken_features, broken_decisions)
+
 
 if __name__ == "__main__":
     unittest.main()
