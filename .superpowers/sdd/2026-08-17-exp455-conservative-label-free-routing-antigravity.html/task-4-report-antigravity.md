@@ -39,6 +39,6 @@
 
 ## Commit and self-review
 
-- Commit: recorded after final clean verification.
+- Commit: `8708c222d53fce3a996dde0719da97ae05df52c7` (`feat(exp455): evaluate conservative routing`).
 - Self-review: exact 48-row validation rejects missing, duplicated, and boolean confusion data; F1 is derived from the exact integer numerator/denominator before conversion to float. Replay recomputes LODO decisions and all semantic leaves rather than trusting stored metrics.
 - Concerns: none.
