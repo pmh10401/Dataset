@@ -108,6 +108,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertTrue(graph["unknown_relationships"])
         builder.validate_map_antigravity(graph, lock, rendered)
 
+    def test_dashboard_exposes_only_approved_fields_and_preflight_lists_all_coverage_antigravity(self) -> None:
+        """Break caught: the dashboard leaks a non-approved field or preflight omits Exp455 evaluation coverage."""
+        dashboard = (ROOT_ANTIGRAVITY / "docs/EXP456_DASHBOARD_antigravity.html").read_text(encoding="utf-8")
+        self.assertNotIn("TEST label 조회", dashboard)
+        report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
+        for coverage_test in (
+            "test_evaluation_antigravity.py",
+            "test_replay_antigravity.py",
+            "test_artifacts_antigravity.py",
+            "test_dashboard_export_antigravity.py",
+        ):
+            self.assertIn(coverage_test, report)
+
     def test_exp455_and_champion_pending_are_preserved_antigravity(self) -> None:
         """Break caught: registering Exp456 changes Exp455 terminal evidence or champion/pending truth."""
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
