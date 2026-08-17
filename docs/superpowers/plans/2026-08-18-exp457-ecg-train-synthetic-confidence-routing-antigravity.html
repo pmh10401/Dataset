@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp457 ECG5000 TRAIN 합성 이상 확신 라우팅 구현 계획</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    h1,h2,h3{line-height:1.25}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    pre{background:#111827;color:#f1f5f9;padding:1rem;overflow:auto}table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}.task{border-top:3px solid #26364a;margin-top:2rem;padding-top:1rem}
+    .meta{background:#f5f7fa;padding:1rem}.step{margin:.8rem 0}.files li{margin:.2rem 0}input{margin-right:.45rem}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp457 ECG5000 TRAIN 합성 이상 확신 라우팅 구현 계획</h1>
+  <blockquote><strong>작업자 필수 방식:</strong> Task별 TDD와 검토를 사용한다. 각 단계가 끝나면 이 HTML의 해당 체크박스를 즉시 체크한다.</blockquote>
+  <p><label><input type="checkbox" checked disabled>설계 승인 완료</label></p>
+  <div class="meta">
+    <p><strong>Goal:</strong> TRAIN에서 Hydra 후보의 신뢰도를 확인하고, 낮은 확신에서는 baseline으로 돌아가는 ECG5000 라우터를 만든다.</p>
+    <p><strong>Architecture:</strong> Exp456의 불변 결과를 기준으로 새 Exp457 패키지를 만든다. TRAIN 전용 합성 이상 검증과 라벨 없는 탐지 구조 게이트가 모두 통과한 ECG5000만 Hydra를 사용하며, 결과는 집계 전용 HTML 대시보드에 표시한다.</p>
+    <p><strong>Tech Stack:</strong> Python 3.14, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2, 표준 라이브러리, unittest, 정적 HTML.</p>
+  </div>
+
+  <h2>Global Constraints</h2>
+  <ul>
+    <li>최종 설계: <code>docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html</code>, SHA256 <code>3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20</code>.</li>
+    <li>Exp456 기준 커밋은 <code>58dae2d425de136cc02bfe665e54bff847418af3</code>이며 Exp456 코드·문서·결과를 수정하지 않는다.</li>
+    <li>새 과학 변화는 ECG5000 Hydra 선택 게이트 하나뿐이다.</li>
+    <li>ChlorineConcentration 세 데이터셋은 family-wide MultiRocket 후보로 고정한다.</li>
+    <li>Hydra 설정은 seed <code>20260721</code>/<code>20261721</code>, 5-fold, <code>alpha=0.005</code>, kNN 3, kernels 8, groups 64를 유지한다.</li>
+    <li>합성 이상은 Exp417의 level shift, gradual drift, amplitude scaling, period change 정의를 그대로 사용한다.</li>
+    <li>게이트 1은 정상 OOF Wilson 95% 상한 ≤5%, pooled sensitivity ≥70%, 종류별 sensitivity ≥50%, 두 seed 모두 통과다.</li>
+    <li>게이트 2는 정확히 <code>added_count &gt; removed_count</code>다.</li>
+    <li>최종 합격은 FN ≤834, FP ≤66, F1 &gt;0.5764150943396227을 모두 만족해야 한다.</li>
+    <li>TEST 혼동행렬·FN·FP·F1은 라우팅 결정에 사용하지 않는다. 최종 결정 후 Exp456 불변 혼동행렬을 재집계할 때만 사용한다.</li>
+    <li>모든 새 파일 이름에 <code>antigravity</code>를 포함하고 새 <code>__init__.py</code>는 만들지 않는다.</li>
+    <li>문서는 HTML로 작성한다. 코드맵 정책 때문에 JSON/lock만 예외다.</li>
+    <li>공식 결과 폴더는 <code>/Users/mac/Documents/Dataset/exp457_ecg_train_synthetic_confidence_routing_antigravity_20260818</code>다.</li>
+    <li>공식 명령은 별도 사용자 승인 후 Task 6에서만 실행한다.</li>
+    <li>MLX는 공식 aeon Hydra를 다시 작성해야 하므로 적용 조건 1을 충족하지 않는다. CPU 구현을 유지한다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <thead><tr><th>파일</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr><td><code>config_antigravity.py</code></td><td>Exp457 정체성, 대상, seeds, alpha, 합격 기준</td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>TRAIN 증거, 게이트 결과, route, 최종 성능의 불변 자료형</td></tr>
+      <tr><td><code>perturbations_antigravity.py</code></td><td>Exp417과 같은 네 가지 TRAIN 합성 이상</td></tr>
+      <tr><td><code>sources_antigravity.py</code></td><td>ECG5000 TRAIN 값과 Exp456 불변 결과 읽기</td></tr>
+      <tr><td><code>qualification_antigravity.py</code></td><td>Hydra 5-fold OOF, 합성 감도, 게이트 1 계산</td></tr>
+      <tr><td><code>router_antigravity.py</code></td><td>게이트 1+2 결합과 baseline 복귀</td></tr>
+      <tr><td><code>evaluation_antigravity.py</code></td><td>네 비교 방법 재집계와 합격 판정</td></tr>
+      <tr><td><code>artifacts_antigravity.py</code></td><td>9개 결과 파일 생성</td></tr>
+      <tr><td><code>replay_antigravity.py</code></td><td>결과를 다시 계산해 같은 집계인지 확인</td></tr>
+      <tr><td><code>dashboard_export_antigravity.py</code></td><td>집계 전용 대시보드 payload</td></tr>
+      <tr><td><code>cli_antigravity.py</code></td><td><code>evaluate --reviewed-commit</code>와 <code>inspect</code></td></tr>
+    </tbody>
+  </table>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 1: Exp457 등록, HTML 대시보드, 코드맵</label></h2>
+    <p><strong>독립 결과:</strong> 구현 전 상태와 과학 기준을 한눈에 볼 수 있고, 다음 Task가 사용할 정확한 설정·계약 이름이 고정된다.</p>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>docs/EXP457_PREREGISTRATION_antigravity_KO.html</code></li>
+      <li>Create: <code>docs/EXP457_RUNBOOK_antigravity_KO.html</code></li>
+      <li>Create: <code>docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+      <li>Create: <code>docs/EXP457_DASHBOARD_antigravity.html</code></li>
+      <li>Create: <code>scratch/build_codemap_exp457_antigravity.py</code></li>
+      <li>Create: <code>docs/codemap/codemap_exp457_antigravity.html</code>, <code>.json</code>, <code>.lock</code></li>
+      <li>Create: <code>experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_governance_antigravity.py</code></li>
+      <li>Modify: <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code></li>
+    </ul>
+    <h3>Interfaces</h3>
+    <p><strong>Produces:</strong> experiment id <code>Exp457</code>, status <code>planned_awaiting_implementation</code>, exact design SHA, frozen gates, dashboard Task 1/6 state, and versioned Exp457 code-map.</p>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED governance test 작성</label>
+      <pre><code>def test_exp457_scientific_contract_antigravity(self):
+    self.assertEqual(config["target_family"], "ECG5000")
+    self.assertEqual(config["pooled_sensitivity_min"], 0.70)
+    self.assertEqual(config["per_type_sensitivity_min"], 0.50)
+    self.assertEqual(config["normal_wilson_upper_max"], 0.05)
+    self.assertEqual(config["final_fn_max"], 834)
+    self.assertEqual(config["final_fp_max"], 66)</code></pre>
+      <p>Run: 고정 Python으로 해당 governance test. Expected: Exp457 문서·상태·map이 없어 FAIL.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: 최소 문서·ledgers·대시보드·map 생성</label><p>대시보드는 Task 1/6, 아직 결과 없음, Exp456 기준값 네 개와 Exp457 합격선을 표시한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: GREEN 및 map 검증</label><p>Run: governance test 두 번, strict JSON parse, map HTML=JSON, 현재 fingerprint 검증.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 체크박스 갱신·커밋·Task 1 검토</label><p>Commit: <code>docs(exp457): register ECG confidence routing</code>.</p></div>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 2: 고정 설정·계약·합성 이상</label></h2>
+    <p><strong>독립 결과:</strong> 입력이나 seed가 같으면 언제나 같은 합성 이상과 같은 게이트 자료형을 만든다.</p>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/config_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/contracts_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/perturbations_antigravity.py</code></li>
+      <li>Create tests: <code>test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_perturbations_antigravity.py</code></li>
+      <li>Modify: Exp457 dashboard, report, plan checkboxes, map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <p><strong>Produces:</strong></p>
+    <pre><code>build_primary_perturbations_antigravity(values: np.ndarray) -&gt; Mapping[str, np.ndarray]
+TrainSeedEvidenceAntigravity(dataset, seed, normal_trials, normal_alerts,
+    normal_wilson_upper, pooled_sensitivity, per_type_sensitivity, passed)
+TrainQualificationAntigravity(dataset, seed_evidence, passed)
+RouteDecisionAntigravity(dataset, train_gate, structure_gate, route)</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED exact perturbation tests</label><p>길이 100 fixture에서 onset 40, level +3 scale, drift 0→3 scale, centered amplitude ×1.5, period ×1.25를 직접 계산해 비교한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED strict contract tests</label><p>bool 숫자, 잘못된 dataset/seed, 빠진 종류, 0~1 밖 sensitivity, route 오타를 거부한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 config/contracts/perturbations 구현</label><p>Exp417 정의를 복사하지 말고 작은 독립 함수로 옮기되 수학적 결과가 byte-level fixture와 같게 한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN 두 번·Exp417 대응 회귀·CPU 결정 확인</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: HTML/map 체크·커밋·Task 2 검토</label><p>Commit: <code>feat(exp457): freeze TRAIN confidence contracts</code>.</p></div>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 3: TRAIN 전용 Hydra 신뢰도 계산</label></h2>
+    <p><strong>독립 결과:</strong> TEST 라벨 없이 5개 ECG5000 각각의 게이트 1 통과 여부를 결정한다.</p>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>sources_antigravity.py</code>, <code>qualification_antigravity.py</code></li>
+      <li>Create tests: <code>test_sources_antigravity.py</code>, <code>test_qualification_antigravity.py</code></li>
+      <li>Modify: dashboard, report, plan checkboxes, map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <pre><code>load_ecg_train_antigravity(dataset: str) -&gt; np.ndarray
+empirical_pvalues_antigravity(reference: np.ndarray, query: np.ndarray) -&gt; np.ndarray
+wilson_upper_antigravity(successes: int, trials: int) -&gt; float
+qualify_ecg_dataset_antigravity(dataset: str, train: np.ndarray) -&gt; TrainQualificationAntigravity
+qualify_all_ecg_antigravity() -&gt; tuple[TrainQualificationAntigravity, ...]</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED TRAIN source test</label><p>SQL이 <code>split='TRAIN'</code>만 읽고 label 열과 TEST 행을 읽지 않는지 확인한다. 실제 대상 이름은 정확히 5개다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED hand-built gate tests</label>
+      <pre><code>self.assertTrue(qualify(seed_a_pass, seed_b_pass).passed)
+self.assertFalse(qualify(seed_a_pass, seed_b_fail).passed)
+self.assertFalse(qualify(per_type_below_050).passed)
+self.assertFalse(qualify(wilson_above_005).passed)</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 5-fold Hydra 점수와 합성 query 구현</label><p>각 fold의 fit rows로 Hydra+LocalGap을 학습하고 원본 query 및 네 perturbation을 같은 model로 점수화한다. 경험적 p-value는 전체 정상 OOF reference로 계산한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN synthetic suite 두 번</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: 실제 TRAIN read-only smoke</label><p>5개 행 수 2335/1413/76/155/19와 finite shape를 확인한다. 전체 공식 qualification은 아직 실행하지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: HTML/map 체크·커밋·Task 3 검토</label><p>Commit: <code>feat(exp457): qualify ECG candidates on TRAIN</code>.</p></div>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 4: 보수적 라우터·평가·재생·대시보드 payload</label></h2>
+    <p><strong>독립 결과:</strong> TRAIN 증거와 라벨 없는 구조만으로 route를 고정하고 Exp456 결과를 정확히 재집계한다.</p>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>router_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
+      <li>Create tests: <code>test_router_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>, <code>test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code></li>
+      <li>Modify: dashboard, report, plan checkboxes, map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <pre><code>route_ecg_antigravity(feature, qualification) -&gt; RouteDecisionAntigravity
+evaluate_routes_antigravity(exp456_authority, decisions) -&gt; EvaluationResultAntigravity
+publish_result_antigravity(root: Path, evidence) -&gt; PublishedResultAntigravity
+inspect_result_at_antigravity(root: Path) -&gt; EvaluationResultAntigravity
+export_dashboard_antigravity(result) -&gt; dict[str, object]</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED routing truth table</label><pre><code># candidate only when both gates pass
+(True, 14, 5)  -&gt; "candidate"
+(False, 14, 5) -&gt; "baseline"
+(True, 5, 5)   -&gt; "baseline"
+(True, 4, 5)   -&gt; "baseline"</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED exact comparison test</label><p>Exp456의 baseline/family-wide/oracle 네 값 중 기존 세 값을 먼저 byte-exact 재현하고, 손으로 만든 qualification에 따라 Exp457 값을 계산한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 router/evaluator 구현</label><p>Chlorine은 항상 candidate, ECG는 두 게이트, 나머지는 baseline으로 합산한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 9-leaf publication과 semantic replay 구현</label><p>정확한 leaf는 context, train qualification, features, route decisions, comparison metrics, family metrics, dashboard snapshot, decision, artifact map이다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: dashboard aggregate-only test</label><p>5개 ECG gate/route와 네 비교 FN/FP/F1만 허용한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: GREEN 두 번·Exp456 재현 회귀</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 7: HTML/map 체크·커밋·Task 4 검토</label><p>Commit: <code>feat(exp457): evaluate conservative ECG routing</code>.</p></div>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 5: 닫힌 CLI와 공식 후보 검증</label></h2>
+    <p><strong>독립 결과:</strong> 공식 실행 전에 코드·TRAIN 계산·대시보드가 재현 가능하며, 사용자가 결과 실행 여부를 판단할 수 있다.</p>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>cli_antigravity.py</code></li>
+      <li>Create: <code>scratch/run_exp457_ecg_train_synthetic_confidence_routing_antigravity.py</code></li>
+      <li>Create test: <code>test_cli_antigravity.py</code></li>
+      <li>Modify: implementation report, dashboard, plan checkboxes, three ledgers, map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <pre><code>evaluate --reviewed-commit &lt;lower-40-hex&gt;
+inspect
+# reject: readiness, new, resume, retry, overrides, abbreviations</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED exact CLI tests</label><p>두 명령 외 모든 형태와 긴/짧은 option 변형을 거부한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: 최소 lazy CLI·outside-CWD launcher 구현</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: Exp457 전체 synthetic suite 두 번</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 실제 TRAIN qualification candidate run</label><p>공식 결과 폴더가 아닌 임시 폴더에서 5개 ECG의 gate 1 결과를 계산하고 두 번 동일한지 확인한다. TEST 라벨은 읽지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: Exp456 과학 회귀와 byte guard</label><p>Exp456 제품 테스트 33개 및 map validate를 통과하고 Exp456 tracked bytes가 기준 커밋과 같은지 확인한다. 새 worktree에 없는 ignored Task 보고서 의존 검사 1개는 baseline limitation으로 명시한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: 결과 중심 최종 검토</label><p>확인 항목은 route 계산, TRAIN gate, 네 비교값, 합격 기준, dashboard 일치다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 7: HTML 체크·커밋·공식 실행 승인 요청</label><p>Commit: <code>feat(exp457): freeze ECG routing candidate</code>. 상태는 <code>implementation_verified_awaiting_official_evaluation</code>.</p></div>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 6: 공식 결과 1회 실행과 HTML 결과 분석</label></h2>
+    <p><strong>독립 결과:</strong> Exp457이 단순 family-wide보다 실제로 나은지 결론을 낸다.</p>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Modify: <code>docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+      <li>Modify: <code>docs/EXP457_DASHBOARD_antigravity.html</code></li>
+      <li>Modify: this plan checkboxes, three ledgers, Exp457 map triplet</li>
+    </ul>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: 사용자 공식 실행 승인 확인</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: exact clean reviewed commit 기록</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 공식 evaluate 정확히 1회</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+"$PY" scratch/run_exp457_ecg_train_synthetic_confidence_routing_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: evaluate 성공 시 inspect 정확히 1회</label><pre><code>"$PY" scratch/run_exp457_ecg_train_synthetic_confidence_routing_antigravity.py inspect</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: 9개 결과 파일과 네 비교값 재계산</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: 합격 기준 세 개와 ECG dataset별 route 분석</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 7: dashboard/report/ledgers/map에 결과 반영</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 8: 독립 결과 검토 후 Task 6 체크·커밋</label><p>통과 시에도 상태는 외부 검증 후보이며 자동 라우팅·승격은 하지 않는다.</p></div>
+  </section>
+
+  <h2>완료 정의</h2>
+  <ul>
+    <li>모든 Task와 Step 체크박스가 실제 상태와 일치한다.</li>
+    <li>HTML 대시보드에서 TRAIN gate, route, FN/FP/F1, 합격 결론을 볼 수 있다.</li>
+    <li>Exp456은 byte-unchanged다.</li>
+    <li>공식 실행 전과 후의 결과 주장이 각각 실제 증거와 일치한다.</li>
+    <li>미해결 과학 문제나 생략한 검증이 없거나, 남은 한계를 결과 보고서에 명시한다.</li>
+  </ul>
+</main>
+</body>
+</html>
