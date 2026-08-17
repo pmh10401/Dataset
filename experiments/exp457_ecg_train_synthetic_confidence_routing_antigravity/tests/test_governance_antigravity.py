@@ -143,16 +143,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
 
     def test_dashboard_and_map_expose_only_planned_boundaries_antigravity(self) -> None:
-        """Break caught: Task 1 fabricates a result or implemented scientific source edge."""
+        """Break caught: Task 2 fabricates a result or a Task 3+ implemented source edge."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 1/6",
+            "Task 2/6",
             "아직 공식 결과 없음",
             "always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742",
             "family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227",
             "oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729",
             "lodo_router</td><td>843</td><td>65</td><td>0.5704824976348155",
-            "다음 Task</th><td>Task 2: 고정 설정·계약·합성 이상",
+            "다음 Task</th><td>Task 3: TRAIN 전용 Hydra 신뢰도 계산",
         ):
             self.assertIn(value, dashboard)
 
@@ -168,9 +168,21 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
         nodes = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("dashboard", "research_state", "governance_regression", "map_builder"):
+        for node_id in (
+            "dashboard",
+            "research_state",
+            "governance_regression",
+            "map_builder",
+            "frozen_config",
+            "result_contracts",
+            "primary_perturbations",
+        ):
             self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
-        for node_id in ("future_config", "future_synthetic", "future_router", "future_evaluation", "future_artifacts", "future_cli"):
+        for node_id in ("frozen_config", "result_contracts", "primary_perturbations"):
+            self.assertTrue(nodes[node_id]["evidence"])
+            self.assertTrue(nodes[node_id]["tests"])
+            self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).is_file())
+        for node_id in ("future_qualification", "future_router", "future_evaluation", "future_artifacts", "future_cli"):
             self.assertEqual(nodes[node_id]["status"], "future_unknown")
             self.assertEqual(nodes[node_id]["evidence"], [])
             self.assertFalse((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())

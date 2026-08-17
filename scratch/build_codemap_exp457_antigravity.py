@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Task 1 Exp457 governance code map."""
+"""Build and validate the bounded Task 2 Exp457 foundation code map."""
 
 from __future__ import annotations
 
@@ -32,7 +32,13 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/EXP457_RUNBOOK_antigravity_KO.html",
     "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html",
     "docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/config_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/contracts_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/perturbations_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_config_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_governance_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_perturbations_antigravity.py",
     "scratch/build_codemap_exp457_antigravity.py",
 )
 ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "tests", "future_unknown"}
@@ -84,9 +90,9 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp457 Task 1 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp457 Task 1 governance 코드맵</h1><p>현재 구현된 governance, dashboard, ledger, test, builder 경계와 향후 과학 source를 분리한다. '
-        'future nodes는 구현 증거가 없으며 관계도 future/unknown이다.</p>'
+        '<title>Exp457 Task 2 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp457 Task 2 foundation 코드맵</h1><p>구현된 governance, 고정 설정, 불변 계약, Exp417-compatible perturbation과 향후 qualification/routing 경계를 분리한다. '
+        'Task 3+ future nodes는 구현 증거가 없으며 관계도 future/unknown이다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -103,21 +109,32 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     design = "docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html"
     package = "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity"
     governance_test = f"{package}/tests/test_governance_antigravity.py"
+    config_test = f"{package}/tests/test_config_antigravity.py"
+    contracts_test = f"{package}/tests/test_contracts_antigravity.py"
+    perturbations_test = f"{package}/tests/test_perturbations_antigravity.py"
+    config = f"{package}/config_antigravity.py"
+    contracts = f"{package}/contracts_antigravity.py"
+    perturbations = f"{package}/perturbations_antigravity.py"
     builder = "scratch/build_codemap_exp457_antigravity.py"
     nodes: list[dict[str, object]] = [
-        {"id": "approved_design", "path": design, "role": "Caller: Task 1 governance. Effect: freezes the only scientific change and exact confidence/result gates.", "tests": [governance_test], "evidence": [evidence_antigravity(design, "Exp457")]},
-        {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: sequences TDD implementation and keeps official execution outside Task 1.", "tests": [governance_test], "evidence": [evidence_antigravity(plan, "Task 1: Exp457 등록")]},
+        {"id": "approved_design", "path": design, "role": "Caller: Tasks 1–2 governance and configuration. Effect: freezes the only scientific change and exact confidence/result gates.", "tests": [governance_test, config_test], "evidence": [evidence_antigravity(design, "Exp457")]},
+        {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: sequences TDD implementation and keeps official execution outside Task 2.", "tests": [governance_test, config_test, contracts_test, perturbations_test], "evidence": [evidence_antigravity(plan, "Task 2: 고정 설정·계약·합성 이상")]},
         {"id": "preregistration", "path": "docs/EXP457_PREREGISTRATION_antigravity_KO.html", "role": "Caller: governance review. Effect: records planned identity, frozen gates, and TEST routing firewall.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
         {"id": "runbook", "path": "docs/EXP457_RUNBOOK_antigravity_KO.html", "role": "Caller: future task operators. Effect: prohibits Task 1 official execution and result-root use.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_RUNBOOK_antigravity_KO.html", "Task 1 governance only")]},
-        {"id": "implementation_report", "path": "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 1 review. Effect: reports governance completion without claiming scientific implementation or results.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "Task 1/6")]},
-        {"id": "dashboard", "path": "docs/EXP457_DASHBOARD_antigravity.html", "role": "Caller: result-facing review. Effect: shows Task 1/6, no result, Exp456 comparators, gates, and Task 2 next action.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_DASHBOARD_antigravity.html", "아직 공식 결과 없음")]},
+        {"id": "implementation_report", "path": "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 2 review. Effect: reports implemented foundations without claiming qualification, routing, or results.", "tests": [], "evidence": [evidence_antigravity("docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "Task 2/6")]},
+        {"id": "dashboard", "path": "docs/EXP457_DASHBOARD_antigravity.html", "role": "Caller: result-facing review. Effect: shows Task 2/6, no result, Exp456 comparators, gates, and Task 3 next action.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_DASHBOARD_antigravity.html", "Task 2/6")]},
         {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: registers planned lifecycle with zero official invocations and null result hashes.", "tests": [governance_test], "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"exp457\"")]},
         {"id": "experiment_catalog", "path": "EXPERIMENT_CATALOG.json", "role": "Caller: catalog review. Effect: registers Exp457 documents, frozen contract, and no-result truth.", "tests": [governance_test], "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"id\": \"Exp457\"")]},
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "Caller: champion review. Effect: records Exp457 without changing champion or pending candidate.", "tests": [governance_test], "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"experiment\": \"Exp457\"")]},
-        {"id": "governance_regression", "path": governance_test, "role": "Caller: Task 1 verification. Effect: rejects gate drift, fabricated results, or implemented-source claims.", "tests": [governance_test], "evidence": [evidence_antigravity(governance_test, "class GovernanceAntigravityTest")]},
-        {"id": "map_builder", "path": builder, "role": "Caller: Task 1 map validation. Effect: validates evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
-        {"id": "future_config", "path": f"{package}/config_antigravity.py", "role": "Future Task 2 frozen configuration and contract boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
-        {"id": "future_synthetic", "path": f"{package}/perturbations_antigravity.py", "role": "Future Task 2 Exp417-compatible synthetic anomaly boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
+        {"id": "governance_regression", "path": governance_test, "role": "Caller: Task 1 scientific-governance verification. Effect: rejects gate drift, fabricated results, or lifecycle changes.", "tests": [governance_test], "evidence": [evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")]},
+        {"id": "map_builder", "path": builder, "role": "Caller: Task 2 map validation. Effect: validates implemented evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
+        {"id": "frozen_config", "path": config, "role": "Caller: Task 3 qualification and Task 4 evaluation. Effect: supplies exact datasets, Hydra parameters, gates, primary order, and final thresholds.", "tests": [config_test], "evidence": [evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")]},
+        {"id": "result_contracts", "path": contracts, "role": "Caller: future Task 3 qualification and Task 4 routing. Effect: rejects malformed seed evidence, qualification records, and route records without deriving decisions.", "tests": [contracts_test], "evidence": [evidence_antigravity(contracts, "TrainSeedEvidenceAntigravity")]},
+        {"id": "primary_perturbations", "path": perturbations, "role": "Caller: future Task 3 TRAIN qualification. Effect: creates four deterministic Exp417-compatible primary perturbations and excludes spike.", "tests": [perturbations_test], "evidence": [evidence_antigravity(perturbations, "build_primary_perturbations_antigravity")]},
+        {"id": "config_regression", "path": config_test, "role": "Caller: Task 2 verification. Effect: rejects drift in every result-affecting frozen configuration value.", "tests": [config_test], "evidence": [evidence_antigravity(config_test, "class ConfigAntigravityTest")]},
+        {"id": "contracts_regression", "path": contracts_test, "role": "Caller: Task 2 verification. Effect: rejects wrong types, datasets, seeds, primary order, sensitivities, and route names.", "tests": [contracts_test], "evidence": [evidence_antigravity(contracts_test, "class ContractsAntigravityTest")]},
+        {"id": "perturbations_regression", "path": perturbations_test, "role": "Caller: Task 2 verification. Effect: freezes onset, robust scale, magnitudes, order, shape, immutability, and period interpolation.", "tests": [perturbations_test], "evidence": [evidence_antigravity(perturbations_test, "class PrimaryPerturbationsAntigravityTest")]},
+        {"id": "future_qualification", "path": f"{package}/qualification_antigravity.py", "role": "Future Task 3 TRAIN-only Hydra scoring and Gate 1 boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
         {"id": "future_router", "path": f"{package}/router_antigravity.py", "role": "Future Task 4 two-gate routing boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
         {"id": "future_evaluation", "path": f"{package}/evaluation_antigravity.py", "role": "Future Task 4 fixed-route result aggregation boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
         {"id": "future_artifacts", "path": f"{package}/artifacts_antigravity.py", "role": "Future Task 4 publication and replay evidence boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
@@ -125,25 +142,34 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     ]
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity("docs/EXP457_PREREGISTRATION_antigravity_KO.html", "고정 게이트")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "대시보드는 Task 1/6")},
+        {"from": "approved_design", "to": "frozen_config", "type": "governs", "evidence": evidence_antigravity(design, "Hydra의 두 고정 seed")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 2: 고정 설정·계약·합성 이상")},
         {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")},
         {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_dashboard_and_map_expose_only_planned_boundaries_antigravity")},
-        {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": evidence_antigravity(governance_test, "builder.validate_map_antigravity")},
-        {"from": "future_config", "to": "future_synthetic", "type": "future_unknown", "evidence": evidence_antigravity(plan, "build_primary_perturbations_antigravity")},
-        {"from": "future_synthetic", "to": "future_router", "type": "future_unknown", "evidence": evidence_antigravity(plan, "RouteDecisionAntigravity")},
+        {"from": "config_regression", "to": "frozen_config", "type": "tests", "evidence": evidence_antigravity(config_test, "test_frozen_config_preserves_the_approved_scientific_contract_antigravity")},
+        {"from": "contracts_regression", "to": "result_contracts", "type": "tests", "evidence": evidence_antigravity(contracts_test, "test_seed_evidence_rejects_wrong_dataset_seed_and_integer_contracts_antigravity")},
+        {"from": "perturbations_regression", "to": "primary_perturbations", "type": "tests", "evidence": evidence_antigravity(perturbations_test, "test_length_100_fixture_matches_exp417_math_and_exact_order_antigravity")},
+        {"from": "frozen_config", "to": "result_contracts", "type": "governs", "evidence": evidence_antigravity(contracts, "FROZEN_CONFIG_ANTIGRAVITY")},
+        {"from": "frozen_config", "to": "primary_perturbations", "type": "governs", "evidence": evidence_antigravity(perturbations, "FROZEN_CONFIG_ANTIGRAVITY.primary_types")},
+        {"from": "result_contracts", "to": "future_qualification", "type": "future_unknown", "evidence": evidence_antigravity(plan, "qualify_ecg_dataset_antigravity")},
+        {"from": "primary_perturbations", "to": "future_qualification", "type": "future_unknown", "evidence": evidence_antigravity(plan, "5-fold Hydra 점수와 합성 query 구현")},
+        {"from": "result_contracts", "to": "future_router", "type": "future_unknown", "evidence": evidence_antigravity(plan, "route_ecg_antigravity")},
+        {"from": "future_qualification", "to": "future_router", "type": "future_unknown", "evidence": evidence_antigravity(plan, "RouteDecisionAntigravity")},
         {"from": "future_router", "to": "future_evaluation", "type": "future_unknown", "evidence": evidence_antigravity(plan, "evaluate_routes_antigravity")},
         {"from": "future_evaluation", "to": "future_artifacts", "type": "future_unknown", "evidence": evidence_antigravity(plan, "publish_result_antigravity")},
         {"from": "future_artifacts", "to": "future_cli", "type": "future_unknown", "evidence": evidence_antigravity(plan, "evaluate --reviewed-commit")},
     ]
     unknowns = [
-        {"from": "future_config", "to": "future_synthetic", "reason": "Task 2 source is not implemented."},
-        {"from": "future_synthetic", "to": "future_router", "reason": "Task 4 routing source is not implemented."},
+        {"from": "result_contracts", "to": "future_qualification", "reason": "Task 3 qualification source is not implemented."},
+        {"from": "primary_perturbations", "to": "future_qualification", "reason": "Task 3 qualification source is not implemented."},
+        {"from": "result_contracts", "to": "future_router", "reason": "Task 4 routing source is not implemented."},
+        {"from": "future_qualification", "to": "future_router", "reason": "Tasks 3 and 4 source relationship is not implemented."},
         {"from": "future_router", "to": "future_evaluation", "reason": "Task 4 evaluation source is not implemented."},
         {"from": "future_evaluation", "to": "future_artifacts", "reason": "Task 4 publication source is not implemented."},
         {"from": "future_artifacts", "to": "future_cli", "reason": "Task 5 CLI source is not implemented."},
     ]
-    graph: dict[str, object] = {"schema": "exp457_task1_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
-    lock: dict[str, object] = {"schema": "exp457_task1_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": tracked_fingerprints_antigravity()}
+    graph: dict[str, object] = {"schema": "exp457_task2_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
+    lock: dict[str, object] = {"schema": "exp457_task2_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": tracked_fingerprints_antigravity()}
     return graph, lock, html_antigravity(graph)
 
 
@@ -159,7 +185,7 @@ def validate_map_antigravity(graph: object, lock: object, rendered_html: str) ->
     if not isinstance(graph, dict) or not isinstance(lock, dict):
         raise ValueError("graph and lock must be objects")
     nodes, edges, unknowns = graph.get("nodes"), graph.get("edges"), graph.get("unknown_relationships")
-    if not isinstance(nodes, list) or not isinstance(edges, list) or not isinstance(unknowns, list) or len(nodes) > 20:
+    if not isinstance(nodes, list) or not isinstance(edges, list) or not isinstance(unknowns, list) or len(nodes) > 24:
         raise ValueError("invalid bounded topology")
     ids: set[str] = set()
     future_ids: set[str] = set()

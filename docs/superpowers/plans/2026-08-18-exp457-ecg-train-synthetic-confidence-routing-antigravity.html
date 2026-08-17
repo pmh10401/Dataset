@@ -91,7 +91,7 @@
   </section>
 
   <section class="task">
-    <h2><label><input type="checkbox" disabled>Task 2: 고정 설정·계약·합성 이상</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 2: 고정 설정·계약·합성 이상</label></h2>
     <p><strong>독립 결과:</strong> 입력이나 seed가 같으면 언제나 같은 합성 이상과 같은 게이트 자료형을 만든다.</p>
     <h3>Files</h3>
     <ul class="files">
@@ -108,11 +108,11 @@ TrainSeedEvidenceAntigravity(dataset, seed, normal_trials, normal_alerts,
     normal_wilson_upper, pooled_sensitivity, per_type_sensitivity, passed)
 TrainQualificationAntigravity(dataset, seed_evidence, passed)
 RouteDecisionAntigravity(dataset, train_gate, structure_gate, route)</code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED exact perturbation tests</label><p>길이 100 fixture에서 onset 40, level +3 scale, drift 0→3 scale, centered amplitude ×1.5, period ×1.25를 직접 계산해 비교한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: RED strict contract tests</label><p>bool 숫자, 잘못된 dataset/seed, 빠진 종류, 0~1 밖 sensitivity, route 오타를 거부한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 config/contracts/perturbations 구현</label><p>Exp417 정의를 복사하지 말고 작은 독립 함수로 옮기되 수학적 결과가 byte-level fixture와 같게 한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN 두 번·Exp417 대응 회귀·CPU 결정 확인</label></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: HTML/map 체크·커밋·Task 2 검토</label><p>Commit: <code>feat(exp457): freeze TRAIN confidence contracts</code>.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED exact perturbation tests</label><p>길이 100 fixture에서 onset 40, level +3 scale, drift 0→3 scale, centered amplitude ×1.5, period ×1.25를 직접 계산해 비교한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: RED strict contract tests</label><p>bool 숫자, 잘못된 dataset/seed, 빠진 종류, 0~1 밖 sensitivity, route 오타를 거부한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: 최소 config/contracts/perturbations 구현</label><p>Exp417 정의를 복사하지 말고 작은 독립 함수로 옮기되 수학적 결과가 byte-level fixture와 같게 한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: GREEN 두 번·Exp417 대응 회귀·CPU 결정 확인</label></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: HTML/map 체크·커밋·Task 2 검토</label><p>Commit: <code>feat(exp457): freeze TRAIN confidence contracts</code>.</p></div>
   </section>
 
   <section class="task">

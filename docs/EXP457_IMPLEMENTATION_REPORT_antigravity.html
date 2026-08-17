@@ -1,5 +1,6 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp457 구현 보고서</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}</style></head><body><main>
-<h1>Exp457 구현 보고서</h1><p><strong>Task 1/6:</strong> governance/dashboard/code-map 경계가 등록되었다. 과학 source와 공식 결과는 아직 없다.</p>
-<ul><li>승인 설계 SHA256: <code>3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20</code></li><li>상태: <code>planned_awaiting_implementation</code></li><li>official evaluate/inspect: 각각 0회</li><li>result hashes: 모두 null</li><li>champion과 pending candidate: 변경 없음</li></ul>
-<p>Task 1은 결과를 만들지 않고 향후 구현 관계를 <code>future_unknown</code>으로 표시한다. 다음 작업은 Task 2 고정 설정·계약·합성 이상이다.</p>
+<h1>Exp457 구현 보고서</h1><p><strong>Task 2/6:</strong> result-affecting 설정, 엄격한 불변 결과 계약, 네 가지 primary TRAIN perturbation이 구현되었다. qualification, routing, 학습, 공식 결과는 아직 없다.</p>
+<ul><li>승인 설계 SHA256: <code>3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20</code></li><li>상태: <code>planned_awaiting_implementation</code></li><li>Hydra: seeds <code>20260721</code>/<code>20261721</code>, folds 5, alpha 0.005, kNN 3, kernels 8, groups 64</li><li>primary perturbations: <code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code></li><li>official evaluate/inspect: 각각 0회</li><li>result hashes: 모두 null</li><li>champion과 pending candidate: 변경 없음</li></ul>
+<p>Robust scale은 Exp417의 <code>1.4826 × median(abs(x − median(x)))</code>를 사용하고, period warp는 40% 이후 구간에 <code>interp(arange(duration)/1.25, arange(duration), region)</code>을 적용한다. Spike는 반환하거나 primary pass/fail 계약에 포함하지 않는다.</p>
+<p>Task 2는 CPU NumPy 경계이며 MLX 가속 대상이 아니다. 공식 aeon Hydra는 후속 Task에서도 CPU 비교 가능성을 유지한다. 다음 작업은 Task 3 TRAIN 전용 Hydra 신뢰도 계산이다.</p>
 </main></body></html>
