@@ -325,7 +325,7 @@
     "experiment": "Exp455",
     "kind": "conservative_label_free_routing",
     "status": "planned",
-    "implementation_status": "implementation_verified_awaiting_independent_review",
+    "implementation_status": "implementation_verified_awaiting_official_evaluation",
     "run_identity": "exp455-exp454-conservative-label-free-routing-antigravity-20260817",
     "run_root": "/Users/mac/Documents/Dataset/exp455_exp454_conservative_label_free_routing_antigravity_20260817",
     "package": "experiments/exp455_exp454_conservative_label_free_routing_antigravity",
@@ -351,7 +351,8 @@
     "scientific_winner_selected": false,
     "pending_candidate_changed": false,
     "mlx_assessment_required": false,
-    "next_action": "complete_independent_result_review_before_any_separately_approved_official_evaluation"
+    "independent_reviews": {"terra_high": "clean", "agy_gemini_3_7_flash_high": "clean"},
+    "next_action": "obtain_separate_user_approval_before_task_6_official_evaluation"
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",

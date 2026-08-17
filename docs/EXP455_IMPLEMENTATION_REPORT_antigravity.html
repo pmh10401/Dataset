@@ -5,7 +5,7 @@
 <p>실제 source는 한 번만 읽었고 <code>label_query_count=0</code>이었다. TEST 정답은 읽지 않았으며, 특징에는 confusion, TP, FP, FN, TN, TEST label, 변형 번호 필드가 없다.</p>
 <p>Task 3은 각 가족 안에서만 다른 데이터셋으로 규칙을 고르는 LODO 라우터를 추가했다. 규칙은 8개 정수 특징의 중간 경계와 양방향만 사용하며, 순서는 FN 최소, FP 최소, 정확한 Fraction F1 최대, candidate 사용 수 최소, 고정 lexical 순서다. held-out outcome을 바꿔도 해당 fold의 규칙과 선택은 변하지 않음을 테스트했다.</p>
 <p>Task 4는 48개 행을 한 번씩 더해 baseline, 가족 전체 candidate, 데이터셋별 oracle, LODO router 네 비교를 계산한다. 결과 파일은 임시 주입 경로에만 8개 leaf로 저장하고, 다시 읽을 때는 규칙과 합계를 새로 계산한다. 파일 내용과 해시를 같이 바꿔도 계산값이 달라지면 거부한다.</p>
-<p>Task 5는 <code>evaluate --reviewed-commit &lt;40 lower hex&gt;</code>와 bare <code>inspect</code>만 허용하는 닫힌 CLI를 추가했다. 합성 전체 흐름은 8 LODO fold, 48개 데이터셋, 네 비교, 8개 결과 leaf, <code>label_query_count=0</code>을 확인하고 replay 일치도 확인했다. 이 구현 후보는 독립 검토를 기다린다. 공식 명령과 고정 result root는 아직 실행·생성하지 않았다.</p>
+<p>Task 5는 <code>evaluate --reviewed-commit &lt;40 lower hex&gt;</code>와 bare <code>inspect</code>만 허용하는 닫힌 CLI를 추가했다. 합성 전체 흐름은 8 LODO fold, 48개 데이터셋, 네 비교, 8개 결과 leaf, <code>label_query_count=0</code>을 확인하고 replay 일치도 확인했다. Terra High와 agy Gemini 3.7 Flash High의 결과 중심 독립 검토는 모두 <code>CLEAN</code>이었다. 공식 명령과 고정 result root는 아직 실행·생성하지 않았다.</p>
 <table><thead><tr><th>가족</th><th>데이터셋</th><th>길이</th><th>baseline</th><th>candidate</th><th>overlap</th><th>union</th><th>added</th><th>removed</th><th>overlap ppm</th></tr></thead><tbody>
 <tr><td>ECG5000</td><td>ECG5000_normal_1</td><td>2950</td><td>40</td><td>32</td><td>20</td><td>52</td><td>12</td><td>20</td><td>384615</td></tr>
 <tr><td>ECG5000</td><td>ECG5000_normal_2</td><td>1800</td><td>13</td><td>22</td><td>8</td><td>27</td><td>14</td><td>5</td><td>296296</td></tr>
@@ -16,5 +16,5 @@
 <tr><td>ChlorineConcentration</td><td>ChlorineConcentration_normal_2</td><td>1000</td><td>13</td><td>12</td><td>12</td><td>13</td><td>0</td><td>1</td><td>923076</td></tr>
 <tr><td>ChlorineConcentration</td><td>ChlorineConcentration_normal_3</td><td>2350</td><td>12</td><td>13</td><td>9</td><td>16</td><td>4</td><td>3</td><td>562500</td></tr>
 </tbody></table>
-<p>현재 상태는 <code>implementation_verified_awaiting_independent_review</code>이고 공식 결과는 계속 <code>not_started</code>다. 합성 계산은 준비 검증일 뿐 공식 실행이 아니다. 공식 명령 실행, official result-root 생성, routing activation, champion/pending-candidate change, promotion은 하지 않았다.</p>
+<p>현재 상태는 <code>implementation_verified_awaiting_official_evaluation</code>이고 공식 결과는 계속 <code>not_started</code>다. 합성 계산은 준비 검증일 뿐 공식 실행이 아니다. Task 6 공식 평가는 별도 사용자 승인이 있어야 한다. 공식 명령 실행, official result-root 생성, routing activation, champion/pending-candidate change, promotion은 하지 않았다.</p>
 </main></body></html>

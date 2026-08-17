@@ -52,7 +52,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             parser.feed(path.read_text(encoding="utf-8"))
             parser.close()
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
-        for value in ("implementation/result calculation ready", "8/8", "Tasks 4/6", "not_started"):
+        for value in ("implementation_verified_awaiting_official_evaluation", "8/8", "Tasks 5/6", "independent reviews CLEAN", "not_started"):
             self.assertIn(value, dashboard)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
@@ -70,8 +70,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["pending_candidate_changed"])
         self.assertEqual(champion["pending_candidate"], state["pending_candidate"])
 
-    def test_task_four_plan_progress_and_map_boundaries_antigravity(self) -> None:
-        """Break caught: Task 4 hides completed calculation work or marks a later boundary complete."""
+    def test_task_five_plan_progress_and_map_boundaries_antigravity(self) -> None:
+        """Break caught: Task 5 hides its reviewed candidate or marks official Task 6 complete."""
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-17-exp455-conservative-label-free-routing-antigravity.html").read_text(encoding="utf-8")
         task_one = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 1:.*?</section>", plan, flags=re.DOTALL)
         self.assertIsNotNone(task_one)
@@ -79,7 +79,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsNotNone(task_three)
         task_four = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 4:.*?</section>", plan, flags=re.DOTALL)
         self.assertIsNotNone(task_four)
-        for task_number in range(5, 7):
+        task_five = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 5:.*?</section>", plan, flags=re.DOTALL)
+        self.assertIsNotNone(task_five)
+        for task_number in range(6, 7):
             section = re.search(rf"<section>\s*<h2><input\b([^>]*)>Task {task_number}:.*?</section>", plan, flags=re.DOTALL)
             self.assertIsNotNone(section)
             assert section is not None
