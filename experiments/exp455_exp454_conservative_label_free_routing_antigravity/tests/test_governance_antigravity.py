@@ -90,7 +90,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsNotNone(task_six)
         assert task_six is not None
         self.assertIn("features must match authority targets in order", task_six.group(0))
-        self.assertIn('<input disabled type="checkbox">Codex가 별도로 8개 fold', task_six.group(0))
+        self.assertIn('<input checked disabled type="checkbox">공식 결과가 있을 때 Codex가 8개 fold', task_six.group(0))
+        self.assertIn('fresh Terra High read-only review <code>CLEAN</code>', task_six.group(0))
 
         spec = importlib.util.spec_from_file_location("exp455_map_builder_antigravity", ROOT_ANTIGRAVITY / "scratch/build_codemap_exp455_antigravity.py")
         assert spec is not None and spec.loader is not None

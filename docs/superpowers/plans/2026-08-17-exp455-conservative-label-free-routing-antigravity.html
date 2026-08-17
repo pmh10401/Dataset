@@ -335,12 +335,12 @@ REVIEWED_COMMIT=$(git rev-parse HEAD)
 "$PYTHON" scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre></li>
       <li><input checked disabled type="checkbox">평가가 성공한 경우에만 bare inspect를 정확히 한 번 실행한다. 평가 실패로 조건이 성립하지 않아 0회 실행했다.
 <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py inspect</code></pre></li>
-      <li><input disabled type="checkbox">Codex가 별도로 8개 fold 선택과 48개 confusion 합계를 다시 계산하고 evaluate/inspect와 같은지 확인한다.</li>
-      <li><input disabled type="checkbox">FN &lt; 1,988, FP ≤ 314, F1 ≥ 0.6264199935, 두 가족 FN 비악화 여부를 결과 그대로 기록한다.</li>
+      <li><input checked disabled type="checkbox">공식 결과가 있을 때 Codex가 8개 fold와 48개 합계를 다시 계산한다. 이번에는 합산 전에 실패해 재계산할 결과가 없음을 확인했다.</li>
+      <li><input checked disabled type="checkbox">FN·FP·F1·가족 FN 변화가 생성되지 않았음을 결과 그대로 기록했다. 합성 수치를 공식 성능으로 대신하지 않았다.</li>
       <li><input checked disabled type="checkbox">HTML 대시보드에 공식 실패, evaluate 1회, inspect 0회, 결과 미생성을 기록한다. 네 비교 성능은 계산되지 않아 표시하지 않는다.</li>
       <li><input checked disabled type="checkbox">report와 ledgers에 실패 원인·명령 횟수·결과 root 부재를 기록하고 champion/pending/promotion이 변하지 않았음을 확인한다.</li>
-      <li><input disabled type="checkbox">모든 Task 1–6 완료 체크박스를 체크하고 map을 최종 결과에 맞춰 동기화한다.</li>
-      <li><input disabled type="checkbox">fresh read-only final review와 최종 tests/map/diff/clean 검증 후 truth와 map을 한 커밋으로 저장한다: <code>docs(exp455): record conservative routing result</code>.</li>
+      <li><input checked disabled type="checkbox">모든 Task 1–6 heading을 완료로 표시하고 Task 6은 terminal failure로 명시했으며 map을 최종 상태와 동기화했다.</li>
+      <li><input checked disabled type="checkbox">fresh Terra High read-only review <code>CLEAN</code>, Exp455 32/32, map/diff/clean 검증 후 terminal truth와 map을 저장했다.</li>
     </ol>
   </section>
 
