@@ -171,7 +171,7 @@ export_dashboard_antigravity(result) -&gt; dict[str, object]</code></pre>
   </section>
 
   <section class="task">
-    <h2><label><input type="checkbox" disabled>Task 5: 닫힌 CLI와 공식 후보 검증</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 5: 닫힌 CLI와 공식 후보 검증</label></h2>
     <p><strong>독립 결과:</strong> 공식 실행 전에 코드·TRAIN 계산·대시보드가 재현 가능하며, 사용자가 결과 실행 여부를 판단할 수 있다.</p>
     <h3>Files</h3>
     <ul class="files">
@@ -184,13 +184,13 @@ export_dashboard_antigravity(result) -&gt; dict[str, object]</code></pre>
     <pre><code>evaluate --reviewed-commit &lt;lower-40-hex&gt;
 inspect
 # reject: readiness, new, resume, retry, overrides, abbreviations</code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED exact CLI tests</label><p>두 명령 외 모든 형태와 긴/짧은 option 변형을 거부한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: 최소 lazy CLI·outside-CWD launcher 구현</label></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: Exp457 전체 synthetic suite 두 번</label></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: 실제 TRAIN qualification candidate run</label><p>공식 결과 폴더가 아닌 임시 폴더에서 5개 ECG의 gate 1 결과를 계산하고 두 번 동일한지 확인한다. TEST 라벨은 읽지 않는다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: Exp456 과학 회귀와 byte guard</label><p>Exp456 제품 테스트 33개 및 map validate를 통과하고 Exp456 tracked bytes가 기준 커밋과 같은지 확인한다. 새 worktree에 없는 ignored Task 보고서 의존 검사 1개는 baseline limitation으로 명시한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: 결과 중심 최종 검토</label><p>확인 항목은 route 계산, TRAIN gate, 네 비교값, 합격 기준, dashboard 일치다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 7: HTML 체크·커밋·공식 실행 승인 요청</label><p>Commit: <code>feat(exp457): freeze ECG routing candidate</code>. 상태는 <code>implementation_verified_awaiting_official_evaluation</code>.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED exact CLI tests</label><p>두 명령 외 모든 형태와 긴/짧은 option 변형을 거부한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: 최소 lazy CLI·outside-CWD launcher 구현</label></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: Exp457 전체 synthetic suite 두 번</label></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: 실제 TRAIN qualification candidate run</label><p>공식 결과 폴더가 아닌 임시 폴더에서 5개 ECG의 gate 1 결과를 계산하고 두 번 동일한지 확인한다. TEST 라벨은 읽지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: Exp456 과학 회귀와 byte guard</label><p>Exp456 제품 테스트 33개 및 map validate를 통과하고 Exp456 tracked bytes가 기준 커밋과 같은지 확인한다. 새 worktree에 없는 ignored Task 보고서 의존 검사 1개는 baseline limitation으로 명시한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: 결과 중심 최종 검토</label><p>확인 항목은 route 계산, TRAIN gate, 네 비교값, 합격 기준, dashboard 일치다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 7: HTML 체크·커밋·공식 실행 승인 요청</label><p>Commit: <code>feat(exp457): freeze ECG routing candidate</code>. 상태는 <code>implementation_verified_awaiting_official_evaluation</code>.</p></div>
   </section>
 
   <section class="task">

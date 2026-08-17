@@ -1453,8 +1453,8 @@
       "id": "Exp457",
       "experiment": "Exp457",
       "kind": "ecg_train_synthetic_confidence_routing",
-      "status": "planned_awaiting_implementation",
-      "implementation_status": "task_1_governance_complete",
+      "status": "implementation_verified_awaiting_official_evaluation",
+      "implementation_status": "task_5_candidate_verification_complete",
       "documents": ["docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html", "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html", "docs/EXP457_PREREGISTRATION_antigravity_KO.html", "docs/EXP457_RUNBOOK_antigravity_KO.html", "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP457_DASHBOARD_antigravity.html"],
       "run_identity": "exp457-ecg-train-synthetic-confidence-routing-antigravity-20260818",
       "artifact_root": "/Users/mac/Documents/Dataset/exp457_ecg_train_synthetic_confidence_routing_antigravity_20260818",
@@ -1477,7 +1477,7 @@
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
-      "notes": "Task 1 registers the approved frozen gates and planned-only dashboard/code-map boundary. No official command or result exists; champion and pending candidate remain unchanged."
+      "notes": "Task 5 closed CLI and candidate flow are verified. Real TRAIN Gate 1 was reproduced exactly twice in temporary non-official roots: all five ECG datasets failed Gate 1, all ECG routes returned to baseline, and the temporary aggregate was FN 836, FP 64, F1 0.5754716981132075. This is not an official result; official invocations remain zero and champion/pending candidate remain unchanged."
     }
   ]
 }

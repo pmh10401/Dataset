@@ -98,7 +98,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         for record in records:
             self.assertEqual(record["kind"], "ecg_train_synthetic_confidence_routing")
-            self.assertEqual(record["status"], "planned_awaiting_implementation")
+            self.assertEqual(
+                record["status"],
+                "implementation_verified_awaiting_official_evaluation",
+            )
+            self.assertEqual(
+                record["implementation_status"],
+                "task_5_candidate_verification_complete",
+            )
             self.assertEqual(record["approved_design_sha256"], "3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20")
             config = record["scientific_contract"]
             self.assertEqual(config["target_family"], "ECG5000")
@@ -142,19 +149,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
             FROZEN_CHAMPION_ANTIGRAVITY,
         )
 
-    def test_dashboard_plan_and_map_expose_task4_implementation_without_results_antigravity(self) -> None:
-        """Break caught: Task 4 fabricates a result or leaves implemented boundaries future."""
+    def test_dashboard_plan_and_map_expose_task5_candidate_without_official_results_antigravity(self) -> None:
+        """Break caught: Task 5 fabricates an official result or leaves the CLI boundary future."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 4/6",
+            "Task 5/6",
             "아직 공식 결과 없음",
             "always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742",
             "family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227",
             "oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729",
-            "lodo_router</td><td>843</td><td>65</td><td>0.5704824976348155",
-            "routing/evaluation/replay implementation verified on synthetic evidence; real TRAIN qualification not yet run",
+            "ecg_train_confidence_router</td><td>836</td><td>64</td><td>0.5754716981132075",
+            "real TRAIN candidate qualification reproduced exactly twice outside the official result root",
             "Gate 1 numeric evidence and evaluation provenance are semantically recomputed",
-            "다음 Task</th><td>Task 5: 닫힌 CLI와 공식 후보 검증",
+            "다음 Task</th><td>Task 6: 사용자 승인 후 공식 결과 1회 실행",
+            "implementation_verified_awaiting_official_evaluation",
             "공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.",
         ):
             self.assertIn(value, dashboard)
@@ -166,13 +174,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
 
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html").read_text(encoding="utf-8")
-        self.assertIn('<input type="checkbox" checked disabled>Task 4:', plan)
-        task4 = plan.split("Task 4:", 1)[1].split("Task 5:", 1)[0]
-        self.assertEqual(task4.count('<input type="checkbox" checked disabled>'), 7)
-        for task in ("Task 5:", "Task 6:"):
-            section = plan.split(task, 1)[1].split('</section>', 1)[0]
-            self.assertIn('<input type="checkbox" disabled>', section)
-            self.assertNotIn('<input type="checkbox" checked disabled>', section)
+        self.assertIn('<input type="checkbox" checked disabled>Task 5:', plan)
+        task5 = plan.split("Task 5:", 1)[1].split("Task 6:", 1)[0]
+        self.assertEqual(task5.count('<input type="checkbox" checked disabled>'), 7)
+        task6 = plan.split("Task 6:", 1)[1].split('</section>', 1)[0]
+        self.assertIn('<input type="checkbox" disabled>', task6)
+        self.assertNotIn('<input type="checkbox" checked disabled>', task6)
 
         spec = importlib.util.spec_from_file_location(
             "exp457_map_builder_antigravity",
@@ -204,6 +211,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "source_regression",
             "qualification_regression",
             "task4_regressions",
+            "cli",
+            "cli_launcher",
+            "cli_regression",
         ):
             self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
         for node_id in (
@@ -217,14 +227,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "artifacts",
             "replay",
             "dashboard_export",
+            "cli",
+            "cli_launcher",
         ):
             self.assertTrue(nodes[node_id]["evidence"])
             self.assertTrue(nodes[node_id]["tests"])
             self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).is_file())
-        for node_id in ("future_cli",):
-            self.assertEqual(nodes[node_id]["status"], "future_unknown")
-            self.assertEqual(nodes[node_id]["evidence"], [])
-            self.assertFalse((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
+        self.assertNotIn("future_cli", nodes)
         builder.validate_map_antigravity(graph, lock, rendered)
 
 
