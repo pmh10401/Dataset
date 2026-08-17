@@ -296,17 +296,17 @@ passed = (
       <li><code>inspect</code> imports replay only and performs no scoring or label query.</li>
     </ul>
     <ol>
-      <li><input disabled type="checkbox">unknown command, abbreviation, duplicate commit option, upper-case commit, path/threshold/candidate override를 거부하는 CLI RED 테스트를 작성한다.</li>
-      <li><input disabled type="checkbox">CLI와 launcher 부재 RED를 실행한다.</li>
-      <li><input disabled type="checkbox">두 명령만 허용하는 lazy dispatcher를 구현한다.
+      <li><input checked disabled type="checkbox">unknown command, abbreviation, duplicate commit option, upper-case commit, path/threshold/candidate override를 거부하는 CLI RED 테스트를 작성한다.</li>
+      <li><input checked disabled type="checkbox">CLI와 launcher 부재 RED를 실행한다.</li>
+      <li><input checked disabled type="checkbox">두 명령만 허용하는 lazy dispatcher를 구현한다.
 <pre><code>def main_antigravity(argv=None):
     args = parser_antigravity().parse_args(argv)
     if args.command == "evaluate":
         return _load_evaluate_antigravity()(args.reviewed_commit)
     return _load_inspect_antigravity()()</code></pre></li>
-      <li><input disabled type="checkbox">synthetic 전체 흐름에서 8 fold, 48 datasets, 네 비교, 8 leaves, label query 0을 확인한다.</li>
-      <li><input disabled type="checkbox">Exp455 discovery를 두 번, Exp454 evaluation/replay와 Exp448 source capture 회귀를 한 번씩 순차 실행한다.</li>
-      <li><input disabled type="checkbox">공식 Exp455 root가 여전히 없고, Exp454 12-leaf 해시가 그대로이며, worktree가 clean인지 확인한다.</li>
+      <li><input checked disabled type="checkbox">synthetic 전체 흐름에서 8 fold, 48 datasets, 네 비교, 8 leaves, label query 0을 확인한다.</li>
+      <li><input checked disabled type="checkbox">Exp455 discovery를 두 번, Exp454 evaluation/replay와 Exp448 source capture 회귀를 한 번씩 순차 실행한다.</li>
+      <li><input checked disabled type="checkbox">공식 Exp455 root가 여전히 없고, Exp454 12-leaf 해시가 그대로이며, worktree가 clean인지 확인한다.</li>
       <li><input disabled type="checkbox">report/dashboard/ledgers를 <code>implementation_verified_awaiting_official_evaluation</code>로 갱신한다. 결과 값은 아직 <code>not_started</code>다.</li>
       <li><input disabled type="checkbox"><code>agy</code>의 Gemini 3.7 Flash High 독립 검토로 결과 계산, 데이터 누수, leave-one-out 분리만 확인한다. Codex가 실제 diff와 테스트를 확인하고 최종 판단한다.</li>
       <li><input disabled type="checkbox">체크박스와 map을 동기화해 한 커밋으로 저장한다: <code>feat(exp455): close routing evaluation candidate</code>.</li>

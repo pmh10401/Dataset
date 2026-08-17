@@ -40,6 +40,7 @@ TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY = (
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/artifacts_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/replay_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/dashboard_export_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/cli_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_authority_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_features_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_router_antigravity.py",
@@ -50,6 +51,8 @@ TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY = (
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_config_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_governance_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_cli_antigravity.py",
+    "scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py",
     "scratch/build_codemap_exp455_antigravity.py",
 )
 ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "reads", "tests", "future_unknown"}
@@ -109,7 +112,7 @@ def _html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp455 초기 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp455 Task 4 코드맵</h1><p>Exp454 authority, label-free 특징, 가족별 LODO router, 48행 evaluation, create-only artifact, semantic replay, aggregate dashboard 경계를 분리한다. '
+        '<h1>Exp455 Task 5 코드맵</h1><p>Exp454 authority, label-free 특징, 가족별 LODO router, 48행 evaluation, create-only artifact, semantic replay, aggregate dashboard와 닫힌 CLI 경계를 분리한다. '
         'label, confusion, dataset variant number는 router inputs가 아니며 holdout outcome은 rule 선택에 쓰지 않는다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
@@ -142,6 +145,9 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     replay_test = f"{package}/tests/test_replay_antigravity.py"
     dashboard_export = f"{package}/dashboard_export_antigravity.py"
     dashboard_export_test = f"{package}/tests/test_dashboard_export_antigravity.py"
+    cli = f"{package}/cli_antigravity.py"
+    cli_test = f"{package}/tests/test_cli_antigravity.py"
+    launcher = "scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py"
     nodes: list[dict[str, object]] = [
         {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html", "role": "Caller: Task 1 governance. Effect: fixes Exp455 scope, candidates, gates, and label-free firewall.", "tests": [governance_test], "evidence": [_evidence_antigravity("docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html", "Exp455")]},
         {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: freezes sequential TDD and official-evaluation boundaries.", "tests": [governance_test], "evidence": [_evidence_antigravity(plan, "Task 1: Governance")]},
@@ -160,6 +166,7 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "artifacts", "path": artifacts, "role": "Caller: injected temporary publication and replay. Effect: writes exactly eight canonical create-only leaves with a self-excluding hash map.", "tests": [artifacts_test, replay_test], "evidence": [_evidence_antigravity(artifacts, "publish_evaluation_antigravity")]},
         {"id": "replay", "path": replay, "role": "Caller: Task 4 artifact inspection. Effect: captures frozen Task 2 authority once, compares all 48 rows plus eight label-free features, then re-fits LODO and recomputes aggregates without TEST labels.", "tests": [replay_test], "evidence": [_evidence_antigravity(replay, "inspect_replay_at_antigravity")]},
         {"id": "dashboard_export", "path": dashboard_export, "role": "Caller: artifact dashboard snapshot. Effect: limits output to aggregate method and family rows.", "tests": [dashboard_export_test], "evidence": [_evidence_antigravity(dashboard_export, "export_aggregate_dashboard_antigravity")]},
+        {"id": "closed_cli", "path": cli, "role": "Caller: outside-CWD launcher and CLI regression. Effect: admits only reviewed evaluate or bare inspect; selected phases load lazily and official publication remains fixed-root only.", "tests": [cli_test], "evidence": [_evidence_antigravity(cli, "main_antigravity"), _evidence_antigravity(launcher, "main_antigravity")]},
     ]
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP455_PREREGISTRATION_antigravity_KO.html", "Exp455")},
@@ -179,6 +186,12 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "router", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "leave_one_dataset_out_antigravity")},
         {"from": "authority", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "capture_routing_authority_antigravity")},
         {"from": "features", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "build_label_free_features_antigravity")},
+        {"from": "closed_cli", "to": "authority", "type": "reads", "evidence": _evidence_antigravity(cli, "capture_routing_authority_antigravity")},
+        {"from": "closed_cli", "to": "features", "type": "reads", "evidence": _evidence_antigravity(cli, "build_label_free_features_antigravity")},
+        {"from": "closed_cli", "to": "router", "type": "reads", "evidence": _evidence_antigravity(cli, "leave_one_dataset_out_antigravity")},
+        {"from": "closed_cli", "to": "evaluation", "type": "reads", "evidence": _evidence_antigravity(cli, "evaluate_routing_antigravity")},
+        {"from": "closed_cli", "to": "artifacts", "type": "reads", "evidence": _evidence_antigravity(cli, "publish_evaluation_antigravity")},
+        {"from": "closed_cli", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(cli, "inspect_replay_at_antigravity")},
     ]
     unknowns: list[dict[str, str]] = []
     graph: dict[str, object] = {"schema": "exp455_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
