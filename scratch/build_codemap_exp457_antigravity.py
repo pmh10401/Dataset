@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Task 5 Exp457 candidate code map."""
+"""Build and validate the bounded Exp457 pre-official stop code map."""
 
 from __future__ import annotations
 
@@ -108,8 +108,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp457 Task 5 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp457 Task 5 candidate 코드맵</h1><p>구현된 TRAIN qualification, conservative router, immutable Exp456 aggregation, 9-leaf replay, closed CLI와 outside-CWD launcher를 연결한다. '
-        '실제 TRAIN 후보 검증은 비공식 임시 폴더에서 두 번 재현되었고 공식 result는 아직 없다.</p>'
+        '<h1>Exp457 pre-official stop 코드맵</h1><p>구현된 TRAIN qualification, conservative router, immutable Exp456 aggregation, 9-leaf replay, closed CLI와 outside-CWD launcher를 연결한다. '
+        'TRAIN 후보가 FN/F1 기준에 실패해 사용자가 공식 TEST 평가를 실행하지 않기로 했으며 공식 command, root, result, hash는 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -152,16 +152,16 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     builder = "scratch/build_codemap_exp457_antigravity.py"
     nodes: list[dict[str, object]] = [
         {"id": "approved_design", "path": design, "role": "Caller: Tasks 1–5 governance, qualification, routing, evaluation, and candidate flow. Effect: freezes the only scientific change and exact confidence/result gates.", "tests": [governance_test, config_test, qualification_test, router_test, evaluation_test, cli_test], "evidence": [evidence_antigravity(design, "Exp457")]},
-        {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: sequences TDD implementation, permits Task 5 temporary candidate qualification, and keeps official execution in Task 6.", "tests": [governance_test, router_test, evaluation_test, artifacts_test, replay_test, dashboard_export_test, cli_test], "evidence": [evidence_antigravity(plan, "Task 5: 닫힌 CLI와 공식 후보 검증")]},
+        {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: records completed Task 5 verification and the checked user stop decision while all Task 6 actions remain unchecked.", "tests": [governance_test, router_test, evaluation_test, artifacts_test, replay_test, dashboard_export_test, cli_test], "evidence": [evidence_antigravity(plan, "종료 결정: TRAIN Gate 실패로 사용자가 공식 TEST 평가를 실행하지 않음")]},
         {"id": "preregistration", "path": "docs/EXP457_PREREGISTRATION_antigravity_KO.html", "role": "Caller: governance review. Effect: records planned identity, frozen gates, and TEST routing firewall.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
         {"id": "runbook", "path": "docs/EXP457_RUNBOOK_antigravity_KO.html", "role": "Caller: future task operators. Effect: prohibits Task 1 official execution and result-root use.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_RUNBOOK_antigravity_KO.html", "Task 1 governance only")]},
-        {"id": "implementation_report", "path": "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 5 review. Effect: reports exact twice-reproduced TRAIN candidate evidence without claiming an official result.", "tests": [], "evidence": [evidence_antigravity("docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "Task 5/6")]},
-        {"id": "dashboard", "path": "docs/EXP457_DASHBOARD_antigravity.html", "role": "Caller: result-facing review. Effect: shows Task 5/6, exact TRAIN gates/routes and temporary aggregate, no official result, and Task 6 approval boundary.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_DASHBOARD_antigravity.html", "Task 5/6")]},
-        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: records implementation verification while retaining zero official invocations and null result hashes.", "tests": [governance_test], "evidence": [evidence_antigravity("RESEARCH_STATE.json", "implementation_verified_awaiting_official_evaluation")]},
+        {"id": "implementation_report", "path": "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: terminal review. Effect: reports exact twice-reproduced TRAIN evidence, failed FN/F1 criteria, and the user stop without claiming an official result.", "tests": [], "evidence": [evidence_antigravity("docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "stopped_before_official_evaluation_train_gate_failed")]},
+        {"id": "dashboard", "path": "docs/EXP457_DASHBOARD_antigravity.html", "role": "Caller: result-facing review. Effect: prominently shows the reproducible TRAIN failure, user stop, zero official actions, and no official result.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_DASHBOARD_antigravity.html", "stopped_before_official_evaluation_train_gate_failed")]},
+        {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: records the terminal pre-official stop while retaining zero official invocations and null result hashes.", "tests": [governance_test], "evidence": [evidence_antigravity("RESEARCH_STATE.json", "stopped_before_official_evaluation_train_gate_failed")]},
         {"id": "experiment_catalog", "path": "EXPERIMENT_CATALOG.json", "role": "Caller: catalog review. Effect: registers Exp457 documents, frozen contract, and no-result truth.", "tests": [governance_test], "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"id\": \"Exp457\"")]},
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "Caller: champion review. Effect: records Exp457 without changing champion or pending candidate.", "tests": [governance_test], "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"experiment\": \"Exp457\"")]},
-        {"id": "governance_regression", "path": governance_test, "role": "Caller: Tasks 1–5 scientific-governance verification. Effect: rejects gate drift, fabricated official results, lifecycle changes, or stale Task 5 boundaries.", "tests": [governance_test], "evidence": [evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")]},
-        {"id": "map_builder", "path": builder, "role": "Caller: Task 5 map validation. Effect: validates implemented CLI/launcher evidence, fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
+        {"id": "governance_regression", "path": governance_test, "role": "Caller: terminal scientific-governance verification. Effect: rejects gate drift, fabricated official results, executed Task 6 actions, or stale stop truth.", "tests": [governance_test], "evidence": [evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")]},
+        {"id": "map_builder", "path": builder, "role": "Caller: terminal map validation. Effect: validates implemented evidence, terminal stop fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
         {"id": "frozen_config", "path": config, "role": "Caller: Task 3 qualification and Task 4 evaluation. Effect: supplies exact datasets, Hydra parameters, gates, primary order, and final thresholds.", "tests": [config_test], "evidence": [evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")]},
         {"id": "result_contracts", "path": contracts, "role": "Caller: qualification, router, evaluation, publication, and replay. Effect: recomputes Wilson, pooled and per-type Gate 1 semantics and rejects mismatched aggregate flags or malformed result records.", "tests": [contracts_test, qualification_test, router_test, evaluation_test, artifacts_test, replay_test], "evidence": [evidence_antigravity(contracts, "validate_train_qualification_semantics_antigravity")]},
         {"id": "primary_perturbations", "path": perturbations, "role": "Caller: Task 3 TRAIN qualification. Effect: creates four deterministic Exp417-compatible primary perturbations and excludes spike.", "tests": [perturbations_test, qualification_test], "evidence": [evidence_antigravity(perturbations, "build_primary_perturbations_antigravity")]},
@@ -223,8 +223,8 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "cli_regression", "to": "cli_launcher", "type": "tests", "evidence": evidence_antigravity(cli_test, "test_launcher_imports_package_from_outside_repository_cwd_antigravity")},
     ]
     unknowns: list[dict[str, object]] = []
-    graph: dict[str, object] = {"schema": "exp457_task5_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
-    lock: dict[str, object] = {"schema": "exp457_task5_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": tracked_fingerprints_antigravity()}
+    graph: dict[str, object] = {"schema": "exp457_preofficial_stop_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
+    lock: dict[str, object] = {"schema": "exp457_preofficial_stop_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": tracked_fingerprints_antigravity()}
     return graph, lock, html_antigravity(graph)
 
 

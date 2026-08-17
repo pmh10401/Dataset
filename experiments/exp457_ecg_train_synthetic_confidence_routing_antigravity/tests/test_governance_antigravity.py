@@ -100,7 +100,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["kind"], "ecg_train_synthetic_confidence_routing")
             self.assertEqual(
                 record["status"],
-                "implementation_verified_awaiting_official_evaluation",
+                "stopped_before_official_evaluation_train_gate_failed",
             )
             self.assertEqual(
                 record["implementation_status"],
@@ -154,6 +154,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
             "Task 5/6",
+            "stopped_before_official_evaluation_train_gate_failed",
             "아직 공식 결과 없음",
             "always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742",
             "family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227",
@@ -161,8 +162,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "ecg_train_confidence_router</td><td>836</td><td>64</td><td>0.5754716981132075",
             "real TRAIN candidate qualification reproduced exactly twice outside the official result root",
             "Gate 1 numeric evidence and evaluation provenance are semantically recomputed",
-            "다음 Task</th><td>Task 6: 사용자 승인 후 공식 결과 1회 실행",
-            "implementation_verified_awaiting_official_evaluation",
+            "사용자가 공식 TEST 평가를 실행하지 않기로 결정",
+            "FN 836 / FP 64 / F1 0.5754716981132075",
             "공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.",
         ):
             self.assertIn(value, dashboard)
@@ -178,8 +179,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
         task5 = plan.split("Task 5:", 1)[1].split("Task 6:", 1)[0]
         self.assertEqual(task5.count('<input type="checkbox" checked disabled>'), 7)
         task6 = plan.split("Task 6:", 1)[1].split('</section>', 1)[0]
-        self.assertIn('<input type="checkbox" disabled>', task6)
-        self.assertNotIn('<input type="checkbox" checked disabled>', task6)
+        self.assertEqual(task6.count('<input type="checkbox" disabled>'), 8)
+        self.assertEqual(task6.count('<input type="checkbox" checked disabled>'), 1)
+        self.assertIn(
+            "종료 결정: TRAIN Gate 실패로 사용자가 공식 TEST 평가를 실행하지 않음",
+            task6,
+        )
 
         spec = importlib.util.spec_from_file_location(
             "exp457_map_builder_antigravity",

@@ -14,12 +14,18 @@
   <h1>Exp457 ECG5000 TRAIN 확신 라우팅</h1>
   <table>
     <tr><th>진행</th><td>Task 5/6</td></tr>
-    <tr><th>상태</th><td><code>implementation_verified_awaiting_official_evaluation</code></td></tr>
+    <tr><th>상태</th><td><code>stopped_before_official_evaluation_train_gate_failed</code></td></tr>
     <tr><th>결과</th><td><strong>아직 공식 결과 없음</strong></td></tr>
     <tr><th>공식 실행</th><td>evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
     <tr><th>후보 검증</th><td>real TRAIN candidate qualification reproduced exactly twice outside the official result root</td></tr>
-    <tr><th>다음 Task</th><td>Task 6: 사용자 승인 후 공식 결과 1회 실행</td></tr>
+    <tr><th>종료 결정</th><td><strong>사용자가 공식 TEST 평가를 실행하지 않기로 결정</strong></td></tr>
   </table>
+
+  <h2>최종 중단 결정</h2>
+  <div class="box">
+    <p><strong>FN 836 / FP 64 / F1 0.5754716981132075</strong></p>
+    <p>재현 가능한 TRAIN 후보 결과에서 FN과 F1 합격선을 넘지 못했다. 따라서 사용자가 공식 TEST 평가를 실행하지 않기로 결정했고, Task 6 evaluate·inspect는 모두 실행하지 않았다.</p>
+  </div>
 
   <h2>먼저 보는 결론</h2>
   <div class="box">

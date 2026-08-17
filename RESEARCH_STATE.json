@@ -395,7 +395,7 @@
   "exp457": {
     "experiment": "Exp457",
     "kind": "ecg_train_synthetic_confidence_routing",
-    "status": "implementation_verified_awaiting_official_evaluation",
+    "status": "stopped_before_official_evaluation_train_gate_failed",
     "implementation_status": "task_5_candidate_verification_complete",
     "run_identity": "exp457-ecg-train-synthetic-confidence-routing-antigravity-20260818",
     "run_root": "/Users/mac/Documents/Dataset/exp457_ecg_train_synthetic_confidence_routing_antigravity_20260818",
@@ -441,7 +441,7 @@
     "scientific_winner_selected": false,
     "pending_candidate_changed": false,
     "mlx_assessment": "inapplicable_official_aeon_hydra_cpu_algorithm_must_remain_unchanged",
-    "next_action": "await_user_approval_for_task_6_official_evaluation"
+    "next_action": "none_user_declined_official_test_evaluation"
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",
