@@ -176,11 +176,14 @@ class Exp449ExecutionProgressTests(unittest.TestCase):
             self.assertTrue(all(not root.exists() for root in roots))
 
     def test_exp449_lock_records_task7_document_boundary_test_and_state_deltas(self) -> None:
-        """Task 7 changes documented, boundary-test, and state provenance—not runtime closure."""
+        """The current official-comparison boundary changes experiments and scratch only."""
         lock_path = Path("docs/codemap/codemap_exp449_antigravity.lock")
         lock = json.loads(lock_path.read_text(encoding="utf-8"))
         self.assertNotIn("paper", lock["changed_modules_since_prior_lock"])
-        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"docs", "experiments", "root"})
+        self.assertEqual(
+            set(lock["changed_modules_since_prior_lock"]),
+            {"experiments", "scratch"},
+        )
 
 
 if __name__ == "__main__":

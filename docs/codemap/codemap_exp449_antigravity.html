@@ -2,12 +2,12 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Time Series · Exp449 Code Map</title>
 <style>:root{color-scheme:dark;--bg:#0b1020;--panel:#141b31;--line:#405072;--txt:#e5ebfa;--muted:#9cadca;--paper:#f06f9b}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#1e2b53,var(--bg) 46%);color:var(--txt);font:14px system-ui,sans-serif}header{padding:18px 24px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:21px}small,.muted{color:var(--muted)}main{display:grid;grid-template-columns:minmax(600px,1fr) 320px;gap:12px;padding:12px}#map,aside{background:rgba(20,27,49,.95);border:1px solid var(--line);border-radius:10px}#map{padding:14px;min-height:610px}#graph{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}.node{border:1px solid #516388;border-radius:8px;padding:10px;background:#101a31;cursor:pointer}.node.paper{border-color:var(--paper)}.node.dim{opacity:.2}.node h3{font-size:13px;margin:0 0 6px}.node p{margin:5px 0;color:var(--muted);font-size:12px}aside{padding:14px}aside h2{font-size:15px;margin:0 0 10px}code{word-break:break-word;color:#cbd8ff}select,input{background:#1d2945;color:var(--txt);border:1px solid #516388;border-radius:6px;padding:7px 9px;margin:8px 4px 0 0}@media(max-width:900px){main{grid-template-columns:1fr}}</style></head>
-<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-17T17:55:24+09:00 · source <code>35a27c028609a67381612a3f7fefa4cdab27cc9d</code> · Exp449 I2 records bounded post-claim recovery; Exp448 remains immutable</small></header>
+<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-17T18:11:35+09:00 · source <code>8812bb069ff7e16777ee29f4a20c74a6fd11eecf</code> · official six-baseline comparison frozen and verified; Exp448 remains immutable</small></header>
 <main><section id="map"><input id="search" placeholder="module search"><select id="flow"><option value="">all flows</option></select><p class="muted">Exp449 is implementation-ready, grant-unauthorized, and remains a no-execution boundary. Pink-bordered nodes are retained paper scientific dependencies.</p><div id="graph"></div></section><aside><h2 id="detail">Exp449 map</h2><div id="info" class="muted">Select a node for callers, effects, tests, constraints, and evidence.</div></aside></main>
 <script id="codemap-data" type="application/json">
 {
-  "generated_at": "2026-08-17T17:55:24+09:00",
-  "generated_from_commit": "35a27c028609a67381612a3f7fefa4cdab27cc9d",
+  "generated_at": "2026-08-17T18:11:35+09:00",
+  "generated_from_commit": "8812bb069ff7e16777ee29f4a20c74a6fd11eecf",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 I2 bounded Smoke A post-claim recovery: this code change creates no authority JSON, production root/claim, score, TEST-label access, smoke, or official run.",
@@ -17,7 +17,8 @@
     "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created.",
     "Official six-public-baseline comparison design: reuse frozen classical results, derive a byte-preserving Deep SVDD single-method view, evaluate the user-parity-confirmed DROCC MPS root, and report matched-budget/conformal metrics without inventing proposal AP/AUROC.",
     "Implemented byte-preserving Deep SVDD single-method view: verifies mixed-root run identity and each shard/meta pair, copies scientific shard JSON bytes unchanged, rebinds only metadata to the derived run identity, records provenance, and freezes exact coverage.",
-    "Implemented official six-method evaluation combiner: requires shared DB/proposal/population identity, exact classical+Deep-SVDD+DROCC ownership and protocols, keeps proposal AP/AUROC absent, records user-confirmed DROCC MPS parity provenance, and publishes scorer-free verifiable create-only comparison leaves."
+    "Implemented official six-method evaluation combiner: requires shared DB/proposal/population identity, exact classical+Deep-SVDD+DROCC ownership and protocols, keeps proposal AP/AUROC absent, records user-confirmed DROCC MPS parity provenance, and publishes scorer-free verifiable create-only comparison leaves.",
+    "Implemented closed official comparison dispatcher: prepares the byte-preserving Deep SVDD view, delays label access until evaluation, freezes and independently verifies 1,117-dataset numerical tables, and exposes no scoring command."
   ],
   "nodes": [
     {
@@ -1940,6 +1941,59 @@
           "symbol": "OfficialComparisonTests"
         }
       ]
+    },
+    {
+      "id": "public_baseline_official_comparison_cli",
+      "path": "scratch/run_official_public_baseline_comparison_antigravity.py",
+      "role": "Closed four-command dispatcher for Deep SVDD view publication, delayed-label evaluation, six-method combination, and scorer-free verification.",
+      "entrypoints": [
+        "build_parser_antigravity",
+        "main_antigravity"
+      ],
+      "callers": [
+        "external paper-comparison operator"
+      ],
+      "effects": [
+        "creates the byte-preserving Deep SVDD view, evaluates only verified deep score roots, freezes the exact six-method comparison, and verifies every score and comparison artifact"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py"
+      ],
+      "constraints": [
+        "Top-level import is label- and scorer-free; only the fixed prepare-deep-view, evaluate, combine, and verify commands are accepted; evaluation artifact identity uses artifact_sha256.json."
+      ],
+      "evidence": [
+        {
+          "path": "scratch/run_official_public_baseline_comparison_antigravity.py",
+          "symbol": "main_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_official_comparison_cli_tests",
+      "path": "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py",
+      "role": "Focused CLI boundary coverage for the closed command set, import firewall, and canonical evaluation artifact name.",
+      "entrypoints": [
+        "OfficialComparisonCliTests"
+      ],
+      "callers": [
+        "python unittest discovery"
+      ],
+      "effects": [
+        "prevents accidental scoring commands, eager label/deep-scorer imports, and verification against a noncanonical evaluation filename"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py"
+      ],
+      "constraints": [
+        "Uses parser and fresh-subprocess import checks only; it does not access production roots or labels."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py",
+          "symbol": "OfficialComparisonCliTests"
+        }
+      ]
     }
   ],
   "edges": [
@@ -2653,6 +2707,33 @@
         "path": "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py",
         "symbol": "OfficialComparisonTests"
       }
+    },
+    {
+      "from": "public_baseline_official_comparison_cli",
+      "to": "public_baseline_official_view",
+      "type": "publishes_verified_view",
+      "evidence": {
+        "path": "scratch/run_official_public_baseline_comparison_antigravity.py",
+        "symbol": "_prepare_deep_view_antigravity"
+      }
+    },
+    {
+      "from": "public_baseline_official_comparison_cli",
+      "to": "public_baseline_official_comparison",
+      "type": "freezes_and_verifies",
+      "evidence": {
+        "path": "scratch/run_official_public_baseline_comparison_antigravity.py",
+        "symbol": "_combine_antigravity, _verify_antigravity"
+      }
+    },
+    {
+      "from": "public_baseline_official_comparison_cli_tests",
+      "to": "public_baseline_official_comparison_cli",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py",
+        "symbol": "OfficialComparisonCliTests"
+      }
     }
   ],
   "flows": [
@@ -2750,9 +2831,13 @@
       "trigger": "Official public-baseline paper comparison",
       "steps": [
         "paper_official_public_baseline_comparison_design",
-        "paper_official_public_baseline_comparison_plan"
+        "paper_official_public_baseline_comparison_plan",
+        "public_baseline_official_view",
+        "public_baseline_official_comparison_cli",
+        "public_baseline_official_comparison",
+        "public_baseline_official_comparison_cli_tests"
       ],
-      "outcome": "A six-public-baseline technical comparison is produced from immutable score evidence, with proposed AP/AUROC intentionally absent and no automatic promotion claim."
+      "outcome": "A verified 1,117-dataset six-public-baseline technical comparison is frozen from immutable score evidence; proposed AP/AUROC remains intentionally absent, MPS parity is disclosed as user-confirmed, and no automatic promotion claim is made."
     }
   ],
   "unknown_relationships": [],

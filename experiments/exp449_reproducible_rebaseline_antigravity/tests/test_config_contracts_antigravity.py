@@ -263,7 +263,10 @@ class Exp449VersionBoundaryTests(unittest.TestCase):
         self.assertIn("docs/authorities", excluded)
         self.assertNotIn("docs", excluded)
         self.assertIn("docs/authorities", lock["fingerprint_algorithm"])
-        self.assertEqual(set(lock["changed_modules_since_prior_lock"]), {"experiments"})
+        self.assertEqual(
+            set(lock["changed_modules_since_prior_lock"]),
+            {"experiments", "scratch"},
+        )
         self.assertEqual(
             by_id["exp449_runbook"]["evidence"][0]["symbol"],
             "Exp449 Smoke A 실행 안내서 — grant 승인 대기",
