@@ -2,12 +2,12 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Time Series · Exp449 Code Map</title>
 <style>:root{color-scheme:dark;--bg:#0b1020;--panel:#141b31;--line:#405072;--txt:#e5ebfa;--muted:#9cadca;--paper:#f06f9b}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#1e2b53,var(--bg) 46%);color:var(--txt);font:14px system-ui,sans-serif}header{padding:18px 24px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:21px}small,.muted{color:var(--muted)}main{display:grid;grid-template-columns:minmax(600px,1fr) 320px;gap:12px;padding:12px}#map,aside{background:rgba(20,27,49,.95);border:1px solid var(--line);border-radius:10px}#map{padding:14px;min-height:610px}#graph{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}.node{border:1px solid #516388;border-radius:8px;padding:10px;background:#101a31;cursor:pointer}.node.paper{border-color:var(--paper)}.node.dim{opacity:.2}.node h3{font-size:13px;margin:0 0 6px}.node p{margin:5px 0;color:var(--muted);font-size:12px}aside{padding:14px}aside h2{font-size:15px;margin:0 0 10px}code{word-break:break-word;color:#cbd8ff}select,input{background:#1d2945;color:var(--txt);border:1px solid #516388;border-radius:6px;padding:7px 9px;margin:8px 4px 0 0}@media(max-width:900px){main{grid-template-columns:1fr}}</style></head>
-<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-17T17:51:21+09:00 · source <code>0bcf427f2941a95899f86bde98af821515f38d3e</code> · Exp449 I2 records bounded post-claim recovery; Exp448 remains immutable</small></header>
+<body><header><h1>Time Series · Exp449 code map</h1><small>Generated 2026-08-17T17:55:24+09:00 · source <code>35a27c028609a67381612a3f7fefa4cdab27cc9d</code> · Exp449 I2 records bounded post-claim recovery; Exp448 remains immutable</small></header>
 <main><section id="map"><input id="search" placeholder="module search"><select id="flow"><option value="">all flows</option></select><p class="muted">Exp449 is implementation-ready, grant-unauthorized, and remains a no-execution boundary. Pink-bordered nodes are retained paper scientific dependencies.</p><div id="graph"></div></section><aside><h2 id="detail">Exp449 map</h2><div id="info" class="muted">Select a node for callers, effects, tests, constraints, and evidence.</div></aside></main>
 <script id="codemap-data" type="application/json">
 {
-  "generated_at": "2026-08-17T17:51:21+09:00",
-  "generated_from_commit": "0bcf427f2941a95899f86bde98af821515f38d3e",
+  "generated_at": "2026-08-17T17:55:24+09:00",
+  "generated_from_commit": "35a27c028609a67381612a3f7fefa4cdab27cc9d",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 I2 bounded Smoke A post-claim recovery: this code change creates no authority JSON, production root/claim, score, TEST-label access, smoke, or official run.",
@@ -16,7 +16,8 @@
     "Smoke A lifecycle mutation is internal-only: verified A -> I readiness derives fixed values-only inputs, bounds Task4/5 to two waves, then capability-freezes and scorer-free verifies before complete terminal publication.",
     "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created.",
     "Official six-public-baseline comparison design: reuse frozen classical results, derive a byte-preserving Deep SVDD single-method view, evaluate the user-parity-confirmed DROCC MPS root, and report matched-budget/conformal metrics without inventing proposal AP/AUROC.",
-    "Implemented byte-preserving Deep SVDD single-method view: verifies mixed-root run identity and each shard/meta pair, copies scientific shard JSON bytes unchanged, rebinds only metadata to the derived run identity, records provenance, and freezes exact coverage."
+    "Implemented byte-preserving Deep SVDD single-method view: verifies mixed-root run identity and each shard/meta pair, copies scientific shard JSON bytes unchanged, rebinds only metadata to the derived run identity, records provenance, and freezes exact coverage.",
+    "Implemented official six-method evaluation combiner: requires shared DB/proposal/population identity, exact classical+Deep-SVDD+DROCC ownership and protocols, keeps proposal AP/AUROC absent, records user-confirmed DROCC MPS parity provenance, and publishes scorer-free verifiable create-only comparison leaves."
   ],
   "nodes": [
     {
@@ -1885,6 +1886,60 @@
           "symbol": "OfficialSingleMethodViewTests"
         }
       ]
+    },
+    {
+      "id": "public_baseline_official_comparison",
+      "path": "experiments/paper_public_baselines/official_comparison_antigravity.py",
+      "role": "Exact six-public-method full-population evaluation combiner and create-only artifact verifier.",
+      "entrypoints": [
+        "combine_official_evaluations_antigravity",
+        "write_official_comparison_antigravity",
+        "verify_official_comparison_antigravity"
+      ],
+      "callers": [
+        "scratch/run_official_public_baseline_comparison_antigravity.py"
+      ],
+      "effects": [
+        "combines independently verified classical, Deep SVDD, and DROCC MPS evaluation bundles into fixed-order full-population tables and bootstrap evidence"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py"
+      ],
+      "constraints": [
+        "Requires 1,117 datasets, exact shared DB/proposal identities, four conformal/matched protocols per method, six unique public methods, absent proposal continuous metrics, and explicit user-confirmed MPS parity provenance."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/official_comparison_antigravity.py",
+          "symbol": "combine_official_evaluations_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "public_baseline_official_comparison_tests",
+      "path": "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py",
+      "role": "TDD coverage for six-method ownership, shared identity rejection, create-only artifacts, and scorer-free reload.",
+      "entrypoints": [
+        "OfficialComparisonTests"
+      ],
+      "callers": [
+        "python unittest discovery"
+      ],
+      "effects": [
+        "prevents identity drift, missing/duplicate public methods, mutable output, or proposal AP/AUROC invention"
+      ],
+      "tests": [
+        "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py"
+      ],
+      "constraints": [
+        "Uses synthetic immutable EvaluationBundle values and no production labels or score roots."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py",
+          "symbol": "OfficialComparisonTests"
+        }
+      ]
     }
   ],
   "edges": [
@@ -2588,6 +2643,15 @@
       "evidence": {
         "path": "experiments/paper_public_baselines/tests/test_official_view_antigravity.py",
         "symbol": "freeze_single_method_view_antigravity"
+      }
+    },
+    {
+      "from": "public_baseline_official_comparison_tests",
+      "to": "public_baseline_official_comparison",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py",
+        "symbol": "OfficialComparisonTests"
       }
     }
   ],
