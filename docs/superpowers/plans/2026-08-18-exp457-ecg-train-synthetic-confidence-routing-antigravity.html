@@ -116,7 +116,7 @@ RouteDecisionAntigravity(dataset, train_gate, structure_gate, route)</code></pre
   </section>
 
   <section class="task">
-    <h2><label><input type="checkbox" disabled>Task 3: TRAIN 전용 Hydra 신뢰도 계산</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 3: TRAIN 전용 Hydra 신뢰도 계산</label></h2>
     <p><strong>독립 결과:</strong> TEST 라벨 없이 5개 ECG5000 각각의 게이트 1 통과 여부를 결정한다.</p>
     <h3>Files</h3>
     <ul class="files">
@@ -130,16 +130,16 @@ empirical_pvalues_antigravity(reference: np.ndarray, query: np.ndarray) -&gt; np
 wilson_upper_antigravity(successes: int, trials: int) -&gt; float
 qualify_ecg_dataset_antigravity(dataset: str, train: np.ndarray) -&gt; TrainQualificationAntigravity
 qualify_all_ecg_antigravity() -&gt; tuple[TrainQualificationAntigravity, ...]</code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED TRAIN source test</label><p>SQL이 <code>split='TRAIN'</code>만 읽고 label 열과 TEST 행을 읽지 않는지 확인한다. 실제 대상 이름은 정확히 5개다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: RED hand-built gate tests</label>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED TRAIN source test</label><p>SQL이 <code>split='TRAIN'</code>만 읽고 label 열과 TEST 행을 읽지 않는지 확인한다. 실제 대상 이름은 정확히 5개다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: RED hand-built gate tests</label>
       <pre><code>self.assertTrue(qualify(seed_a_pass, seed_b_pass).passed)
 self.assertFalse(qualify(seed_a_pass, seed_b_fail).passed)
 self.assertFalse(qualify(per_type_below_050).passed)
 self.assertFalse(qualify(wilson_above_005).passed)</code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: 5-fold Hydra 점수와 합성 query 구현</label><p>각 fold의 fit rows로 Hydra+LocalGap을 학습하고 원본 query 및 네 perturbation을 같은 model로 점수화한다. 경험적 p-value는 전체 정상 OOF reference로 계산한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN synthetic suite 두 번</label></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: 실제 TRAIN read-only smoke</label><p>5개 행 수 2335/1413/76/155/19와 finite shape를 확인한다. 전체 공식 qualification은 아직 실행하지 않는다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: HTML/map 체크·커밋·Task 3 검토</label><p>Commit: <code>feat(exp457): qualify ECG candidates on TRAIN</code>.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: 5-fold Hydra 점수와 합성 query 구현</label><p>각 fold의 fit rows로 Hydra+LocalGap을 학습하고 원본 query 및 네 perturbation을 같은 model로 점수화한다. 경험적 p-value는 전체 정상 OOF reference로 계산한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: GREEN synthetic suite 두 번</label></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: 실제 TRAIN read-only smoke</label><p>5개 행 수 2335/1413/76/155/19와 finite shape를 확인한다. 전체 공식 qualification은 아직 실행하지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: HTML/map 체크·커밋·Task 3 검토</label><p>Commit: <code>feat(exp457): qualify ECG candidates on TRAIN</code>.</p></div>
   </section>
 
   <section class="task">

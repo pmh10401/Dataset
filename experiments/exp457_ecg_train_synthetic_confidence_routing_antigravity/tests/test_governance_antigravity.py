@@ -142,17 +142,18 @@ class GovernanceAntigravityTest(unittest.TestCase):
             FROZEN_CHAMPION_ANTIGRAVITY,
         )
 
-    def test_dashboard_and_map_expose_only_planned_boundaries_antigravity(self) -> None:
-        """Break caught: Task 2 fabricates a result or a Task 3+ implemented source edge."""
+    def test_dashboard_and_map_expose_task3_implementation_without_results_antigravity(self) -> None:
+        """Break caught: Task 3 fabricates a result or claims a Task 4+ source boundary."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 2/6",
+            "Task 3/6",
             "아직 공식 결과 없음",
             "always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742",
             "family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227",
             "oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729",
             "lodo_router</td><td>843</td><td>65</td><td>0.5704824976348155",
-            "다음 Task</th><td>Task 3: TRAIN 전용 Hydra 신뢰도 계산",
+            "qualification implementation verified; real qualification not yet run",
+            "다음 Task</th><td>Task 4: 보수적 라우터·평가·재생·대시보드 payload",
             "공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.",
         ):
             self.assertIn(value, dashboard)
@@ -177,13 +178,23 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "frozen_config",
             "result_contracts",
             "primary_perturbations",
+            "train_source",
+            "train_qualification",
+            "source_regression",
+            "qualification_regression",
         ):
             self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
-        for node_id in ("frozen_config", "result_contracts", "primary_perturbations"):
+        for node_id in (
+            "frozen_config",
+            "result_contracts",
+            "primary_perturbations",
+            "train_source",
+            "train_qualification",
+        ):
             self.assertTrue(nodes[node_id]["evidence"])
             self.assertTrue(nodes[node_id]["tests"])
             self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).is_file())
-        for node_id in ("future_qualification", "future_router", "future_evaluation", "future_artifacts", "future_cli"):
+        for node_id in ("future_router", "future_evaluation", "future_artifacts", "future_cli"):
             self.assertEqual(nodes[node_id]["status"], "future_unknown")
             self.assertEqual(nodes[node_id]["evidence"], [])
             self.assertFalse((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
