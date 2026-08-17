@@ -52,8 +52,8 @@ class HtmlParserAntigravity(html.parser.HTMLParser):
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
-    def test_planned_governance_dashboard_and_map_antigravity(self) -> None:
-        """Break caught: Exp456 starts without planned-only truth or invents performance/source code."""
+    def test_candidate_governance_dashboard_and_map_antigravity(self) -> None:
+        """Break caught: Task 4 candidate truth drifts or claims official performance/execution."""
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             path = ROOT_ANTIGRAVITY / relative
             self.assertTrue(path.is_file(), relative)
@@ -72,7 +72,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         exp456_champion = next(item for item in champion["history"] if item["experiment"] == "Exp456")
         for record in (exp456_state, exp456_catalog, exp456_champion):
             self.assertEqual(record["kind"], "exp455_dataset_key_order_repair")
-            self.assertEqual(record["status"], "planned_awaiting_implementation")
+            self.assertEqual(record["status"], "implementation_verified_awaiting_official_evaluation")
             self.assertEqual(record["label_query_count"], 0)
             self.assertFalse(record["official_evaluate_started"])
             self.assertIsNone(record["evaluation_sha256"])
@@ -83,12 +83,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "planned_awaiting_implementation",
-            "Task 3/5",
+            "implementation_verified_awaiting_official_evaluation",
+            "Task 4/5",
             "0회",
             "not_available",
             "result_root_created=false",
-            "Task 3",
+            "Task 4",
         ):
             self.assertIn(value, dashboard)
 
@@ -105,17 +105,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
         nodes = {node["id"]: node for node in graph["nodes"]}
         self.assertNotIn("status", nodes["evaluation"])
         self.assertTrue(nodes["evaluation"]["evidence"])
-        self.assertEqual(nodes["future_cli"]["status"], "future_unknown")
-        self.assertEqual(nodes["future_cli"]["evidence"], [])
-        self.assertTrue(graph["unknown_relationships"])
+        self.assertIn("cli", nodes)
+        self.assertNotIn("future_cli", nodes)
+        self.assertFalse(graph["unknown_relationships"])
         self.assertEqual(
             builder.FUTURE_RELATIONSHIPS_ANTIGRAVITY,
-            "Task 3 implements evaluation, artifacts, replay, and dashboard export; only Task 4 CLI remains unimplemented.",
+            "Task 4 implements the closed CLI and outside-CWD launcher; no Exp456 source relationship remains future or unknown.",
         )
         self.assertNotIn("Task 1", json.dumps(graph, ensure_ascii=False))
-        self.assertIn("Task 3", nodes["dashboard"]["role"])
-        self.assertIn("Task 3", nodes["governance_regression"]["role"])
-        self.assertIn("Task 3", nodes["map_builder"]["role"])
+        self.assertIn("Task 4", nodes["dashboard"]["role"])
+        self.assertIn("Task 4", nodes["governance_regression"]["role"])
+        self.assertIn("Task 4", nodes["map_builder"]["role"])
         builder.validate_map_antigravity(graph, lock, rendered)
 
     def test_dashboard_exposes_only_approved_fields_and_preflight_lists_all_coverage_antigravity(self) -> None:
@@ -138,9 +138,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         source_parent = graph["source_parent_commit"]
         self.assertEqual(source_parent, lock["source_parent_commit"])
-        self.assertEqual(source_parent, "9fdd035acc8871dce876275bc6d5c5fb205fe9fb")
+        self.assertEqual(source_parent, "63710f4687d22f1426f1f46d8930a2126ee968e6")
         implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        self.assertIn("checked-in map source-parent commit SHA는 <code>9fdd035acc8871dce876275bc6d5c5fb205fe9fb</code>", implementation_report)
+        self.assertIn("checked-in map source-parent commit SHA는 <code>63710f4687d22f1426f1f46d8930a2126ee968e6</code>", implementation_report)
         self.assertIn("<code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>은 Exp455 byte guard reference일 뿐 map binding이 아니다.", implementation_report)
         task_report = (ROOT_ANTIGRAVITY / ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html").read_text(encoding="utf-8")
         self.assertIn("source-parent <code>17c6ffa100f70368f0c86efaa4a5f04890e4f12d</code>", task_report)

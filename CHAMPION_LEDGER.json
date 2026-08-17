@@ -542,9 +542,9 @@
     {
       "experiment": "Exp456",
       "kind": "exp455_dataset_key_order_repair",
-      "status": "planned_awaiting_implementation",
-      "implementation_status": "task_3_dataset_key_join_complete",
-      "reason": "Exp456 is a planned-only repair of Exp455's dataset-key order contract. Task 3 completed exact dataset-key joining, synthetic evaluation, bounded publication, replay, and aggregate-only export; no official evaluate/inspect, label query, official result, routing, champion selection, pending-candidate change, or promotion occurred.",
+      "status": "implementation_verified_awaiting_official_evaluation",
+      "implementation_status": "task_4_closed_cli_and_full_verification_complete",
+      "reason": "Exp456 is an implementation-verified repair of Exp455's dataset-key order contract. Task 4 completed the closed CLI, outside-CWD launcher, synthetic dependency flow, aggregate-only JSON, and candidate verification; no official evaluate/inspect, label query, official result, routing, champion selection, pending-candidate change, or promotion occurred.",
       "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
       "prediction_sha256": null,
       "evaluation_sha256": null,

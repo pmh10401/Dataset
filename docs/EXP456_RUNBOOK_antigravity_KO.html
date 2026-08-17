@@ -1,6 +1,5 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp456 실행 안내서</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}.stop{border-left:4px solid #c0392b;background:#fff5f4;padding:1rem}</style></head><body><main>
-<h1>Exp456 실행 안내서</h1><p><strong>현재 단계:</strong> Task 1 governance만 완료되었으며 구현·공식 명령은 아직 시작하지 않았다.</p>
-<h2>순서와 차단 규칙</h2><ol><li>Task 2에서 Exp455 통제 복사와 동등성 검증을 한다.</li><li>Task 3에서 dataset 이름 결합과 replay를 구현·검증한다.</li><li>Task 4에서 닫힌 CLI와 전체 검증·독립 검토를 마친다.</li><li>Task 5는 사용자의 별도 승인 뒤에만 공식 evaluate, 성공 시 inspect를 정확히 한 번씩 실행한다.</li></ol>
-<div class="stop">현재 <code>official_evaluate_started=false</code>, <code>official_inspect_started=false</code>, <code>result_root_created=false</code>다. 공식 실행, label query, 결과 root 생성은 Task 1에서 금지된다. Exp455는 <code>official_evaluation_failed_immutable_no_retry</code>로 보존하며 다시 실행하지 않는다.</div>
-<p>공식 결과가 생기기 전 FN·FP·F1과 가족별 FN 변화는 <code>not_available</code>이다. 결과가 통과해도 routing, champion, pending candidate, promotion은 변경하지 않는다.</p>
+<h1>Exp456 실행 안내서</h1><p><strong>현재 단계:</strong> Task 4 candidate 구현·검증은 완료되었고 상태는 <code>implementation_verified_awaiting_official_evaluation</code>이다.</p>
+<h2>차단 규칙</h2><div class="stop">현재 <code>official_evaluate_started=false</code>, <code>official_inspect_started=false</code>, <code>result_root_created=false</code>다. Task 5는 사용자의 별도 승인과 exact clean reviewed commit 뒤에만 <code>evaluate --reviewed-commit LOWER40</code>를 한 번 실행할 수 있다. 성공한 evaluate와 complete eight-leaf inventory 뒤에만 bare <code>inspect</code>를 한 번 실행할 수 있다.</div>
+<p>공식 결과가 생기기 전 FN·FP·F1과 가족별 FN 변화는 <code>not_available</code>이다. 결과가 통과해도 routing, champion, pending candidate, promotion은 변경하지 않는다. Exp455는 <code>official_evaluation_failed_immutable_no_retry</code>로 보존하며 다시 실행하지 않는다.</p>
 </main></body></html>

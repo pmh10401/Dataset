@@ -358,8 +358,8 @@
   "exp456": {
     "experiment": "Exp456",
     "kind": "exp455_dataset_key_order_repair",
-    "status": "planned_awaiting_implementation",
-    "implementation_status": "task_3_dataset_key_join_complete",
+    "status": "implementation_verified_awaiting_official_evaluation",
+    "implementation_status": "task_4_closed_cli_and_full_verification_complete",
     "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
     "run_root": "/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817",
     "package": "experiments/exp456_exp455_dataset_key_order_repair_antigravity",
@@ -385,7 +385,7 @@
     "pending_candidate_changed": false,
     "mlx_assessment_required": false,
     "official_lifecycle": {"evaluate_invocations": 0, "inspect_invocations": 0, "label_access_count": 0, "result_root_created": false},
-    "next_action": "implement_task_4_closed_cli_and_full_verification_without_official_execution"
+    "next_action": "await_user_approval_for_task_5_closed_official_evaluation"
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",

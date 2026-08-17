@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the Task 3 Exp456 dataset-key evaluation code map."""
+"""Build and validate the Task 4 Exp456 candidate code map."""
 
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/artifacts_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/replay_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/dashboard_export_antigravity.py",
+    "experiments/exp456_exp455_dataset_key_order_repair_antigravity/cli_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_config_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_contracts_antigravity.py",
@@ -49,9 +50,11 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_replay_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_dashboard_export_antigravity.py",
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_dataset_key_join_antigravity.py",
+    "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_cli_antigravity.py",
     "scratch/build_codemap_exp456_antigravity.py",
+    "scratch/run_exp456_exp455_dataset_key_order_repair_antigravity.py",
 )
-FUTURE_RELATIONSHIPS_ANTIGRAVITY = "Task 3 implements evaluation, artifacts, replay, and dashboard export; only Task 4 CLI remains unimplemented."
+FUTURE_RELATIONSHIPS_ANTIGRAVITY = "Task 4 implements the closed CLI and outside-CWD launcher; no Exp456 source relationship remains future or unknown."
 
 
 def canonical_bytes_antigravity(value: object) -> bytes:
@@ -94,7 +97,7 @@ def module_fingerprints_antigravity() -> dict[str, str]:
 def html_antigravity(graph: dict[str, object]) -> str:
     payload = html.escape(canonical_bytes_antigravity(graph).decode("utf-8"))
     nodes = "".join(f'<li><code>{html.escape(str(node.get("path", "unimplemented")))}</code> — {html.escape(str(node["role"]))}</li>' for node in graph["nodes"])
-    return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><title>Exp456 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main><h1>Exp456 Task 3 dataset-key join 코드맵</h1><p>현재 map은 Exp455 controlled-fork foundations와 Task 3 dataset-key evaluation, artifact, replay, dashboard-export evidence를 표시한다. Task 4 CLI source만 unimplemented다.</p><h2>노드</h2><ul>" + nodes + "</ul><h2>Machine-readable graph</h2><pre id=\"codemap-json-antigravity\" type=\"application/json\">" + payload + "</pre></main></body></html>"
+    return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><title>Exp456 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main><h1>Exp456 Task 4 candidate 코드맵</h1><p>현재 map은 Exp455 controlled-fork foundations, Task 3 dataset-key evaluation, 그리고 Task 4 closed CLI/launcher를 표시한다. 모든 CLI caller, effect, test 관계는 concrete evidence로 연결되며 future source는 없다.</p><h2>노드</h2><ul>" + nodes + "</ul><h2>Machine-readable graph</h2><pre id=\"codemap-json-antigravity\" type=\"application/json\">" + payload + "</pre></main></body></html>"
 
 
 def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[str, object], dict[str, object], str]:
@@ -117,16 +120,16 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     builder = "scratch/build_codemap_exp456_antigravity.py"
     nodes: list[dict[str, object]] = [
         {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "role": "Caller: Task 3 join review. Effect: freezes dataset-key repair as the only scientific change.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "Exp456")]},
-        {"id": "implementation_plan", "path": "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "role": "Caller: Task 3 join review. Effect: sequences the completed join and later approval gate.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "Task 3:")]},
-        {"id": "preregistration", "path": "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "role": "Caller: Task 3 governance review. Effect: records frozen identity and the continuing execution firewall.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
-        {"id": "runbook", "path": "docs/EXP456_RUNBOOK_antigravity_KO.html", "role": "Caller: future execution discussion. Effect: blocks official commands until Task 5 approval.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_RUNBOOK_antigravity_KO.html", "official_evaluate_started=false")]},
-        {"id": "implementation_report", "path": "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 3 review. Effect: records map preflight, RED/GREEN evidence, dataset-key checks, and non-actions.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "Map preflight")]},
-        {"id": "dashboard", "path": "docs/EXP456_DASHBOARD_antigravity.html", "role": "Caller: Task 3 status review. Effect: shows Task 3 progress and only not_available official performance.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_DASHBOARD_antigravity.html", "Task 3/5")]},
+        {"id": "implementation_plan", "path": "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "role": "Caller: Task 4 candidate review. Effect: sequences the completed closed CLI and later approval gate.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "Task 4:")]},
+        {"id": "preregistration", "path": "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "role": "Caller: Task 4 governance review. Effect: records frozen identity and the continuing execution firewall.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
+        {"id": "runbook", "path": "docs/EXP456_RUNBOOK_antigravity_KO.html", "role": "Caller: Task 4 candidate review. Effect: blocks official commands until Task 5 approval.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_RUNBOOK_antigravity_KO.html", "official_evaluate_started=false")]},
+        {"id": "implementation_report", "path": "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 4 review. Effect: records map preflight, CLI RED/GREEN, full verification, and non-actions.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "Map preflight")]},
+        {"id": "dashboard", "path": "docs/EXP456_DASHBOARD_antigravity.html", "role": "Caller: Task 4 status review. Effect: shows Task 4 candidate progress and only not_available official performance.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_DASHBOARD_antigravity.html", "Task 4/5")]},
         {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: records Exp456 planned lifecycle truth.", "tests": [test], "evidence": [evidence_antigravity("RESEARCH_STATE.json", "exp456")]},
         {"id": "experiment_catalog", "path": "EXPERIMENT_CATALOG.json", "role": "Caller: governance review. Effect: registers the planned Exp456 document and lifecycle surface.", "tests": [test], "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "Exp456")]},
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "Caller: champion review. Effect: records no champion or pending-candidate change.", "tests": [test], "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "Exp456")]},
-        {"id": "governance_regression", "path": test, "role": "Caller: Task 3 verification. Effect: rejects planned-truth drift, invented official performance, stale map progress, and Exp455/champion mutation.", "tests": [test], "evidence": [evidence_antigravity(test, "GovernanceAntigravityTest")]},
-        {"id": "map_builder", "path": builder, "role": "Caller: Task 3 map validation. Effect: validates current evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
+        {"id": "governance_regression", "path": test, "role": "Caller: Task 4 verification. Effect: rejects candidate-truth drift, invented official performance, stale map progress, and Exp455/champion mutation.", "tests": [test], "evidence": [evidence_antigravity(test, "GovernanceAntigravityTest")]},
+        {"id": "map_builder", "path": builder, "role": "Caller: Task 4 map validation. Effect: validates current evidence, concrete CLI boundaries, fingerprints, and HTML/JSON parity.", "tests": [test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
     ]
     for node_id, role, symbol in (
         ("foundation_config", "Caller: authority capture and later evaluation. Effect: freezes Exp456 identity while retaining Exp455 scientific gates and Exp454 evidence hashes.", "FROZEN_CONFIG_ANTIGRAVITY"),
@@ -149,12 +152,19 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         nodes.append({"id": node_id, "path": path, "role": role, "tests": tests, "evidence": [evidence_antigravity(path, symbol)]})
     for path in sorted({test for _node_id, _path, _role, _symbol, tests in task3_sources for test in tests}):
         nodes.append({"id": Path(path).stem, "path": path, "role": "Caller: Task 3 verification. Effect: rejects dataset-key join, publication, replay, or dashboard aggregate drift.", "tests": [path], "evidence": [evidence_antigravity(path, "Antigravity")]})
-    nodes.append({"id": "future_cli", "path": "experiments/exp456_exp455_dataset_key_order_repair_antigravity/cli_antigravity.py", "role": "Future Task 4 CLI source; unimplemented.", "tests": [], "status": "future_unknown", "evidence": []})
-    unknowns = [{"from": "future_cli", "to": "evaluation", "reason": "Task 4 implementation is absent."}]
+    cli_test = f"{package}/tests/test_cli_antigravity.py"
+    cli_path = f"{package}/cli_antigravity.py"
+    launcher = "scratch/run_exp456_exp455_dataset_key_order_repair_antigravity.py"
+    nodes.extend([
+        {"id": "cli", "path": cli_path, "role": "Caller: outside-CWD launcher. Effect: accepts exactly reviewed evaluate or bare inspect; evaluates authority→features→LODO→evaluation→publication and emits aggregate JSON, or replays and emits the same aggregate.", "tests": [cli_test], "evidence": [evidence_antigravity(cli_path, "main_antigravity")]},
+        {"id": "launcher", "path": launcher, "role": "Caller: user command outside repository CWD. Effect: resolves the repository package and invokes only the closed CLI main.", "tests": [cli_test], "evidence": [evidence_antigravity(launcher, "main_antigravity")]},
+        {"id": "cli_regression", "path": cli_test, "role": "Caller: Task 4 verification. Effect: rejects parser expansion and validates injected evaluate/replay ordering, aggregate output, and no official test root.", "tests": [cli_test], "evidence": [evidence_antigravity(cli_test, "CliAntigravityTests")]},
+    ])
+    unknowns: list[dict[str, str]] = []
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity("docs/EXP456_PREREGISTRATION_antigravity_KO.html", "dataset")},
-        {"from": "implementation_plan", "to": "research_state", "type": "governs", "evidence": evidence_antigravity("RESEARCH_STATE.json", "planned_awaiting_implementation")},
-        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(test, "test_planned_governance_dashboard_and_map_antigravity")},
+        {"from": "implementation_plan", "to": "research_state", "type": "governs", "evidence": evidence_antigravity("RESEARCH_STATE.json", "implementation_verified_awaiting_official_evaluation")},
+        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(test, "test_candidate_governance_dashboard_and_map_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": evidence_antigravity(test, "builder.validate_map_antigravity")},
     ]
     for name, path in foundation_tests.items():
@@ -171,11 +181,19 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "artifacts", "to": "evaluation", "type": "consumes", "evidence": evidence_antigravity(f"{package}/artifacts_antigravity.py", "evidence_for_evaluation_antigravity")},
         {"from": "artifacts", "to": "dashboard_export", "type": "calls", "evidence": evidence_antigravity(f"{package}/artifacts_antigravity.py", "export_aggregate_dashboard_antigravity")},
         {"from": "replay", "to": "evaluation", "type": "calls", "evidence": evidence_antigravity(f"{package}/replay_antigravity.py", "evaluate_routing_antigravity")},
+        {"from": "launcher", "to": "cli", "type": "calls", "evidence": evidence_antigravity(launcher, "main_antigravity")},
+        {"from": "cli_regression", "to": "cli", "type": "tests", "evidence": evidence_antigravity(cli_test, "CliAntigravityTests")},
+        {"from": "cli_regression", "to": "launcher", "type": "tests", "evidence": evidence_antigravity(cli_test, "test_launcher_is_outside_cwd_safe_and_only_calls_package_cli_antigravity")},
+        {"from": "cli", "to": "foundation_authority", "type": "calls", "evidence": evidence_antigravity(cli_path, "capture_routing_authority_antigravity")},
+        {"from": "cli", "to": "foundation_features", "type": "calls", "evidence": evidence_antigravity(cli_path, "build_label_free_features_antigravity")},
+        {"from": "cli", "to": "foundation_router", "type": "calls", "evidence": evidence_antigravity(cli_path, "leave_one_dataset_out_antigravity")},
+        {"from": "cli", "to": "evaluation", "type": "calls", "evidence": evidence_antigravity(cli_path, "evaluate_routing_antigravity")},
+        {"from": "cli", "to": "artifacts", "type": "calls", "evidence": evidence_antigravity(cli_path, "publish_evaluation_antigravity")},
+        {"from": "cli", "to": "replay", "type": "calls", "evidence": evidence_antigravity(cli_path, "inspect_replay_at_antigravity")},
+        {"from": "cli", "to": "dashboard_export", "type": "calls", "evidence": evidence_antigravity(cli_path, "export_aggregate_dashboard_antigravity")},
     ])
-    for unknown in unknowns:
-        edges.append({"from": unknown["from"], "to": unknown["to"], "type": "future_unknown", "evidence": evidence_antigravity(builder, "FUTURE_RELATIONSHIPS_ANTIGRAVITY")})
-    graph: dict[str, object] = {"schema": "exp456_task3_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
-    lock: dict[str, object] = {"schema": "exp456_task3_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": fingerprints_antigravity()}
+    graph: dict[str, object] = {"schema": "exp456_task4_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
+    lock: dict[str, object] = {"schema": "exp456_task4_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": fingerprints_antigravity()}
     return graph, lock, html_antigravity(graph)
 
 
