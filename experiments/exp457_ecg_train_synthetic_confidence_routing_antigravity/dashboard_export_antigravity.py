@@ -8,6 +8,7 @@ from experiments.exp456_exp455_dataset_key_order_repair_antigravity.evaluation_a
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import EvaluationResultAntigravity
+from .evaluation_antigravity import validate_evaluation_result_semantics_antigravity
 
 
 _COMPARISONS_ANTIGRAVITY = (
@@ -27,6 +28,7 @@ _CRITERIA_ANTIGRAVITY = (
 def _validate_result_antigravity(value: object) -> EvaluationResultAntigravity:
     if type(value) is not EvaluationResultAntigravity:
         raise ValueError("dashboard input must be an Exp457 evaluation")
+    validate_evaluation_result_semantics_antigravity(value)
     if tuple(row.name for row in value.comparisons) != _COMPARISONS_ANTIGRAVITY:
         raise ValueError("dashboard comparison order differs")
     for row in value.comparisons:

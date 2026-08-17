@@ -86,7 +86,9 @@ class ArtifactsAntigravityTest(unittest.TestCase):
         evidence = publication_evidence_antigravity()
         forged = replace(
             evidence,
-            qualifications=(replace(evidence.qualifications[0], passed=True),)
+            qualifications=(
+                qualification_antigravity("ECG5000_normal_1", True),
+            )
             + evidence.qualifications[1:],
         )
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):

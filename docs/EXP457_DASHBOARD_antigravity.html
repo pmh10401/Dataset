@@ -4,4 +4,5 @@
 <h2>Exp457 고정 합격선</h2><table><tr><th>TRAIN 게이트</th><td>각 seed별 정상 Wilson 95% 상한 ≤ 5%; pooled sensitivity ≥ 70%; 각 primary type ≥ 50%; finite</td></tr><tr><th>구조 게이트</th><td><code>added_count &gt; removed_count</code></td></tr><tr><th>최종 결과</th><td>FN ≤ 834, FP ≤ 66, F1 &gt; 0.5764150943396227</td></tr></table>
 <p class="muted">ChlorineConcentration 세 데이터셋은 family-wide MultiRocket 후보로 고정한다. TEST confusion/FN/FP/F1은 route를 정하는 데 쓰지 않고 route 고정 뒤 최종 집계에만 사용한다.</p>
 <p class="muted">Task 4는 합성 48-row Exp456 authority와 손으로 만든 TRAIN qualification으로 라우팅·평가·9-leaf semantic replay·대시보드 allowlist를 검증했다. 실제 Hydra TRAIN qualification, 공식 Exp457 평가·publication, TEST query는 수행하지 않았다. 공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.</p>
+<p class="muted">Gate 1 numeric evidence and evaluation provenance are semantically recomputed. Wilson·ordered sensitivity 수치에서 seed/aggregate pass를 다시 계산하고, evaluator와 dashboard는 exact router/authority provenance가 없는 caller 작성 boolean·route·comparison을 거부한다.</p>
 </main></body></html>

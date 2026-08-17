@@ -15,7 +15,11 @@ from .contracts_antigravity import (
     TrainQualificationAntigravity,
 )
 from .dashboard_export_antigravity import export_dashboard_antigravity
-from .evaluation_antigravity import _validate_authority_antigravity, evaluate_routes_antigravity
+from .evaluation_antigravity import (
+    _validate_authority_antigravity,
+    evaluate_routes_antigravity,
+    validate_evaluation_result_semantics_antigravity,
+)
 from .router_antigravity import route_ecg_antigravity
 
 
@@ -117,6 +121,11 @@ def _validate_evidence_antigravity(
 ) -> PublicationEvidenceAntigravity:
     if type(value) is not PublicationEvidenceAntigravity:
         raise ValueError("publication evidence type is invalid")
+    result_authority, result_qualifications = (
+        validate_evaluation_result_semantics_antigravity(value.result)
+    )
+    if result_authority != value.exp456_authority or result_qualifications != value.qualifications:
+        raise ValueError("publication evidence differs from evaluated provenance")
     _rows, authority_features = _validate_authority_antigravity(value.exp456_authority)
     if type(value.qualifications) is not tuple or len(value.qualifications) != 5 or any(
         type(item) is not TrainQualificationAntigravity for item in value.qualifications

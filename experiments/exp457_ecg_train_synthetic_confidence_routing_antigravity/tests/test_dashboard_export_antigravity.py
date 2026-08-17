@@ -113,6 +113,29 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 export_dashboard_antigravity(value)  # type: ignore[arg-type]
 
+    def test_rejects_forged_but_internally_consistent_predecessor_comparison_antigravity(self) -> None:
+        """Break caught: dashboard accepts comparison arithmetic without evaluation provenance."""
+        from experiments.exp456_exp455_dataset_key_order_repair_antigravity.contracts_antigravity import (
+            ComparisonMetricAntigravity,
+            ConfusionAntigravity,
+        )
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.dashboard_export_antigravity import (
+            export_dashboard_antigravity,
+        )
+
+        result = result_antigravity()
+        forged = replace(
+            result,
+            comparisons=(
+                ComparisonMetricAntigravity(
+                    "always_baseline", ConfusionAntigravity(1, 0, 0, 0), 1.0
+                ),
+            )
+            + result.comparisons[1:],
+        )
+        with self.assertRaises(ValueError):
+            export_dashboard_antigravity(forged)
+
 
 if __name__ == "__main__":
     unittest.main()

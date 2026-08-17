@@ -27,6 +27,7 @@ from .evaluation_antigravity import (
     capture_exp456_result_authority_antigravity,
     evaluate_routes_antigravity,
 )
+from .router_antigravity import route_ecg_antigravity
 
 
 def _strict_json_antigravity(payload: bytes) -> object:
@@ -185,7 +186,16 @@ def _inspect_result_with_authority_antigravity(
     decisions = _decisions_antigravity(
         leaves["route_decisions_antigravity.jsonl"]
     )
-    result = evaluate_routes_antigravity(expected_authority, decisions)
+    authority_features = {
+        feature.dataset: feature for feature in expected_authority.features
+    }
+    recomputed_decisions = tuple(
+        route_ecg_antigravity(authority_features[item.dataset], item)
+        for item in qualifications
+    )
+    if decisions != recomputed_decisions:
+        raise ValueError("stored routes differ from exact Gate 1/router replay")
+    result = evaluate_routes_antigravity(expected_authority, recomputed_decisions)
     evidence = PublicationEvidenceAntigravity(
         expected_authority, qualifications, features, result
     )

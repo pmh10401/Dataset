@@ -10,15 +10,23 @@ def qualification_antigravity(dataset: str, passed: bool):
         TrainSeedEvidenceAntigravity,
     )
 
+    sensitivity = 0.75 if passed else 0.40
     primary = {
-        "level_shift": 0.60,
-        "gradual_drift": 0.60,
-        "amplitude_scaling": 0.60,
-        "period_change": 0.60,
+        "level_shift": sensitivity,
+        "gradual_drift": sensitivity,
+        "amplitude_scaling": sensitivity,
+        "period_change": sensitivity,
     }
     evidence = tuple(
         TrainSeedEvidenceAntigravity(
-            dataset, seed, 100, 2, 0.049, 0.75, primary, passed
+            dataset,
+            seed,
+            100,
+            0,
+            0.03699349820698568,
+            sensitivity,
+            primary,
+            passed,
         )
         for seed in (20260721, 20261721)
     )

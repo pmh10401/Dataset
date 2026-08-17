@@ -217,6 +217,20 @@ class EvaluationAntigravityTest(unittest.TestCase):
         ).comparisons[-1]
         self.assertEqual((final.confusion.fn, final.confusion.fp), (829, 66))
 
+    def test_rejects_self_consistent_caller_flip_of_normal_two_train_gate_and_route_antigravity(self) -> None:
+        """Break caught: evaluator accepts caller booleans instead of exact Gate 1/router evidence."""
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.evaluation_antigravity import (
+            evaluate_routes_antigravity,
+        )
+
+        authority = exp456_authority_antigravity()
+        decisions = decisions_antigravity(authority)
+        altered = decisions[:1] + (
+            replace(decisions[1], train_gate=False, route="baseline"),
+        ) + decisions[2:]
+        with self.assertRaises(ValueError):
+            evaluate_routes_antigravity(authority, altered)
+
     def test_rejects_forged_route_structure_gate_or_predecessor_comparison_antigravity(self) -> None:
         """Break caught: caller route text or a rewritten Exp456 aggregate controls evaluation."""
         from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.evaluation_antigravity import (

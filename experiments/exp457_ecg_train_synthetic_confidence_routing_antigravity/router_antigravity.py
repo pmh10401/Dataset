@@ -10,7 +10,18 @@ from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import (
     RouteDecisionAntigravity,
     TrainQualificationAntigravity,
+    validate_train_qualification_semantics_antigravity,
 )
+
+
+_EVIDENCE_BY_DECISION_ID_ANTIGRAVITY: dict[
+    int,
+    tuple[
+        RouteDecisionAntigravity,
+        DatasetRoutingFeaturesAntigravity,
+        TrainQualificationAntigravity,
+    ],
+] = {}
 
 
 def _feature_antigravity(value: object) -> DatasetRoutingFeaturesAntigravity:
@@ -33,16 +44,16 @@ def _feature_antigravity(value: object) -> DatasetRoutingFeaturesAntigravity:
     return value
 
 
-def route_ecg_antigravity(
+def _route_decision_antigravity(
     feature: DatasetRoutingFeaturesAntigravity,
     qualification: TrainQualificationAntigravity,
 ) -> RouteDecisionAntigravity:
-    """Recompute both frozen gates; equality remains baseline."""
     value = _feature_antigravity(feature)
     if type(qualification) is not TrainQualificationAntigravity:
         raise ValueError("qualification type is invalid")
     if qualification.dataset != value.dataset:
         raise ValueError("qualification and feature dataset keys differ")
+    validate_train_qualification_semantics_antigravity(qualification)
     train_gate = qualification.passed
     structure_gate = value.added_count > value.removed_count
     return RouteDecisionAntigravity(
@@ -51,6 +62,32 @@ def route_ecg_antigravity(
         structure_gate,
         "candidate" if train_gate and structure_gate else "baseline",
     )
+
+
+def _evidence_for_route_decision_antigravity(
+    decision: RouteDecisionAntigravity,
+) -> tuple[DatasetRoutingFeaturesAntigravity, TrainQualificationAntigravity]:
+    evidence = _EVIDENCE_BY_DECISION_ID_ANTIGRAVITY.get(id(decision))
+    if evidence is None or evidence[0] is not decision:
+        raise ValueError("route decision lacks exact Gate 1 provenance")
+    _stored, feature, qualification = evidence
+    if _route_decision_antigravity(feature, qualification) != decision:
+        raise ValueError("route decision differs from semantic recomputation")
+    return feature, qualification
+
+
+def route_ecg_antigravity(
+    feature: DatasetRoutingFeaturesAntigravity,
+    qualification: TrainQualificationAntigravity,
+) -> RouteDecisionAntigravity:
+    """Recompute both frozen gates; equality remains baseline."""
+    decision = _route_decision_antigravity(feature, qualification)
+    _EVIDENCE_BY_DECISION_ID_ANTIGRAVITY[id(decision)] = (
+        decision,
+        feature,
+        qualification,
+    )
+    return decision
 
 
 __all__ = ("route_ecg_antigravity",)

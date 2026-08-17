@@ -24,10 +24,10 @@ def seed_evidence_antigravity(seed: int = SEEDS_ANTIGRAVITY[0]):
         DATASET_ANTIGRAVITY,
         seed,
         100,
-        2,
-        0.049,
+        0,
+        0.03699349820698568,
         0.75,
-        {name: 0.60 for name in PRIMARY_TYPES_ANTIGRAVITY},
+        {name: 0.75 for name in PRIMARY_TYPES_ANTIGRAVITY},
         True,
     )
 
@@ -178,6 +178,27 @@ class ContractsAntigravityTest(unittest.TestCase):
                 TrainQualificationAntigravity(DATASET_ANTIGRAVITY, evidence, True)  # type: ignore[arg-type]
         with self.assertRaises(ValueError):
             TrainQualificationAntigravity(DATASET_ANTIGRAVITY, (first, second), 1)  # type: ignore[arg-type]
+
+    def test_qualification_recomputes_numeric_seed_and_aggregate_gate_semantics_antigravity(self) -> None:
+        """Break caught: stored Wilson, pooled, seed, or aggregate flags override Gate 1 math."""
+        from dataclasses import replace
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.contracts_antigravity import (
+            TrainQualificationAntigravity,
+        )
+
+        first = seed_evidence_antigravity(SEEDS_ANTIGRAVITY[0])
+        second = seed_evidence_antigravity(SEEDS_ANTIGRAVITY[1])
+        broken = (
+            (replace(first, normal_wilson_upper=0.04), second, True),
+            (replace(first, pooled_sensitivity=0.74), second, True),
+            (replace(first, passed=False), second, True),
+            (first, second, False),
+        )
+        for left, right, aggregate in broken:
+            with self.subTest(left=left, aggregate=aggregate), self.assertRaises(ValueError):
+                TrainQualificationAntigravity(
+                    DATASET_ANTIGRAVITY, (left, right), aggregate
+                )
 
     def test_route_decision_rejects_wrong_dataset_bool_flags_and_route_names_antigravity(self) -> None:
         """Break caught: downstream results carry an out-of-scope route or non-boolean gate."""

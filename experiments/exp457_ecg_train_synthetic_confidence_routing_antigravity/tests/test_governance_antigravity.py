@@ -153,10 +153,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729",
             "lodo_router</td><td>843</td><td>65</td><td>0.5704824976348155",
             "routing/evaluation/replay implementation verified on synthetic evidence; real TRAIN qualification not yet run",
+            "Gate 1 numeric evidence and evaluation provenance are semantically recomputed",
             "다음 Task</th><td>Task 5: 닫힌 CLI와 공식 후보 검증",
             "공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.",
         ):
             self.assertIn(value, dashboard)
+
+        report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
+        self.assertIn(
+            "Gate 1 numeric evidence and evaluation provenance are semantically recomputed",
+            report,
+        )
 
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html").read_text(encoding="utf-8")
         self.assertIn('<input type="checkbox" checked disabled>Task 4:', plan)

@@ -36,6 +36,11 @@ from .contracts_antigravity import (
     Exp456ResultAuthorityAntigravity,
     FamilyMetricAntigravity,
     RouteDecisionAntigravity,
+    TrainQualificationAntigravity,
+)
+from .router_antigravity import (
+    _evidence_for_route_decision_antigravity,
+    route_ecg_antigravity,
 )
 
 
@@ -64,6 +69,14 @@ _COMPARISON_NAMES_ANTIGRAVITY = (
     "ecg_train_confidence_router",
 )
 _FAMILIES_ANTIGRAVITY = ("ECG5000", "ChlorineConcentration")
+_EVIDENCE_BY_RESULT_ID_ANTIGRAVITY: dict[
+    int,
+    tuple[
+        EvaluationResultAntigravity,
+        Exp456ResultAuthorityAntigravity,
+        tuple[TrainQualificationAntigravity, ...],
+    ],
+] = {}
 
 
 def _expected_predecessor_antigravity() -> tuple[ComparisonMetricAntigravity, ...]:
@@ -246,19 +259,26 @@ def _validate_authority_antigravity(
 def _validate_decisions_antigravity(
     decisions: object,
     features: Mapping[str, DatasetRoutingFeaturesAntigravity],
-) -> dict[str, RouteDecisionAntigravity]:
+) -> tuple[
+    dict[str, RouteDecisionAntigravity], tuple[TrainQualificationAntigravity, ...]
+]:
     if type(decisions) is not tuple or len(decisions) != 5 or any(
         type(item) is not RouteDecisionAntigravity for item in decisions
     ):
         raise ValueError("route decisions must be the exact five-record tuple")
     if tuple(item.dataset for item in decisions) != FROZEN_CONFIG_ANTIGRAVITY.ecg_datasets:
         raise ValueError("route decision dataset order differs")
+    qualifications = []
     for item in decisions:
+        source_feature, qualification = _evidence_for_route_decision_antigravity(item)
+        if source_feature != features[item.dataset] or qualification.dataset != item.dataset:
+            raise ValueError("route decision provenance differs from Exp456 feature authority")
         expected_structure = features[item.dataset].added_count > features[item.dataset].removed_count
         expected_route = "candidate" if item.train_gate and expected_structure else "baseline"
         if item.structure_gate is not expected_structure or item.route != expected_route:
             raise ValueError("route decision differs from recomputed gates")
-    return {item.dataset: item for item in decisions}
+        qualifications.append(qualification)
+    return {item.dataset: item for item in decisions}, tuple(qualifications)
 
 
 def evaluate_routes_antigravity(
@@ -267,7 +287,7 @@ def evaluate_routes_antigravity(
 ) -> EvaluationResultAntigravity:
     """Compute the exact three Exp456 comparators and conservative Exp457 route."""
     rows, features = _validate_authority_antigravity(exp456_authority)
-    by_dataset = _validate_decisions_antigravity(decisions, features)
+    by_dataset, qualifications = _validate_decisions_antigravity(decisions, features)
     baseline = tuple(row.baseline_confusion for row in rows)
     family_wide = tuple(
         row.candidate_confusion
@@ -342,7 +362,7 @@ def evaluate_routes_antigravity(
         ),
     )
     passed = all(item.passed for item in criteria)
-    return EvaluationResultAntigravity(
+    result = EvaluationResultAntigravity(
         comparisons,
         family_metrics,
         decisions,
@@ -352,9 +372,39 @@ def evaluate_routes_antigravity(
         if passed
         else "routing_candidate_not_qualified_for_external_validation",
     )
+    _EVIDENCE_BY_RESULT_ID_ANTIGRAVITY[id(result)] = (
+        result,
+        exp456_authority,
+        qualifications,
+    )
+    return result
+
+
+def validate_evaluation_result_semantics_antigravity(
+    result: EvaluationResultAntigravity,
+) -> tuple[
+    Exp456ResultAuthorityAntigravity, tuple[TrainQualificationAntigravity, ...]
+]:
+    """Recompute a result from its exact authority, Gate 1, and router provenance."""
+    if type(result) is not EvaluationResultAntigravity:
+        raise ValueError("evaluation result type is invalid")
+    evidence = _EVIDENCE_BY_RESULT_ID_ANTIGRAVITY.get(id(result))
+    if evidence is None or evidence[0] is not result:
+        raise ValueError("evaluation result lacks semantic provenance")
+    _stored, authority, qualifications = evidence
+    _rows, features = _validate_authority_antigravity(authority)
+    decisions = tuple(
+        route_ecg_antigravity(features[qualification.dataset], qualification)
+        for qualification in qualifications
+    )
+    expected = evaluate_routes_antigravity(authority, decisions)
+    if expected != result:
+        raise ValueError("evaluation result differs from semantic recomputation")
+    return authority, qualifications
 
 
 __all__ = (
     "capture_exp456_result_authority_antigravity",
     "evaluate_routes_antigravity",
+    "validate_evaluation_result_semantics_antigravity",
 )

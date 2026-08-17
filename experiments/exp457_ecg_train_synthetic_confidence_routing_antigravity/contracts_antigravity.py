@@ -94,6 +94,54 @@ class TrainQualificationAntigravity:
         if any(item.dataset != self.dataset for item in self.seed_evidence):
             raise ValueError("seed_evidence datasets must match qualification dataset")
         _bool_antigravity(self.passed, "passed")
+        validate_train_qualification_semantics_antigravity(self)
+
+
+def validate_train_qualification_semantics_antigravity(
+    qualification: TrainQualificationAntigravity,
+) -> TrainQualificationAntigravity:
+    """Derive every Gate 1 value and boolean from the stored numeric evidence."""
+    if type(qualification) is not TrainQualificationAntigravity:
+        raise ValueError("qualification type is invalid")
+    from .qualification_antigravity import wilson_upper_antigravity
+
+    seed_outcomes = []
+    for seed in qualification.seed_evidence:
+        sensitivities = tuple(
+            seed.per_type_sensitivity[name]
+            for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types
+        )
+        finite = all(
+            isfinite(value)
+            for value in (
+                seed.normal_wilson_upper,
+                seed.pooled_sensitivity,
+                *sensitivities,
+            )
+        )
+        expected_wilson = wilson_upper_antigravity(
+            seed.normal_alerts, seed.normal_trials
+        )
+        expected_pooled = float(sum(sensitivities) / len(sensitivities))
+        expected_passed = bool(
+            finite
+            and expected_wilson <= FROZEN_CONFIG_ANTIGRAVITY.normal_wilson_upper_max
+            and expected_pooled >= FROZEN_CONFIG_ANTIGRAVITY.pooled_sensitivity_min
+            and all(
+                value >= FROZEN_CONFIG_ANTIGRAVITY.per_type_sensitivity_min
+                for value in sensitivities
+            )
+        )
+        if (
+            seed.normal_wilson_upper != expected_wilson
+            or seed.pooled_sensitivity != expected_pooled
+            or seed.passed is not expected_passed
+        ):
+            raise ValueError("seed Gate 1 evidence differs from semantic recomputation")
+        seed_outcomes.append(expected_passed)
+    if qualification.passed is not all(seed_outcomes):
+        raise ValueError("qualification Gate 1 differs from both-seed recomputation")
+    return qualification
 
 
 @dataclass(frozen=True, slots=True)
@@ -246,4 +294,5 @@ __all__ = (
     "RouteDecisionAntigravity",
     "TrainQualificationAntigravity",
     "TrainSeedEvidenceAntigravity",
+    "validate_train_qualification_semantics_antigravity",
 )

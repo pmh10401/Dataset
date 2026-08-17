@@ -38,6 +38,42 @@ def _rehash_antigravity(root: Path) -> None:
 
 
 class ReplayAntigravityTest(unittest.TestCase):
+    def test_rejects_rehashed_passing_gate_values_with_false_seed_and_aggregate_flags_antigravity(self) -> None:
+        """Break caught: stored Gate 1 booleans override Wilson and sensitivity evidence."""
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.artifacts_antigravity import (
+            publish_result_antigravity,
+        )
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.replay_antigravity import (
+            _inspect_result_with_authority_antigravity,
+        )
+
+        evidence = publication_evidence_antigravity()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "result"
+            publish_result_antigravity(root, evidence)
+            path = root / "train_qualification_antigravity.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            qualification = payload["qualifications"][0]
+            for seed in qualification["seed_evidence"]:
+                seed["normal_trials"] = 100
+                seed["normal_alerts"] = 0
+                seed["normal_wilson_upper"] = 0.03699349820698568
+                seed["pooled_sensitivity"] = 0.75
+                seed["per_type_sensitivity"] = {
+                    "level_shift": 0.75,
+                    "gradual_drift": 0.75,
+                    "amplitude_scaling": 0.75,
+                    "period_change": 0.75,
+                }
+                seed["passed"] = False
+            qualification["passed"] = False
+            path.write_bytes(_canonical_antigravity(payload))
+            _rehash_antigravity(root)
+            with self.assertRaises(ValueError):
+                _inspect_result_with_authority_antigravity(
+                    root, evidence.exp456_authority
+                )
+
     def test_inspect_recomputes_routes_and_all_comparisons_antigravity(self) -> None:
         """Break caught: inspect trusts stored route or metric leaves instead of semantic replay."""
         from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.artifacts_antigravity import (
