@@ -52,7 +52,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             parser.feed(path.read_text(encoding="utf-8"))
             parser.close()
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
-        for value in ("planned", "8/8", "Tasks 2/6", "not_started"):
+        for value in ("planned", "8/8", "Tasks 3/6", "not_started"):
             self.assertIn(value, dashboard)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
@@ -70,12 +70,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["pending_candidate_changed"])
         self.assertEqual(champion["pending_candidate"], state["pending_candidate"])
 
-    def test_task_one_plan_progress_and_map_boundaries_antigravity(self) -> None:
-        """Break caught: Task 1 hides unfinished downstream boundaries or omits its code map."""
+    def test_task_three_plan_progress_and_map_boundaries_antigravity(self) -> None:
+        """Break caught: Task 3 hides its completed router or marks a later boundary complete."""
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-17-exp455-conservative-label-free-routing-antigravity.html").read_text(encoding="utf-8")
         task_one = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 1:.*?</section>", plan, flags=re.DOTALL)
         self.assertIsNotNone(task_one)
-        for task_number in range(3, 7):
+        task_three = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 3:.*?</section>", plan, flags=re.DOTALL)
+        self.assertIsNotNone(task_three)
+        for task_number in range(4, 7):
             section = re.search(rf"<section>\s*<h2><input\b([^>]*)>Task {task_number}:.*?</section>", plan, flags=re.DOTALL)
             self.assertIsNotNone(section)
             assert section is not None
@@ -90,8 +92,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
         nodes = {node["id"]: node for node in graph["nodes"]}
-        for node_id in ("config", "contracts", "authority", "features", "future_router", "future_evaluation"):
+        for node_id in ("config", "contracts", "authority", "features", "router", "future_evaluation"):
             self.assertIn(node_id, nodes)
-        self.assertEqual(nodes["future_router"]["status"], "future_unknown")
+        self.assertNotIn("status", nodes["router"])
         self.assertEqual(nodes["future_evaluation"]["status"], "future_unknown")
         builder.validate_map_antigravity(graph, lock, rendered)

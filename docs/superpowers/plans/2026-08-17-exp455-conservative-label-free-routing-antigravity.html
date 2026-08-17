@@ -210,7 +210,7 @@ features = DatasetRoutingFeaturesAntigravity(
   </section>
 
   <section>
-    <h2><input disabled type="checkbox">Task 3: 가족별 leave-one-dataset-out 라우터</h2>
+    <h2><input checked disabled type="checkbox">Task 3: 가족별 leave-one-dataset-out 라우터</h2>
     <h3>Files</h3>
     <ul class="files">
       <li>Create: <code>router_antigravity.py</code>, <code>tests/test_router_antigravity.py</code></li>
@@ -223,9 +223,9 @@ features = DatasetRoutingFeaturesAntigravity(
       <li>Produces: <code>leave_one_dataset_out_antigravity(features, outcomes) -&gt; tuple[FoldDecisionAntigravity, ...]</code>.</li>
     </ul>
     <ol>
-      <li><input disabled type="checkbox">검증 데이터의 outcome을 바꾸어도 그 fold의 선택 규칙이 변하지 않는 테스트, 순서 변경 불변 테스트, 동률 baseline 우선 테스트를 작성한다.</li>
-      <li><input disabled type="checkbox">router 모듈 부재 RED를 실행한다.</li>
-      <li><input disabled type="checkbox">정수 특징별 정렬된 고유 값 사이 합을 <code>threshold_twice</code>로 만들고 양방향 규칙을 생성한다.
+      <li><input checked disabled type="checkbox">검증 데이터의 outcome을 바꾸어도 그 fold의 선택 규칙이 변하지 않는 테스트, 순서 변경 불변 테스트, 동률 baseline 우선 테스트를 작성한다.</li>
+      <li><input checked disabled type="checkbox">router 모듈 부재 RED를 실행한다.</li>
+      <li><input checked disabled type="checkbox">정수 특징별 정렬된 고유 값 사이 합을 <code>threshold_twice</code>로 만들고 양방향 규칙을 생성한다.
 <pre><code>def threshold_rules_antigravity(feature_name, values):
     ordered = sorted(set(values))
     rules = [RouteRuleAntigravity(None, None, "never"), RouteRuleAntigravity(None, None, "always")]
@@ -238,10 +238,10 @@ def applies_antigravity(rule, value):
     if rule.candidate_when == "never": return False
     if rule.candidate_when == "always": return True
     return 2 * value &lt;= rule.threshold_twice if rule.candidate_when == "lte" else 2 * value &gt; rule.threshold_twice</code></pre></li>
-      <li><input disabled type="checkbox">각 가족 안에서만 학습하고 dataset 문자열과 변형 번호는 규칙 입력에서 제외한다. 목적 순서는 FN 최소 → FP 최소 → exact <code>Fraction</code> F1 최대 → 후보 사용 수 최소 → 규칙 lexical 순서로 고정한다.</li>
-      <li><input disabled type="checkbox">ECG5000 5 fold와 ChlorineConcentration 3 fold가 각각 정확히 한 번 holdout되고 총 8개 결정이 원래 데이터셋 순서로 반환되는지 검사한다.</li>
-      <li><input disabled type="checkbox">focused 테스트 두 번과 Task 2 회귀 한 번, map validate, diff-check를 통과시킨다.</li>
-      <li><input disabled type="checkbox">체크박스·대시보드를 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): select conservative family routes</code>.</li>
+      <li><input checked disabled type="checkbox">각 가족 안에서만 학습하고 dataset 문자열과 변형 번호는 규칙 입력에서 제외한다. 목적 순서는 FN 최소 → FP 최소 → exact <code>Fraction</code> F1 최대 → 후보 사용 수 최소 → 규칙 lexical 순서로 고정한다.</li>
+      <li><input checked disabled type="checkbox">ECG5000 5 fold와 ChlorineConcentration 3 fold가 각각 정확히 한 번 holdout되고 총 8개 결정이 원래 데이터셋 순서로 반환되는지 검사한다.</li>
+      <li><input checked disabled type="checkbox">focused 테스트 두 번과 Task 2 회귀 한 번, map validate, diff-check를 통과시킨다.</li>
+      <li><input checked disabled type="checkbox">체크박스·대시보드를 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): select conservative family routes</code>.</li>
     </ol>
   </section>
 
