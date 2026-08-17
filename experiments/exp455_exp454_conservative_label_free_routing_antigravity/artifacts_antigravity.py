@@ -37,7 +37,7 @@ def _context_antigravity(evaluation: RoutingEvaluationAntigravity) -> dict[str, 
     """Store only the minimal label-free row identity and confusion evidence for replay."""
     # Evaluation deliberately has no authority field.  Task 4 publication receives its
     # immutable evidence through the private attachment below, set only by evaluator use.
-    evidence, _features = evidence_for_evaluation_antigravity(evaluation)
+    evidence, _features, inventory = evidence_for_evaluation_antigravity(evaluation)
     rows = []
     for row in evidence:
         rows.append({
@@ -48,11 +48,11 @@ def _context_antigravity(evaluation: RoutingEvaluationAntigravity) -> dict[str, 
             "baseline_confusion": asdict(row.baseline_confusion),
             "candidate_confusion": None if row.candidate_confusion is None else asdict(row.candidate_confusion),
         })
-    return {"experiment_id": "Exp455", "rows": rows}
+    return {"experiment_id": "Exp455", "exp454_leaf_sha256": inventory, "rows": rows}
 
 
 def _features_antigravity(evaluation: RoutingEvaluationAntigravity) -> tuple[dict[str, object], ...]:
-    _evidence, features = evidence_for_evaluation_antigravity(evaluation)
+    _evidence, features, _inventory = evidence_for_evaluation_antigravity(evaluation)
     return tuple(asdict(row) for row in features)
 
 

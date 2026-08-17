@@ -69,7 +69,7 @@ def _load_antigravity(root: Path) -> dict[str, bytes]:
 
 def _reconstruct_antigravity(leaves: dict[str, bytes]) -> tuple[FrozenRoutingAuthorityAntigravity, tuple[DatasetRoutingFeaturesAntigravity, ...], tuple[FoldDecisionAntigravity, ...]]:
     context = _strict_json_antigravity(leaves["context_antigravity.json"])
-    if type(context) is not dict or set(context) != {"experiment_id", "rows"} or context["experiment_id"] != "Exp455" or type(context["rows"]) is not list:
+    if type(context) is not dict or set(context) != {"experiment_id", "exp454_leaf_sha256", "rows"} or context["experiment_id"] != "Exp455" or type(context["rows"]) is not list or type(context["exp454_leaf_sha256"]) is not list:
         raise ValueError("context is invalid")
     rows = []
     for row in context["rows"]:
@@ -89,7 +89,8 @@ def _reconstruct_antigravity(leaves: dict[str, bytes]) -> tuple[FrozenRoutingAut
         if type(row) is not dict or set(row) != decision_keys or type(row["rule"]) is not dict:
             raise ValueError("decision row is invalid")
         decisions.append(FoldDecisionAntigravity(row["dataset"], row["family"], row["method"], row["selected_route"], RouteRuleAntigravity(**row["rule"])))
-    return FrozenRoutingAuthorityAntigravity(tuple(rows), (), 0), tuple(feature_rows), tuple(decisions)
+    inventory = tuple(tuple(item) for item in context["exp454_leaf_sha256"])
+    return FrozenRoutingAuthorityAntigravity(tuple(rows), inventory, 0), tuple(feature_rows), tuple(decisions)
 
 
 def inspect_replay_at_antigravity(root: str | Path) -> RoutingEvaluationAntigravity:

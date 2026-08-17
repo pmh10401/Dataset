@@ -29,6 +29,35 @@ class ReplayAntigravityTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 inspect_replay_at_antigravity(root)
 
+    def test_replay_rejects_self_consistent_rehash_with_mutated_frozen_authority_binding_antigravity(self) -> None:
+        """Break caught: a rewritten context, decisions, semantic leaves, and map can replace Exp454 authority evidence."""
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.artifacts_antigravity import _payloads_antigravity, publish_evaluation_antigravity
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.evaluation_antigravity import evaluate_routing_antigravity
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.replay_antigravity import _reconstruct_antigravity, inspect_replay_at_antigravity
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.router_antigravity import leave_one_dataset_out_antigravity
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.tests.test_evaluation_antigravity import RoutingEvaluationAntigravityTests
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "result"
+            publish_evaluation_antigravity(root, evaluate_routing_antigravity(*RoutingEvaluationAntigravityTests._inputs_antigravity()))
+            context_path = root / "context_antigravity.json"
+            context = json.loads(context_path.read_text(encoding="utf-8"))
+            context["rows"][0]["baseline_confusion"]["fn"] += 1
+            context_path.write_bytes(json.dumps(context, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+            leaves = {entry.name: entry.read_bytes() for entry in root.iterdir()}
+            authority, features, _decisions = _reconstruct_antigravity(leaves)
+            outcomes = {row.dataset: (row.baseline_confusion, row.candidate_confusion) for row in authority.rows if row.candidate_confusion is not None}
+            evaluation = evaluate_routing_antigravity(authority, features, leave_one_dataset_out_antigravity(features, outcomes))
+            for name, payload in _payloads_antigravity(evaluation).items():
+                (root / name).write_bytes(payload)
+            context = json.loads(context_path.read_text(encoding="utf-8"))
+            context["exp454_leaf_sha256"][0][1] = "b" * 64
+            context_path.write_bytes(json.dumps(context, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+            artifact_map = {entry.name: hashlib.sha256(entry.read_bytes()).hexdigest() for entry in root.iterdir() if entry.name != "artifact_sha256_antigravity.json"}
+            (root / "artifact_sha256_antigravity.json").write_bytes(json.dumps(artifact_map, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+            with self.assertRaises(ValueError):
+                inspect_replay_at_antigravity(root)
+
 
 if __name__ == "__main__":
     unittest.main()

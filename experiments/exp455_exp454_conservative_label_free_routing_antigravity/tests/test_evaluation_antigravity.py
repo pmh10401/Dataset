@@ -29,7 +29,17 @@ class RoutingEvaluationAntigravityTests(unittest.TestCase):
                 decisions.append(FoldDecisionAntigravity(dataset, family, method, "candidate" if family == "ECG5000" else "baseline", RouteRuleAntigravity(None, None, "always" if family == "ECG5000" else "never")))
         for index in range(40):
             rows.append(DatasetRoutingAuthorityAntigravity(f"Other__{index}", "Other", 50, None, frozenset(), None, ConfusionAntigravity(10, 1, 5, 90), None))
-        return FrozenRoutingAuthorityAntigravity(tuple(rows), (), 0), tuple(features), tuple(decisions)
+        from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.config_antigravity import EVALUATION_LEAVES_ANTIGRAVITY
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+
+        configured = dict(FROZEN_CONFIG_ANTIGRAVITY.exp454_sha256)
+        aliases = {
+            "artifact_sha256_antigravity.json": configured["artifact_map"],
+            "evaluation_antigravity.json": configured["evaluation"],
+            "decision_antigravity.json": configured["decision"],
+        }
+        inventory = tuple(sorted((name, aliases.get(name, "a" * 64)) for name in EVALUATION_LEAVES_ANTIGRAVITY))
+        return FrozenRoutingAuthorityAntigravity(tuple(rows), inventory, 0), tuple(features), tuple(decisions)
 
     def test_evaluates_all_four_preregistered_comparisons_and_family_deltas_antigravity(self) -> None:
         """Break caught: a comparison skips baseline rows or uses an approximate F1."""
@@ -58,6 +68,18 @@ class RoutingEvaluationAntigravityTests(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 evaluate_routing_antigravity(broken, features, decisions)
+
+    def test_rejects_forged_lodo_decision_or_unfrozen_authority_inventory_antigravity(self) -> None:
+        """Break caught: caller-selected routes or a mutable source inventory bypass the frozen LODO boundary."""
+        from dataclasses import replace
+        from experiments.exp455_exp454_conservative_label_free_routing_antigravity.evaluation_antigravity import evaluate_routing_antigravity
+
+        authority, features, decisions = self._inputs_antigravity()
+        forged = (replace(decisions[0], selected_route="baseline"),) + decisions[1:]
+        with self.assertRaises(ValueError):
+            evaluate_routing_antigravity(authority, features, forged)
+        with self.assertRaises(ValueError):
+            evaluate_routing_antigravity(replace(authority, exp454_leaf_sha256=authority.exp454_leaf_sha256[:-1]), features, decisions)
 
 
 if __name__ == "__main__":

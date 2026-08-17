@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from fractions import Fraction
+import re
 from typing import Sequence
+
+from experiments.exp454_exp453_exp449_authority_boundary_repair_antigravity.config_antigravity import EVALUATION_LEAVES_ANTIGRAVITY
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import (
@@ -15,6 +18,7 @@ from .contracts_antigravity import (
     FrozenRoutingAuthorityAntigravity,
     RoutingEvaluationAntigravity,
 )
+from .router_antigravity import leave_one_dataset_out_antigravity
 
 
 _COMPARISON_NAMES_ANTIGRAVITY = (
@@ -24,13 +28,32 @@ _COMPARISON_NAMES_ANTIGRAVITY = (
     "lodo_router",
 )
 _TARGET_METHODS_ANTIGRAVITY = {"ECG5000": "hydra_local_gap", "ChlorineConcentration": "multirocket_local_gap"}
-_EVIDENCE_BY_EVALUATION_ID_ANTIGRAVITY: dict[int, tuple[tuple[DatasetRoutingAuthorityAntigravity, ...], tuple[DatasetRoutingFeaturesAntigravity, ...]]] = {}
+_EVIDENCE_BY_EVALUATION_ID_ANTIGRAVITY: dict[int, tuple[tuple[DatasetRoutingAuthorityAntigravity, ...], tuple[DatasetRoutingFeaturesAntigravity, ...], tuple[tuple[str, str], ...]]] = {}
 
 
 def _valid_confusion_antigravity(value: object) -> ConfusionAntigravity:
     if type(value) is not ConfusionAntigravity or any(type(item) is not int or item < 0 for item in (value.tp, value.fp, value.fn, value.tn)):
         raise ValueError("confusion must contain non-negative integers")
     return value
+
+
+def _validate_exp454_inventory_antigravity(authority: FrozenRoutingAuthorityAntigravity) -> tuple[tuple[str, str], ...]:
+    inventory = authority.exp454_leaf_sha256
+    if (
+        type(inventory) is not tuple
+        or any(type(item) is not tuple or len(item) != 2 or type(item[0]) is not str or type(item[1]) is not str or not re.fullmatch(r"[0-9a-f]{64}", item[1]) for item in inventory)
+        or tuple(name for name, _digest in inventory) != tuple(sorted(EVALUATION_LEAVES_ANTIGRAVITY))
+    ):
+        raise ValueError("Exp454 frozen 12-leaf inventory differs")
+    configured = dict(FROZEN_CONFIG_ANTIGRAVITY.exp454_sha256)
+    expected = {
+        "artifact_sha256_antigravity.json": configured["artifact_map"],
+        "evaluation_antigravity.json": configured["evaluation"],
+        "decision_antigravity.json": configured["decision"],
+    }
+    if any(dict(inventory)[name] != digest for name, digest in expected.items()):
+        raise ValueError("Exp454 frozen inventory differs from Exp455 config")
+    return inventory
 
 
 def _sum_antigravity(rows: Sequence[ConfusionAntigravity]) -> ConfusionAntigravity:
@@ -54,9 +77,10 @@ def _prefer_candidate_antigravity(baseline: ConfusionAntigravity, candidate: Con
 
 def _validate_inputs_antigravity(
     authority: object, features: object, decisions: object,
-) -> tuple[tuple[DatasetRoutingAuthorityAntigravity, ...], tuple[DatasetRoutingFeaturesAntigravity, ...], dict[str, FoldDecisionAntigravity]]:
+) -> tuple[tuple[DatasetRoutingAuthorityAntigravity, ...], tuple[DatasetRoutingFeaturesAntigravity, ...], dict[str, FoldDecisionAntigravity], tuple[tuple[str, str], ...]]:
     if type(authority) is not FrozenRoutingAuthorityAntigravity or authority.label_query_count != 0:
         raise ValueError("routing authority is invalid")
+    inventory = _validate_exp454_inventory_antigravity(authority)
     rows = authority.rows
     if type(rows) is not tuple or len(rows) != 48 or any(type(row) is not DatasetRoutingAuthorityAntigravity for row in rows):
         raise ValueError("authority must contain exactly 48 rows")
@@ -92,7 +116,14 @@ def _validate_inputs_antigravity(
         decision = decision_by_dataset[target.dataset]
         if decision.family != target.family or decision.method != target.method or decision.selected_route not in {"baseline", "candidate"}:
             raise ValueError("decision is invalid")
-    return rows, tuple(features), decision_by_dataset
+    outcomes = {
+        row.dataset: (row.baseline_confusion, row.candidate_confusion)
+        for row in targets
+    }
+    expected_decisions = leave_one_dataset_out_antigravity(tuple(features), outcomes)
+    if decisions != expected_decisions:
+        raise ValueError("decisions differ from frozen Task 3 LODO replay")
+    return rows, tuple(features), decision_by_dataset, inventory
 
 
 def _comparison_antigravity(name: str, rows: Sequence[ConfusionAntigravity]) -> ComparisonMetricAntigravity:
@@ -102,7 +133,7 @@ def _comparison_antigravity(name: str, rows: Sequence[ConfusionAntigravity]) -> 
 
 def evidence_for_evaluation_antigravity(
     evaluation: RoutingEvaluationAntigravity,
-) -> tuple[tuple[DatasetRoutingAuthorityAntigravity, ...], tuple[DatasetRoutingFeaturesAntigravity, ...]]:
+) -> tuple[tuple[DatasetRoutingAuthorityAntigravity, ...], tuple[DatasetRoutingFeaturesAntigravity, ...], tuple[tuple[str, str], ...]]:
     """Return the in-memory immutable evidence bound to this freshly evaluated result."""
     evidence = _EVIDENCE_BY_EVALUATION_ID_ANTIGRAVITY.get(id(evaluation))
     if evidence is None:
@@ -116,7 +147,7 @@ def evaluate_routing_antigravity(
     decisions: tuple[FoldDecisionAntigravity, ...],
 ) -> RoutingEvaluationAntigravity:
     """Compute all four preregistered comparisons over the exact frozen 48 rows."""
-    rows, _features, decision_by_dataset = _validate_inputs_antigravity(authority, features, decisions)
+    rows, _features, decision_by_dataset, inventory = _validate_inputs_antigravity(authority, features, decisions)
     baseline = tuple(row.baseline_confusion for row in rows)
     family_wide = tuple(
         row.candidate_confusion if row.candidate_confusion is not None else row.baseline_confusion
@@ -150,7 +181,7 @@ def evaluate_routing_antigravity(
     )
     status = "routing_candidate_qualified_for_external_validation" if passed else "routing_candidate_not_qualified_for_external_validation"
     result = RoutingEvaluationAntigravity(comparisons, family_delta, decisions, passed, status)
-    _EVIDENCE_BY_EVALUATION_ID_ANTIGRAVITY[id(result)] = (rows, _features)
+    _EVIDENCE_BY_EVALUATION_ID_ANTIGRAVITY[id(result)] = (rows, _features, inventory)
     return result
 
 

@@ -42,3 +42,10 @@
 - Commit: `8708c222d53fce3a996dde0719da97ae05df52c7` (`feat(exp455): evaluate conservative routing`).
 - Self-review: exact 48-row validation rejects missing, duplicated, and boolean confusion data; F1 is derived from the exact integer numerator/denominator before conversion to float. Replay recomputes LODO decisions and all semantic leaves rather than trusting stored metrics.
 - Concerns: none.
+
+## Follow-up review repair
+
+- RED: added review tests ran before the repair: 7 tests, with two expected assertion failures (forged LODO decision and loose dashboard schema) plus one expected context-binding error.
+- GREEN: Task 4 focused suite now has 9 tests passing.  The evaluator requires the exact Task 3 recomputed decisions and the named 12-leaf Exp454 inventory, including the three configured immutable hashes.
+- Context now carries the complete authority inventory.  The replay test rewrites the context, recomputes decisions and all semantic leaves, rehashes the map, then mutates the frozen authority binding; replay rejects it.
+- Dashboard export now requires the exact four comparison names/order, exact two families/order, exact integer counts, exact derived float F1, and an actual boolean pass value.
