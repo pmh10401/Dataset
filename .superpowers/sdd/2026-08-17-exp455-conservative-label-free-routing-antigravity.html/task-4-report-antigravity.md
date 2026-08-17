@@ -56,3 +56,8 @@
 - GREEN: the replay-focused suite with all Task 4 modules passed 11 tests in 0.056s.
 - Public replay now captures frozen Task 2 authority once and derives its eight features once.  It compares the canonical stored 48-row context and eight feature rows to those independent values before considering stored decisions or metrics.
 - Tests never call that public capture. They inject synthetic authority/features, then prove that self-consistent context-outcome or feature rewrites (including recomputed decisions, all semantic leaves, and map) are rejected.
+
+## Follow-up governance truth repair
+
+- RED: package discovery exposed two stale Task 3-era expectations: dashboard progress and completed-boundary checkboxes.
+- GREEN: governance now asserts calculation-ready, `Tasks 4/6`, official `not_started`, checked Tasks 1–4, unchecked Tasks 5–6, and the implemented evaluation/artifact/replay/dashboard map nodes. Planned/non-promoted ledger assertions are unchanged.
