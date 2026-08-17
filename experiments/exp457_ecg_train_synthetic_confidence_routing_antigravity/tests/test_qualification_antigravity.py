@@ -26,6 +26,58 @@ class QualificationMathAntigravityTest(unittest.TestCase):
         self.assertEqual(float(exact[0]), 0.005)
         self.assertTrue(bool(exact[0] <= 0.005))
 
+    def test_score_vectors_require_real_non_boolean_numeric_dtypes_antigravity(self) -> None:
+        """Break caught: bool, complex, or object scores are silently coerced into Gate 1 floats."""
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.config_antigravity import (
+            FROZEN_CONFIG_ANTIGRAVITY,
+        )
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.qualification_antigravity import (
+            _FoldScoresAntigravity,
+            empirical_pvalues_antigravity,
+        )
+
+        integer_pvalues = empirical_pvalues_antigravity(
+            np.asarray((1, 2, 3), dtype=np.int64),
+            np.asarray((2, 4), dtype=np.int32),
+        )
+        np.testing.assert_array_equal(integer_pvalues, np.asarray((0.75, 0.25)))
+        valid_primary = {
+            name: np.asarray((1.0, 2.0), dtype=np.float32)
+            for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types
+        }
+        integer_fold = _FoldScoresAntigravity(
+            np.asarray((1, 2), dtype=np.int64),
+            valid_primary,
+            2,
+        )
+        np.testing.assert_array_equal(integer_fold.original, np.asarray((1.0, 2.0)))
+
+        invalid = (
+            np.asarray((True, False), dtype=np.bool_),
+            np.asarray((1.0 + 2.0j, 3.0 + 0.0j), dtype=np.complex128),
+            np.asarray((1.0, 2.0), dtype=object),
+        )
+        finite_real = np.asarray((1.0, 2.0), dtype=np.float64)
+        for values in invalid:
+            with self.subTest(dtype=str(values.dtype), boundary="reference"), self.assertRaisesRegex(
+                ValueError, "real numeric dtype"
+            ):
+                empirical_pvalues_antigravity(values, finite_real)
+            with self.subTest(dtype=str(values.dtype), boundary="query"), self.assertRaisesRegex(
+                ValueError, "real numeric dtype"
+            ):
+                empirical_pvalues_antigravity(finite_real, values)
+            with self.subTest(dtype=str(values.dtype), boundary="fold-original"), self.assertRaisesRegex(
+                ValueError, "real numeric dtype"
+            ):
+                _FoldScoresAntigravity(values, valid_primary, 2)
+            invalid_primary = dict(valid_primary)
+            invalid_primary["level_shift"] = values
+            with self.subTest(dtype=str(values.dtype), boundary="fold-primary"), self.assertRaisesRegex(
+                ValueError, "real numeric dtype"
+            ):
+                _FoldScoresAntigravity(finite_real, invalid_primary, 2)
+
     def test_wilson_95_upper_values_and_validation_are_hand_derived_antigravity(self) -> None:
         """Break caught: Gate 1 uses a Wald bound, wrong z, or permissive integer coercion."""
         from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.qualification_antigravity import (
@@ -48,6 +100,9 @@ class FoldScoringAntigravityTest(unittest.TestCase):
         )
         from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.qualification_antigravity import (
             _score_fold_antigravity,
+        )
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.perturbations_antigravity import (
+            build_primary_perturbations_antigravity,
         )
 
         train = np.asarray(
@@ -115,6 +170,14 @@ class FoldScoringAntigravityTest(unittest.TestCase):
         self.assertEqual(len(representation.transform_rows), 5)
         np.testing.assert_array_equal(representation.transform_rows[0], train[query_indices])
         self.assertEqual(len(model.score_calls), 5)
+        np.testing.assert_array_equal(model.score_calls[0], train[query_indices, :2])
+        expected_rows = tuple(
+            build_primary_perturbations_antigravity(row) for row in train[query_indices]
+        )
+        for call_index, name in enumerate(FROZEN_CONFIG_ANTIGRAVITY.primary_types, start=1):
+            expected = np.stack([row[name] for row in expected_rows])
+            np.testing.assert_array_equal(representation.transform_rows[call_index], expected)
+            np.testing.assert_array_equal(model.score_calls[call_index], expected[:, :2])
         self.assertEqual(tuple(result.primary), FROZEN_CONFIG_ANTIGRAVITY.primary_types)
         self.assertEqual(result.original.shape, (5,))
         self.assertTrue(all(values.shape == (5,) for values in result.primary.values()))

@@ -37,6 +37,11 @@ _WILSON_95_Z_ANTIGRAVITY = 1.959963984540054
 def _vector_antigravity(values: np.ndarray, name: str, *, finite: bool = True) -> np.ndarray:
     if type(values) is not np.ndarray or values.ndim != 1 or len(values) == 0:
         raise ValueError(f"{name} must be a non-empty one-dimensional ndarray")
+    if not (
+        np.issubdtype(values.dtype, np.integer)
+        or np.issubdtype(values.dtype, np.floating)
+    ):
+        raise ValueError(f"{name} must have a real numeric dtype")
     result = np.asarray(values, dtype=float)
     if finite and not np.isfinite(result).all():
         raise ValueError(f"{name} must be finite")
