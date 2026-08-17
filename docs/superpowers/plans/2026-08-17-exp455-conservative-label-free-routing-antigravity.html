@@ -246,7 +246,7 @@ def applies_antigravity(rule, value):
   </section>
 
   <section>
-    <h2><input disabled type="checkbox">Task 4: 네 비교 결과, 결과 파일, 재계산</h2>
+    <h2><input checked disabled type="checkbox">Task 4: 네 비교 결과, 결과 파일, 재계산</h2>
     <h3>Files</h3>
     <ul class="files">
       <li>Create: <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
@@ -261,9 +261,9 @@ def applies_antigravity(rule, value):
       <li>Exact leaf inventory: context JSON, features JSONL, fold decisions JSONL, comparison metrics JSON, family metrics JSONL, decision JSON, dashboard snapshot JSON, artifact SHA JSON.</li>
     </ul>
     <ol>
-      <li><input disabled type="checkbox">baseline, 가족 전체 적용, 정답 기반 상한선, 실제 라우터의 confusion을 손으로 계산한 작은 fixture 테스트를 작성한다.</li>
-      <li><input disabled type="checkbox">모듈 부재 RED와 semantic tamper RED를 기록한다.</li>
-      <li><input disabled type="checkbox">48개 데이터셋을 정확히 한 번씩 합산하고 exact integer confusion에서 F1을 계산한다.
+      <li><input checked disabled type="checkbox">baseline, 가족 전체 적용, 정답 기반 상한선, 실제 라우터의 confusion을 손으로 계산한 작은 fixture 테스트를 작성한다.</li>
+      <li><input checked disabled type="checkbox">모듈 부재 RED와 semantic tamper RED를 기록한다.</li>
+      <li><input checked disabled type="checkbox">48개 데이터셋을 정확히 한 번씩 합산하고 exact integer confusion에서 F1을 계산한다.
 <pre><code>def f1_antigravity(c):
     denominator = 2 * c.tp + c.fp + c.fn
     return 0.0 if denominator == 0 else (2.0 * c.tp) / denominator
@@ -273,11 +273,11 @@ passed = (
     and f1_antigravity(routed) &gt;= 0.6264199935
     and all(family_fn_delta[name] &lt;= 0 for name in TARGET_FAMILIES_ANTIGRAVITY)
 )</code></pre></li>
-      <li><input disabled type="checkbox">canonical JSON/JSONL 8-leaf writer와 self-excluding artifact map을 구현하고 기존 root, symlink, partial root를 거부한다.</li>
-      <li><input disabled type="checkbox">replay가 features에서 fold 규칙을 다시 고르고 confusion을 다시 합산하게 한다. leaf 값과 artifact map을 함께 바꾼 tamper도 거부해야 한다.</li>
-      <li><input disabled type="checkbox">대시보드 payload를 <code>experiment_id</code>, <code>status</code>, <code>completed_folds</code>, 네 방법의 FN·FP·F1, 두 가족 FN delta, <code>passed</code>로 제한한다.</li>
-      <li><input disabled type="checkbox">focused 테스트 두 번, Task 2–3 회귀 한 번, map validate, diff-check를 통과시킨다.</li>
-      <li><input disabled type="checkbox">체크박스·HTML 대시보드를 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): evaluate conservative routing</code>.</li>
+      <li><input checked disabled type="checkbox">canonical JSON/JSONL 8-leaf writer와 self-excluding artifact map을 구현하고 기존 root, symlink, partial root를 거부한다.</li>
+      <li><input checked disabled type="checkbox">replay가 features에서 fold 규칙을 다시 고르고 confusion을 다시 합산하게 한다. leaf 값과 artifact map을 함께 바꾼 tamper도 거부해야 한다.</li>
+      <li><input checked disabled type="checkbox">대시보드 payload를 <code>experiment_id</code>, <code>status</code>, <code>completed_folds</code>, 네 방법의 FN·FP·F1, 두 가족 FN delta, <code>passed</code>로 제한한다.</li>
+      <li><input checked disabled type="checkbox">focused 테스트 두 번, Task 2–3 회귀 한 번, map validate, diff-check를 통과시킨다.</li>
+      <li><input checked disabled type="checkbox">체크박스·HTML 대시보드를 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): evaluate conservative routing</code>.</li>
     </ol>
   </section>
 

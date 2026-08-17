@@ -36,9 +36,17 @@ TRACKED_FINGERPRINT_PATHS_ANTIGRAVITY = (
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/authority_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/features_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/router_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/evaluation_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/artifacts_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/replay_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/dashboard_export_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_authority_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_features_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_router_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_artifacts_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_dashboard_export_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_config_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_governance_antigravity.py",
@@ -101,7 +109,7 @@ def _html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp455 초기 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp455 Task 3 코드맵</h1><p>Exp454 authority, label-free 특징, 가족별 LODO router, 미래 evaluation 경계를 분리한다. '
+        '<h1>Exp455 Task 4 코드맵</h1><p>Exp454 authority, label-free 특징, 가족별 LODO router, 48행 evaluation, create-only artifact, semantic replay, aggregate dashboard 경계를 분리한다. '
         'label, confusion, dataset variant number는 router inputs가 아니며 holdout outcome은 rule 선택에 쓰지 않는다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
@@ -126,12 +134,20 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     features_test = f"{package}/tests/test_features_antigravity.py"
     router = f"{package}/router_antigravity.py"
     router_test = f"{package}/tests/test_router_antigravity.py"
+    evaluation = f"{package}/evaluation_antigravity.py"
+    evaluation_test = f"{package}/tests/test_evaluation_antigravity.py"
+    artifacts = f"{package}/artifacts_antigravity.py"
+    artifacts_test = f"{package}/tests/test_artifacts_antigravity.py"
+    replay = f"{package}/replay_antigravity.py"
+    replay_test = f"{package}/tests/test_replay_antigravity.py"
+    dashboard_export = f"{package}/dashboard_export_antigravity.py"
+    dashboard_export_test = f"{package}/tests/test_dashboard_export_antigravity.py"
     nodes: list[dict[str, object]] = [
         {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html", "role": "Caller: Task 1 governance. Effect: fixes Exp455 scope, candidates, gates, and label-free firewall.", "tests": [governance_test], "evidence": [_evidence_antigravity("docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html", "Exp455")]},
         {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: freezes sequential TDD and official-evaluation boundaries.", "tests": [governance_test], "evidence": [_evidence_antigravity(plan, "Task 1: Governance")]},
         {"id": "preregistration", "path": "docs/EXP455_PREREGISTRATION_antigravity_KO.html", "role": "Caller: governance review. Effect: records planned-only frozen identity and firewall.", "tests": [governance_test], "evidence": [_evidence_antigravity("docs/EXP455_PREREGISTRATION_antigravity_KO.html", "Exp455")]},
         {"id": "runbook", "path": "docs/EXP455_RUNBOOK_antigravity_KO.html", "role": "Caller: future operators. Effect: prohibits Task 1 official execution and TEST-label access.", "tests": [governance_test], "evidence": [_evidence_antigravity("docs/EXP455_RUNBOOK_antigravity_KO.html", "Task 1")]},
-        {"id": "dashboard", "path": "docs/EXP455_DASHBOARD_antigravity.html", "role": "Caller: planned status display. Effect: exposes 8/8 label-free features, Tasks 3/6, 8/8 folds, and not_started result state.", "tests": [governance_test], "evidence": [_evidence_antigravity("docs/EXP455_DASHBOARD_antigravity.html", "Tasks 3/6")]},
+        {"id": "dashboard", "path": "docs/EXP455_DASHBOARD_antigravity.html", "role": "Caller: planned status display. Effect: exposes 8/8 label-free features, Tasks 4/6, 8/8 folds, and still-not-started official result.", "tests": [governance_test, dashboard_export_test], "evidence": [_evidence_antigravity("docs/EXP455_DASHBOARD_antigravity.html", "Tasks 4/6")]},
         {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: records Exp455 as planned, non-promoted, and not officially run.", "tests": [governance_test], "evidence": [_evidence_antigravity("RESEARCH_STATE.json", "\"exp455\"")]},
         {"id": "config", "path": f"{package}/config_antigravity.py", "role": "Caller: future authority, router, and evaluation. Effect: freezes approved identity, scope, gates, evidence hashes, and official Python.", "tests": [config_test, governance_test], "evidence": [_evidence_antigravity(f"{package}/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")]},
         {"id": "contracts", "path": f"{package}/contracts_antigravity.py", "role": "Caller: future authority, router, and evaluation. Effect: freezes label-free feature, authority, rule, decision, and result records.", "tests": [contracts_test, governance_test], "evidence": [_evidence_antigravity(f"{package}/contracts_antigravity.py", "DatasetRoutingFeaturesAntigravity")]},
@@ -139,8 +155,11 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"id": "map_builder", "path": "scratch/build_codemap_exp455_antigravity.py", "role": "Caller: Task 1 map validation. Effect: checks evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [_evidence_antigravity("scratch/build_codemap_exp455_antigravity.py", "validate_map_antigravity")]},
         {"id": "authority", "path": authority, "role": "Caller: Task 2 feature builder and future router/evaluation. Effect: verifies Exp454 12 leaves and combines Exp446 stable-26 plus Exp404 Hard coordinates without labels.", "tests": [authority_test], "evidence": [_evidence_antigravity(authority, "capture_routing_authority_antigravity")]},
         {"id": "features", "path": features, "role": "Caller: Task 3 router. Effect: emits exactly eight ECG5000-then-ChlorineConcentration integer feature rows without confusion or labels.", "tests": [features_test], "evidence": [_evidence_antigravity(features, "build_label_free_features_antigravity")]},
-        {"id": "router", "path": router, "role": "Caller: Task 3 fold selection and future Task 4 evaluation. Effect: chooses deterministic family LODO rules from allowed integer features without the held-out outcome.", "tests": [router_test], "evidence": [_evidence_antigravity(router, "leave_one_dataset_out_antigravity")]},
-        {"id": "future_evaluation", "path": f"{package}/evaluation_antigravity.py", "role": "Future Task 4 evaluation and frozen-result boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
+        {"id": "router", "path": router, "role": "Caller: Task 3 fold selection and Task 4 replay. Effect: chooses deterministic family LODO rules from allowed integer features without the held-out outcome.", "tests": [router_test, replay_test], "evidence": [_evidence_antigravity(router, "leave_one_dataset_out_antigravity")]},
+        {"id": "evaluation", "path": evaluation, "role": "Caller: Task 4 artifacts and dashboard export. Effect: sums each of 48 rows once for four comparisons and checks gates without activating routing.", "tests": [evaluation_test, artifacts_test, replay_test, dashboard_export_test], "evidence": [_evidence_antigravity(evaluation, "evaluate_routing_antigravity")]},
+        {"id": "artifacts", "path": artifacts, "role": "Caller: injected temporary publication and replay. Effect: writes exactly eight canonical create-only leaves with a self-excluding hash map.", "tests": [artifacts_test, replay_test], "evidence": [_evidence_antigravity(artifacts, "publish_evaluation_antigravity")]},
+        {"id": "replay", "path": replay, "role": "Caller: Task 4 artifact inspection. Effect: re-fits LODO rules and recomputes stored aggregate metrics without TEST labels.", "tests": [replay_test], "evidence": [_evidence_antigravity(replay, "inspect_replay_at_antigravity")]},
+        {"id": "dashboard_export", "path": dashboard_export, "role": "Caller: artifact dashboard snapshot. Effect: limits output to aggregate method and family rows.", "tests": [dashboard_export_test], "evidence": [_evidence_antigravity(dashboard_export, "export_aggregate_dashboard_antigravity")]},
     ]
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": _evidence_antigravity("docs/EXP455_PREREGISTRATION_antigravity_KO.html", "Exp455")},
@@ -153,11 +172,13 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "features", "to": "authority", "type": "reads", "evidence": _evidence_antigravity(features, "FrozenRoutingAuthorityAntigravity")},
         {"from": "router", "to": "features", "type": "reads", "evidence": _evidence_antigravity(router, "DatasetRoutingFeaturesAntigravity")},
         {"from": "router", "to": "contracts", "type": "reads", "evidence": _evidence_antigravity(router, "FoldDecisionAntigravity")},
-        {"from": "router", "to": "future_evaluation", "type": "future_unknown", "evidence": _evidence_antigravity(plan, "evaluate_routing_antigravity")},
+        {"from": "router", "to": "evaluation", "type": "reads", "evidence": _evidence_antigravity(evaluation, "FoldDecisionAntigravity")},
+        {"from": "evaluation", "to": "artifacts", "type": "reads", "evidence": _evidence_antigravity(artifacts, "publish_evaluation_antigravity")},
+        {"from": "evaluation", "to": "dashboard_export", "type": "reads", "evidence": _evidence_antigravity(dashboard_export, "RoutingEvaluationAntigravity")},
+        {"from": "artifacts", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "_LEAVES_ANTIGRAVITY")},
+        {"from": "router", "to": "replay", "type": "reads", "evidence": _evidence_antigravity(replay, "leave_one_dataset_out_antigravity")},
     ]
-    unknowns = [
-        {"from": "router", "to": "future_evaluation", "reason": "Task 4 evaluation is not implemented."},
-    ]
+    unknowns: list[dict[str, str]] = []
     graph: dict[str, object] = {"schema": "exp455_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
     lock: dict[str, object] = {"schema": "exp455_codemap_map_child_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": _module_fingerprints_antigravity(), "tracked_fingerprints": _tracked_fingerprints_antigravity()}
     return graph, lock, _html_antigravity(graph)
