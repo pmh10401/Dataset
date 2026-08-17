@@ -35,11 +35,31 @@ class OfficialComparisonCliTests(unittest.TestCase):
         module = _load_launcher()
         parser = module.build_parser_antigravity()
 
-        for command in ("prepare-deep-view", "evaluate", "combine", "verify"):
+        for command in (
+            "prepare-deep-view", "evaluate", "combine", "verify",
+            "evaluate-exp449-continuous", "combine-exp449-continuous",
+            "verify-exp449-continuous",
+        ):
             with self.subTest(command=command):
                 self.assertEqual(parser.parse_args([command]).command, command)
         with self.assertRaises(SystemExit):
             parser.parse_args(["score"])
+
+    def test_exp449_continuous_roots_are_separate_from_legacy_result(self) -> None:
+        module = _load_launcher()
+
+        self.assertEqual(
+            module.EXP449_PROPOSAL_ROOT_ANTIGRAVITY.name,
+            "paper_proposal_exp449_official_antigravity_20260814",
+        )
+        self.assertEqual(
+            module.EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY.name,
+            "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817",
+        )
+        self.assertNotEqual(
+            module.OFFICIAL_COMPARISON_ROOT_ANTIGRAVITY,
+            module.EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY,
+        )
 
     def test_import_is_label_and_scorer_free(self) -> None:
         code = (

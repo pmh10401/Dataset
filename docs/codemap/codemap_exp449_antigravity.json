@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-17T18:11:35+09:00",
-  "generated_from_commit": "8812bb069ff7e16777ee29f4a20c74a6fd11eecf",
+  "generated_at": "2026-08-17T22:15:00+09:00",
+  "generated_from_commit": "b1fa8c60ea3f97868fd67b8a401903e7224e316e",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 I2 bounded Smoke A post-claim recovery: this code change creates no authority JSON, production root/claim, score, TEST-label access, smoke, or official run.",
@@ -8,10 +8,9 @@
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "Smoke A lifecycle mutation is internal-only: verified A -> I readiness derives fixed values-only inputs, bounds Task4/5 to two waves, then capability-freezes and scorer-free verifies before complete terminal publication.",
     "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created.",
-    "Official six-public-baseline comparison design: reuse frozen classical results, derive a byte-preserving Deep SVDD single-method view, evaluate the user-parity-confirmed DROCC MPS root, and report matched-budget/conformal metrics without inventing proposal AP/AUROC.",
     "Implemented byte-preserving Deep SVDD single-method view: verifies mixed-root run identity and each shard/meta pair, copies scientific shard JSON bytes unchanged, rebinds only metadata to the derived run identity, records provenance, and freezes exact coverage.",
-    "Implemented official six-method evaluation combiner: requires shared DB/proposal/population identity, exact classical+Deep-SVDD+DROCC ownership and protocols, keeps proposal AP/AUROC absent, records user-confirmed DROCC MPS parity provenance, and publishes scorer-free verifiable create-only comparison leaves.",
-    "Implemented closed official comparison dispatcher: prepares the byte-preserving Deep SVDD view, delays label access until evaluation, freezes and independently verifies 1,117-dataset numerical tables, and exposes no scoring command."
+    "Implemented Exp449 continuous-score comparison: verifies 1,117 frozen proposal shards and 195,900 route-preserving Candidate-C scores, recomputes all six public baselines at the 2,276-alert budget without retraining, and reports proposal AP/AUROC.",
+    "Extended closed official comparison dispatcher: legacy results remain immutable while separate Exp449 continuous evaluate/combine/verify commands publish a new create-only result root."
   ],
   "nodes": [
     {
@@ -1884,8 +1883,11 @@
     {
       "id": "public_baseline_official_comparison",
       "path": "experiments/paper_public_baselines/official_comparison_antigravity.py",
-      "role": "Exact six-public-method full-population evaluation combiner and create-only artifact verifier.",
+      "role": "Exact six-public-method full-population evaluator/combiner with verified Exp449 continuous proposal scores and create-only artifact verification.",
       "entrypoints": [
+        "load_exp449_continuous_proposal_antigravity",
+        "evaluate_frozen_scores_exp449_continuous_antigravity",
+        "attach_exp449_continuous_metrics_antigravity",
         "combine_official_evaluations_antigravity",
         "write_official_comparison_antigravity",
         "verify_official_comparison_antigravity"
@@ -1894,13 +1896,13 @@
         "scratch/run_official_public_baseline_comparison_antigravity.py"
       ],
       "effects": [
-        "combines independently verified classical, Deep SVDD, and DROCC MPS evaluation bundles into fixed-order full-population tables and bootstrap evidence"
+        "verifies Exp449 Candidate-C shard scores, re-evaluates immutable public scores at the 2,276-alert budget, computes proposal AP/AUROC, and freezes fixed-order full-population tables plus bootstrap evidence"
       ],
       "tests": [
         "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py"
       ],
       "constraints": [
-        "Requires 1,117 datasets, exact shared DB/proposal identities, four conformal/matched protocols per method, six unique public methods, absent proposal continuous metrics, and explicit user-confirmed MPS parity provenance."
+        "Requires 1,117 datasets, 195,900 finite Exp449 scores, exact 0.5 alert-boundary preservation, shared DB/proposal identities, six unique public methods, and explicit user-confirmed MPS parity provenance."
       ],
       "evidence": [
         {
@@ -1912,7 +1914,7 @@
     {
       "id": "public_baseline_official_comparison_tests",
       "path": "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py",
-      "role": "TDD coverage for six-method ownership, shared identity rejection, create-only artifacts, and scorer-free reload.",
+      "role": "TDD coverage for Exp449 score/alert closure, proposal AP/AUROC, six-method ownership, create-only artifacts, and scorer-free reload.",
       "entrypoints": [
         "OfficialComparisonTests"
       ],
@@ -1920,13 +1922,13 @@
         "python unittest discovery"
       ],
       "effects": [
-        "prevents identity drift, missing/duplicate public methods, mutable output, or proposal AP/AUROC invention"
+        "prevents score/alert drift, missing continuous proposal metrics, identity drift, missing/duplicate public methods, or mutable output"
       ],
       "tests": [
         "experiments/paper_public_baselines/tests/test_official_comparison_antigravity.py"
       ],
       "constraints": [
-        "Uses synthetic immutable EvaluationBundle values and no production labels or score roots."
+        "Uses synthetic immutable EvaluationBundle and Exp449 shard values; production result verification is performed by the closed CLI."
       ],
       "evidence": [
         {
@@ -1938,7 +1940,7 @@
     {
       "id": "public_baseline_official_comparison_cli",
       "path": "scratch/run_official_public_baseline_comparison_antigravity.py",
-      "role": "Closed four-command dispatcher for Deep SVDD view publication, delayed-label evaluation, six-method combination, and scorer-free verification.",
+      "role": "Closed seven-command dispatcher for legacy comparison plus separate Exp449 continuous evaluation, combination, and verification.",
       "entrypoints": [
         "build_parser_antigravity",
         "main_antigravity"
@@ -1947,13 +1949,13 @@
         "external paper-comparison operator"
       ],
       "effects": [
-        "creates the byte-preserving Deep SVDD view, evaluates only verified deep score roots, freezes the exact six-method comparison, and verifies every score and comparison artifact"
+        "preserves legacy artifacts, re-evaluates three immutable public score roots against Exp449 Candidate-C scores, freezes a separate continuous comparison root, and verifies all score/proposal/comparison artifacts"
       ],
       "tests": [
         "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py"
       ],
       "constraints": [
-        "Top-level import is label- and scorer-free; only the fixed prepare-deep-view, evaluate, combine, and verify commands are accepted; evaluation artifact identity uses artifact_sha256.json."
+        "Top-level import is label- and scorer-free; no scoring or training command exists; Exp449 continuous evaluation writes only to its separate fixed result root."
       ],
       "evidence": [
         {
@@ -1965,7 +1967,7 @@
     {
       "id": "public_baseline_official_comparison_cli_tests",
       "path": "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py",
-      "role": "Focused CLI boundary coverage for the closed command set, import firewall, and canonical evaluation artifact name.",
+      "role": "Focused CLI boundary coverage for the closed legacy/Exp449 command set, root separation, import firewall, and canonical artifact names.",
       "entrypoints": [
         "OfficialComparisonCliTests"
       ],
@@ -1973,7 +1975,7 @@
         "python unittest discovery"
       ],
       "effects": [
-        "prevents accidental scoring commands, eager label/deep-scorer imports, and verification against a noncanonical evaluation filename"
+        "prevents accidental training/scoring commands, eager label/deep-scorer imports, legacy result overwrite, and noncanonical evaluation verification"
       ],
       "tests": [
         "experiments/paper_public_baselines/tests/test_official_comparison_cli_antigravity.py"
@@ -2830,7 +2832,7 @@
         "public_baseline_official_comparison",
         "public_baseline_official_comparison_cli_tests"
       ],
-      "outcome": "A verified 1,117-dataset six-public-baseline technical comparison is frozen from immutable score evidence; proposed AP/AUROC remains intentionally absent, MPS parity is disclosed as user-confirmed, and no automatic promotion claim is made."
+      "outcome": "A verified 1,117-dataset comparison is frozen from immutable score evidence; Exp449 proposal AP/AUROC is computed from its route-preserving continuous score, MPS parity is disclosed as user-confirmed, and no automatic promotion claim is made."
     }
   ],
   "unknown_relationships": [],

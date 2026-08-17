@@ -34,11 +34,27 @@ OFFICIAL_COMPARISON_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/"
     "paper_public_baselines_official_comparison_antigravity_20260817"
 )
+EXP449_PROPOSAL_ROOT_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/"
+    "paper_proposal_exp449_official_antigravity_20260814"
+)
+EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/"
+    "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817"
+)
+EXP449_EVALUATION_GROUPS_ANTIGRAVITY = (
+    ("classical", CLASSICAL_ROOT_ANTIGRAVITY),
+    ("deep_svdd", DEEP_SVDD_VIEW_ROOT_ANTIGRAVITY),
+    ("drocc_mps", DROCC_MPS_ROOT_ANTIGRAVITY),
+)
 COMMANDS_ANTIGRAVITY = (
     "prepare-deep-view",
     "evaluate",
     "combine",
     "verify",
+    "evaluate-exp449-continuous",
+    "combine-exp449-continuous",
+    "verify-exp449-continuous",
 )
 EVALUATION_ARTIFACT_NAME_ANTIGRAVITY = "artifact_sha256.json"
 
@@ -61,6 +77,12 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         result = _combine_antigravity()
     elif arguments.command == "verify":
         result = _verify_antigravity()
+    elif arguments.command == "evaluate-exp449-continuous":
+        result = _evaluate_exp449_continuous_antigravity()
+    elif arguments.command == "combine-exp449-continuous":
+        result = _combine_exp449_continuous_antigravity()
+    elif arguments.command == "verify-exp449-continuous":
+        result = _verify_exp449_continuous_antigravity()
     else:  # pragma: no cover - argparse closes this branch
         raise AssertionError(arguments.command)
     from experiments.paper_public_baselines.artifacts import canonical_json_bytes
@@ -179,6 +201,97 @@ def _verify_antigravity() -> dict[str, object]:
         "score_roots": score_manifests,
         "comparison_artifact_map_sha256": sha256_file(
             OFFICIAL_COMPARISON_ROOT_ANTIGRAVITY
+            / "official_comparison_artifact_sha256_antigravity.json"
+        ),
+    }
+
+
+def _evaluate_exp449_continuous_antigravity() -> dict[str, object]:
+    from experiments.paper_public_baselines.evaluation import write_evaluation_bundle
+    from experiments.paper_public_baselines.official_comparison_antigravity import (
+        evaluate_frozen_scores_exp449_continuous_antigravity,
+    )
+
+    artifacts: dict[str, str] = {}
+    for name, score_root in EXP449_EVALUATION_GROUPS_ANTIGRAVITY:
+        bundle = evaluate_frozen_scores_exp449_continuous_antigravity(
+            score_root, EXP449_PROPOSAL_ROOT_ANTIGRAVITY
+        )
+        artifacts[name] = write_evaluation_bundle(
+            EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY / name, bundle
+        )
+    return {
+        "status": "exp449_continuous_evaluations_complete",
+        "dataset_count": 1117,
+        "test_row_count": 195900,
+        "proposal_alert_count": 2276,
+        "evaluation_artifact_map_sha256": artifacts,
+    }
+
+
+def _combine_exp449_continuous_antigravity() -> dict[str, object]:
+    from experiments.paper_public_baselines.official_comparison_antigravity import (
+        combine_official_evaluations_antigravity,
+        write_official_comparison_antigravity,
+    )
+    from experiments.paper_public_baselines.reporting import load_evaluation_bundle
+
+    bundles = tuple(
+        load_evaluation_bundle(EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY / name)
+        for name, _score_root in EXP449_EVALUATION_GROUPS_ANTIGRAVITY
+    )
+    comparison = combine_official_evaluations_antigravity(
+        *bundles,
+        drocc_parity_status="user_confirmed_no_difference",
+        require_proposal_continuous_antigravity=True,
+    )
+    artifact_sha = write_official_comparison_antigravity(
+        EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY, comparison
+    )
+    return {
+        "status": "exp449_continuous_official_comparison_frozen",
+        "dataset_count": comparison.dataset_count,
+        "public_method_count": len(comparison.public_methods),
+        "comparison_artifact_map_sha256": artifact_sha,
+    }
+
+
+def _verify_exp449_continuous_antigravity() -> dict[str, object]:
+    from experiments.paper_public_baselines.artifacts import sha256_file
+    from experiments.paper_public_baselines.official_comparison_antigravity import (
+        OFFICIAL_CONTINUOUS_COMPARISON_SCHEMA_ANTIGRAVITY,
+        load_exp449_continuous_proposal_antigravity,
+        verify_official_comparison_antigravity,
+    )
+    from experiments.paper_public_baselines.reporting import load_evaluation_bundle
+    from experiments.paper_public_baselines.runner import verify_score_root
+
+    score_manifests: dict[str, str] = {}
+    for name, score_root in EXP449_EVALUATION_GROUPS_ANTIGRAVITY:
+        verify_score_root(score_root)
+        evaluation = load_evaluation_bundle(
+            EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY / name
+        )
+        if evaluation.metadata.get("proposal_continuous_score_available") is not True:
+            raise ValueError("Exp449 continuous evaluation authority differs")
+        score_manifests[name] = sha256_file(score_root / "frozen_score_manifest.json")
+    proposal = load_exp449_continuous_proposal_antigravity(
+        EXP449_PROPOSAL_ROOT_ANTIGRAVITY
+    )
+    comparison = verify_official_comparison_antigravity(
+        EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY
+    )
+    if comparison.metadata.get("schema") != OFFICIAL_CONTINUOUS_COMPARISON_SCHEMA_ANTIGRAVITY:
+        raise ValueError("Exp449 continuous comparison schema differs")
+    return {
+        "status": "exp449_continuous_official_comparison_verified",
+        "dataset_count": comparison.dataset_count,
+        "test_row_count": proposal.test_row_count,
+        "proposal_alert_count": sum(map(len, proposal.alerts_by_dataset.values())),
+        "proposal_manifest_sha256": proposal.manifest_sha256,
+        "score_manifest_sha256": score_manifests,
+        "comparison_artifact_map_sha256": sha256_file(
+            EXP449_CONTINUOUS_COMPARISON_ROOT_ANTIGRAVITY
             / "official_comparison_artifact_sha256_antigravity.json"
         ),
     }
