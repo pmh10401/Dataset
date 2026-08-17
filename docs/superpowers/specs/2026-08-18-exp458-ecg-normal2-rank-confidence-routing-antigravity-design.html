@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 ECG normal_2 점수 순위 신뢰도 라우팅 설계</title>
+  <style>
+    body{max-width:1040px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    h1,h2{line-height:1.25} table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    .ok{color:#087a45}.bad{color:#a62121}.box{background:#f5f7fa;padding:1rem;margin:1rem 0}
+    input[type=checkbox]{margin-right:.45rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 — ECG5000 normal_2 점수 순위 신뢰도 라우팅</h1>
+  <p><strong>목표:</strong> Exp457이 <code>normal_2</code> 후보를 버린 이유를 바로잡고, 이 데이터셋 하나만 TRAIN 점수 순위로 다시 판단한다.</p>
+  <p><label><input type="checkbox" checked disabled>사용자 승인 설계 반영</label></p>
+
+  <h2>1. 결론부터</h2>
+  <div class="box">
+    <p>Exp457의 후보 점수는 합성 이상을 잘 구분했다. 문제는 구분 능력이 아니라 <strong>상위 0.5%만 이상으로 인정한 지나치게 극단적인 통과선</strong>이었다.</p>
+    <p>Exp458은 점수가 정상보다 얼마나 꾸준히 높은지를 AUC로 측정한다. 대상은 구조상 이득이 확인된 <code>ECG5000_normal_2</code> 하나로 제한한다.</p>
+  </div>
+
+  <h2>2. Exp457에서 확인한 실패 원인</h2>
+  <table>
+    <thead><tr><th>seed</th><th>level shift</th><th>gradual drift</th><th>amplitude scaling</th><th>period change</th><th>평균 AUC</th></tr></thead>
+    <tbody>
+      <tr><td>20260721</td><td>0.9796866525</td><td>0.9052489546</td><td>0.9951992643</td><td>0.9104679077</td><td>0.9476506948</td></tr>
+      <tr><td>20261721</td><td>0.9761215365</td><td>0.8957752024</td><td>0.9943593234</td><td>0.9278161686</td><td>0.9485180577</td></tr>
+    </tbody>
+  </table>
+  <p>AUC 0.5는 무작위, 1.0은 완전한 구분이다. 두 seed의 모든 값이 0.895 이상이므로 후보 점수의 순서는 강하고 반복 가능하다. 반면 기존 <code>p ≤ 0.005</code> 감도는 점수가 극단적인 꼬리까지 넘어간 경우만 세어 이 정보를 대부분 버렸다.</p>
+
+  <h2>3. 실험 정체성과 범위</h2>
+  <ul>
+    <li>실험: <code>Exp458</code></li>
+    <li>종류: <code>ecg_normal2_rank_confidence_routing</code></li>
+    <li>실행 이름: <code>exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818</code></li>
+    <li>공식 결과 폴더: <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code></li>
+    <li>기준 커밋: Exp457 종료 커밋 <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code></li>
+    <li>새 과학 변화: <code>ECG5000_normal_2</code>의 합성 이상 판정을 이진 꼬리 감도에서 AUC로 바꾸는 것 하나뿐이다.</li>
+    <li><code>normal_1</code>, <code>normal_3</code>, <code>normal_4</code>, <code>normal_5</code>는 baseline으로 고정한다.</li>
+    <li>ChlorineConcentration 세 데이터셋은 기존 MultiRocket 후보로 고정한다. 다른 데이터셋도 기존 결정을 유지한다.</li>
+  </ul>
+
+  <h2>4. AUC 계산</h2>
+  <ol>
+    <li>Exp457과 같은 TRAIN, 5분할, Hydra LocalGap, 두 seed, 네 합성 이상을 사용한다.</li>
+    <li>각 TRAIN 행은 자신을 학습에 사용하지 않은 모델에서 정상 점수와 합성 이상 점수를 받는다.</li>
+    <li>종류별 AUC는 <code>(합성 점수 &gt; 정상 점수인 쌍 + 동점 쌍의 절반) / 전체 쌍</code>으로 계산한다.</li>
+    <li>점수가 높을수록 이상에 가깝다는 기존 방향을 유지한다.</li>
+    <li>네 종류 AUC의 단순 평균을 pooled AUC로 사용한다.</li>
+  </ol>
+  <p>새 합성 이상이나 새 강도는 추가하지 않는다. 따라서 바뀌는 것은 점수를 요약하는 방법뿐이다.</p>
+
+  <h2>5. Exp458 통과 규칙</h2>
+  <p>두 seed가 아래 조건을 <strong>각각 모두</strong> 만족해야 한다.</p>
+  <table>
+    <thead><tr><th>조건</th><th>통과선</th><th>뜻</th></tr></thead>
+    <tbody>
+      <tr><td>정상 오탐 Wilson 상한</td><td>≤ 0.05</td><td>정상 TRAIN을 지나치게 이상으로 보지 않는다.</td></tr>
+      <tr><td>각 합성 이상 AUC</td><td>모두 ≥ 0.85</td><td>네 종류를 빠짐없이 잘 구분한다.</td></tr>
+      <tr><td>평균 AUC</td><td>≥ 0.90</td><td>전체적인 구분력이 충분히 높다.</td></tr>
+      <tr><td>점수</td><td>모두 유한</td><td>계산 실패가 없어야 한다.</td></tr>
+    </tbody>
+  </table>
+  <p>AUC 기준은 Exp457이 종료된 뒤 고정된 TRAIN 진단으로 만든 새 가설이다. TEST 성능을 보고 정하지 않았다. 같은 TRAIN을 사용해 만든 후속 가설이므로 통과하더라도 자동 배포하지 않고 외부 검증 후보로만 기록한다.</p>
+
+  <h2>6. 최종 라우팅</h2>
+  <ul>
+    <li><code>normal_2</code>: 두 seed의 AUC 게이트와 기존 구조 게이트 <code>14 추가 &gt; 5 제거</code>를 모두 통과하면 candidate, 아니면 baseline.</li>
+    <li>나머지 ECG 네 개: 항상 baseline.</li>
+    <li>Chlorine 세 개: 기존 candidate.</li>
+    <li>그 외: 기존 baseline.</li>
+  </ul>
+  <p>동률은 통과가 아니다. 통과선 자체는 포함하여 AUC 0.85와 0.90은 통과로 처리한다.</p>
+
+  <h2>7. 예상 결과와 합격 기준</h2>
+  <table>
+    <thead><tr><th>방법</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th></tr></thead>
+    <tbody>
+      <tr><td>always_baseline</td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td></tr>
+      <tr><td>family_wide_local_gap</td><td>611</td><td>63</td><td>835</td><td>70791</td><td>0.5764150943396227</td></tr>
+      <tr><td>oracle_per_dataset</td><td>618</td><td>64</td><td>828</td><td>70790</td><td>0.5808270676691729</td></tr>
+      <tr><td>normal2_rank_router 예상</td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td></tr>
+    </tbody>
+  </table>
+  <p>공식 합격 조건은 기존과 같다: FN ≤ 834, FP ≤ 66, F1 &gt; 0.5764150943396227. 예상값은 세 조건을 모두 통과하지만, 공식 결과로 미리 간주하지 않는다.</p>
+
+  <h2>8. 구성 요소와 데이터 흐름</h2>
+  <ol>
+    <li><strong>소스:</strong> Exp457의 고정 TRAIN 입력과 Exp456의 불변 비교 자료를 읽는다.</li>
+    <li><strong>AUC 자격 평가:</strong> <code>normal_2</code>의 두 seed·네 종류 AUC와 정상 Wilson 상한을 계산한다.</li>
+    <li><strong>라우터:</strong> AUC 게이트와 구조 게이트를 결합해 <code>normal_2</code> route를 정한다.</li>
+    <li><strong>평가:</strong> 고정된 데이터셋별 혼동행렬을 합쳐 네 비교값과 세 합격 조건을 계산한다.</li>
+    <li><strong>재생 검사:</strong> 저장된 AUC·route·비교값을 원자료에서 다시 계산해 같은지 확인한다.</li>
+    <li><strong>HTML 대시보드:</strong> AUC, route, FN/FP/F1, 통과 여부만 쉽게 보여준다.</li>
+  </ol>
+
+  <h2>9. 실패 처리</h2>
+  <p>TRAIN 점수가 빠지거나 유한하지 않거나, 두 seed 순서가 다르거나, 고정 비교 자료와 맞지 않으면 후보를 통과시키지 않는다. 실제 계산이 예상값과 달라도 억지로 맞추지 않고 그 차이를 결과로 기록한다.</p>
+
+  <h2>10. 검증 체크리스트</h2>
+  <ul>
+    <li><label><input type="checkbox" disabled>AUC의 승리·동점 계산과 점수 방향을 작은 예제로 검증</label></li>
+    <li><label><input type="checkbox" disabled>0.85와 0.90 경계값 포함 여부를 검증</label></li>
+    <li><label><input type="checkbox" disabled>한 종류 또는 한 seed만 실패하면 baseline인지 검증</label></li>
+    <li><label><input type="checkbox" disabled>normal_2 외 ECG는 AUC와 무관하게 baseline인지 검증</label></li>
+    <li><label><input type="checkbox" disabled>실제 TRAIN 계산을 두 번 실행해 AUC와 route가 정확히 같은지 확인</label></li>
+    <li><label><input type="checkbox" disabled>예상 혼동행렬과 F1을 독립 재계산</label></li>
+    <li><label><input type="checkbox" disabled>Exp457·Exp456 과학 회귀 테스트 통과</label></li>
+    <li><label><input type="checkbox" disabled>공식 TEST 평가는 별도 사용자 승인 전 0회 유지</label></li>
+  </ul>
+
+  <h2>11. 결과 화면</h2>
+  <p><code>docs/EXP458_DASHBOARD_antigravity.html</code>에 두 seed의 네 AUC, 평균 AUC, 정상 Wilson 상한, 구조 게이트, 최종 route, 네 비교값, 세 합격 조건을 표시한다. 원시 행이나 TEST 라벨은 표시하지 않는다.</p>
+
+  <h2>12. 구현 경계</h2>
+  <ul>
+    <li>예정 패키지: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/</code></li>
+    <li>예정 실행기: <code>scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py</code></li>
+    <li>예정 코드맵: <code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code></li>
+    <li>Exp457·Exp456 제품 코드와 결과는 수정하지 않는다.</li>
+    <li>새 파일 이름에는 모두 <code>antigravity</code>를 포함한다.</li>
+  </ul>
+
+  <h2>13. 계산 장치</h2>
+  <p>Hydra는 기존 aeon CPU 구현을 그대로 사용한다. 이를 MLX로 다시 쓰면 고정 알고리즘이 달라지므로 MLX 적용 조건을 만족하지 않는다. AUC 계산 자체는 작고 단순하여 CPU로 충분하다.</p>
+
+  <h2>14. 승인 상태</h2>
+  <p class="ok"><strong>승인됨:</strong> normal_2 하나의 극단 꼬리 감도만 AUC 순위 게이트로 바꾸고, 나머지 라우팅과 성능 기준은 유지한다.</p>
+</main></body>
+</html>
