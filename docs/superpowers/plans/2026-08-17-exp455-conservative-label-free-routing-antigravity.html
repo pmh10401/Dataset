@@ -67,7 +67,7 @@
   </table>
 
   <section>
-    <h2><input disabled type="checkbox">Task 1: Governance, 고정 설정, 초기 code map</h2>
+    <h2><input checked disabled type="checkbox">Task 1: Governance, 고정 설정, 초기 code map</h2>
     <h3>Files</h3>
     <ul class="files">
       <li>Create: <code>docs/EXP455_PREREGISTRATION_antigravity_KO.html</code></li>
@@ -89,12 +89,12 @@
       <li>Dashboard initial state: <code>planned</code>, completed datasets <code>0/8</code>, result fields <code>not_started</code>.</li>
     </ul>
     <ol>
-      <li><input disabled type="checkbox">현재 Exp454 map JSON에서 config, predecessor, evaluator, replay, dashboard의 callers/effects/tests를 기록하고, Exp455 source가 없다는 RED map 상태를 확인한다.</li>
-      <li><input disabled type="checkbox">다음 import가 실패하는 테스트를 먼저 작성한다.
+      <li><input checked disabled type="checkbox">현재 Exp454 map JSON에서 config, predecessor, evaluator, replay, dashboard의 callers/effects/tests를 기록하고, Exp455 source가 없다는 RED map 상태를 확인한다.</li>
+      <li><input checked disabled type="checkbox">다음 import가 실패하는 테스트를 먼저 작성한다.
 <pre><code>from experiments.exp455_exp454_conservative_label_free_routing_antigravity.config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from experiments.exp455_exp454_conservative_label_free_routing_antigravity.contracts_antigravity import DatasetRoutingFeaturesAntigravity</code></pre></li>
-      <li><input disabled type="checkbox"><code>python3 -m unittest ...test_config_antigravity ...test_contracts_antigravity ...test_governance_antigravity</code>를 실행해 모듈 부재 RED를 보존한다.</li>
-      <li><input disabled type="checkbox">고정 설정과 타입을 최소 구현한다.
+      <li><input checked disabled type="checkbox"><code>python3 -m unittest ...test_config_antigravity ...test_contracts_antigravity ...test_governance_antigravity</code>를 실행해 모듈 부재 RED를 보존한다.</li>
+      <li><input checked disabled type="checkbox">고정 설정과 타입을 최소 구현한다.
 <pre><code>from __future__ import annotations
 
 @dataclass(frozen=True, slots=True)
@@ -167,10 +167,10 @@ class FrozenResultAntigravity:
     root: str
     leaf_sha256: tuple[tuple[str, str], ...]
     artifact_map_sha256: str</code></pre></li>
-      <li><input disabled type="checkbox">사전등록, runbook, 구현 기록, 대시보드 HTML과 세 ledger의 Exp455 planned/non-promoted 기록을 작성한다. champion과 pending candidate 값은 그대로 둔다.</li>
-      <li><input disabled type="checkbox">Exp455 map builder와 triplet을 생성해 새 config/contracts 노드, future authority/router/evaluation 경계를 표시한다.</li>
-      <li><input disabled type="checkbox">focused 테스트를 두 번 통과시키고 HTML parse, JSON duplicate-key 검사, map validate, <code>git diff --check</code>를 통과시킨다.</li>
-      <li><input disabled type="checkbox">Task 1 heading과 완료 단계 체크박스 및 대시보드 진행률을 갱신하고 코드·문서·map을 한 커밋으로 저장한다: <code>feat(exp455): freeze conservative routing contract</code>.</li>
+      <li><input checked disabled type="checkbox">사전등록, runbook, 구현 기록, 대시보드 HTML과 세 ledger의 Exp455 planned/non-promoted 기록을 작성한다. champion과 pending candidate 값은 그대로 둔다.</li>
+      <li><input checked disabled type="checkbox">Exp455 map builder와 triplet을 생성해 새 config/contracts 노드, future authority/router/evaluation 경계를 표시한다.</li>
+      <li><input checked disabled type="checkbox">focused 테스트를 두 번 통과시키고 HTML parse, JSON duplicate-key 검사, map validate, <code>git diff --check</code>를 통과시킨다.</li>
+      <li><input checked disabled type="checkbox">Task 1 heading과 완료 단계 체크박스 및 대시보드 진행률을 갱신하고 코드·문서·map을 한 커밋으로 저장한다: <code>feat(exp455): freeze conservative routing contract</code>.</li>
     </ol>
   </section>
 

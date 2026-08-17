@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp455 사전등록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left;vertical-align:top}.note{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
+<h1>Exp455: 보수적 label-free 라우팅 사전등록</h1>
+<p>Exp455는 Exp454의 불변 결과에서 이미 통과한 두 LocalGap 후보를 8개 대상 데이터셋에서 단순한 label-free 규칙으로 선택하는 계획 연구다. Task 1은 거버넌스와 계약만 만들며 공식 실행이나 결과를 만들지 않는다.</p>
+<h2>고정 정체성</h2><table><tr><th>항목</th><th>고정값</th></tr>
+<tr><td>실험 / 종류</td><td><code>Exp455</code> / <code>conservative_label_free_routing</code></td></tr>
+<tr><td>실행 이름</td><td><code>exp455-exp454-conservative-label-free-routing-antigravity-20260817</code></td></tr>
+<tr><td>결과 root</td><td><code>/Users/mac/Documents/Dataset/exp455_exp454_conservative_label_free_routing_antigravity_20260817</code> (Task 1에서는 생성 금지)</td></tr>
+<tr><td>패키지</td><td><code>experiments/exp455_exp454_conservative_label_free_routing_antigravity</code></td></tr>
+<tr><td>승인 설계</td><td><code>docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html</code><br><code>ae391bdaa9b34b8d603722262887143e0bdf8284bdcbf0fa1b059d4841c0369a</code></td></tr>
+</table>
+<h2>고정 범위와 기준</h2><ul>
+<li>후보는 정확히 <code>ECG5000:hydra_local_gap</code>, <code>ChlorineConcentration:multirocket_local_gap</code>다.</li>
+<li>대상은 ECG5000 5개와 ChlorineConcentration 3개, 총 8개이며 나머지 40개는 baseline이다.</li>
+<li>통과 기준은 FN <code>&lt; 1988</code>, FP <code>&lt;= 314</code>, F1 <code>&gt;= 0.6264199935</code>, 두 대상 family의 FN 변화 각각 <code>&lt;= 0</code>이다.</li>
+<li>Exp454 artifact map, evaluation, decision SHA-256은 각각 <code>748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65</code>, <code>c2b6321d18ba4c98e426be96ea3d3fb0824e75926fa54ba4600634dded68e1ac</code>, <code>3510a426d3ee083ccb3f8599c64d0c91cc56d0b902780c8b6a2136098cd9a595</code>로 고정한다.</li>
+</ul>
+<div class="note"><strong>방화벽:</strong> 라우터 입력에는 TEST label, confusion, 데이터셋 변형 번호를 포함하지 않는다. Exp455는 새 score source가 아니므로 MLX 작업과 가속 평가를 하지 않는다. 공식 Python은 <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>이다.</div>
+<h2>현재 상태</h2><p><code>planned</code>. routing, champion, pending candidate, promotion은 모두 변경하거나 활성화하지 않는다.</p>
+</main></body></html>
