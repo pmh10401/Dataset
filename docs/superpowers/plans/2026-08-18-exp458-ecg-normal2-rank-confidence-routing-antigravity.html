@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 normal_2 점수 순위 라우팅 구현 계획</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    h1,h2,h3{line-height:1.25}section{border-top:2px solid #d8dee8;padding-top:1rem;margin-top:2rem}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}pre{background:#101827;color:#eef4ff;padding:1rem;overflow:auto}
+    table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}
+    .box{background:#f5f7fa;padding:1rem}.step{margin:.8rem 0}input{margin-right:.45rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 normal_2 점수 순위 라우팅 구현 계획</h1>
+  <blockquote><strong>Agent 작업 규칙:</strong> Task별로 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용한다. 아래 체크박스는 실제 완료된 항목만 체크한다.</blockquote>
+  <p><strong>Goal:</strong> <code>ECG5000_normal_2</code>의 TRAIN 점수 순위 신뢰도를 정확히 계산하고, 두 seed의 AUC 게이트와 구조 게이트를 통과할 때만 후보 방법을 사용한다.</p>
+  <p><strong>Architecture:</strong> Exp457의 TRAIN 입력·Hydra 점수·합성 이상 정의를 바꾸지 않고 AUC 요약기만 새로 둔다. 새 라우터는 normal_2 하나만 판단하고, 평가·재생·HTML 대시보드는 route와 네 비교값을 원자료에서 다시 계산한다.</p>
+  <p><strong>Tech Stack:</strong> Python 3.14, NumPy 2.4.6, aeon 1.4.0 Hydra CPU, 표준 라이브러리 JSON/HTML, unittest.</p>
+  <p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html</code></p>
+
+  <h2>Global Constraints</h2>
+  <ul>
+    <li>실험은 <code>Exp458</code>, 종류는 <code>ecg_normal2_rank_confidence_routing</code>, 실행 이름은 <code>exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818</code>이다.</li>
+    <li>기준 커밋은 <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>이다.</li>
+    <li>공식 폴더는 <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code>이며 Task 6 별도 승인 전에는 만들지 않는다.</li>
+    <li>normal_2만 AUC 게이트 대상이다. 다른 ECG는 baseline, Chlorine 세 개는 기존 candidate, 나머지는 기존 결정을 유지한다.</li>
+    <li>두 seed는 20260721/20261721, 종류별 AUC는 모두 0.85 이상, seed별 평균 AUC는 0.90 이상, Wilson 상한은 0.05 이하여야 한다.</li>
+    <li>기존 5분할, Hydra, 네 합성 이상, 구조 게이트 <code>added_count &gt; removed_count</code>, FN/FP/F1 합격선을 바꾸지 않는다.</li>
+    <li>예상 후보 결과는 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311이다.</li>
+    <li>TEST 결과는 route를 정하는 데 사용하지 않는다. 공식 평가는 Task 6에서 사용자 별도 승인 후 한 번만 수행한다.</li>
+    <li>Hydra는 aeon CPU를 유지한다. MLX 재작성은 고정 알고리즘을 바꾸므로 적용하지 않는다.</li>
+    <li>새 문서는 모두 HTML이고, 새 파일 이름은 모두 <code>antigravity</code>를 포함한다. 새 <code>__init__.py</code>는 만들지 않는다.</li>
+    <li>각 코드 Task 시작 전 Exp458 코드맵 lock/JSON으로 callers·effects·tests를 확인하고, 경계가 바뀌면 HTML/JSON/lock을 같은 커밋에서 갱신한다.</li>
+  </ul>
+
+  <section>
+    <h2><label><input type="checkbox" disabled>Task 1: 거버넌스·HTML 대시보드·코드맵 고정</label></h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>docs/EXP458_PREREGISTRATION_antigravity.html</code></li>
+      <li>Create: <code>docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+      <li>Create: <code>docs/EXP458_DASHBOARD_antigravity.html</code></li>
+      <li>Create: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_governance_antigravity.py</code></li>
+      <li>Create: <code>scratch/build_codemap_exp458_antigravity.py</code></li>
+      <li>Create: <code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code></li>
+      <li>Modify: <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>, this plan HTML</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <p><strong>Consumes:</strong> approved spec and Exp457 terminal result. <strong>Produces:</strong> planned Exp458 identity, zero official activity, null result hashes, visible HTML status, synchronized initial code map.</p>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED 거버넌스 테스트 작성</label><pre><code>def test_exp458_is_planned_without_official_result_antigravity(self):
+    self.assertEqual(state["experiment_id"], "Exp458")
+    self.assertEqual(state["official_evaluate_count"], 0)
+    self.assertEqual(state["test_label_query_count"], 0)
+    self.assertIsNone(state["evaluation_sha256"])
+    self.assertIn("AUC", dashboard_html)
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 실행</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_governance_antigravity
+# Expected: missing Exp458 docs/map/ledger record
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 HTML·ledger·map 작성</label><p>상태를 <code>planned_not_started</code>로 기록하고 AUC 표, 예상 결과, Task 진행표를 대시보드에 넣는다. Exp457 종료 상태와 champion/pending 값은 바꾸지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN·HTML·map 검증</label><pre><code>$PY -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_governance_antigravity
+$PY scratch/build_codemap_exp458_antigravity.py --validate-only
+git diff --check
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: 독립 검토와 커밋</label><pre><code>git commit -m "docs(exp458): register normal2 rank routing"
+</code></pre></div>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" disabled>Task 2: 고정 설정·계약·AUC 계산기</label></h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/config_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/contracts_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/rank_auc_antigravity.py</code></li>
+      <li>Create tests: <code>test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_rank_auc_antigravity.py</code>, <code>test_controlled_fork_antigravity.py</code></li>
+      <li>Modify: implementation report, dashboard, plan checkboxes, map builder/triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <p><strong>Produces:</strong></p>
+    <pre><code>mann_whitney_auc_antigravity(normal: np.ndarray, anomaly: np.ndarray) -&gt; float
+RankSeedEvidenceAntigravity(dataset: str, seed: int, normal_trials: int,
+  normal_alerts: int, normal_wilson_upper: float,
+  per_type_auc: Mapping[str, float], pooled_auc: float, passed: bool)
+RankQualificationAntigravity(dataset: str,
+  seed_evidence: tuple[RankSeedEvidenceAntigravity, ...], passed: bool)
+</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED AUC·경계 테스트 작성</label><pre><code>def test_auc_counts_wins_and_half_ties_antigravity():
+    normal = np.array([0.0, 1.0])
+    anomaly = np.array([1.0, 2.0])
+    assert mann_whitney_auc_antigravity(normal, anomaly) == 0.875
+
+def test_thresholds_are_inclusive_antigravity():
+    evidence = seed_evidence(
+        per_type=(0.85, 0.90, 0.90, 0.95), pooled=0.90, wilson=0.05
+    )
+    assert evidence.passed is True
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 확인</label><pre><code>$PY -m unittest \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_config_antigravity \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_contracts_antigravity \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_rank_auc_antigravity
+# Expected: new modules absent
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 구현</label><pre><code>def mann_whitney_auc_antigravity(normal, anomaly):
+    normal = exact_finite_vector_antigravity(normal)
+    anomaly = exact_finite_vector_antigravity(anomaly)
+    wins = np.count_nonzero(anomaly[:, None] &gt; normal[None, :])
+    ties = np.count_nonzero(anomaly[:, None] == normal[None, :])
+    return float((wins + 0.5 * ties) / (len(normal) * len(anomaly)))
+</code></pre><p>실제 구현은 큰 배열에서도 같은 식을 유지하도록 chunk로 계산하되 수학적 결과는 정확히 같아야 한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 의미 검증</label><p>계약 생성 시 pooled AUC를 네 ordered 종류의 평균으로 다시 계산하고, 두 통과 표시를 수치에서 다시 계산한다. bool·문자열·NaN·무한대는 숫자로 받아들이지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: GREEN 두 번·Exp457 차이 보호</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+git diff --exit-code 6e8e500d -- experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): define rank confidence contracts"
+</code></pre></div>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" disabled>Task 3: TRAIN 점수와 normal_2 자격 평가</label></h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>sources_antigravity.py</code>, <code>qualification_antigravity.py</code></li>
+      <li>Create tests: <code>test_sources_antigravity.py</code>, <code>test_qualification_antigravity.py</code></li>
+      <li>Modify: controlled-fork test, report/dashboard/plan, map builder/triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <pre><code>load_normal2_train_antigravity() -&gt; np.ndarray
+FoldScoresAntigravity(original: np.ndarray,
+  primary: Mapping[str, np.ndarray], feature_dimension: int)
+qualify_normal2_antigravity() -&gt; RankQualificationAntigravity
+_qualify_normal2_with_dependencies_antigravity(
+  loader: Callable[[], np.ndarray],
+  fold_scorer: Callable[..., FoldScoresAntigravity]
+) -&gt; RankQualificationAntigravity
+</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED 합성 자격 평가 테스트</label><pre><code>def test_both_seeds_and_all_four_auc_types_are_required_antigravity():
+    q = qualify_fixture(seed_1=(.91,.91,.91,.91), seed_2=(.91,.91,.84,.91))
+    self.assertFalse(q.passed)
+
+def test_only_normal2_source_is_accepted_antigravity():
+    with self.assertRaises(ValueError):
+        load_named_train_antigravity("ECG5000_normal_1")
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 확인</label><pre><code>$PY -m unittest \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_sources_antigravity \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_qualification_antigravity
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: Exp457 계산 경로를 그대로 연결</label><p>TRAIN loader, 5분할, Hydra score fold, Exp417 네 perturbation을 재사용한다. 각 query 행은 한 번만 점수를 받고, normal/anomaly 배열로 AUC를 계산한다. 기존 <code>p≤0.005</code>는 정상 Wilson 계산에만 남긴다.</p><pre><code>for seed in (20260721, 20261721):
+    normal, primary = collect_exact_crossfit_scores(train, seed)
+    aucs = {name: mann_whitney_auc_antigravity(normal, primary[name])
+            for name in PRIMARY_TYPES}
+    seed_evidence.append(rank_seed_evidence(dataset, seed, normal, aucs))
+return RankQualificationAntigravity(
+    dataset, tuple(seed_evidence), all(row.passed for row in seed_evidence)
+)
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN 두 번·기존 회귀</label><pre><code>$PY -m unittest \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_sources_antigravity \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_qualification_antigravity
+$PY -m unittest \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_sources_antigravity \
+  experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_qualification_antigravity
+$PY -m unittest experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.tests.test_qualification_antigravity
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: 실제 TRAIN 읽기 전용 smoke 1회</label><p>normal_2만 계산해 두 seed의 8개 AUC, 평균 AUC, Wilson, label query 0을 확인한다. 이 smoke는 공식 결과 폴더를 만들지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): qualify normal2 by score rank"
+</code></pre></div>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" disabled>Task 4: 라우터·평가·9-leaf 결과·재생·대시보드</label></h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>router_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
+      <li>Create tests: <code>test_router_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>, <code>test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code></li>
+      <li>Modify: contracts, report/dashboard/plan, map builder/triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <pre><code>RouteDecisionAntigravity(dataset: str, rank_gate: bool,
+  structure_gate: bool, route: Literal["baseline", "candidate"])
+route_normal2_antigravity(feature, qualification) -&gt; RouteDecisionAntigravity
+capture_exp456_result_authority_antigravity() -&gt; Exp456ResultAuthorityAntigravity
+evaluate_routes_antigravity(authority, decision) -&gt; EvaluationResultAntigravity
+publish_result_antigravity(root, evidence) -&gt; PublishedResultAntigravity
+inspect_result_at_antigravity(root) -&gt; EvaluationResultAntigravity
+export_dashboard_antigravity(result) -&gt; dict[str, object]
+</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED route truth table</label><pre><code># only normal_2 may become candidate
+(auc_gate=True, structure=14&gt;5)  -&gt; candidate
+(auc_gate=False, structure=14&gt;5) -&gt; baseline
+(auc_gate=True, structure=5&gt;14)   -&gt; baseline
+normal_1/3/4/5                    -&gt; baseline
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 평가·재생·대시보드 tests</label><p>예상 TP/FP/FN/TN/F1, 네 비교 순서, 9-leaf inventory, AUC/route/comparison을 다시 해시한 의미 변조 거부, dashboard 필드·값 일치를 각각 실패 테스트로 먼저 만든다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 router/evaluator 구현</label><p>qualification 수치에서 AUC 게이트를 다시 계산하고, frozen feature의 14/5 구조 게이트를 결합한다. 예상 final confusion은 literal로 반환하지 않고 데이터셋별 고정 혼동행렬 합으로 계산한다.</p><pre><code>def route_normal2_antigravity(feature, qualification):
+    validate_rank_qualification_semantics_antigravity(qualification)
+    if feature.dataset != "ECG5000_normal_2":
+        return RouteDecisionAntigravity(feature.dataset, False, False, "baseline")
+    structure_gate = feature.added_count &gt; feature.removed_count
+    route = "candidate" if qualification.passed and structure_gate else "baseline"
+    return RouteDecisionAntigravity(
+        feature.dataset, qualification.passed, structure_gate, route
+    )
+
+def evaluate_routes_antigravity(authority, decision):
+    rows = choose_frozen_dataset_confusions(authority, decision)
+    aggregate = sum_confusions_antigravity(rows)
+    return build_exact_four_comparisons_and_criteria(aggregate)
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 정확한 9-leaf publication</label><pre><code>context_antigravity.json
+train_qualification_antigravity.jsonl
+features_antigravity.jsonl
+route_decisions_antigravity.jsonl
+comparison_metrics_antigravity.json
+family_metrics_antigravity.json
+dashboard_snapshot_antigravity.json
+decision_antigravity.json
+artifact_sha256_antigravity.json
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: semantic replay·dashboard</label><p>재생 검사는 AUC, pooled 평균, 두 gate, route, 네 비교, family metric, 세 기준을 다시 계산한다. dashboard는 같은 검증기를 통과한 결과만 표시한다.</p><pre><code>recomputed = evaluate_routes_antigravity(
+    capture_authority_from_context(payloads),
+    route_normal2_antigravity(feature, qualification),
+)
+if recomputed != stored_result:
+    raise ValueError("Exp458 semantic replay differs")
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: GREEN 두 번·Exp457/Exp456 회귀</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+$PY -m unittest \
+  experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.tests.test_evaluation_antigravity \
+  experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.tests.test_replay_antigravity \
+  experiments.exp456_exp455_dataset_key_order_repair_antigravity.tests.test_evaluation_antigravity
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 7: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): evaluate normal2 rank routing"
+</code></pre></div>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" disabled>Task 5: 닫힌 CLI·후보 재현성·최종 검토</label></h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>cli_antigravity.py</code>, <code>scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py</code>, <code>tests/test_cli_antigravity.py</code></li>
+      <li>Modify: report/dashboard/plan, three ledgers, map builder/triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <pre><code>evaluate --reviewed-commit &lt;lower-40-hex&gt;
+inspect
+# reject: readiness, new, resume, retry, overrides, abbreviations
+</code></pre>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: RED exact CLI·outside-CWD tests</label><p>두 명령 외 모든 명령과 잘못된 commit을 거부하고, evaluate만 TRAIN 계산·publication을 불러오며 inspect는 결과 재생만 불러오는지 검사한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: 최소 lazy CLI·launcher 구현</label><pre><code>def main_antigravity(argv=None):
+    args = parser_antigravity().parse_args(argv)
+    if args.command == "evaluate":
+        validate_lower40_clean_head(args.reviewed_commit)
+        return load_evaluate_antigravity()(args.reviewed_commit)
+    if args.command == "inspect":
+        return load_inspect_antigravity()()
+    raise ValueError("unsupported Exp458 command")
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: Exp458 전체 synthetic suite 두 번</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 실제 TRAIN 후보 계산 두 번</label><p>각 실행은 별도 임시 폴더를 사용한다. 두 seed의 8개 AUC, 평균, Wilson, route, 네 비교값, 세 기준이 exact 같아야 한다. 공식 폴더와 TEST 라벨은 사용하지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: Exp457·Exp456 과학 회귀와 byte guard</label><p>두 predecessor 제품 테스트와 map 검증을 실행하고 <code>git diff --exit-code 6e8e500d -- experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity</code>를 통과한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: 결과 중심 최종 독립 검토</label><p>AUC 계산, normal_2 전용 범위, route, TP/FP/FN/TN/F1, 세 합격 기준, dashboard 일치만 검토한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 7: 상태·HTML·commit</label><p>통과하면 <code>implementation_verified_awaiting_official_evaluation</code>로 기록한다. Task 5만 체크하고 Task 6은 미체크로 남긴다.</p><pre><code>git commit -m "feat(exp458): freeze normal2 rank candidate"
+</code></pre></div>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" disabled>Task 6: 별도 승인 후 공식 평가 1회와 HTML 결과 분석</label></h2>
+    <p><strong>사전 조건:</strong> Task 5의 실제 TRAIN 후보가 세 기준을 모두 통과하고, fresh final review가 SHIP이며, 사용자가 이 Task를 따로 승인해야 한다.</p>
+    <div class="step"><label><input type="checkbox" disabled>Step 1: 공식 전 상태 확인</label><p>공식 폴더 부재, label query 0, reviewed commit clean, TRAIN 후보 결과와 대시보드 일치를 확인한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 2: 공식 evaluate 정확히 1회</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+$PY scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 3: 성공한 경우에만 inspect 정확히 1회</label><pre><code>$PY scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py inspect
+</code></pre></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 4: 9개 leaf와 네 비교값 독립 재계산</label></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 5: HTML 대시보드 결과 분석</label><p>TRAIN AUC와 공식 FN/FP/F1, 예상값과의 차이, 세 기준 통과 여부, 최종 결론을 쉬운 말로 기록한다.</p></div>
+    <div class="step"><label><input type="checkbox" disabled>Step 6: truth closeout와 최종 read-only review</label><p>성공/실패 사실을 report·ledger·map에 한 번 기록한다. 실패 시 재실행하지 않는다. 통과해도 자동 배포·champion 변경은 하지 않는다.</p></div>
+  </section>
+
+  <h2>완료 조건</h2>
+  <ul>
+    <li>각 Task의 RED→GREEN 증거와 독립 검토가 있다.</li>
+    <li>실제 TRAIN 두 번의 AUC·route·예상 성능이 exact 같다.</li>
+    <li>대시보드가 코드·artifact·ledger와 같은 결과를 보여준다.</li>
+    <li>완료된 Task/Step만 체크되어 있다.</li>
+    <li>Task 6은 별도 승인 없이는 절대 실행하지 않는다.</li>
+  </ul>
+</main></body>
+</html>
