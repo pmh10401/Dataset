@@ -42,7 +42,7 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_controlled_fork_antigravity.py",
     "scratch/build_codemap_exp456_antigravity.py",
 )
-FUTURE_RELATIONSHIPS_ANTIGRAVITY = "Task 1 declares future evaluation, artifacts, replay, dashboard export, and CLI relationships as unimplemented."
+FUTURE_RELATIONSHIPS_ANTIGRAVITY = "Task 2 keeps future evaluation, artifacts, replay, dashboard export, and CLI sources unimplemented."
 
 
 def canonical_bytes_antigravity(value: object) -> bytes:
@@ -107,17 +107,17 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     }
     builder = "scratch/build_codemap_exp456_antigravity.py"
     nodes: list[dict[str, object]] = [
-        {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "role": "Caller: Task 1 governance. Effect: freezes dataset-key repair as the only future scientific change.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "Exp456")]},
-        {"id": "implementation_plan", "path": "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "role": "Caller: Tasks 1–5. Effect: sequences planned-only work and the later approval gate.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "Task 1:")]},
-        {"id": "preregistration", "path": "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "role": "Caller: governance review. Effect: records frozen identity and Task 1 firewall.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
+        {"id": "approved_design", "path": "docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "role": "Caller: Task 2 foundation review. Effect: freezes dataset-key repair as the only future scientific change.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "Exp456")]},
+        {"id": "implementation_plan", "path": "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "role": "Caller: Task 2 foundation review. Effect: sequences planned-only work and the later approval gate.", "tests": [test], "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "Task 2:")]},
+        {"id": "preregistration", "path": "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "role": "Caller: Task 2 governance review. Effect: records frozen identity and the continuing execution firewall.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
         {"id": "runbook", "path": "docs/EXP456_RUNBOOK_antigravity_KO.html", "role": "Caller: future execution discussion. Effect: blocks official commands until Task 5 approval.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_RUNBOOK_antigravity_KO.html", "official_evaluate_started=false")]},
         {"id": "implementation_report", "path": "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 2 review. Effect: records map preflight, RED/GREEN evidence, controlled-fork checks, and non-actions.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "Map preflight")]},
-        {"id": "dashboard", "path": "docs/EXP456_DASHBOARD_antigravity.html", "role": "Caller: status review. Effect: shows Task 1 progress and only not_available performance.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_DASHBOARD_antigravity.html", "not_available")]},
+        {"id": "dashboard", "path": "docs/EXP456_DASHBOARD_antigravity.html", "role": "Caller: Task 2 status review. Effect: shows Task 2 progress and only not_available performance.", "tests": [test], "evidence": [evidence_antigravity("docs/EXP456_DASHBOARD_antigravity.html", "Task 2/5")]},
         {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: records Exp456 planned lifecycle truth.", "tests": [test], "evidence": [evidence_antigravity("RESEARCH_STATE.json", "exp456")]},
         {"id": "experiment_catalog", "path": "EXPERIMENT_CATALOG.json", "role": "Caller: governance review. Effect: registers the planned Exp456 document and lifecycle surface.", "tests": [test], "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "Exp456")]},
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "Caller: champion review. Effect: records no champion or pending-candidate change.", "tests": [test], "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "Exp456")]},
-        {"id": "governance_regression", "path": test, "role": "Caller: Task 1 verification. Effect: rejects missing planned truth, invented performance, map drift, and Exp455/champion mutation.", "tests": [test], "evidence": [evidence_antigravity(test, "GovernanceAntigravityTest")]},
-        {"id": "map_builder", "path": builder, "role": "Caller: Task 1 map validation. Effect: validates evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
+        {"id": "governance_regression", "path": test, "role": "Caller: Task 2 verification. Effect: rejects planned-truth drift, invented performance, stale map progress, and Exp455/champion mutation.", "tests": [test], "evidence": [evidence_antigravity(test, "GovernanceAntigravityTest")]},
+        {"id": "map_builder", "path": builder, "role": "Caller: Task 2 map validation. Effect: validates current evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
     ]
     for node_id, role, symbol in (
         ("foundation_config", "Caller: authority capture and later evaluation. Effect: freezes Exp456 identity while retaining Exp455 scientific gates and Exp454 evidence hashes.", "FROZEN_CONFIG_ANTIGRAVITY"),

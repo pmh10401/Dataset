@@ -17,5 +17,9 @@ class FeaturesAntigravityTest(unittest.TestCase):
         ecg = tuple(row(f"ECG5000__{index}", "ECG5000", "hydra_local_gap") for index in range(5))
         chlorine = tuple(row(f"ChlorineConcentration__{index}", "ChlorineConcentration", "multirocket_local_gap") for index in range(3))
         features = build_label_free_features_antigravity(FrozenRoutingAuthorityAntigravity(chlorine + ecg, (), 0))
+        self.assertEqual(
+            build_label_free_features_antigravity.__doc__,
+            "Return frozen label-free rows in approved ECG5000 then ChlorineConcentration public order.",
+        )
         self.assertEqual(tuple(item.dataset for item in features), tuple(item.dataset for item in ecg + chlorine))
         self.assertEqual((features[0].overlap_count, features[0].union_count, features[0].overlap_ppm), (1, 3, 333333))

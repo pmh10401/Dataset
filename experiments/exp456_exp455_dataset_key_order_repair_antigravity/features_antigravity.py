@@ -14,7 +14,7 @@ _TARGET_METHODS_ANTIGRAVITY = {
 def build_label_free_features_antigravity(
     authority: FrozenRoutingAuthorityAntigravity,
 ) -> tuple[DatasetRoutingFeaturesAntigravity, ...]:
-    """Return the frozen eight rows in source order, using only coordinate sets and lengths."""
+    """Return frozen label-free rows in approved ECG5000 then ChlorineConcentration public order."""
     if type(authority) is not FrozenRoutingAuthorityAntigravity or authority.label_query_count != 0:
         raise ValueError("routing authority is invalid")
     selected = {family: [] for family in _TARGET_METHODS_ANTIGRAVITY}
