@@ -52,8 +52,8 @@ class HtmlParserAntigravity(html.parser.HTMLParser):
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
-    def test_candidate_governance_dashboard_and_map_antigravity(self) -> None:
-        """Break caught: Task 4 candidate truth drifts or claims official performance/execution."""
+    def test_terminal_governance_dashboard_and_map_antigravity(self) -> None:
+        """Break caught: Task 5 terminal truth, aggregate dashboard, or map drifts."""
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             path = ROOT_ANTIGRAVITY / relative
             self.assertTrue(path.is_file(), relative)
@@ -70,27 +70,57 @@ class GovernanceAntigravityTest(unittest.TestCase):
         exp456_state = state["exp456"]
         exp456_catalog = next(item for item in catalog["experiments"] if item["id"] == "Exp456")
         exp456_champion = next(item for item in champion["history"] if item["experiment"] == "Exp456")
+        expected_hashes = {
+            "evaluation_sha256": "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc",
+            "decision_sha256": "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01",
+            "artifact_map_sha256": "3c1321f74016d363899b41357609edca62ecf410d71708a9c90a6b803a4445e0",
+            "dashboard_snapshot_sha256": "7a9196efdc8764b53a5810f169bcfd7b12d6bfab1bf383ff024421b791fea407",
+        }
+        expected_comparisons = [
+            {"name": "always_baseline", "fn": 837, "fp": 66, "f1": 0.5742574257425742},
+            {"name": "family_wide_local_gap", "fn": 835, "fp": 63, "f1": 0.5764150943396227},
+            {"name": "oracle_per_dataset", "fn": 828, "fp": 64, "f1": 0.5808270676691729},
+            {"name": "lodo_router", "fn": 843, "fp": 65, "f1": 0.5704824976348155},
+        ]
         for record in (exp456_state, exp456_catalog, exp456_champion):
             self.assertEqual(record["kind"], "exp455_dataset_key_order_repair")
-            self.assertEqual(record["status"], "implementation_verified_awaiting_official_evaluation")
+            self.assertEqual(record["status"], "official_evaluation_inspected_complete_not_qualified")
             self.assertEqual(record["label_query_count"], 0)
-            self.assertFalse(record["official_evaluate_started"])
-            self.assertIsNone(record["evaluation_sha256"])
-            self.assertFalse(record["result_root_created"])
+            self.assertTrue(record["official_evaluate_started"])
+            self.assertTrue(record["official_inspect_started"])
+            self.assertTrue(record["result_root_created"])
             self.assertFalse(record["routing_allowed"])
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
+            self.assertEqual({key: record[key] for key in expected_hashes}, expected_hashes)
+            self.assertEqual(record["comparisons"], expected_comparisons)
+            self.assertEqual(record["family_fn_delta"], {"ECG5000": 6, "ChlorineConcentration": 0})
+            lifecycle = record["official_lifecycle"]
+            self.assertEqual(lifecycle["evaluate_invocations"], 1)
+            self.assertEqual(lifecycle["evaluate_exit_code"], 0)
+            self.assertEqual(lifecycle["inspect_invocations"], 1)
+            self.assertEqual(lifecycle["inspect_exit_code"], 0)
+            self.assertEqual(lifecycle["label_query_count"], 0)
+            self.assertTrue(lifecycle["aggregate_json_equal"])
+            self.assertEqual(lifecycle["completed_folds"], 8)
+            self.assertFalse(lifecycle["passed"])
+            self.assertEqual(lifecycle["status"], "routing_candidate_not_qualified_for_external_validation")
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "implementation_verified_awaiting_official_evaluation",
-            "Task 4/5",
-            "0회",
-            "not_available",
-            "result_root_created=false",
-            "Task 4",
+            "official_evaluation_inspected_complete_not_qualified",
+            "Task 5/5 complete",
+            "1회, exit 0",
+            "routing_candidate_not_qualified_for_external_validation",
+            "passed=false",
+            "ECG5000</th><td>+6",
+            "ChlorineConcentration</th><td>0",
         ):
             self.assertIn(value, dashboard)
+        self.assertNotIn("not_available", dashboard)
+        for comparison in expected_comparisons:
+            for value in comparison.values():
+                self.assertIn(str(value), dashboard)
 
         spec = importlib.util.spec_from_file_location(
             "exp456_map_builder_antigravity", ROOT_ANTIGRAVITY / "scratch/build_codemap_exp456_antigravity.py"
@@ -110,26 +140,40 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(graph["unknown_relationships"])
         self.assertEqual(
             builder.FUTURE_RELATIONSHIPS_ANTIGRAVITY,
-            "Task 4 implements the closed CLI and outside-CWD launcher; no Exp456 source relationship remains future or unknown.",
+            "Task 5 records the immutable official result; no Exp456 source relationship remains future or unknown.",
         )
         self.assertNotIn("Task 1", json.dumps(graph, ensure_ascii=False))
-        self.assertIn("Task 4", nodes["dashboard"]["role"])
-        self.assertIn("Task 4", nodes["governance_regression"]["role"])
-        self.assertIn("Task 4", nodes["map_builder"]["role"])
+        self.assertIn("Task 5", nodes["dashboard"]["role"])
+        self.assertIn("Task 5", nodes["governance_regression"]["role"])
+        self.assertIn("Task 5", nodes["map_builder"]["role"])
         builder.validate_map_antigravity(graph, lock, rendered)
 
-    def test_dashboard_exposes_only_approved_fields_and_preflight_lists_all_coverage_antigravity(self) -> None:
-        """Break caught: the dashboard leaks a non-approved field or preflight omits Exp455 evaluation coverage."""
+    def test_dashboard_exposes_only_approved_fields_and_reconciles_terminal_report_antigravity(self) -> None:
+        """Break caught: the dashboard leaks a non-approved field or diverges from terminal result report."""
         dashboard = (ROOT_ANTIGRAVITY / "docs/EXP456_DASHBOARD_antigravity.html").read_text(encoding="utf-8")
         self.assertNotIn("TEST label 조회", dashboard)
+        self.assertIn("raw TEST label이나 개별 index를 표시하지 않는다.", dashboard)
+        self.assertNotIn("candidate_confusion", dashboard)
         report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        for coverage_test in (
-            "test_evaluation_antigravity.py",
-            "test_replay_antigravity.py",
-            "test_artifacts_antigravity.py",
-            "test_dashboard_export_antigravity.py",
+        for terminal_value in (
+            "official_evaluation_inspected_complete_not_qualified",
+            "routing_candidate_not_qualified_for_external_validation",
+            "passed=false",
+            "completed folds 8",
+            "3c1321f74016d363899b41357609edca62ecf410d71708a9c90a6b803a4445e0",
+            "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc",
+            "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01",
+            "7a9196efdc8764b53a5810f169bcfd7b12d6bfab1bf383ff024421b791fea407",
+            "ECG5000 <strong>+6</strong>",
+            "ChlorineConcentration <strong>0</strong>",
         ):
-            self.assertIn(coverage_test, report)
+            self.assertIn(terminal_value, report)
+        for dashboard_value in (
+            "837", "66", "0.5742574257425742", "835", "63", "0.5764150943396227",
+            "828", "64", "0.5808270676691729", "843", "65", "0.5704824976348155",
+        ):
+            self.assertIn(dashboard_value, dashboard)
+            self.assertIn(dashboard_value, report)
 
     def test_reports_bind_to_checked_in_map_source_parent_antigravity(self) -> None:
         """Break caught: a report states a different map source-parent than the checked-in map triplet."""
@@ -138,9 +182,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         source_parent = graph["source_parent_commit"]
         self.assertEqual(source_parent, lock["source_parent_commit"])
-        self.assertEqual(source_parent, "ff3d3fa860e24f675fc7622a727ed2c93538bba0")
+        self.assertEqual(source_parent, "e5fbf598bb3cc5f86bd4218c559eece9ddc2a6dc")
         implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        self.assertIn("checked-in map source-parent commit SHA는 <code>ff3d3fa860e24f675fc7622a727ed2c93538bba0</code>", implementation_report)
+        self.assertIn("최종 checked-in map child는 clean truth closeout commit <code>e5fbf598bb3cc5f86bd4218c559eece9ddc2a6dc</code>를 source-parent로 bind한다.", implementation_report)
+        self.assertIn("reviewed candidate <code>a45ff019e0736bbf895bb698b8eccfcbc69cd190</code>는 official execution input이며 map source-parent가 아니다.", implementation_report)
         self.assertIn("<code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>은 Exp455 byte guard reference일 뿐 map binding이 아니다.", implementation_report)
         task_report = (ROOT_ANTIGRAVITY / ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html").read_text(encoding="utf-8")
         self.assertIn("source-parent <code>17c6ffa100f70368f0c86efaa4a5f04890e4f12d</code>", task_report)
