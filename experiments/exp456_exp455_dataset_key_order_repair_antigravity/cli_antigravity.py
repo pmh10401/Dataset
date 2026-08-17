@@ -20,11 +20,13 @@ class _ExactSurfaceParserAntigravity(argparse.ArgumentParser):
 
     def parse_args(self, args: Sequence[str] | None = None, namespace=None):
         raw = list(sys.argv[1:] if args is None else args)
-        if raw[:1] == ["inspect"] and raw != ["inspect"]:
-            self.error("inspect accepts no options or arguments")
-        if raw[:1] == ["evaluate"] and (len(raw) != 3 or raw[1] != "--reviewed-commit"):
-            self.error("evaluate accepts exactly --reviewed-commit LOWER40")
-        return super().parse_args(raw, namespace)
+        if raw == ["inspect"] or (
+            len(raw) == 3
+            and raw[:2] == ["evaluate", "--reviewed-commit"]
+            and _COMMIT_ANTIGRAVITY.fullmatch(raw[2]) is not None
+        ):
+            return super().parse_args(raw, namespace)
+        self.error("only bare inspect or evaluate --reviewed-commit LOWER40 is accepted")
 
 
 class _OneReviewedCommitActionAntigravity(argparse.Action):
