@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp455 보수적 라우팅 구현 계획</title>
+  <style>
+    body{max-width:1060px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    h1,h2,h3{line-height:1.3}code,pre{background:#eef2f7}code{padding:.1rem .3rem;overflow-wrap:anywhere}
+    pre{padding:1rem;overflow:auto;border:1px solid #c8d0da}table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #9aa5b1;padding:.45rem;text-align:left;vertical-align:top}
+    blockquote{margin:1rem 0;border-left:4px solid #2563eb;background:#eff6ff;padding:.7rem 1rem}
+    section{border-top:2px solid #d5dbe3;margin-top:2rem;padding-top:1rem}.meta{background:#f8fafc;padding:1rem}
+    li{margin:.35rem 0}.files li,.interfaces li{margin:.2rem 0}input[type=checkbox]{margin-right:.5rem}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp455 보수적 라우팅 구현 계획</h1>
+  <blockquote><strong>작업자 필수 절차:</strong> 각 Task는 <code>superpowers:subagent-driven-development</code> 또는
+    <code>superpowers:executing-plans</code>로 하나씩 실행한다. 모든 단계의 체크박스는 실제 완료 직후에만 체크한다.</blockquote>
+
+  <div class="meta">
+    <p><strong>목표:</strong> ECG5000의 Hydra LocalGap과 ChlorineConcentration의 MultiRocket LocalGap만 대상으로,
+      정답 없는 특징을 사용하는 leave-one-dataset-out 라우터를 만들고 전체 FN·FP·F1 기준을 평가한다.</p>
+    <p><strong>구조:</strong> Exp454와 Exp404/Exp446의 동결 결과를 읽는 authority 계층, 정답 없는 특징 계층,
+      단순 규칙을 고르는 router 계층, 저장된 confusion으로 결과를 계산하는 evaluation 계층을 분리한다.
+      라우팅 규칙 선택은 가족별로 검증 데이터셋을 하나씩 제외해 수행한다.</p>
+    <p><strong>기술:</strong> Python 3.14, 표준 라이브러리, <code>dataclasses</code>, <code>unittest</code>, 정적 HTML,
+      기존 Exp454/Exp448 source-free capture 함수.</p>
+    <p><strong>승인된 설계:</strong>
+      <code>docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html</code>,
+      SHA-256 <code>ae391bdaa9b34b8d603722262887143e0bdf8284bdcbf0fa1b059d4841c0369a</code>.</p>
+  </div>
+
+  <h2>Global Constraints</h2>
+  <ul>
+    <li>실험 ID는 <code>Exp455</code>, 종류는 <code>conservative_label_free_routing</code>다.</li>
+    <li>새 파일 이름은 모두 <code>antigravity</code>를 포함하며 새 <code>__init__.py</code>를 만들지 않는다.</li>
+    <li>후보는 ECG5000 + Hydra LocalGap, ChlorineConcentration + MultiRocket LocalGap 두 개뿐이다.</li>
+    <li>대상 8개 외 40개 데이터셋은 baseline을 그대로 사용한다.</li>
+    <li>라우터 입력에 TEST 정답, confusion 값, 데이터셋 변형 번호를 넣지 않는다.</li>
+    <li>주요 기준은 FN &lt; 1,988, 안전 기준은 FP ≤ 314와 F1 ≥ 0.6264199935다.</li>
+    <li>Exp455는 새 score source가 아니므로 MLX 평가는 적용하지 않는다.</li>
+    <li>공식 Python은 <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>으로 고정한다.</li>
+    <li>설계·계획·사전등록·runbook·구현 기록·대시보드는 HTML로 작성한다.</li>
+    <li>각 코드 변경 전 현재 Exp455 code map에서 callers, effects, tests를 확인하고 같은 커밋에 map을 동기화한다.</li>
+    <li>Task 6 전에는 공식 Exp455 결과 폴더를 만들거나 공식 평가 명령을 실행하지 않는다.</li>
+    <li>통과 결과는 외부 검증 후보일 뿐 자동 라우팅, champion 변경, pending candidate 변경, promotion을 허용하지 않는다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <thead><tr><th>파일</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr><td><code>config_antigravity.py</code></td><td>실험 ID, 후보 두 개, 8개 대상, 성능 기준, Exp454 해시를 고정한다.</td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>authority, 특징, 규칙, fold 결정, confusion, 결과 타입을 정의한다.</td></tr>
+      <tr><td><code>authority_antigravity.py</code></td><td>Exp454 결과와 Exp404 Hard + Exp446 stable-26 baseline 위치를 읽기 전용으로 결합한다.</td></tr>
+      <tr><td><code>features_antigravity.py</code></td><td>8개 데이터셋의 정답 없는 정수 특징을 만든다.</td></tr>
+      <tr><td><code>router_antigravity.py</code></td><td>가족별 단순 threshold 규칙과 leave-one-dataset-out 결정을 만든다.</td></tr>
+      <tr><td><code>evaluation_antigravity.py</code></td><td>네 비교 방법의 48개 데이터셋 confusion과 성능 기준을 계산한다.</td></tr>
+      <tr><td><code>artifacts_antigravity.py</code></td><td>결과 8개 leaf를 canonical JSON/JSONL로 create-only 저장한다.</td></tr>
+      <tr><td><code>replay_antigravity.py</code></td><td>저장된 leaf에서 규칙 선택과 결과를 다시 계산해 검사한다.</td></tr>
+      <tr><td><code>dashboard_export_antigravity.py</code></td><td>진행률과 aggregate FN·FP·F1만 대시보드 형식으로 내보낸다.</td></tr>
+      <tr><td><code>cli_antigravity.py</code>, launcher</td><td><code>evaluate --reviewed-commit</code>와 <code>inspect</code>만 제공한다.</td></tr>
+    </tbody>
+  </table>
+
+  <section>
+    <h2><input disabled type="checkbox">Task 1: Governance, 고정 설정, 초기 code map</h2>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>docs/EXP455_PREREGISTRATION_antigravity_KO.html</code></li>
+      <li>Create: <code>docs/EXP455_RUNBOOK_antigravity_KO.html</code></li>
+      <li>Create: <code>docs/EXP455_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+      <li>Create: <code>docs/EXP455_DASHBOARD_antigravity.html</code></li>
+      <li>Create: <code>experiments/exp455_exp454_conservative_label_free_routing_antigravity/config_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp455_exp454_conservative_label_free_routing_antigravity/contracts_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_config_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_contracts_antigravity.py</code></li>
+      <li>Create: <code>experiments/exp455_exp454_conservative_label_free_routing_antigravity/tests/test_governance_antigravity.py</code></li>
+      <li>Create: <code>scratch/build_codemap_exp455_antigravity.py</code> and <code>docs/codemap/codemap_exp455_antigravity.{html,json,lock}</code></li>
+      <li>Modify: Exp455 records only in <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code></li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul class="interfaces">
+      <li>Produces: <code>FROZEN_CONFIG_ANTIGRAVITY: Exp455ConfigAntigravity</code></li>
+      <li>Produces: <code>ConfusionAntigravity</code>, <code>DatasetRoutingAuthorityAntigravity</code>, <code>FrozenRoutingAuthorityAntigravity</code>, <code>DatasetRoutingFeaturesAntigravity</code>, <code>RouteRuleAntigravity</code>, <code>FoldDecisionAntigravity</code>, <code>RoutingEvaluationAntigravity</code>, <code>FrozenResultAntigravity</code>.</li>
+      <li>Dashboard initial state: <code>planned</code>, completed datasets <code>0/8</code>, result fields <code>not_started</code>.</li>
+    </ul>
+    <ol>
+      <li><input disabled type="checkbox">현재 Exp454 map JSON에서 config, predecessor, evaluator, replay, dashboard의 callers/effects/tests를 기록하고, Exp455 source가 없다는 RED map 상태를 확인한다.</li>
+      <li><input disabled type="checkbox">다음 import가 실패하는 테스트를 먼저 작성한다.
+<pre><code>from experiments.exp455_exp454_conservative_label_free_routing_antigravity.config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+from experiments.exp455_exp454_conservative_label_free_routing_antigravity.contracts_antigravity import DatasetRoutingFeaturesAntigravity</code></pre></li>
+      <li><input disabled type="checkbox"><code>python3 -m unittest ...test_config_antigravity ...test_contracts_antigravity ...test_governance_antigravity</code>를 실행해 모듈 부재 RED를 보존한다.</li>
+      <li><input disabled type="checkbox">고정 설정과 타입을 최소 구현한다.
+<pre><code>from __future__ import annotations
+
+@dataclass(frozen=True, slots=True)
+class ConfusionAntigravity:
+    tp: int
+    fp: int
+    fn: int
+    tn: int
+
+@dataclass(frozen=True, slots=True)
+class DatasetRoutingFeaturesAntigravity:
+    dataset: str
+    family: str
+    target_length: int
+    baseline_count: int
+    candidate_count: int
+    overlap_count: int
+    union_count: int
+    added_count: int
+    removed_count: int
+    overlap_ppm: int
+
+@dataclass(frozen=True, slots=True)
+class DatasetRoutingAuthorityAntigravity:
+    dataset: str
+    family: str
+    target_length: int
+    method: str | None
+    baseline_indices: frozenset[int]
+    candidate_indices: frozenset[int] | None
+    baseline_confusion: ConfusionAntigravity
+    candidate_confusion: ConfusionAntigravity | None
+
+@dataclass(frozen=True, slots=True)
+class FrozenRoutingAuthorityAntigravity:
+    rows: tuple[DatasetRoutingAuthorityAntigravity, ...]
+    exp454_leaf_sha256: tuple[tuple[str, str], ...]
+    label_query_count: int = 0
+
+@dataclass(frozen=True, slots=True)
+class RouteRuleAntigravity:
+    feature_name: str | None
+    threshold_twice: int | None
+    candidate_when: str
+
+@dataclass(frozen=True, slots=True)
+class FoldDecisionAntigravity:
+    dataset: str
+    family: str
+    method: str
+    selected_route: str
+    rule: RouteRuleAntigravity
+
+@dataclass(frozen=True, slots=True)
+class ComparisonMetricAntigravity:
+    name: str
+    confusion: ConfusionAntigravity
+    f1: float
+
+@dataclass(frozen=True, slots=True)
+class RoutingEvaluationAntigravity:
+    comparisons: tuple[ComparisonMetricAntigravity, ...]
+    family_fn_delta: tuple[tuple[str, int], ...]
+    decisions: tuple[FoldDecisionAntigravity, ...]
+    passed: bool
+    status: str
+
+@dataclass(frozen=True, slots=True)
+class FrozenResultAntigravity:
+    root: str
+    leaf_sha256: tuple[tuple[str, str], ...]
+    artifact_map_sha256: str</code></pre></li>
+      <li><input disabled type="checkbox">사전등록, runbook, 구현 기록, 대시보드 HTML과 세 ledger의 Exp455 planned/non-promoted 기록을 작성한다. champion과 pending candidate 값은 그대로 둔다.</li>
+      <li><input disabled type="checkbox">Exp455 map builder와 triplet을 생성해 새 config/contracts 노드, future authority/router/evaluation 경계를 표시한다.</li>
+      <li><input disabled type="checkbox">focused 테스트를 두 번 통과시키고 HTML parse, JSON duplicate-key 검사, map validate, <code>git diff --check</code>를 통과시킨다.</li>
+      <li><input disabled type="checkbox">Task 1 heading과 완료 단계 체크박스 및 대시보드 진행률을 갱신하고 코드·문서·map을 한 커밋으로 저장한다: <code>feat(exp455): freeze conservative routing contract</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input disabled type="checkbox">Task 2: Exp454 authority와 정답 없는 특징</h2>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>authority_antigravity.py</code>, <code>features_antigravity.py</code></li>
+      <li>Create: <code>tests/test_authority_antigravity.py</code>, <code>tests/test_features_antigravity.py</code></li>
+      <li>Modify: Exp455 report/dashboard, map builder and triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul class="interfaces">
+      <li>Consumes: Exp454 artifact/evaluation/decision SHA-256 and its exact 12-leaf root.</li>
+      <li>Consumes: <code>capture_exp446_publication_antigravity()</code> and <code>capture_hard_predictions_antigravity(identity)</code>.</li>
+      <li>Produces: <code>capture_routing_authority_antigravity() -&gt; FrozenRoutingAuthorityAntigravity</code>.</li>
+      <li>Produces: <code>build_label_free_features_antigravity(authority) -&gt; tuple[DatasetRoutingFeaturesAntigravity, ...]</code>.</li>
+    </ul>
+    <ol>
+      <li><input disabled type="checkbox">8개 이름, 두 가족·기법, 12-leaf 해시, baseline 좌표가 하나라도 다르면 실패하는 synthetic authority 테스트를 작성한다.</li>
+      <li><input disabled type="checkbox">모듈 부재 RED를 실행하고 예상 실패를 기록한다.</li>
+      <li><input disabled type="checkbox">Exp454에서 후보 위치와 저장된 confusion을 읽고, Exp404 Hard 좌표와 Exp446 stable-26 좌표의 합집합으로 baseline 위치를 구성한다.
+<pre><code>baseline = hard_by_dataset[dataset] | stable_by_dataset[dataset]
+candidate = exp454_candidates[(dataset, method)]
+features = DatasetRoutingFeaturesAntigravity(
+    dataset=dataset, family=family, target_length=target_length,
+    baseline_count=len(baseline), candidate_count=len(candidate),
+    overlap_count=len(baseline &amp; candidate), union_count=len(baseline | candidate),
+    added_count=len(candidate - baseline), removed_count=len(baseline - candidate),
+    overlap_ppm=(len(baseline &amp; candidate) * 1_000_000) // max(1, len(baseline | candidate)),
+)</code></pre></li>
+      <li><input disabled type="checkbox">특징 객체에 confusion·TP·FP·FN·TN·변형 번호 필드가 없음을 검사하고, 특징을 바꿔도 authority 원본이 변하지 않음을 검사한다.</li>
+      <li><input disabled type="checkbox">실제 동결 source를 한 번 읽어 8개 특징을 만들고 label query가 0임을 확인한다. 공식 Exp455 결과 폴더는 만들지 않는다.</li>
+      <li><input disabled type="checkbox">focused 테스트 두 번, Exp454 predecessor/source 회귀 한 번, map validate와 diff-check를 통과시킨다.</li>
+      <li><input disabled type="checkbox">체크박스·대시보드 진행률을 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): capture label-free routing features</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input disabled type="checkbox">Task 3: 가족별 leave-one-dataset-out 라우터</h2>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>router_antigravity.py</code>, <code>tests/test_router_antigravity.py</code></li>
+      <li>Modify: Exp455 report/dashboard, map builder and triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul class="interfaces">
+      <li>Consumes: 8개의 <code>DatasetRoutingFeaturesAntigravity</code>와 같은 이름의 baseline/candidate confusion.</li>
+      <li>Produces: <code>fit_family_rule_antigravity(training_features, outcomes) -&gt; RouteRuleAntigravity</code>.</li>
+      <li>Produces: <code>leave_one_dataset_out_antigravity(features, outcomes) -&gt; tuple[FoldDecisionAntigravity, ...]</code>.</li>
+    </ul>
+    <ol>
+      <li><input disabled type="checkbox">검증 데이터의 outcome을 바꾸어도 그 fold의 선택 규칙이 변하지 않는 테스트, 순서 변경 불변 테스트, 동률 baseline 우선 테스트를 작성한다.</li>
+      <li><input disabled type="checkbox">router 모듈 부재 RED를 실행한다.</li>
+      <li><input disabled type="checkbox">정수 특징별 정렬된 고유 값 사이 합을 <code>threshold_twice</code>로 만들고 양방향 규칙을 생성한다.
+<pre><code>def threshold_rules_antigravity(feature_name, values):
+    ordered = sorted(set(values))
+    rules = [RouteRuleAntigravity(None, None, "never"), RouteRuleAntigravity(None, None, "always")]
+    for left, right in zip(ordered, ordered[1:]):
+        threshold_twice = left + right
+        rules.extend((RouteRuleAntigravity(feature_name, threshold_twice, "lte"), RouteRuleAntigravity(feature_name, threshold_twice, "gt")))
+    return tuple(rules)
+
+def applies_antigravity(rule, value):
+    if rule.candidate_when == "never": return False
+    if rule.candidate_when == "always": return True
+    return 2 * value &lt;= rule.threshold_twice if rule.candidate_when == "lte" else 2 * value &gt; rule.threshold_twice</code></pre></li>
+      <li><input disabled type="checkbox">각 가족 안에서만 학습하고 dataset 문자열과 변형 번호는 규칙 입력에서 제외한다. 목적 순서는 FN 최소 → FP 최소 → exact <code>Fraction</code> F1 최대 → 후보 사용 수 최소 → 규칙 lexical 순서로 고정한다.</li>
+      <li><input disabled type="checkbox">ECG5000 5 fold와 ChlorineConcentration 3 fold가 각각 정확히 한 번 holdout되고 총 8개 결정이 원래 데이터셋 순서로 반환되는지 검사한다.</li>
+      <li><input disabled type="checkbox">focused 테스트 두 번과 Task 2 회귀 한 번, map validate, diff-check를 통과시킨다.</li>
+      <li><input disabled type="checkbox">체크박스·대시보드를 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): select conservative family routes</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input disabled type="checkbox">Task 4: 네 비교 결과, 결과 파일, 재계산</h2>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
+      <li>Create: <code>tests/test_evaluation_antigravity.py</code>, <code>tests/test_artifacts_antigravity.py</code>, <code>tests/test_replay_antigravity.py</code>, <code>tests/test_dashboard_export_antigravity.py</code></li>
+      <li>Modify: Exp455 report/dashboard, map builder and triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul class="interfaces">
+      <li>Produces: <code>evaluate_routing_antigravity(authority, features, decisions) -&gt; RoutingEvaluationAntigravity</code>.</li>
+      <li>Produces: <code>publish_evaluation_antigravity(root, evaluation) -&gt; FrozenResultAntigravity</code>.</li>
+      <li>Produces: <code>inspect_replay_at_antigravity(root) -&gt; RoutingEvaluationAntigravity</code>.</li>
+      <li>Exact leaf inventory: context JSON, features JSONL, fold decisions JSONL, comparison metrics JSON, family metrics JSONL, decision JSON, dashboard snapshot JSON, artifact SHA JSON.</li>
+    </ul>
+    <ol>
+      <li><input disabled type="checkbox">baseline, 가족 전체 적용, 정답 기반 상한선, 실제 라우터의 confusion을 손으로 계산한 작은 fixture 테스트를 작성한다.</li>
+      <li><input disabled type="checkbox">모듈 부재 RED와 semantic tamper RED를 기록한다.</li>
+      <li><input disabled type="checkbox">48개 데이터셋을 정확히 한 번씩 합산하고 exact integer confusion에서 F1을 계산한다.
+<pre><code>def f1_antigravity(c):
+    denominator = 2 * c.tp + c.fp + c.fn
+    return 0.0 if denominator == 0 else (2.0 * c.tp) / denominator
+
+passed = (
+    routed.fn &lt; 1988 and routed.fp &lt;= 314
+    and f1_antigravity(routed) &gt;= 0.6264199935
+    and all(family_fn_delta[name] &lt;= 0 for name in TARGET_FAMILIES_ANTIGRAVITY)
+)</code></pre></li>
+      <li><input disabled type="checkbox">canonical JSON/JSONL 8-leaf writer와 self-excluding artifact map을 구현하고 기존 root, symlink, partial root를 거부한다.</li>
+      <li><input disabled type="checkbox">replay가 features에서 fold 규칙을 다시 고르고 confusion을 다시 합산하게 한다. leaf 값과 artifact map을 함께 바꾼 tamper도 거부해야 한다.</li>
+      <li><input disabled type="checkbox">대시보드 payload를 <code>experiment_id</code>, <code>status</code>, <code>completed_folds</code>, 네 방법의 FN·FP·F1, 두 가족 FN delta, <code>passed</code>로 제한한다.</li>
+      <li><input disabled type="checkbox">focused 테스트 두 번, Task 2–3 회귀 한 번, map validate, diff-check를 통과시킨다.</li>
+      <li><input disabled type="checkbox">체크박스·HTML 대시보드를 갱신하고 한 커밋으로 저장한다: <code>feat(exp455): evaluate conservative routing</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input disabled type="checkbox">Task 5: 닫힌 CLI와 구현 후보 검증</h2>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Create: <code>cli_antigravity.py</code>, <code>tests/test_cli_antigravity.py</code></li>
+      <li>Create: <code>scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py</code></li>
+      <li>Modify: Exp455 report/dashboard/ledgers/plan, map builder and triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul class="interfaces">
+      <li>CLI accepts exactly <code>evaluate --reviewed-commit &lt;40 lower hex&gt;</code> and bare <code>inspect</code>.</li>
+      <li><code>evaluate</code> is label-free and Task 6에서 호출될 때만 새 Exp455 result root를 쓴다.</li>
+      <li><code>inspect</code> imports replay only and performs no scoring or label query.</li>
+    </ul>
+    <ol>
+      <li><input disabled type="checkbox">unknown command, abbreviation, duplicate commit option, upper-case commit, path/threshold/candidate override를 거부하는 CLI RED 테스트를 작성한다.</li>
+      <li><input disabled type="checkbox">CLI와 launcher 부재 RED를 실행한다.</li>
+      <li><input disabled type="checkbox">두 명령만 허용하는 lazy dispatcher를 구현한다.
+<pre><code>def main_antigravity(argv=None):
+    args = parser_antigravity().parse_args(argv)
+    if args.command == "evaluate":
+        return _load_evaluate_antigravity()(args.reviewed_commit)
+    return _load_inspect_antigravity()()</code></pre></li>
+      <li><input disabled type="checkbox">synthetic 전체 흐름에서 8 fold, 48 datasets, 네 비교, 8 leaves, label query 0을 확인한다.</li>
+      <li><input disabled type="checkbox">Exp455 discovery를 두 번, Exp454 evaluation/replay와 Exp448 source capture 회귀를 한 번씩 순차 실행한다.</li>
+      <li><input disabled type="checkbox">공식 Exp455 root가 여전히 없고, Exp454 12-leaf 해시가 그대로이며, worktree가 clean인지 확인한다.</li>
+      <li><input disabled type="checkbox">report/dashboard/ledgers를 <code>implementation_verified_awaiting_official_evaluation</code>로 갱신한다. 결과 값은 아직 <code>not_started</code>다.</li>
+      <li><input disabled type="checkbox"><code>agy</code>의 Gemini 3.7 Flash High 독립 검토로 결과 계산, 데이터 누수, leave-one-out 분리만 확인한다. Codex가 실제 diff와 테스트를 확인하고 최종 판단한다.</li>
+      <li><input disabled type="checkbox">체크박스와 map을 동기화해 한 커밋으로 저장한다: <code>feat(exp455): close routing evaluation candidate</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input disabled type="checkbox">Task 6: 공식 label-free 평가, 결과 확인, 대시보드</h2>
+    <h3>Files</h3>
+    <ul class="files">
+      <li>Modify: <code>docs/EXP455_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP455_DASHBOARD_antigravity.html</code></li>
+      <li>Modify: Exp455 records in state/catalog/champion, plan checkboxes, map triplet</li>
+      <li>Create externally: exact Exp455 8-leaf result root only through the reviewed CLI</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul class="interfaces">
+      <li>Official commands are sequential and single-use for the reviewed commit.</li>
+      <li>No TEST label session or database label query is permitted.</li>
+      <li>Result status is either <code>routing_candidate_qualified_for_external_validation</code> or <code>routing_candidate_not_qualified</code>.</li>
+    </ul>
+    <ol>
+      <li><input disabled type="checkbox">사용자 승인을 받은 exact clean commit, Exp454 hashes, absent Exp455 root, no active Exp455 process를 확인한다.</li>
+      <li><input disabled type="checkbox">공식 평가를 정확히 한 번 실행한다.
+<pre><code>PYTHON=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+"$PYTHON" scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre></li>
+      <li><input disabled type="checkbox">평가가 성공한 경우에만 bare inspect를 정확히 한 번 실행한다.
+<pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp455_exp454_conservative_label_free_routing_antigravity.py inspect</code></pre></li>
+      <li><input disabled type="checkbox">Codex가 별도로 8개 fold 선택과 48개 confusion 합계를 다시 계산하고 evaluate/inspect와 같은지 확인한다.</li>
+      <li><input disabled type="checkbox">FN &lt; 1,988, FP ≤ 314, F1 ≥ 0.6264199935, 두 가족 FN 비악화 여부를 결과 그대로 기록한다.</li>
+      <li><input disabled type="checkbox">HTML 대시보드에 네 비교 방법의 FN·FP·F1, 두 가족 FN delta, 최종 통과 여부를 갱신한다.</li>
+      <li><input disabled type="checkbox">report와 ledgers에 실제 결과·해시·명령 횟수를 기록하고 champion/pending/promotion이 변하지 않았음을 확인한다.</li>
+      <li><input disabled type="checkbox">모든 Task 1–6 완료 체크박스를 체크하고 map을 최종 결과에 맞춰 동기화한다.</li>
+      <li><input disabled type="checkbox">fresh read-only final review와 최종 tests/map/diff/clean 검증 후 truth와 map을 한 커밋으로 저장한다: <code>docs(exp455): record conservative routing result</code>.</li>
+    </ol>
+  </section>
+
+  <h2>완료 조건</h2>
+  <ul>
+    <li>Task 1–5는 공식 결과 없이 구현과 검증만 완료한다.</li>
+    <li>Task 6은 별도 사용자 승인 뒤에만 실행한다.</li>
+    <li>모든 완료 Task와 Step은 이 HTML의 disabled checkbox에 즉시 체크한다.</li>
+    <li>최종 답변은 전체 FN·FP·F1, 가족별 FN 변화, 선택된 8개 경로, 통과 여부에 집중한다.</li>
+  </ul>
+</main>
+</body>
+</html>
