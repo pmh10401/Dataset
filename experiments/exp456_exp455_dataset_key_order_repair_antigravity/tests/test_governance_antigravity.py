@@ -84,7 +84,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
             "planned_awaiting_implementation",
-            "Task 2/5",
+            "Task 3/5",
             "0회",
             "not_available",
             "result_root_created=false",
@@ -103,17 +103,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
         nodes = {node["id"]: node for node in graph["nodes"]}
-        self.assertEqual(nodes["future_evaluation"]["status"], "future_unknown")
-        self.assertEqual(nodes["future_evaluation"]["evidence"], [])
+        self.assertNotIn("status", nodes["evaluation"])
+        self.assertTrue(nodes["evaluation"]["evidence"])
+        self.assertEqual(nodes["future_cli"]["status"], "future_unknown")
+        self.assertEqual(nodes["future_cli"]["evidence"], [])
         self.assertTrue(graph["unknown_relationships"])
         self.assertEqual(
             builder.FUTURE_RELATIONSHIPS_ANTIGRAVITY,
-            "Task 2 keeps future evaluation, artifacts, replay, dashboard export, and CLI sources unimplemented.",
+            "Task 3 implements evaluation, artifacts, replay, and dashboard export; only Task 4 CLI remains unimplemented.",
         )
         self.assertNotIn("Task 1", json.dumps(graph, ensure_ascii=False))
-        self.assertIn("Task 2", nodes["dashboard"]["role"])
-        self.assertIn("Task 2", nodes["governance_regression"]["role"])
-        self.assertIn("Task 2", nodes["map_builder"]["role"])
+        self.assertIn("Task 3", nodes["dashboard"]["role"])
+        self.assertIn("Task 3", nodes["governance_regression"]["role"])
+        self.assertIn("Task 3", nodes["map_builder"]["role"])
         builder.validate_map_antigravity(graph, lock, rendered)
 
     def test_dashboard_exposes_only_approved_fields_and_preflight_lists_all_coverage_antigravity(self) -> None:
@@ -136,9 +138,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         source_parent = graph["source_parent_commit"]
         self.assertEqual(source_parent, lock["source_parent_commit"])
-        self.assertEqual(source_parent, "fb8dd634d8cf377e293bc6297bf9b6c29befd7a4")
+        self.assertEqual(source_parent, "9fdd035acc8871dce876275bc6d5c5fb205fe9fb")
         implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        self.assertIn("checked-in map source-parent commit SHA는 <code>fb8dd634d8cf377e293bc6297bf9b6c29befd7a4</code>", implementation_report)
+        self.assertIn("checked-in map source-parent commit SHA는 <code>9fdd035acc8871dce876275bc6d5c5fb205fe9fb</code>", implementation_report)
         self.assertIn("<code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>은 Exp455 byte guard reference일 뿐 map binding이 아니다.", implementation_report)
         task_report = (ROOT_ANTIGRAVITY / ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html").read_text(encoding="utf-8")
         self.assertIn("source-parent <code>17c6ffa100f70368f0c86efaa4a5f04890e4f12d</code>", task_report)
