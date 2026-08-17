@@ -1,13 +1,14 @@
 {
-  "generated_at": "2026-08-15T20:46:11+09:00",
-  "generated_from_commit": "ee642f7cac6c0c355eb69798b07f4bd0bae6388b",
+  "generated_at": "2026-08-17T17:08:07+09:00",
+  "generated_from_commit": "43d61dfc8aabbcef0047473d77d5ec4e9bc50844",
   "working_tree_dirty": true,
   "scope": [
     "Implemented Exp449 I2 bounded Smoke A post-claim recovery: this code change creates no authority JSON, production root/claim, score, TEST-label access, smoke, or official run.",
     "Task4 TRAIN-only and Task5 label-free TRAIN+TEST-value-transductive collection feed the exact catalog gate, Task6 low-frequency selection, Task7 stability/routing, Candidate C, typed shards, outer manifest, and scorer-free verifier.",
     "Readiness binds the complete frozen 30-module scientific closure, paper lineage lock SHA-256, Exp449 codemap lock SHA-256, full normalized installed-distribution inventory, and AST-literal/import-safe constants manifest.",
     "Smoke A lifecycle mutation is internal-only: verified A -> I readiness derives fixed values-only inputs, bounds Task4/5 to two waves, then capability-freezes and scorer-free verifies before complete terminal publication.",
-    "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created."
+    "Smoke A authority verification is read-only: it proves a retained exact two-file A -> I grant/digest delta and may supply only private readonly implementation readiness; no authority JSON, claim, production root, database scoring, label access, or execution is created.",
+    "Official six-public-baseline comparison design: reuse frozen classical results, derive a byte-preserving Deep SVDD single-method view, evaluate the user-parity-confirmed DROCC MPS root, and report matched-budget/conformal metrics without inventing proposal AP/AUROC."
   ],
   "nodes": [
     {
@@ -1770,6 +1771,33 @@
       "effects": [
         "proves exact parent-created claim/receipt reauthentication before scientific-root creation, two-wave incomplete stopping, scorer-free terminal recovery, fresh/resume scientific equivalence, and drift rejection"
       ]
+    },
+    {
+      "id": "exp449_official_public_baseline_comparison_design",
+      "path": "docs/superpowers/specs/2026-08-17-exp449-official-public-baseline-comparison-antigravity-design.md",
+      "role": "Approved official paper comparison design for the proposed method and six published public baselines.",
+      "entrypoints": [
+        "Exp449 공식 공개 기준선 비교 설계",
+        "평가 규칙",
+        "Deep SVDD 독립 동결 view"
+      ],
+      "callers": [
+        "human reviewers",
+        "future official comparison execution plan"
+      ],
+      "effects": [
+        "freezes the source roots, matched-alert-budget/conformal metrics, AP/AUROC scope, bootstrap, provenance, and no-promotion interpretation for the official paper table"
+      ],
+      "tests": [],
+      "constraints": [
+        "Deep SVDD scores are byte-preserved and not retrained; DROCC MPS parity is user-confirmed without a machine-readable parity artifact; proposal AP/AUROC remains unreported because no continuous proposal score is frozen."
+      ],
+      "evidence": [
+        {
+          "path": "docs/superpowers/specs/2026-08-17-exp449-official-public-baseline-comparison-antigravity-design.md",
+          "symbol": "## 평가 규칙"
+        }
+      ]
     }
   ],
   "edges": [
@@ -2557,6 +2585,13 @@
         "exp449_verifier"
       ],
       "outcome": "Fresh derives fixed verified inputs, parent-claims only the operations root, and the forked child reauthenticates the exact claimed pre-science state before scoring. Resume accepts that exact absent-science/present-operations state or a fully existing inactive namespace, then runs no more than two Task4/5 waves or recovers a verified freeze without rescoring."
+    },
+    {
+      "trigger": "Official public-baseline paper comparison",
+      "steps": [
+        "exp449_official_public_baseline_comparison_design"
+      ],
+      "outcome": "A six-public-baseline technical comparison is produced from immutable score evidence, with proposed AP/AUROC intentionally absent and no automatic promotion claim."
     }
   ],
   "unknown_relationships": [],
