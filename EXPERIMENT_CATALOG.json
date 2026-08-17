@@ -1416,6 +1416,38 @@
       "independent_reviews": {"terra_high": "clean", "agy_gemini_3_7_flash_high": "clean"},
       "official_lifecycle": {"reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613", "evaluate_invocations": 1, "evaluate_exit_code": 1, "evaluate_error_type": "ValueError", "evaluate_error": "features must match authority targets in order", "inspect_invocations": 0, "label_access_count": 0},
       "notes": "The one approved official evaluate failed before aggregation because the approved feature order and frozen authority target order differed. No official result root or performance metrics exist; inspect was not run. Exp455 is immutable and must not be retried. Routing and promotion stay disabled."
+    },
+    {
+      "id": "Exp456",
+      "experiment": "Exp456",
+      "kind": "exp455_dataset_key_order_repair",
+      "status": "official_evaluation_inspected_complete_not_qualified",
+      "implementation_status": "task_5_official_evaluation_and_inspection_complete",
+      "documents": ["docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "docs/EXP456_RUNBOOK_antigravity_KO.html", "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP456_DASHBOARD_antigravity.html"],
+      "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817",
+      "qualified_candidates": ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"],
+      "target_family_counts": {"ECG5000": 5, "ChlorineConcentration": 3},
+      "target_dataset_count": 8,
+      "baseline_dataset_count": 40,
+      "prediction_sha256": null,
+      "evaluation_sha256": "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc",
+      "decision_sha256": "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01",
+      "artifact_map_sha256": "3c1321f74016d363899b41357609edca62ecf410d71708a9c90a6b803a4445e0",
+      "dashboard_snapshot_sha256": "7a9196efdc8764b53a5810f169bcfd7b12d6bfab1bf383ff024421b791fea407",
+      "result_root_created": true,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_lifecycle": {"reviewed_commit": "a45ff019e0736bbf895bb698b8eccfcbc69cd190", "evaluate_invocations": 1, "evaluate_exit_code": 0, "inspect_invocations": 1, "inspect_exit_code": 0, "aggregate_json_equal": true, "completed_folds": 8, "passed": false, "status": "routing_candidate_not_qualified_for_external_validation", "label_access_count": 0, "label_query_count": 0, "result_root_created": true, "result_root_leaf_count": 8, "result_root_is_non_symlink_directory": true, "artifact_map_non_map_leaf_recomputation": "exact_match"},
+      "comparisons": [{"name": "always_baseline", "fn": 837, "fp": 66, "f1": 0.5742574257425742}, {"name": "family_wide_local_gap", "fn": 835, "fp": 63, "f1": 0.5764150943396227}, {"name": "oracle_per_dataset", "fn": 828, "fp": 64, "f1": 0.5808270676691729}, {"name": "lodo_router", "fn": 843, "fp": 65, "f1": 0.5704824976348155}],
+      "family_fn_delta": {"ECG5000": 6, "ChlorineConcentration": 0},
+      "notes": "Official evaluate and then inspect each ran exactly once with exit 0 at reviewed commit a45ff019e0736bbf895bb698b8eccfcbc69cd190 and emitted the same aggregate JSON. The immutable 8-leaf non-symlink result root has artifact-map recomputation exact-match evidence. family-wide methods slightly improve FN/FP/F1 and oracle shows theoretical room, but the learned LODO router is worse than baseline by FN +6 and lower F1. Status is routing_candidate_not_qualified_for_external_validation; routing, champion, pending candidate, and promotion remain unchanged."
     }
   ]
 }

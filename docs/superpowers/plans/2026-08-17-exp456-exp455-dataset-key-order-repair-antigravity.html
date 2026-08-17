@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp456 데이터셋 이름 결합 수정 구현 계획</title>
+  <style>
+    body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    h1,h2,h3{line-height:1.3}code,pre{background:#eef2f7}code{padding:.1rem .3rem;overflow-wrap:anywhere}
+    pre{padding:1rem;overflow:auto;border:1px solid #cbd5e1;border-radius:.4rem}table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #9aa5b1;padding:.5rem;text-align:left;vertical-align:top}
+    blockquote{margin:1rem 0;border-left:4px solid #2563eb;background:#eff6ff;padding:.7rem 1rem}
+    section{border-top:2px solid #d5dbe3;margin-top:2rem;padding-top:1rem}.meta{background:#f8fafc;padding:1rem}
+    li{margin:.4rem 0}input[type=checkbox]{margin-right:.5rem}.gate{border-left:4px solid #d97706;background:#fffbeb;padding:.8rem}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp456 데이터셋 이름 결합 수정 구현 계획</h1>
+  <blockquote><strong>작업 방법:</strong> Task를 하나씩 순서대로 진행한다. 각 Task는 RED → 최소 구현 → GREEN → 검토 → 커밋으로 끝낸다.
+    체크박스는 실제 완료 직후에만 체크한다.</blockquote>
+
+  <div class="meta">
+    <p><strong>목표:</strong> Exp455의 위치 기반 8행 비교를 데이터셋 이름 기반 결합으로 바꾸고, 나머지 과학 조건은 그대로 둔 채 공식 라우팅 성능을 계산할 수 있게 한다.</p>
+    <p><strong>구조:</strong> Exp455를 Exp456 패키지로 통제 복사한다. authority와 특징의 원본 순서는 유지하고,
+      평가·재검산 경계에서만 이름으로 1:1 결합한다. 결과 파일과 대시보드의 성능 항목은 기존 구조를 유지한다.</p>
+    <p><strong>기술:</strong> Python 3.14, 표준 라이브러리, <code>dataclasses</code>, <code>unittest</code>, 정적 HTML.</p>
+    <p><strong>승인된 설계:</strong>
+      <code>docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html</code><br>
+      SHA-256 <code>79c6ad3e8bfad6f7f9b397fc1d20b448ebc656f198de5d449ff897a92de98247</code>.</p>
+  </div>
+
+  <h2>Global Constraints</h2>
+  <ul>
+    <li>실험 ID는 <code>Exp456</code>, 종류는 <code>exp455_dataset_key_order_repair</code>다.</li>
+    <li>유일한 과학적 변경은 위치 비교를 정확한 <code>dataset</code> 이름 결합으로 바꾸는 것이다.</li>
+    <li>모델, 특징, LODO 규칙, 후보, 4개 비교 방법, FN·FP·F1 기준, 결과 leaf 구조는 Exp455와 같다.</li>
+    <li>특징과 공개 결과 순서는 ECG5000 5개 → ChlorineConcentration 3개로 고정한다.</li>
+    <li>중복·누락·추가 이름과 family·method·target length 불일치는 계산 전에 거부한다.</li>
+    <li>TEST label 조회는 0회이며 새 학습·새 점수원·MLX 변경은 없다.</li>
+    <li>Exp455 패키지, launcher, 공식 실패 기록은 기준 커밋 <code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>과 byte-unchanged여야 한다.</li>
+    <li>새 파일 이름은 모두 <code>antigravity</code>를 포함하며 새 <code>__init__.py</code>를 만들지 않는다.</li>
+    <li>모든 새 문서와 대시보드는 HTML로 작성한다.</li>
+    <li>공식 Python은 <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>이다.</li>
+    <li>코드 변경 전 Exp456 code map에서 callers, effects, tests를 확인하고 경계가 바뀌면 HTML/JSON/lock을 함께 갱신한다.</li>
+    <li>공식 Exp456 evaluate와 inspect는 Task 5에서 사용자 별도 승인 뒤에만 실행한다.</li>
+    <li>통과는 외부 검증 후보 자격일 뿐 champion·pending candidate·promotion·자동 routing을 바꾸지 않는다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <thead><tr><th>파일</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr><td><code>config_antigravity.py</code></td><td>Exp456 정체성, Exp455 실패 증거, 기존 후보·기준을 고정한다.</td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>authority, 특징, 결정, confusion, 평가 결과 타입을 정의한다.</td></tr>
+      <tr><td><code>authority_antigravity.py</code></td><td>Exp454의 48개 동결 행을 기존 순서 그대로 읽는다.</td></tr>
+      <tr><td><code>features_antigravity.py</code></td><td>8개 label-free 특징을 승인 순서로 만든다.</td></tr>
+      <tr><td><code>router_antigravity.py</code></td><td>기존 가족별 LODO 결정을 그대로 만든다.</td></tr>
+      <tr><td><code>evaluation_antigravity.py</code></td><td>이름으로 authority·특징·결정을 결합하고 네 성능을 계산한다.</td></tr>
+      <tr><td><code>artifacts_antigravity.py</code></td><td>기존 8개 결과 leaf를 create-only로 저장한다.</td></tr>
+      <tr><td><code>replay_antigravity.py</code></td><td>저장 결과를 이름 기반으로 다시 계산한다.</td></tr>
+      <tr><td><code>dashboard_export_antigravity.py</code></td><td>aggregate 성능만 대시보드에 전달한다.</td></tr>
+      <tr><td><code>cli_antigravity.py</code>, launcher</td><td><code>evaluate --reviewed-commit</code>와 <code>inspect</code>만 제공한다.</td></tr>
+    </tbody>
+  </table>
+
+  <section>
+    <h2><input checked disabled type="checkbox">Task 1: Governance, HTML 대시보드, 초기 code map</h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>docs/EXP456_PREREGISTRATION_antigravity_KO.html</code></li>
+      <li>Create: <code>docs/EXP456_RUNBOOK_antigravity_KO.html</code></li>
+      <li>Create: <code>docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+      <li>Create: <code>docs/EXP456_DASHBOARD_antigravity.html</code></li>
+      <li>Create: <code>scratch/build_codemap_exp456_antigravity.py</code></li>
+      <li>Create: <code>docs/codemap/codemap_exp456_antigravity.html</code>, <code>.json</code>, <code>.lock</code></li>
+      <li>Create: <code>experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_governance_antigravity.py</code></li>
+      <li>Modify: Exp456 항목만 <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code></li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul>
+      <li>Produces: 상태 <code>planned_awaiting_implementation</code>, label access <code>0</code>, 공식 실행 <code>false</code>.</li>
+      <li>Produces: 대시보드 source는 승인 설계, 세 ledger, 이후 공식 결과 8 leaves다.</li>
+      <li>Produces: 다음 명령은 Task 2 구현이며 공식 명령은 아직 표시하지 않는다.</li>
+    </ul>
+    <ol>
+      <li><input checked disabled type="checkbox">승인된 Exp456 설계 HTML을 작성하고 SHA-256을 고정했다.</li>
+      <li><input checked disabled type="checkbox">현재 Exp455 code map을 읽고 평가기의 caller가 CLI·artifacts·dashboard이며, effects가 4개 성능과 8개 결과 leaf이고, coverage가 evaluation/replay 테스트임을 Task 1 보고서에 기록한다.</li>
+      <li><input checked disabled type="checkbox">Exp456 항목이 없어서 실패하는 governance 테스트를 작성한다.
+<pre><code>self.assertEqual(exp456["status"], "planned_awaiting_implementation")
+self.assertEqual(exp456["label_query_count"], 0)
+self.assertFalse(exp456["official_evaluate_started"])
+self.assertIsNone(exp456["evaluation_sha256"])</code></pre></li>
+      <li><input checked disabled type="checkbox">governance 테스트를 실행해 RED를 기록한다.</li>
+      <li><input checked disabled type="checkbox">사전등록·runbook·구현 기록·대시보드와 세 ledger에 Exp456 planned 상태를 추가한다. Exp455 terminal truth와 champion/pending 값은 바꾸지 않는다.</li>
+      <li><input checked disabled type="checkbox">대시보드에 상태, Task 진행률, 공식 명령 횟수, 결과 존재 여부, FN·FP·F1, 가족별 FN 변화, 다음 단계만 배치한다. 결과 전 성능 값은 <code>not_available</code>로 표시한다.</li>
+      <li><input checked disabled type="checkbox">Exp456 초기 map triplet을 만들고 미래 source 경계는 명시적으로 미구현으로 표시한다.</li>
+      <li><input checked disabled type="checkbox">governance GREEN, HTML parse, strict JSON parse, map validate, <code>git diff --check</code>를 통과시킨다.</li>
+      <li><input checked disabled type="checkbox">Task 1의 완료 항목과 대시보드 진행률을 체크하고 커밋한다: <code>docs(exp456): register dataset-key order repair</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input checked disabled type="checkbox">Task 2: Exp455 통제 복사와 과학 조건 동등성</h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>experiments/exp456_exp455_dataset_key_order_repair_antigravity/config_antigravity.py</code></li>
+      <li>Create: 같은 폴더의 <code>contracts_antigravity.py</code>, <code>authority_antigravity.py</code>, <code>features_antigravity.py</code>, <code>router_antigravity.py</code></li>
+      <li>Create: 대응 테스트 5개와 <code>tests/test_controlled_fork_antigravity.py</code></li>
+      <li>Modify: Exp456 report/dashboard/map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul>
+      <li>Produces: <code>capture_routing_authority_antigravity() -&gt; FrozenRoutingAuthorityAntigravity</code>.</li>
+      <li>Produces: <code>build_label_free_features_antigravity(authority) -&gt; tuple[DatasetRoutingFeaturesAntigravity, ...]</code>.</li>
+      <li>Produces: <code>leave_one_dataset_out_antigravity(features, outcomes) -&gt; tuple[FoldDecisionAntigravity, ...]</code>.</li>
+    </ul>
+    <ol>
+      <li><input checked disabled type="checkbox">Exp456 모듈 부재와 Exp455/Exp456 동등성 helper 부재를 확인하는 RED 테스트를 작성·실행한다.</li>
+      <li><input checked disabled type="checkbox">Exp455의 다섯 모듈을 Exp456으로 복사하고 실험 ID·root·문서 SHA만 바꾼다. 특징과 router 본문은 과학적으로 동일하게 유지한다.</li>
+      <li><input checked disabled type="checkbox">다음 고정값의 정확한 동등성을 검사한다.
+<pre><code>assert exp456.candidates == exp455.candidates
+assert exp456.target_family_counts == (("ECG5000", 5), ("ChlorineConcentration", 3))
+assert exp456.global_fn_must_be_below == 1988
+assert exp456.global_fp_max == 314
+assert exp456.global_f1_min == 0.6264199935</code></pre></li>
+      <li><input checked disabled type="checkbox">합성 authority가 Chlorine→ECG 순서여도 특징은 ECG 5개→Chlorine 3개 순서로 나오는 기존 계약을 검사한다.</li>
+      <li><input checked disabled type="checkbox">Exp455 기준 커밋과 현재 Exp455 package·launcher의 byte diff가 0인지 검사한다.</li>
+      <li><input checked disabled type="checkbox">focused GREEN을 두 번, Exp455 대응 회귀를 한 번 실행한다.</li>
+      <li><input checked disabled type="checkbox">map·report·dashboard·체크박스를 동기화하고 커밋한다: <code>feat(exp456): freeze order-repair foundations</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input checked disabled type="checkbox">Task 3: 이름 기반 결합, 평가, 재검산</h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
+      <li>Create: 대응 테스트 4개와 <code>tests/test_dataset_key_join_antigravity.py</code></li>
+      <li>Modify: Exp456 report/dashboard/map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul>
+      <li>Produces: <code>align_targets_by_dataset_antigravity(authority, features, decisions)</code>가 승인 순서의 8개 결합을 반환한다.</li>
+      <li>Produces: <code>evaluate_routing_antigravity(...)</code>가 기존 <code>RoutingEvaluationAntigravity</code>를 반환한다.</li>
+      <li>Produces: 기존 8-leaf publication과 <code>inspect_replay_at_antigravity(root)</code>.</li>
+    </ul>
+    <ol>
+      <li><input checked disabled type="checkbox">Exp455의 실제 순서 충돌 fixture가 실패하고, 같은 데이터의 동일 순서 fixture는 통과하는 RED를 기록한다.</li>
+      <li><input checked disabled type="checkbox">정확한 이름 결합 helper를 최소 구현한다.
+<pre><code>def align_targets_by_dataset_antigravity(targets, features, decisions):
+    target_by_dataset = exact_unique_map_antigravity(targets)
+    decision_by_dataset = exact_unique_map_antigravity(decisions)
+    feature_names = tuple(row.dataset for row in features)
+    if set(feature_names) != set(target_by_dataset) or set(feature_names) != set(decision_by_dataset):
+        raise ValueError("dataset key sets differ")
+    return tuple((target_by_dataset[f.dataset], f, decision_by_dataset[f.dataset]) for f in features)</code></pre></li>
+      <li><input checked disabled type="checkbox">각 결합의 dataset·family·method·target length를 비교하고, 중복·누락·추가·타입 오류를 계산 전에 거부한다.</li>
+      <li><input checked disabled type="checkbox">평가와 replay가 동일 helper를 사용하도록 연결하되, confusion 합산·LODO·gate·8 leaves는 Exp455와 동일하게 유지한다.</li>
+      <li><input checked disabled type="checkbox">서로 다른 순서 fixture와 동일 순서 fixture의 네 comparison, 8 decisions, family FN delta, pass/status가 완전히 같은지 검사한다.</li>
+      <li><input checked disabled type="checkbox">중복 이름, 한 행 누락, 추가 행, 잘못된 family·method·target length, 결정 순서 변경을 표 기반 테스트로 검사한다.</li>
+      <li><input checked disabled type="checkbox">합성 결과를 발행한 뒤 replay하고, 결합 증거를 자체 일관되게 바꿔 재해시한 경우 거부되는지 검사한다.</li>
+      <li><input checked disabled type="checkbox">Task 3 GREEN 두 번과 Exp455 evaluation/replay 회귀 한 번을 실행한다.</li>
+      <li><input checked disabled type="checkbox">map·report·dashboard·체크박스를 동기화하고 커밋한다: <code>fix(exp456): join routing evidence by dataset key</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input checked disabled type="checkbox">Task 4: 닫힌 CLI, 전체 검증, 독립 검토</h2>
+    <h3>Files</h3>
+    <ul>
+      <li>Create: <code>experiments/exp456_exp455_dataset_key_order_repair_antigravity/cli_antigravity.py</code></li>
+      <li>Create: <code>scratch/run_exp456_exp455_dataset_key_order_repair_antigravity.py</code></li>
+      <li>Create: <code>tests/test_cli_antigravity.py</code></li>
+      <li>Modify: Exp456 implementation report/dashboard/ledgers/map triplet</li>
+    </ul>
+    <h3>Interfaces</h3>
+    <ul>
+      <li>CLI accepts exactly <code>evaluate --reviewed-commit LOWER40</code> and bare <code>inspect</code>.</li>
+      <li>Task 완료 상태는 <code>implementation_verified_awaiting_official_evaluation</code>이다.</li>
+    </ul>
+    <ol>
+      <li><input checked disabled type="checkbox">CLI와 launcher 부재 RED, 잘못된 option·약어·추가 인자 거부 테스트를 작성·실행한다.</li>
+      <li><input checked disabled type="checkbox">evaluate와 inspect만 lazy-load하는 최소 CLI와 고정 Python launcher를 구현한다.</li>
+      <li><input checked disabled type="checkbox">Exp456 전체 discovery를 두 번 실행하고 각 실행의 정확한 통과 수와 시간을 HTML 보고서에 기록한다.</li>
+      <li><input checked disabled type="checkbox">Exp455 32개 전체 회귀와 기준 커밋 byte guard를 통과시킨다.</li>
+      <li><input checked disabled type="checkbox">공식 Exp456 root가 없고 label query가 0이며 대시보드가 결과를 만들지 않았음을 확인한다.</li>
+      <li><input checked disabled type="checkbox">구현 보고서·세 ledger·대시보드를 awaiting official 상태로 갱신하고 map을 동기화한다.</li>
+      <li><input checked disabled type="checkbox">fresh <code>sol_advisor_terra_implementer</code> High에게 결과에 영향을 주는 결함만 독립 검토하게 한다.</li>
+      <li><input checked disabled type="checkbox">Codex가 지적 사항을 판단·통합하고 필요한 focused 회귀를 실행한다.</li>
+      <li><input checked disabled type="checkbox">Task 4 체크박스를 완료하고 clean candidate를 커밋한다: <code>feat(exp456): verify dataset-key repair candidate</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><input checked disabled type="checkbox">Task 5: 공식 평가, inspect, 결과 대시보드</h2>
+    <div class="gate"><strong>승인 gate:</strong> Task 4의 clean candidate와 독립 검토 결과를 사용자에게 보여주고 별도 승인을 받은 뒤에만 시작한다.</div>
+    <h3>Files</h3>
+    <ul>
+      <li>Modify: <code>docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP456_RUNBOOK_antigravity_KO.html</code>, <code>docs/EXP456_DASHBOARD_antigravity.html</code></li>
+      <li>Modify: Exp456 truth in three ledgers and Exp456 map triplet</li>
+      <li>Read-only result: <code>/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817</code></li>
+    </ul>
+    <h3>Official commands</h3>
+<pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+"$PY" scratch/run_exp456_exp455_dataset_key_order_repair_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"
+"$PY" scratch/run_exp456_exp455_dataset_key_order_repair_antigravity.py inspect</code></pre>
+    <ol>
+      <li><input checked disabled type="checkbox">사용자 승인과 exact clean reviewed commit을 기록한다.</li>
+      <li><input checked disabled type="checkbox">공식 <code>evaluate</code>를 한 번 실행한다. nonzero면 즉시 중단하고 inspect를 실행하지 않는다.</li>
+      <li><input checked disabled type="checkbox">evaluate가 성공하고 8개 leaf가 완전할 때만 <code>inspect</code>를 한 번 실행한다.</li>
+      <li><input checked disabled type="checkbox">네 comparison의 FN·FP·F1, 두 가족 FN 변화, 8 decisions, pass/status를 독립 재계산한다.</li>
+      <li><input checked disabled type="checkbox">대시보드에 실제 결과만 반영하고, 미계산 값이나 추정치를 넣지 않는다.</li>
+      <li><input checked disabled type="checkbox">결과가 통과해도 routing·champion·pending·promotion은 변경하지 않는다.</li>
+      <li><input checked disabled type="checkbox">Task 5와 모든 하위 단계를 체크하고 truth/map closeout을 커밋한다.</li>
+      <li><input checked disabled type="checkbox">fresh read-only 검토로 HTML 대시보드와 실제 8 leaves가 일치하는지 확인한 뒤 결과 토론에서 멈춘다.</li>
+    </ol>
+  </section>
+
+  <h2>계획 자체 점검</h2>
+  <ul>
+    <li><input checked disabled type="checkbox">설계의 모든 요구가 Task 1–5 중 하나에 연결되어 있다.</li>
+    <li><input checked disabled type="checkbox">미완성 표기나 빈 구현 단계가 없다.</li>
+    <li><input checked disabled type="checkbox">Task 사이 함수 이름과 타입이 일치한다.</li>
+    <li><input checked disabled type="checkbox">공식 평가가 구현·검토와 분리되어 있다.</li>
+    <li><input checked disabled type="checkbox">대시보드는 진행 상태와 실제 성능 결과만 표시한다.</li>
+  </ul>
+</main>
+</body>
+</html>
