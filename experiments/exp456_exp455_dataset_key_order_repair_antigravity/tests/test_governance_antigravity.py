@@ -138,9 +138,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         source_parent = graph["source_parent_commit"]
         self.assertEqual(source_parent, lock["source_parent_commit"])
-        self.assertEqual(source_parent, "8065d14b93b22606b333ffed04ea388fa077f191")
+        self.assertEqual(source_parent, "ff3d3fa860e24f675fc7622a727ed2c93538bba0")
         implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        self.assertIn("checked-in map source-parent commit SHA는 <code>8065d14b93b22606b333ffed04ea388fa077f191</code>", implementation_report)
+        self.assertIn("checked-in map source-parent commit SHA는 <code>ff3d3fa860e24f675fc7622a727ed2c93538bba0</code>", implementation_report)
         self.assertIn("<code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>은 Exp455 byte guard reference일 뿐 map binding이 아니다.", implementation_report)
         task_report = (ROOT_ANTIGRAVITY / ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html").read_text(encoding="utf-8")
         self.assertIn("source-parent <code>17c6ffa100f70368f0c86efaa4a5f04890e4f12d</code>", task_report)
