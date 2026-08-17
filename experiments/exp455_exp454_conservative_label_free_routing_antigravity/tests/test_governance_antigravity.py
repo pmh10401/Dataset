@@ -52,7 +52,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             parser.feed(path.read_text(encoding="utf-8"))
             parser.close()
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
-        for value in ("implementation_verified_awaiting_official_evaluation", "8/8", "Tasks 5/6", "independent reviews CLEAN", "not_started"):
+        for value in ("official_evaluation_failed_immutable_no_retry", "1회, exit 1", "0회", "결과 폴더</th><td>없음", "성능 결과</th><td>계산되지 않음"):
             self.assertIn(value, dashboard)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
@@ -64,14 +64,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
         exp455_champion = next(item for item in champion["history"] if item["experiment"] == "Exp455")
         for record in (exp455_state, exp455_catalog, exp455_champion):
             self.assertEqual(record["kind"], "conservative_label_free_routing")
-            self.assertEqual(record["status"], "planned")
+            self.assertEqual(record["status"], "official_evaluation_failed_immutable_no_retry")
+            self.assertEqual(record["implementation_status"], "verified_implementation_official_evaluation_failed")
+            self.assertEqual(record["official_lifecycle"]["evaluate_invocations"], 1)
+            self.assertEqual(record["official_lifecycle"]["evaluate_exit_code"], 1)
+            self.assertEqual(record["official_lifecycle"]["inspect_invocations"], 0)
+            self.assertEqual(record["official_lifecycle"]["label_access_count"], 0)
             self.assertFalse(record["routing_allowed"])
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
         self.assertEqual(champion["pending_candidate"], state["pending_candidate"])
 
-    def test_task_five_plan_progress_and_map_boundaries_antigravity(self) -> None:
-        """Break caught: Task 5 hides its reviewed candidate or marks official Task 6 complete."""
+    def test_task_six_terminal_progress_and_map_boundaries_antigravity(self) -> None:
+        """Break caught: Task 6 hides the failed official outcome or invents a result."""
         plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-17-exp455-conservative-label-free-routing-antigravity.html").read_text(encoding="utf-8")
         task_one = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 1:.*?</section>", plan, flags=re.DOTALL)
         self.assertIsNotNone(task_one)
@@ -81,11 +86,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsNotNone(task_four)
         task_five = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 5:.*?</section>", plan, flags=re.DOTALL)
         self.assertIsNotNone(task_five)
-        for task_number in range(6, 7):
-            section = re.search(rf"<section>\s*<h2><input\b([^>]*)>Task {task_number}:.*?</section>", plan, flags=re.DOTALL)
-            self.assertIsNotNone(section)
-            assert section is not None
-            self.assertNotIn("checked", section.group(1))
+        task_six = re.search(r"<section>\s*<h2><input\b[^>]*checked[^>]*>Task 6:.*?</section>", plan, flags=re.DOTALL)
+        self.assertIsNotNone(task_six)
+        assert task_six is not None
+        self.assertIn("features must match authority targets in order", task_six.group(0))
+        self.assertIn('<input disabled type="checkbox">Codex가 별도로 8개 fold', task_six.group(0))
 
         spec = importlib.util.spec_from_file_location("exp455_map_builder_antigravity", ROOT_ANTIGRAVITY / "scratch/build_codemap_exp455_antigravity.py")
         assert spec is not None and spec.loader is not None

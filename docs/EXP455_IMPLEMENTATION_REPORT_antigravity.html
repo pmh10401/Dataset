@@ -17,4 +17,8 @@
 <tr><td>ChlorineConcentration</td><td>ChlorineConcentration_normal_3</td><td>2350</td><td>12</td><td>13</td><td>9</td><td>16</td><td>4</td><td>3</td><td>562500</td></tr>
 </tbody></table>
 <p>현재 상태는 <code>implementation_verified_awaiting_official_evaluation</code>이고 공식 결과는 계속 <code>not_started</code>다. 합성 계산은 준비 검증일 뿐 공식 실행이 아니다. Task 6 공식 평가는 별도 사용자 승인이 있어야 한다. 공식 명령 실행, official result-root 생성, routing activation, champion/pending-candidate change, promotion은 하지 않았다.</p>
+<h2>Task 6 공식 실행 결과</h2>
+<p>사용자 승인 뒤 clean commit <code>b1ac9c24eea25b1da055d7076240d3058ffce613</code>에서 공식 <code>evaluate</code>를 정확히 한 번 실행했다. 명령은 exit 1로 끝났고, <code>ValueError: features must match authority targets in order</code>가 발생했다.</p>
+<p>원인은 label-free 특징의 승인 출력 순서(ECG5000 5개 → ChlorineConcentration 3개)와 Exp454 authority의 동결 원본 대상 순서(ChlorineConcentration → ECG5000)가 달랐기 때문이다. 실패는 성능 합산과 결과 폴더 생성 전에 발생했다. 공식 result root는 없고, TEST label 조회는 0회이며, 성공 조건이 아니므로 inspect는 0회다.</p>
+<p>Exp455 상태는 <code>official_evaluation_failed_immutable_no_retry</code>다. FN·FP·F1 결과는 생성되지 않았고, routing/champion/pending candidate/promotion은 바뀌지 않았다. 이 순서 계약을 고치려면 Exp455 재실행이 아니라 새 실험 번호와 새 사전등록이 필요하다.</p>
 </main></body></html>

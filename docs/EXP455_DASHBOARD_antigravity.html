@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp455 대시보드</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left}</style></head><body><main>
 <h1>Exp455 보수적 label-free 라우팅</h1>
-<table><tr><th>상태</th><td>implementation_verified_awaiting_official_evaluation</td></tr><tr><th>완료 특징 데이터셋</th><td>8/8</td></tr><tr><th>완료 LODO fold</th><td>8/8</td></tr><tr><th>구현 진행</th><td>Tasks 5/6; independent reviews CLEAN</td></tr><tr><th>합성 전체 흐름</th><td>8 folds, 48 datasets, 4 comparisons, 8 leaves, label query 0</td></tr><tr><th>동결 source 확인</th><td>12 leaves, label query 0</td></tr><tr><th>공식 결과</th><td>not_started</td></tr><tr><th>routing</th><td>disabled</td></tr><tr><th>promotion</th><td>disabled</td></tr></table>
-<p>구현과 결과 계산 검증은 끝났다. 다음 단계인 Task 6 공식 평가는 별도 사용자 승인 전에는 실행하지 않는다.</p>
+<table><tr><th>상태</th><td>official_evaluation_failed_immutable_no_retry</td></tr><tr><th>공식 evaluate</th><td>1회, exit 1</td></tr><tr><th>공식 inspect</th><td>0회 — evaluate 실패로 실행하지 않음</td></tr><tr><th>결과 폴더</th><td>없음</td></tr><tr><th>성능 결과</th><td>계산되지 않음</td></tr><tr><th>TEST label 조회</th><td>0회</td></tr><tr><th>routing</th><td>disabled</td></tr><tr><th>promotion</th><td>disabled</td></tr></table>
+<p><strong>중단 이유:</strong> 특징 행은 승인 순서인 ECG5000 → ChlorineConcentration이었지만, authority 대상 행은 동결 원본 순서인 ChlorineConcentration → ECG5000이었다. 평가기는 두 순서가 같아야 한다고 검사해 성능 합산 전에 중단했다.</p>
+<p>따라서 FN·FP·F1과 가족별 FN 변화는 공식 결과가 아니다. Exp455는 다시 실행하지 않으며, 순서 계약을 고치려면 새 실험 번호가 필요하다.</p>
 <p>대시보드는 raw TEST label이나 개별 index를 표시하지 않는다.</p>
 </main></body></html>

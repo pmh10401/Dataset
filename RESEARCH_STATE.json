@@ -324,8 +324,8 @@
   "exp455": {
     "experiment": "Exp455",
     "kind": "conservative_label_free_routing",
-    "status": "planned",
-    "implementation_status": "implementation_verified_awaiting_official_evaluation",
+    "status": "official_evaluation_failed_immutable_no_retry",
+    "implementation_status": "verified_implementation_official_evaluation_failed",
     "run_identity": "exp455-exp454-conservative-label-free-routing-antigravity-20260817",
     "run_root": "/Users/mac/Documents/Dataset/exp455_exp454_conservative_label_free_routing_antigravity_20260817",
     "package": "experiments/exp455_exp454_conservative_label_free_routing_antigravity",
@@ -344,7 +344,7 @@
     "target_family_fn_delta_max": 0,
     "label_access_count": 0,
     "test_labels_opened": false,
-    "official_command_started": false,
+    "official_command_started": true,
     "result_root_created": false,
     "routing_allowed": false,
     "promotion_allowed": false,
@@ -352,7 +352,8 @@
     "pending_candidate_changed": false,
     "mlx_assessment_required": false,
     "independent_reviews": {"terra_high": "clean", "agy_gemini_3_7_flash_high": "clean"},
-    "next_action": "obtain_separate_user_approval_before_task_6_official_evaluation"
+    "official_lifecycle": {"reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613", "evaluate_invocations": 1, "evaluate_exit_code": 1, "evaluate_error_type": "ValueError", "evaluate_error": "features must match authority targets in order", "inspect_invocations": 0, "label_access_count": 0, "result_root_created": false},
+    "next_action": "discuss_result_then_design_new_experiment_for_authority_feature_order_repair_no_exp455_retry"
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",
