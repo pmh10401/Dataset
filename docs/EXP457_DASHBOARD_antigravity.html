@@ -3,5 +3,5 @@
 <h2>Exp456 불변 비교 기준</h2><table><thead><tr><th>방법</th><th>FN</th><th>FP</th><th>F1</th></tr></thead><tbody><tr><td>always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742</td></tr><tr><td>family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227</td></tr><tr><td>oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729</td></tr><tr><td>lodo_router</td><td>843</td><td>65</td><td>0.5704824976348155</td></tr></tbody></table>
 <h2>Exp457 고정 합격선</h2><table><tr><th>TRAIN 게이트</th><td>각 seed별 정상 Wilson 95% 상한 ≤ 5%; pooled sensitivity ≥ 70%; 각 primary type ≥ 50%; finite</td></tr><tr><th>구조 게이트</th><td><code>added_count &gt; removed_count</code></td></tr><tr><th>최종 결과</th><td>FN ≤ 834, FP ≤ 66, F1 &gt; 0.5764150943396227</td></tr></table>
 <p class="muted">ChlorineConcentration 세 데이터셋은 family-wide MultiRocket 후보로 고정한다. TEST confusion/FN/FP/F1은 route를 정하는 데 쓰지 않고 route 고정 뒤 최종 집계에만 사용한다.</p>
-<p class="muted">Task 2는 qualification이나 routing을 수행하지 않았다. 합성 이상은 CPU NumPy로 생성하며 공식 aeon Hydra와 MLX 평가는 Task 3 이후의 별도 경계다.</p>
+<p class="muted">Task 2는 qualification이나 routing을 수행하지 않았다. 공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.</p>
 </main></body></html>
