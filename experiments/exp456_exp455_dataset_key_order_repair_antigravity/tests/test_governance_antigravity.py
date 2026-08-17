@@ -182,9 +182,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert isinstance(graph, dict) and isinstance(lock, dict)
         source_parent = graph["source_parent_commit"]
         self.assertEqual(source_parent, lock["source_parent_commit"])
-        self.assertEqual(source_parent, "e5fbf598bb3cc5f86bd4218c559eece9ddc2a6dc")
+        map_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+        direct_parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+        map_only_paths = tuple(sorted(subprocess.check_output(
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", map_commit],
+            cwd=ROOT_ANTIGRAVITY,
+            text=True,
+        ).splitlines()))
+        self.assertEqual(map_only_paths, tuple(sorted(TRIPLET_ANTIGRAVITY)))
+        self.assertEqual(source_parent, direct_parent)
         implementation_report = (ROOT_ANTIGRAVITY / "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html").read_text(encoding="utf-8")
-        self.assertIn("최종 checked-in map child는 clean truth closeout commit <code>e5fbf598bb3cc5f86bd4218c559eece9ddc2a6dc</code>를 source-parent로 bind한다.", implementation_report)
+        self.assertIn("최종 checked-in map-only child는 바로 앞의 clean functional closeout commit을 source-parent로 bind한다.", implementation_report)
         self.assertIn("reviewed candidate <code>a45ff019e0736bbf895bb698b8eccfcbc69cd190</code>는 official execution input이며 map source-parent가 아니다.", implementation_report)
         self.assertIn("<code>77bb8b7de74de8a1a1a1a4ebf3b784cfdd681d17</code>은 Exp455 byte guard reference일 뿐 map binding이 아니다.", implementation_report)
         task_report = (ROOT_ANTIGRAVITY / ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html").read_text(encoding="utf-8")

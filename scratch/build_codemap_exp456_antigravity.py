@@ -105,6 +105,11 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         raise ValueError("source_commit must be lowercase 40-hex")
     if subprocess.run(["git", "cat-file", "-e", f"{source_commit}^{{commit}}"], cwd=ROOT_ANTIGRAVITY, check=False).returncode:
         raise ValueError("source_commit does not resolve to a commit")
+    current_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+    if source_commit != current_commit:
+        raise ValueError("source_commit must be the current clean functional closeout")
+    if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT_ANTIGRAVITY, text=True).strip():
+        raise ValueError("map source working tree must be clean")
     if not generated_at.endswith("Z"):
         raise ValueError("generated_at must end in Z")
     test = "experiments/exp456_exp455_dataset_key_order_repair_antigravity/tests/test_governance_antigravity.py"
