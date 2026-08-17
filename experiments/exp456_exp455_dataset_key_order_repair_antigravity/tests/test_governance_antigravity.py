@@ -121,6 +121,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
         ):
             self.assertIn(coverage_test, report)
 
+    def test_reports_bind_to_checked_in_map_source_parent_antigravity(self) -> None:
+        """Break caught: a report states a different map source-parent than the checked-in map triplet."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
+        assert isinstance(graph, dict) and isinstance(lock, dict)
+        source_parent = graph["source_parent_commit"]
+        self.assertEqual(source_parent, lock["source_parent_commit"])
+        self.assertIsInstance(source_parent, str)
+        for relative in (
+            "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html",
+            ".superpowers/sdd/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html/task-1-report-antigravity.html",
+        ):
+            self.assertIn(source_parent, (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8"))
+
     def test_exp455_and_champion_pending_are_preserved_antigravity(self) -> None:
         """Break caught: registering Exp456 changes Exp455 terminal evidence or champion/pending truth."""
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
