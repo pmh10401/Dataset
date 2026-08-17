@@ -19,6 +19,44 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp457_antigravity.json",
     "docs/codemap/codemap_exp457_antigravity.lock",
 )
+FROZEN_PENDING_CANDIDATE_ANTIGRAVITY = {
+    "experiment": None,
+    "status": "none_exp446_publication_inspected_complete_not_pending_champion",
+    "prediction_sha256": None,
+    "evaluation": None,
+}
+FROZEN_CHAMPION_ANTIGRAVITY = {
+    "champion_status": "no_new_champion_verified_in_current_loop",
+    "verified_references": [
+        {
+            "name": "Exp404 Hard prediction audited by Exp416",
+            "role": "current_verified_full_population_reference_not_mandatory_code_base",
+            "prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
+            "evaluation_artifact": "/Users/mac/Documents/Dataset/exp416_exp404_hard_test_confusion_audit/exp416_confusion_matrix.json",
+            "dataset_count": 1117,
+            "prediction_coordinate_count": 2218,
+            "prediction_dataset_count": 888,
+            "micro": {
+                "tp": 1915,
+                "fp": 303,
+                "fn": 2003,
+                "tn": 191679,
+                "precision": 0.8633904418394951,
+                "recall": 0.4887697805002552,
+                "f1": 0.6241851368970013,
+                "false_positive_rate": 0.0015782729630902897,
+            },
+            "dataset_balanced_macro": {
+                "precision": 0.8262807700918903,
+                "recall": 0.591448835046688,
+                "f1": 0.6089825086931719,
+                "false_positive_rate": 0.002196457972318159,
+            },
+            "test_labels_loaded_after_prediction_freeze": True,
+            "operational_policy_changed": False,
+        }
+    ],
+}
 
 
 def strict_json_antigravity(path: Path) -> object:
@@ -64,19 +102,24 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["approved_design_sha256"], "3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20")
             config = record["scientific_contract"]
             self.assertEqual(config["target_family"], "ECG5000")
+            self.assertEqual(config["candidate"], "hydra_local_gap")
+            self.assertEqual(config["chlorine_route"], "multirocket_local_gap_for_all_three_datasets")
             self.assertEqual(config["hydra_seeds"], [20260721, 20261721])
             self.assertEqual(config["folds"], 5)
             self.assertEqual(config["alpha"], 0.005)
             self.assertEqual(config["knn_k"], 3)
             self.assertEqual(config["kernels"], 8)
             self.assertEqual(config["groups"], 64)
+            self.assertEqual(config["synthetic_primary_types"], ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"])
             self.assertEqual(config["pooled_sensitivity_min"], 0.70)
             self.assertEqual(config["per_type_sensitivity_min"], 0.50)
             self.assertEqual(config["normal_wilson_upper_max"], 0.05)
+            self.assertTrue(config["finite_required"])
             self.assertEqual(config["structure_gate"], "added_count > removed_count")
             self.assertEqual(config["final_fn_max"], 834)
             self.assertEqual(config["final_fp_max"], 66)
             self.assertEqual(config["final_f1_strictly_above"], 0.5764150943396227)
+            self.assertFalse(config["test_metrics_may_inform_routing"])
             self.assertFalse(record["official_evaluate_started"])
             self.assertFalse(record["official_inspect_started"])
             self.assertEqual(record["official_evaluate_invocations"], 0)
@@ -88,7 +131,15 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["routing_allowed"])
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
-        self.assertEqual(champion["pending_candidate"], state["pending_candidate"])
+            self.assertFalse(record["test_labels_opened"])
+            self.assertEqual(record["label_query_count"], 0)
+            self.assertFalse(record["scientific_winner_selected"])
+        self.assertEqual(state["pending_candidate"], FROZEN_PENDING_CANDIDATE_ANTIGRAVITY)
+        self.assertEqual(champion["pending_candidate"], FROZEN_PENDING_CANDIDATE_ANTIGRAVITY)
+        self.assertEqual(
+            {key: champion[key] for key in FROZEN_CHAMPION_ANTIGRAVITY},
+            FROZEN_CHAMPION_ANTIGRAVITY,
+        )
 
     def test_dashboard_and_map_expose_only_planned_boundaries_antigravity(self) -> None:
         """Break caught: Task 1 fabricates a result or implemented scientific source edge."""
