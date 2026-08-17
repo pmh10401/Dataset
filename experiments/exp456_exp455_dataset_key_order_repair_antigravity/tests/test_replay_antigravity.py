@@ -166,17 +166,23 @@ class ReplayAntigravityTests(unittest.TestCase):
             next(row for row in context["rows"] if row["dataset"] == old)["dataset"] = new; features[0]["dataset"] = new; next(row for row in decisions if row["dataset"] == old)["dataset"] = new
             (root / "context_antigravity.json").write_bytes(json.dumps(context, sort_keys=True, separators=(",", ":")).encode() + b"\n"); (root / "features_antigravity.jsonl").write_bytes(b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n" for row in features)); (root / "fold_decisions_antigravity.jsonl").write_bytes(b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n" for row in decisions))
 
-        def mutate_family_method_antigravity(root: Path, mutate_method: bool) -> None:
+        def mutate_family_antigravity(root: Path) -> None:
             context = json.loads((root / "context_antigravity.json").read_text(encoding="utf-8")); features = [json.loads(line) for line in (root / "features_antigravity.jsonl").read_text(encoding="utf-8").splitlines()]; decisions = [json.loads(line) for line in (root / "fold_decisions_antigravity.jsonl").read_text(encoding="utf-8").splitlines()]
             first, second = features[0]["dataset"], features[-1]["dataset"]
             for rows in (context["rows"], features, decisions):
                 left, right = next(row for row in rows if row["dataset"] == first), next(row for row in rows if row["dataset"] == second)
                 left["family"], right["family"] = right["family"], left["family"]
-            if mutate_method:
-                for rows in (context["rows"], decisions):
-                    left, right = next(row for row in rows if row["dataset"] == first), next(row for row in rows if row["dataset"] == second)
-                    left["method"], right["method"] = right["method"], left["method"]
+            for rows in (context["rows"], decisions):
+                left, right = next(row for row in rows if row["dataset"] == first), next(row for row in rows if row["dataset"] == second)
+                left["method"], right["method"] = right["method"], left["method"]
             (root / "context_antigravity.json").write_bytes(json.dumps(context, sort_keys=True, separators=(",", ":")).encode() + b"\n"); (root / "features_antigravity.jsonl").write_bytes(b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n" for row in features)); (root / "fold_decisions_antigravity.jsonl").write_bytes(b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n" for row in decisions))
+
+        def mutate_method_antigravity(root: Path) -> None:
+            context = json.loads((root / "context_antigravity.json").read_text(encoding="utf-8")); decisions = [json.loads(line) for line in (root / "fold_decisions_antigravity.jsonl").read_text(encoding="utf-8").splitlines()]
+            dataset = decisions[0]["dataset"]
+            next(row for row in context["rows"] if row["dataset"] == dataset)["method"] = "stored_method_replacement"
+            decisions[0]["method"] = "stored_method_replacement"
+            (root / "context_antigravity.json").write_bytes(json.dumps(context, sort_keys=True, separators=(",", ":")).encode() + b"\n"); (root / "fold_decisions_antigravity.jsonl").write_bytes(b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n" for row in decisions))
 
         def mutate_length_antigravity(root: Path) -> None:
             context = json.loads((root / "context_antigravity.json").read_text(encoding="utf-8")); features = [json.loads(line) for line in (root / "features_antigravity.jsonl").read_text(encoding="utf-8").splitlines()]; dataset = features[0]["dataset"]
@@ -184,12 +190,16 @@ class ReplayAntigravityTests(unittest.TestCase):
             (root / "context_antigravity.json").write_bytes(json.dumps(context, sort_keys=True, separators=(",", ":")).encode() + b"\n"); (root / "features_antigravity.jsonl").write_bytes(b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n" for row in features))
 
         expected_authority, expected_features, expected_decisions = self._inputs_antigravity()
-        mutations = (("dataset", mutate_dataset_antigravity), ("family", lambda root: mutate_family_method_antigravity(root, True)), ("method", lambda root: mutate_family_method_antigravity(root, True)), ("target_length", mutate_length_antigravity))
-        for name, mutate in mutations:
+        mutations = (("dataset", mutate_dataset_antigravity, True), ("family", mutate_family_antigravity, True), ("method", mutate_method_antigravity, False), ("target_length", mutate_length_antigravity, True))
+        for name, mutate, rebuild in mutations:
             with self.subTest(change=name), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary) / "result"
                 publish_evaluation_antigravity(root, evaluate_routing_antigravity(expected_authority, expected_features, expected_decisions))
-                mutate(root); rewrite_antigravity(root)
+                mutate(root)
+                if rebuild:
+                    rewrite_antigravity(root)
+                else:
+                    self._rehash_antigravity(root)
                 with self.assertRaises(ValueError):
                     _inspect_replay_with_dependencies_antigravity(root, expected_authority, expected_features)
 
