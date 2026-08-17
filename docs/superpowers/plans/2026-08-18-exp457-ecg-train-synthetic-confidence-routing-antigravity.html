@@ -143,7 +143,7 @@ self.assertFalse(qualify(wilson_above_005).passed)</code></pre></div>
   </section>
 
   <section class="task">
-    <h2><label><input type="checkbox" disabled>Task 4: 보수적 라우터·평가·재생·대시보드 payload</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 4: 보수적 라우터·평가·재생·대시보드 payload</label></h2>
     <p><strong>독립 결과:</strong> TRAIN 증거와 라벨 없는 구조만으로 route를 고정하고 Exp456 결과를 정확히 재집계한다.</p>
     <h3>Files</h3>
     <ul class="files">
@@ -157,17 +157,17 @@ evaluate_routes_antigravity(exp456_authority, decisions) -&gt; EvaluationResultA
 publish_result_antigravity(root: Path, evidence) -&gt; PublishedResultAntigravity
 inspect_result_at_antigravity(root: Path) -&gt; EvaluationResultAntigravity
 export_dashboard_antigravity(result) -&gt; dict[str, object]</code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED routing truth table</label><pre><code># candidate only when both gates pass
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED routing truth table</label><pre><code># candidate only when both gates pass
 (True, 14, 5)  -&gt; "candidate"
 (False, 14, 5) -&gt; "baseline"
 (True, 5, 5)   -&gt; "baseline"
 (True, 4, 5)   -&gt; "baseline"</code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: RED exact comparison test</label><p>Exp456의 baseline/family-wide/oracle 네 값 중 기존 세 값을 먼저 byte-exact 재현하고, 손으로 만든 qualification에 따라 Exp457 값을 계산한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 router/evaluator 구현</label><p>Chlorine은 항상 candidate, ECG는 두 게이트, 나머지는 baseline으로 합산한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: 9-leaf publication과 semantic replay 구현</label><p>정확한 leaf는 context, train qualification, features, route decisions, comparison metrics, family metrics, dashboard snapshot, decision, artifact map이다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: dashboard aggregate-only test</label><p>5개 ECG gate/route와 네 비교 FN/FP/F1만 허용한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: GREEN 두 번·Exp456 재현 회귀</label></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 7: HTML/map 체크·커밋·Task 4 검토</label><p>Commit: <code>feat(exp457): evaluate conservative ECG routing</code>.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: RED exact comparison test</label><p>Exp456의 baseline/family-wide/oracle 네 값 중 기존 세 값을 먼저 byte-exact 재현하고, 손으로 만든 qualification에 따라 Exp457 값을 계산한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: 최소 router/evaluator 구현</label><p>Chlorine은 항상 candidate, ECG는 두 게이트, 나머지는 baseline으로 합산한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: 9-leaf publication과 semantic replay 구현</label><p>정확한 leaf는 context, train qualification, features, route decisions, comparison metrics, family metrics, dashboard snapshot, decision, artifact map이다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: dashboard aggregate-only test</label><p>5개 ECG gate/route와 네 비교 FN/FP/F1만 허용한다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: GREEN 두 번·Exp456 재현 회귀</label></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 7: HTML/map 체크·커밋·Task 4 검토</label><p>Commit: <code>feat(exp457): evaluate conservative ECG routing</code>.</p></div>
   </section>
 
   <section class="task">

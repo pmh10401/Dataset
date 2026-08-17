@@ -198,6 +198,65 @@ class ContractsAntigravityTest(unittest.TestCase):
             with self.subTest(args=args), self.assertRaises(ValueError):
                 RouteDecisionAntigravity(*args)
 
+    def test_task4_result_contracts_are_exact_frozen_and_type_strict_antigravity(self) -> None:
+        """Break caught: publication/evaluation records gain mutable or ambiguous scalar fields."""
+        from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.contracts_antigravity import (
+            CriterionOutcomeAntigravity,
+            EvaluationResultAntigravity,
+            Exp456ResultAuthorityAntigravity,
+            FamilyMetricAntigravity,
+            PublicationEvidenceAntigravity,
+            PublishedResultAntigravity,
+        )
+
+        self.assertEqual(
+            tuple(field.name for field in fields(CriterionOutcomeAntigravity)),
+            ("metric", "operator", "threshold", "actual", "passed"),
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(FamilyMetricAntigravity)),
+            ("family", "fn_delta", "fp_delta"),
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(EvaluationResultAntigravity)),
+            ("comparisons", "family_metrics", "decisions", "criteria", "passed", "status"),
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(Exp456ResultAuthorityAntigravity)),
+            (
+                "authority",
+                "features",
+                "predecessor_comparisons",
+                "artifact_map_sha256",
+                "comparison_sha256",
+                "decision_sha256",
+                "label_query_count",
+            ),
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(PublicationEvidenceAntigravity)),
+            ("exp456_authority", "qualifications", "features", "result"),
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(PublishedResultAntigravity)),
+            ("root", "leaf_sha256", "artifact_map_sha256"),
+        )
+        criterion = CriterionOutcomeAntigravity("final_fn", "<=", 834, 829, True)
+        family = FamilyMetricAntigravity("ECG5000", -8, 0)
+        with self.assertRaises(FrozenInstanceError):
+            criterion.passed = False  # type: ignore[misc]
+        for args in (
+            ("final_fn", "<=", 834, True, True),
+            ("final_f1", ">", 0.5, 1, True),
+            ("unknown", "<=", 834, 829, True),
+        ):
+            with self.subTest(args=args), self.assertRaises(ValueError):
+                CriterionOutcomeAntigravity(*args)
+        with self.assertRaises(ValueError):
+            FamilyMetricAntigravity("Other", -8, 0)
+        with self.assertRaises(ValueError):
+            FamilyMetricAntigravity("ECG5000", True, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

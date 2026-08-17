@@ -5,7 +5,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from math import isfinite
+from pathlib import Path
+import re
 from types import MappingProxyType
+
+from experiments.exp456_exp455_dataset_key_order_repair_antigravity.contracts_antigravity import (
+    ComparisonMetricAntigravity,
+    DatasetRoutingFeaturesAntigravity,
+    FrozenRoutingAuthorityAntigravity,
+)
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 
@@ -103,7 +111,138 @@ class RouteDecisionAntigravity:
             raise ValueError("route must be baseline or candidate")
 
 
+@dataclass(frozen=True, slots=True)
+class CriterionOutcomeAntigravity:
+    metric: str
+    operator: str
+    threshold: int | float
+    actual: int | float
+    passed: bool
+
+    def __post_init__(self) -> None:
+        expected = {
+            "final_fn": ("<=", int),
+            "final_fp": ("<=", int),
+            "final_f1": (">", float),
+        }
+        if type(self.metric) is not str or self.metric not in expected:
+            raise ValueError("criterion metric is invalid")
+        operator, scalar = expected[self.metric]
+        if self.operator != operator or type(self.threshold) is not scalar or type(self.actual) is not scalar:
+            raise ValueError("criterion scalar contract is invalid")
+        if scalar is int:
+            if self.threshold < 0 or self.actual < 0:
+                raise ValueError("criterion integer values must be non-negative")
+        elif not isfinite(self.threshold) or not isfinite(self.actual):
+            raise ValueError("criterion float values must be finite")
+        _bool_antigravity(self.passed, "criterion passed")
+
+
+@dataclass(frozen=True, slots=True)
+class FamilyMetricAntigravity:
+    family: str
+    fn_delta: int
+    fp_delta: int
+
+    def __post_init__(self) -> None:
+        if type(self.family) is not str or self.family not in {
+            "ECG5000",
+            "ChlorineConcentration",
+        }:
+            raise ValueError("family metric family is invalid")
+        if type(self.fn_delta) is not int or type(self.fp_delta) is not int:
+            raise ValueError("family deltas must be exact integers")
+
+
+@dataclass(frozen=True, slots=True)
+class Exp456ResultAuthorityAntigravity:
+    authority: FrozenRoutingAuthorityAntigravity
+    features: tuple[DatasetRoutingFeaturesAntigravity, ...]
+    predecessor_comparisons: tuple[ComparisonMetricAntigravity, ...]
+    artifact_map_sha256: str
+    comparison_sha256: str
+    decision_sha256: str
+    label_query_count: int = 0
+
+    def __post_init__(self) -> None:
+        if type(self.authority) is not FrozenRoutingAuthorityAntigravity:
+            raise ValueError("Exp456 authority type is invalid")
+        if type(self.features) is not tuple or any(
+            type(item) is not DatasetRoutingFeaturesAntigravity for item in self.features
+        ):
+            raise ValueError("Exp456 feature tuple is invalid")
+        if type(self.predecessor_comparisons) is not tuple or len(self.predecessor_comparisons) != 3 or any(
+            type(item) is not ComparisonMetricAntigravity
+            for item in self.predecessor_comparisons
+        ):
+            raise ValueError("Exp456 predecessor comparisons are invalid")
+        for digest in (
+            self.artifact_map_sha256,
+            self.comparison_sha256,
+            self.decision_sha256,
+        ):
+            if type(digest) is not str or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                raise ValueError("Exp456 result identity is invalid")
+        if type(self.label_query_count) is not int or self.label_query_count != 0:
+            raise ValueError("Exp456 authority must have label query count zero")
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluationResultAntigravity:
+    comparisons: tuple[ComparisonMetricAntigravity, ...]
+    family_metrics: tuple[FamilyMetricAntigravity, ...]
+    decisions: tuple[RouteDecisionAntigravity, ...]
+    criteria: tuple[CriterionOutcomeAntigravity, ...]
+    passed: bool
+    status: str
+
+    def __post_init__(self) -> None:
+        if type(self.comparisons) is not tuple or any(
+            type(item) is not ComparisonMetricAntigravity for item in self.comparisons
+        ):
+            raise ValueError("evaluation comparisons are invalid")
+        if type(self.family_metrics) is not tuple or any(
+            type(item) is not FamilyMetricAntigravity for item in self.family_metrics
+        ):
+            raise ValueError("evaluation family metrics are invalid")
+        if type(self.decisions) is not tuple or any(
+            type(item) is not RouteDecisionAntigravity for item in self.decisions
+        ):
+            raise ValueError("evaluation decisions are invalid")
+        if type(self.criteria) is not tuple or any(
+            type(item) is not CriterionOutcomeAntigravity for item in self.criteria
+        ):
+            raise ValueError("evaluation criteria are invalid")
+        _bool_antigravity(self.passed, "evaluation passed")
+        if type(self.status) is not str or self.status not in {
+            "routing_candidate_qualified_for_external_validation",
+            "routing_candidate_not_qualified_for_external_validation",
+        }:
+            raise ValueError("evaluation status is invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationEvidenceAntigravity:
+    exp456_authority: Exp456ResultAuthorityAntigravity
+    qualifications: tuple[TrainQualificationAntigravity, ...]
+    features: tuple[DatasetRoutingFeaturesAntigravity, ...]
+    result: EvaluationResultAntigravity
+
+
+@dataclass(frozen=True, slots=True)
+class PublishedResultAntigravity:
+    root: Path
+    leaf_sha256: tuple[tuple[str, str], ...]
+    artifact_map_sha256: str
+
+
 __all__ = (
+    "CriterionOutcomeAntigravity",
+    "EvaluationResultAntigravity",
+    "Exp456ResultAuthorityAntigravity",
+    "FamilyMetricAntigravity",
+    "PublicationEvidenceAntigravity",
+    "PublishedResultAntigravity",
     "RouteDecisionAntigravity",
     "TrainQualificationAntigravity",
     "TrainSeedEvidenceAntigravity",

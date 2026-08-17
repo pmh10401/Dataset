@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Task 3 Exp457 qualification code map."""
+"""Build and validate the bounded Task 4 Exp457 routing/result code map."""
 
 from __future__ import annotations
 
@@ -34,14 +34,24 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/config_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/contracts_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/dashboard_export_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/evaluation_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/artifacts_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/perturbations_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/qualification_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/replay_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/router_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/sources_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_config_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_contracts_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_dashboard_export_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_artifacts_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_perturbations_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_router_antigravity.py",
     "experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp457_antigravity.py",
 )
@@ -94,9 +104,9 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp457 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp457 Task 3 qualification 코드맵</h1><p>구현된 TRAIN source, 고정 설정·계약·perturbation, Hydra+LocalGap Gate 1과 향후 routing 경계를 분리한다. '
-        'Task 4+ future nodes는 구현 증거가 없으며 관계도 future/unknown이다.</p>'
+        '<title>Exp457 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp457 Task 4 routing/result 코드맵</h1><p>구현된 TRAIN qualification, conservative router, immutable Exp456 aggregation, 9-leaf replay, aggregate dashboard 경계를 연결한다. '
+        'Task 5 CLI만 future/unknown이며 실제 Exp457 qualification과 공식 result는 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -118,45 +128,58 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
     perturbations_test = f"{package}/tests/test_perturbations_antigravity.py"
     qualification_test = f"{package}/tests/test_qualification_antigravity.py"
     sources_test = f"{package}/tests/test_sources_antigravity.py"
+    router_test = f"{package}/tests/test_router_antigravity.py"
+    evaluation_test = f"{package}/tests/test_evaluation_antigravity.py"
+    artifacts_test = f"{package}/tests/test_artifacts_antigravity.py"
+    replay_test = f"{package}/tests/test_replay_antigravity.py"
+    dashboard_export_test = f"{package}/tests/test_dashboard_export_antigravity.py"
     config = f"{package}/config_antigravity.py"
     contracts = f"{package}/contracts_antigravity.py"
     perturbations = f"{package}/perturbations_antigravity.py"
     qualification = f"{package}/qualification_antigravity.py"
     sources = f"{package}/sources_antigravity.py"
+    router = f"{package}/router_antigravity.py"
+    evaluation = f"{package}/evaluation_antigravity.py"
+    artifacts = f"{package}/artifacts_antigravity.py"
+    replay = f"{package}/replay_antigravity.py"
+    dashboard_export = f"{package}/dashboard_export_antigravity.py"
     builder = "scratch/build_codemap_exp457_antigravity.py"
     nodes: list[dict[str, object]] = [
-        {"id": "approved_design", "path": design, "role": "Caller: Tasks 1–3 governance, configuration, and TRAIN qualification. Effect: freezes the only scientific change and exact confidence/result gates.", "tests": [governance_test, config_test, qualification_test], "evidence": [evidence_antigravity(design, "Exp457")]},
-        {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: sequences TDD implementation and keeps real qualification and official execution outside Task 3.", "tests": [governance_test, config_test, contracts_test, perturbations_test, sources_test, qualification_test], "evidence": [evidence_antigravity(plan, "Task 3: TRAIN 전용 Hydra 신뢰도 계산")]},
+        {"id": "approved_design", "path": design, "role": "Caller: Tasks 1–4 governance, qualification, routing, and evaluation. Effect: freezes the only scientific change and exact confidence/result gates.", "tests": [governance_test, config_test, qualification_test, router_test, evaluation_test], "evidence": [evidence_antigravity(design, "Exp457")]},
+        {"id": "implementation_plan", "path": plan, "role": "Caller: Tasks 1–6. Effect: sequences TDD implementation and keeps real qualification and official execution outside Task 4.", "tests": [governance_test, router_test, evaluation_test, artifacts_test, replay_test, dashboard_export_test], "evidence": [evidence_antigravity(plan, "Task 4: 보수적 라우터·평가·재생·대시보드 payload")]},
         {"id": "preregistration", "path": "docs/EXP457_PREREGISTRATION_antigravity_KO.html", "role": "Caller: governance review. Effect: records planned identity, frozen gates, and TEST routing firewall.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_PREREGISTRATION_antigravity_KO.html", "planned_awaiting_implementation")]},
         {"id": "runbook", "path": "docs/EXP457_RUNBOOK_antigravity_KO.html", "role": "Caller: future task operators. Effect: prohibits Task 1 official execution and result-root use.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_RUNBOOK_antigravity_KO.html", "Task 1 governance only")]},
-        {"id": "implementation_report", "path": "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 3 review. Effect: reports verified qualification implementation without claiming a real qualification, route, or result.", "tests": [], "evidence": [evidence_antigravity("docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "Task 3/6")]},
-        {"id": "dashboard", "path": "docs/EXP457_DASHBOARD_antigravity.html", "role": "Caller: result-facing review. Effect: shows Task 3/6, no result, verified implementation, Exp456 comparators, gates, and Task 4 next action.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_DASHBOARD_antigravity.html", "Task 3/6")]},
+        {"id": "implementation_report", "path": "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "role": "Caller: Task 4 review. Effect: reports synthetic routing/replay verification without claiming a real qualification or official result.", "tests": [], "evidence": [evidence_antigravity("docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "Task 4/6")]},
+        {"id": "dashboard", "path": "docs/EXP457_DASHBOARD_antigravity.html", "role": "Caller: result-facing review. Effect: shows Task 4/6, no official result, verified synthetic implementation, immutable comparators, and Task 5 next action.", "tests": [governance_test], "evidence": [evidence_antigravity("docs/EXP457_DASHBOARD_antigravity.html", "Task 4/6")]},
         {"id": "research_state", "path": "RESEARCH_STATE.json", "role": "Caller: governance review. Effect: registers planned lifecycle with zero official invocations and null result hashes.", "tests": [governance_test], "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"exp457\"")]},
         {"id": "experiment_catalog", "path": "EXPERIMENT_CATALOG.json", "role": "Caller: catalog review. Effect: registers Exp457 documents, frozen contract, and no-result truth.", "tests": [governance_test], "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"id\": \"Exp457\"")]},
         {"id": "champion_ledger", "path": "CHAMPION_LEDGER.json", "role": "Caller: champion review. Effect: records Exp457 without changing champion or pending candidate.", "tests": [governance_test], "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"experiment\": \"Exp457\"")]},
-        {"id": "governance_regression", "path": governance_test, "role": "Caller: Tasks 1–3 scientific-governance verification. Effect: rejects gate drift, fabricated results, lifecycle changes, or false Task 4 source claims.", "tests": [governance_test], "evidence": [evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")]},
-        {"id": "map_builder", "path": builder, "role": "Caller: Task 3 map validation. Effect: validates implemented evidence, future boundaries, fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
+        {"id": "governance_regression", "path": governance_test, "role": "Caller: Tasks 1–4 scientific-governance verification. Effect: rejects gate drift, fabricated results, lifecycle changes, or stale Task 4 boundaries.", "tests": [governance_test], "evidence": [evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")]},
+        {"id": "map_builder", "path": builder, "role": "Caller: Task 4 map validation. Effect: validates implemented evidence, the future CLI boundary, fingerprints, and HTML/JSON parity.", "tests": [governance_test], "evidence": [evidence_antigravity(builder, "validate_map_antigravity")]},
         {"id": "frozen_config", "path": config, "role": "Caller: Task 3 qualification and Task 4 evaluation. Effect: supplies exact datasets, Hydra parameters, gates, primary order, and final thresholds.", "tests": [config_test], "evidence": [evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")]},
-        {"id": "result_contracts", "path": contracts, "role": "Caller: Task 3 qualification and future Task 4 routing. Effect: rejects malformed seed evidence, qualification records, and route records without deriving route decisions.", "tests": [contracts_test, qualification_test], "evidence": [evidence_antigravity(contracts, "TrainSeedEvidenceAntigravity")]},
+        {"id": "result_contracts", "path": contracts, "role": "Caller: qualification, router, evaluation, publication, and replay. Effect: rejects malformed TRAIN evidence, route/result records, predecessor identity, and publication evidence.", "tests": [contracts_test, qualification_test, router_test, evaluation_test, artifacts_test, replay_test], "evidence": [evidence_antigravity(contracts, "EvaluationResultAntigravity")]},
         {"id": "primary_perturbations", "path": perturbations, "role": "Caller: Task 3 TRAIN qualification. Effect: creates four deterministic Exp417-compatible primary perturbations and excludes spike.", "tests": [perturbations_test, qualification_test], "evidence": [evidence_antigravity(perturbations, "build_primary_perturbations_antigravity")]},
         {"id": "config_regression", "path": config_test, "role": "Caller: Task 2 verification. Effect: rejects drift in every result-affecting frozen configuration value.", "tests": [config_test], "evidence": [evidence_antigravity(config_test, "class ConfigAntigravityTest")]},
         {"id": "contracts_regression", "path": contracts_test, "role": "Caller: Task 2 verification. Effect: rejects wrong types, datasets, seeds, primary order, sensitivities, and route names.", "tests": [contracts_test], "evidence": [evidence_antigravity(contracts_test, "class ContractsAntigravityTest")]},
         {"id": "perturbations_regression", "path": perturbations_test, "role": "Caller: Task 2 verification. Effect: freezes onset, robust scale, magnitudes, order, shape, immutability, and period interpolation.", "tests": [perturbations_test], "evidence": [evidence_antigravity(perturbations_test, "class PrimaryPerturbationsAntigravityTest")]},
         {"id": "train_source", "path": sources, "role": "Caller: Task 3 qualification and read-only smoke. Effect: selects only exact-index ECG TRAIN values into owned immutable float32 matrices.", "tests": [sources_test], "evidence": [evidence_antigravity(sources, "load_ecg_train_antigravity")]},
-        {"id": "train_qualification", "path": qualification, "role": "Caller: future Task 4 routing. Effect: computes two-seed five-fold Hydra+LocalGap OOF and synthetic Gate 1 evidence using the complete normal OOF reference.", "tests": [qualification_test], "evidence": [evidence_antigravity(qualification, "qualify_ecg_dataset_antigravity")]},
+        {"id": "train_qualification", "path": qualification, "role": "Caller: Task 4 router. Effect: computes two-seed five-fold Hydra+LocalGap OOF and synthetic Gate 1 evidence using the complete normal OOF reference.", "tests": [qualification_test, router_test], "evidence": [evidence_antigravity(qualification, "qualify_ecg_dataset_antigravity")]},
         {"id": "source_regression", "path": sources_test, "role": "Caller: Task 3 verification. Effect: rejects label/TEST SQL, row-index drift, malformed values, aliases, and writable output.", "tests": [sources_test], "evidence": [evidence_antigravity(sources_test, "class SourcesAntigravityTest")]},
         {"id": "qualification_regression", "path": qualification_test, "role": "Caller: Task 3 verification. Effect: freezes plus-one math, Wilson 95%, same-model folds, complete OOF reference, and every Gate 1 criterion.", "tests": [qualification_test], "evidence": [evidence_antigravity(qualification_test, "class QualificationMathAntigravityTest")]},
-        {"id": "future_router", "path": f"{package}/router_antigravity.py", "role": "Future Task 4 two-gate routing boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
-        {"id": "future_evaluation", "path": f"{package}/evaluation_antigravity.py", "role": "Future Task 4 fixed-route result aggregation boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
-        {"id": "future_artifacts", "path": f"{package}/artifacts_antigravity.py", "role": "Future Task 4 publication and replay evidence boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
+        {"id": "router", "path": router, "role": "Caller: Task 5 qualification flow and semantic replay. Effect: recomputes TRAIN and added>removed gates for exactly five ECG datasets; equality is baseline.", "tests": [router_test, artifacts_test, replay_test], "evidence": [evidence_antigravity(router, "route_ecg_antigravity")]},
+        {"id": "evaluation", "path": evaluation, "role": "Caller: publication, replay, and future CLI. Effect: binds exact Exp456 identities, reuses Exp456 oracle/F1 math, fixes Chlorine candidate, and aggregates four comparisons.", "tests": [evaluation_test, artifacts_test, replay_test, dashboard_export_test], "evidence": [evidence_antigravity(evaluation, "evaluate_routes_antigravity")]},
+        {"id": "artifacts", "path": artifacts, "role": "Caller: future Task 5 evaluate command. Effect: validates recomputed evidence and creates the canonical nine-leaf result inventory.", "tests": [artifacts_test, replay_test], "evidence": [evidence_antigravity(artifacts, "publish_result_antigravity")]},
+        {"id": "replay", "path": replay, "role": "Caller: future Task 5 inspect command. Effect: verifies inventory/hashes and semantically recomputes routes, comparisons, family metrics, dashboard, and decision.", "tests": [replay_test], "evidence": [evidence_antigravity(replay, "inspect_result_at_antigravity")]},
+        {"id": "dashboard_export", "path": dashboard_export, "role": "Caller: artifact publication and future result display. Effect: exposes only ordered aggregate/TRAIN gate fields and rejects malformed result state.", "tests": [dashboard_export_test, artifacts_test, replay_test], "evidence": [evidence_antigravity(dashboard_export, "export_dashboard_antigravity")]},
+        {"id": "task4_regressions", "path": router_test, "role": "Caller: Task 4 verification suite. Effect: covers router truth table, exact evaluation, predecessor capture, nine-leaf replay, and dashboard allowlist.", "tests": [router_test, evaluation_test, artifacts_test, replay_test, dashboard_export_test], "evidence": [evidence_antigravity(router_test, "class RouterAntigravityTest")]},
         {"id": "future_cli", "path": f"{package}/cli_antigravity.py", "role": "Future Task 5 closed evaluate/inspect command boundary.", "tests": [], "evidence": [], "status": "future_unknown"},
     ]
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity("docs/EXP457_PREREGISTRATION_antigravity_KO.html", "고정 게이트")},
         {"from": "approved_design", "to": "frozen_config", "type": "governs", "evidence": evidence_antigravity(design, "Hydra의 두 고정 seed")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3: TRAIN 전용 Hydra 신뢰도 계산")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4: 보수적 라우터·평가·재생·대시보드 payload")},
         {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp457_scientific_contract_antigravity")},
-        {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_dashboard_and_map_expose_task3_implementation_without_results_antigravity")},
+        {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_dashboard_plan_and_map_expose_task4_implementation_without_results_antigravity")},
         {"from": "config_regression", "to": "frozen_config", "type": "tests", "evidence": evidence_antigravity(config_test, "test_frozen_config_preserves_the_approved_scientific_contract_antigravity")},
         {"from": "contracts_regression", "to": "result_contracts", "type": "tests", "evidence": evidence_antigravity(contracts_test, "test_seed_evidence_rejects_wrong_dataset_seed_and_integer_contracts_antigravity")},
         {"from": "perturbations_regression", "to": "primary_perturbations", "type": "tests", "evidence": evidence_antigravity(perturbations_test, "test_length_100_fixture_matches_exp417_math_and_exact_order_antigravity")},
@@ -169,21 +192,28 @@ def build_map_antigravity(source_commit: str, generated_at: str) -> tuple[dict[s
         {"from": "result_contracts", "to": "train_qualification", "type": "governs", "evidence": evidence_antigravity(qualification, "TrainSeedEvidenceAntigravity")},
         {"from": "primary_perturbations", "to": "train_qualification", "type": "governs", "evidence": evidence_antigravity(qualification, "build_primary_perturbations_antigravity")},
         {"from": "train_source", "to": "train_qualification", "type": "governs", "evidence": evidence_antigravity(qualification, "load_ecg_train_antigravity")},
-        {"from": "result_contracts", "to": "future_router", "type": "future_unknown", "evidence": evidence_antigravity(plan, "route_ecg_antigravity")},
-        {"from": "train_qualification", "to": "future_router", "type": "future_unknown", "evidence": evidence_antigravity(plan, "RouteDecisionAntigravity")},
-        {"from": "future_router", "to": "future_evaluation", "type": "future_unknown", "evidence": evidence_antigravity(plan, "evaluate_routes_antigravity")},
-        {"from": "future_evaluation", "to": "future_artifacts", "type": "future_unknown", "evidence": evidence_antigravity(plan, "publish_result_antigravity")},
-        {"from": "future_artifacts", "to": "future_cli", "type": "future_unknown", "evidence": evidence_antigravity(plan, "evaluate --reviewed-commit")},
+        {"from": "result_contracts", "to": "router", "type": "governs", "evidence": evidence_antigravity(router, "TrainQualificationAntigravity")},
+        {"from": "train_qualification", "to": "router", "type": "governs", "evidence": evidence_antigravity(router, "route_ecg_antigravity")},
+        {"from": "router", "to": "evaluation", "type": "governs", "evidence": evidence_antigravity(evaluation, "RouteDecisionAntigravity")},
+        {"from": "evaluation", "to": "artifacts", "type": "governs", "evidence": evidence_antigravity(artifacts, "evaluate_routes_antigravity")},
+        {"from": "evaluation", "to": "replay", "type": "governs", "evidence": evidence_antigravity(replay, "evaluate_routes_antigravity")},
+        {"from": "evaluation", "to": "dashboard_export", "type": "governs", "evidence": evidence_antigravity(dashboard_export, "EvaluationResultAntigravity")},
+        {"from": "dashboard_export", "to": "artifacts", "type": "governs", "evidence": evidence_antigravity(artifacts, "export_dashboard_antigravity")},
+        {"from": "artifacts", "to": "replay", "type": "governs", "evidence": evidence_antigravity(replay, "_payloads_antigravity")},
+        {"from": "task4_regressions", "to": "router", "type": "tests", "evidence": evidence_antigravity(router_test, "test_candidate_requires_both_recomputed_gates_antigravity")},
+        {"from": "task4_regressions", "to": "evaluation", "type": "tests", "evidence": evidence_antigravity(evaluation_test, "test_reproduces_exp456_comparisons_before_hand_derived_exp457_result_antigravity")},
+        {"from": "task4_regressions", "to": "artifacts", "type": "tests", "evidence": evidence_antigravity(artifacts_test, "test_publishes_exact_ordered_canonical_nine_leaf_inventory_create_only_antigravity")},
+        {"from": "task4_regressions", "to": "replay", "type": "tests", "evidence": evidence_antigravity(replay_test, "test_rejects_every_rehashed_semantic_leaf_tamper_antigravity")},
+        {"from": "task4_regressions", "to": "dashboard_export", "type": "tests", "evidence": evidence_antigravity(dashboard_export_test, "test_exact_aggregate_and_train_gate_allowlist_antigravity")},
+        {"from": "artifacts", "to": "future_cli", "type": "future_unknown", "evidence": evidence_antigravity(plan, "publish_result_antigravity")},
+        {"from": "replay", "to": "future_cli", "type": "future_unknown", "evidence": evidence_antigravity(plan, "inspect_result_at_antigravity")},
     ]
     unknowns = [
-        {"from": "result_contracts", "to": "future_router", "reason": "Task 4 routing source is not implemented."},
-        {"from": "train_qualification", "to": "future_router", "reason": "Task 4 routing consumer is not implemented."},
-        {"from": "future_router", "to": "future_evaluation", "reason": "Task 4 evaluation source is not implemented."},
-        {"from": "future_evaluation", "to": "future_artifacts", "reason": "Task 4 publication source is not implemented."},
-        {"from": "future_artifacts", "to": "future_cli", "reason": "Task 5 CLI source is not implemented."},
+        {"from": "artifacts", "to": "future_cli", "reason": "Task 5 evaluate CLI source is not implemented."},
+        {"from": "replay", "to": "future_cli", "reason": "Task 5 inspect CLI source is not implemented."},
     ]
-    graph: dict[str, object] = {"schema": "exp457_task3_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
-    lock: dict[str, object] = {"schema": "exp457_task3_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": tracked_fingerprints_antigravity()}
+    graph: dict[str, object] = {"schema": "exp457_task4_codemap_v1", "generated_at": generated_at, "source_parent_commit": source_commit, "nodes": nodes, "edges": edges, "unknown_relationships": unknowns}
+    lock: dict[str, object] = {"schema": "exp457_task4_codemap_lock_v1", "source_parent_commit": source_commit, "working_tree_dirty": False, "represented_paths": sorted(TRIPLET_ANTIGRAVITY), "generated_at": generated_at, "module_fingerprints": module_fingerprints_antigravity(), "tracked_fingerprints": tracked_fingerprints_antigravity()}
     return graph, lock, html_antigravity(graph)
 
 
@@ -199,7 +229,7 @@ def validate_map_antigravity(graph: object, lock: object, rendered_html: str) ->
     if not isinstance(graph, dict) or not isinstance(lock, dict):
         raise ValueError("graph and lock must be objects")
     nodes, edges, unknowns = graph.get("nodes"), graph.get("edges"), graph.get("unknown_relationships")
-    if not isinstance(nodes, list) or not isinstance(edges, list) or not isinstance(unknowns, list) or len(nodes) > 26:
+    if not isinstance(nodes, list) or not isinstance(edges, list) or not isinstance(unknowns, list) or len(nodes) > 30:
         raise ValueError("invalid bounded topology")
     ids: set[str] = set()
     future_ids: set[str] = set()

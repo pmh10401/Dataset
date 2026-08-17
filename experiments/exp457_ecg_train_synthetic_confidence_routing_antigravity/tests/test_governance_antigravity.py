@@ -142,21 +142,30 @@ class GovernanceAntigravityTest(unittest.TestCase):
             FROZEN_CHAMPION_ANTIGRAVITY,
         )
 
-    def test_dashboard_and_map_expose_task3_implementation_without_results_antigravity(self) -> None:
-        """Break caught: Task 3 fabricates a result or claims a Task 4+ source boundary."""
+    def test_dashboard_plan_and_map_expose_task4_implementation_without_results_antigravity(self) -> None:
+        """Break caught: Task 4 fabricates a result or leaves implemented boundaries future."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 3/6",
+            "Task 4/6",
             "아직 공식 결과 없음",
             "always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742",
             "family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227",
             "oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729",
             "lodo_router</td><td>843</td><td>65</td><td>0.5704824976348155",
-            "qualification implementation verified; real qualification not yet run",
-            "다음 Task</th><td>Task 4: 보수적 라우터·평가·재생·대시보드 payload",
+            "routing/evaluation/replay implementation verified on synthetic evidence; real TRAIN qualification not yet run",
+            "다음 Task</th><td>Task 5: 닫힌 CLI와 공식 후보 검증",
             "공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.",
         ):
             self.assertIn(value, dashboard)
+
+        plan = (ROOT_ANTIGRAVITY / "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html").read_text(encoding="utf-8")
+        self.assertIn('<input type="checkbox" checked disabled>Task 4:', plan)
+        task4 = plan.split("Task 4:", 1)[1].split("Task 5:", 1)[0]
+        self.assertEqual(task4.count('<input type="checkbox" checked disabled>'), 7)
+        for task in ("Task 5:", "Task 6:"):
+            section = plan.split(task, 1)[1].split('</section>', 1)[0]
+            self.assertIn('<input type="checkbox" disabled>', section)
+            self.assertNotIn('<input type="checkbox" checked disabled>', section)
 
         spec = importlib.util.spec_from_file_location(
             "exp457_map_builder_antigravity",
@@ -180,8 +189,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "primary_perturbations",
             "train_source",
             "train_qualification",
+            "router",
+            "evaluation",
+            "artifacts",
+            "replay",
+            "dashboard_export",
             "source_regression",
             "qualification_regression",
+            "task4_regressions",
         ):
             self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
         for node_id in (
@@ -190,11 +205,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "primary_perturbations",
             "train_source",
             "train_qualification",
+            "router",
+            "evaluation",
+            "artifacts",
+            "replay",
+            "dashboard_export",
         ):
             self.assertTrue(nodes[node_id]["evidence"])
             self.assertTrue(nodes[node_id]["tests"])
             self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).is_file())
-        for node_id in ("future_router", "future_evaluation", "future_artifacts", "future_cli"):
+        for node_id in ("future_cli",):
             self.assertEqual(nodes[node_id]["status"], "future_unknown")
             self.assertEqual(nodes[node_id]["evidence"], [])
             self.assertFalse((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
