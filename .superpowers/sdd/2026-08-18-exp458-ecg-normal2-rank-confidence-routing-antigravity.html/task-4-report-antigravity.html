@@ -14,7 +14,7 @@
 </head>
 <body><main>
   <h1>Exp458 Task 4 Report</h1>
-  <p><strong>Status:</strong> <span class="ok">round-2 fixes implemented and verified</span>. Commit chain: initial Task4 review base <code>10107035</code> → round-1 fix <code>87c974ff</code> → round-2 final commit SHA reported in the task response after commit creation. Task4 uses synthetic/frozen evidence only; no real Hydra/TRAIN smoke, TEST-label query, official command, official root, network, MLX, Exp456 mutation, or Exp457 mutation was performed.</p>
+  <p><strong>Status:</strong> <span class="ok">round-3 functional fix implemented and verified</span>. Commit chain: initial Task4 review base <code>10107035</code> → round-1 fix <code>87c974ff</code> → round-2 fix <code>f87a1b96</code> → round-3 functional fix <code>be03a7dc2bc2a51192fb4a7156852a62b1091bf7</code>. Task4 uses synthetic/frozen evidence only; no real Hydra/TRAIN smoke, TEST-label query, official command, official root, network, MLX, Exp456 mutation, or Exp457 mutation was performed.</p>
 
   <h2>Implemented Modules</h2>
   <ul>
@@ -39,7 +39,11 @@
       <tr><td>Round-2 RED</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_contracts_antigravity ... test_replay_antigravity</code></td><td>31 focused tests produced expected failures/errors: generic rank evidence was over-constrained to exact Task3 values, rank-fail routing could not be constructed, and forged Exp456 baseline/candidate index sets, inner inventory, and <code>authority.label_query_count=1</code> were accepted by evaluation/replay.</td></tr>
       <tr><td>Round-2 GREEN 1</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458...test_contracts_antigravity ... test_replay_antigravity</code></td><td>31 tests OK in 2.535s.</td></tr>
       <tr><td>Round-2 GREEN 2</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458...test_contracts_antigravity ... test_replay_antigravity</code></td><td>31 tests OK in 1.848s.</td></tr>
-      <tr><td>Full Exp458 synthetic</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>50 tests OK in 2.084s.</td></tr>
+      <tr><td>Round-3 RED</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458...test_evaluation...label_queries... experiments.exp458...test_replay...label_count...</code></td><td>2 tests failed as expected because inner <code>authority.label_query_count=False</code> was accepted through equality with zero.</td></tr>
+      <tr><td>Round-3 GREEN 1</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458...test_evaluation...label_queries... experiments.exp458...test_replay...label_count...</code></td><td>2 tests OK in 0.063s.</td></tr>
+      <tr><td>Round-3 GREEN 2</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458...test_evaluation...label_queries... experiments.exp458...test_replay...label_count...</code></td><td>2 tests OK in 0.062s.</td></tr>
+      <tr><td>Round-3 affected suite</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458...test_evaluation_antigravity experiments.exp458...test_replay_antigravity</code></td><td>12 tests OK in 0.188s, followed by compile, diff, and official-root checks.</td></tr>
+      <tr><td>Full Exp458 synthetic</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>50 tests OK in 2.187s before the functional commit; the Exp458 map was then regenerated against <code>be03a7dc2bc2a51192fb4a7156852a62b1091bf7</code>.</td></tr>
     </tbody>
   </table>
 
@@ -48,7 +52,7 @@
     <thead><tr><th>Area</th><th>Covered Cases</th></tr></thead>
     <tbody>
       <tr><td>Route truth table</td><td>Generic semantically valid rank-fail evidence routes normal2 to baseline; generic rank-pass plus strict structure pass routes normal2 to candidate; structure equality and reversal route to baseline; forged nested rank evidence is rejected; non-normal2 feature remains baseline even with passing rank evidence.</td></tr>
-      <tr><td>Evaluation authority</td><td>Exact ordered 48-row Exp456 authority digest now includes every baseline/candidate index set; extra, missing, reordered, duplicate, non-target row swap, non-target rename, inner inventory drift, and <code>authority.label_query_count=1</code> are rejected; feature digest and exact normal2 added=14/removed=5 row required.</td></tr>
+      <tr><td>Evaluation authority</td><td>Exact ordered 48-row Exp456 authority digest now includes every baseline/candidate index set; extra, missing, reordered, duplicate, non-target row swap, non-target rename, inner inventory drift, <code>authority.label_query_count=1</code>, and <code>authority.label_query_count=False</code> are rejected; feature digest and exact normal2 added=14/removed=5 row required.</td></tr>
       <tr><td>Criteria</td><td>FN 834 inclusive pass, FP 66 inclusive pass, F1 equal to 0.5764150943396227 fails because the F1 comparison is strict.</td></tr>
       <tr><td>Dashboard</td><td>Only experiment/status/pass, approved two-seed rank evidence, normal2 route, four aggregate method rows, and three criteria are exported; <code>normal_trials</code> and <code>normal_alerts</code> are intentionally not public dashboard keys.</td></tr>
     </tbody>
@@ -75,7 +79,7 @@
     <tbody>
       <tr><td>Rank evidence</td><td>per-type AUC, pooled AUC, Wilson upper, seed pass, aggregate pass, and coordinated all-AUC=.99/pooled=.99/Wilson=0 dashboard-matched tamper.</td></tr>
       <tr><td>Feature/structure</td><td>added count and removed count drift, including coherent normal2 added=99/removed=0 feature evidence.</td></tr>
-      <tr><td>Expected authority</td><td>Forged baseline indices, inner authority inventory, and expected-authority label query count drift.</td></tr>
+      <tr><td>Expected authority</td><td>Forged baseline indices, inner authority inventory, expected-authority label query count drift, and bool-as-zero label count drift.</td></tr>
       <tr><td>Route</td><td>stored route drift.</td></tr>
       <tr><td>Comparisons</td><td>first-three Exp456 comparison drift and proposed F1/confusion drift.</td></tr>
       <tr><td>Family/dashboard/decision</td><td>family delta, dashboard pass, and decision status drift.</td></tr>
@@ -96,7 +100,7 @@
   </ul>
 
   <h2>Self-Review</h2>
-  <p>The round-2 fix moves exact Task3 observed-value equality out of the generic <code>RankSeedEvidenceAntigravity</code>/<code>RankQualificationAntigravity</code> semantic contracts and into the actual Task4 evaluation/publication/replay boundary via a frozen Task3 validator. This restores legitimate semantically valid failing evidence and the router rank-fail→baseline branch while preserving coordinated tamper rejection at the public-result boundary. It also binds exact Exp456 authority row index sets, exact inner authority inventory, and <code>authority.label_query_count==0</code>. No champion, promotion, deployment, or official result claim is made. Remaining future work is Task5 CLI and any later user-approved official evaluation path.</p>
+  <p>The round-3 functional fix strengthens the actual Exp456 authority boundary to require <code>type(authority.label_query_count) is int</code> before requiring value zero, so <code>False</code> no longer passes as zero. Earlier round-2 behavior remains: exact Task3 observed-value equality lives at the actual Task4 evaluation/publication/replay boundary, generic rank contracts remain semantic, exact Exp456 authority row index sets and exact inner authority inventory are bound, and coordinated tamper rejection is preserved. No champion, promotion, deployment, or official result claim is made. Remaining future work is Task5 CLI and any later user-approved official evaluation path.</p>
 
   <h2>Concerns</h2>
   <p class="warn">No unresolved Task4 implementation concerns. Scope notes: Task4 did not run a real Hydra/TRAIN smoke, did not create the official result root, and predecessor full-discovery governance checks are not a valid clean signal inside this active Exp458 worktree because they bind to their own checked-in map/source-parent state.</p>
