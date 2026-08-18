@@ -35,7 +35,7 @@
   <h2>아직 하지 않은 것</h2>
   <table>
     <tr><th>항목</th><th>현재 truth</th></tr>
-    <tr><td>Exp459 package 구현</td><td>Task 4의 evaluation·artifacts·replay·dashboard export까지 존재하고 CLI는 아직 없음</td></tr>
+    <tr><td>Exp459 package 구현</td><td>Task 4의 evaluation·artifacts·replay·dashboard export까지 존재하고 CLI와 <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>는 아직 없음</td></tr>
     <tr><td>공식 evaluate / inspect</td><td>둘 다 0회</td></tr>
     <tr><td>공식 결과 폴더</td><td>아직 없음</td></tr>
     <tr><td>결과 hash</td><td>prediction / evaluation / decision / artifact map / dashboard 모두 <code>null</code></td></tr>
@@ -47,7 +47,10 @@
 
   <h2>2026-08-18 보강 메모</h2>
   <p>후속 리뷰에서 지적된 세부 경계도 보강했다. BlockedFold는 <code>n_rows</code>를 명시적으로 기록해 <code>np.array_split</code> 기준의 query 범위와 fit 보완 집합을 스스로 검증하고, ndarray-backed contract는 외부 alias나 <code>writeable</code> 재설정으로 변조할 수 없도록 bytes-backed snapshot만 받아들인다.</p>
-  <p>Task 3은 실제 TRAIN/Hydra 전체 계산을 수행하지 않았다. 테스트는 synthetic source와 fake scorer 주입으로 call order, coverage, bad score, threshold, source SQL boundary를 검증했고 실제 두 번의 TRAIN qualification은 Task 5에 남겨 둔다.</p>
+  <p>Task 3은 실제 TRAIN/Hydra 전체 계산을 수행하지 않았다. 테스트는 synthetic source와 fake scorer 주입으로 call order, coverage, bad score, threshold, source SQL boundary를 검증했고 private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행하는 작업은 Task 5에 남겨 둔다.</p>
   <p>Task 4도 실제 TRAIN/Hydra 전체 계산이나 공식 root 생성을 수행하지 않았다. 테스트는 synthetic qualification과 injected frozen authority로 stable/unstable result logic, exact 7-leaf publication, authority-gated source-free replay, wrong/digest-mutated authority rejection, coordinated AUC+pooled+dashboard+decision+map tamper rejection, dashboard aggregate contract를 검증했다. 실제 authority 값 생성은 Task 5의 두 private TRAIN run exact-equal 확인과 최종 검토 뒤로 남겨 둔다.</p>
+  <h2>Task 5 sequence is now explicit</h2>
+  <p>Task 5는 먼저 private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행하고, canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest exact-equal을 확인한다. 그 다음에만 Task5-owned <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>를 version-control한다.</p>
+  <p>CLI evaluate와 bare inspect는 모두 version-controlled authority module을 require하며, bare inspect import boundary는 authority + replay only; sources/SQLite/Hydra 금지다. authority commit을 full tests 후 fresh final review에 올리고, SHIP 후에만 Task 6 approval을 요청한다. no actual authority values exist yet.</p>
 </main></body>
 </html>

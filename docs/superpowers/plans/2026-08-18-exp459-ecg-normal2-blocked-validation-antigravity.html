@@ -33,7 +33,7 @@
     <li>Exp458 공식 결과, 제품 코드, champion, pending candidate, 운영 route는 바꾸지 않는다.</li>
     <li>Hydra는 aeon CPU 구현을 유지한다. MLX 재구현은 고정 방법을 바꾸므로 하지 않는다.</li>
     <li>새 문서와 대시보드는 HTML이며, 모든 새 파일 이름에 <code>antigravity</code>를 포함한다.</li>
-    <li>공식 Exp459 명령은 Task 5 구현·비공식 실측·독립 검토와 별도 사용자 승인 전 0회다.</li>
+    <li>공식 Exp459 명령은 Task 5의 private qualification/evaluation 두 번, authority 파일 생성, full tests, fresh final review, 그리고 별도 Task 6 승인 전 0회다.</li>
   </ul>
 
   <h2>파일 구조</h2>
@@ -49,7 +49,7 @@
       <tr><td><code>artifacts_antigravity.py</code></td><td>정확한 7-leaf 결과를 create-only로 저장</td></tr>
       <tr><td><code>replay_antigravity.py</code></td><td>trusted frozen authority에서 fold·AUC·판단 payload를 source-free로 재구성하고 root bytes와 exact 비교</td></tr>
       <tr><td><code>dashboard_export_antigravity.py</code></td><td>TRAIN aggregate만 포함한 HTML용 결과 payload 생성</td></tr>
-      <tr><td><code>cli_antigravity.py</code>와 launcher</td><td>정확한 evaluate/inspect 표면과 고정 runtime 실행</td></tr>
+      <tr><td><code>cli_antigravity.py</code>, launcher, Task5-owned authority module</td><td>정확한 evaluate/inspect 표면, 고정 runtime 실행, version-controlled frozen authority 요구</td></tr>
     </tbody>
   </table>
 
@@ -136,7 +136,7 @@ seed_passed = all(record.passed for record in seed_records)
 qualification_passed = all(summary.passed for summary in seed_summaries)</code></pre>
   <ul>
     <li><label><input type="checkbox" checked disabled>Step 5 — 한 fold/한 seed 실패, 경계값, nonfinite, 누락/중복 query, 무작위 fold 순서 공격을 표 기반 테스트로 검증한다.</label></li>
-    <li><label><input type="checkbox" checked disabled>Step 6 — synthetic GREEN 두 번과 Exp458 source/qualification 회귀를 실행한다. 실제 전체 TRAIN 계산은 Task 5까지 미룬다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — synthetic GREEN 두 번과 Exp458 source/qualification 회귀를 실행한다. 실제 private qualification/evaluation 두 번과 authority 생성은 Task 5까지 미룬다.</label></li>
     <li><label><input type="checkbox" checked disabled>Step 7 — 문서·대시보드·map·체크박스를 갱신하고 커밋·검토한다.</label></li>
   </ul>
 
@@ -170,24 +170,24 @@ qualification_passed = all(summary.passed for summary in seed_summaries)</code><
   <p><strong>파일</strong></p>
   <ul>
     <li>Create: <code>cli_antigravity.py</code>, <code>scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py</code></li>
+    <li>Task5-owned future create after exact private equality only: <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code></li>
     <li>Create test: <code>test_cli_antigravity.py</code></li>
     <li>Modify: Exp459 HTML 문서·세 ledgers·map builder/triplet</li>
   </ul>
-  <p><strong>Public commands:</strong> 정확히 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>. 다른 subcommand, root/threshold/fold/seed override, 약식 option은 허용하지 않는다. 단, Task 4의 replay/publication 계약상 inspect와 publication은 root 자체를 신뢰하지 않고 Task 5에서 만든 trusted immutable validation authority와 exact-equal일 때만 통과한다.</p>
-  <p><strong>Frozen authority boundary:</strong> Task 4는 <code>FrozenValidationAuthorityAntigravity</code> 인터페이스와 synthetic 주입 테스트만 제공한다. 실제 authority 값은 Task 5에서 private TRAIN 두 번이 10 fold evidence, 두 seed summary, decision input, canonical digest까지 exact-equal이고 최종 독립 검토가 끝난 뒤에만 생성한다.</p>
+  <p><strong>Public commands:</strong> 정확히 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>. 다른 subcommand, root/threshold/fold/seed override, 약식 option은 허용하지 않는다. 단, Task 4의 replay/publication 계약상 inspect와 publication은 root 자체를 신뢰하지 않고 Task 5에서 만든 trusted immutable validation authority와 exact-equal일 때만 통과한다. CLI evaluate와 bare inspect는 모두 version-controlled authority module을 require한다.</p>
+  <p><strong>Frozen authority boundary:</strong> Task 4는 <code>FrozenValidationAuthorityAntigravity</code> 인터페이스와 synthetic 주입 테스트만 제공한다. 실제 authority 값은 Task 5에서 private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행하고 canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest exact-equal을 확인한 뒤에만 <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>에 version-control한다.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — CLI/launcher missing RED, parser exact surface, lazy import, wrong runtime, outside-CWD launcher 테스트를 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — fixed Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0을 확인한 뒤에만 evaluate가 qualification→evaluation을 실행하고, 두 private run이 exact-equal이기 전에는 authority나 publication을 만들지 않게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — inspect는 TRAIN/SQLite/Hydra를 import하지 않고 완성된 7-leaf root와 trusted authority를 exact-equal 비교하는 replay만 수행하게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — 전체 synthetic suite를 두 번 실행하고 Exp458 62/62와 Exp457 과학 회귀를 확인한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — 공식 root가 없는 상태에서 private temporary root로 실제 TRAIN qualification을 순차적으로 정확히 두 번 실행한다. 두 실행의 5 fold plan, 10 fold evidence, 2 seed summaries, decision input, canonical authority digest, 7 leaf hashes가 exact 같은지 확인하고 temp root를 정리한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — exact-equal private run과 최종 review 후에만 실제 trusted frozen authority를 만들고, 결과가 stable이든 unstable이든 그대로 HTML 대시보드와 보고서에 기록한다. 실패 결과를 통과로 바꾸지 않는다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 7 — 상태를 <code>implementation_verified_awaiting_official_evaluation</code>로 갱신하되 official counts 0, result hashes null, champion/pending unchanged를 유지한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 8 — map/diff/byte/root/clean 검증, 새 독립 최종 review SHIP을 받고 Task 5 체크박스를 완료한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 1 — fixed Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0을 확인한 뒤 private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행한다. 공식 root, official evaluate/inspect, TEST labels는 여전히 금지다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest exact-equal과 7 leaf hashes exact-equal을 확인한다. 다르면 authority를 만들지 않고 중단한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — exact-equal 후에만 <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>를 생성·version-control한다. 이 파일은 exact canonical 5 plan / 10 evidence / 2 summaries / decision input / digest를 포함한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 4 — tests load it and CLI evaluate/inspect both require it; CLI evaluate와 bare inspect는 모두 version-controlled authority module을 require한다. bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지.</label></li>
+    <li><label><input type="checkbox" disabled>Step 5 — authority commit을 full tests 후 fresh final review 대상으로 제출한다. review 대상은 authority 포함 exact clean commit이어야 하며, 결과가 stable이든 unstable이든 그대로 HTML 대시보드와 보고서에 기록한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — fresh final review가 SHIP일 때만 Task 5 체크박스를 완료하고 상태를 <code>implementation_verified_awaiting_official_evaluation</code>로 갱신하되 official counts 0, result hashes null, champion/pending unchanged를 유지한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 7 — SHIP 후에만 Task 6 approval을 사용자에게 요청한다. 승인 전에는 공식 evaluate/inspect를 실행하지 않는다.</label></li>
   </ul>
 
   <h2>Task 6: 별도 승인 후 공식 1회 실행과 truth closeout</h2>
-  <p class="stop"><strong>중지 경계:</strong> Task 5 최종 review가 SHIP이어도 사용자에게 공식 Task 6 승인을 다시 받기 전에는 실행하지 않는다.</p>
+  <p class="stop"><strong>중지 경계:</strong> Task 5 final review가 SHIP이어도 Task 6 approval을 사용자에게 다시 받기 전에는 실행하지 않는다.</p>
   <ul>
     <li><label><input type="checkbox" disabled>Step 1 — exact clean reviewed commit, runtime, Exp458 predecessor, Exp459 공식 root 부재를 확인한다.</label></li>
     <li><label><input type="checkbox" disabled>Step 2 — 아래 evaluate 명령을 정확히 한 번 실행하고 stdout/stderr/exit를 보존한다.</label></li>

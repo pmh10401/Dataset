@@ -34,7 +34,7 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "150e06ea94796b041d0e8d54563873f0cf727a50c4f0ea28b75753b6f5edcd86"
+    "ec5e1cd933424ba7776df5b6cf766e8a765608fb8e3f72436a5bc78c1124b229"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
@@ -199,6 +199,62 @@ class GovernanceAntigravityTest(unittest.TestCase):
             flags=re.IGNORECASE,
         )
         self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료", "Task 3 완료", "Task 4 완료"])
+
+    def test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity(self) -> None:
+        """Break caught: Task 5 can create or use authority before exact private equality/review."""
+        plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
+        task5 = re.search(
+            r"<h2>Task 5:.*?(?=<h2>Task 6:)",
+            plan,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(task5)
+        assert task5 is not None
+        sequence = [
+            "private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행",
+            "canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest exact-equal",
+            "experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py",
+            "CLI evaluate와 bare inspect는 모두 version-controlled authority module을 require",
+            "bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지",
+            "authority commit을 full tests 후 fresh final review",
+            "SHIP 후에만 Task 6 approval",
+        ]
+        previous = -1
+        for phrase in sequence:
+            with self.subTest(phrase=phrase):
+                position = task5.group(0).find(phrase, previous + 1)
+                self.assertGreater(position, previous)
+                previous = position
+        self.assertNotRegex(task5.group(0), r"<input\b[^>]*checked")
+        authority_path = (
+            ROOT_ANTIGRAVITY
+            / PACKAGE_ANTIGRAVITY
+            / "frozen_validation_authority_antigravity.py"
+        )
+        self.assertFalse(authority_path.exists())
+
+        document_expectations = {
+            "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html": (
+                "Task 5 sequence is now explicit",
+                "frozen_validation_authority_antigravity.py",
+                "no actual authority values exist yet",
+            ),
+            "docs/EXP459_RUNBOOK_antigravity.html": (
+                "private qualification/evaluation twice before authority creation",
+                "bare inspect imports only authority + replay",
+                "Task 6 approval is requested only after SHIP",
+            ),
+            "docs/EXP459_DASHBOARD_antigravity.html": (
+                "Task 5 authority sequence clarified",
+                "actual authority file absent",
+                "Task 6 still requires approval after SHIP",
+            ),
+        }
+        for relative, phrases in document_expectations.items():
+            text = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8")
+            for phrase in phrases:
+                with self.subTest(relative=relative, phrase=phrase):
+                    self.assertIn(phrase, text)
 
     def test_exp459_planned_truth_and_non_promotion_antigravity(self) -> None:
         """Break caught: Exp459 records an official result, changes champion, or loses frozen hashes."""

@@ -158,7 +158,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp459 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp459 Task 4 result/replay 코드맵</h1><p>Task 4는 Exp459를 planned_not_started로 유지한 채 stable 판단, trusted-authority-gated canonical 7-leaf publication, source-free replay, aggregate dashboard export, bounded tests, 그리고 동기화된 ledgers/map만 추가한다. 실제 frozen authority 값, 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
+        '<h1>Exp459 Task 4 result/replay 코드맵</h1><p>Task 4는 Exp459를 planned_not_started로 유지한 채 stable 판단, trusted-authority-gated canonical 7-leaf publication, source-free replay, aggregate dashboard export, Task5 authority sequence clarification, bounded tests, 그리고 동기화된 ledgers/map만 추가한다. 실제 frozen authority 값, 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -263,7 +263,7 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1–4 execution. Effect: records checked Task 1, Task 2, Task 3, and Task 4 steps while Tasks 5–6 remain unchecked pending later work.",
+            "role": "Caller: Task 1–4 execution and future Task 5 operator sequence. Effect: records checked Task 1, Task 2, Task 3, and Task 4 steps while Task 5 now explicitly requires private qualification/evaluation twice, canonical equality, version-controlled authority, full tests, fresh review, and Task 6 approval after SHIP.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(plan, "Task 4: stable 판단, 7-leaf 결과, replay와 대시보드")],
         },
@@ -277,42 +277,42 @@ def build_map_antigravity(
         {
             "id": "runbook",
             "path": "docs/EXP459_RUNBOOK_antigravity.html",
-            "role": "Caller: future operators. Effect: records that Task 4 completed evaluation, artifacts, replay, and dashboard export while official commands, root creation, and label access remain blocked.",
+            "role": "Caller: future operators. Effect: records that Task 4 completed evaluation, artifacts, replay, and dashboard export while official commands, root creation, label access, actual authority values, and Task 6 execution remain blocked until the exact Task 5 authority sequence completes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 5 이전까지 금지한 일")],
+            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 5 authority 순서")],
         },
         {
             "id": "implementation_report",
             "path": "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: implementation review. Effect: reports the Task 4 evaluation/artifacts/replay/dashboard additions while the official Exp459 lifecycle remains unstarted.",
+            "role": "Caller: implementation review. Effect: reports the Task 4 evaluation/artifacts/replay/dashboard additions and the clarified Task 5 authority file/import/review order while the official Exp459 lifecycle remains unstarted.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 4의 stable/unstable 판단")],
+            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 5 sequence is now explicit")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP459_DASHBOARD_antigravity.html",
-            "role": "Caller: reader-facing review. Effect: shows Task 4/6 progress, planned_not_started status, zero official commands, and unchanged champion state.",
+            "role": "Caller: reader-facing review. Effect: shows Task 4/6 progress, planned_not_started status, zero official commands, absent authority file, clarified Task 5 authority sequence, and unchanged champion state.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 4/6")],
+            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 5 authority sequence clarified")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: records Exp459 as planned_not_started with Task 4 complete, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
+            "role": "Caller: governance review. Effect: records Exp459 as planned_not_started with Task 4 complete, clarified future Task 5 authority sequence, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_4_evaluation_artifacts_replay_dashboard_complete\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 4 implementation status, frozen predecessor link, planned status, and no-result truth.",
+            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 4 implementation status, clarified future Task 5 authority sequence, frozen predecessor link, planned status, and no-result truth.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_4_evaluation_artifacts_replay_dashboard_complete\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: records Exp459 Task 4 completion without changing champion, pending candidate, routing, or promotion.",
+            "role": "Caller: champion review. Effect: records Exp459 Task 4 completion and clarified future Task 5 authority sequence without changing champion, pending candidate, routing, or promotion.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_4_evaluation_artifacts_replay_dashboard_complete\"")],
         },
@@ -452,9 +452,9 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 4 ledger truth, official-root absence, and bounded code-map parity.",
+            "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 4 ledger truth, Task 5 authority sequence/import boundary, official-root absence, and bounded code-map parity.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(governance_test, "test_exp459_planned_truth_and_non_promotion_antigravity")],
+            "evidence": [evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")],
         },
         {
             "id": "map_builder",
@@ -478,7 +478,7 @@ def build_map_antigravity(
         {"from": "approved_design", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(design, "결과 파일과 대시보드")},
         {"from": "approved_design", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(design, "source-free replay")},
         {"from": "approved_design", "to": "task4_dashboard_export", "type": "governs", "evidence": evidence_antigravity(design, "원시 TRAIN 행")},
-        {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "Step 6 — focused GREEN 두 번, Exp458 contract/AUC 회귀, compile/diff/map 검증 후 체크박스와 map을 갱신하고 커밋·검토한다.")},
+        {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "SHIP 후에만 Task 6 approval")},
         {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 완료")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(plan, "exact config와 immutable dataclass 계약을 구현한다.")},
         {"from": "implementation_plan", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(plan, "FoldEvidenceAntigravity")},
@@ -515,9 +515,9 @@ def build_map_antigravity(
         {"from": "task4_replay_tests", "to": "task4_replay", "type": "tests", "evidence": evidence_antigravity(replay_test, "test_source_free_replay_recomputes_plan_evidence_decision_and_dashboard_antigravity")},
         {"from": "task4_dashboard_tests", "to": "task4_dashboard_export", "type": "tests", "evidence": evidence_antigravity(dashboard_export_test, "test_dashboard_rejects_forged_result_and_mutated_nested_fields_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
-        {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
-        {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
-        {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
+        {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")},
+        {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")},
+        {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")},
         {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_planned_truth_and_non_promotion_antigravity")},
         {"from": "governance_regression", "to": "experiment_catalog", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_planned_truth_and_non_promotion_antigravity")},
         {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_planned_truth_and_non_promotion_antigravity")},
