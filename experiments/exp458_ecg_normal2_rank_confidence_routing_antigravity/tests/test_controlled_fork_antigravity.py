@@ -31,6 +31,40 @@ def _function_node_antigravity(tree: ast.Module, name: str) -> ast.FunctionDef:
     return function
 
 
+def _fold_count_guard_target_antigravity(function: ast.FunctionDef) -> int | None:
+    for node in ast.walk(function):
+        if not isinstance(node, ast.If) or not isinstance(node.test, ast.Compare):
+            continue
+        compare = node.test
+        if (
+            not isinstance(compare.left, ast.Call)
+            or not isinstance(compare.left.func, ast.Name)
+            or compare.left.func.id != "len"
+            or len(compare.left.args) != 1
+            or not isinstance(compare.left.args[0], ast.Name)
+            or compare.left.args[0].id != "folds"
+            or len(compare.ops) != 1
+            or not isinstance(compare.ops[0], ast.NotEq)
+            or len(compare.comparators) != 1
+        ):
+            continue
+        target = compare.comparators[0]
+        if isinstance(target, ast.Constant) and type(target.value) is int:
+            return target.value
+        if (
+            isinstance(target, ast.Attribute)
+            and target.attr == "folds"
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "FROZEN_CONFIG_ANTIGRAVITY"
+        ):
+            from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.config_antigravity import (
+                FROZEN_CONFIG_ANTIGRAVITY,
+            )
+
+            return FROZEN_CONFIG_ANTIGRAVITY.folds
+    return None
+
+
 class ControlledForkAntigravityTest(unittest.TestCase):
     def test_exp457_frozen_constants_remain_unchanged_antigravity(self) -> None:
         from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.config_antigravity import (
@@ -207,20 +241,36 @@ class ControlledForkAntigravityTest(unittest.TestCase):
             [("seed", "seed")],
         )
 
-        exact_fold_check = any(
-            isinstance(node, ast.If)
-            and isinstance(node.test, ast.Compare)
-            and isinstance(node.test.left, ast.Call)
-            and isinstance(node.test.left.func, ast.Name)
-            and node.test.left.func.id == "len"
-            and len(node.test.left.args) == 1
-            and isinstance(node.test.left.args[0], ast.Name)
-            and node.test.left.args[0].id == "folds"
-            and len(node.test.ops) == 1
-            and isinstance(node.test.ops[0], ast.NotEq)
-            for node in ast.walk(qualify_function)
+        self.assertEqual(_fold_count_guard_target_antigravity(qualify_function), 5)
+
+        mutated_tree = ast.parse(qualification_path.read_text(encoding="utf-8"))
+        mutated_function = _function_node_antigravity(
+            mutated_tree,
+            "_qualify_normal2_with_dependencies_antigravity",
         )
-        self.assertTrue(exact_fold_check)
+        mutated_guard = next(
+            (
+                node
+                for node in ast.walk(mutated_function)
+                if isinstance(node, ast.If)
+                and isinstance(node.test, ast.Compare)
+                and isinstance(node.test.left, ast.Call)
+                and isinstance(node.test.left.func, ast.Name)
+                and node.test.left.func.id == "len"
+                and len(node.test.left.args) == 1
+                and isinstance(node.test.left.args[0], ast.Name)
+                and node.test.left.args[0].id == "folds"
+                and len(node.test.ops) == 1
+                and isinstance(node.test.ops[0], ast.NotEq)
+                and len(node.test.comparators) == 1
+            ),
+            None,
+        )
+        self.assertIsNotNone(mutated_guard)
+        assert isinstance(mutated_guard, ast.If)
+        mutated_guard.test.comparators[0] = ast.Constant(value=4)
+        self.assertEqual(_fold_count_guard_target_antigravity(mutated_function), 4)
+        self.assertNotEqual(_fold_count_guard_target_antigravity(mutated_function), 5)
 
 
 if __name__ == "__main__":
