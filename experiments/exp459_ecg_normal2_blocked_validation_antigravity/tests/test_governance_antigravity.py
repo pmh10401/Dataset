@@ -34,7 +34,7 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "a915dbb16bbe8e8609b56c44e6769f140a080e43be11aaf3bb17e5ea456b5381"
+    "3e9534af91d5da273a83cf139d71236d29e91e8a48968672605b434120f7da0d"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
@@ -78,6 +78,13 @@ PRIVATE_VALIDATION_ANTIGRAVITY = {
         },
     ],
 }
+SCIENTIFIC_LIMITATION_DISCLOSURE_ANTIGRAVITY = (
+    "exact empirical pvalues compare each fold original scores against same 282/283 vector",
+    "self-count+plus-one => minimum 2/(n+1) > .005",
+    "normal_alerts structurally zero",
+    "Wilson rows non-discriminative",
+    "unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4",
+)
 RUN_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818"
 )
@@ -294,6 +301,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for relative, phrases in document_expectations.items():
             text = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8")
             for phrase in phrases:
+                with self.subTest(relative=relative, phrase=phrase):
+                    self.assertIn(phrase, text)
+
+    def test_task5_scientific_limitation_disclosure_is_visible_antigravity(self) -> None:
+        """Break caught: reports overstate normal-alert/Wilson evidence as discriminative."""
+        for relative in (*DOCUMENTS_ANTIGRAVITY, PLAN_ANTIGRAVITY):
+            text = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8")
+            for phrase in SCIENTIFIC_LIMITATION_DISCLOSURE_ANTIGRAVITY:
                 with self.subTest(relative=relative, phrase=phrase):
                     self.assertIn(phrase, text)
 

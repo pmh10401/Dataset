@@ -11,5 +11,6 @@
     <tr><th>Task 5 observed truth</th><td><code>unstable</code>, digest <code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code>, failed folds seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063</td></tr>
     <tr><th>official boundary</th><td>official root absent, evaluate 0, inspect 0, label query 0, result hashes null</td></tr>
   </table>
+  <p><strong>Scientific limitation disclosure:</strong> 쉽게 말해 exact empirical pvalues compare each fold original scores against same 282/283 vector. 현재 공식은 self-count+plus-one => minimum 2/(n+1) > .005 이므로 n=283이면 2/284≈0.00704, n=282이면 2/283≈0.00707이다. 따라서 0.005 alert threshold는 도달할 수 없고 normal_alerts structurally zero; Wilson rows non-discriminative in this blocked validation. Exp459 is unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4.</p>
   <p>Unstable truth is recorded without threshold tuning. Task 6 still requires separate approval before any official command.</p>
 </main></body></html>

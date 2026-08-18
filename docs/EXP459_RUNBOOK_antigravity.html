@@ -12,6 +12,7 @@
     <tr><th>CLI boundary</th><td>CLI evaluate and bare inspect require the version-controlled authority. bare inspect imports only authority + replay; bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지.</td></tr>
     <tr><th>official boundary</th><td>공식 root 없음, evaluate 0회, inspect 0회, label query 0, result hashes null.</td></tr>
   </table>
+  <p><strong>Scientific limitation disclosure:</strong> 쉽게 말해 exact empirical pvalues compare each fold original scores against same 282/283 vector. 현재 공식은 self-count+plus-one => minimum 2/(n+1) > .005 이므로 n=283이면 2/284≈0.00704, n=282이면 2/283≈0.00707이다. 따라서 0.005 alert threshold는 도달할 수 없고 normal_alerts structurally zero; Wilson rows non-discriminative in this blocked validation. Exp459 is unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4.</p>
   <h2>Task 6 전 금지</h2>
   <p>Task 6 still requires approval after SHIP. 승인 전 공식 evaluate/inspect를 실행하지 않는다. unstable 결과 때문에 Exp459 안에서 threshold tuning, seed/fold 변경, 합성 종류 변경은 금지한다.</p>
   <h2>검증 체크리스트</h2>

@@ -11,6 +11,7 @@
     <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</td></tr>
     <tr><th>official state</th><td>official root absent, evaluate 0, inspect 0, label query 0, official result hashes null.</td></tr>
   </table>
+  <p><strong>Scientific limitation disclosure:</strong> 쉽게 말해 exact empirical pvalues compare each fold original scores against same 282/283 vector. 현재 공식은 self-count+plus-one => minimum 2/(n+1) > .005 이므로 n=283이면 2/284≈0.00704, n=282이면 2/283≈0.00707이다. 따라서 0.005 alert threshold는 도달할 수 없고 normal_alerts structurally zero; Wilson rows non-discriminative in this blocked validation. Exp459 is unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4.</p>
   <p>Because the result is unstable, no threshold tuning or in-experiment retry is allowed. The next useful research direction is failure-fold analysis or a separately approved successor experiment, not Task 5 tuning.</p>
   <h2>CLI and replay boundary</h2>
   <p><code>cli_antigravity.py</code> accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>. Runtime and frozen authority validate before TRAIN source qualification or root creation. The launcher re-execs the fixed Python runtime outside CWD. Inspect remains source/SQLite/Hydra-free where possible and replays only against trusted authority.</p>
