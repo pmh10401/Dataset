@@ -166,6 +166,27 @@ class ContractsAntigravityTest(unittest.TestCase):
             with self.subTest(case=case), self.assertRaises(ValueError):
                 RankSeedEvidenceAntigravity(**case)
 
+    def test_seed_validator_revalidates_exact_fields_antigravity(self) -> None:
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
+            validate_rank_seed_semantics_antigravity,
+        )
+
+        evidence = seed_evidence_antigravity()
+
+        object.__setattr__(evidence, "dataset", "ECG5000_normal_1")
+        with self.assertRaises(ValueError):
+            validate_rank_seed_semantics_antigravity(evidence)
+
+        object.__setattr__(evidence, "dataset", DATASET_ANTIGRAVITY)
+        object.__setattr__(evidence, "seed", True)
+        with self.assertRaises(ValueError):
+            validate_rank_seed_semantics_antigravity(evidence)
+
+        object.__setattr__(evidence, "seed", SEEDS_ANTIGRAVITY[0])
+        object.__setattr__(evidence, "normal_trials", True)
+        with self.assertRaises(ValueError):
+            validate_rank_seed_semantics_antigravity(evidence)
+
     def test_seed_evidence_uses_inclusive_boundaries_antigravity(self) -> None:
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
             RankSeedEvidenceAntigravity,
@@ -223,6 +244,25 @@ class ContractsAntigravityTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             RankQualificationAntigravity(DATASET_ANTIGRAVITY, (first, second), False)
+
+    def test_qualification_validator_revalidates_seed_order_and_nested_semantics_antigravity(self) -> None:
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
+            RankQualificationAntigravity,
+            validate_rank_qualification_semantics_antigravity,
+        )
+
+        first = seed_evidence_antigravity(seed=SEEDS_ANTIGRAVITY[0])
+        second = seed_evidence_antigravity(seed=SEEDS_ANTIGRAVITY[1])
+        qualification = RankQualificationAntigravity(DATASET_ANTIGRAVITY, (first, second), True)
+
+        object.__setattr__(qualification, "seed_evidence", (second, first))
+        with self.assertRaises(ValueError):
+            validate_rank_qualification_semantics_antigravity(qualification)
+
+        object.__setattr__(qualification, "seed_evidence", (first, second))
+        object.__setattr__(second, "pooled_auc", 0.1)
+        with self.assertRaises(ValueError):
+            validate_rank_qualification_semantics_antigravity(qualification)
 
 
 if __name__ == "__main__":

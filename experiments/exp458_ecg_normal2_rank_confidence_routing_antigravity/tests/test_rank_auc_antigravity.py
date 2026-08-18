@@ -80,6 +80,27 @@ class RankAucAntigravityTest(unittest.TestCase):
             direct_auc_antigravity(normal, anomaly),
         )
 
+    def test_integer_auc_preserves_exact_comparisons_past_float53_antigravity(self) -> None:
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.rank_auc_antigravity import (
+            mann_whitney_auc_antigravity,
+        )
+
+        normal = np.array([2**53], dtype=np.int64)
+        anomaly = np.array([2**53 + 1], dtype=np.int64)
+        self.assertEqual(mann_whitney_auc_antigravity(normal, anomaly), 1.0)
+
+    def test_integer_chunked_auc_matches_direct_pairwise_formula_antigravity(self) -> None:
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.rank_auc_antigravity import (
+            mann_whitney_auc_antigravity,
+        )
+
+        normal = np.array([2**53 - 1, 2**53, 2**53 + 2, 2**53 + 4], dtype=np.int64)
+        anomaly = np.array([2**53, 2**53 + 1, 2**53 + 3, 2**53 + 5], dtype=np.int64)
+        self.assertEqual(
+            mann_whitney_auc_antigravity(normal, anomaly),
+            direct_auc_antigravity(normal, anomaly),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,6 +24,7 @@ class Exp458ConfigAntigravity:
     dataset: str
     kind: str
     run_identity: str
+    official_result_root: str
     hydra_seeds: tuple[int, int]
     folds: int
     primary_types: tuple[str, str, str, str]
@@ -48,6 +49,7 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "dataset": "ECG5000_normal_2",
         "kind": "ecg_normal2_rank_confidence_routing",
         "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
+        "official_result_root": "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
         "hydra_seeds": (20260721, 20261721),
         "folds": 5,
         "primary_types": (

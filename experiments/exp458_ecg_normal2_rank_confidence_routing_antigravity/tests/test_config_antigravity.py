@@ -22,6 +22,10 @@ class ConfigAntigravityTest(unittest.TestCase):
             config.run_identity,
             "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
         )
+        self.assertEqual(
+            config.official_result_root,
+            "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
+        )
         self.assertEqual(config.hydra_seeds, (20260721, 20261721))
         self.assertEqual(config.folds, 5)
         self.assertEqual(
@@ -60,6 +64,7 @@ class ConfigAntigravityTest(unittest.TestCase):
             ("dataset", "ECG5000_normal_1"),
             ("kind", "other"),
             ("run_identity", "exp458-other"),
+            ("official_result_root", "/Users/mac/Documents/Dataset/other"),
             ("hydra_seeds", tuple(reversed(config.hydra_seeds))),
             ("hydra_seeds", (20260721, 20261721, 20262721)),
             ("folds", True),

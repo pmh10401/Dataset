@@ -52,6 +52,27 @@ def _validate_per_type_auc_antigravity(value: object) -> MappingProxyType:
     return MappingProxyType(frozen)
 
 
+def _validated_seed_fields_antigravity(value: object) -> tuple[float, ...]:
+    if type(value) is not RankSeedEvidenceAntigravity:
+        raise ValueError("rank seed evidence type is invalid")
+    _dataset_antigravity(value.dataset)
+    if type(value.seed) is not int or value.seed not in FROZEN_CONFIG_ANTIGRAVITY.hydra_seeds:
+        raise ValueError("seed must be one of the two exact Hydra seeds")
+    _positive_int_antigravity(value.normal_trials, "normal_trials")
+    _bounded_int_antigravity(
+        value.normal_alerts,
+        "normal_alerts",
+        upper=value.normal_trials,
+    )
+    _unit_float_antigravity(value.normal_wilson_upper, "normal_wilson_upper")
+    if type(value.per_type_auc) is not MappingProxyType:
+        raise ValueError("per_type_auc must remain an exact validated mapping")
+    per_type_auc = _validate_per_type_auc_antigravity(value.per_type_auc)
+    _unit_float_antigravity(value.pooled_auc, "pooled_auc")
+    _bool_antigravity(value.passed, "passed")
+    return tuple(per_type_auc[name] for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types)
+
+
 @dataclass(frozen=True, slots=True)
 class RankSeedEvidenceAntigravity:
     dataset: str
@@ -87,11 +108,7 @@ class RankSeedEvidenceAntigravity:
 def validate_rank_seed_semantics_antigravity(
     value: object,
 ) -> RankSeedEvidenceAntigravity:
-    if type(value) is not RankSeedEvidenceAntigravity:
-        raise ValueError("rank seed evidence type is invalid")
-    per_type_values = tuple(
-        value.per_type_auc[name] for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types
-    )
+    per_type_values = _validated_seed_fields_antigravity(value)
     expected_pooled = float(sum(per_type_values) / len(per_type_values))
     expected_passed = bool(
         value.normal_wilson_upper <= FROZEN_CONFIG_ANTIGRAVITY.normal_wilson_upper_max
@@ -132,7 +149,21 @@ def validate_rank_qualification_semantics_antigravity(
 ) -> RankQualificationAntigravity:
     if type(value) is not RankQualificationAntigravity:
         raise ValueError("rank qualification type is invalid")
-    expected = all(seed.passed for seed in value.seed_evidence)
+    _dataset_antigravity(value.dataset)
+    if type(value.seed_evidence) is not tuple or len(value.seed_evidence) != len(
+        FROZEN_CONFIG_ANTIGRAVITY.hydra_seeds
+    ):
+        raise ValueError("seed_evidence must be the exact two-record tuple")
+    if any(type(item) is not RankSeedEvidenceAntigravity for item in value.seed_evidence):
+        raise ValueError("seed_evidence must contain RankSeedEvidenceAntigravity records")
+    if tuple(item.seed for item in value.seed_evidence) != FROZEN_CONFIG_ANTIGRAVITY.hydra_seeds:
+        raise ValueError("seed_evidence must use both Hydra seeds in frozen order")
+    if any(item.dataset != value.dataset for item in value.seed_evidence):
+        raise ValueError("seed_evidence datasets must match qualification dataset")
+    _bool_antigravity(value.passed, "passed")
+    expected = all(
+        validate_rank_seed_semantics_antigravity(seed).passed for seed in value.seed_evidence
+    )
     if value.passed is not expected:
         raise ValueError("rank qualification differs from both-seed recomputation")
     return value

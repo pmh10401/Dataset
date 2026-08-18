@@ -15,9 +15,9 @@ def _exact_finite_real_vector_antigravity(value: object, name: str) -> np.ndarra
         raise ValueError(f"{name} must be a non-empty one-dimensional array")
     if value.dtype.kind not in {"f", "i", "u"}:
         raise ValueError(f"{name} must contain exact real scalars")
-    if not np.isfinite(value).all():
+    if value.dtype.kind == "f" and not np.isfinite(value).all():
         raise ValueError(f"{name} must contain only finite values")
-    return value.astype(np.float64, copy=False)
+    return value
 
 
 def mann_whitney_auc_antigravity(normal: np.ndarray, anomaly: np.ndarray) -> float:
