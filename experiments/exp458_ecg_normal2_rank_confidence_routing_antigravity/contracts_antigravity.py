@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from importlib import metadata
 from math import isfinite
 from math import sqrt
 from pathlib import Path
+import platform
 import re
+import sys
 from types import MappingProxyType
 from typing import Literal
 
@@ -244,6 +247,37 @@ def _nonempty_str_antigravity(value: object, name: str) -> str:
 
 
 @dataclass(frozen=True, slots=True)
+class RuntimeProvenanceAntigravity:
+    executable: str
+    prefix: str
+    python_version: str
+    numpy_version: str
+    aeon_version: str
+
+    def __post_init__(self) -> None:
+        expected = {
+            "executable": FROZEN_CONFIG_ANTIGRAVITY.runtime_executable,
+            "prefix": FROZEN_CONFIG_ANTIGRAVITY.runtime_prefix,
+            "python_version": FROZEN_CONFIG_ANTIGRAVITY.runtime_python_version,
+            "numpy_version": FROZEN_CONFIG_ANTIGRAVITY.runtime_numpy_version,
+            "aeon_version": FROZEN_CONFIG_ANTIGRAVITY.runtime_aeon_version,
+        }
+        for name, wanted in expected.items():
+            if type(getattr(self, name)) is not str or getattr(self, name) != wanted:
+                raise ValueError(f"{name} differs from the frozen Exp458 runtime")
+
+
+def observe_runtime_provenance_antigravity() -> RuntimeProvenanceAntigravity:
+    return RuntimeProvenanceAntigravity(
+        sys.executable,
+        sys.prefix,
+        platform.python_version(),
+        metadata.version("numpy"),
+        metadata.version("aeon"),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class RouteDecisionAntigravity:
     dataset: str
     rank_gate: bool
@@ -392,6 +426,8 @@ __all__ = (
     "RankQualificationAntigravity",
     "RankSeedEvidenceAntigravity",
     "RouteDecisionAntigravity",
+    "RuntimeProvenanceAntigravity",
+    "observe_runtime_provenance_antigravity",
     "validate_frozen_task3_qualification_antigravity",
     "validate_rank_qualification_semantics_antigravity",
     "validate_rank_seed_semantics_antigravity",

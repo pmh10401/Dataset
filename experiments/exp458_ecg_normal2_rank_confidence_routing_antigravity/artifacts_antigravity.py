@@ -12,6 +12,7 @@ from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import (
     PublicationEvidenceAntigravity,
     PublishedResultAntigravity,
+    observe_runtime_provenance_antigravity,
 )
 from .dashboard_export_antigravity import export_dashboard_antigravity
 from .evaluation_antigravity import (
@@ -101,6 +102,7 @@ def _context_antigravity(evidence: PublicationEvidenceAntigravity) -> dict[str, 
             "decision_sha256": authority.decision_sha256,
         },
         "rows": rows,
+        "runtime": asdict(observe_runtime_provenance_antigravity()),
     }
 
 

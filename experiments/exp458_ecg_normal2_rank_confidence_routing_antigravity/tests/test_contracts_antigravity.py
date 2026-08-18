@@ -60,6 +60,41 @@ def seed_evidence_antigravity(
 
 
 class ContractsAntigravityTest(unittest.TestCase):
+    def test_runtime_provenance_contract_freezes_exact_interpreter_and_packages_antigravity(self) -> None:
+        """Break caught: evaluate or replay accepts a different fixed-runtime identity."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
+            RuntimeProvenanceAntigravity,
+            observe_runtime_provenance_antigravity,
+        )
+
+        expected = dict(
+            executable="/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+            prefix="/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+            python_version="3.14.6",
+            numpy_version="2.3.5",
+            aeon_version="1.4.0",
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(RuntimeProvenanceAntigravity)),
+            ("executable", "prefix", "python_version", "numpy_version", "aeon_version"),
+        )
+        provenance = RuntimeProvenanceAntigravity(**expected)
+        self.assertEqual(provenance, observe_runtime_provenance_antigravity())
+        with self.assertRaises(FrozenInstanceError):
+            provenance.numpy_version = "2.4.6"  # type: ignore[misc]
+
+        cases = (
+            ("executable", "/usr/bin/python3"),
+            ("prefix", "/Users/mac/Documents/Dataset/venvs/other"),
+            ("python_version", "3.14.7"),
+            ("numpy_version", "2.4.6"),
+            ("aeon_version", "1.4.1"),
+            ("numpy_version", True),
+        )
+        for field, value in cases:
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                RuntimeProvenanceAntigravity(**{**expected, field: value})
+
     def test_contract_fields_are_exact_and_instances_are_immutable_antigravity(self) -> None:
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
             RankQualificationAntigravity,

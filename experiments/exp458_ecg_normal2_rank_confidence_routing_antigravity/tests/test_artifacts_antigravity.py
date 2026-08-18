@@ -59,6 +59,17 @@ class ArtifactsAntigravityTest(unittest.TestCase):
             artifact_map = json.loads((root / "artifact_sha256_antigravity.json").read_text(encoding="utf-8"))
             self.assertEqual(tuple(artifact_map), tuple(sorted(expected[:-1])))
             self.assertNotIn("artifact_sha256_antigravity.json", artifact_map)
+            context = json.loads((root / "context_antigravity.json").read_text(encoding="utf-8"))
+            self.assertEqual(
+                context["runtime"],
+                {
+                    "aeon_version": "1.4.0",
+                    "executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+                    "numpy_version": "2.3.5",
+                    "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+                    "python_version": "3.14.6",
+                },
+            )
             self.assertTrue(all((root / name).read_bytes().endswith(b"\n") for name in expected))
             with self.assertRaises(ValueError):
                 publish_result_antigravity(root, publication_evidence_antigravity())

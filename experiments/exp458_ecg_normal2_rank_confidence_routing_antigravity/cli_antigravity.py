@@ -103,6 +103,13 @@ def emit_dashboard_json_antigravity(result: object) -> None:
     )
 
 
+def observe_runtime_provenance_antigravity() -> object:
+    """Validate exact interpreter/package provenance before any qualification writes."""
+    from .contracts_antigravity import observe_runtime_provenance_antigravity as observe
+
+    return observe()
+
+
 def _evaluate_with_dependencies_antigravity(
     reviewed_commit: str,
     root: Path,
@@ -130,6 +137,7 @@ def _evaluate_with_dependencies_antigravity(
 
     if _COMMIT_ANTIGRAVITY.fullmatch(reviewed_commit) is None:
         raise ValueError("reviewed commit must be lowercase 40-hex")
+    observe_runtime_provenance_antigravity()
     qualification = qualifier()
     if type(qualification) is not RankQualificationAntigravity:
         raise ValueError("qualification must be the exact Exp458 rank record")
@@ -235,5 +243,6 @@ __all__ = (
     "_evaluate_with_dependencies_antigravity",
     "_inspect_with_dependencies_antigravity",
     "main_antigravity",
+    "observe_runtime_provenance_antigravity",
     "parser_antigravity",
 )

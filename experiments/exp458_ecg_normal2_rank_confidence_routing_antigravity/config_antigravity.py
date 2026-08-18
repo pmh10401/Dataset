@@ -25,6 +25,11 @@ class Exp458ConfigAntigravity:
     kind: str
     run_identity: str
     official_result_root: str
+    runtime_executable: str
+    runtime_prefix: str
+    runtime_python_version: str
+    runtime_numpy_version: str
+    runtime_aeon_version: str
     hydra_seeds: tuple[int, int]
     folds: int
     primary_types: tuple[str, str, str, str]
@@ -57,6 +62,11 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "kind": "ecg_normal2_rank_confidence_routing",
         "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
         "official_result_root": "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
+        "runtime_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+        "runtime_prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+        "runtime_python_version": "3.14.6",
+        "runtime_numpy_version": "2.3.5",
+        "runtime_aeon_version": "1.4.0",
         "hydra_seeds": (20260721, 20261721),
         "folds": 5,
         "primary_types": (

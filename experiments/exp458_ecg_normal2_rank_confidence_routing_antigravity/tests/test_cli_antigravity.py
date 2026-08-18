@@ -232,6 +232,38 @@ class CliAntigravityTest(unittest.TestCase):
             self.assertEqual(len({entry.name for entry in root.iterdir()}), 9)
             self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
 
+    def test_evaluate_fails_closed_on_runtime_mismatch_before_qualifier_or_root_antigravity(self) -> None:
+        """Break caught: public evaluate can create a root or qualify under the wrong runtime."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity import (
+            cli_antigravity as cli,
+        )
+
+        runtime_fields = ("executable", "prefix", "python_version", "numpy_version", "aeon_version")
+        for field in runtime_fields:
+            with self.subTest(field=field), tempfile.TemporaryDirectory(prefix="exp458_runtime_reject_antigravity_") as temporary:
+                root = Path(temporary) / "result"
+                with (
+                    patch.object(
+                        cli,
+                        "observe_runtime_provenance_antigravity",
+                        side_effect=ValueError(f"{field} differs from frozen runtime"),
+                        create=True,
+                    ) as runtime,
+                    self.assertRaisesRegex(ValueError, field),
+                ):
+                    cli._evaluate_with_dependencies_antigravity(
+                        _COMMIT_ANTIGRAVITY,
+                        root,
+                        lambda: self.fail("qualifier reached after runtime mismatch"),
+                        lambda: self.fail("authority reached after runtime mismatch"),
+                        lambda _feature, _qualification: self.fail("router reached after runtime mismatch"),
+                        lambda _authority, _decision: self.fail("evaluator reached after runtime mismatch"),
+                        lambda _root, _evidence: self.fail("publisher reached after runtime mismatch"),
+                        lambda _root: self.fail("inspector reached after runtime mismatch"),
+                    )
+                runtime.assert_called_once_with()
+                self.assertFalse(root.exists())
+
     def test_candidate_flow_routes_baseline_when_qualification_fails_antigravity(self) -> None:
         """Break caught: failed TRAIN qualification is published as a passing candidate."""
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity import (

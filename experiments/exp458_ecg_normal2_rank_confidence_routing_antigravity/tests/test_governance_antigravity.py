@@ -162,6 +162,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(config["final_fp_max"], 66)
             self.assertEqual(config["final_f1_strictly_above"], 0.5764150943396227)
             self.assertIs(config["test_metrics_may_inform_routing"], False)
+            self.assertEqual(
+                config["runtime_contract"],
+                {
+                    "executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+                    "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+                    "python_version": "3.14.6",
+                    "numpy_version": "2.3.5",
+                    "aeon_version": "1.4.0",
+                },
+            )
             self.assertFalse(record["official_evaluate_started"])
             self.assertFalse(record["official_inspect_started"])
             self.assertEqual(record["official_evaluate_invocations"], 0)

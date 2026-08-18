@@ -160,6 +160,28 @@ class ReplayAntigravityTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _inspect_result_with_authority_antigravity(root, evidence.exp456_authority)
 
+    def test_rejects_rehashed_runtime_provenance_tamper_antigravity(self) -> None:
+        """Break caught: replay trusts rehashed context from the wrong runtime."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.artifacts_antigravity import (
+            publish_result_antigravity,
+        )
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.replay_antigravity import (
+            _inspect_result_with_authority_antigravity,
+        )
+
+        evidence = publication_evidence_antigravity()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "result"
+            publish_result_antigravity(root, evidence)
+            context_path = root / "context_antigravity.json"
+            context = json.loads(context_path.read_text(encoding="utf-8"))
+            context["runtime"]["numpy_version"] = "2.4.6"
+            context_path.write_bytes(canonical_antigravity(context))
+            rehash_antigravity(root)
+
+            with self.assertRaises(ValueError):
+                _inspect_result_with_authority_antigravity(root, evidence.exp456_authority)
+
     def test_rejects_forged_expected_authority_indices_inventory_and_label_count_antigravity(self) -> None:
         """Break caught: replay can be pointed at a rehashed but internally forged Exp456 authority object."""
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.artifacts_antigravity import (

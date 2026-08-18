@@ -26,6 +26,17 @@ class ConfigAntigravityTest(unittest.TestCase):
             config.official_result_root,
             "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
         )
+        self.assertEqual(
+            config.runtime_executable,
+            "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+        )
+        self.assertEqual(
+            config.runtime_prefix,
+            "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+        )
+        self.assertEqual(config.runtime_python_version, "3.14.6")
+        self.assertEqual(config.runtime_numpy_version, "2.3.5")
+        self.assertEqual(config.runtime_aeon_version, "1.4.0")
         self.assertEqual(config.hydra_seeds, (20260721, 20261721))
         self.assertEqual(config.folds, 5)
         self.assertEqual(
@@ -93,6 +104,11 @@ class ConfigAntigravityTest(unittest.TestCase):
             ("kind", "other"),
             ("run_identity", "exp458-other"),
             ("official_result_root", "/Users/mac/Documents/Dataset/other"),
+            ("runtime_executable", "/usr/bin/python3"),
+            ("runtime_prefix", "/Users/mac/Documents/Dataset/venvs/other"),
+            ("runtime_python_version", "3.14.7"),
+            ("runtime_numpy_version", "2.4.6"),
+            ("runtime_aeon_version", "1.4.1"),
             ("hydra_seeds", tuple(reversed(config.hydra_seeds))),
             ("hydra_seeds", (20260721, 20261721, 20262721)),
             ("folds", True),

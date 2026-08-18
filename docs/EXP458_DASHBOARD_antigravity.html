@@ -20,7 +20,8 @@
     <tr><th>현재 판단</th><td><strong>TRAIN 후보는 두 번 재현 통과, 공식 결과 없음</strong></td></tr>
     <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
     <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
-    <tr><th>현재 구현</th><td>Task 5 closed CLI / fixed-runtime outside-CWD launcher / private two-run TRAIN candidate verification 완료. 공식 evaluate/inspect는 실행하지 않았고 Task 6은 미승인 상태다.</td></tr>
+    <tr><th>현재 구현</th><td>Task 5 closed CLI / exact-runtime outside-CWD launcher / private two-run TRAIN candidate verification 완료. 공식 evaluate/inspect는 실행하지 않았고 Task 6은 미승인 상태다.</td></tr>
+    <tr><th>고정 runtime</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code> / Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0</td></tr>
   </table>
 
   <div class="box">
@@ -45,7 +46,7 @@
 
   <h2>두 번 재현한 TRAIN 후보 결과</h2>
   <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
-  <p>이 값은 <strong>공식 결과가 아니라 두 번 재현한 TRAIN 후보 결과</strong>다. Task 5에서는 공식 root를 만들지 않고 두 개의 임시 non-official root에서 private dependency seam으로 publication/replay를 수행했다. 두 실행의 qualification, route, dashboard, 9개 leaf hash, canonical payload hash가 exact match했다.</p>
+  <p>이 값은 <strong>공식 결과가 아니라 두 번 재현한 TRAIN 후보 결과</strong>다. Task 5에서는 공식 root를 만들지 않고 두 개의 임시 non-official root에서 private dependency seam으로 publication/replay를 수행했다. 두 실행의 qualification, route, dashboard, 9개 leaf hash, canonical payload hash가 exact match했다. 현재 public evaluate는 qualification/root 생성 전에 executable, prefix, Python, NumPy, aeon을 fail-closed로 확인하고, replay는 9-leaf context에 기록된 runtime provenance를 semantic replay 일부로 검증한다.</p>
 
   <h2>Task 5 실제 TRAIN 후보 검증</h2>
   <table>
