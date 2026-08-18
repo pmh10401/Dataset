@@ -97,6 +97,28 @@ class EvaluationAntigravityTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             evaluate_blocked_qualification_antigravity(valid)
 
+    def test_rejects_bool_int_container_and_per_type_post_construction_mutation_antigravity(self) -> None:
+        """Break caught: post-construction mutation changes exact types while preserving equal values."""
+        from experiments.exp459_ecg_normal2_blocked_validation_antigravity.evaluation_antigravity import (
+            evaluate_blocked_qualification_antigravity,
+        )
+
+        bool_as_int = qualification_antigravity()
+        object.__setattr__(bool_as_int, "passed", 1)
+        with self.assertRaises(ValueError):
+            evaluate_blocked_qualification_antigravity(bool_as_int)
+
+        list_container = qualification_antigravity()
+        object.__setattr__(list_container, "fold_evidence", list(list_container.fold_evidence))
+        with self.assertRaises(ValueError):
+            evaluate_blocked_qualification_antigravity(list_container)
+
+        extra_auc = qualification_antigravity()
+        record = extra_auc.fold_evidence[0]
+        object.__setattr__(record, "per_type_auc", {**dict(record.per_type_auc), "bonus": 0.9})
+        with self.assertRaises(ValueError):
+            evaluate_blocked_qualification_antigravity(extra_auc)
+
 
 if __name__ == "__main__":
     unittest.main()

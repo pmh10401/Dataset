@@ -26,28 +26,35 @@ _DECISION_EVIDENCE_BY_ID_ANTIGRAVITY: dict[
 ] = {}
 
 
+def _scalar_signature_antigravity(value: object) -> tuple[type, object]:
+    return (type(value), value)
+
+
 def _fold_signature_antigravity(record: FoldEvidenceAntigravity) -> tuple[object, ...]:
     return (
-        record.dataset,
-        record.seed,
-        record.fold_index,
+        _scalar_signature_antigravity(record.dataset),
+        _scalar_signature_antigravity(record.seed),
+        _scalar_signature_antigravity(record.fold_index),
         record.fit_indices.tobytes(),
         record.query_indices.tobytes(),
-        record.normal_trials,
-        record.normal_alerts,
-        record.normal_wilson_upper,
-        tuple(record.per_type_auc[name] for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types),
-        record.pooled_auc,
-        record.passed,
+        _scalar_signature_antigravity(record.normal_trials),
+        _scalar_signature_antigravity(record.normal_alerts),
+        _scalar_signature_antigravity(record.normal_wilson_upper),
+        tuple(
+            _scalar_signature_antigravity(record.per_type_auc[name])
+            for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types
+        ),
+        _scalar_signature_antigravity(record.pooled_auc),
+        _scalar_signature_antigravity(record.passed),
     )
 
 
 def _summary_signature_antigravity(summary: SeedSummaryAntigravity) -> tuple[object, ...]:
     return (
-        summary.dataset,
-        summary.seed,
+        _scalar_signature_antigravity(summary.dataset),
+        _scalar_signature_antigravity(summary.seed),
         tuple(_fold_signature_antigravity(record) for record in summary.fold_records),
-        summary.passed,
+        _scalar_signature_antigravity(summary.passed),
     )
 
 
@@ -55,31 +62,42 @@ def _qualification_signature_antigravity(
     qualification: BlockedQualificationAntigravity,
 ) -> tuple[object, ...]:
     return (
-        qualification.dataset,
+        _scalar_signature_antigravity(qualification.dataset),
         tuple(_fold_signature_antigravity(record) for record in qualification.fold_evidence),
         tuple(_summary_signature_antigravity(summary) for summary in qualification.seed_summaries),
-        qualification.passed,
+        _scalar_signature_antigravity(qualification.passed),
     )
 
 
 def _decision_signature_antigravity(decision: ValidationDecisionAntigravity) -> tuple[object, ...]:
     return (
-        decision.dataset,
+        _scalar_signature_antigravity(decision.dataset),
         _qualification_signature_antigravity(decision.qualification),
-        decision.status,
-        decision.passed,
+        _scalar_signature_antigravity(decision.status),
+        _scalar_signature_antigravity(decision.passed),
     )
 
 
 def _rebuilt_fold_antigravity(record: object) -> FoldEvidenceAntigravity:
     if type(record) is not FoldEvidenceAntigravity:
         raise ValueError("fold evidence type is invalid")
+    if (
+        type(record.fit_indices) is not np.ndarray
+        or record.fit_indices.dtype != np.dtype(np.int64)
+        or record.fit_indices.flags.writeable
+        or type(record.query_indices) is not np.ndarray
+        or record.query_indices.dtype != np.dtype(np.int64)
+        or record.query_indices.flags.writeable
+    ):
+        raise ValueError("fold index arrays must remain exact immutable int64 arrays")
+    if tuple(record.per_type_auc) != FROZEN_CONFIG_ANTIGRAVITY.primary_types:
+        raise ValueError("per_type_auc must retain exact primary type order")
     return FoldEvidenceAntigravity(
         dataset=record.dataset,
         seed=record.seed,
         fold_index=record.fold_index,
-        fit_indices=np.array(record.fit_indices, dtype=np.int64, copy=True),
-        query_indices=np.array(record.query_indices, dtype=np.int64, copy=True),
+        fit_indices=record.fit_indices,
+        query_indices=record.query_indices,
         normal_trials=record.normal_trials,
         normal_alerts=record.normal_alerts,
         normal_wilson_upper=record.normal_wilson_upper,
@@ -99,6 +117,12 @@ def validate_blocked_qualification_semantics_antigravity(
         raise ValueError("qualification type is invalid")
     if value.dataset != FROZEN_CONFIG_ANTIGRAVITY.dataset:
         raise ValueError("qualification dataset differs")
+    if type(value.fold_evidence) is not tuple or len(value.fold_evidence) != (
+        len(FROZEN_CONFIG_ANTIGRAVITY.hydra_seeds) * FROZEN_CONFIG_ANTIGRAVITY.folds
+    ):
+        raise ValueError("fold evidence inventory differs")
+    if type(value.passed) is not bool:
+        raise ValueError("qualification passed must remain bool")
     rebuilt_records = tuple(_rebuilt_fold_antigravity(record) for record in value.fold_evidence)
     expected_order = tuple(
         (seed, fold_index)
