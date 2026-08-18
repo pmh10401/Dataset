@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp459 Task 2 contracts/folds code map."""
+"""Build and validate the bounded Exp459 Task 3 source/qualification code map."""
 
 from __future__ import annotations
 
@@ -37,11 +37,15 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/blocked_folds_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/config_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/contracts_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/qualification_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/sources_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_blocked_folds_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_config_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_controlled_fork_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_governance_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp459_antigravity.py",
 )
 ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "tests"}
@@ -145,8 +149,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp459 Task 2 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp459 Task 2 contracts/folds 코드맵</h1><p>Task 2는 Exp459를 planned_not_started로 유지한 채 frozen config, immutable contracts, deterministic blocked folds, bounded tests, 그리고 동기화된 ledgers/map만 추가한다. 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
+        '<title>Exp459 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp459 Task 3 source/qualification 코드맵</h1><p>Task 3는 Exp459를 planned_not_started로 유지한 채 TRAIN-only source, blocked fold-seed qualification, bounded tests, 그리고 동기화된 ledgers/map만 추가한다. 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -180,6 +184,12 @@ def build_map_antigravity(
     blocked_folds_path = (
         "experiments/exp459_ecg_normal2_blocked_validation_antigravity/blocked_folds_antigravity.py"
     )
+    sources_path = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/sources_antigravity.py"
+    )
+    qualification_path = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/qualification_antigravity.py"
+    )
     config_test = (
         "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
         "test_config_antigravity.py"
@@ -196,6 +206,14 @@ def build_map_antigravity(
         "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
         "test_controlled_fork_antigravity.py"
     )
+    sources_test = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
+        "test_sources_antigravity.py"
+    )
+    qualification_test = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
+        "test_qualification_antigravity.py"
+    )
     builder = "scratch/build_codemap_exp459_antigravity.py"
 
     nodes: list[dict[str, object]] = [
@@ -209,9 +227,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1–2 execution. Effect: records checked Task 1 and Task 2 steps while Tasks 3–6 remain unchecked pending later work.",
+            "role": "Caller: Task 1–3 execution. Effect: records checked Task 1, Task 2, and Task 3 steps while Tasks 4–6 remain unchecked pending later work.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 2: 고정 계약과 연속 fold 생성")],
+            "evidence": [evidence_antigravity(plan, "Task 3: TRAIN source와 10개 fold-seed 자격 평가")],
         },
         {
             "id": "preregistration",
@@ -223,44 +241,44 @@ def build_map_antigravity(
         {
             "id": "runbook",
             "path": "docs/EXP459_RUNBOOK_antigravity.html",
-            "role": "Caller: future operators. Effect: records that Task 2 completed frozen contracts and blocked folds while official commands, root creation, and label access remain blocked.",
+            "role": "Caller: future operators. Effect: records that Task 3 completed TRAIN-only source and qualification while official commands, root creation, and label access remain blocked.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 3 이전까지 금지한 일")],
+            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 4 이전까지 금지한 일")],
         },
         {
             "id": "implementation_report",
             "path": "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: implementation review. Effect: reports the Task 2 frozen config/contracts/folds additions while the official Exp459 lifecycle remains unstarted.",
+            "role": "Caller: implementation review. Effect: reports the Task 3 source/qualification additions while the official Exp459 lifecycle remains unstarted.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 2의 고정 계약과 연속 fold 생성까지 완료했다")],
+            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 3의 TRAIN source와 10개 fold-seed qualification 표면까지 완료했다")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP459_DASHBOARD_antigravity.html",
-            "role": "Caller: reader-facing review. Effect: shows Task 2/6 progress, planned_not_started status, zero official commands, and unchanged champion state.",
+            "role": "Caller: reader-facing review. Effect: shows Task 3/6 progress, planned_not_started status, zero official commands, and unchanged champion state.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 2/6")],
+            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 3/6")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: records Exp459 as planned_not_started with Task 2 complete, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
+            "role": "Caller: governance review. Effect: records Exp459 as planned_not_started with Task 3 complete, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_2_contracts_and_blocked_folds_complete\"")],
+            "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_3_source_and_qualification_complete\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 2 implementation status, frozen predecessor link, planned status, and no-result truth.",
+            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 3 implementation status, frozen predecessor link, planned status, and no-result truth.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_2_contracts_and_blocked_folds_complete\"")],
+            "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_3_source_and_qualification_complete\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: records Exp459 Task 2 completion without changing champion, pending candidate, routing, or promotion.",
+            "role": "Caller: champion review. Effect: records Exp459 Task 3 completion without changing champion, pending candidate, routing, or promotion.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_2_contracts_and_blocked_folds_complete\"")],
+            "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_3_source_and_qualification_complete\"")],
         },
         {
             "id": "task2_config",
@@ -282,6 +300,20 @@ def build_map_antigravity(
             "role": "Caller: Task 3 qualification and Task 2 tests. Effect: generates deterministic contiguous query ranges and sorted complement fit indices without randomness.",
             "tests": [blocked_folds_test, controlled_fork_test],
             "evidence": [evidence_antigravity(blocked_folds_path, "blocked_plan_antigravity")],
+        },
+        {
+            "id": "task3_sources",
+            "path": sources_path,
+            "role": "Caller: Task 3 qualification and source tests. Effect: loads exactly one ECG5000_normal_2 TRAIN values matrix as owned read-only float32 1413x140 without labels or TEST rows.",
+            "tests": [sources_test],
+            "evidence": [evidence_antigravity(sources_path, "load_normal2_train_antigravity")],
+        },
+        {
+            "id": "task3_qualification",
+            "path": qualification_path,
+            "role": "Caller: future evaluation/CLI and Task 3 tests. Effect: calls the blocked fold scorer in exact seed-then-fold order, computes fold AUC/Wilson pass records, seed summaries, and overall qualification.",
+            "tests": [qualification_test],
+            "evidence": [evidence_antigravity(qualification_path, "qualify_blocked_normal2_antigravity")],
         },
         {
             "id": "task2_config_tests",
@@ -312,6 +344,20 @@ def build_map_antigravity(
             "evidence": [evidence_antigravity(controlled_fork_test, "test_exp459_config_changes_only_identity_predecessor_and_fold_planner_antigravity")],
         },
         {
+            "id": "task3_source_tests",
+            "path": sources_test,
+            "role": "Caller: Task 3 verification. Effect: proves the no-argument TRAIN-only source API, one SQL query, no label/TEST surface, exact shape, finite float32, and no aliasing.",
+            "tests": [sources_test],
+            "evidence": [evidence_antigravity(sources_test, "test_loader_issues_one_normal2_train_value_query_with_no_labels_or_test_antigravity")],
+        },
+        {
+            "id": "task3_qualification_tests",
+            "path": qualification_test,
+            "role": "Caller: Task 3 verification. Effect: proves exact ten-call seed/fold order, row coverage, scorer validation, one fold/seed failure behavior, and inclusive threshold semantics.",
+            "tests": [qualification_test],
+            "evidence": [evidence_antigravity(qualification_test, "test_qualification_calls_ten_ordered_blocked_scorers_and_covers_each_row_per_seed_antigravity")],
+        },
+        {
             "id": "governance_regression",
             "path": governance_test,
             "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 2 ledger truth, official-root absence, and bounded code-map parity.",
@@ -321,7 +367,7 @@ def build_map_antigravity(
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 2 validation. Effect: recomputes the bounded Task 2 graph, fingerprints, source-parent rule, and HTML/JSON/lock parity.",
+            "role": "Caller: Task 3 validation. Effect: recomputes the bounded Task 3 graph, fingerprints, source-parent rule, and HTML/JSON/lock parity.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -334,11 +380,15 @@ def build_map_antigravity(
         {"from": "approved_design", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(design, "실행 이름:")},
         {"from": "approved_design", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(design, "stable/unstable")},
         {"from": "approved_design", "to": "task2_blocked_folds", "type": "governs", "evidence": evidence_antigravity(design, "numpy.array_split")},
+        {"from": "approved_design", "to": "task3_sources", "type": "governs", "evidence": evidence_antigravity(design, "TRAIN 입력:")},
+        {"from": "approved_design", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(design, "점수 계산:")},
         {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "Step 6 — focused GREEN 두 번, Exp458 contract/AUC 회귀, compile/diff/map 검증 후 체크박스와 map을 갱신하고 커밋·검토한다.")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 2 완료")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 완료")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(plan, "exact config와 immutable dataclass 계약을 구현한다.")},
         {"from": "implementation_plan", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(plan, "FoldEvidenceAntigravity")},
         {"from": "implementation_plan", "to": "task2_blocked_folds", "type": "governs", "evidence": evidence_antigravity(plan, "def blocked_plan_antigravity(n_rows: int):")},
+        {"from": "implementation_plan", "to": "task3_sources", "type": "governs", "evidence": evidence_antigravity(plan, "sources_antigravity.py")},
+        {"from": "implementation_plan", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(plan, "qualify_blocked_normal2_antigravity()")},
         {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": evidence_antigravity(plan, "map을 갱신하고 커밋·검토한다.")},
         {"from": "task2_config_tests", "to": "task2_config", "type": "tests", "evidence": evidence_antigravity(config_test, "test_config_rejects_any_mutated_value_type_or_order_antigravity")},
         {"from": "task2_contract_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(contracts_test, "test_fold_evidence_summary_qualification_and_decision_recompute_semantics_antigravity")},
@@ -346,6 +396,11 @@ def build_map_antigravity(
         {"from": "task2_controlled_fork_tests", "to": "task2_config", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_config_changes_only_identity_predecessor_and_fold_planner_antigravity")},
         {"from": "task2_controlled_fork_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_modules_avoid_forbidden_runtime_expansions_and_bind_science_to_exp458_antigravity")},
         {"from": "task2_controlled_fork_tests", "to": "task2_blocked_folds", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_modules_avoid_forbidden_runtime_expansions_and_bind_science_to_exp458_antigravity")},
+        {"from": "task2_blocked_folds", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(qualification_path, "_blocked_plan_for_train_antigravity")},
+        {"from": "task2_contracts", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(qualification_path, "_fold_evidence_antigravity")},
+        {"from": "task3_sources", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(qualification_path, "qualify_blocked_normal2_antigravity")},
+        {"from": "task3_source_tests", "to": "task3_sources", "type": "tests", "evidence": evidence_antigravity(sources_test, "test_loader_rejects_malformed_train_rows_and_never_aliases_results_antigravity")},
+        {"from": "task3_qualification_tests", "to": "task3_qualification", "type": "tests", "evidence": evidence_antigravity(qualification_test, "test_qualification_applies_fold_seed_and_inclusive_threshold_gates_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
@@ -356,7 +411,7 @@ def build_map_antigravity(
     ]
 
     graph = {
-        "schema": "exp459_task2_contracts_and_folds_codemap_v1",
+        "schema": "exp459_task3_source_qualification_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -364,7 +419,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp459_task2_contracts_and_folds_codemap_lock_v1",
+        "schema": "exp459_task3_source_qualification_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),
