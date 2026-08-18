@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 대시보드</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem}
+    .box{background:#f5f7fa;padding:1rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
+  <table>
+    <tr><th>진행</th><td>Task 1/6</td></tr>
+    <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
+    <tr><th>현재 판단</th><td><strong>공식 결과 없음</strong></td></tr>
+    <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
+    <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
+  </table>
+
+  <div class="box">
+    <p><strong>고정 진단:</strong> Exp457의 실패 원인은 <strong>상위 0.5%만 이상으로 인정한 지나치게 극단적인 통과선</strong>이었다.</p>
+    <p>Exp458은 같은 TRAIN 점수를 AUC로 다시 요약한다. AUC는 정상보다 이상 점수가 얼마나 꾸준히 높은지 보여주는 값이다.</p>
+  </div>
+
+  <h2>AUC 통과 규칙</h2>
+  <table>
+    <thead><tr><th>조건</th><th>기준</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>각 합성 이상 AUC</td><td>모두 ≥ 0.85</td><td>네 종류를 모두 충분히 잘 구분해야 한다.</td></tr>
+      <tr><td>평균 AUC</td><td>≥ 0.90</td><td>전체 구분력이 높아야 한다.</td></tr>
+      <tr><td>정상 Wilson 상한</td><td>≤ 0.05</td><td>정상 TRAIN을 지나치게 이상으로 고르지 않아야 한다.</td></tr>
+      <tr><td>구조 게이트</td><td><code>14&gt;5</code></td><td><code>added_count &gt; removed_count</code>를 유지한다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>예상 후보 결과</h2>
+  <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
+  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 1에서는 route를 실제로 계산하지 않고 설계와 경계만 고정한다.</p>
+
+  <h2>현재 설명</h2>
+  <div class="box">
+    <p>normal_2만 다시 보는 이유는 구조 진단이 <code>14&gt;5</code>로 유일하게 긍정적이었기 때문이다. 나머지 ECG 네 개는 아직 baseline으로 고정한다.</p>
+    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 1에서 새로 도입하지 않는다.</p>
+  </div>
+</main></body>
+</html>

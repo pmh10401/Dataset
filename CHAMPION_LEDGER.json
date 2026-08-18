@@ -594,6 +594,38 @@
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp458",
+      "kind": "ecg_normal2_rank_confidence_routing",
+      "status": "planned_not_started",
+      "implementation_status": "task_1_governance_registered",
+      "reason": "Exp458 is registered as a planned normal_2-only AUC follow-up to Exp457. Task 1 records the frozen diagnosis, thresholds, projected result, and future implementation boundaries only. No official evaluate/inspect, TEST-label access, official root creation, routing change, champion selection, pending-candidate change, promotion, or operational alert has occurred.",
+      "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
+      "approved_design": "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
+      "approved_design_sha256": "52abe997c0e14badc2c886b888e3b2b2074cf002216891f173ab3b1dd6d7ea5d",
+      "scientific_contract": {"target_dataset": "ECG5000_normal_2", "hydra_seeds": [20260721, 20261721], "folds": 5, "primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "per_type_auc_min": 0.85, "pooled_auc_min": 0.90, "normal_wilson_upper_max": 0.05, "structure_gate": "added_count > removed_count", "projected_result": {"tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}, "final_fn_max": 834, "final_fp_max": 66, "final_f1_strictly_above": 0.5764150943396227, "test_metrics_may_inform_routing": false},
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "next_action": "remain_planned_until_task_2_contracts_and_later_review_complete"
     }
   ]
 }
