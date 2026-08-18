@@ -65,7 +65,7 @@ def canonical_bytes_antigravity(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def strict_json_antigravity(text: str) -> object:
+def strict_json_antigravity(text_or_path: str | Path) -> object:
     def reject_duplicates_antigravity(
         pairs: list[tuple[str, object]],
     ) -> dict[str, object]:
@@ -76,6 +76,11 @@ def strict_json_antigravity(text: str) -> object:
             result[key] = value
         return result
 
+    text = (
+        text_or_path.read_text(encoding="utf-8")
+        if isinstance(text_or_path, Path)
+        else text_or_path
+    )
     return json.loads(text, object_pairs_hook=reject_duplicates_antigravity)
 
 
