@@ -276,9 +276,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(task2.count('<input type="checkbox" checked disabled>'), 7)
         task3 = plan.split("Task 3:", 1)[1].split("Task 4:", 1)[0]
         self.assertEqual(task3.count('<input type="checkbox" checked disabled>'), 7)
-        task4 = plan.split("Task 4:", 1)[1].split("Task 5:", 1)[0]
+        task4 = plan.split("Task 4:", 1)[1].split("</section>", 1)[0]
         self.assertEqual(task4.count('<input type="checkbox" checked disabled>'), 7)
-        task5 = plan.split("Task 5:", 1)[1].split("Task 6:", 1)[0]
+        task5 = plan.split("Task 5:", 1)[1].split("</section>", 1)[0]
         self.assertEqual(task5.count('<input type="checkbox" checked disabled>'), 7)
         for task_number in range(2, 7):
             if task_number in {2, 3, 4, 5}:
