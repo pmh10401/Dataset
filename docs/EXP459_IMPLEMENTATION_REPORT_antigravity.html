@@ -21,8 +21,8 @@
     <tr><td>Exp458 선행 정리</td><td>Task 6 이후 stale truth가 된 Exp458 CLI 테스트 2개를 private synthetic root 기준으로 고쳤고, Exp458 전체 62개 테스트를 다시 녹색으로 맞췄다.</td></tr>
     <tr><td>Exp459 문서 4개</td><td>사전등록, runbook, 구현 보고서, 대시보드를 self-contained HTML로 추가했다.</td></tr>
     <tr><td>세 ledger</td><td>Exp459를 <code>planned_not_started</code>로 등록하고 공식 실행 수 0, label query 0, 결과 hash null을 고정했다.</td></tr>
-    <tr><td>Task 2 config</td><td><code>config_antigravity.py</code>에 실험 정체성, predecessor, runtime, seed, fold 크기, AUC/Wilson 기준을 exact freeze했다.</td></tr>
-    <tr><td>Task 2 contracts</td><td><code>contracts_antigravity.py</code>에 immutable dataclass와 Wilson/AUC semantic recomputation을 추가해 type/order/count 공격을 막았다.</td></tr>
+    <tr><td>Task 2 config</td><td><code>config_antigravity.py</code>에 실험 정체성, predecessor, runtime, seed, fold 크기와 함께 Exp458의 승인 후보 <code>hydra_local_gap</code>, <code>alpha=0.005</code>, <code>knn=3</code>, <code>kernels=8</code>, <code>groups=64</code>를 exact freeze했다.</td></tr>
+    <tr><td>Task 2 contracts</td><td><code>contracts_antigravity.py</code>에 immutable dataclass, bytes-backed immutable ndarray snapshot, Wilson/AUC semantic recomputation을 추가하고 Exp458 구현에 과학 경계를 묶어 type/order/count/mutation 공격을 막았다.</td></tr>
     <tr><td>Task 2 fold planner</td><td><code>blocked_folds_antigravity.py</code>가 <code>np.arange</code> + <code>np.array_split</code>만으로 5개 연속 query 구간과 sorted fit 보완 집합을 만든다.</td></tr>
     <tr><td>Exp459 code map</td><td>Task 2의 config/contracts/blocked folds/test 경계까지 담도록 bounded map triplet을 확장했다.</td></tr>
   </table>
@@ -39,5 +39,8 @@
 
   <h2>전임 실험 보호</h2>
   <p>Exp458 product code와 공식 결과 root는 변경하지 않았다. Exp459는 Exp458의 완료된 truth를 읽기 전용 predecessor로만 사용한다.</p>
+
+  <h2>2026-08-18 보강 메모</h2>
+  <p>후속 리뷰에서 지적된 세부 경계도 보강했다. BlockedFold는 <code>n_rows</code>를 명시적으로 기록해 <code>np.array_split</code> 기준의 query 범위와 fit 보완 집합을 스스로 검증하고, ndarray-backed contract는 외부 alias나 <code>writeable</code> 재설정으로 변조할 수 없도록 bytes-backed snapshot만 받아들인다.</p>
 </main></body>
 </html>

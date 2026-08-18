@@ -103,7 +103,7 @@ class ContractsAntigravityTest(unittest.TestCase):
 
         self.assertEqual(
             tuple(field.name for field in fields(BlockedFoldAntigravity)),
-            ("fold_index", "fit_indices", "query_indices"),
+            ("n_rows", "fold_index", "fit_indices", "query_indices"),
         )
         self.assertEqual(
             tuple(field.name for field in fields(FoldEvidenceAntigravity)),
@@ -137,6 +137,10 @@ class ContractsAntigravityTest(unittest.TestCase):
         evidence = fold_evidence_antigravity()
         self.assertIsInstance(evidence.per_type_auc, MappingProxyType)
         self.assertEqual(tuple(evidence.per_type_auc), PRIMARY_TYPES_ANTIGRAVITY)
+        with self.assertRaises(ValueError):
+            evidence.fit_indices.setflags(write=True)
+        with self.assertRaises(ValueError):
+            evidence.query_indices.setflags(write=True)
         with self.assertRaises(TypeError):
             evidence.per_type_auc["level_shift"] = 0.0  # type: ignore[index]
         with self.assertRaises(FrozenInstanceError):
@@ -147,31 +151,41 @@ class ContractsAntigravityTest(unittest.TestCase):
             BlockedFoldAntigravity,
         )
 
-        fit = np.array([0, 1, 2, 5], dtype=np.int64)
-        query = np.array([3, 4], dtype=np.int64)
-        fold = BlockedFoldAntigravity(1, fit, query)
+        fit = np.array([0, 1, 4, 5, 6, 7, 8, 9], dtype=np.int64)
+        query = np.array([2, 3], dtype=np.int64)
+        fold = BlockedFoldAntigravity(10, 1, fit, query)
         fit[0] = 99
         query[0] = 77
-        self.assertEqual(fold.fit_indices.tolist(), [0, 1, 2, 5])
-        self.assertEqual(fold.query_indices.tolist(), [3, 4])
+        self.assertEqual(fold.fit_indices.tolist(), [0, 1, 4, 5, 6, 7, 8, 9])
+        self.assertEqual(fold.query_indices.tolist(), [2, 3])
         self.assertFalse(np.shares_memory(fold.fit_indices, fit))
         self.assertFalse(np.shares_memory(fold.query_indices, query))
         self.assertFalse(fold.fit_indices.flags.writeable)
         self.assertFalse(fold.query_indices.flags.writeable)
+        with self.assertRaises(ValueError):
+            fold.fit_indices.setflags(write=True)
+        with self.assertRaises(ValueError):
+            fold.query_indices.setflags(write=True)
 
-    def test_blocked_fold_rejects_type_order_uniqueness_and_overlap_attacks_antigravity(self) -> None:
+    def test_blocked_fold_rejects_type_order_uniqueness_overlap_and_non_array_split_semantics_antigravity(
+        self,
+    ) -> None:
         from experiments.exp459_ecg_normal2_blocked_validation_antigravity.contracts_antigravity import (
             BlockedFoldAntigravity,
         )
 
         cases = (
-            dict(fold_index=True, fit_indices=np.array([0, 1]), query_indices=np.array([2, 3])),
-            dict(fold_index=-1, fit_indices=np.array([0, 1]), query_indices=np.array([2, 3])),
-            dict(fold_index=0, fit_indices=np.array([[0, 1]]), query_indices=np.array([2, 3])),
-            dict(fold_index=0, fit_indices=np.array([1, 0]), query_indices=np.array([2, 3])),
-            dict(fold_index=0, fit_indices=np.array([0, 0]), query_indices=np.array([2, 3])),
-            dict(fold_index=0, fit_indices=np.array([0, 1], dtype=bool), query_indices=np.array([2, 3])),
-            dict(fold_index=0, fit_indices=np.array([0, 1]), query_indices=np.array([1, 2])),
+            dict(n_rows=True, fold_index=0, fit_indices=np.array([2, 3, 4, 5, 6]), query_indices=np.array([0, 1])),
+            dict(n_rows=4, fold_index=0, fit_indices=np.array([1, 2, 3]), query_indices=np.array([0])),
+            dict(n_rows=7, fold_index=True, fit_indices=np.array([2, 3, 4, 5, 6]), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=-1, fit_indices=np.array([2, 3, 4, 5, 6]), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=0, fit_indices=np.array([[2, 3, 4, 5, 6]]), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=0, fit_indices=np.array([3, 2, 4, 5, 6]), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=0, fit_indices=np.array([2, 2, 4, 5, 6]), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=0, fit_indices=np.array([2, 3, 4, 5, 6], dtype=bool), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=0, fit_indices=np.array([2, 3, 4, 5]), query_indices=np.array([0, 1])),
+            dict(n_rows=7, fold_index=0, fit_indices=np.array([2, 3, 4, 5, 6]), query_indices=np.array([1, 2])),
+            dict(n_rows=7, fold_index=1, fit_indices=np.array([0, 1, 4, 5]), query_indices=np.array([2, 3])),
         )
         for case in cases:
             with self.subTest(case=case), self.assertRaises(ValueError):

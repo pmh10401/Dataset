@@ -5,10 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from math import isfinite
-from math import sqrt
 from types import MappingProxyType
 
 import numpy as np
+
+from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
+    _wilson_upper_antigravity as _exp458_wilson_upper_antigravity,
+)
+from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.rank_auc_antigravity import (
+    mann_whitney_auc_antigravity,
+)
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 
@@ -52,13 +58,19 @@ def _fold_index_antigravity(value: object) -> int:
     return value
 
 
+def _n_rows_antigravity(value: object) -> int:
+    if type(value) is not int or value < FROZEN_CONFIG_ANTIGRAVITY.folds:
+        raise ValueError("n_rows must be an exact integer with at least one row per fold")
+    return value
+
+
 def _unit_float_antigravity(value: object, name: str) -> float:
     if type(value) is not float or not isfinite(value) or not 0.0 <= value <= 1.0:
         raise ValueError(f"{name} must be a finite float in [0, 1]")
     return value
 
 
-def _readonly_owned_indices_antigravity(value: object, name: str) -> np.ndarray:
+def _immutable_indices_antigravity(value: object, name: str) -> np.ndarray:
     if not isinstance(value, np.ndarray):
         raise ValueError(f"{name} must be a NumPy array")
     if value.ndim != 1 or value.size < 1:
@@ -72,8 +84,7 @@ def _readonly_owned_indices_antigravity(value: object, name: str) -> np.ndarray:
         raise ValueError(f"{name} must be unique")
     if not np.array_equal(indices, np.sort(indices)):
         raise ValueError(f"{name} must be sorted")
-    indices.flags.writeable = False
-    return indices
+    return np.frombuffer(indices.tobytes(), dtype=np.int64)
 
 
 def _validate_per_type_auc_antigravity(value: object) -> MappingProxyType:
@@ -89,35 +100,24 @@ def _validate_per_type_auc_antigravity(value: object) -> MappingProxyType:
 
 
 def wilson_upper_antigravity(successes: int, trials: int) -> float:
-    _positive_int_antigravity(trials, "normal_trials")
-    _bounded_int_antigravity(successes, "normal_alerts", upper=trials)
-    proportion = successes / trials
-    z_squared = _WILSON_95_Z_ANTIGRAVITY**2
-    denominator = 1.0 + z_squared / trials
-    center = proportion + z_squared / (2.0 * trials)
-    adjustment = _WILSON_95_Z_ANTIGRAVITY * sqrt(
-        (proportion * (1.0 - proportion) + z_squared / (4.0 * trials)) / trials
+    return _exp458_wilson_upper_antigravity(successes, trials)
+
+
+def _expected_queries_antigravity(n_rows: int) -> tuple[np.ndarray, ...]:
+    return tuple(
+        np.frombuffer(np.array(part, dtype=np.int64, copy=True).tobytes(), dtype=np.int64)
+        for part in np.array_split(np.arange(n_rows, dtype=np.int64), FROZEN_CONFIG_ANTIGRAVITY.folds)
     )
-    return min(1.0, (center + adjustment) / denominator)
 
 
-def _expected_query_indices_antigravity(fold_index: int) -> np.ndarray:
-    start, stop = FROZEN_CONFIG_ANTIGRAVITY.query_ranges[fold_index]
-    indices = np.arange(start, stop + 1, dtype=np.int64)
-    indices.flags.writeable = False
-    return indices
+def _expected_query_indices_antigravity(n_rows: int, fold_index: int) -> np.ndarray:
+    return _expected_queries_antigravity(n_rows)[fold_index]
 
 
-def _expected_fit_indices_antigravity(fold_index: int) -> np.ndarray:
-    query = _expected_query_indices_antigravity(fold_index)
-    fit = np.concatenate(
-        (
-            np.arange(0, int(query[0]), dtype=np.int64),
-            np.arange(int(query[-1]) + 1, FROZEN_CONFIG_ANTIGRAVITY.normal2_train_rows, dtype=np.int64),
-        )
-    )
-    fit.flags.writeable = False
-    return fit
+def _expected_fit_indices_antigravity(n_rows: int, fold_index: int) -> np.ndarray:
+    queries = _expected_queries_antigravity(n_rows)
+    fit = np.concatenate(queries[:fold_index] + queries[fold_index + 1 :])
+    return np.frombuffer(np.array(fit, dtype=np.int64, copy=True).tobytes(), dtype=np.int64)
 
 
 def _fold_signature_antigravity(value: object) -> tuple[object, ...]:
@@ -140,16 +140,22 @@ def _fold_signature_antigravity(value: object) -> tuple[object, ...]:
 
 @dataclass(frozen=True, slots=True)
 class BlockedFoldAntigravity:
+    n_rows: int
     fold_index: int
     fit_indices: np.ndarray
     query_indices: np.ndarray
 
     def __post_init__(self) -> None:
-        _fold_index_antigravity(self.fold_index)
-        fit_indices = _readonly_owned_indices_antigravity(self.fit_indices, "fit_indices")
-        query_indices = _readonly_owned_indices_antigravity(self.query_indices, "query_indices")
-        if np.intersect1d(fit_indices, query_indices).size:
-            raise ValueError("fit_indices and query_indices must remain disjoint")
+        n_rows = _n_rows_antigravity(self.n_rows)
+        fold_index = _fold_index_antigravity(self.fold_index)
+        fit_indices = _immutable_indices_antigravity(self.fit_indices, "fit_indices")
+        query_indices = _immutable_indices_antigravity(self.query_indices, "query_indices")
+        expected_query = _expected_query_indices_antigravity(n_rows, fold_index)
+        expected_fit = _expected_fit_indices_antigravity(n_rows, fold_index)
+        if not np.array_equal(query_indices, expected_query):
+            raise ValueError("query_indices must match the exact array_split blocked range")
+        if not np.array_equal(fit_indices, expected_fit):
+            raise ValueError("fit_indices must match the exact blocked complement")
         object.__setattr__(self, "fit_indices", fit_indices)
         object.__setattr__(self, "query_indices", query_indices)
 
@@ -172,13 +178,17 @@ class FoldEvidenceAntigravity:
         _dataset_antigravity(self.dataset)
         _seed_antigravity(self.seed)
         fold_index = _fold_index_antigravity(self.fold_index)
-        fit_indices = _readonly_owned_indices_antigravity(self.fit_indices, "fit_indices")
-        query_indices = _readonly_owned_indices_antigravity(self.query_indices, "query_indices")
-        if np.intersect1d(fit_indices, query_indices).size:
-            raise ValueError("fit_indices and query_indices must remain disjoint")
-        if not np.array_equal(query_indices, _expected_query_indices_antigravity(fold_index)):
+        fit_indices = _immutable_indices_antigravity(self.fit_indices, "fit_indices")
+        query_indices = _immutable_indices_antigravity(self.query_indices, "query_indices")
+        if not np.array_equal(
+            query_indices,
+            _expected_query_indices_antigravity(FROZEN_CONFIG_ANTIGRAVITY.normal2_train_rows, fold_index),
+        ):
             raise ValueError("query_indices must match the exact blocked fold range")
-        if not np.array_equal(fit_indices, _expected_fit_indices_antigravity(fold_index)):
+        if not np.array_equal(
+            fit_indices,
+            _expected_fit_indices_antigravity(FROZEN_CONFIG_ANTIGRAVITY.normal2_train_rows, fold_index),
+        ):
             raise ValueError("fit_indices must match the exact blocked fold complement")
         _positive_int_antigravity(self.normal_trials, "normal_trials")
         if self.normal_trials != len(query_indices):
@@ -309,5 +319,6 @@ __all__ = (
     "FoldEvidenceAntigravity",
     "SeedSummaryAntigravity",
     "ValidationDecisionAntigravity",
+    "mann_whitney_auc_antigravity",
     "wilson_upper_antigravity",
 )

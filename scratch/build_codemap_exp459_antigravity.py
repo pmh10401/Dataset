@@ -260,14 +260,14 @@ def build_map_antigravity(
         {
             "id": "task2_config",
             "path": config_path,
-            "role": "Caller: contracts, blocked_folds, and future qualification. Effect: freezes Exp459 identity, predecessor, runtime, fold ranges, seeds, types, and AUC/Wilson thresholds.",
+            "role": "Caller: contracts, blocked_folds, and future qualification. Effect: freezes Exp459 identity plus the inherited Exp458 candidate, alpha, Hydra settings, runtime, fold ranges, seeds, types, and AUC/Wilson thresholds.",
             "tests": [config_test, controlled_fork_test],
             "evidence": [evidence_antigravity(config_path, "Exp459ConfigAntigravity")],
         },
         {
             "id": "task2_contracts",
             "path": contracts_path,
-            "role": "Caller: blocked_folds, future qualification/evaluation, and Task 2 tests. Effect: validates immutable blocked-fold, fold-evidence, seed-summary, qualification, and decision semantics.",
+            "role": "Caller: blocked_folds, future qualification/evaluation, and Task 2 tests. Effect: validates immutable blocked-fold, fold-evidence, seed-summary, qualification, and decision semantics while binding Wilson/AUC science to Exp458.",
             "tests": [contracts_test, controlled_fork_test],
             "evidence": [evidence_antigravity(contracts_path, "FoldEvidenceAntigravity")],
         },
@@ -302,7 +302,7 @@ def build_map_antigravity(
         {
             "id": "task2_controlled_fork_tests",
             "path": controlled_fork_test,
-            "role": "Caller: Task 2 verification. Effect: proves only identity/fold-planner deltas exist while runtime, seed, type, threshold, and no-randomness boundaries stay paired with Exp458.",
+            "role": "Caller: Task 2 verification. Effect: proves only identity/fold-planner deltas exist while inherited candidate, alpha, Hydra settings, Exp458 AUC/Wilson bindings, runtime, seed, type, threshold, and no-randomness boundaries stay paired.",
             "tests": [controlled_fork_test],
             "evidence": [evidence_antigravity(controlled_fork_test, "test_exp459_config_changes_only_identity_predecessor_and_fold_planner_antigravity")],
         },
@@ -339,8 +339,8 @@ def build_map_antigravity(
         {"from": "task2_contract_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(contracts_test, "test_fold_evidence_summary_qualification_and_decision_recompute_semantics_antigravity")},
         {"from": "task2_blocked_fold_tests", "to": "task2_blocked_folds", "type": "tests", "evidence": evidence_antigravity(blocked_folds_test, "test_blocked_plan_source_uses_array_split_without_random_calls_antigravity")},
         {"from": "task2_controlled_fork_tests", "to": "task2_config", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_config_changes_only_identity_predecessor_and_fold_planner_antigravity")},
-        {"from": "task2_controlled_fork_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_modules_avoid_forbidden_runtime_expansions_antigravity")},
-        {"from": "task2_controlled_fork_tests", "to": "task2_blocked_folds", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_modules_avoid_forbidden_runtime_expansions_antigravity")},
+        {"from": "task2_controlled_fork_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_modules_avoid_forbidden_runtime_expansions_and_bind_science_to_exp458_antigravity")},
+        {"from": "task2_controlled_fork_tests", "to": "task2_blocked_folds", "type": "tests", "evidence": evidence_antigravity(controlled_fork_test, "test_exp459_modules_avoid_forbidden_runtime_expansions_and_bind_science_to_exp458_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
@@ -458,8 +458,8 @@ def main_antigravity() -> None:
     args = parser.parse_args()
     if args.validate_only:
         validate_map_antigravity(
-            strict_json_antigravity(JSON_PATH_ANTIGRAVITY.read_text(encoding="utf-8")),
-            strict_json_antigravity(LOCK_PATH_ANTIGRAVITY.read_text(encoding="utf-8")),
+            strict_json_antigravity(JSON_PATH_ANTIGRAVITY),
+            strict_json_antigravity(LOCK_PATH_ANTIGRAVITY),
             HTML_PATH_ANTIGRAVITY.read_text(encoding="utf-8"),
         )
         return

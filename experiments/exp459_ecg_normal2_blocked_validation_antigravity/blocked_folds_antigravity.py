@@ -18,6 +18,7 @@ def blocked_plan_antigravity(n_rows: int) -> tuple[BlockedFoldAntigravity, ...]:
     )
     return tuple(
         BlockedFoldAntigravity(
+            n_rows=n_rows,
             fold_index=index,
             fit_indices=np.concatenate(queries[:index] + queries[index + 1 :]),
             query_indices=query,

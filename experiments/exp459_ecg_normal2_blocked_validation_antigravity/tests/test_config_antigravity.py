@@ -49,8 +49,13 @@ class ConfigAntigravityTest(unittest.TestCase):
             "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9",
         )
         self.assertEqual(config.blocked_fold_planner, "numpy.arange+numpy.array_split")
+        self.assertEqual(config.candidate, "hydra_local_gap")
         self.assertEqual(config.hydra_seeds, (20260721, 20261721))
         self.assertEqual(config.folds, 5)
+        self.assertEqual(config.alpha, 0.005)
+        self.assertEqual(config.knn_k, 3)
+        self.assertEqual(config.kernels, 8)
+        self.assertEqual(config.groups, 64)
         self.assertEqual(config.query_sizes, (283, 283, 283, 282, 282))
         self.assertEqual(
             config.query_ranges,
@@ -105,10 +110,19 @@ class ConfigAntigravityTest(unittest.TestCase):
             ("predecessor_reviewed_commit", "0" * 40),
             ("predecessor_artifact_map_sha256", "1" * 64),
             ("blocked_fold_planner", "shuffle"),
+            ("candidate", "multirocket_local_gap"),
             ("hydra_seeds", tuple(reversed(config.hydra_seeds))),
             ("hydra_seeds", (20260721, 20261721, 20262721)),
             ("folds", True),
             ("folds", 4),
+            ("alpha", True),
+            ("alpha", 0.01),
+            ("knn_k", True),
+            ("knn_k", 4),
+            ("kernels", True),
+            ("kernels", 16),
+            ("groups", True),
+            ("groups", 32),
             ("query_sizes", tuple(reversed(config.query_sizes))),
             ("query_ranges", tuple(reversed(config.query_ranges))),
             ("fit_sizes", tuple(reversed(config.fit_sizes))),

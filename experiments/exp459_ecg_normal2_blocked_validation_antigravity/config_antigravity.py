@@ -34,8 +34,13 @@ class Exp459ConfigAntigravity:
     predecessor_reviewed_commit: str
     predecessor_artifact_map_sha256: str
     blocked_fold_planner: str
+    candidate: str
     hydra_seeds: tuple[int, int]
     folds: int
+    alpha: float
+    knn_k: int
+    kernels: int
+    groups: int
     query_sizes: tuple[int, int, int, int, int]
     query_ranges: tuple[
         tuple[int, int],
@@ -79,8 +84,13 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "predecessor_reviewed_commit": "fc530cd2b392394aa7ffbd1408bc06d5b1b7c806",
         "predecessor_artifact_map_sha256": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9",
         "blocked_fold_planner": "numpy.arange+numpy.array_split",
+        "candidate": "hydra_local_gap",
         "hydra_seeds": (20260721, 20261721),
         "folds": 5,
+        "alpha": 0.005,
+        "knn_k": 3,
+        "kernels": 8,
+        "groups": 64,
         "query_sizes": (283, 283, 283, 282, 282),
         "query_ranges": ((0, 282), (283, 565), (566, 848), (849, 1130), (1131, 1412)),
         "fit_sizes": (1130, 1130, 1130, 1131, 1131),

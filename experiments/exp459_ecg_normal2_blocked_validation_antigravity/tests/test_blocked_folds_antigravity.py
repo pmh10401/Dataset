@@ -28,6 +28,7 @@ class BlockedFoldsAntigravityTest(unittest.TestCase):
         )
         for fold_index, fold in enumerate(folds):
             with self.subTest(fold_index=fold_index):
+                self.assertEqual(fold.n_rows, 1413)
                 self.assertEqual(fold.fold_index, fold_index)
                 self.assertEqual(np.intersect1d(fold.fit_indices, fold.query_indices).size, 0)
                 self.assertEqual(
@@ -46,6 +47,7 @@ class BlockedFoldsAntigravityTest(unittest.TestCase):
         )
 
         folds = blocked_plan_antigravity(7)
+        self.assertEqual([fold.n_rows for fold in folds], [7, 7, 7, 7, 7])
         self.assertEqual([fold.query_indices.tolist() for fold in folds], [[0, 1], [2, 3], [4], [5], [6]])
         self.assertEqual([fold.fit_indices.tolist() for fold in folds], [[2, 3, 4, 5, 6], [0, 1, 4, 5, 6], [0, 1, 2, 3, 5, 6], [0, 1, 2, 3, 4, 6], [0, 1, 2, 3, 4, 5]])
 
