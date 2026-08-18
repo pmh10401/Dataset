@@ -87,6 +87,28 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             export_dashboard_antigravity(mutated)
 
+    def test_dashboard_rejects_exp458_predecessor_metrics_mutation_antigravity(self) -> None:
+        """Break caught: exported mutable Exp458 metrics can be edited before dashboard publication."""
+        from experiments.exp459_ecg_normal2_blocked_validation_antigravity import evaluation_antigravity
+        from experiments.exp459_ecg_normal2_blocked_validation_antigravity.dashboard_export_antigravity import (
+            export_dashboard_antigravity,
+        )
+
+        metrics = evaluation_antigravity.EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY
+        original = metrics["f1"] if hasattr(metrics, "__getitem__") else metrics.f1
+        try:
+            if hasattr(metrics, "__setitem__"):
+                metrics["f1"] = 0.0
+            else:
+                object.__setattr__(metrics, "f1", 0.0)
+            with self.assertRaises(ValueError):
+                export_dashboard_antigravity(decision_antigravity())
+        finally:
+            if hasattr(metrics, "__setitem__"):
+                metrics["f1"] = original
+            else:
+                object.__setattr__(metrics, "f1", original)
+
 
 if __name__ == "__main__":
     unittest.main()

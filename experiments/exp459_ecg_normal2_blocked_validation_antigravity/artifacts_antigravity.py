@@ -12,11 +12,11 @@ import re
 from .blocked_folds_antigravity import blocked_plan_antigravity
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import ValidationDecisionAntigravity
-from .dashboard_export_antigravity import export_dashboard_antigravity
+from .dashboard_export_antigravity import export_dashboard_from_authority_antigravity
 from .evaluation_antigravity import (
-    EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY,
-    _qualification_for_decision_antigravity,
-    validate_validation_decision_semantics_antigravity,
+    exp458_predecessor_context_payload_antigravity,
+    validate_decision_matches_authority_antigravity,
+    validate_frozen_validation_authority_antigravity,
 )
 
 
@@ -74,15 +74,16 @@ def _context_payload_antigravity() -> dict[str, object]:
         "run_identity": FROZEN_CONFIG_ANTIGRAVITY.run_identity,
         "predecessor_reviewed_commit": FROZEN_CONFIG_ANTIGRAVITY.predecessor_reviewed_commit,
         "predecessor_artifact_map_sha256": FROZEN_CONFIG_ANTIGRAVITY.predecessor_artifact_map_sha256,
-        "exp458_predecessor": dict(EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY),
+        "exp458_predecessor": exp458_predecessor_context_payload_antigravity(),
         "runtime": _runtime_payload_antigravity(),
         "label_query_count": 0,
     }
 
 
-def _fold_plan_rows_antigravity() -> tuple[dict[str, object], ...]:
+def _fold_plan_rows_antigravity(fold_plan: tuple[object, ...] | None = None) -> tuple[dict[str, object], ...]:
     rows: list[dict[str, object]] = []
-    for fold in blocked_plan_antigravity(FROZEN_CONFIG_ANTIGRAVITY.normal2_train_rows):
+    folds = fold_plan if fold_plan is not None else blocked_plan_antigravity(FROZEN_CONFIG_ANTIGRAVITY.normal2_train_rows)
+    for fold in folds:
         rows.append(
             {
                 "n_rows": fold.n_rows,
@@ -132,20 +133,19 @@ def _decision_payload_antigravity(decision: ValidationDecisionAntigravity) -> di
     }
 
 
-def _payloads_antigravity(decision: ValidationDecisionAntigravity) -> dict[str, bytes]:
-    value = validate_validation_decision_semantics_antigravity(decision)
-    qualification = _qualification_for_decision_antigravity(value)
+def _payloads_antigravity(authority: object) -> dict[str, bytes]:
+    trusted = validate_frozen_validation_authority_antigravity(authority)
     payloads = {
         "context_antigravity.json": _json_bytes_antigravity(_context_payload_antigravity()),
-        "fold_plan_antigravity.jsonl": _jsonl_bytes_antigravity(_fold_plan_rows_antigravity()),
+        "fold_plan_antigravity.jsonl": _jsonl_bytes_antigravity(_fold_plan_rows_antigravity(trusted.fold_plan)),
         "fold_evidence_antigravity.jsonl": _jsonl_bytes_antigravity(
-            tuple(_fold_evidence_row_antigravity(record) for record in qualification.fold_evidence)
+            tuple(_fold_evidence_row_antigravity(record) for record in trusted.fold_evidence)
         ),
         "seed_summary_antigravity.jsonl": _jsonl_bytes_antigravity(
-            tuple(_seed_summary_row_antigravity(summary) for summary in qualification.seed_summaries)
+            tuple(_seed_summary_row_antigravity(summary) for summary in trusted.seed_summaries)
         ),
-        "decision_antigravity.json": _json_bytes_antigravity(_decision_payload_antigravity(value)),
-        "dashboard_snapshot_antigravity.json": _json_bytes_antigravity(export_dashboard_antigravity(value)),
+        "decision_antigravity.json": _json_bytes_antigravity(_decision_payload_antigravity(trusted.decision)),
+        "dashboard_snapshot_antigravity.json": _json_bytes_antigravity(export_dashboard_from_authority_antigravity(trusted)),
     }
     if tuple(payloads) != _LEAVES_ANTIGRAVITY[:-1]:
         raise ValueError("publication payload inventory differs")
@@ -153,11 +153,14 @@ def _payloads_antigravity(decision: ValidationDecisionAntigravity) -> dict[str, 
 
 
 def publish_result_antigravity(
-    root: Path, decision: ValidationDecisionAntigravity
+    root: Path,
+    decision: ValidationDecisionAntigravity,
+    authority: object | None = None,
 ) -> PublishedResultAntigravity:
     if not isinstance(root, Path) or root.exists() or root.is_symlink():
         raise ValueError("publication destination must not exist")
-    payloads = _payloads_antigravity(decision)
+    trusted = validate_decision_matches_authority_antigravity(decision, authority)
+    payloads = _payloads_antigravity(trusted)
     artifact_map = {name: sha256(payloads[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
     map_bytes = _json_bytes_antigravity(artifact_map)
     try:

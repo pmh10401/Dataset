@@ -20,6 +20,14 @@ def decision_antigravity(*, unstable: bool = False):
     )
 
 
+def authority_antigravity(*, unstable: bool = False):
+    from experiments.exp459_ecg_normal2_blocked_validation_antigravity.evaluation_antigravity import (
+        freeze_validation_authority_antigravity,
+    )
+
+    return freeze_validation_authority_antigravity(decision_antigravity(unstable=unstable))
+
+
 class ArtifactsAntigravityTest(unittest.TestCase):
     def test_publishes_exact_canonical_seven_leaf_inventory_create_only_antigravity(self) -> None:
         """Break caught: publication writes the wrong leaves, noncanonical bytes, or overwrites a root."""
@@ -40,7 +48,8 @@ class ArtifactsAntigravityTest(unittest.TestCase):
         self.assertEqual(_LEAVES_ANTIGRAVITY, expected)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "result_antigravity"
-            published = publish_result_antigravity(root, decision_antigravity())
+            decision = decision_antigravity()
+            published = publish_result_antigravity(root, decision, authority_antigravity())
             self.assertEqual(tuple(name for name, _digest in published.leaf_sha256), expected)
             self.assertEqual({entry.name for entry in root.iterdir()}, set(expected))
             self.assertTrue(all((root / name).read_bytes().endswith(b"\n") for name in expected))
@@ -62,10 +71,10 @@ class ArtifactsAntigravityTest(unittest.TestCase):
             self.assertNotIn("/Users/mac/Documents/Dataset/univariate_ts.db", repr(context))
 
             with self.assertRaises(ValueError):
-                publish_result_antigravity(root, decision_antigravity())
+                publish_result_antigravity(root, decision, authority_antigravity())
 
-    def test_rejects_symlink_destination_and_forged_decision_without_shared_evaluator_antigravity(self) -> None:
-        """Break caught: publication trusts unsafe paths or caller-minted decisions."""
+    def test_rejects_missing_or_wrong_authority_and_unsafe_or_forged_decision_antigravity(self) -> None:
+        """Break caught: publication trusts unsafe paths, caller-minted decisions, or root-local evidence."""
         from experiments.exp459_ecg_normal2_blocked_validation_antigravity.artifacts_antigravity import (
             publish_result_antigravity,
         )
@@ -74,13 +83,19 @@ class ArtifactsAntigravityTest(unittest.TestCase):
         )
 
         decision = decision_antigravity()
+        authority = authority_antigravity()
+        with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
+            publish_result_antigravity(Path(temporary) / "result_antigravity", decision)
+        with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
+            publish_result_antigravity(Path(temporary) / "result_antigravity", decision, authority_antigravity(unstable=True))
+
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary) / "target_antigravity"
             target.mkdir()
             link = Path(temporary) / "link_antigravity"
             link.symlink_to(target, target_is_directory=True)
             with self.assertRaises(ValueError):
-                publish_result_antigravity(link, decision)
+                publish_result_antigravity(link, decision, authority)
 
         forged = ValidationDecisionAntigravity(
             dataset=decision.dataset,
@@ -89,7 +104,7 @@ class ArtifactsAntigravityTest(unittest.TestCase):
             passed=decision.passed,
         )
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
-            publish_result_antigravity(Path(temporary) / "result_antigravity", forged)
+            publish_result_antigravity(Path(temporary) / "result_antigravity", forged, authority)
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "d0a2a2643593b973b4ec8ac1f24a43fdd109916b1f73956dea9bc4cffcb572ef"
+    "150e06ea94796b041d0e8d54563873f0cf727a50c4f0ea28b75753b6f5edcd86"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"

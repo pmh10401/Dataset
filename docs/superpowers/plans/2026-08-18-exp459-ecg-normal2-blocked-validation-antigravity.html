@@ -47,7 +47,7 @@
       <tr><td><code>qualification_antigravity.py</code></td><td>두 seed×다섯 fold Hydra/LocalGap 점수와 AUC/Wilson 계산</td></tr>
       <tr><td><code>evaluation_antigravity.py</code></td><td>10개 판단을 stable/unstable로 집계하고 Exp458 고정 성능을 함께 표시</td></tr>
       <tr><td><code>artifacts_antigravity.py</code></td><td>정확한 7-leaf 결과를 create-only로 저장</td></tr>
-      <tr><td><code>replay_antigravity.py</code></td><td>저장된 fold·AUC·판단을 source-free로 다시 계산</td></tr>
+      <tr><td><code>replay_antigravity.py</code></td><td>trusted frozen authority에서 fold·AUC·판단 payload를 source-free로 재구성하고 root bytes와 exact 비교</td></tr>
       <tr><td><code>dashboard_export_antigravity.py</code></td><td>TRAIN aggregate만 포함한 HTML용 결과 payload 생성</td></tr>
       <tr><td><code>cli_antigravity.py</code>와 launcher</td><td>정확한 evaluate/inspect 표면과 고정 runtime 실행</td></tr>
     </tbody>
@@ -157,30 +157,31 @@ qualification_passed = all(summary.passed for summary in seed_summaries)</code><
     <li><code>artifact_sha256_antigravity.json</code></li>
   </ol>
   <ul>
-    <li><label><input type="checkbox" checked disabled>Step 1 — stable 10/10, unstable 9/10, exact Exp458 metrics, create-only publication, semantic tamper replay RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — stable 10/10, unstable 9/10, exact immutable Exp458 metrics, create-only authority-gated publication, semantic tamper replay RED를 작성한다.</label></li>
     <li><label><input type="checkbox" checked disabled>Step 2 — evaluator가 fold records를 정렬하지 않고 exact seed→fold 순서로 요구하며, 모든 10개 pass일 때만 stable을 반환하게 한다.</label></li>
     <li><label><input type="checkbox" checked disabled>Step 3 — canonical JSON/JSONL로 7 leaves를 저장하고 artifact map은 자신을 제외한 6개 leaf hash만 기록한다.</label></li>
-    <li><label><input type="checkbox" checked disabled>Step 4 — replay가 fold plan, 네 AUC, pooled 평균, Wilson, seed pass, final decision, dashboard payload를 source-free로 재계산하게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — replay가 root 자체가 아니라 외부 <code>FrozenValidationAuthorityAntigravity</code>에서 fold plan, 네 AUC, pooled 평균, Wilson, seed pass, final decision, dashboard payload를 source-free로 재구성하게 한다.</label></li>
     <li><label><input type="checkbox" checked disabled>Step 5 — dashboard payload를 status, 10개 aggregate row, seed summary, Exp458 고정 metrics, label_query_count=0만 허용하도록 구현한다.</label></li>
-    <li><label><input type="checkbox" checked disabled>Step 6 — rehashed fold/AUC/Wilson/decision/dashboard/map tamper와 extra/missing/reordered leaf를 거부하는 테스트를 통과시킨다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — rehashed fold/AUC/Wilson/decision/dashboard/map tamper, coordinated evidence+dashboard+decision+map rewrite, wrong/digest-mutated authority, extra/missing/reordered leaf를 거부하는 테스트를 통과시킨다.</label></li>
     <li><label><input type="checkbox" checked disabled>Step 7 — focused GREEN 두 번, Tasks 2–3 및 Exp458 replay 회귀, map/diff/HTML 검증 후 커밋·검토한다.</label></li>
   </ul>
 
-  <h2>Task 5: 닫힌 CLI, 실제 TRAIN 두 번, 최종 후보 검토</h2>
+  <h2>Task 5: 닫힌 CLI, 실제 TRAIN 두 번, frozen authority 생성, 최종 후보 검토</h2>
   <p><strong>파일</strong></p>
   <ul>
     <li>Create: <code>cli_antigravity.py</code>, <code>scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py</code></li>
     <li>Create test: <code>test_cli_antigravity.py</code></li>
     <li>Modify: Exp459 HTML 문서·세 ledgers·map builder/triplet</li>
   </ul>
-  <p><strong>Public commands:</strong> 정확히 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>. 다른 subcommand, root/threshold/fold/seed override, 약식 option은 허용하지 않는다.</p>
+  <p><strong>Public commands:</strong> 정확히 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>. 다른 subcommand, root/threshold/fold/seed override, 약식 option은 허용하지 않는다. 단, Task 4의 replay/publication 계약상 inspect와 publication은 root 자체를 신뢰하지 않고 Task 5에서 만든 trusted immutable validation authority와 exact-equal일 때만 통과한다.</p>
+  <p><strong>Frozen authority boundary:</strong> Task 4는 <code>FrozenValidationAuthorityAntigravity</code> 인터페이스와 synthetic 주입 테스트만 제공한다. 실제 authority 값은 Task 5에서 private TRAIN 두 번이 10 fold evidence, 두 seed summary, decision input, canonical digest까지 exact-equal이고 최종 독립 검토가 끝난 뒤에만 생성한다.</p>
   <ul>
     <li><label><input type="checkbox" disabled>Step 1 — CLI/launcher missing RED, parser exact surface, lazy import, wrong runtime, outside-CWD launcher 테스트를 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — fixed Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0을 확인한 뒤에만 evaluate가 qualification→evaluation→temporary publication→replay를 실행하게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — inspect는 TRAIN/SQLite/Hydra를 import하지 않고 완성된 7-leaf root만 replay하게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — fixed Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0을 확인한 뒤에만 evaluate가 qualification→evaluation을 실행하고, 두 private run이 exact-equal이기 전에는 authority나 publication을 만들지 않게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — inspect는 TRAIN/SQLite/Hydra를 import하지 않고 완성된 7-leaf root와 trusted authority를 exact-equal 비교하는 replay만 수행하게 한다.</label></li>
     <li><label><input type="checkbox" disabled>Step 4 — 전체 synthetic suite를 두 번 실행하고 Exp458 62/62와 Exp457 과학 회귀를 확인한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — 공식 root가 없는 상태에서 private temporary root로 실제 TRAIN qualification을 순차적으로 정확히 두 번 실행한다. 두 실행의 10 fold AUC, pass, decision, 7 leaf hashes가 exact 같은지 확인하고 temp root를 정리한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — 실제 결과가 stable이든 unstable이든 그대로 HTML 대시보드와 보고서에 기록한다. 실패 결과를 통과로 바꾸지 않는다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 5 — 공식 root가 없는 상태에서 private temporary root로 실제 TRAIN qualification을 순차적으로 정확히 두 번 실행한다. 두 실행의 5 fold plan, 10 fold evidence, 2 seed summaries, decision input, canonical authority digest, 7 leaf hashes가 exact 같은지 확인하고 temp root를 정리한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — exact-equal private run과 최종 review 후에만 실제 trusted frozen authority를 만들고, 결과가 stable이든 unstable이든 그대로 HTML 대시보드와 보고서에 기록한다. 실패 결과를 통과로 바꾸지 않는다.</label></li>
     <li><label><input type="checkbox" disabled>Step 7 — 상태를 <code>implementation_verified_awaiting_official_evaluation</code>로 갱신하되 official counts 0, result hashes null, champion/pending unchanged를 유지한다.</label></li>
     <li><label><input type="checkbox" disabled>Step 8 — map/diff/byte/root/clean 검증, 새 독립 최종 review SHIP을 받고 Task 5 체크박스를 완료한다.</label></li>
   </ul>

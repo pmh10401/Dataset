@@ -13,7 +13,7 @@
 </head>
 <body><main>
   <h1>Exp459 실행 가이드</h1>
-  <p><strong>상태:</strong> <code>planned_not_started</code>. 지금은 Task 4의 stable/unstable 판단, 7-leaf publication, source-free replay, dashboard payload까지 준비된 단계다.</p>
+  <p><strong>상태:</strong> <code>planned_not_started</code>. 지금은 Task 4의 stable/unstable 판단, exact 7-leaf publication, trusted authority-gated source-free replay, dashboard payload까지 준비된 단계다. 실제 frozen validation authority 값은 아직 없다.</p>
 
   <h2>Task 1–4에서 완료한 일</h2>
   <table>
@@ -23,9 +23,9 @@
     <tr><td>연속 fold planner</td><td><code>blocked_folds_antigravity.py</code>가 shuffle 없이 5개 연속 query 구간을 생성한다.</td></tr>
     <tr><td>TRAIN source</td><td><code>sources_antigravity.py</code>가 normal_2 TRAIN values만 한 번 조회하고 label/TEST query surface를 만들지 않는다.</td></tr>
     <tr><td>Qualification</td><td><code>qualification_antigravity.py</code>가 두 seed와 다섯 blocked fold를 exact order로 평가하고 Task 2 evidence contract로 결과를 묶는다.</td></tr>
-    <tr><td>Evaluation/artifacts/replay</td><td><code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>가 stable/unstable 판단, exact 7 leaves, self-excluding hash map, source-free semantic replay를 담당한다.</td></tr>
+    <tr><td>Evaluation/artifacts/replay</td><td><code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>가 stable/unstable 판단, exact 7 leaves, self-excluding hash map, trusted immutable validation authority 기반 source-free replay를 담당한다. root-local evidence·dashboard·decision·map이 함께 rehash되어도 authority와 다르면 거부한다.</td></tr>
     <tr><td>Dashboard payload</td><td><code>dashboard_export_antigravity.py</code>가 10 fold aggregate row, 2 seed summaries, label query 0, fixed Exp458 metrics만 내보낸다.</td></tr>
-    <tr><td>code map</td><td>Task 4 범위의 문서·ledger·evaluation·artifacts·replay·dashboard·테스트 경계를 기록한다.</td></tr>
+    <tr><td>code map</td><td>Task 4 범위의 문서·ledger·evaluation·authority·artifacts·replay·dashboard·테스트 경계를 기록한다.</td></tr>
   </table>
 
   <h2>Task 5 이전까지 금지한 일</h2>
@@ -34,6 +34,7 @@
     <tr><td>공식 evaluate / inspect</td><td>별도 승인 전 0회를 유지해야 한다.</td></tr>
     <tr><td>공식 결과 폴더 생성</td><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code>는 아직 없어야 한다.</td></tr>
     <tr><td>TEST label 조회</td><td>Task 1–4는 label-free governance, TRAIN-only qualification contract, synthetic result publication/replay만 다루므로 TEST label은 여전히 열지 않는다.</td></tr>
+    <tr><td>실제 frozen authority 생성</td><td>Task 5에서 두 private TRAIN run이 exact-equal이고 최종 검토가 끝나기 전에는 실제 authority 값을 만들지 않는다.</td></tr>
     <tr><td>champion / pending candidate 변경</td><td>Exp458 이후 운영 truth를 바꾸지 않는다.</td></tr>
   </table>
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError, fields
 from fractions import Fraction
+import re
 import unittest
 
 from experiments.exp459_ecg_normal2_blocked_validation_antigravity.tests.test_contracts_antigravity import (
@@ -56,12 +58,13 @@ class EvaluationAntigravityTest(unittest.TestCase):
         from experiments.exp459_ecg_normal2_blocked_validation_antigravity.evaluation_antigravity import (
             EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY,
             evaluate_blocked_qualification_antigravity,
+            exp458_predecessor_context_payload_antigravity,
         )
 
         decision = evaluate_blocked_qualification_antigravity(qualification_antigravity())
         self.assertEqual(decision.status, "stable")
         self.assertEqual(
-            EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY,
+            exp458_predecessor_context_payload_antigravity(),
             {
                 "experiment": "Exp458",
                 "tp": 617,
@@ -72,10 +75,57 @@ class EvaluationAntigravityTest(unittest.TestCase):
             },
         )
         self.assertEqual(
-            EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY["f1"],
+            EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY.f1,
             float(Fraction(2 * 617, 2 * 617 + 66 + 829)),
         )
+        self.assertFalse(hasattr(EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY, "__setitem__"))
+        with self.assertRaises(FrozenInstanceError):
+            EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY.f1 = 0.0  # type: ignore[misc]
         self.assertNotIn("confusion_matrix_antigravity", repr(decision).lower())
+
+    def test_frozen_validation_authority_carries_exact_payloads_and_digest_antigravity(self) -> None:
+        """Break caught: replay/publication trusts a mutable root instead of a frozen external authority."""
+        from experiments.exp459_ecg_normal2_blocked_validation_antigravity.evaluation_antigravity import (
+            FrozenValidationAuthorityAntigravity,
+            freeze_validation_authority_antigravity,
+            validate_frozen_validation_authority_antigravity,
+            evaluate_blocked_qualification_antigravity,
+        )
+
+        decision = evaluate_blocked_qualification_antigravity(qualification_antigravity())
+        authority = freeze_validation_authority_antigravity(decision)
+        self.assertEqual(
+            tuple(field.name for field in fields(FrozenValidationAuthorityAntigravity)),
+            (
+                "fold_plan",
+                "fold_evidence",
+                "seed_summaries",
+                "decision",
+                "canonical_digest",
+            ),
+        )
+        self.assertEqual(len(authority.fold_plan), 5)
+        self.assertEqual(len(authority.fold_evidence), 10)
+        self.assertEqual(len(authority.seed_summaries), 2)
+        self.assertEqual(authority.decision.status, "stable")
+        self.assertRegex(authority.canonical_digest, r"^[0-9a-f]{64}$")
+        self.assertEqual(
+            [(record.seed, record.fold_index) for record in authority.fold_evidence],
+            [(seed, fold_index) for seed in SEEDS_ANTIGRAVITY for fold_index in range(5)],
+        )
+        self.assertIsInstance(validate_frozen_validation_authority_antigravity(authority), FrozenValidationAuthorityAntigravity)
+
+        wrong_digest = freeze_validation_authority_antigravity(decision)
+        object.__setattr__(wrong_digest, "canonical_digest", "0" * 64)
+        with self.assertRaises(ValueError):
+            validate_frozen_validation_authority_antigravity(wrong_digest)
+
+        malformed_digest = freeze_validation_authority_antigravity(decision)
+        object.__setattr__(malformed_digest, "canonical_digest", "not-a-digest")
+        with self.assertRaises(ValueError):
+            validate_frozen_validation_authority_antigravity(malformed_digest)
+
+        self.assertTrue(re.fullmatch(r"[0-9a-f]{64}", authority.canonical_digest))
 
     def test_rejects_forged_or_mutated_qualification_at_evaluation_boundary_antigravity(self) -> None:
         """Break caught: caller-mutated evidence bypasses the exact qualification contract."""
