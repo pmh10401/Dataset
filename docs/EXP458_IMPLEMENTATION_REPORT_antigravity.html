@@ -12,8 +12,8 @@
 </head>
 <body><main>
   <h1>Exp458 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 1부터 Task 4까지 완료했다. 상태는 여전히 <code>planned_not_started</code>이며 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
-  <p><strong>Task 4 범위:</strong> Exp458의 고정 설정, normal_2 전용 순위 계약, chunked Mann-Whitney AUC 계산기, normal_2 TRAIN source, two-seed rank qualification, normal_2 router, Exp456 frozen evaluator, 9-leaf temporary publication, semantic replay, dashboard export, Exp457 controlled-fork byte guard, Task 4 경계까지의 code map을 추가했다. CLI와 공식 실행은 아직 구현하지 않았다.</p>
+  <p><strong>현재 단계:</strong> Task 1부터 Task 5까지 완료했다. 상태는 <code>implementation_verified_awaiting_official_evaluation</code>이며 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
+  <p><strong>Task 5 범위:</strong> closed CLI, fixed-runtime outside-CWD launcher, CLI tests, private temporary-root candidate publication/replay, two-run actual TRAIN reproducibility proof, dashboard/ledger truth update를 추가했다. Task 6 공식 실행은 아직 승인되지 않았다.</p>
 
   <h2>이번 단계에서 만든 것</h2>
   <ul>
@@ -25,6 +25,8 @@
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/router_antigravity.py</code>: <code>ECG5000_normal_2</code>만 rank gate와 <code>14&gt;5</code> structure gate를 결합해 candidate로 보낼 수 있고, 다른 feature는 baseline으로 고정한다.</li>
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/evaluation_antigravity.py</code>: Exp456의 48 frozen dataset rows에서 always baseline, family-wide, oracle, normal2 router 네 비교를 다시 합산한다.</li>
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code>: exact 9-leaf temporary publication, semantic replay, aggregate/TRAIN-only dashboard payload를 제공한다.</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/cli_antigravity.py</code>: public surface를 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>로 닫고, parser 뒤 selected phase만 lazy import한다.</li>
+    <li><code>scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py</code>: CWD 밖에서도 repository import path를 고정하고 aeon Python 3.14.6 runtime으로 re-exec한다.</li>
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_sources_antigravity.py</code>, <code>test_qualification_antigravity.py</code>, <code>test_controlled_fork_antigravity.py</code>, <code>test_router_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>, <code>test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code>: Task 3–4 RED/GREEN regression과 Exp457 science boundary guard</li>
     <li><code>docs/EXP458_DASHBOARD_antigravity.html</code>, <code>docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html</code>, <code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code>: Task 4 truth 반영</li>
   </ul>
@@ -49,10 +51,21 @@
   </table>
   <p>shape는 1413×140, dtype은 <code>float32</code>, finite/owned/read-only는 각각 true/true/true였다. smoke 결과는 승인 설계에 적힌 expected AUC와 exact match했다.</p>
 
+  <h2>Task 5 실제 TRAIN 후보 검증</h2>
+  <p>actual TRAIN candidate verification을 정확히 두 번 실행했다. 두 실행은 같은 프로세스 안에서 순차 실행했고, 각각 별도 임시 non-official root를 만들었다가 cleanup했다. public CLI는 사용하지 않았고 official root는 before/between/after 모두 없었다.</p>
+  <table>
+    <thead><tr><th>run</th><th>time</th><th>route</th><th>payload SHA-256</th><th>label queries</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>98.6050003329292초</td><td>candidate</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td><td>0</td></tr>
+      <tr><td>2</td><td>99.41886049997993초</td><td>candidate</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>equality proof: qualification=true, route=true, dashboard=true, leaf hashes=true, canonical payload=true. 두 실행의 9개 leaf SHA-256도 모두 같았다. official ledgers의 result hashes는 여전히 null이고, 위 SHA-256은 temporary candidate evidence only다.</p>
+
   <h2>아직 하지 않은 것</h2>
   <ul>
     <li>공식 evaluate/inspect, TEST label, 공식 root 생성</li>
-    <li>CLI와 공식 결과 루트 publication</li>
+    <li>공식 결과 루트 publication</li>
   </ul>
 
   <h2>Task 4 결과 산술</h2>
@@ -73,6 +86,8 @@
     <li>Exp458 code map validate-only 확인</li>
     <li>official root 부재 확인</li>
     <li>read-only public smoke 1회 확인</li>
+    <li>Task 5 CLI focused suite 두 번 확인</li>
+    <li>Task 5 actual TRAIN private candidate verification 두 번 확인</li>
   </ul>
 
   <h2>금지 경계</h2>

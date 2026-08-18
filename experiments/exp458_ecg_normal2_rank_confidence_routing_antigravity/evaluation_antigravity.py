@@ -39,6 +39,7 @@ from .contracts_antigravity import (
     FamilyMetricAntigravity,
     RankQualificationAntigravity,
     RouteDecisionAntigravity,
+    validate_rank_qualification_semantics_antigravity,
     validate_frozen_task3_qualification_antigravity,
 )
 from .router_antigravity import (
@@ -359,7 +360,10 @@ def _validate_decision_antigravity(
     source_feature, qualification = _evidence_for_route_decision_antigravity(decision)
     if source_feature != features[FROZEN_CONFIG_ANTIGRAVITY.dataset] or qualification.dataset != FROZEN_CONFIG_ANTIGRAVITY.dataset:
         raise ValueError("route decision provenance differs from Exp456 feature authority")
-    validate_frozen_task3_qualification_antigravity(qualification)
+    if decision.rank_gate:
+        validate_frozen_task3_qualification_antigravity(qualification)
+    else:
+        validate_rank_qualification_semantics_antigravity(qualification)
     expected_structure = source_feature.added_count > source_feature.removed_count
     expected_route = "candidate" if decision.rank_gate and expected_structure else "baseline"
     if decision.structure_gate is not expected_structure or decision.route != expected_route:

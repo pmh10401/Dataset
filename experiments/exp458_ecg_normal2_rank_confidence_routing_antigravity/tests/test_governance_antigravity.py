@@ -117,8 +117,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for record in records:
             self.assertEqual(record["experiment"], "Exp458")
             self.assertEqual(record["kind"], "ecg_normal2_rank_confidence_routing")
-            self.assertEqual(record["status"], "planned_not_started")
-            self.assertEqual(record["implementation_status"], "task_1_governance_registered")
+            self.assertEqual(
+                record["status"],
+                "implementation_verified_awaiting_official_evaluation",
+            )
+            self.assertEqual(
+                record["implementation_status"],
+                "task_5_private_train_candidate_verified_twice",
+            )
             self.assertEqual(
                 record["run_identity"],
                 "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
@@ -176,6 +182,31 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["scientific_winner_selected"])
             self.assertIs(record["test_labels_opened"], False)
             self.assertEqual(record["label_query_count"], 0)
+            private = record["private_candidate_verification"]
+            self.assertEqual(private["runs"], 2)
+            self.assertEqual(private["public_cli_evaluate_invocations"], 0)
+            self.assertEqual(private["public_cli_inspect_invocations"], 0)
+            self.assertTrue(private["official_root_absent_before_between_after"])
+            self.assertTrue(private["temporary_roots_cleaned"])
+            self.assertEqual(private["label_query_count_each_run"], [0, 0])
+            self.assertEqual(
+                private["candidate_payload_sha256"],
+                "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8",
+            )
+            self.assertTrue(private["leaf_sha256_equal"])
+            self.assertTrue(private["dashboard_equal"])
+            self.assertTrue(private["qualification_equal"])
+            self.assertTrue(private["route_equal"])
+            self.assertEqual(private["route"], "candidate")
+            self.assertEqual(
+                private["result"],
+                {"tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311},
+            )
+            self.assertEqual(
+                private["criteria_passed"],
+                ["final_fn", "final_fp", "final_f1"],
+            )
+            self.assertTrue(private["official_hashes_remain_null"])
         self.assertEqual(state["pending_candidate"], FROZEN_PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["pending_candidate"], FROZEN_PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(
@@ -205,7 +236,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = dashboard_path.read_text(encoding="utf-8")
         for value in (
-            "planned_not_started",
+            "implementation_verified_awaiting_official_evaluation",
             "AUC",
             "ECG5000_normal_2",
             "상위 0.5%만 이상으로 인정한 지나치게 극단적인 통과선",
@@ -215,22 +246,25 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "≥ 0.90",
             "14&gt;5",
             "TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311",
-            "공식 결과가 아니라 예상 후보 결과",
-            "Task 4/6",
+            "공식 결과가 아니라 두 번 재현한 TRAIN 후보 결과",
+            "Task 5/6",
             "공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음",
+            "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8",
             "두 seed 20260721와 20261721가 각각 모든 gate를 만족해야 한다.",
-            "Task 4 router/evaluation/replay 완료",
+            "Task 5 closed CLI",
         ):
             self.assertIn(value, dashboard)
 
         report = report_path.read_text(encoding="utf-8")
-        self.assertIn("planned_not_started", report)
-        self.assertIn("Task 1부터 Task 4까지 완료했다", report)
+        self.assertIn("implementation_verified_awaiting_official_evaluation", report)
+        self.assertIn("Task 1부터 Task 5까지 완료했다", report)
         self.assertIn("공식 evaluate/inspect, TEST label", report)
         self.assertIn("6e8e500d19afcb17907ef53ad1527b5781c6d007", report)
         self.assertIn("0.9796866524522819", report)
         self.assertIn("0.9485180577280324", report)
         self.assertIn("Task4 uses synthetic/frozen evidence only", report)
+        self.assertIn("actual TRAIN candidate verification을 정확히 두 번 실행했다", report)
+        self.assertIn("0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8", report)
 
         plan = plan_path.read_text(encoding="utf-8")
         self.assertIn('<input type="checkbox" checked disabled>Task 1:', plan)
@@ -244,8 +278,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(task3.count('<input type="checkbox" checked disabled>'), 7)
         task4 = plan.split("Task 4:", 1)[1].split("Task 5:", 1)[0]
         self.assertEqual(task4.count('<input type="checkbox" checked disabled>'), 7)
+        task5 = plan.split("Task 5:", 1)[1].split("Task 6:", 1)[0]
+        self.assertEqual(task5.count('<input type="checkbox" checked disabled>'), 7)
         for task_number in range(2, 7):
-            if task_number in {2, 3, 4}:
+            if task_number in {2, 3, 4, 5}:
                 continue
             task = plan.split(f"Task {task_number}:", 1)[1]
             if task_number < 6:
@@ -287,18 +323,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "artifacts",
             "replay",
             "dashboard_export",
-        ):
-            self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
-            self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
-        for node_id in (
             "cli",
             "cli_launcher",
         ):
-            self.assertEqual(nodes[node_id]["status"], "future_unknown")
-            self.assertFalse(nodes[node_id]["evidence"])
-            self.assertFalse(nodes[node_id]["tests"])
-            self.assertFalse((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
-        self.assertTrue(graph["unknown_relationships"])
+            self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
+            self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
+        self.assertFalse(graph["unknown_relationships"])
         builder.validate_map_antigravity(graph, lock, rendered)
 
 

@@ -598,9 +598,9 @@
     {
       "experiment": "Exp458",
       "kind": "ecg_normal2_rank_confidence_routing",
-      "status": "planned_not_started",
-      "implementation_status": "task_1_governance_registered",
-      "reason": "Exp458 is registered as a planned normal_2-only AUC follow-up to Exp457. Task 1 records the frozen diagnosis, thresholds, projected result, and future implementation boundaries only. No official evaluate/inspect, TEST-label access, official root creation, routing change, champion selection, pending-candidate change, promotion, or operational alert has occurred.",
+      "status": "implementation_verified_awaiting_official_evaluation",
+      "implementation_status": "task_5_private_train_candidate_verified_twice",
+      "reason": "Exp458 Task 5 verified the normal_2 rank candidate twice on TRAIN through private temporary non-official publications only. Both runs matched on qualification, route, dashboard, leaf hashes, candidate payload hash 0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8, and provisional FN/FP/F1 criteria. No official evaluate/inspect, TEST-label access, official root creation, routing change, champion selection, pending-candidate change, promotion, or operational alert has occurred.",
       "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
       "approved_design": "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
       "approved_design_sha256": "52abe997c0e14badc2c886b888e3b2b2074cf002216891f173ab3b1dd6d7ea5d",
@@ -619,13 +619,47 @@
       "dashboard_snapshot_sha256": null,
       "test_labels_opened": false,
       "label_query_count": 0,
+      "private_candidate_verification": {
+        "runs": 2,
+        "public_cli_evaluate_invocations": 0,
+        "public_cli_inspect_invocations": 0,
+        "official_root_absent_before_between_after": true,
+        "temporary_roots_cleaned": true,
+        "label_query_count_each_run": [
+          0,
+          0
+        ],
+        "candidate_payload_sha256": "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8",
+        "leaf_sha256_equal": true,
+        "dashboard_equal": true,
+        "qualification_equal": true,
+        "route_equal": true,
+        "elapsed_seconds": [
+          98.6050003329292,
+          99.41886049997993
+        ],
+        "route": "candidate",
+        "result": {
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        },
+        "criteria_passed": [
+          "final_fn",
+          "final_fp",
+          "final_f1"
+        ],
+        "official_hashes_remain_null": true
+      },
       "routing_allowed": false,
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
-      "next_action": "remain_planned_until_task_2_contracts_and_later_review_complete"
+      "next_action": "await_explicit_task_6_approval_for_single_official_evaluation"
     }
   ]
 }

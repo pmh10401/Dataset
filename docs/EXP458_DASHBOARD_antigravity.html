@@ -15,12 +15,12 @@
 <body><main>
   <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
   <table>
-    <tr><th>진행</th><td>Task 4/6</td></tr>
-    <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
-    <tr><th>현재 판단</th><td><strong>공식 결과 없음</strong></td></tr>
+    <tr><th>진행</th><td>Task 5/6</td></tr>
+    <tr><th>상태</th><td><code>implementation_verified_awaiting_official_evaluation</code></td></tr>
+    <tr><th>현재 판단</th><td><strong>TRAIN 후보는 두 번 재현 통과, 공식 결과 없음</strong></td></tr>
     <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
     <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
-    <tr><th>현재 구현</th><td>Task 4 router/evaluation/replay 완료. 고정 설정 / rank contracts / AUC 계산기 / normal_2 TRAIN loader / two-seed qualification / router / evaluator / 9-leaf temporary publication / semantic replay / dashboard export 완료, CLI는 아직 미구현</td></tr>
+    <tr><th>현재 구현</th><td>Task 5 closed CLI / fixed-runtime outside-CWD launcher / private two-run TRAIN candidate verification 완료. 공식 evaluate/inspect는 실행하지 않았고 Task 6은 미승인 상태다.</td></tr>
   </table>
 
   <div class="box">
@@ -43,15 +43,30 @@
   <h2>AUC 계산 계약</h2>
   <p>AUC는 <code>(anomaly&gt;normal wins + 0.5*ties)/(n_normal*n_anomaly)</code>로 계산한다. 점수가 높을수록 더 이상에 가깝다는 기존 방향을 유지하고, tie는 반승으로 계산한다.</p>
 
-  <h2>예상 후보 결과</h2>
+  <h2>두 번 재현한 TRAIN 후보 결과</h2>
   <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
-  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 4에서는 공식 root를 만들지 않고 synthetic/frozen Exp456 authority와 Task3 TRAIN evidence로 route/evaluation/replay semantics를 검증했다.</p>
+  <p>이 값은 <strong>공식 결과가 아니라 두 번 재현한 TRAIN 후보 결과</strong>다. Task 5에서는 공식 root를 만들지 않고 두 개의 임시 non-official root에서 private dependency seam으로 publication/replay를 수행했다. 두 실행의 qualification, route, dashboard, 9개 leaf hash, canonical payload hash가 exact match했다.</p>
+
+  <h2>Task 5 실제 TRAIN 후보 검증</h2>
+  <table>
+    <thead><tr><th>항목</th><th>run 1</th><th>run 2</th></tr></thead>
+    <tbody>
+      <tr><td>소요 시간</td><td>98.6050003329292초</td><td>99.41886049997993초</td></tr>
+      <tr><td>route</td><td>candidate</td><td>candidate</td></tr>
+      <tr><td>label query 수</td><td>0</td><td>0</td></tr>
+      <tr><td>canonical payload SHA-256</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
+      <tr><td>equality proof</td><td colspan="2">qualification=true / route=true / dashboard=true / leaf hashes=true / canonical payload=true</td></tr>
+      <tr><td>임시 root</td><td colspan="2">두 임시 root 모두 cleanup 완료</td></tr>
+      <tr><td>공식 root</td><td colspan="2">before / between / after 모두 없음</td></tr>
+      <tr><td>공식 명령</td><td colspan="2">public evaluate 0회 / public inspect 0회</td></tr>
+    </tbody>
+  </table>
 
   <h2>Task 3 실제 TRAIN smoke</h2>
   <table>
     <thead><tr><th>항목</th><th>값</th></tr></thead>
     <tbody>
-      <tr><td>실행 수</td><td>1회 read-only smoke</td></tr>
+      <tr><td>실행 수</td><td>Task 3 read-only smoke 1회, Task 5 private candidate verification 2회</td></tr>
       <tr><td>소요 시간</td><td>103.54300962504931초</td></tr>
       <tr><td>TRAIN shape / dtype</td><td>1413×140 / <code>float32</code></td></tr>
       <tr><td>finite / owned / writeable</td><td>true / true / false</td></tr>
@@ -63,10 +78,20 @@
     </tbody>
   </table>
 
+  <h2>기준 통과</h2>
+  <table>
+    <thead><tr><th>기준</th><th>실제값</th><th>통과</th></tr></thead>
+    <tbody>
+      <tr><td>FN ≤ 834</td><td>829</td><td>true</td></tr>
+      <tr><td>FP ≤ 66</td><td>66</td><td>true</td></tr>
+      <tr><td>F1 &gt; 0.5764150943396227</td><td>0.5796148426491311</td><td>true</td></tr>
+    </tbody>
+  </table>
+
   <h2>현재 설명</h2>
   <div class="box">
     <p>normal_2만 다시 보는 이유는 구조 진단이 <code>14&gt;5</code>로 유일하게 긍정적이었기 때문이다. 나머지 ECG 네 개는 아직 baseline으로 고정한다.</p>
-    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 3에서도 새로 도입하지 않는다.</p>
+    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 5에서도 새로 도입하지 않는다.</p>
   </div>
 </main></body>
 </html>

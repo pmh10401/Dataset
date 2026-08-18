@@ -1483,8 +1483,8 @@
       "id": "Exp458",
       "experiment": "Exp458",
       "kind": "ecg_normal2_rank_confidence_routing",
-      "status": "planned_not_started",
-      "implementation_status": "task_1_governance_registered",
+      "status": "implementation_verified_awaiting_official_evaluation",
+      "implementation_status": "task_5_private_train_candidate_verified_twice",
       "documents": ["docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html", "docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html", "docs/EXP458_PREREGISTRATION_antigravity.html", "docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP458_DASHBOARD_antigravity.html"],
       "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
       "artifact_root": "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
@@ -1504,11 +1504,45 @@
       "dashboard_snapshot_sha256": null,
       "test_labels_opened": false,
       "label_query_count": 0,
+      "private_candidate_verification": {
+        "runs": 2,
+        "public_cli_evaluate_invocations": 0,
+        "public_cli_inspect_invocations": 0,
+        "official_root_absent_before_between_after": true,
+        "temporary_roots_cleaned": true,
+        "label_query_count_each_run": [
+          0,
+          0
+        ],
+        "candidate_payload_sha256": "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8",
+        "leaf_sha256_equal": true,
+        "dashboard_equal": true,
+        "qualification_equal": true,
+        "route_equal": true,
+        "elapsed_seconds": [
+          98.6050003329292,
+          99.41886049997993
+        ],
+        "route": "candidate",
+        "result": {
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        },
+        "criteria_passed": [
+          "final_fn",
+          "final_fp",
+          "final_f1"
+        ],
+        "official_hashes_remain_null": true
+      },
       "routing_allowed": false,
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
-      "notes": "Task 1 registers Exp458 as a planned normal_2-only AUC follow-up to Exp457. The frozen diagnosis is that Exp457 used an over-extreme tail threshold; Exp458 keeps the same TRAIN source, seeds, synthetic perturbations, structure gate, and final FN/FP/F1 criteria while replacing only the normal_2 score summary with AUC thresholds. Official evaluate/inspect remain at 0, TEST labels are unopened, the official root is absent, all result hashes are null, and champion plus pending candidate remain unchanged."
+      "notes": "Task 5 verified the Exp458 normal_2 rank candidate twice on TRAIN through the private dependency seam only. Both temporary non-official publications were cleaned, both produced identical qualification, route, dashboard, leaf hashes, and candidate payload hash 0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8. Official evaluate/inspect remain at 0, TEST labels are unopened, the official root is absent, all official result hashes are null, and champion plus pending candidate remain unchanged."
     }
   ]
 }
