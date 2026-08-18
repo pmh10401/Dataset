@@ -122,10 +122,10 @@ assert pending_before == pending_after</code></pre>
   </ul>
   <p><strong>Consumes:</strong> Task 2 <code>blocked_plan_antigravity(1413)</code>. <strong>Produces:</strong> <code>qualify_blocked_normal2_antigravity() -&gt; BlockedQualificationAntigravity</code> with 10 ordered fold records and two seed summaries.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — synthetic 1413×140 source와 fake fold scorer로 RED를 작성한다: query exact order, fit/query disjoint, 10 calls, coverage once, label0.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — Exp458 source loader를 통제 복제해 TRAIN을 한 번만 읽고 float32/finite/owned/read-only 1413×140을 요구한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — 각 seed의 각 fold에서 Hydra를 fit indices에만 맞추고 query 정상과 네 합성 이상 점수를 계산한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — fold별 AUC/Wilson과 pass를 계산하고, seed pass는 다섯 fold 모두 pass, 전체 pass는 두 seed 모두 pass로 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — synthetic 1413×140 source와 fake fold scorer로 RED를 작성한다: query exact order, fit/query disjoint, 10 calls, coverage once, label0.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — Exp458 source loader를 통제 복제해 TRAIN을 한 번만 읽고 float32/finite/owned/read-only 1413×140을 요구한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — 각 seed의 각 fold에서 Hydra를 fit indices에만 맞추고 query 정상과 네 합성 이상 점수를 계산한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — fold별 AUC/Wilson과 pass를 계산하고, seed pass는 다섯 fold 모두 pass, 전체 pass는 두 seed 모두 pass로 구현한다.</label></li>
   </ul>
   <pre><code>fold_passed = (
     wilson_upper &lt;= 0.05
@@ -135,9 +135,9 @@ assert pending_before == pending_after</code></pre>
 seed_passed = all(record.passed for record in seed_records)
 qualification_passed = all(summary.passed for summary in seed_summaries)</code></pre>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 5 — 한 fold/한 seed 실패, 경계값, nonfinite, 누락/중복 query, 무작위 fold 순서 공격을 표 기반 테스트로 검증한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — synthetic GREEN 두 번과 Exp458 source/qualification 회귀를 실행한다. 실제 전체 TRAIN 계산은 Task 5까지 미룬다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 7 — 문서·대시보드·map·체크박스를 갱신하고 커밋·검토한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — 한 fold/한 seed 실패, 경계값, nonfinite, 누락/중복 query, 무작위 fold 순서 공격을 표 기반 테스트로 검증한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — synthetic GREEN 두 번과 Exp458 source/qualification 회귀를 실행한다. 실제 전체 TRAIN 계산은 Task 5까지 미룬다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 7 — 문서·대시보드·map·체크박스를 갱신하고 커밋·검토한다.</label></li>
   </ul>
 
   <h2>Task 4: stable 판단, 7-leaf 결과, replay와 대시보드</h2>
@@ -231,7 +231,7 @@ git diff --check</code></pre>
   <ul>
     <li><label><input type="checkbox" checked disabled>Task 1 완료</label></li>
     <li><label><input type="checkbox" checked disabled>Task 2 완료</label></li>
-    <li><label><input type="checkbox" disabled>Task 3 완료</label></li>
+    <li><label><input type="checkbox" checked disabled>Task 3 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 4 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 5 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 6 완료</label></li>

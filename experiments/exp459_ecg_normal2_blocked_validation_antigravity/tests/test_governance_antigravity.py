@@ -34,13 +34,13 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "00929a257fa86be42428632a0cf03e36574b2eb764a5a703e9da6d943f526b9e"
+    "3be3e493131b558a579b2de22b280f47761c695fab2eac25ba89a81f0836f453"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
 )
 IMPLEMENTATION_STATUS_ANTIGRAVITY = (
-    "task_2_contracts_and_blocked_folds_complete"
+    "task_3_source_and_qualification_complete"
 )
 RUN_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818"
@@ -187,7 +187,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             checked = [tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)]
-            if task_number in {1, 2}:
+            if task_number in {1, 2, 3}:
                 self.assertEqual(len(checked), len(tags))
             else:
                 self.assertEqual(len(checked), 0)
@@ -198,7 +198,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             plan,
             flags=re.IGNORECASE,
         )
-        self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료"])
+        self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료", "Task 3 완료"])
 
     def test_exp459_planned_truth_and_non_promotion_antigravity(self) -> None:
         """Break caught: Exp459 records an official result, changes champion, or loses frozen hashes."""
@@ -301,12 +301,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
-        self.assertLessEqual(len(graph["nodes"]), 20)
+        self.assertLessEqual(len(graph["nodes"]), 24)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
         self.assertIn("governance_regression", node_by_id)
         self.assertIn("task2_config", node_by_id)
         self.assertIn("task2_contracts", node_by_id)
         self.assertIn("task2_blocked_folds", node_by_id)
+        self.assertIn("task3_sources", node_by_id)
+        self.assertIn("task3_qualification", node_by_id)
         self.assertIn("research_state", node_by_id)
         self.assertIn("experiment_catalog", node_by_id)
         self.assertIn("champion_ledger", node_by_id)
@@ -330,6 +332,22 @@ class GovernanceAntigravityTest(unittest.TestCase):
             any(
                 edge["from"] == "task2_contract_tests"
                 and edge["to"] == "task2_contracts"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task3_source_tests"
+                and edge["to"] == "task3_sources"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task3_qualification_tests"
+                and edge["to"] == "task3_qualification"
                 and edge["type"] == "tests"
                 for edge in graph["edges"]
             )
