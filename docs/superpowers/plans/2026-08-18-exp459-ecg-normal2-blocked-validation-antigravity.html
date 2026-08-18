@@ -92,9 +92,9 @@ assert pending_before == pending_after</code></pre>
   </ul>
   <p><strong>Produces:</strong> <code>blocked_plan_antigravity(n_rows: int) -&gt; tuple[BlockedFoldAntigravity, ...]</code>, <code>FoldEvidenceAntigravity</code>, <code>SeedSummaryAntigravity</code>, <code>ValidationDecisionAntigravity</code>.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — 모듈이 없는 상태에서 config/contracts/fold 테스트가 import RED인지 확인한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — exact config와 immutable dataclass 계약을 구현한다. bool은 int로 받지 않고, dataset/seed/type/threshold 값은 exact 일치만 허용한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — 아래 규칙 그대로 연속 fold를 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 모듈이 없는 상태에서 config/contracts/fold 테스트가 import RED인지 확인한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — exact config와 immutable dataclass 계약을 구현한다. bool은 int로 받지 않고, dataset/seed/type/threshold 값은 exact 일치만 허용한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — 아래 규칙 그대로 연속 fold를 구현한다.</label></li>
   </ul>
   <pre><code>def blocked_plan_antigravity(n_rows: int):
     indices = np.arange(n_rows, dtype=np.int64)
@@ -109,9 +109,9 @@ assert pending_before == pending_after</code></pre>
         for i, query in enumerate(queries)
     )</code></pre>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 4 — 1413행에서 query 크기 283/283/283/282/282, exact range, 교집합 0, coverage 1, shuffle 호출 0을 검증한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — controlled-fork 검사가 Exp458과 달라질 수 있는 항목을 identity와 fold planner로만 제한하고, AUC/Wilson/Hydra/seed/합성 종류 변경을 거부하게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — focused GREEN 두 번, Exp458 contract/AUC 회귀, compile/diff/map 검증 후 체크박스와 map을 갱신하고 커밋·검토한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — 1413행에서 query 크기 283/283/283/282/282, exact range, 교집합 0, coverage 1, shuffle 호출 0을 검증한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — controlled-fork 검사가 Exp458과 달라질 수 있는 항목을 identity와 fold planner로만 제한하고, AUC/Wilson/Hydra/seed/합성 종류 변경을 거부하게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — focused GREEN 두 번, Exp458 contract/AUC 회귀, compile/diff/map 검증 후 체크박스와 map을 갱신하고 커밋·검토한다.</label></li>
   </ul>
 
   <h2>Task 3: TRAIN source와 10개 fold-seed 자격 평가</h2>
@@ -230,7 +230,7 @@ git diff --check</code></pre>
   <h2>초기 상태</h2>
   <ul>
     <li><label><input type="checkbox" checked disabled>Task 1 완료</label></li>
-    <li><label><input type="checkbox" disabled>Task 2 완료</label></li>
+    <li><label><input type="checkbox" checked disabled>Task 2 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 3 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 4 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 5 완료</label></li>

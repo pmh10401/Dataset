@@ -13,17 +13,18 @@
 </head>
 <body><main>
   <h1>Exp459 실행 가이드</h1>
-  <p><strong>상태:</strong> <code>planned_not_started</code>. 지금은 문서와 거버넌스만 준비된 단계다.</p>
+  <p><strong>상태:</strong> <code>planned_not_started</code>. 지금은 Task 2의 고정 계약과 연속 fold planner까지 준비된 단계다.</p>
 
-  <h2>Task 1에서 허용한 일</h2>
+  <h2>Task 1–2에서 완료한 일</h2>
   <table>
-    <tr><th>허용</th><th>설명</th></tr>
-    <tr><td>문서 작성</td><td>사전등록, runbook, 구현 보고서, 대시보드를 HTML로 준비한다.</td></tr>
-    <tr><td>ledger 갱신</td><td>Exp459 상태를 <code>planned_not_started</code>로 등록한다.</td></tr>
-    <tr><td>code map 작성</td><td>Task 1 범위의 문서·ledger·테스트 경계를 기록한다.</td></tr>
+    <tr><th>완료</th><th>설명</th></tr>
+    <tr><td>문서와 ledger</td><td>사전등록, runbook, 구현 보고서, 대시보드를 HTML로 준비하고 Exp459 상태를 <code>planned_not_started</code>로 유지했다.</td></tr>
+    <tr><td>고정 계약</td><td><code>config_antigravity.py</code>와 <code>contracts_antigravity.py</code>에 exact runtime/predecessor/threshold/fold contract를 고정했다.</td></tr>
+    <tr><td>연속 fold planner</td><td><code>blocked_folds_antigravity.py</code>가 shuffle 없이 5개 연속 query 구간을 생성한다.</td></tr>
+    <tr><td>code map</td><td>Task 2 범위의 문서·ledger·config·contracts·folds·테스트 경계를 기록한다.</td></tr>
   </table>
 
-  <h2>Task 1에서 금지한 일</h2>
+  <h2>Task 3 이전까지 금지한 일</h2>
   <table>
     <tr><th>금지</th><th>이유</th></tr>
     <tr><td>공식 evaluate / inspect</td><td>별도 승인 전 0회를 유지해야 한다.</td></tr>
