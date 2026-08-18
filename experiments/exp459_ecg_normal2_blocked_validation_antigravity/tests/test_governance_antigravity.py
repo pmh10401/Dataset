@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import html.parser
 import importlib.util
 import json
+import copy
 import re
 import unittest
 from pathlib import Path
@@ -118,6 +120,41 @@ def map_builder_antigravity() -> object:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+class HtmlTextExtractorAntigravity(html.parser.HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def unresolved_evidence_antigravity(graph: dict[str, object]) -> list[dict[str, str]]:
+    unresolved: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for collection in ("nodes", "edges"):
+        for item in graph[collection]:
+            for evidence in item["evidence"] if collection == "nodes" else [item["evidence"]]:
+                key = (evidence["path"], evidence["symbol"])
+                if key in seen:
+                    continue
+                seen.add(key)
+                path = ROOT_ANTIGRAVITY / evidence["path"]
+                if not path.is_file():
+                    unresolved.append({"path": evidence["path"], "symbol": evidence["symbol"]})
+                    continue
+                text = path.read_text(encoding="utf-8")
+                if path.suffix == ".html":
+                    parser = HtmlTextExtractorAntigravity()
+                    parser.feed(text)
+                    haystack = " ".join(parser.parts)
+                else:
+                    haystack = text
+                if evidence["symbol"] not in haystack:
+                    unresolved.append({"path": evidence["path"], "symbol": evidence["symbol"]})
+    return unresolved
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
@@ -285,6 +322,30 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         self.assertEqual(graph["unknown_relationships"], [])
         builder.validate_map_antigravity(graph, lock, rendered)
+
+    def test_exp459_map_evidence_symbols_resolve_in_cited_sources_antigravity(self) -> None:
+        """Break caught: map evidence cites HTML or Python symbols that do not resolve in the cited file."""
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        assert isinstance(graph, dict)
+        self.assertEqual(unresolved_evidence_antigravity(graph), [])
+
+    def test_exp459_validator_rejects_unresolved_evidence_symbol_antigravity(self) -> None:
+        """Break caught: validator accepts an evidence symbol that does not resolve in its cited source."""
+        builder = map_builder_antigravity()
+        source_commit = builder.subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT_ANTIGRAVITY,
+            text=True,
+        ).strip()
+        graph, lock, rendered = builder.build_map_antigravity(
+            source_commit,
+            "2026-08-18T00:00:00Z",
+        )
+        graph = copy.deepcopy(graph)
+        graph["edges"][0]["evidence"]["symbol"] = "missing_symbol_antigravity"
+        rendered = builder.html_antigravity(graph)
+        with self.assertRaisesRegex(ValueError, "unresolved evidence"):
+            builder.validate_map_antigravity(graph, lock, rendered)
 
 
 if __name__ == "__main__":

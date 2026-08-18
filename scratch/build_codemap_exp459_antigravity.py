@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import html as html_module
+import html.parser
 import json
 import re
 import subprocess
@@ -38,6 +40,15 @@ TRACKED_PATHS_ANTIGRAVITY = (
 ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "tests"}
 
 
+class HtmlTextExtractorAntigravity(html.parser.HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
 def canonical_bytes_antigravity(value: object) -> bytes:
     return json.dumps(
         value,
@@ -63,6 +74,34 @@ def strict_json_antigravity(text: str) -> object:
 
 def evidence_antigravity(path: str, symbol: str) -> dict[str, str]:
     return {"path": path, "symbol": symbol}
+
+
+def python_symbols_antigravity(text: str) -> set[str]:
+    tree = ast.parse(text)
+    symbols: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            symbols.add(node.name)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    symbols.add(target.id)
+    return symbols
+
+
+def evidence_resolves_antigravity(path: str, symbol: str) -> bool:
+    target = ROOT_ANTIGRAVITY / path
+    if not target.is_file():
+        return False
+    text = target.read_text(encoding="utf-8")
+    if target.suffix == ".html":
+        parser = HtmlTextExtractorAntigravity()
+        parser.feed(text)
+        return symbol in " ".join(parser.parts)
+    if target.suffix == ".py":
+        return symbol in python_symbols_antigravity(text)
+    return symbol in text
 
 
 def tracked_fingerprints_antigravity() -> dict[str, str]:
@@ -206,11 +245,11 @@ def build_map_antigravity(
 
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(design, "Exp459")},
-        {"from": "approved_design", "to": "runbook", "type": "governs", "evidence": evidence_antigravity(design, "전임 실험")},
+        {"from": "approved_design", "to": "runbook", "type": "governs", "evidence": evidence_antigravity(design, "기준 커밋: Exp458 최종 커밋")},
         {"from": "approved_design", "to": "research_state", "type": "governs", "evidence": evidence_antigravity(design, "Exp458 공식 artifact map")},
         {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "Step 4 — 네 HTML 문서, 세 ledger의 Exp459 non-promotion 항목, 진행 대시보드, code map을 최소 구현한다.")},
         {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Step 5 — governance GREEN을 두 번 실행하고 HTML parse, JSON duplicate-key, map validate, diff check를 실행한다.")},
-        {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": evidence_antigravity(plan, "Create: scratch/build_codemap_exp459_antigravity.py 와 Exp459 map triplet")},
+        {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": evidence_antigravity(plan, "scratch/build_codemap_exp459_antigravity.py")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
@@ -268,6 +307,8 @@ def validate_map_antigravity(
         for item in node["evidence"]:
             if not isinstance(item, dict) or set(item) != {"path", "symbol"}:
                 raise ValueError("invalid evidence")
+            if not evidence_resolves_antigravity(item["path"], item["symbol"]):
+                raise ValueError("unresolved evidence")
     for edge in graph["edges"]:
         if (
             not isinstance(edge, dict)
@@ -279,6 +320,8 @@ def validate_map_antigravity(
         item = edge.get("evidence")
         if not isinstance(item, dict) or set(item) != {"path", "symbol"}:
             raise ValueError("invalid edge evidence")
+        if not evidence_resolves_antigravity(item["path"], item["symbol"]):
+            raise ValueError("unresolved evidence")
 
     source = lock.get("source_parent_commit")
     head = subprocess.check_output(
