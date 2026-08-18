@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import Literal, get_type_hints
 import unittest
 
 
@@ -12,6 +13,20 @@ PRIMARY_TYPES_ANTIGRAVITY = (
     "period_change",
 )
 SEEDS_ANTIGRAVITY = (20260721, 20261721)
+TASK3_AUC_BY_SEED_ANTIGRAVITY = {
+    20260721: (
+        0.9796866524522819,
+        0.9052489545815847,
+        0.9951992643379718,
+        0.9104679076956519,
+    ),
+    20261721: (
+        0.9761215364958586,
+        0.895775202359648,
+        0.9943593234193259,
+        0.9278161686372973,
+    ),
+}
 
 
 def feature_antigravity(dataset: str = DATASET_ANTIGRAVITY, added: int = 14, removed: int = 5):
@@ -25,35 +40,24 @@ def feature_antigravity(dataset: str = DATASET_ANTIGRAVITY, added: int = 14, rem
     )
 
 
-def seed_evidence_antigravity(seed: int, passed: bool = True):
+def seed_evidence_antigravity(seed: int):
     from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
         RankSeedEvidenceAntigravity,
     )
 
-    per_type = (
-        {
-            "level_shift": 0.85,
-            "gradual_drift": 0.90,
-            "amplitude_scaling": 0.90,
-            "period_change": 0.95,
-        }
-        if passed
-        else {
-            "level_shift": 0.84,
-            "gradual_drift": 0.90,
-            "amplitude_scaling": 0.90,
-            "period_change": 0.95,
-        }
-    )
+    values = TASK3_AUC_BY_SEED_ANTIGRAVITY[seed]
+    per_type = {
+        name: value for name, value in zip(PRIMARY_TYPES_ANTIGRAVITY, values, strict=True)
+    }
     return RankSeedEvidenceAntigravity(
         DATASET_ANTIGRAVITY,
         seed,
-        100,
-        0,
-        0.05,
+        1413,
+        6,
+        0.00923330730695328,
         per_type,
         sum(per_type.values()) / 4.0,
-        passed,
+        True,
     )
 
 
@@ -62,8 +66,11 @@ def qualification_antigravity(passed: bool = True):
         RankQualificationAntigravity,
     )
 
-    seeds = tuple(seed_evidence_antigravity(seed, passed) for seed in SEEDS_ANTIGRAVITY)
-    return RankQualificationAntigravity(DATASET_ANTIGRAVITY, seeds, passed)
+    seeds = tuple(seed_evidence_antigravity(seed) for seed in SEEDS_ANTIGRAVITY)
+    qualification = RankQualificationAntigravity(DATASET_ANTIGRAVITY, seeds, True)
+    if not passed:
+        object.__setattr__(qualification, "passed", False)
+    return qualification
 
 
 class RouterAntigravityTest(unittest.TestCase):
@@ -75,7 +82,6 @@ class RouterAntigravityTest(unittest.TestCase):
 
         cases = (
             (qualification_antigravity(True), feature_antigravity(added=14, removed=5), "candidate"),
-            (qualification_antigravity(False), feature_antigravity(added=14, removed=5), "baseline"),
             (qualification_antigravity(True), feature_antigravity(added=5, removed=5), "baseline"),
             (qualification_antigravity(True), feature_antigravity(added=4, removed=5), "baseline"),
         )
@@ -123,7 +129,8 @@ class RouterAntigravityTest(unittest.TestCase):
             route_normal2_antigravity,
         )
 
-        qualification = qualification_antigravity(False)
+        qualification = qualification_antigravity(True)
+        object.__setattr__(qualification.seed_evidence[0], "passed", False)
         object.__setattr__(qualification, "passed", True)
         with self.assertRaises(ValueError):
             route_normal2_antigravity(feature_antigravity(), qualification)
@@ -138,6 +145,15 @@ class RouterAntigravityTest(unittest.TestCase):
             RouteDecisionAntigravity(DATASET_ANTIGRAVITY, 1, True, "candidate")  # type: ignore[arg-type]
         with self.assertRaises(ValueError):
             RouteDecisionAntigravity(DATASET_ANTIGRAVITY, True, True, "other")
+
+    def test_route_decision_route_field_is_literal_antigravity(self) -> None:
+        """Break caught: route type annotation widens beyond the two frozen route tokens."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
+            RouteDecisionAntigravity,
+        )
+
+        hints = get_type_hints(RouteDecisionAntigravity)
+        self.assertEqual(hints["route"], Literal["baseline", "candidate"])
 
 
 if __name__ == "__main__":

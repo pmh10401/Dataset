@@ -23,6 +23,36 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         self.assertEqual(tuple(row["method"] for row in dashboard["methods"]), ("always_baseline", "family_wide_local_gap", "oracle_per_dataset", "normal2_rank_router"))
         self.assertEqual(tuple(row["metric"] for row in dashboard["criteria"]), ("final_fn", "final_fp", "final_f1"))
         self.assertEqual(len(dashboard["rank_evidence"]), 2)
+        self.assertEqual(
+            tuple(tuple(row) for row in dashboard["rank_evidence"]),
+            (
+                ("dataset", "seed", "normal_wilson_upper", "per_type_auc", "pooled_auc", "passed"),
+                ("dataset", "seed", "normal_wilson_upper", "per_type_auc", "pooled_auc", "passed"),
+            ),
+        )
+        self.assertEqual(
+            tuple(tuple(row["per_type_auc"]) for row in dashboard["rank_evidence"]),
+            (
+                ("level_shift", "gradual_drift", "amplitude_scaling", "period_change"),
+                ("level_shift", "gradual_drift", "amplitude_scaling", "period_change"),
+            ),
+        )
+        self.assertEqual(
+            tuple(
+                (
+                    type(row["dataset"]),
+                    type(row["seed"]),
+                    type(row["normal_wilson_upper"]),
+                    type(row["per_type_auc"]),
+                    type(row["pooled_auc"]),
+                    type(row["passed"]),
+                )
+                for row in dashboard["rank_evidence"]
+            ),
+            ((str, int, float, dict, float, bool), (str, int, float, dict, float, bool)),
+        )
+        self.assertNotIn("normal_trials", repr(dashboard["rank_evidence"]))
+        self.assertNotIn("normal_alerts", repr(dashboard["rank_evidence"]))
         self.assertNotIn("ECG5000_normal_1", repr(dashboard))
         self.assertNotIn("ChlorineConcentration_normal_1", repr(dashboard))
 

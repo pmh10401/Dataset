@@ -68,8 +68,6 @@ def export_dashboard_antigravity(result: EvaluationResultAntigravity) -> dict[st
             {
                 "dataset": FROZEN_CONFIG_ANTIGRAVITY.dataset,
                 "seed": seed.seed,
-                "normal_trials": seed.normal_trials,
-                "normal_alerts": seed.normal_alerts,
                 "normal_wilson_upper": seed.normal_wilson_upper,
                 "per_type_auc": dict(seed.per_type_auc),
                 "pooled_auc": seed.pooled_auc,

@@ -14,7 +14,7 @@
 </head>
 <body><main>
   <h1>Exp458 Task 4 Report</h1>
-  <p><strong>Status:</strong> <span class="ok">implemented, verified, committed-ready before final commit</span>. Task4 uses synthetic/frozen evidence only; no real Hydra/TRAIN smoke, TEST-label query, official command, official root, network, MLX, Exp456 mutation, or Exp457 mutation was performed.</p>
+  <p><strong>Status:</strong> <span class="ok">round-1 fixes implemented and verified, committed-ready before final commit</span>. Fix round starts from commit <code>10107035</code>. Task4 uses synthetic/frozen evidence only; no real Hydra/TRAIN smoke, TEST-label query, official command, official root, network, MLX, Exp456 mutation, or Exp457 mutation was performed.</p>
 
   <h2>Implemented Modules</h2>
   <ul>
@@ -33,7 +33,10 @@
       <tr><td>RED</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest ...test_router... ...test_dashboard_export...</code></td><td>Expected failures: missing <code>router/evaluation/artifacts/replay/dashboard_export</code> modules and missing Task4 contract classes.</td></tr>
       <tr><td>GREEN 1</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_router_antigravity ... test_dashboard_export_antigravity</code></td><td>16 tests OK in 0.116s.</td></tr>
       <tr><td>GREEN 2</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_router_antigravity ... test_dashboard_export_antigravity</code></td><td>16 tests OK in 0.123s.</td></tr>
-      <tr><td>Full Exp458 synthetic</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>44 tests OK in 2.360s.</td></tr>
+      <tr><td>Round-1 RED</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_config_antigravity ... test_dashboard_export_antigravity</code></td><td>27 focused tests produced expected failures: 2 config errors, exact Task3 AUC/Wilson acceptance, route annotation drift, Exp456 non-target row/content drift, coherent normal2 feature drift, coordinated replay tamper acceptance, dashboard count-field exposure.</td></tr>
+      <tr><td>Round-1 GREEN 1</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_config_antigravity ... test_dashboard_export_antigravity</code></td><td>27 tests OK in 0.126s.</td></tr>
+      <tr><td>Round-1 GREEN 2</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_config_antigravity ... test_dashboard_export_antigravity</code></td><td>27 tests OK in 0.129s.</td></tr>
+      <tr><td>Full Exp458 synthetic</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>47 tests OK in 2.756s.</td></tr>
     </tbody>
   </table>
 
@@ -41,10 +44,10 @@
   <table>
     <thead><tr><th>Area</th><th>Covered Cases</th></tr></thead>
     <tbody>
-      <tr><td>Route truth table</td><td>pass/pass to candidate; rank fail, structure equality, and structure reversal to baseline; forged rank pass rejected; non-normal2 feature remains baseline even with passing rank evidence.</td></tr>
-      <tr><td>Evaluation authority</td><td>48 unique rows required; extra, missing, reordered, duplicate dataset rows rejected; predecessor comparisons must match exact Exp456 values.</td></tr>
+      <tr><td>Route truth table</td><td>exact frozen Task3 rank evidence plus strict structure pass routes normal2 to candidate; structure equality and structure reversal route to baseline; forged nested rank evidence is rejected; non-normal2 feature remains baseline even with passing rank evidence.</td></tr>
+      <tr><td>Evaluation authority</td><td>Exact ordered 48-row Exp456 authority digest required; extra, missing, reordered, duplicate, non-target row swap, and non-target rename rows rejected; feature digest and exact normal2 added=14/removed=5 row required.</td></tr>
       <tr><td>Criteria</td><td>FN 834 inclusive pass, FP 66 inclusive pass, F1 equal to 0.5764150943396227 fails because the F1 comparison is strict.</td></tr>
-      <tr><td>Dashboard</td><td>Only experiment/status/pass, two-seed rank evidence, normal2 route, four aggregate method rows, and three criteria are exported; unapproved dataset names are rejected.</td></tr>
+      <tr><td>Dashboard</td><td>Only experiment/status/pass, approved two-seed rank evidence, normal2 route, four aggregate method rows, and three criteria are exported; <code>normal_trials</code> and <code>normal_alerts</code> are intentionally not public dashboard keys.</td></tr>
     </tbody>
   </table>
 
@@ -67,8 +70,8 @@
   <table>
     <thead><tr><th>Domain</th><th>Mutations Rejected After Rehash</th></tr></thead>
     <tbody>
-      <tr><td>Rank evidence</td><td>per-type AUC, pooled AUC, Wilson upper, seed pass, aggregate pass.</td></tr>
-      <tr><td>Feature/structure</td><td>added count and removed count drift.</td></tr>
+      <tr><td>Rank evidence</td><td>per-type AUC, pooled AUC, Wilson upper, seed pass, aggregate pass, and coordinated all-AUC=.99/pooled=.99/Wilson=0 dashboard-matched tamper.</td></tr>
+      <tr><td>Feature/structure</td><td>added count and removed count drift, including coherent normal2 added=99/removed=0 feature evidence.</td></tr>
       <tr><td>Route</td><td>stored route drift.</td></tr>
       <tr><td>Comparisons</td><td>first-three Exp456 comparison drift and proposed F1/confusion drift.</td></tr>
       <tr><td>Family/dashboard/decision</td><td>family delta, dashboard pass, and decision status drift.</td></tr>
@@ -78,20 +81,20 @@
 
   <h2>Regression and Boundary Checks</h2>
   <ul>
-    <li>Exp457 evaluation/replay/artifact/dashboard: <code>14 tests OK in 1.811s</code>.</li>
-    <li>Exp456 evaluation: <code>3 tests OK in 0.011s</code>.</li>
-    <li>Governance: <code>2 tests OK in 0.038s</code>.</li>
+    <li>Exp457 affected non-governance suite: <code>46 tests OK in 1.697s</code>.</li>
+    <li>Exp456 affected non-governance suite: <code>30 tests OK in 0.119s</code>.</li>
+    <li>Predecessor full-discovery governance note: Exp457/Exp456 full discovery was attempted and reached only their map/source-parent governance checks, which intentionally reject this active Exp458 worktree state. No predecessor runtime regression failed.</li>
     <li><code>py_compile</code>: Task4 modules, Task4 tests, governance test, and map builder passed.</li>
     <li><code>scratch/build_codemap_exp458_antigravity.py --validate-only</code>: passed.</li>
     <li><code>git diff --check</code>: passed.</li>
-    <li>Exp457 byte guard: <code>git diff --exit-code 6e8e500d19afcb17907ef53ad1527b5781c6d007 -- experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity</code> passed.</li>
     <li>Official root check: <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code> absent.</li>
+    <li>Scope check: changed files are limited to Exp458 code/tests, Exp458 codemap triplet, and this report.</li>
   </ul>
 
   <h2>Self-Review</h2>
-  <p>The implementation keeps Task4 scoped to frozen synthetic/Exp456 authority evidence and temporary publication. The shared validator is used by publication, replay, and dashboard. No champion, promotion, deployment, or official result claim is made. Remaining future work is Task5 CLI and any later user-approved official evaluation path.</p>
+  <p>The round-1 fix binds qualification to the exact Task3 two-seed/four-type AUC values in frozen config, recomputes Wilson from exact normal_alerts/trials, binds evaluation to exact Exp456 ordered authority/feature content, and restricts the dashboard rank export to the approved nested allowlist. The shared validator remains used by publication, replay, and dashboard. No champion, promotion, deployment, or official result claim is made. Remaining future work is Task5 CLI and any later user-approved official evaluation path.</p>
 
   <h2>Concerns</h2>
-  <p class="warn">No unresolved Task4 implementation concerns. The only scope note is intentional: Task4 did not run a real Hydra/TRAIN smoke and did not create the official result root.</p>
+  <p class="warn">No unresolved Task4 implementation concerns. Scope notes: Task4 did not run a real Hydra/TRAIN smoke, did not create the official result root, and predecessor full-discovery governance checks are not a valid clean signal inside this active Exp458 worktree because they bind to their own checked-in map/source-parent state.</p>
 </main></body>
 </html>

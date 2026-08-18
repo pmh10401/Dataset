@@ -5,9 +5,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from math import isfinite
+from math import sqrt
 from pathlib import Path
 import re
 from types import MappingProxyType
+from typing import Literal
 
 from experiments.exp456_exp455_dataset_key_order_repair_antigravity.contracts_antigravity import (
     ComparisonMetricAntigravity,
@@ -16,6 +18,9 @@ from experiments.exp456_exp455_dataset_key_order_repair_antigravity.contracts_an
 )
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+
+
+_WILSON_95_Z_ANTIGRAVITY = 1.959963984540054
 
 
 def _dataset_antigravity(value: object) -> str:
@@ -81,6 +86,28 @@ def _validated_seed_fields_antigravity(value: object) -> tuple[float, ...]:
     return tuple(per_type_auc[name] for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types)
 
 
+def _wilson_upper_antigravity(successes: int, trials: int) -> float:
+    _bounded_int_antigravity(successes, "normal_alerts", upper=trials)
+    _positive_int_antigravity(trials, "normal_trials")
+    proportion = successes / trials
+    z_squared = _WILSON_95_Z_ANTIGRAVITY**2
+    denominator = 1.0 + z_squared / trials
+    center = proportion + z_squared / (2.0 * trials)
+    adjustment = _WILSON_95_Z_ANTIGRAVITY * sqrt(
+        (proportion * (1.0 - proportion) + z_squared / (4.0 * trials)) / trials
+    )
+    return min(1.0, (center + adjustment) / denominator)
+
+
+def _expected_seed_auc_antigravity(
+    seed: int,
+) -> tuple[tuple[tuple[str, float], tuple[str, float], tuple[str, float], tuple[str, float]], float]:
+    for expected_seed, per_type, pooled in FROZEN_CONFIG_ANTIGRAVITY.task3_rank_auc_by_seed:
+        if expected_seed == seed:
+            return per_type, pooled
+    raise ValueError("seed must be one of the exact Task3 seeds")
+
+
 @dataclass(frozen=True, slots=True)
 class RankSeedEvidenceAntigravity:
     dataset: str
@@ -117,15 +144,28 @@ def validate_rank_seed_semantics_antigravity(
     value: object,
 ) -> RankSeedEvidenceAntigravity:
     per_type_values = _validated_seed_fields_antigravity(value)
-    expected_pooled = float(sum(per_type_values) / len(per_type_values))
-    expected_passed = bool(
-        value.normal_wilson_upper <= FROZEN_CONFIG_ANTIGRAVITY.normal_wilson_upper_max
-        and expected_pooled >= FROZEN_CONFIG_ANTIGRAVITY.pooled_auc_min
-        and all(
-            auc >= FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min for auc in per_type_values
-        )
+    expected_per_type, expected_pooled = _expected_seed_auc_antigravity(value.seed)
+    expected_values = tuple(item[1] for item in expected_per_type)
+    expected_wilson = _wilson_upper_antigravity(
+        value.normal_alerts,
+        value.normal_trials,
     )
-    if value.pooled_auc != expected_pooled or value.passed is not expected_passed:
+    expected_passed = bool(
+        expected_wilson <= FROZEN_CONFIG_ANTIGRAVITY.normal_wilson_upper_max
+        and expected_pooled >= FROZEN_CONFIG_ANTIGRAVITY.pooled_auc_min
+        and all(auc >= FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min for auc in expected_values)
+    )
+    if (
+        value.normal_trials != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_trials
+        or value.normal_alerts != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_alerts
+        or expected_wilson != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_wilson_upper
+        or value.normal_wilson_upper != expected_wilson
+        or tuple(item[0] for item in expected_per_type) != FROZEN_CONFIG_ANTIGRAVITY.primary_types
+        or per_type_values != expected_values
+        or value.pooled_auc != float(sum(per_type_values) / len(per_type_values))
+        or value.pooled_auc != expected_pooled
+        or value.passed is not expected_passed
+    ):
         raise ValueError("rank seed evidence differs from semantic recomputation")
     return value
 
@@ -188,7 +228,7 @@ class RouteDecisionAntigravity:
     dataset: str
     rank_gate: bool
     structure_gate: bool
-    route: str
+    route: Literal["baseline", "candidate"]
 
     def __post_init__(self) -> None:
         _nonempty_str_antigravity(self.dataset, "dataset")

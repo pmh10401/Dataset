@@ -31,6 +31,13 @@ class Exp458ConfigAntigravity:
     per_type_auc_min: float
     pooled_auc_min: float
     normal_wilson_upper_max: float
+    normal2_train_trials: int
+    normal2_train_alerts: int
+    normal2_train_wilson_upper: float
+    task3_rank_auc_by_seed: tuple[
+        tuple[int, tuple[tuple[str, float], tuple[str, float], tuple[str, float], tuple[str, float]], float],
+        tuple[int, tuple[tuple[str, float], tuple[str, float], tuple[str, float], tuple[str, float]], float],
+    ]
     structure_gate: str
     finite_required: bool
     test_metrics_may_inform_routing: bool
@@ -61,6 +68,31 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "per_type_auc_min": 0.85,
         "pooled_auc_min": 0.90,
         "normal_wilson_upper_max": 0.05,
+        "normal2_train_trials": 1413,
+        "normal2_train_alerts": 6,
+        "normal2_train_wilson_upper": 0.00923330730695328,
+        "task3_rank_auc_by_seed": (
+            (
+                20260721,
+                (
+                    ("level_shift", 0.9796866524522819),
+                    ("gradual_drift", 0.9052489545815847),
+                    ("amplitude_scaling", 0.9951992643379718),
+                    ("period_change", 0.9104679076956519),
+                ),
+                0.9476506947668726,
+            ),
+            (
+                20261721,
+                (
+                    ("level_shift", 0.9761215364958586),
+                    ("gradual_drift", 0.895775202359648),
+                    ("amplitude_scaling", 0.9943593234193259),
+                    ("period_change", 0.9278161686372973),
+                ),
+                0.9485180577280324,
+            ),
+        ),
         "structure_gate": "added_count > removed_count",
         "finite_required": True,
         "test_metrics_may_inform_routing": False,

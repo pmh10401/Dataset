@@ -108,7 +108,7 @@ class ReplayAntigravityTest(unittest.TestCase):
             lambda root: mutate_jsonl(root, "route_decisions_antigravity.jsonl", lambda rows: rows[0].__setitem__("route", "baseline")),
             lambda root: mutate_json(root, "comparison_metrics_antigravity.json", lambda value: value["comparisons"][0]["confusion"].__setitem__("tp", 610)),
             lambda root: mutate_json(root, "comparison_metrics_antigravity.json", lambda value: value["comparisons"][-1]["f1"].__setitem__ if False else value["comparisons"][-1].__setitem__("f1", 0.58)),
-            lambda root: mutate_json(root, "family_metrics_antigravity.json", lambda value: value["families"][0].__setitem__("fn_delta", -7)),
+            lambda root: mutate_json(root, "family_metrics_antigravity.json", lambda value: value["families"][0].__setitem__("fn_delta", -6)),
             lambda root: mutate_json(root, "dashboard_snapshot_antigravity.json", lambda value: value.__setitem__("passed", False)),
             lambda root: mutate_json(root, "decision_antigravity.json", lambda value: value.__setitem__("status", "routing_candidate_not_qualified_for_external_validation")),
         )
@@ -121,6 +121,43 @@ class ReplayAntigravityTest(unittest.TestCase):
                 rehash_antigravity(root)
                 with self.assertRaises(ValueError):
                     _inspect_result_with_authority_antigravity(root, evidence.exp456_authority)
+
+    def test_rejects_coordinated_rehashed_auc_wilson_dashboard_tamper_antigravity(self) -> None:
+        """Break caught: all-AUC=.99/Wilson=0 evidence and matching downstream payloads can replay cleanly."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.artifacts_antigravity import (
+            publish_result_antigravity,
+        )
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.replay_antigravity import (
+            _inspect_result_with_authority_antigravity,
+        )
+
+        evidence = publication_evidence_antigravity()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "result"
+            publish_result_antigravity(root, evidence)
+
+            qualification_path = root / "train_qualification_antigravity.jsonl"
+            qualification = json.loads(qualification_path.read_text(encoding="utf-8").splitlines()[0])
+            for seed in qualification["seed_evidence"]:
+                seed["normal_wilson_upper"] = 0.0
+                seed["per_type_auc"] = {name: 0.99 for name in seed["per_type_auc"]}
+                seed["pooled_auc"] = 0.99
+                seed["passed"] = True
+            qualification["passed"] = True
+            qualification_path.write_bytes(canonical_antigravity(qualification))
+
+            dashboard_path = root / "dashboard_snapshot_antigravity.json"
+            dashboard = json.loads(dashboard_path.read_text(encoding="utf-8"))
+            for seed in dashboard["rank_evidence"]:
+                seed["normal_wilson_upper"] = 0.0
+                seed["per_type_auc"] = {name: 0.99 for name in seed["per_type_auc"]}
+                seed["pooled_auc"] = 0.99
+                seed["passed"] = True
+            dashboard_path.write_bytes(canonical_antigravity(dashboard))
+            rehash_antigravity(root)
+
+            with self.assertRaises(ValueError):
+                _inspect_result_with_authority_antigravity(root, evidence.exp456_authority)
 
 
 if __name__ == "__main__":

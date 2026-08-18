@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 from fractions import Fraction
+import json
+from pathlib import Path
 import unittest
 
 from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_router_antigravity import (
@@ -14,6 +16,9 @@ from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.te
 ARTIFACT_MAP_SHA256_ANTIGRAVITY = "3c1321f74016d363899b41357609edca62ecf410d71708a9c90a6b803a4445e0"
 COMPARISON_SHA256_ANTIGRAVITY = "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc"
 DECISION_SHA256_ANTIGRAVITY = "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01"
+EXP456_ROOT_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817"
+)
 
 
 def comparison_antigravity(name: str, values: tuple[int, int, int, int]):
@@ -41,94 +46,49 @@ def exp456_authority_antigravity():
         Exp456ResultAuthorityAntigravity,
     )
 
-    ecg = tuple(f"ECG5000_normal_{index}" for index in range(1, 6))
-    chlorine = tuple(f"ChlorineConcentration_normal_{index}" for index in range(1, 4))
-    baselines = {
-        ecg[0]: ConfusionAntigravity(7, 1, 0, 0),
-        ecg[1]: ConfusionAntigravity(0, 0, 8, 0),
-        ecg[2]: ConfusionAntigravity(0, 2, 1, 0),
-    }
-    candidates = {
-        ecg[0]: ConfusionAntigravity(0, 0, 7, 1),
-        ecg[1]: ConfusionAntigravity(8, 0, 0, 0),
-        ecg[2]: ConfusionAntigravity(1, 0, 0, 2),
-    }
-    feature_gates = ((12, 20), (14, 5), (0, 0), (0, 0), (0, 1))
-    rows = []
-    features = []
-    for dataset, (added, removed) in zip(ecg, feature_gates, strict=True):
-        baseline = baselines.get(dataset, ConfusionAntigravity(0, 0, 0, 0))
-        candidate = candidates.get(dataset, baseline)
-        rows.append(
-            DatasetRoutingAuthorityAntigravity(
-                dataset,
-                "ECG5000",
-                100,
-                "hydra_local_gap",
-                frozenset(),
-                frozenset(),
-                baseline,
-                candidate,
-            )
-        )
-        features.append(
-            DatasetRoutingFeaturesAntigravity(
-                dataset, "ECG5000", 100, 10, 10, 5, 15, added, removed, 333_333
-            )
-        )
-    for dataset in chlorine:
-        zero = ConfusionAntigravity(0, 0, 0, 0)
-        rows.append(
-            DatasetRoutingAuthorityAntigravity(
-                dataset,
-                "ChlorineConcentration",
-                100,
-                "multirocket_local_gap",
-                frozenset(),
-                frozenset(),
-                zero,
-                zero,
-            )
-        )
-        features.append(
-            DatasetRoutingFeaturesAntigravity(
-                dataset, "ChlorineConcentration", 100, 10, 10, 5, 15, 1, 1, 333_333
-            )
-        )
-    rows.append(
+    def confusion_antigravity(value: dict[str, int]) -> ConfusionAntigravity:
+        return ConfusionAntigravity(value["tp"], value["fp"], value["fn"], value["tn"])
+
+    context = json.loads((EXP456_ROOT_ANTIGRAVITY / "context_antigravity.json").read_text(encoding="utf-8"))
+    feature_rows = [
+        json.loads(line)
+        for line in (EXP456_ROOT_ANTIGRAVITY / "features_antigravity.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    comparison_rows = json.loads(
+        (EXP456_ROOT_ANTIGRAVITY / "comparison_metrics_antigravity.json").read_text(encoding="utf-8")
+    )["comparisons"]
+    rows = tuple(
         DatasetRoutingAuthorityAntigravity(
-            "Other_normal_1",
-            "Other",
-            100,
-            None,
+            row["dataset"],
+            row["family"],
+            row["target_length"],
+            row["method"],
             frozenset(),
-            None,
-            ConfusionAntigravity(602, 63, 828, 70788),
-            None,
+            None if row["candidate_confusion"] is None else frozenset(),
+            confusion_antigravity(row["baseline_confusion"]),
+            None if row["candidate_confusion"] is None else confusion_antigravity(row["candidate_confusion"]),
         )
+        for row in context["rows"]
     )
-    for index in range(2, 41):
-        rows.append(
-            DatasetRoutingAuthorityAntigravity(
-                f"Other_normal_{index}",
-                "Other",
-                100,
-                None,
-                frozenset(),
-                None,
-                ConfusionAntigravity(0, 0, 0, 0),
-                None,
-            )
-        )
+    features = tuple(DatasetRoutingFeaturesAntigravity(**row) for row in feature_rows)
     comparisons = (
-        comparison_antigravity("always_baseline", (609, 66, 837, 70788)),
-        comparison_antigravity("family_wide_local_gap", (611, 63, 835, 70791)),
-        comparison_antigravity("oracle_per_dataset", (618, 64, 828, 70790)),
+        *(
+            comparison_antigravity(
+                row["name"],
+                (
+                    row["confusion"]["tp"],
+                    row["confusion"]["fp"],
+                    row["confusion"]["fn"],
+                    row["confusion"]["tn"],
+                ),
+            )
+            for row in comparison_rows[:3]
+        ),
     )
-    frozen = FrozenRoutingAuthorityAntigravity(tuple(rows), tuple(), 0)
+    frozen = FrozenRoutingAuthorityAntigravity(rows, tuple(tuple(item) for item in context["exp454_leaf_sha256"]), 0)
     return Exp456ResultAuthorityAntigravity(
         frozen,
-        tuple(features),
+        features,
         comparisons,
         ARTIFACT_MAP_SHA256_ANTIGRAVITY,
         COMPARISON_SHA256_ANTIGRAVITY,
@@ -182,7 +142,7 @@ class EvaluationAntigravityTest(unittest.TestCase):
         self.assertEqual(final.f1, float(Fraction(2 * 617, 2 * 617 + 66 + 829)))
         self.assertEqual(
             tuple((row.family, row.fn_delta, row.fp_delta) for row in result.family_metrics),
-            (("ECG5000", -8, 0), ("ChlorineConcentration", 0, 0)),
+            (("ECG5000", -7, 2), ("ChlorineConcentration", -1, -2)),
         )
 
     def test_criteria_boundaries_are_fn_fp_inclusive_and_f1_strict_antigravity(self) -> None:
@@ -220,10 +180,29 @@ class EvaluationAntigravityTest(unittest.TestCase):
             replace(authority, authority=replace(authority.authority, rows=authority.authority.rows + (authority.authority.rows[-1],))),
             replace(authority, authority=replace(authority.authority, rows=(authority.authority.rows[1], authority.authority.rows[0]) + authority.authority.rows[2:])),
             replace(authority, authority=replace(authority.authority, rows=(replace(authority.authority.rows[0], dataset=authority.authority.rows[1].dataset),) + authority.authority.rows[1:])),
+            replace(authority, authority=replace(authority.authority, rows=authority.authority.rows[:3] + (authority.authority.rows[4], authority.authority.rows[3]) + authority.authority.rows[5:])),
+            replace(authority, authority=replace(authority.authority, rows=authority.authority.rows[:4] + (replace(authority.authority.rows[4], dataset="Crop_normal_10_renamed"),) + authority.authority.rows[5:])),
         )
         for case in cases:
             with self.subTest(rows=len(case.authority.rows)), self.assertRaises(ValueError):
                 evaluate_routes_antigravity(case, normal2_decision_antigravity(authority))
+
+    def test_rejects_coherent_rehashed_normal2_feature_drift_antigravity(self) -> None:
+        """Break caught: added=99/removed=0 normal_2 structure evidence can replace the Exp456 feature row."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.evaluation_antigravity import (
+            evaluate_routes_antigravity,
+        )
+
+        authority = exp456_authority_antigravity()
+        index = next(index for index, row in enumerate(authority.features) if row.dataset == DATASET_ANTIGRAVITY)
+        drifted_features = (
+            authority.features[:index]
+            + (replace(authority.features[index], added_count=99, removed_count=0),)
+            + authority.features[index + 1 :]
+        )
+        drifted_authority = replace(authority, features=drifted_features)
+        with self.assertRaises(ValueError):
+            evaluate_routes_antigravity(drifted_authority, normal2_decision_antigravity(drifted_authority))
 
     def test_rejects_forged_predecessor_or_caller_minted_route_antigravity(self) -> None:
         """Break caught: caller-supplied comparison or route objects bypass semantic provenance."""

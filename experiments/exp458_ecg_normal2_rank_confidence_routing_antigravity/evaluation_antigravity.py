@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from fractions import Fraction
 from hashlib import sha256
+import json
 from pathlib import Path
 import re
 
@@ -63,6 +64,20 @@ _EXP456_IDENTITIES_ANTIGRAVITY = {
     "comparison_metrics_antigravity.json": "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc",
     "decision_antigravity.json": "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01",
 }
+_EXP456_AUTHORITY_ROWS_SHA256_ANTIGRAVITY = "78f17bad2f9e37158b2e23867b9a6f4b555fab5009734bf49cf6d43453ee48bb"
+_EXP456_FEATURE_ROWS_SHA256_ANTIGRAVITY = "a7dc1130afa6a1fb54ba7573e07084b6432a240b7c0392676bc48e5e6b0f632c"
+_EXP456_NORMAL2_FEATURE_ANTIGRAVITY = {
+    "dataset": "ECG5000_normal_2",
+    "family": "ECG5000",
+    "target_length": 1800,
+    "baseline_count": 13,
+    "candidate_count": 22,
+    "overlap_count": 8,
+    "union_count": 27,
+    "added_count": 14,
+    "removed_count": 5,
+    "overlap_ppm": 296296,
+}
 _COMPARISON_NAMES_ANTIGRAVITY = (
     "always_baseline",
     "family_wide_local_gap",
@@ -100,6 +115,47 @@ def _expected_predecessor_antigravity() -> tuple[ComparisonMetricAntigravity, ..
             "oracle_per_dataset", (ConfusionAntigravity(618, 64, 828, 70790),)
         ),
     )
+
+
+def _json_bytes_antigravity(value: object) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+
+
+def _confusion_payload_antigravity(value: ConfusionAntigravity) -> dict[str, int]:
+    return {"tp": value.tp, "fp": value.fp, "fn": value.fn, "tn": value.tn}
+
+
+def _authority_rows_payload_antigravity(
+    rows: tuple[DatasetRoutingAuthorityAntigravity, ...],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "dataset": row.dataset,
+            "family": row.family,
+            "target_length": row.target_length,
+            "method": row.method,
+            "baseline_confusion": _confusion_payload_antigravity(row.baseline_confusion),
+            "candidate_confusion": None
+            if row.candidate_confusion is None
+            else _confusion_payload_antigravity(row.candidate_confusion),
+        }
+        for row in rows
+    ]
+
+
+def _feature_payload_antigravity(row: DatasetRoutingFeaturesAntigravity) -> dict[str, object]:
+    return {
+        "dataset": row.dataset,
+        "family": row.family,
+        "target_length": row.target_length,
+        "baseline_count": row.baseline_count,
+        "candidate_count": row.candidate_count,
+        "overlap_count": row.overlap_count,
+        "union_count": row.union_count,
+        "added_count": row.added_count,
+        "removed_count": row.removed_count,
+        "overlap_ppm": row.overlap_ppm,
+    }
 
 
 def _capture_exp456_result_authority_with_dependencies_antigravity(
@@ -212,6 +268,8 @@ def _validate_authority_antigravity(
     rows = value.authority.rows
     if type(rows) is not tuple or len(rows) != 48 or any(type(row) is not DatasetRoutingAuthorityAntigravity for row in rows):
         raise ValueError("Exp456 authority must contain exactly 48 rows")
+    if sha256(_json_bytes_antigravity(_authority_rows_payload_antigravity(rows))).hexdigest() != _EXP456_AUTHORITY_ROWS_SHA256_ANTIGRAVITY:
+        raise ValueError("Exp456 authority row content or order differs")
     if len({row.dataset for row in rows}) != 48:
         raise ValueError("Exp456 authority dataset keys are invalid")
     ecg = []
@@ -243,9 +301,14 @@ def _validate_authority_antigravity(
         raise ValueError("Exp456 target dataset order differs")
     if type(value.features) is not tuple or len(value.features) != 8 or len({row.dataset for row in value.features}) != 8:
         raise ValueError("Exp456 feature inventory differs")
+    feature_payload = [_feature_payload_antigravity(row) for row in value.features]
+    if sha256(_json_bytes_antigravity(feature_payload)).hexdigest() != _EXP456_FEATURE_ROWS_SHA256_ANTIGRAVITY:
+        raise ValueError("Exp456 feature content or order differs")
     features = {row.dataset: row for row in value.features}
     if set(features) != set(ecg + chlorine):
         raise ValueError("Exp456 feature dataset keys differ")
+    if _feature_payload_antigravity(features[FROZEN_CONFIG_ANTIGRAVITY.dataset]) != _EXP456_NORMAL2_FEATURE_ANTIGRAVITY:
+        raise ValueError("Exp456 normal_2 feature row differs")
     for row in value.features:
         if type(row) is not DatasetRoutingFeaturesAntigravity:
             raise ValueError("Exp456 feature type differs")

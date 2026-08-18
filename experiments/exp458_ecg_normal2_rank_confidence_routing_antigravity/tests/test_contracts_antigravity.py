@@ -15,26 +15,45 @@ PRIMARY_TYPES_ANTIGRAVITY = (
 )
 DATASET_ANTIGRAVITY = "ECG5000_normal_2"
 SEEDS_ANTIGRAVITY = (20260721, 20261721)
+TASK3_AUC_BY_SEED_ANTIGRAVITY = {
+    20260721: (
+        0.9796866524522819,
+        0.9052489545815847,
+        0.9951992643379718,
+        0.9104679076956519,
+    ),
+    20261721: (
+        0.9761215364958586,
+        0.895775202359648,
+        0.9943593234193259,
+        0.9278161686372973,
+    ),
+}
 
 
 def seed_evidence_antigravity(
     *,
     seed: int = SEEDS_ANTIGRAVITY[0],
-    per_type: tuple[float, float, float, float] = (0.85, 0.90, 0.90, 0.95),
-    wilson: float = 0.05,
+    per_type: tuple[float, float, float, float] | None = None,
+    pooled: float | None = None,
+    trials: int = 1413,
+    alerts: int = 6,
+    wilson: float = 0.00923330730695328,
 ) -> object:
     from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
         RankSeedEvidenceAntigravity,
     )
 
+    values = TASK3_AUC_BY_SEED_ANTIGRAVITY[seed] if per_type is None else per_type
+    pooled_value = float(sum(values) / len(values)) if pooled is None else pooled
     return RankSeedEvidenceAntigravity(
         DATASET_ANTIGRAVITY,
         seed,
-        100,
-        0,
+        trials,
+        alerts,
         wilson,
-        {name: value for name, value in zip(PRIMARY_TYPES_ANTIGRAVITY, per_type, strict=True)},
-        0.90,
+        {name: value for name, value in zip(PRIMARY_TYPES_ANTIGRAVITY, values, strict=True)},
+        pooled_value,
         True,
     )
 
@@ -83,11 +102,16 @@ class ContractsAntigravityTest(unittest.TestCase):
         valid = dict(
             dataset=DATASET_ANTIGRAVITY,
             seed=SEEDS_ANTIGRAVITY[0],
-            normal_trials=100,
-            normal_alerts=0,
-            normal_wilson_upper=0.05,
-            per_type_auc={name: 0.90 for name in PRIMARY_TYPES_ANTIGRAVITY},
-            pooled_auc=0.90,
+            normal_trials=1413,
+            normal_alerts=6,
+            normal_wilson_upper=0.00923330730695328,
+            per_type_auc={
+                "level_shift": 0.9796866524522819,
+                "gradual_drift": 0.9052489545815847,
+                "amplitude_scaling": 0.9951992643379718,
+                "period_change": 0.9104679076956519,
+            },
+            pooled_auc=0.9476506947668726,
             passed=True,
         )
         for field, value in (
@@ -99,12 +123,10 @@ class ContractsAntigravityTest(unittest.TestCase):
             ("normal_trials", 0),
             ("normal_alerts", False),
             ("normal_alerts", -1),
-            ("normal_alerts", 101),
+            ("normal_alerts", 1414),
             ("normal_wilson_upper", True),
-            ("normal_wilson_upper", 0.051),
             ("normal_wilson_upper", float("nan")),
             ("pooled_auc", True),
-            ("pooled_auc", 0.89),
             ("passed", 1),
         ):
             case = {**valid, field: value}
@@ -115,14 +137,14 @@ class ContractsAntigravityTest(unittest.TestCase):
             {name: 0.90 for name in PRIMARY_TYPES_ANTIGRAVITY[:-1]},
             {**{name: 0.90 for name in PRIMARY_TYPES_ANTIGRAVITY}, "bonus": 0.9},
             {name: 0.90 for name in reversed(PRIMARY_TYPES_ANTIGRAVITY)},
-            {**{name: 0.90 for name in PRIMARY_TYPES_ANTIGRAVITY}, "level_shift": True},
-            {**{name: 0.90 for name in PRIMARY_TYPES_ANTIGRAVITY}, "level_shift": np.float64(0.9)},
-            {**{name: 0.90 for name in PRIMARY_TYPES_ANTIGRAVITY}, "level_shift": float("inf")},
+            {**valid["per_type_auc"], "level_shift": True},
+            {**valid["per_type_auc"], "level_shift": np.float64(0.9)},
+            {**valid["per_type_auc"], "level_shift": float("inf")},
         ):
             with self.subTest(per_type_auc=per_type_auc), self.assertRaises(ValueError):
                 RankSeedEvidenceAntigravity(**{**valid, "per_type_auc": per_type_auc})
 
-    def test_seed_validator_recomputes_pooled_and_passed_from_numeric_evidence_antigravity(self) -> None:
+    def test_seed_validator_binds_exact_task3_auc_wilson_and_passed_evidence_antigravity(self) -> None:
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
             RankSeedEvidenceAntigravity,
             validate_rank_seed_semantics_antigravity,
@@ -135,32 +157,32 @@ class ContractsAntigravityTest(unittest.TestCase):
             dict(
                 dataset=DATASET_ANTIGRAVITY,
                 seed=SEEDS_ANTIGRAVITY[0],
-                normal_trials=100,
-                normal_alerts=0,
-                normal_wilson_upper=0.05,
+                normal_trials=1413,
+                normal_alerts=6,
+                normal_wilson_upper=0.00923330730695328,
                 per_type_auc={
-                    "level_shift": 0.85,
-                    "gradual_drift": 0.90,
-                    "amplitude_scaling": 0.90,
-                    "period_change": 0.95,
+                    "level_shift": 0.99,
+                    "gradual_drift": 0.99,
+                    "amplitude_scaling": 0.99,
+                    "period_change": 0.99,
                 },
-                pooled_auc=0.91,
+                pooled_auc=0.99,
                 passed=True,
             ),
             dict(
                 dataset=DATASET_ANTIGRAVITY,
                 seed=SEEDS_ANTIGRAVITY[0],
-                normal_trials=100,
-                normal_alerts=0,
-                normal_wilson_upper=0.05,
+                normal_trials=1413,
+                normal_alerts=6,
+                normal_wilson_upper=0.0,
                 per_type_auc={
-                    "level_shift": 0.85,
-                    "gradual_drift": 0.90,
-                    "amplitude_scaling": 0.90,
-                    "period_change": 0.95,
+                    "level_shift": 0.9796866524522819,
+                    "gradual_drift": 0.9052489545815847,
+                    "amplitude_scaling": 0.9951992643379718,
+                    "period_change": 0.9104679076956519,
                 },
-                pooled_auc=0.90,
-                passed=False,
+                pooled_auc=0.9476506947668726,
+                passed=True,
             ),
         ):
             with self.subTest(case=case), self.assertRaises(ValueError):
@@ -195,16 +217,16 @@ class ContractsAntigravityTest(unittest.TestCase):
         evidence = RankSeedEvidenceAntigravity(
             DATASET_ANTIGRAVITY,
             SEEDS_ANTIGRAVITY[0],
-            100,
-            0,
-            0.05,
+            1413,
+            6,
+            0.00923330730695328,
             {
-                "level_shift": 0.85,
-                "gradual_drift": 0.90,
-                "amplitude_scaling": 0.90,
-                "period_change": 0.95,
+                "level_shift": 0.9796866524522819,
+                "gradual_drift": 0.9052489545815847,
+                "amplitude_scaling": 0.9951992643379718,
+                "period_change": 0.9104679076956519,
             },
-            0.90,
+            0.9476506947668726,
             True,
         )
         self.assertTrue(evidence.passed)
