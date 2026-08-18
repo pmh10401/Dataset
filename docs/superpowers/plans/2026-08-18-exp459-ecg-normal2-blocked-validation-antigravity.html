@@ -19,7 +19,7 @@
 
   <p><strong>목표:</strong> Exp458의 <code>ECG5000_normal_2</code> 라우팅 규칙이 저장 순서 기반 다섯 연속 구간에서도 안정적인지, Exp458 통과선을 바꾸지 않고 검증한다.</p>
   <p><strong>구조:</strong> Exp458의 TRAIN loader, Hydra/LocalGap 점수 계산, AUC와 Wilson 공식을 통제된 복제로 재사용한다. 달라지는 과학 요소는 무작위 fold 대신 정확한 다섯 연속 query 구간을 사용하는 것뿐이다. 결과는 10개 fold-seed 판단, 두 seed 요약, 최종 <code>stable/unstable</code>로 저장하고 source-free replay와 HTML 대시보드로 검증한다.</p>
-  <p><strong>Scientific limitation disclosure:</strong> 쉽게 말해 exact empirical pvalues compare each fold original scores against same 282/283 vector. 현재 공식은 self-count+plus-one => minimum 2/(n+1) > .005 이므로 n=283이면 2/284≈0.00704, n=282이면 2/283≈0.00707이다. 따라서 0.005 alert threshold는 도달할 수 없고 normal_alerts structurally zero; Wilson rows non-discriminative in this blocked validation. Exp459 is unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4.</p>
+<p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
   <p><strong>기술:</strong> Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, SQLite read-only TRAIN source, unittest, canonical JSON/JSONL, HTML.</p>
   <p><strong>설계서:</strong> <code>docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html</code> / SHA-256 <code>47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275</code></p>
 

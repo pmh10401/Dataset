@@ -2043,7 +2043,7 @@
       "approved_design": "docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html",
       "approved_design_sha256": "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275",
       "approved_plan": "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html",
-      "approved_plan_sha256": "3e9534af91d5da273a83cf139d71236d29e91e8a48968672605b434120f7da0d",
+      "approved_plan_sha256": "4e5d44e3a180e0541e75a558b64993f050e67ad4e863e97d6133c7afd5e6d0f0",
       "predecessor": {
         "experiment": "Exp458",
         "reviewed_commit": "fc530cd2b392394aa7ffbd1408bc06d5b1b7c806",

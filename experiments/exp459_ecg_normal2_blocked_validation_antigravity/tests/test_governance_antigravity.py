@@ -34,7 +34,7 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "3e9534af91d5da273a83cf139d71236d29e91e8a48968672605b434120f7da0d"
+    "4e5d44e3a180e0541e75a558b64993f050e67ad4e863e97d6133c7afd5e6d0f0"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
@@ -79,11 +79,11 @@ PRIVATE_VALIDATION_ANTIGRAVITY = {
     ],
 }
 SCIENTIFIC_LIMITATION_DISCLOSURE_ANTIGRAVITY = (
-    "exact empirical pvalues compare each fold original scores against same 282/283 vector",
-    "self-count+plus-one => minimum 2/(n+1) > .005",
-    "normal_alerts structurally zero",
-    "Wilson rows non-discriminative",
-    "unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4",
+    "각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다",
+    "가능한 가장 작은 p값은",
+    "정상 경보 수가 항상 0",
+    "Wilson 값은 fold별 오경보 차이를 구분하지 못한다",
+    "seed 20260721의 fold 3과 seed 20261721의 fold 4",
 )
 RUN_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818"

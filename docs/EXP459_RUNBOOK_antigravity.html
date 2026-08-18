@@ -12,7 +12,7 @@
     <tr><th>CLI boundary</th><td>CLI evaluate and bare inspect require the version-controlled authority. bare inspect imports only authority + replay; bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지.</td></tr>
     <tr><th>official boundary</th><td>공식 root 없음, evaluate 0회, inspect 0회, label query 0, result hashes null.</td></tr>
   </table>
-  <p><strong>Scientific limitation disclosure:</strong> 쉽게 말해 exact empirical pvalues compare each fold original scores against same 282/283 vector. 현재 공식은 self-count+plus-one => minimum 2/(n+1) > .005 이므로 n=283이면 2/284≈0.00704, n=282이면 2/283≈0.00707이다. 따라서 0.005 alert threshold는 도달할 수 없고 normal_alerts structurally zero; Wilson rows non-discriminative in this blocked validation. Exp459 is unstable solely because period_change AUC failures at seed20260721/fold3 and seed20261721/fold4.</p>
+<p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
   <h2>Task 6 전 금지</h2>
   <p>Task 6 still requires approval after SHIP. 승인 전 공식 evaluate/inspect를 실행하지 않는다. unstable 결과 때문에 Exp459 안에서 threshold tuning, seed/fold 변경, 합성 종류 변경은 금지한다.</p>
   <h2>검증 체크리스트</h2>
