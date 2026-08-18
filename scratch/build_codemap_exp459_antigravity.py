@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp459 Task 3 source/qualification code map."""
+"""Build and validate the bounded Exp459 Task 4 result/replay code map."""
 
 from __future__ import annotations
 
@@ -37,14 +37,22 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/blocked_folds_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/config_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/contracts_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/artifacts_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/dashboard_export_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/evaluation_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/qualification_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/replay_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/sources_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_artifacts_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_blocked_folds_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_config_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_controlled_fork_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_dashboard_export_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_evaluation_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_replay_antigravity.py",
     "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp459_antigravity.py",
 )
@@ -149,8 +157,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp459 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp459 Task 3 source/qualification 코드맵</h1><p>Task 3는 Exp459를 planned_not_started로 유지한 채 TRAIN-only source, blocked fold-seed qualification, bounded tests, 그리고 동기화된 ledgers/map만 추가한다. 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
+        '<title>Exp459 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp459 Task 4 result/replay 코드맵</h1><p>Task 4는 Exp459를 planned_not_started로 유지한 채 stable 판단, canonical 7-leaf publication, source-free replay, aggregate dashboard export, bounded tests, 그리고 동기화된 ledgers/map만 추가한다. 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -190,6 +198,18 @@ def build_map_antigravity(
     qualification_path = (
         "experiments/exp459_ecg_normal2_blocked_validation_antigravity/qualification_antigravity.py"
     )
+    evaluation_path = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/evaluation_antigravity.py"
+    )
+    artifacts_path = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/artifacts_antigravity.py"
+    )
+    replay_path = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/replay_antigravity.py"
+    )
+    dashboard_export_path = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/dashboard_export_antigravity.py"
+    )
     config_test = (
         "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
         "test_config_antigravity.py"
@@ -214,6 +234,22 @@ def build_map_antigravity(
         "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
         "test_qualification_antigravity.py"
     )
+    evaluation_test = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
+        "test_evaluation_antigravity.py"
+    )
+    artifacts_test = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
+        "test_artifacts_antigravity.py"
+    )
+    replay_test = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
+        "test_replay_antigravity.py"
+    )
+    dashboard_export_test = (
+        "experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/"
+        "test_dashboard_export_antigravity.py"
+    )
     builder = "scratch/build_codemap_exp459_antigravity.py"
 
     nodes: list[dict[str, object]] = [
@@ -227,9 +263,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1–3 execution. Effect: records checked Task 1, Task 2, and Task 3 steps while Tasks 4–6 remain unchecked pending later work.",
+            "role": "Caller: Task 1–4 execution. Effect: records checked Task 1, Task 2, Task 3, and Task 4 steps while Tasks 5–6 remain unchecked pending later work.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 3: TRAIN source와 10개 fold-seed 자격 평가")],
+            "evidence": [evidence_antigravity(plan, "Task 4: stable 판단, 7-leaf 결과, replay와 대시보드")],
         },
         {
             "id": "preregistration",
@@ -241,44 +277,44 @@ def build_map_antigravity(
         {
             "id": "runbook",
             "path": "docs/EXP459_RUNBOOK_antigravity.html",
-            "role": "Caller: future operators. Effect: records that Task 3 completed TRAIN-only source and qualification while official commands, root creation, and label access remain blocked.",
+            "role": "Caller: future operators. Effect: records that Task 4 completed evaluation, artifacts, replay, and dashboard export while official commands, root creation, and label access remain blocked.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 4 이전까지 금지한 일")],
+            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 5 이전까지 금지한 일")],
         },
         {
             "id": "implementation_report",
             "path": "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: implementation review. Effect: reports the Task 3 source/qualification additions while the official Exp459 lifecycle remains unstarted.",
+            "role": "Caller: implementation review. Effect: reports the Task 4 evaluation/artifacts/replay/dashboard additions while the official Exp459 lifecycle remains unstarted.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 3의 TRAIN source와 10개 fold-seed qualification 표면까지 완료했다")],
+            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 4의 stable/unstable 판단")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP459_DASHBOARD_antigravity.html",
-            "role": "Caller: reader-facing review. Effect: shows Task 3/6 progress, planned_not_started status, zero official commands, and unchanged champion state.",
+            "role": "Caller: reader-facing review. Effect: shows Task 4/6 progress, planned_not_started status, zero official commands, and unchanged champion state.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 3/6")],
+            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 4/6")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: records Exp459 as planned_not_started with Task 3 complete, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
+            "role": "Caller: governance review. Effect: records Exp459 as planned_not_started with Task 4 complete, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_3_source_and_qualification_complete\"")],
+            "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_4_evaluation_artifacts_replay_dashboard_complete\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 3 implementation status, frozen predecessor link, planned status, and no-result truth.",
+            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 4 implementation status, frozen predecessor link, planned status, and no-result truth.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_3_source_and_qualification_complete\"")],
+            "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_4_evaluation_artifacts_replay_dashboard_complete\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: records Exp459 Task 3 completion without changing champion, pending candidate, routing, or promotion.",
+            "role": "Caller: champion review. Effect: records Exp459 Task 4 completion without changing champion, pending candidate, routing, or promotion.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_3_source_and_qualification_complete\"")],
+            "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_4_evaluation_artifacts_replay_dashboard_complete\"")],
         },
         {
             "id": "task2_config",
@@ -311,9 +347,37 @@ def build_map_antigravity(
         {
             "id": "task3_qualification",
             "path": qualification_path,
-            "role": "Caller: future evaluation/CLI and Task 3 tests. Effect: calls the blocked fold scorer in exact seed-then-fold order, computes fold AUC/Wilson pass records, seed summaries, and overall qualification.",
+            "role": "Caller: Task 4 evaluation, future CLI, and Task 3 tests. Effect: calls the blocked fold scorer in exact seed-then-fold order, computes fold AUC/Wilson pass records, seed summaries, and overall qualification.",
             "tests": [qualification_test],
             "evidence": [evidence_antigravity(qualification_path, "qualify_blocked_normal2_antigravity")],
+        },
+        {
+            "id": "task4_evaluation",
+            "path": evaluation_path,
+            "role": "Caller: Task 4 artifacts, dashboard export, replay, and evaluation tests. Effect: validates exact ordered qualification evidence and returns stable only when all ten fold-seed records pass while exposing Exp458 metrics as predecessor context only.",
+            "tests": [evaluation_test, artifacts_test, replay_test, dashboard_export_test],
+            "evidence": [evidence_antigravity(evaluation_path, "evaluate_blocked_qualification_antigravity")],
+        },
+        {
+            "id": "task4_artifacts",
+            "path": artifacts_path,
+            "role": "Caller: Task 4 replay, future CLI, and artifact tests. Effect: publishes canonical seven-leaf result roots create-only with a self-excluding six-leaf artifact hash map.",
+            "tests": [artifacts_test, replay_test],
+            "evidence": [evidence_antigravity(artifacts_path, "publish_result_antigravity")],
+        },
+        {
+            "id": "task4_replay",
+            "path": replay_path,
+            "role": "Caller: Task 4 replay tests and future inspect CLI. Effect: rejects inventory, canonical JSON, hash-map, fold-plan, AUC, Wilson, seed/final decision, dashboard, and map tamper without reading source rows.",
+            "tests": [replay_test],
+            "evidence": [evidence_antigravity(replay_path, "inspect_result_at_antigravity")],
+        },
+        {
+            "id": "task4_dashboard_export",
+            "path": dashboard_export_path,
+            "role": "Caller: Task 4 artifacts, replay, dashboard tests, and future reports. Effect: exports only aggregate TRAIN evidence, two seed summaries, fixed Exp458 predecessor metrics, and label_query_count 0.",
+            "tests": [dashboard_export_test, artifacts_test, replay_test],
+            "evidence": [evidence_antigravity(dashboard_export_path, "export_dashboard_antigravity")],
         },
         {
             "id": "task2_config_tests",
@@ -358,16 +422,44 @@ def build_map_antigravity(
             "evidence": [evidence_antigravity(qualification_test, "test_qualification_calls_ten_ordered_blocked_scorers_and_covers_each_row_per_seed_antigravity")],
         },
         {
+            "id": "task4_evaluation_tests",
+            "path": evaluation_test,
+            "role": "Caller: Task 4 verification. Effect: proves stable requires ten ordered passes, unstable follows one failed record, Exp458 metrics stay predecessor-only, and forged qualification evidence is rejected.",
+            "tests": [evaluation_test],
+            "evidence": [evidence_antigravity(evaluation_test, "test_stable_requires_all_ten_ordered_fold_seed_records_antigravity")],
+        },
+        {
+            "id": "task4_artifact_tests",
+            "path": artifacts_test,
+            "role": "Caller: Task 4 verification. Effect: proves exact seven-leaf canonical create-only publication, self-excluding artifact maps, context payload, and evaluator provenance enforcement.",
+            "tests": [artifacts_test],
+            "evidence": [evidence_antigravity(artifacts_test, "test_publishes_exact_canonical_seven_leaf_inventory_create_only_antigravity")],
+        },
+        {
+            "id": "task4_replay_tests",
+            "path": replay_test,
+            "role": "Caller: Task 4 verification. Effect: proves source-free replay recomputation and rejection of rehashed fold, AUC, Wilson, decision, dashboard, map, inventory, and row-order tamper.",
+            "tests": [replay_test],
+            "evidence": [evidence_antigravity(replay_test, "test_rejects_rehashed_semantic_tamper_across_result_leaves_antigravity")],
+        },
+        {
+            "id": "task4_dashboard_tests",
+            "path": dashboard_export_test,
+            "role": "Caller: Task 4 verification. Effect: proves dashboard payload is aggregate-only, includes fixed Exp458 metrics and label_query_count 0, and rejects forged or mutated decisions.",
+            "tests": [dashboard_export_test],
+            "evidence": [evidence_antigravity(dashboard_export_test, "test_dashboard_exports_only_aggregate_train_payload_and_exp458_context_antigravity")],
+        },
+        {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 2 ledger truth, official-root absence, and bounded code-map parity.",
+            "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 4 ledger truth, official-root absence, and bounded code-map parity.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_exp459_planned_truth_and_non_promotion_antigravity")],
         },
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 3 validation. Effect: recomputes the bounded Task 3 graph, fingerprints, source-parent rule, and HTML/JSON/lock parity.",
+            "role": "Caller: Task 4 validation. Effect: recomputes the bounded Task 4 graph, fingerprints, source-parent rule, and HTML/JSON/lock parity.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -382,13 +474,21 @@ def build_map_antigravity(
         {"from": "approved_design", "to": "task2_blocked_folds", "type": "governs", "evidence": evidence_antigravity(design, "numpy.array_split")},
         {"from": "approved_design", "to": "task3_sources", "type": "governs", "evidence": evidence_antigravity(design, "TRAIN 입력:")},
         {"from": "approved_design", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(design, "점수 계산:")},
+        {"from": "approved_design", "to": "task4_evaluation", "type": "governs", "evidence": evidence_antigravity(design, "최종 판단")},
+        {"from": "approved_design", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(design, "결과 파일과 대시보드")},
+        {"from": "approved_design", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(design, "source-free replay")},
+        {"from": "approved_design", "to": "task4_dashboard_export", "type": "governs", "evidence": evidence_antigravity(design, "원시 TRAIN 행")},
         {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "Step 6 — focused GREEN 두 번, Exp458 contract/AUC 회귀, compile/diff/map 검증 후 체크박스와 map을 갱신하고 커밋·검토한다.")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 완료")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 완료")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(plan, "exact config와 immutable dataclass 계약을 구현한다.")},
         {"from": "implementation_plan", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(plan, "FoldEvidenceAntigravity")},
         {"from": "implementation_plan", "to": "task2_blocked_folds", "type": "governs", "evidence": evidence_antigravity(plan, "def blocked_plan_antigravity(n_rows: int):")},
         {"from": "implementation_plan", "to": "task3_sources", "type": "governs", "evidence": evidence_antigravity(plan, "sources_antigravity.py")},
         {"from": "implementation_plan", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(plan, "qualify_blocked_normal2_antigravity()")},
+        {"from": "implementation_plan", "to": "task4_evaluation", "type": "governs", "evidence": evidence_antigravity(plan, "evaluation_antigravity.py")},
+        {"from": "implementation_plan", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(plan, "artifacts_antigravity.py")},
+        {"from": "implementation_plan", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(plan, "replay_antigravity.py")},
+        {"from": "implementation_plan", "to": "task4_dashboard_export", "type": "governs", "evidence": evidence_antigravity(plan, "dashboard_export_antigravity.py")},
         {"from": "implementation_plan", "to": "map_builder", "type": "governs", "evidence": evidence_antigravity(plan, "map을 갱신하고 커밋·검토한다.")},
         {"from": "task2_config_tests", "to": "task2_config", "type": "tests", "evidence": evidence_antigravity(config_test, "test_config_rejects_any_mutated_value_type_or_order_antigravity")},
         {"from": "task2_contract_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(contracts_test, "test_fold_evidence_summary_qualification_and_decision_recompute_semantics_antigravity")},
@@ -399,8 +499,21 @@ def build_map_antigravity(
         {"from": "task2_blocked_folds", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(qualification_path, "_blocked_plan_for_train_antigravity")},
         {"from": "task2_contracts", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(qualification_path, "_fold_evidence_antigravity")},
         {"from": "task3_sources", "to": "task3_qualification", "type": "governs", "evidence": evidence_antigravity(qualification_path, "qualify_blocked_normal2_antigravity")},
+        {"from": "task2_contracts", "to": "task4_evaluation", "type": "governs", "evidence": evidence_antigravity(evaluation_path, "validate_blocked_qualification_semantics_antigravity")},
+        {"from": "task3_qualification", "to": "task4_evaluation", "type": "governs", "evidence": evidence_antigravity(evaluation_path, "evaluate_blocked_qualification_antigravity")},
+        {"from": "task2_blocked_folds", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(artifacts_path, "_fold_plan_rows_antigravity")},
+        {"from": "task4_evaluation", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(artifacts_path, "publish_result_antigravity")},
+        {"from": "task4_dashboard_export", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(artifacts_path, "_payloads_antigravity")},
+        {"from": "task4_evaluation", "to": "task4_dashboard_export", "type": "governs", "evidence": evidence_antigravity(dashboard_export_path, "export_dashboard_antigravity")},
+        {"from": "task4_artifacts", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(replay_path, "inspect_result_at_antigravity")},
+        {"from": "task4_evaluation", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(replay_path, "_decision_antigravity")},
+        {"from": "task4_dashboard_export", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(replay_path, "inspect_result_at_antigravity")},
         {"from": "task3_source_tests", "to": "task3_sources", "type": "tests", "evidence": evidence_antigravity(sources_test, "test_loader_rejects_malformed_train_rows_and_never_aliases_results_antigravity")},
         {"from": "task3_qualification_tests", "to": "task3_qualification", "type": "tests", "evidence": evidence_antigravity(qualification_test, "test_qualification_applies_fold_seed_and_inclusive_threshold_gates_antigravity")},
+        {"from": "task4_evaluation_tests", "to": "task4_evaluation", "type": "tests", "evidence": evidence_antigravity(evaluation_test, "test_rejects_forged_or_mutated_qualification_at_evaluation_boundary_antigravity")},
+        {"from": "task4_artifact_tests", "to": "task4_artifacts", "type": "tests", "evidence": evidence_antigravity(artifacts_test, "test_rejects_symlink_destination_and_forged_decision_without_shared_evaluator_antigravity")},
+        {"from": "task4_replay_tests", "to": "task4_replay", "type": "tests", "evidence": evidence_antigravity(replay_test, "test_source_free_replay_recomputes_plan_evidence_decision_and_dashboard_antigravity")},
+        {"from": "task4_dashboard_tests", "to": "task4_dashboard_export", "type": "tests", "evidence": evidence_antigravity(dashboard_export_test, "test_dashboard_rejects_forged_result_and_mutated_nested_fields_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
         {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_documents_triplet_and_checkboxes_antigravity")},
@@ -411,7 +524,7 @@ def build_map_antigravity(
     ]
 
     graph = {
-        "schema": "exp459_task3_source_qualification_codemap_v1",
+        "schema": "exp459_task4_result_replay_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -419,7 +532,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp459_task3_source_qualification_codemap_lock_v1",
+        "schema": "exp459_task4_result_replay_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),

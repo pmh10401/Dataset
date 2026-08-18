@@ -301,7 +301,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
-        self.assertLessEqual(len(graph["nodes"]), 24)
+        self.assertLessEqual(len(graph["nodes"]), 32)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
         self.assertIn("governance_regression", node_by_id)
         self.assertIn("task2_config", node_by_id)
@@ -309,6 +309,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("task2_blocked_folds", node_by_id)
         self.assertIn("task3_sources", node_by_id)
         self.assertIn("task3_qualification", node_by_id)
+        self.assertIn("task4_evaluation", node_by_id)
+        self.assertIn("task4_artifacts", node_by_id)
+        self.assertIn("task4_replay", node_by_id)
+        self.assertIn("task4_dashboard_export", node_by_id)
         self.assertIn("research_state", node_by_id)
         self.assertIn("experiment_catalog", node_by_id)
         self.assertIn("champion_ledger", node_by_id)
@@ -348,6 +352,38 @@ class GovernanceAntigravityTest(unittest.TestCase):
             any(
                 edge["from"] == "task3_qualification_tests"
                 and edge["to"] == "task3_qualification"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task4_evaluation_tests"
+                and edge["to"] == "task4_evaluation"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task4_artifact_tests"
+                and edge["to"] == "task4_artifacts"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task4_replay_tests"
+                and edge["to"] == "task4_replay"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task4_dashboard_tests"
+                and edge["to"] == "task4_dashboard_export"
                 and edge["type"] == "tests"
                 for edge in graph["edges"]
             )
