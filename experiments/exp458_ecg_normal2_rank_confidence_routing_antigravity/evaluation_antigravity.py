@@ -39,6 +39,7 @@ from .contracts_antigravity import (
     FamilyMetricAntigravity,
     RankQualificationAntigravity,
     RouteDecisionAntigravity,
+    validate_frozen_task3_qualification_antigravity,
 )
 from .router_antigravity import (
     _evidence_for_route_decision_antigravity,
@@ -64,7 +65,8 @@ _EXP456_IDENTITIES_ANTIGRAVITY = {
     "comparison_metrics_antigravity.json": "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc",
     "decision_antigravity.json": "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01",
 }
-_EXP456_AUTHORITY_ROWS_SHA256_ANTIGRAVITY = "78f17bad2f9e37158b2e23867b9a6f4b555fab5009734bf49cf6d43453ee48bb"
+_EXP456_AUTHORITY_ROWS_SHA256_ANTIGRAVITY = "b1f6399b12a618967b4001468f77d27896bcd49575b12c84ac500e9ffb772adf"
+_EXP456_INNER_AUTHORITY_INVENTORY_SHA256_ANTIGRAVITY = "213e39e9ef0a7072735b900e91f931214b549e18561e643da998665e5b9b97b2"
 _EXP456_FEATURE_ROWS_SHA256_ANTIGRAVITY = "a7dc1130afa6a1fb54ba7573e07084b6432a240b7c0392676bc48e5e6b0f632c"
 _EXP456_NORMAL2_FEATURE_ANTIGRAVITY = {
     "dataset": "ECG5000_normal_2",
@@ -125,6 +127,12 @@ def _confusion_payload_antigravity(value: ConfusionAntigravity) -> dict[str, int
     return {"tp": value.tp, "fp": value.fp, "fn": value.fn, "tn": value.tn}
 
 
+def _index_payload_antigravity(value: object, name: str) -> list[int]:
+    if type(value) is not frozenset or any(type(item) is not int or item < 0 for item in value):
+        raise ValueError(f"{name} indices are invalid")
+    return sorted(value)
+
+
 def _authority_rows_payload_antigravity(
     rows: tuple[DatasetRoutingAuthorityAntigravity, ...],
 ) -> list[dict[str, object]]:
@@ -134,6 +142,10 @@ def _authority_rows_payload_antigravity(
             "family": row.family,
             "target_length": row.target_length,
             "method": row.method,
+            "baseline_indices": _index_payload_antigravity(row.baseline_indices, "baseline"),
+            "candidate_indices": None
+            if row.candidate_indices is None
+            else _index_payload_antigravity(row.candidate_indices, "candidate"),
             "baseline_confusion": _confusion_payload_antigravity(row.baseline_confusion),
             "candidate_confusion": None
             if row.candidate_confusion is None
@@ -141,6 +153,23 @@ def _authority_rows_payload_antigravity(
         }
         for row in rows
     ]
+
+
+def _inventory_payload_antigravity(value: object) -> list[list[str]]:
+    if type(value) is not tuple:
+        raise ValueError("Exp456 inner authority inventory type differs")
+    payload = []
+    for item in value:
+        if (
+            type(item) is not tuple
+            or len(item) != 2
+            or type(item[0]) is not str
+            or type(item[1]) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", item[1]) is None
+        ):
+            raise ValueError("Exp456 inner authority inventory differs")
+        payload.append([item[0], item[1]])
+    return payload
 
 
 def _feature_payload_antigravity(row: DatasetRoutingFeaturesAntigravity) -> dict[str, object]:
@@ -263,8 +292,11 @@ def _validate_authority_antigravity(
         or value.decision_sha256 != _EXP456_IDENTITIES_ANTIGRAVITY["decision_antigravity.json"]
         or value.predecessor_comparisons != _expected_predecessor_antigravity()
         or value.label_query_count != 0
+        or value.authority.label_query_count != 0
     ):
         raise ValueError("Exp456 immutable result binding differs")
+    if sha256(_json_bytes_antigravity(_inventory_payload_antigravity(value.authority.exp454_leaf_sha256))).hexdigest() != _EXP456_INNER_AUTHORITY_INVENTORY_SHA256_ANTIGRAVITY:
+        raise ValueError("Exp456 inner authority inventory differs")
     rows = value.authority.rows
     if type(rows) is not tuple or len(rows) != 48 or any(type(row) is not DatasetRoutingAuthorityAntigravity for row in rows):
         raise ValueError("Exp456 authority must contain exactly 48 rows")
@@ -326,6 +358,7 @@ def _validate_decision_antigravity(
     source_feature, qualification = _evidence_for_route_decision_antigravity(decision)
     if source_feature != features[FROZEN_CONFIG_ANTIGRAVITY.dataset] or qualification.dataset != FROZEN_CONFIG_ANTIGRAVITY.dataset:
         raise ValueError("route decision provenance differs from Exp456 feature authority")
+    validate_frozen_task3_qualification_antigravity(qualification)
     expected_structure = source_feature.added_count > source_feature.removed_count
     expected_route = "candidate" if decision.rank_gate and expected_structure else "baseline"
     if decision.structure_gate is not expected_structure or decision.route != expected_route:

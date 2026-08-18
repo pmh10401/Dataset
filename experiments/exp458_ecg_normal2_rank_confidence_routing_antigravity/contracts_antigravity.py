@@ -144,25 +144,18 @@ def validate_rank_seed_semantics_antigravity(
     value: object,
 ) -> RankSeedEvidenceAntigravity:
     per_type_values = _validated_seed_fields_antigravity(value)
-    expected_per_type, expected_pooled = _expected_seed_auc_antigravity(value.seed)
-    expected_values = tuple(item[1] for item in expected_per_type)
     expected_wilson = _wilson_upper_antigravity(
         value.normal_alerts,
         value.normal_trials,
     )
+    expected_pooled = float(sum(per_type_values) / len(per_type_values))
     expected_passed = bool(
         expected_wilson <= FROZEN_CONFIG_ANTIGRAVITY.normal_wilson_upper_max
         and expected_pooled >= FROZEN_CONFIG_ANTIGRAVITY.pooled_auc_min
-        and all(auc >= FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min for auc in expected_values)
+        and all(auc >= FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min for auc in per_type_values)
     )
     if (
-        value.normal_trials != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_trials
-        or value.normal_alerts != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_alerts
-        or expected_wilson != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_wilson_upper
-        or value.normal_wilson_upper != expected_wilson
-        or tuple(item[0] for item in expected_per_type) != FROZEN_CONFIG_ANTIGRAVITY.primary_types
-        or per_type_values != expected_values
-        or value.pooled_auc != float(sum(per_type_values) / len(per_type_values))
+        value.normal_wilson_upper != expected_wilson
         or value.pooled_auc != expected_pooled
         or value.passed is not expected_passed
     ):
@@ -215,6 +208,33 @@ def validate_rank_qualification_semantics_antigravity(
     if value.passed is not expected:
         raise ValueError("rank qualification differs from both-seed recomputation")
     return value
+
+
+def validate_frozen_task3_qualification_antigravity(
+    value: object,
+) -> RankQualificationAntigravity:
+    qualification = validate_rank_qualification_semantics_antigravity(value)
+    for seed in qualification.seed_evidence:
+        expected_per_type, expected_pooled = _expected_seed_auc_antigravity(seed.seed)
+        expected_values = tuple(item[1] for item in expected_per_type)
+        expected_wilson = _wilson_upper_antigravity(
+            seed.normal_alerts,
+            seed.normal_trials,
+        )
+        if (
+            seed.normal_trials != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_trials
+            or seed.normal_alerts != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_alerts
+            or expected_wilson != FROZEN_CONFIG_ANTIGRAVITY.normal2_train_wilson_upper
+            or seed.normal_wilson_upper != expected_wilson
+            or tuple(item[0] for item in expected_per_type) != FROZEN_CONFIG_ANTIGRAVITY.primary_types
+            or tuple(seed.per_type_auc[name] for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types) != expected_values
+            or seed.pooled_auc != expected_pooled
+            or seed.passed is not True
+        ):
+            raise ValueError("rank qualification differs from frozen Task3 evidence")
+    if qualification.passed is not True:
+        raise ValueError("rank qualification differs from frozen Task3 evidence")
+    return qualification
 
 
 def _nonempty_str_antigravity(value: object, name: str) -> str:
@@ -372,6 +392,7 @@ __all__ = (
     "RankQualificationAntigravity",
     "RankSeedEvidenceAntigravity",
     "RouteDecisionAntigravity",
+    "validate_frozen_task3_qualification_antigravity",
     "validate_rank_qualification_semantics_antigravity",
     "validate_rank_seed_semantics_antigravity",
 )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -158,6 +159,44 @@ class ReplayAntigravityTest(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 _inspect_result_with_authority_antigravity(root, evidence.exp456_authority)
+
+    def test_rejects_forged_expected_authority_indices_inventory_and_label_count_antigravity(self) -> None:
+        """Break caught: replay can be pointed at a rehashed but internally forged Exp456 authority object."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.artifacts_antigravity import (
+            publish_result_antigravity,
+        )
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.replay_antigravity import (
+            _inspect_result_with_authority_antigravity,
+        )
+
+        evidence = publication_evidence_antigravity()
+        row = evidence.exp456_authority.authority.rows[0]
+        forged_baseline = frozenset((*row.baseline_indices, max(row.baseline_indices) + 10_000))
+        inventory = evidence.exp456_authority.authority.exp454_leaf_sha256
+        cases = (
+            replace(
+                evidence.exp456_authority,
+                authority=replace(
+                    evidence.exp456_authority.authority,
+                    rows=(replace(row, baseline_indices=forged_baseline),) + evidence.exp456_authority.authority.rows[1:],
+                ),
+            ),
+            replace(
+                evidence.exp456_authority,
+                authority=replace(evidence.exp456_authority.authority, exp454_leaf_sha256=inventory[:-1]),
+            ),
+            replace(
+                evidence.exp456_authority,
+                authority=replace(evidence.exp456_authority.authority, label_query_count=1),
+            ),
+        )
+        for authority in cases:
+            with self.subTest(label_count=authority.authority.label_query_count), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "result"
+                publish_result_antigravity(root, evidence)
+                rehash_antigravity(root)
+                with self.assertRaises(ValueError):
+                    _inspect_result_with_authority_antigravity(root, authority)
 
 
 if __name__ == "__main__":

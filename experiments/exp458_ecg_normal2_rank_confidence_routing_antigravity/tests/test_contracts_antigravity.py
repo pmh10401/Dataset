@@ -39,6 +39,7 @@ def seed_evidence_antigravity(
     trials: int = 1413,
     alerts: int = 6,
     wilson: float = 0.00923330730695328,
+    passed: bool = True,
 ) -> object:
     from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
         RankSeedEvidenceAntigravity,
@@ -54,7 +55,7 @@ def seed_evidence_antigravity(
         wilson,
         {name: value for name, value in zip(PRIMARY_TYPES_ANTIGRAVITY, values, strict=True)},
         pooled_value,
-        True,
+        passed,
     )
 
 
@@ -144,7 +145,7 @@ class ContractsAntigravityTest(unittest.TestCase):
             with self.subTest(per_type_auc=per_type_auc), self.assertRaises(ValueError):
                 RankSeedEvidenceAntigravity(**{**valid, "per_type_auc": per_type_auc})
 
-    def test_seed_validator_binds_exact_task3_auc_wilson_and_passed_evidence_antigravity(self) -> None:
+    def test_seed_validator_recomputes_wilson_pooled_and_passed_without_exact_task3_values_antigravity(self) -> None:
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
             RankSeedEvidenceAntigravity,
             validate_rank_seed_semantics_antigravity,
@@ -152,6 +153,34 @@ class ContractsAntigravityTest(unittest.TestCase):
 
         evidence = seed_evidence_antigravity()
         self.assertIs(validate_rank_seed_semantics_antigravity(evidence), evidence)
+        high_auc = RankSeedEvidenceAntigravity(
+            DATASET_ANTIGRAVITY,
+            SEEDS_ANTIGRAVITY[0],
+            1413,
+            6,
+            0.00923330730695328,
+            {name: 0.99 for name in PRIMARY_TYPES_ANTIGRAVITY},
+            0.99,
+            True,
+        )
+        self.assertIs(validate_rank_seed_semantics_antigravity(high_auc), high_auc)
+        failing = RankSeedEvidenceAntigravity(
+            DATASET_ANTIGRAVITY,
+            SEEDS_ANTIGRAVITY[0],
+            1413,
+            6,
+            0.00923330730695328,
+            {
+                "level_shift": 0.84,
+                "gradual_drift": 0.95,
+                "amplitude_scaling": 0.95,
+                "period_change": 0.95,
+            },
+            0.9225,
+            False,
+        )
+        self.assertFalse(failing.passed)
+        self.assertIs(validate_rank_seed_semantics_antigravity(failing), failing)
 
         for case in (
             dict(
@@ -159,7 +188,7 @@ class ContractsAntigravityTest(unittest.TestCase):
                 seed=SEEDS_ANTIGRAVITY[0],
                 normal_trials=1413,
                 normal_alerts=6,
-                normal_wilson_upper=0.00923330730695328,
+                normal_wilson_upper=0.0,
                 per_type_auc={
                     "level_shift": 0.99,
                     "gradual_drift": 0.99,
@@ -174,14 +203,14 @@ class ContractsAntigravityTest(unittest.TestCase):
                 seed=SEEDS_ANTIGRAVITY[0],
                 normal_trials=1413,
                 normal_alerts=6,
-                normal_wilson_upper=0.0,
+                normal_wilson_upper=0.00923330730695328,
                 per_type_auc={
                     "level_shift": 0.9796866524522819,
                     "gradual_drift": 0.9052489545815847,
                     "amplitude_scaling": 0.9951992643379718,
                     "period_change": 0.9104679076956519,
                 },
-                pooled_auc=0.9476506947668726,
+                pooled_auc=0.1,
                 passed=True,
             ),
         ):
@@ -260,6 +289,13 @@ class ContractsAntigravityTest(unittest.TestCase):
         )
 
         first = seed_evidence_antigravity(seed=SEEDS_ANTIGRAVITY[0])
+        second = seed_evidence_antigravity(
+            seed=SEEDS_ANTIGRAVITY[1],
+            per_type=(0.84, 0.95, 0.95, 0.95),
+            passed=False,
+        )
+        failing = RankQualificationAntigravity(DATASET_ANTIGRAVITY, (first, second), False)
+        self.assertIs(validate_rank_qualification_semantics_antigravity(failing), failing)
         second = seed_evidence_antigravity(seed=SEEDS_ANTIGRAVITY[1])
         qualification = RankQualificationAntigravity(DATASET_ANTIGRAVITY, (first, second), True)
         self.assertIs(validate_rank_qualification_semantics_antigravity(qualification), qualification)

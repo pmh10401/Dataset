@@ -40,12 +40,14 @@ def feature_antigravity(dataset: str = DATASET_ANTIGRAVITY, added: int = 14, rem
     )
 
 
-def seed_evidence_antigravity(seed: int):
+def seed_evidence_antigravity(seed: int, passed: bool = True):
     from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
         RankSeedEvidenceAntigravity,
     )
 
     values = TASK3_AUC_BY_SEED_ANTIGRAVITY[seed]
+    if not passed:
+        values = (0.84, 0.95, 0.95, 0.95)
     per_type = {
         name: value for name, value in zip(PRIMARY_TYPES_ANTIGRAVITY, values, strict=True)
     }
@@ -57,7 +59,7 @@ def seed_evidence_antigravity(seed: int):
         0.00923330730695328,
         per_type,
         sum(per_type.values()) / 4.0,
-        True,
+        passed,
     )
 
 
@@ -66,11 +68,11 @@ def qualification_antigravity(passed: bool = True):
         RankQualificationAntigravity,
     )
 
-    seeds = tuple(seed_evidence_antigravity(seed) for seed in SEEDS_ANTIGRAVITY)
-    qualification = RankQualificationAntigravity(DATASET_ANTIGRAVITY, seeds, True)
-    if not passed:
-        object.__setattr__(qualification, "passed", False)
-    return qualification
+    seeds = (
+        seed_evidence_antigravity(SEEDS_ANTIGRAVITY[0], passed=passed),
+        seed_evidence_antigravity(SEEDS_ANTIGRAVITY[1], passed=True),
+    )
+    return RankQualificationAntigravity(DATASET_ANTIGRAVITY, seeds, passed)
 
 
 class RouterAntigravityTest(unittest.TestCase):
@@ -82,6 +84,7 @@ class RouterAntigravityTest(unittest.TestCase):
 
         cases = (
             (qualification_antigravity(True), feature_antigravity(added=14, removed=5), "candidate"),
+            (qualification_antigravity(False), feature_antigravity(added=14, removed=5), "baseline"),
             (qualification_antigravity(True), feature_antigravity(added=5, removed=5), "baseline"),
             (qualification_antigravity(True), feature_antigravity(added=4, removed=5), "baseline"),
         )
@@ -129,8 +132,7 @@ class RouterAntigravityTest(unittest.TestCase):
             route_normal2_antigravity,
         )
 
-        qualification = qualification_antigravity(True)
-        object.__setattr__(qualification.seed_evidence[0], "passed", False)
+        qualification = qualification_antigravity(False)
         object.__setattr__(qualification, "passed", True)
         with self.assertRaises(ValueError):
             route_normal2_antigravity(feature_antigravity(), qualification)

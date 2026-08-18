@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import lru_cache
 from fractions import Fraction
 import json
 from pathlib import Path
@@ -8,6 +9,7 @@ import unittest
 
 from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_router_antigravity import (
     DATASET_ANTIGRAVITY,
+    PRIMARY_TYPES_ANTIGRAVITY,
     feature_antigravity,
     qualification_antigravity,
 )
@@ -35,42 +37,23 @@ def comparison_antigravity(name: str, values: tuple[int, int, int, int]):
     )
 
 
+@lru_cache(maxsize=1)
 def exp456_authority_antigravity():
-    from experiments.exp456_exp455_dataset_key_order_repair_antigravity.contracts_antigravity import (
-        ConfusionAntigravity,
-        DatasetRoutingAuthorityAntigravity,
-        DatasetRoutingFeaturesAntigravity,
-        FrozenRoutingAuthorityAntigravity,
+    from experiments.exp456_exp455_dataset_key_order_repair_antigravity.authority_antigravity import (
+        capture_routing_authority_antigravity,
+    )
+    from experiments.exp456_exp455_dataset_key_order_repair_antigravity.features_antigravity import (
+        build_label_free_features_antigravity,
     )
     from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
         Exp456ResultAuthorityAntigravity,
     )
 
-    def confusion_antigravity(value: dict[str, int]) -> ConfusionAntigravity:
-        return ConfusionAntigravity(value["tp"], value["fp"], value["fn"], value["tn"])
-
-    context = json.loads((EXP456_ROOT_ANTIGRAVITY / "context_antigravity.json").read_text(encoding="utf-8"))
-    feature_rows = [
-        json.loads(line)
-        for line in (EXP456_ROOT_ANTIGRAVITY / "features_antigravity.jsonl").read_text(encoding="utf-8").splitlines()
-    ]
     comparison_rows = json.loads(
         (EXP456_ROOT_ANTIGRAVITY / "comparison_metrics_antigravity.json").read_text(encoding="utf-8")
     )["comparisons"]
-    rows = tuple(
-        DatasetRoutingAuthorityAntigravity(
-            row["dataset"],
-            row["family"],
-            row["target_length"],
-            row["method"],
-            frozenset(),
-            None if row["candidate_confusion"] is None else frozenset(),
-            confusion_antigravity(row["baseline_confusion"]),
-            None if row["candidate_confusion"] is None else confusion_antigravity(row["candidate_confusion"]),
-        )
-        for row in context["rows"]
-    )
-    features = tuple(DatasetRoutingFeaturesAntigravity(**row) for row in feature_rows)
+    frozen = capture_routing_authority_antigravity()
+    features = build_label_free_features_antigravity(frozen)
     comparisons = (
         *(
             comparison_antigravity(
@@ -85,7 +68,6 @@ def exp456_authority_antigravity():
             for row in comparison_rows[:3]
         ),
     )
-    frozen = FrozenRoutingAuthorityAntigravity(rows, tuple(tuple(item) for item in context["exp454_leaf_sha256"]), 0)
     return Exp456ResultAuthorityAntigravity(
         frozen,
         features,
@@ -187,6 +169,30 @@ class EvaluationAntigravityTest(unittest.TestCase):
             with self.subTest(rows=len(case.authority.rows)), self.assertRaises(ValueError):
                 evaluate_routes_antigravity(case, normal2_decision_antigravity(authority))
 
+    def test_rejects_forged_authority_indices_inventory_and_label_queries_antigravity(self) -> None:
+        """Break caught: exact Exp456 row index sets, inner inventory, or label-query count are not bound."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.evaluation_antigravity import (
+            evaluate_routes_antigravity,
+        )
+
+        authority = exp456_authority_antigravity()
+        row = authority.authority.rows[0]
+        baseline_indices = frozenset((*row.baseline_indices, max(row.baseline_indices) + 10_000))
+        candidate_indices = frozenset((*row.candidate_indices, max(row.candidate_indices) + 10_000))  # type: ignore[arg-type]
+        inventory = authority.authority.exp454_leaf_sha256
+        cases = (
+            replace(authority, authority=replace(authority.authority, rows=(replace(row, baseline_indices=baseline_indices),) + authority.authority.rows[1:])),
+            replace(authority, authority=replace(authority.authority, rows=(replace(row, candidate_indices=candidate_indices),) + authority.authority.rows[1:])),
+            replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=inventory[:-1])),
+            replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=inventory + (("extra_antigravity.json", "0" * 64),))),
+            replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=(inventory[1], inventory[0]) + inventory[2:])),
+            replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=list(inventory))),  # type: ignore[arg-type]
+            replace(authority, authority=replace(authority.authority, label_query_count=1)),
+        )
+        for case in cases:
+            with self.subTest(label_count=case.authority.label_query_count), self.assertRaises(ValueError):
+                evaluate_routes_antigravity(case, normal2_decision_antigravity(authority))
+
     def test_rejects_coherent_rehashed_normal2_feature_drift_antigravity(self) -> None:
         """Break caught: added=99/removed=0 normal_2 structure evidence can replace the Exp456 feature row."""
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.evaluation_antigravity import (
@@ -203,6 +209,41 @@ class EvaluationAntigravityTest(unittest.TestCase):
         drifted_authority = replace(authority, features=drifted_features)
         with self.assertRaises(ValueError):
             evaluate_routes_antigravity(drifted_authority, normal2_decision_antigravity(drifted_authority))
+
+    def test_rejects_non_frozen_task3_rank_at_actual_evaluation_boundary_antigravity(self) -> None:
+        """Break caught: generic rank evidence bypasses the exact Task3 public-result boundary."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.contracts_antigravity import (
+            RankQualificationAntigravity,
+            RankSeedEvidenceAntigravity,
+        )
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.evaluation_antigravity import (
+            evaluate_routes_antigravity,
+        )
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.router_antigravity import (
+            route_normal2_antigravity,
+        )
+
+        authority = exp456_authority_antigravity()
+        feature = {item.dataset: item for item in authority.features}[DATASET_ANTIGRAVITY]
+        seeds = tuple(
+            RankSeedEvidenceAntigravity(
+                DATASET_ANTIGRAVITY,
+                seed,
+                1413,
+                6,
+                0.00923330730695328,
+                {name: 0.99 for name in PRIMARY_TYPES_ANTIGRAVITY},
+                0.99,
+                True,
+            )
+            for seed in (20260721, 20261721)
+        )
+        decision = route_normal2_antigravity(
+            feature,
+            RankQualificationAntigravity(DATASET_ANTIGRAVITY, seeds, True),
+        )
+        with self.assertRaises(ValueError):
+            evaluate_routes_antigravity(authority, decision)
 
     def test_rejects_forged_predecessor_or_caller_minted_route_antigravity(self) -> None:
         """Break caught: caller-supplied comparison or route objects bypass semantic provenance."""

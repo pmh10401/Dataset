@@ -134,8 +134,8 @@ class FoldScoresAntigravityTest(unittest.TestCase):
 
 
 class QualificationAntigravityTest(unittest.TestCase):
-    def test_qualification_rejects_non_frozen_task3_auc_vectors_antigravity(self) -> None:
-        """Break caught: synthetic Task 3 vectors can replace the exact approved seed evidence."""
+    def test_qualification_uses_both_exact_seed_orders_and_collects_full_auc_vectors_antigravity(self) -> None:
+        """Break caught: Task 3 reorders seeds/types or summarizes anything but the full OOF vectors."""
         from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.qualification_antigravity import (
             _qualify_normal2_with_dependencies_antigravity,
         )
@@ -158,11 +158,23 @@ class QualificationAntigravityTest(unittest.TestCase):
             ),
         }
 
-        with self.assertRaisesRegex(ValueError, "rank seed evidence"):
-            _qualify_normal2_with_dependencies_antigravity(
-                loader=lambda: rows_antigravity(size),
-                fold_scorer=fold_scorer_from_vectors_antigravity(per_seed),
-            )
+        qualification = _qualify_normal2_with_dependencies_antigravity(
+            loader=lambda: rows_antigravity(size),
+            fold_scorer=fold_scorer_from_vectors_antigravity(per_seed),
+        )
+
+        self.assertEqual(tuple(seed.seed for seed in qualification.seed_evidence), SEEDS_ANTIGRAVITY)
+        self.assertTrue(qualification.passed)
+        first = qualification.seed_evidence[0]
+        self.assertEqual(tuple(first.per_type_auc), PRIMARY_TYPES_ANTIGRAVITY)
+        self.assertEqual(first.normal_trials, size)
+        self.assertEqual(first.normal_alerts, 4)
+        self.assertLess(first.normal_wilson_upper, 0.05)
+        self.assertEqual(first.per_type_auc["level_shift"], 0.85)
+        self.assertEqual(first.per_type_auc["gradual_drift"], 0.9)
+        self.assertEqual(first.per_type_auc["amplitude_scaling"], 0.9)
+        self.assertEqual(first.per_type_auc["period_change"], 0.95)
+        self.assertEqual(first.pooled_auc, 0.9)
 
     def test_qualification_rejects_per_type_pooled_wilson_and_single_seed_failures_antigravity(self) -> None:
         """Break caught: one weak gate or one failing seed can still qualify normal_2."""
@@ -178,9 +190,9 @@ class QualificationAntigravityTest(unittest.TestCase):
             amplitude_scaling_wins=900000,
             period_change_wins=900000,
         )
-        cases = (
-            (
-                size,
+        per_type_fail = _qualify_normal2_with_dependencies_antigravity(
+            loader=lambda: rows_antigravity(size),
+            fold_scorer=fold_scorer_from_vectors_antigravity(
                 {
                     20260721: vectors_antigravity(
                         size,
@@ -190,10 +202,17 @@ class QualificationAntigravityTest(unittest.TestCase):
                         period_change_wins=950000,
                     ),
                     20261721: passing,
-                },
+                }
             ),
-            (
-                size,
+        )
+        self.assertFalse(per_type_fail.seed_evidence[0].passed)
+        self.assertGreater(per_type_fail.seed_evidence[0].pooled_auc, 0.9)
+        self.assertEqual(per_type_fail.seed_evidence[0].per_type_auc["level_shift"], 0.849999)
+        self.assertFalse(per_type_fail.passed)
+
+        pooled_fail = _qualify_normal2_with_dependencies_antigravity(
+            loader=lambda: rows_antigravity(size),
+            fold_scorer=fold_scorer_from_vectors_antigravity(
                 {
                     20260721: vectors_antigravity(
                         size,
@@ -203,10 +222,17 @@ class QualificationAntigravityTest(unittest.TestCase):
                         period_change_wins=899996,
                     ),
                     20261721: passing,
-                },
+                }
             ),
-            (
-                size,
+        )
+        self.assertFalse(pooled_fail.seed_evidence[0].passed)
+        self.assertEqual(pooled_fail.seed_evidence[0].pooled_auc, 0.899999)
+        self.assertTrue(all(value > 0.85 for value in pooled_fail.seed_evidence[0].per_type_auc.values()))
+        self.assertFalse(pooled_fail.passed)
+
+        one_seed_fail = _qualify_normal2_with_dependencies_antigravity(
+            loader=lambda: rows_antigravity(size),
+            fold_scorer=fold_scorer_from_vectors_antigravity(
                 {
                     20260721: passing,
                     20261721: vectors_antigravity(
@@ -216,10 +242,16 @@ class QualificationAntigravityTest(unittest.TestCase):
                         amplitude_scaling_wins=950000,
                         period_change_wins=950000,
                     ),
-                },
+                }
             ),
-            (
-                72,
+        )
+        self.assertTrue(one_seed_fail.seed_evidence[0].passed)
+        self.assertFalse(one_seed_fail.seed_evidence[1].passed)
+        self.assertFalse(one_seed_fail.passed)
+
+        wilson_fail = _qualify_normal2_with_dependencies_antigravity(
+            loader=lambda: rows_antigravity(72),
+            fold_scorer=fold_scorer_from_vectors_antigravity(
                 {
                     20260721: vectors_antigravity(
                         72,
@@ -235,15 +267,12 @@ class QualificationAntigravityTest(unittest.TestCase):
                         amplitude_scaling_wins=5184,
                         period_change_wins=5184,
                     ),
-                },
+                }
             ),
         )
-        for train_size, per_seed in cases:
-            with self.subTest(train_size=train_size), self.assertRaisesRegex(ValueError, "rank seed evidence"):
-                _qualify_normal2_with_dependencies_antigravity(
-                    loader=lambda train_size=train_size: rows_antigravity(train_size),
-                    fold_scorer=fold_scorer_from_vectors_antigravity(per_seed),
-                )
+        self.assertFalse(any(seed.passed for seed in wilson_fail.seed_evidence))
+        self.assertTrue(all(seed.normal_wilson_upper > 0.05 for seed in wilson_fail.seed_evidence))
+        self.assertFalse(wilson_fail.passed)
 
     def test_qualification_rejects_nonfinite_scores_and_bad_crossfit_coverage_antigravity(self) -> None:
         """Break caught: missing, duplicated, overlapping, or non-finite fold evidence is accepted."""
