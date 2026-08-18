@@ -12,8 +12,8 @@
 </head>
 <body><main>
   <h1>Exp458 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 1부터 Task 5까지 완료했다. 상태는 <code>implementation_verified_awaiting_official_evaluation</code>이며 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
-  <p><strong>Task 5 범위:</strong> closed CLI, exact-runtime outside-CWD launcher, CLI tests, private temporary-root candidate publication/replay, two-run actual TRAIN reproducibility proof, dashboard/ledger truth update를 추가했다. Task 6 공식 실행은 아직 승인되지 않았다.</p>
+  <p><strong>현재 단계:</strong> Task 1부터 Task 6까지 완료했다. 상태는 <code>official_evaluation_inspected_complete_qualified_for_external_validation</code>이며 공식 evaluate 1회와 inspect 1회가 모두 exit 0으로 끝났다.</p>
+  <p><strong>Task 6 범위:</strong> reviewed commit <code>2c836e371993b865b87d1b0b96595d0befd6ee3d</code>에서 공식 root를 한 번 만들고, 성공 후 bare inspect를 한 번 실행했다. 추가 retry, dashboard external publication, champion 변경, pending-candidate 변경, routing 변경, promotion은 수행하지 않았다.</p>
 
   <h2>이번 단계에서 만든 것</h2>
   <ul>
@@ -60,16 +60,35 @@
       <tr><td>2</td><td>99.41886049997993초</td><td>candidate</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td><td>0</td></tr>
     </tbody>
   </table>
-  <p>equality proof: qualification=true, route=true, dashboard=true, leaf hashes=true, canonical payload=true. 두 실행의 9개 leaf SHA-256도 모두 같았다. official ledgers의 result hashes는 여전히 null이고, 위 SHA-256은 temporary candidate evidence only다.</p>
+  <p>equality proof: qualification=true, route=true, dashboard=true, leaf hashes=true, canonical payload=true. 두 실행의 9개 leaf SHA-256도 모두 같았다. 이 SHA-256은 Task 5 당시 temporary candidate evidence였고, Task 6 이후 official ledgers는 공식 artifact hash로 갱신됐다.</p>
 
-  <h2>아직 하지 않은 것</h2>
+  <h2>Task 6 공식 lifecycle 결과</h2>
+  <p>공식 evaluate는 정확히 1회 실행했고 exit 0이었다. 공식 root <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code>는 non-symlink directory이며 leaf 9개를 가진다. 그 뒤 bare inspect를 정확히 1회 실행했고 exit 0이었다. 두 명령의 stdout JSON SHA-256은 모두 <code>9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1</code>로 같고 stderr는 둘 다 빈 파일이다.</p>
+  <table>
+    <thead><tr><th>leaf</th><th>SHA-256</th></tr></thead>
+    <tbody>
+      <tr><td><code>artifact_sha256_antigravity.json</code></td><td><code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code></td></tr>
+      <tr><td><code>comparison_metrics_antigravity.json</code></td><td><code>e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230</code></td></tr>
+      <tr><td><code>context_antigravity.json</code></td><td><code>b08051a5742479d6062367acd437683342d76e69a50faf8f7324a34b725c5f1d</code></td></tr>
+      <tr><td><code>dashboard_snapshot_antigravity.json</code></td><td><code>9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1</code></td></tr>
+      <tr><td><code>decision_antigravity.json</code></td><td><code>afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0</code></td></tr>
+      <tr><td><code>family_metrics_antigravity.json</code></td><td><code>f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6</code></td></tr>
+      <tr><td><code>features_antigravity.jsonl</code></td><td><code>bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5</code></td></tr>
+      <tr><td><code>route_decisions_antigravity.jsonl</code></td><td><code>d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed</code></td></tr>
+      <tr><td><code>train_qualification_antigravity.jsonl</code></td><td><code>a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4</code></td></tr>
+    </tbody>
+  </table>
+  <p>독립 검증은 17개 check를 모두 통과했다. artifact map은 8개 non-map leaf를 exact 재계산했고, semantic replay 결과는 evaluate/inspect stdout과 같았다. runtime provenance는 executable <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>, prefix <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314</code>, Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, aeon <code>1.4.0</code>로 exact match했다. label_query_count는 0이다.</p>
+
+  <h2>하지 않은 것</h2>
   <ul>
-    <li>공식 evaluate/inspect, TEST label, 공식 root 생성</li>
-    <li>공식 결과 루트 publication</li>
+    <li>공식 lifecycle retry 또는 추가 inspect</li>
+    <li>외부 dashboard/Sites publication</li>
+    <li>champion, pending candidate, routing, promotion, operational alert 변경</li>
   </ul>
 
   <h2>Task 4 결과 산술</h2>
-  <p>Task4 uses synthetic/frozen evidence only. Exp456 predecessor comparisons는 always_baseline TP 609 / FP 66 / FN 837 / TN 70788 / F1 0.5742574257425742, family_wide_local_gap TP 611 / FP 63 / FN 835 / TN 70791 / F1 0.5764150943396227, oracle_per_dataset TP 618 / FP 64 / FN 828 / TN 70790 / F1 0.5808270676691729로 고정했다. normal2_rank_router는 48 frozen dataset rows에서 Chlorine 세 candidate와 normal_2 candidate만 선택해 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311을 계산한다. 기준 FN≤834, FP≤66, F1&gt;0.5764150943396227은 모두 통과하지만 외부 검증 후보일 뿐 champion/promotion/deployment가 아니다.</p>
+  <p>Exp456 predecessor comparisons는 always_baseline TP 609 / FP 66 / FN 837 / TN 70788 / F1 0.5742574257425742, family_wide_local_gap TP 611 / FP 63 / FN 835 / TN 70791 / F1 0.5764150943396227, oracle_per_dataset TP 618 / FP 64 / FN 828 / TN 70790 / F1 0.5808270676691729로 고정했다. 공식 normal2_rank_router는 48 frozen dataset rows에서 Chlorine 세 candidate와 normal_2 candidate만 선택해 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311을 계산했다. 기준 FN≤834, FP≤66, F1&gt;0.5764150943396227은 모두 통과하지만 외부 검증 후보일 뿐 champion/promotion/deployment가 아니다.</p>
 
   <h2>보호한 truth</h2>
   <p>Exp457의 종료 상태 <code>stopped_before_official_evaluation_train_gate_failed</code>는 그대로 유지했다. champion과 pending candidate도 변경하지 않았다. controlled-fork test는 Exp457 패키지 전체 바이트가 기준 커밋 <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>와 동일한지 확인한다. projected result는 여전히 공식 결과로 승격하지 않는다.</p>
@@ -88,9 +107,12 @@
     <li>read-only public smoke 1회 확인</li>
     <li>Task 5 CLI focused suite 두 번 확인</li>
     <li>Task 5 actual TRAIN private candidate verification 두 번 확인</li>
+    <li>Task 6 official evaluate 1회 exit 0 확인</li>
+    <li>Task 6 official inspect 1회 exit 0 확인</li>
+    <li>Task 6 independent verification 17 checks pass 확인</li>
   </ul>
 
   <h2>금지 경계</h2>
-  <p>공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 금지 상태를 유지한다. 본 보고서는 <strong>공식 evaluate/inspect, TEST label</strong>이 0회라는 점과 Task 5는 검증 완료, Task 6은 미승인·미실행이라는 점을 truthfully 기록하는 데만 사용된다.</p>
+  <p>Task 6 공식 evaluate/inspect는 승인 후 각각 정확히 1회만 수행했으며 더 이상 retry하지 않는다. TEST label은 열지 않았고 label_query_count는 0이다. 본 보고서는 공식 result가 external validation candidate로 qualified됐다는 점과, champion/pending/routing/promotion/dashboard external publication은 변하지 않았다는 점을 truthfully 기록하는 데만 사용된다.</p>
 </main></body>
 </html>

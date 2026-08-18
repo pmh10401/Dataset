@@ -269,23 +269,23 @@ $PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routi
     <div class="step"><label><input type="checkbox" checked disabled>Step 4: 실제 TRAIN 후보 계산 두 번</label><p>각 실행은 별도 임시 폴더를 사용했다. 두 seed의 8개 AUC, 평균, Wilson, route, 네 비교값, 세 기준이 exact 같았다. 공식 폴더와 TEST 라벨은 사용하지 않았다. payload SHA-256은 두 실행 모두 <code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code>였다.</p></div>
     <div class="step"><label><input type="checkbox" checked disabled>Step 5: Exp457·Exp456 과학 회귀와 byte guard</label><p>두 predecessor 제품 테스트와 map 검증을 실행하고 <code>git diff --exit-code 6e8e500d -- experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity</code>를 통과한다.</p></div>
     <div class="step"><label><input type="checkbox" checked disabled>Step 6: 결과 중심 최종 self-review</label><p>AUC 계산, normal_2 전용 범위, route, TP/FP/FN/TN/F1, 세 합격 기준, dashboard 일치만 검토했다. No subagents/reviewers 조건 때문에 외부 reviewer는 사용하지 않았다.</p></div>
-    <div class="step"><label><input type="checkbox" checked disabled>Step 7: 상태·HTML·commit</label><p>통과해 <code>implementation_verified_awaiting_official_evaluation</code>로 기록했다. Task 5만 체크하고 Task 6은 미체크로 남긴다.</p><pre><code>git commit -m "feat(exp458): freeze normal2 rank candidate"
+    <div class="step"><label><input type="checkbox" checked disabled>Step 7: 상태·HTML·commit</label><p>Task 5 closeout 당시에는 통과해 <code>implementation_verified_awaiting_official_evaluation</code>로 기록했고, Task 5만 체크하고 Task 6은 미체크로 남겼다.</p><pre><code>git commit -m "feat(exp458): freeze normal2 rank candidate"
 </code></pre></div>
   </section>
 
   <section>
-    <h2><label><input type="checkbox" disabled>Task 6: 별도 승인 후 공식 평가 1회와 HTML 결과 분석</label></h2>
-    <p><strong>사전 조건:</strong> Task 5의 실제 TRAIN 후보가 세 기준을 모두 통과하고, fresh final review가 SHIP이며, 사용자가 이 Task를 따로 승인해야 한다.</p>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: 공식 전 상태 확인</label><p>공식 폴더 부재, label query 0, reviewed commit clean, TRAIN 후보 결과와 대시보드 일치를 확인한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: 공식 evaluate 정확히 1회</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+    <h2><label><input type="checkbox" checked disabled>Task 6: 별도 승인 후 공식 평가 1회와 HTML 결과 분석</label></h2>
+    <p><strong>사전 조건:</strong> Task 5의 실제 TRAIN 후보가 세 기준을 모두 통과하고, final reviewer context가 SHIP이며, 사용자가 이 Task를 따로 승인했다.</p>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: 공식 전 상태 확인</label><p>공식 폴더 부재, label query 0, reviewed commit clean, TRAIN 후보 결과와 대시보드 일치를 확인했다. 실행 직전 HEAD는 <code>2c836e371993b865b87d1b0b96595d0befd6ee3d</code>였다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: 공식 evaluate 정확히 1회</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
 REVIEWED_COMMIT=$(git rev-parse HEAD)
 $PY scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"
-</code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: 성공한 경우에만 inspect 정확히 1회</label><pre><code>$PY scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py inspect
-</code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: 9개 leaf와 네 비교값 독립 재계산</label></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: HTML 대시보드 결과 분석</label><p>TRAIN AUC와 공식 FN/FP/F1, 예상값과의 차이, 세 기준 통과 여부, 최종 결론을 쉬운 말로 기록한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: truth closeout와 최종 read-only review</label><p>성공/실패 사실을 report·ledger·map에 한 번 기록한다. 실패 시 재실행하지 않는다. 통과해도 자동 배포·champion 변경은 하지 않는다.</p></div>
+</code></pre><p>실행은 정확히 1회였고 exit 0이었다. stdout/stderr/exit evidence는 ignored SDD workspace에 <code>task-6-official-evaluate-*-antigravity.*</code> 파일로 보존했다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: 성공한 경우에만 inspect 정확히 1회</label><pre><code>$PY scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py inspect
+</code></pre><p>evaluate exit 0과 complete 9-leaf root를 확인한 뒤 inspect를 정확히 1회 실행했고 exit 0이었다. stdout/stderr/exit evidence는 ignored SDD workspace에 <code>task-6-official-inspect-*-antigravity.*</code> 파일로 보존했다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: 9개 leaf와 네 비교값 독립 재계산</label><p>독립 검증 17개 check가 모두 통과했다. artifact map은 8개 non-map leaf를 exact 재계산했고, semantic replay와 evaluate/inspect stdout은 같았다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: HTML 대시보드 결과 분석</label><p>공식 결과는 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311이며 FN≤834, FP≤66, F1&gt;0.5764150943396227 기준을 모두 통과했다. 상태는 <code>routing_candidate_qualified_for_external_validation</code>다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: truth closeout와 최종 read-only review</label><p>성공 사실을 report·dashboard·ledger·map에 한 번 기록한다. 통과해도 자동 배포·champion 변경·pending-candidate 변경·routing 변경·promotion은 하지 않는다.</p></div>
   </section>
 
   <h2>완료 조건</h2>
@@ -294,7 +294,7 @@ $PY scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py evalua
     <li>실제 TRAIN 두 번의 AUC·route·예상 성능이 exact 같다.</li>
     <li>대시보드가 코드·artifact·ledger와 같은 결과를 보여준다.</li>
     <li>완료된 Task/Step만 체크되어 있다.</li>
-    <li>Task 6은 별도 승인 없이는 절대 실행하지 않는다.</li>
+    <li>Task 6은 별도 승인 뒤에만 실행하며, 이번 승인된 lifecycle은 evaluate 1회와 inspect 1회로 종료됐다. 이후 retry는 수행하지 않는다.</li>
   </ul>
 </main></body>
 </html>

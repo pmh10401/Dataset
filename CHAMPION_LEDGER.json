@@ -598,25 +598,39 @@
     {
       "experiment": "Exp458",
       "kind": "ecg_normal2_rank_confidence_routing",
-      "status": "implementation_verified_awaiting_official_evaluation",
-      "implementation_status": "task_5_private_train_candidate_verified_twice",
-      "reason": "Exp458 Task 5 verified the normal_2 rank candidate twice on TRAIN through private temporary non-official publications only. Both runs matched on qualification, route, dashboard, leaf hashes, candidate payload hash 0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8, and provisional FN/FP/F1 criteria. No official evaluate/inspect, TEST-label access, official root creation, routing change, champion selection, pending-candidate change, promotion, or operational alert has occurred.",
+      "status": "official_evaluation_inspected_complete_qualified_for_external_validation",
+      "implementation_status": "task_6_official_evaluation_and_inspection_complete",
+      "reason": "Exp458 Task 6 official evaluate and then inspect each ran exactly once with exit 0 at reviewed commit 2c836e371993b865b87d1b0b96595d0befd6ee3d and emitted the same aggregate JSON. The immutable non-symlink result root has 9 leaves, exact artifact-map recomputation, source-free semantic replay, normal_2 candidate route, all other ECG baseline routes, and all Chlorine candidate routes. Official metrics are TP 617, FP 66, FN 829, TN 70788, F1 0.5796148426491311, so all preregistered criteria pass for external validation candidacy. TEST labels remain unopened, label_query_count is 0, and champion, pending candidate, routing, promotion, and operational alert eligibility remain unchanged.",
       "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
       "approved_design": "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
       "approved_design_sha256": "52abe997c0e14badc2c886b888e3b2b2074cf002216891f173ab3b1dd6d7ea5d",
       "scientific_contract": {"target_dataset": "ECG5000_normal_2", "hydra_seeds": [20260721, 20261721], "folds": 5, "primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "per_type_auc_min": 0.85, "pooled_auc_min": 0.90, "normal_wilson_upper_max": 0.05, "structure_gate": "added_count > removed_count", "projected_result": {"tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}, "final_fn_max": 834, "final_fp_max": 66, "final_f1_strictly_above": 0.5764150943396227, "test_metrics_may_inform_routing": false, "runtime_contract": {"executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python", "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314", "python_version": "3.14.6", "numpy_version": "2.3.5", "aeon_version": "1.4.0"}},
-      "official_evaluate_started": false,
-      "official_inspect_started": false,
-      "official_evaluate_invocations": 0,
-      "official_inspect_invocations": 0,
-      "result_root_created": false,
-      "official_result": null,
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "official_evaluate_invocations": 1,
+      "official_inspect_invocations": 1,
+      "result_root_created": true,
+      "official_result": {
+        "status": "routing_candidate_qualified_for_external_validation",
+        "passed": true,
+        "tp": 617,
+        "fp": 66,
+        "fn": 829,
+        "tn": 70788,
+        "f1": 0.5796148426491311
+      },
       "prediction_sha256": null,
-      "evaluation": null,
-      "evaluation_sha256": null,
-      "decision_sha256": null,
-      "artifact_map_sha256": null,
-      "dashboard_snapshot_sha256": null,
+      "evaluation": {
+        "tp": 617,
+        "fp": 66,
+        "fn": 829,
+        "tn": 70788,
+        "f1": 0.5796148426491311
+      },
+      "evaluation_sha256": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
+      "decision_sha256": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
+      "artifact_map_sha256": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9",
+      "dashboard_snapshot_sha256": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1",
       "test_labels_opened": false,
       "label_query_count": 0,
       "private_candidate_verification": {
@@ -651,15 +665,19 @@
           "final_fp",
           "final_f1"
         ],
-        "official_hashes_remain_null": true
+        "official_hashes_remain_null": false
       },
+      "official_lifecycle": {"reviewed_commit": "2c836e371993b865b87d1b0b96595d0befd6ee3d", "evaluate_invocations": 1, "evaluate_exit_code": 0, "inspect_invocations": 1, "inspect_exit_code": 0, "aggregate_json_equal": true, "semantic_replay_equal": true, "passed": true, "status": "routing_candidate_qualified_for_external_validation", "label_access_count": 0, "label_query_count": 0, "result_root_created": true, "result_root_leaf_count": 9, "result_root_is_non_symlink_directory": true, "artifact_map_non_map_leaf_recomputation": "exact_match"},
+      "comparisons": [{"name": "always_baseline", "tp": 609, "fp": 66, "fn": 837, "tn": 70788, "f1": 0.5742574257425742}, {"name": "family_wide_local_gap", "tp": 611, "fp": 63, "fn": 835, "tn": 70791, "f1": 0.5764150943396227}, {"name": "oracle_per_dataset", "tp": 618, "fp": 64, "fn": 828, "tn": 70790, "f1": 0.5808270676691729}, {"name": "normal2_rank_router", "tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}],
+      "effective_routes": {"ChlorineConcentration_normal_1": "candidate", "ChlorineConcentration_normal_2": "candidate", "ChlorineConcentration_normal_3": "candidate", "ECG5000_normal_1": "baseline", "ECG5000_normal_2": "candidate", "ECG5000_normal_3": "baseline", "ECG5000_normal_4": "baseline", "ECG5000_normal_5": "baseline"},
+      "leaf_sha256": {"artifact_sha256_antigravity.json": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9", "comparison_metrics_antigravity.json": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230", "context_antigravity.json": "b08051a5742479d6062367acd437683342d76e69a50faf8f7324a34b725c5f1d", "dashboard_snapshot_antigravity.json": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1", "decision_antigravity.json": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0", "family_metrics_antigravity.json": "f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6", "features_antigravity.jsonl": "bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5", "route_decisions_antigravity.jsonl": "d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed", "train_qualification_antigravity.jsonl": "a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4"},
       "routing_allowed": false,
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
-      "next_action": "await_explicit_task_6_approval_for_single_official_evaluation"
+      "next_action": "discuss_qualified_external_validation_candidate_no_automatic_routing_or_promotion"
     }
   ]
 }

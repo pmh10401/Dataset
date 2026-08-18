@@ -15,12 +15,12 @@
 <body><main>
   <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
   <table>
-    <tr><th>진행</th><td>Task 5/6</td></tr>
-    <tr><th>상태</th><td><code>implementation_verified_awaiting_official_evaluation</code></td></tr>
-    <tr><th>현재 판단</th><td><strong>TRAIN 후보는 두 번 재현 통과, 공식 결과 없음</strong></td></tr>
-    <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
+    <tr><th>진행</th><td>Task 6/6</td></tr>
+    <tr><th>상태</th><td><code>official_evaluation_inspected_complete_qualified_for_external_validation</code></td></tr>
+    <tr><th>현재 판단</th><td><strong>공식 결과가 외부 검증 후보 기준을 통과했다</strong></td></tr>
+    <tr><th>공식 실행</th><td>공식 evaluate 1회 exit 0 / inspect 1회 exit 0 / 결과 폴더 leaf 9개</td></tr>
     <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
-    <tr><th>현재 구현</th><td>Task 5 closed CLI / exact-runtime outside-CWD launcher / private two-run TRAIN candidate verification 완료. 공식 evaluate/inspect는 실행하지 않았고 Task 6은 미승인 상태다.</td></tr>
+    <tr><th>현재 구현</th><td>Task 6 one-shot official lifecycle 완료. reviewed commit <code>2c836e371993b865b87d1b0b96595d0befd6ee3d</code>에서 evaluate와 inspect를 각각 정확히 한 번 실행했다.</td></tr>
     <tr><th>고정 runtime</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code> / Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0</td></tr>
   </table>
 
@@ -44,9 +44,10 @@
   <h2>AUC 계산 계약</h2>
   <p>AUC는 <code>(anomaly&gt;normal wins + 0.5*ties)/(n_normal*n_anomaly)</code>로 계산한다. 점수가 높을수록 더 이상에 가깝다는 기존 방향을 유지하고, tie는 반승으로 계산한다.</p>
 
-  <h2>두 번 재현한 TRAIN 후보 결과</h2>
+  <h2>공식 결과</h2>
   <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
-  <p>이 값은 <strong>공식 결과가 아니라 두 번 재현한 TRAIN 후보 결과</strong>다. Task 5에서는 공식 root를 만들지 않고 두 개의 임시 non-official root에서 private dependency seam으로 publication/replay를 수행했다. 두 실행의 qualification, route, dashboard, 9개 leaf hash, canonical payload hash가 exact match했다. 현재 public evaluate는 qualification/root 생성 전에 executable, prefix, Python, NumPy, aeon을 fail-closed로 확인하고, replay는 9-leaf context에 기록된 runtime provenance를 semantic replay 일부로 검증한다.</p>
+  <p>이 값은 Task 6의 공식 evaluate와 공식 inspect가 동일하게 출력한 결과다. 공식 root는 <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code>이며 non-symlink directory, leaf 9개, artifact-map exact recomputation, source-free semantic replay를 통과했다. label_query_count는 0이다.</p>
+  <p>effective route는 <code>ECG5000_normal_2</code> candidate, 다른 ECG 네 개 baseline, ChlorineConcentration 세 개 candidate다. 상태는 <code>routing_candidate_qualified_for_external_validation</code>이며 champion, pending candidate, routing, promotion, external dashboard publication은 바꾸지 않았다.</p>
 
   <h2>Task 5 실제 TRAIN 후보 검증</h2>
   <table>
@@ -58,8 +59,8 @@
       <tr><td>canonical payload SHA-256</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
       <tr><td>equality proof</td><td colspan="2">qualification=true / route=true / dashboard=true / leaf hashes=true / canonical payload=true</td></tr>
       <tr><td>임시 root</td><td colspan="2">두 임시 root 모두 cleanup 완료</td></tr>
-      <tr><td>공식 root</td><td colspan="2">before / between / after 모두 없음</td></tr>
-      <tr><td>공식 명령</td><td colspan="2">public evaluate 0회 / public inspect 0회</td></tr>
+      <tr><td>공식 root</td><td colspan="2">Task 5 동안 없음. Task 6에서 공식 root 1개 생성 완료.</td></tr>
+      <tr><td>공식 명령</td><td colspan="2">Task 5 동안 public evaluate 0회 / public inspect 0회. Task 6 공식 lifecycle은 evaluate 1회와 inspect 1회로 종료.</td></tr>
     </tbody>
   </table>
 
@@ -86,6 +87,17 @@
       <tr><td>FN ≤ 834</td><td>829</td><td>true</td></tr>
       <tr><td>FP ≤ 66</td><td>66</td><td>true</td></tr>
       <tr><td>F1 &gt; 0.5764150943396227</td><td>0.5796148426491311</td><td>true</td></tr>
+    </tbody>
+  </table>
+
+  <h2>공식 artifact hashes</h2>
+  <table>
+    <thead><tr><th>항목</th><th>SHA-256</th></tr></thead>
+    <tbody>
+      <tr><td>comparison metrics</td><td><code>e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230</code></td></tr>
+      <tr><td>decision</td><td><code>afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0</code></td></tr>
+      <tr><td>dashboard snapshot</td><td><code>9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1</code></td></tr>
+      <tr><td>artifact map</td><td><code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code></td></tr>
     </tbody>
   </table>
 
