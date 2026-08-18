@@ -15,11 +15,12 @@
 <body><main>
   <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
   <table>
-    <tr><th>진행</th><td>Task 1/6</td></tr>
+    <tr><th>진행</th><td>Task 2/6</td></tr>
     <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
     <tr><th>현재 판단</th><td><strong>공식 결과 없음</strong></td></tr>
     <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
     <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
+    <tr><th>현재 구현</th><td>고정 설정 / rank contracts / AUC 계산기 완료, qualification·route·evaluation·CLI는 아직 미구현</td></tr>
   </table>
 
   <div class="box">
@@ -37,15 +38,19 @@
       <tr><td>구조 게이트</td><td><code>14&gt;5</code></td><td><code>added_count &gt; removed_count</code>를 유지한다.</td></tr>
     </tbody>
   </table>
+  <p><strong>두 seed 20260721와 20261721가 각각 모든 gate를 만족해야 한다.</strong> 한 seed라도 Wilson, per-type AUC, pooled AUC 중 하나를 놓치면 normal_2는 baseline으로 남는다.</p>
+
+  <h2>AUC 계산 계약</h2>
+  <p>AUC는 <code>(anomaly&gt;normal wins + 0.5*ties)/(n_normal*n_anomaly)</code>로 계산한다. 점수가 높을수록 더 이상에 가깝다는 기존 방향을 유지하고, tie는 반승으로 계산한다.</p>
 
   <h2>예상 후보 결과</h2>
   <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
-  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 1에서는 route를 실제로 계산하지 않고 설계와 경계만 고정한다.</p>
+  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 2에서는 route를 아직 실제 계산하지 않고, 그 전단의 고정 계약과 AUC 계산기만 완성했다.</p>
 
   <h2>현재 설명</h2>
   <div class="box">
     <p>normal_2만 다시 보는 이유는 구조 진단이 <code>14&gt;5</code>로 유일하게 긍정적이었기 때문이다. 나머지 ECG 네 개는 아직 baseline으로 고정한다.</p>
-    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 1에서 새로 도입하지 않는다.</p>
+    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 2에서도 새로 도입하지 않는다.</p>
   </div>
 </main></body>
 </html>

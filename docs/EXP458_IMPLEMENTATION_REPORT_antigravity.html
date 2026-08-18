@@ -12,28 +12,51 @@
 </head>
 <body><main>
   <h1>Exp458 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 1만 완료했다. 상태는 <code>planned_not_started</code>이며 아직 과학 계산 코드, 라우터, 평가기, CLI는 구현하지 않았다.</p>
-  <p><strong>Task 1 범위:</strong> 사전등록, 초기 대시보드, planned_not_started ledger truth, 초기 code map, governance regression test를 등록했다. 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
+  <p><strong>현재 단계:</strong> Task 1과 Task 2를 완료했다. 상태는 여전히 <code>planned_not_started</code>이며 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
+  <p><strong>Task 2 범위:</strong> Exp458의 고정 설정, normal_2 전용 순위 계약, chunked Mann-Whitney AUC 계산기, Exp457 controlled-fork byte guard, Task 2 경계까지의 code map을 추가했다. TRAIN source 연결, qualification 실행, 라우터, 평가기, CLI는 아직 구현하지 않았다.</p>
 
   <h2>이번 단계에서 만든 것</h2>
   <ul>
-    <li><code>docs/EXP458_PREREGISTRATION_antigravity.html</code>: frozen diagnosis, AUC 기준, projected result, 실행 경계</li>
-    <li><code>docs/EXP458_DASHBOARD_antigravity.html</code>: 쉬운 한국어 상태판과 AUC 기준표</li>
-    <li><code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code>: governance surfaces는 known, source/qualification/router/evaluation/CLI는 future_unknown</li>
-    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_governance_antigravity.py</code>: Task 1 truth regression</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/config_antigravity.py</code>: Exp458 identity, dataset, seed, gate, structure rule을 exact 값으로 고정</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/contracts_antigravity.py</code>: two-seed rank evidence와 qualification semantics를 exact type과 boundary로 검증</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/rank_auc_antigravity.py</code>: <code>(anomaly&gt;normal wins + 0.5*ties)/(n_normal*n_anomaly)</code> 공식을 chunk 단위로 그대로 계산</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_rank_auc_antigravity.py</code>, <code>test_controlled_fork_antigravity.py</code>: Task 2 RED/GREEN regression과 Exp457 byte guard</li>
+    <li><code>docs/EXP458_DASHBOARD_antigravity.html</code>, <code>docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html</code>, <code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code>: Task 2 truth 반영</li>
   </ul>
+
+  <h2>Task 2 진실 계약</h2>
+  <ul>
+    <li>대상 dataset은 <code>ECG5000_normal_2</code> 하나뿐이다.</li>
+    <li>seed는 <code>20260721</code>, <code>20261721</code> 두 개를 exact order로 유지한다.</li>
+    <li>종류 순서는 <code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code>다.</li>
+    <li>seed별 통과는 Wilson ≤ 0.05, 네 AUC 모두 ≥ 0.85, pooled AUC ≥ 0.90을 동시에 만족할 때만 참이다.</li>
+    <li>qualification 통과는 두 seed가 각각 모두 통과할 때만 참이다.</li>
+  </ul>
+
+  <h2>AUC 증거</h2>
+  <p>RED 테스트는 모듈 부재 상태에서 시작했고, GREEN에서는 세 기준 예제를 통과했다: <code>[0,1]</code> 대 <code>[1,2]</code>는 0.875, 방향을 바꾸면 0.125, 완전 동점은 0.5다. 구현은 anomaly block과 normal vector를 chunk로 비교하지만, duplicate와 tie를 포함한 direct pairwise 공식과 정확히 같은 값을 반환한다.</p>
 
   <h2>아직 하지 않은 것</h2>
   <ul>
     <li>공식 evaluate/inspect, TEST label, 공식 root 생성</li>
-    <li><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>rank_auc_antigravity.py</code> 등 미래 구현 파일</li>
-    <li>실제 AUC 계산, route 결정, 9-leaf publication, replay</li>
+    <li>실제 TRAIN source 연결과 two-seed qualification 실행</li>
+    <li>normal_2 route 결정, 9-leaf publication, replay, dashboard export, CLI</li>
   </ul>
 
   <h2>보호한 truth</h2>
-  <p>Exp457의 종료 상태 <code>stopped_before_official_evaluation_train_gate_failed</code>는 그대로 유지했다. champion과 pending candidate도 변경하지 않았다. 이 단계는 후속 구현을 위한 등록 작업일 뿐이며, projected result는 공식 결과로 승격하지 않는다.</p>
+  <p>Exp457의 종료 상태 <code>stopped_before_official_evaluation_train_gate_failed</code>는 그대로 유지했다. champion과 pending candidate도 변경하지 않았다. controlled-fork test는 Exp457 패키지 전체 바이트가 기준 커밋 <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>와 동일한지 확인한다. projected result는 여전히 공식 결과로 승격하지 않는다.</p>
+
+  <h2>검증</h2>
+  <ul>
+    <li>Task 2 focused suite를 두 번 실행</li>
+    <li><code>py_compile</code>로 새 Python 파일 문법 확인</li>
+    <li><code>git diff --check</code> 확인</li>
+    <li>Exp457 byte guard 확인</li>
+    <li>Exp458 code map validate-only 확인</li>
+    <li>official root 부재 확인</li>
+  </ul>
 
   <h2>금지 경계</h2>
-  <p>공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 금지 상태를 유지한다. 본 보고서는 <strong>공식 evaluate/inspect, TEST label</strong>이 0회라는 점과 future boundary를 truthfully 기록하는 데만 사용된다.</p>
+  <p>공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 금지 상태를 유지한다. 본 보고서는 <strong>공식 evaluate/inspect, TEST label</strong>이 0회라는 점과 Task 3 이후 경계가 여전히 future임을 truthfully 기록하는 데만 사용된다.</p>
 </main></body>
 </html>

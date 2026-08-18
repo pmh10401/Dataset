@@ -216,21 +216,28 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "14&gt;5",
             "TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311",
             "공식 결과가 아니라 예상 후보 결과",
-            "Task 1/6",
+            "Task 2/6",
             "공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음",
+            "두 seed 20260721와 20261721가 각각 모든 gate를 만족해야 한다.",
         ):
             self.assertIn(value, dashboard)
 
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("planned_not_started", report)
-        self.assertIn("Task 1", report)
+        self.assertIn("Task 1과 Task 2를 완료했다", report)
         self.assertIn("공식 evaluate/inspect, TEST label", report)
+        self.assertIn("6e8e500d19afcb17907ef53ad1527b5781c6d007", report)
 
         plan = plan_path.read_text(encoding="utf-8")
         self.assertIn('<input type="checkbox" checked disabled>Task 1:', plan)
+        self.assertIn('<input type="checkbox" checked disabled>Task 2:', plan)
         task1 = plan.split("<section>", 1)[1].split("</section>", 1)[0]
         self.assertEqual(task1.count('<input type="checkbox" checked disabled>'), 6)
+        task2 = plan.split("Task 2:", 1)[1].split("Task 3:", 1)[0]
+        self.assertEqual(task2.count('<input type="checkbox" checked disabled>'), 6)
         for task_number in range(2, 7):
+            if task_number == 2:
+                continue
             task = plan.split(f"Task {task_number}:", 1)[1]
             if task_number < 6:
                 task = task.split(f"Task {task_number + 1}:", 1)[0]
@@ -261,13 +268,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "champion_ledger",
             "governance_regression",
             "map_builder",
+            "frozen_config",
+            "result_contracts",
+            "rank_auc",
         ):
             self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
             self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
         for node_id in (
-            "frozen_config",
-            "result_contracts",
-            "rank_auc",
             "train_source",
             "train_qualification",
             "router",

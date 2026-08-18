@@ -70,7 +70,7 @@ git diff --check
   </section>
 
   <section>
-    <h2><label><input type="checkbox" disabled>Task 2: 고정 설정·계약·AUC 계산기</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 2: 고정 설정·계약·AUC 계산기</label></h2>
     <h3>Files</h3>
     <ul>
       <li>Create: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/config_antigravity.py</code></li>
@@ -88,7 +88,7 @@ RankSeedEvidenceAntigravity(dataset: str, seed: int, normal_trials: int,
 RankQualificationAntigravity(dataset: str,
   seed_evidence: tuple[RankSeedEvidenceAntigravity, ...], passed: bool)
 </code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED AUC·경계 테스트 작성</label><pre><code>def test_auc_counts_wins_and_half_ties_antigravity():
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED AUC·경계 테스트 작성</label><pre><code>def test_auc_counts_wins_and_half_ties_antigravity():
     normal = np.array([0.0, 1.0])
     anomaly = np.array([1.0, 2.0])
     assert mann_whitney_auc_antigravity(normal, anomaly) == 0.875
@@ -99,25 +99,25 @@ def test_thresholds_are_inclusive_antigravity():
     )
     assert evidence.passed is True
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 확인</label><pre><code>$PY -m unittest \
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: RED 확인</label><pre><code>$PY -m unittest \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_config_antigravity \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_contracts_antigravity \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_rank_auc_antigravity
 # Expected: new modules absent
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 구현</label><pre><code>def mann_whitney_auc_antigravity(normal, anomaly):
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: 최소 구현</label><pre><code>def mann_whitney_auc_antigravity(normal, anomaly):
     normal = exact_finite_vector_antigravity(normal)
     anomaly = exact_finite_vector_antigravity(anomaly)
     wins = np.count_nonzero(anomaly[:, None] &gt; normal[None, :])
     ties = np.count_nonzero(anomaly[:, None] == normal[None, :])
     return float((wins + 0.5 * ties) / (len(normal) * len(anomaly)))
 </code></pre><p>실제 구현은 큰 배열에서도 같은 식을 유지하도록 chunk로 계산하되 수학적 결과는 정확히 같아야 한다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: 의미 검증</label><p>계약 생성 시 pooled AUC를 네 ordered 종류의 평균으로 다시 계산하고, 두 통과 표시를 수치에서 다시 계산한다. bool·문자열·NaN·무한대는 숫자로 받아들이지 않는다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: GREEN 두 번·Exp457 차이 보호</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: 의미 검증</label><p>계약 생성 시 pooled AUC를 네 ordered 종류의 평균으로 다시 계산하고, 두 통과 표시를 수치에서 다시 계산한다. bool·문자열·NaN·무한대는 숫자로 받아들이지 않는다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: GREEN 두 번·Exp457 차이 보호</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
 $PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
 git diff --exit-code 6e8e500d -- experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): define rank confidence contracts"
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): define rank confidence contracts"
 </code></pre></div>
   </section>
 
