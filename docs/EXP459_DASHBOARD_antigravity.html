@@ -1,54 +1,37 @@
 <!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Exp459 대시보드</title>
-  <style>
-    body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
-    table{width:100%;border-collapse:collapse;margin:1rem 0}
-    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
-    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
-    .box{background:#f5f7fa;padding:1rem}
-  </style>
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
 <body><main>
   <h1>Exp459 ECG5000 normal_2 연속 구간 검증</h1>
   <table>
-    <tr><th>진행</th><td>Task 5/6</td></tr>
-    <tr><th>상태</th><td><code>implementation_verified_awaiting_official_evaluation</code></td></tr>
-    <tr><th>Task 5 private validation result</th><td><code>unstable</code>. 두 private TRAIN run은 canonical fold plan, 10 evidence rows, 2 summaries, decision, dashboard, digest, 7 leaf hashes가 exact-equal이었다.</td></tr>
+    <tr><th>진행</th><td>Task 6/6</td></tr>
+    <tr><th>상태</th><td><code>official_evaluation_inspected_complete_unstable_no_promotion</code></td></tr>
+    <tr><th>공식 실행</th><td>evaluate 1회 exit 0 / inspect 1회 exit 0 / official root present</td></tr>
+    <tr><th>reviewed commit</th><td><code>05bca7e3b03e14ddc9200e24174606bcb951827e</code></td></tr>
+    <tr><th>공식 결과 root</th><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code></td></tr>
     <tr><th>frozen authority digest</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
-    <tr><th>authority file</th><td>actual authority file present: <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code></td></tr>
-    <tr><th>공식 실행</th><td>evaluate 0회 / inspect 0회 / official root absent</td></tr>
+    <tr><th>artifact map SHA-256</th><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code></td></tr>
+    <tr><th>evaluate/inspect stdout SHA-256</th><td><code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code> / <code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr>
     <tr><th>label query 수</th><td>0</td></tr>
     <tr><th>champion / pending candidate</th><td>변경 없음</td></tr>
   </table>
-
   <div class="box">
-    <p><strong>결론:</strong> Exp459은 unstable이다. 모든 정상 Wilson 상한은 기준을 통과했지만, 두 fold에서 <code>period_change</code> AUC가 0.85 미만이었다: seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</p>
-<p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
-    <p><strong>중지 규칙:</strong> 이 실험에서는 threshold, fold, seed, 합성 종류를 조정하지 않는다. Task 6 still requires approval after SHIP; 승인 전 공식 evaluate/inspect는 계속 0회다.</p>
+    <p><strong>공식 결론:</strong> Exp459은 <code>unstable</code>이다. 10개 fold-seed record 중 8개는 통과했고, 두 fold에서 <code>period_change</code> AUC가 0.85 미만이었다: seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</p>
+    <p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
+    <p><strong>중지 규칙:</strong> 이 실험에서는 threshold, fold, seed, 합성 종류를 조정하지 않는다. Exp458 공식 결과는 보존하지만 운영 승격 근거로 사용하지 않는다.</p>
   </div>
-
   <h2>10개 fold evidence</h2>
-  <table>
-    <thead><tr><th>seed</th><th>fold</th><th>normal n</th><th>alerts</th><th>Wilson upper</th><th>level shift AUC</th><th>gradual drift AUC</th><th>amplitude scaling AUC</th><th>period change AUC</th><th>pooled AUC</th><th>판정</th></tr></thead>
-    <tbody><tr><td>20260721</td><td>0</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.974066351184308</td><td>0.899549251457753</td><td>0.991884029017718</td><td>0.878922199053553</td><td>0.936105457678333</td><td>통과</td></tr><tr><td>20260721</td><td>1</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.983880433018267</td><td>0.912821985541086</td><td>0.999375694539824</td><td>0.967673463272110</td><td>0.965937894092822</td><td>통과</td></tr><tr><td>20260721</td><td>2</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.980159572475621</td><td>0.897601418422005</td><td>0.999238347338586</td><td>0.943824994693404</td><td>0.955206083232404</td><td>통과</td></tr><tr><td>20260721</td><td>3</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.967141994869473</td><td>0.885896081686032</td><td>0.990304813641165</td><td>0.820833962074342</td><td>0.916044213067753</td><td>실패</td></tr><tr><td>20260721</td><td>4</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.988833559680097</td><td>0.924324732156330</td><td>0.996290428046879</td><td>0.886562547155576</td><td>0.949002816759720</td><td>통과</td></tr><tr><td>20261721</td><td>0</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.974615739989262</td><td>0.888024572662912</td><td>0.996404000549389</td><td>0.868458839541011</td><td>0.931875788185643</td><td>통과</td></tr><tr><td>20261721</td><td>1</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.979372947595800</td><td>0.906691305922162</td><td>0.997303000412042</td><td>0.950005618749142</td><td>0.958343218169786</td><td>통과</td></tr><tr><td>20261721</td><td>2</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.975527225961118</td><td>0.885914420207519</td><td>0.999850166689558</td><td>0.854287105595026</td><td>0.928894729613305</td><td>통과</td></tr><tr><td>20261721</td><td>3</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.963482722197073</td><td>0.879973341381218</td><td>0.986934761832906</td><td>0.940772596951864</td><td>0.942790855590765</td><td>통과</td></tr><tr><td>20261721</td><td>4</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.983753332327348</td><td>0.919143906242141</td><td>0.993297620844022</td><td>0.800412454101906</td><td>0.924151828378854</td><td>실패</td></tr></tbody>
-  </table>
-
+  <table><thead><tr><th>seed</th><th>fold</th><th>normal n</th><th>alerts</th><th>Wilson upper</th><th>level shift AUC</th><th>gradual drift AUC</th><th>amplitude scaling AUC</th><th>period change AUC</th><th>pooled AUC</th><th>판정</th></tr></thead><tbody><tr><td>20260721</td><td>0</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.974066351184308</td><td>0.899549251457753</td><td>0.991884029017718</td><td>0.878922199053553</td><td>0.936105457678333</td><td>통과</td></tr><tr><td>20260721</td><td>1</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.983880433018267</td><td>0.912821985541086</td><td>0.999375694539824</td><td>0.967673463272110</td><td>0.965937894092822</td><td>통과</td></tr><tr><td>20260721</td><td>2</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.980159572475621</td><td>0.897601418422005</td><td>0.999238347338586</td><td>0.943824994693404</td><td>0.955206083232404</td><td>통과</td></tr><tr><td>20260721</td><td>3</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.967141994869473</td><td>0.885896081686032</td><td>0.990304813641165</td><td>0.820833962074342</td><td>0.916044213067753</td><td>실패</td></tr><tr><td>20260721</td><td>4</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.988833559680097</td><td>0.924324732156330</td><td>0.996290428046879</td><td>0.886562547155576</td><td>0.949002816759720</td><td>통과</td></tr><tr><td>20261721</td><td>0</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.974615739989262</td><td>0.888024572662912</td><td>0.996404000549389</td><td>0.868458839541011</td><td>0.931875788185643</td><td>통과</td></tr><tr><td>20261721</td><td>1</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.979372947595800</td><td>0.906691305922162</td><td>0.997303000412042</td><td>0.950005618749142</td><td>0.958343218169786</td><td>통과</td></tr><tr><td>20261721</td><td>2</td><td>283</td><td>0</td><td>0.013392271941747</td><td>0.975527225961118</td><td>0.885914420207519</td><td>0.999850166689558</td><td>0.854287105595026</td><td>0.928894729613305</td><td>통과</td></tr><tr><td>20261721</td><td>3</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.963482722197073</td><td>0.879973341381218</td><td>0.986934761832906</td><td>0.940772596951864</td><td>0.942790855590765</td><td>통과</td></tr><tr><td>20261721</td><td>4</td><td>282</td><td>0</td><td>0.013439124039399</td><td>0.983753332327348</td><td>0.919143906242141</td><td>0.993297620844022</td><td>0.800412454101906</td><td>0.924151828378854</td><td>실패</td></tr></tbody></table>
   <h2>seed summaries</h2>
   <table><thead><tr><th>seed</th><th>fold count</th><th>판정</th></tr></thead><tbody><tr><td>20260721</td><td>5</td><td>실패</td></tr><tr><td>20261721</td><td>5</td><td>실패</td></tr></tbody></table>
-
-  <h2>official result fields remain null</h2>
-  <table>
-    <tbody>
-      <tr><td>prediction SHA-256</td><td><code>null</code></td></tr>
-      <tr><td>evaluation SHA-256</td><td><code>null</code></td></tr>
-      <tr><td>decision SHA-256</td><td><code>null</code></td></tr>
-      <tr><td>artifact map SHA-256</td><td><code>null</code></td></tr>
-      <tr><td>dashboard snapshot SHA-256</td><td><code>null</code></td></tr>
-    </tbody>
-  </table>
-</main></body>
-</html>
+  <h2>official result hashes</h2>
+  <table><tbody>
+    <tr><td>prediction SHA-256</td><td><code>null</code> (prediction artifact 없음)</td></tr>
+    <tr><td>evaluation SHA-256</td><td><code>a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364</code> (<code>fold_evidence_antigravity.jsonl</code>)</td></tr>
+    <tr><td>decision SHA-256</td><td><code>527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716</code></td></tr>
+    <tr><td>artifact map SHA-256</td><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code></td></tr>
+    <tr><td>dashboard snapshot SHA-256</td><td><code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr>
+  </tbody></table>
+  <h2>official leaf hashes</h2>
+  <table><tbody><tr><td><code>artifact_sha256_antigravity.json</code></td><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code></td></tr><tr><td><code>context_antigravity.json</code></td><td><code>757f1af091ce7efba11d9dfb4ab6fc9ad5b53a6527a0da102033ed5a71b556be</code></td></tr><tr><td><code>dashboard_snapshot_antigravity.json</code></td><td><code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr><tr><td><code>decision_antigravity.json</code></td><td><code>527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716</code></td></tr><tr><td><code>fold_evidence_antigravity.jsonl</code></td><td><code>a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364</code></td></tr><tr><td><code>fold_plan_antigravity.jsonl</code></td><td><code>7e2b60c31ff493077fbe6e501f25704d5b527b3cea8496e8b265e66b71191985</code></td></tr><tr><td><code>seed_summary_antigravity.jsonl</code></td><td><code>f530e4c411085f3406be896f1802357b5ce67a53b5e1a4f753ac02fdf2b061d7</code></td></tr></tbody></table>
+</main></body></html>

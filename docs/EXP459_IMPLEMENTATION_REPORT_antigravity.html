@@ -1,20 +1,21 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 구현 보고서</title><style>body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
 <body><main>
   <h1>Exp459 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 5 private validation result is <code>unstable</code>. CLI, launcher, version-controlled frozen authority, private evidence, docs, ledgers, and map are prepared for final verification. Official evaluate/inspect remain 0.</p>
-  <h2>Task 5 private validation result</h2>
+  <p><strong>현재 단계:</strong> Task 6 official evaluate and bare inspect each completed exactly once at reviewed commit <code>05bca7e3b03e14ddc9200e24174606bcb951827e</code>. The official result is <code>unstable</code>; champion, pending candidate, routing, and promotion remain unchanged.</p>
+  <h2>Task 6 official lifecycle</h2>
   <table>
-    <tr><th>authority file</th><td><code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code></td></tr>
-    <tr><th>canonical digest</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
-    <tr><th>private runs</th><td>Run 1 PID 15100 and run 2 PID 15421 completed sequentially; both produced seven leaves and were exact-equal on every required canonical surface.</td></tr>
-    <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</td></tr>
-    <tr><th>official state</th><td>official root absent, evaluate 0, inspect 0, label query 0, official result hashes null.</td></tr>
+    <tr><th>evaluate</th><td>PID 26273, exit 0, elapsed 106 seconds, stderr empty</td></tr>
+    <tr><th>inspect</th><td>PID 27275, exit 0, elapsed 0 seconds, stderr empty</td></tr>
+    <tr><th>aggregate equality</th><td>evaluate and inspect stdout exact-equal; SHA-256 <code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code>, non-symlink directory, exactly seven regular leaves</td></tr>
+    <tr><th>authority equality</th><td>All six non-map payload leaves are byte-equal to frozen authority digest <code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code>; artifact map recomputation exact.</td></tr>
+    <tr><th>decision</th><td><code>unstable</code>; failed folds: seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
   </table>
-<p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
-  <p>Because the result is unstable, no threshold tuning or in-experiment retry is allowed. The next useful research direction is failure-fold analysis or a separately approved successor experiment, not Task 5 tuning.</p>
-  <h2>CLI and replay boundary</h2>
-  <p><code>cli_antigravity.py</code> accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>. Runtime and frozen authority validate before TRAIN source qualification or root creation. The launcher re-execs the fixed Python runtime outside CWD. Inspect remains source/SQLite/Hydra-free where possible and replays only against trusted authority.</p>
+  <h2>Official hashes</h2>
+  <table><tbody><tr><td><code>artifact_sha256_antigravity.json</code></td><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code></td></tr><tr><td><code>context_antigravity.json</code></td><td><code>757f1af091ce7efba11d9dfb4ab6fc9ad5b53a6527a0da102033ed5a71b556be</code></td></tr><tr><td><code>dashboard_snapshot_antigravity.json</code></td><td><code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr><tr><td><code>decision_antigravity.json</code></td><td><code>527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716</code></td></tr><tr><td><code>fold_evidence_antigravity.jsonl</code></td><td><code>a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364</code></td></tr><tr><td><code>fold_plan_antigravity.jsonl</code></td><td><code>7e2b60c31ff493077fbe6e501f25704d5b527b3cea8496e8b265e66b71191985</code></td></tr><tr><td><code>seed_summary_antigravity.jsonl</code></td><td><code>f530e4c411085f3406be896f1802357b5ce67a53b5e1a4f753ac02fdf2b061d7</code></td></tr></tbody></table>
+  <p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
   <h2>Predecessor protection</h2>
-  <p>Exp458 product code and official result root were not modified. Champion and pending candidate remain unchanged.</p>
+  <p>Exp458 product code and official result root were not modified. Exp458 artifact map remains <code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code>. No threshold tuning, label use, routing change, promotion, or external publication was performed.</p>
 </main></body></html>

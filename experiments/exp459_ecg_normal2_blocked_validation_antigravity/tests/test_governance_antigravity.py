@@ -34,15 +34,15 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "4e5d44e3a180e0541e75a558b64993f050e67ad4e863e97d6133c7afd5e6d0f0"
+    "db1aaf8f959a55c8ee7758edb61b95e6f7bf8d9ee8ea821ca39733213692d994"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
 )
 IMPLEMENTATION_STATUS_ANTIGRAVITY = (
-    "task_5_private_unstable_authority_frozen"
+    "task_6_official_unstable_preserved"
 )
-STATUS_ANTIGRAVITY = "implementation_verified_awaiting_official_evaluation"
+STATUS_ANTIGRAVITY = "official_evaluation_inspected_complete_unstable_no_promotion"
 AUTHORITY_DIGEST_ANTIGRAVITY = (
     "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee"
 )
@@ -77,6 +77,39 @@ PRIVATE_VALIDATION_ANTIGRAVITY = {
             "normal_wilson_upper": 0.013439124039399194,
         },
     ],
+}
+OFFICIAL_ARTIFACT_MAP_SHA256_ANTIGRAVITY = (
+    "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d"
+)
+OFFICIAL_DASHBOARD_SHA256_ANTIGRAVITY = (
+    "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350"
+)
+OFFICIAL_DECISION_SHA256_ANTIGRAVITY = (
+    "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716"
+)
+OFFICIAL_EVALUATION_SHA256_ANTIGRAVITY = (
+    "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364"
+)
+OFFICIAL_REVIEWED_COMMIT_ANTIGRAVITY = (
+    "05bca7e3b03e14ddc9200e24174606bcb951827e"
+)
+OFFICIAL_RESULT_ANTIGRAVITY = {
+    "status": "unstable",
+    "passed": False,
+    "fold_plan_rows": 5,
+    "fold_records": 10,
+    "seed_summaries": 2,
+    "failed_fold_count": 2,
+    "failed_folds": PRIVATE_VALIDATION_ANTIGRAVITY["failed_folds"],
+}
+OFFICIAL_LEAF_SHA256_ANTIGRAVITY = {
+    "artifact_sha256_antigravity.json": OFFICIAL_ARTIFACT_MAP_SHA256_ANTIGRAVITY,
+    "context_antigravity.json": "757f1af091ce7efba11d9dfb4ab6fc9ad5b53a6527a0da102033ed5a71b556be",
+    "dashboard_snapshot_antigravity.json": OFFICIAL_DASHBOARD_SHA256_ANTIGRAVITY,
+    "decision_antigravity.json": OFFICIAL_DECISION_SHA256_ANTIGRAVITY,
+    "fold_evidence_antigravity.jsonl": OFFICIAL_EVALUATION_SHA256_ANTIGRAVITY,
+    "fold_plan_antigravity.jsonl": "7e2b60c31ff493077fbe6e501f25704d5b527b3cea8496e8b265e66b71191985",
+    "seed_summary_antigravity.jsonl": "f530e4c411085f3406be896f1802357b5ce67a53b5e1a4f753ac02fdf2b061d7",
 }
 SCIENTIFIC_LIMITATION_DISCLOSURE_ANTIGRAVITY = (
     "각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다",
@@ -230,10 +263,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             checked = [tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)]
-            if task_number in {1, 2, 3, 4, 5}:
-                self.assertEqual(len(checked), len(tags))
-            else:
-                self.assertEqual(len(checked), 0)
+            self.assertEqual(len(checked), len(tags))
         status_rows = re.findall(r"<li><label><input\b[^>]*>(Task \d 완료)</label></li>", plan)
         self.assertEqual(status_rows, [f"Task {n} 완료" for n in range(1, 7)])
         initial_checked = re.findall(
@@ -243,7 +273,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         self.assertEqual(
             initial_checked,
-            ["Task 1 완료", "Task 2 완료", "Task 3 완료", "Task 4 완료", "Task 5 완료"],
+            [
+                "Task 1 완료",
+                "Task 2 완료",
+                "Task 3 완료",
+                "Task 4 완료",
+                "Task 5 완료",
+                "Task 6 완료",
+            ],
         )
 
     def test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity(self) -> None:
@@ -280,21 +317,21 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         document_expectations = {
             "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html": (
-                "Task 5 private validation result",
-                "frozen_validation_authority_antigravity.py",
+                "Task 6 official lifecycle",
+                OFFICIAL_REVIEWED_COMMIT_ANTIGRAVITY,
                 AUTHORITY_DIGEST_ANTIGRAVITY,
                 "unstable",
             ),
             "docs/EXP459_RUNBOOK_antigravity.html": (
-                "private qualification/evaluation twice completed",
-                "bare inspect imports only authority + replay",
-                "Task 6 approval is requested only after SHIP",
-                AUTHORITY_DIGEST_ANTIGRAVITY,
+                "Task 6 official command evidence",
+                "evaluate/inspect payloads exact-equal",
+                "Do not rerun, retry, tune thresholds",
+                OFFICIAL_ARTIFACT_MAP_SHA256_ANTIGRAVITY,
             ),
             "docs/EXP459_DASHBOARD_antigravity.html": (
-                "Task 5 private validation result",
-                "actual authority file present",
-                "Task 6 still requires approval after SHIP",
+                "Task 6/6",
+                "official root present",
+                "운영 승격 근거로 사용하지 않는다",
                 AUTHORITY_DIGEST_ANTIGRAVITY,
             ),
         }
@@ -312,8 +349,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 with self.subTest(relative=relative, phrase=phrase):
                     self.assertIn(phrase, text)
 
-    def test_exp459_task5_truth_and_non_promotion_antigravity(self) -> None:
-        """Break caught: Exp459 records an official result, changes champion, or loses frozen hashes."""
+    def test_exp459_task6_truth_and_non_promotion_antigravity(self) -> None:
+        """Break caught: Exp459 official truth changes champion or loses frozen hashes."""
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         catalog = strict_json_antigravity(ROOT_ANTIGRAVITY / "EXPERIMENT_CATALOG.json")
         champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
@@ -343,17 +380,66 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["approved_design_sha256"], DESIGN_SHA256_ANTIGRAVITY)
                 self.assertEqual(record["approved_plan"], PLAN_ANTIGRAVITY)
                 self.assertEqual(record["approved_plan_sha256"], PLAN_SHA256_ANTIGRAVITY)
-                self.assertFalse(record["official_evaluate_started"])
-                self.assertFalse(record["official_inspect_started"])
-                self.assertEqual(record["official_evaluate_invocations"], 0)
-                self.assertEqual(record["official_inspect_invocations"], 0)
-                self.assertFalse(record["result_root_created"])
-                self.assertIsNone(record["official_result"])
+                self.assertTrue(record["official_evaluate_started"])
+                self.assertTrue(record["official_inspect_started"])
+                self.assertEqual(record["official_evaluate_invocations"], 1)
+                self.assertEqual(record["official_inspect_invocations"], 1)
+                self.assertTrue(record["result_root_created"])
+                self.assertEqual(record["official_result"], OFFICIAL_RESULT_ANTIGRAVITY)
                 self.assertIsNone(record["prediction_sha256"])
-                self.assertIsNone(record["evaluation_sha256"])
-                self.assertIsNone(record["decision_sha256"])
-                self.assertIsNone(record["artifact_map_sha256"])
-                self.assertIsNone(record["dashboard_snapshot_sha256"])
+                self.assertEqual(
+                    record["evaluation_sha256"],
+                    OFFICIAL_EVALUATION_SHA256_ANTIGRAVITY,
+                )
+                self.assertEqual(
+                    record["decision_sha256"],
+                    OFFICIAL_DECISION_SHA256_ANTIGRAVITY,
+                )
+                self.assertEqual(
+                    record["artifact_map_sha256"],
+                    OFFICIAL_ARTIFACT_MAP_SHA256_ANTIGRAVITY,
+                )
+                self.assertEqual(
+                    record["dashboard_snapshot_sha256"],
+                    OFFICIAL_DASHBOARD_SHA256_ANTIGRAVITY,
+                )
+                self.assertEqual(record["leaf_sha256"], OFFICIAL_LEAF_SHA256_ANTIGRAVITY)
+                lifecycle = record["official_lifecycle"]
+                self.assertEqual(lifecycle["reviewed_commit"], OFFICIAL_REVIEWED_COMMIT_ANTIGRAVITY)
+                self.assertEqual(lifecycle["evaluate_invocations"], 1)
+                self.assertEqual(lifecycle["evaluate_exit_code"], 0)
+                self.assertIs(type(lifecycle["evaluate_pid"]), int)
+                self.assertGreater(lifecycle["evaluate_pid"], 0)
+                self.assertEqual(lifecycle["inspect_invocations"], 1)
+                self.assertEqual(lifecycle["inspect_exit_code"], 0)
+                self.assertIs(type(lifecycle["inspect_pid"]), int)
+                self.assertGreater(lifecycle["inspect_pid"], 0)
+                self.assertTrue(lifecycle["aggregate_json_equal"])
+                self.assertTrue(lifecycle["semantic_replay_equal"])
+                self.assertTrue(lifecycle["authority_payload_equal"])
+                self.assertFalse(lifecycle["passed"])
+                self.assertEqual(lifecycle["status"], "unstable")
+                self.assertEqual(lifecycle["label_query_count"], 0)
+                self.assertTrue(lifecycle["result_root_created"])
+                self.assertEqual(lifecycle["result_root_leaf_count"], 7)
+                self.assertTrue(lifecycle["result_root_is_non_symlink_directory"])
+                self.assertEqual(
+                    lifecycle["artifact_map_non_map_leaf_recomputation"],
+                    "exact_match",
+                )
+                self.assertEqual(lifecycle["authority_digest"], AUTHORITY_DIGEST_ANTIGRAVITY)
+                self.assertEqual(
+                    lifecycle["evaluate_stdout_sha256"],
+                    OFFICIAL_DASHBOARD_SHA256_ANTIGRAVITY,
+                )
+                self.assertEqual(
+                    lifecycle["inspect_stdout_sha256"],
+                    OFFICIAL_DASHBOARD_SHA256_ANTIGRAVITY,
+                )
+                self.assertEqual(
+                    lifecycle["failed_folds"],
+                    PRIVATE_VALIDATION_ANTIGRAVITY["failed_folds"],
+                )
                 self.assertEqual(record["label_query_count"], 0)
                 self.assertFalse(record["test_labels_opened"])
                 self.assertFalse(record["routing_allowed"])
@@ -405,7 +491,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
             hashlib.sha256((ROOT_ANTIGRAVITY / DESIGN_ANTIGRAVITY).read_bytes()).hexdigest(),
             DESIGN_SHA256_ANTIGRAVITY,
         )
-        self.assertFalse(RUN_ROOT_ANTIGRAVITY.exists())
+        self.assertTrue(RUN_ROOT_ANTIGRAVITY.is_dir())
+        self.assertFalse(RUN_ROOT_ANTIGRAVITY.is_symlink())
+        self.assertEqual(
+            {entry.name for entry in RUN_ROOT_ANTIGRAVITY.iterdir()},
+            set(OFFICIAL_LEAF_SHA256_ANTIGRAVITY),
+        )
+        self.assertEqual(
+            {
+                leaf_name: hashlib.sha256((RUN_ROOT_ANTIGRAVITY / leaf_name).read_bytes()).hexdigest()
+                for leaf_name in OFFICIAL_LEAF_SHA256_ANTIGRAVITY
+            },
+            OFFICIAL_LEAF_SHA256_ANTIGRAVITY,
+        )
 
     def test_exp459_map_is_bounded_and_validates_antigravity(self) -> None:
         """Break caught: Task 1 map drifts from HTML/JSON/lock parity or loses governance coverage."""

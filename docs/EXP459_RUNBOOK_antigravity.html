@@ -1,26 +1,22 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 실행 가이드</title><style>body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
 <body><main>
   <h1>Exp459 실행 가이드</h1>
-  <p><strong>상태:</strong> <code>implementation_verified_awaiting_official_evaluation</code>. private qualification/evaluation twice completed, exact equality confirmed, and <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code> is now the version-controlled frozen authority. Official evaluate/inspect remain 0 and Task 6 approval is requested only after SHIP.</p>
-  <h2>Task 5 authority 순서 결과</h2>
+  <p><strong>상태:</strong> <code>official_evaluation_inspected_complete_unstable_no_promotion</code>. Task 6 official evaluate and bare inspect have both completed exactly once. Do not rerun, retry, tune thresholds, alter folds/seeds/synthetic types, change routing, or publish externally from this experiment.</p>
+  <h2>Task 6 official command evidence</h2>
   <table>
-    <tr><th>private runs</th><td>2회. public CLI 없이 별도 temporary non-official 7-leaf root에서 순차 실행했고 temp roots는 정리했다.</td></tr>
-    <tr><th>equality</th><td>canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest / dashboard / 7 leaf hashes exact-equal.</td></tr>
-    <tr><th>digest</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
-    <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</td></tr>
-    <tr><th>CLI boundary</th><td>CLI evaluate and bare inspect require the version-controlled authority. bare inspect imports only authority + replay; bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지.</td></tr>
-    <tr><th>official boundary</th><td>공식 root 없음, evaluate 0회, inspect 0회, label query 0, result hashes null.</td></tr>
+    <tr><th>evaluate</th><td><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python REVIEWED_COMMIT=$(git rev-parse HEAD); "$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code>; PID 26273; exit 0; stdout <code>.superpowers/sdd/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html/task6_official_evaluate_stdout_antigravity.json</code>; stderr empty</td></tr>
+    <tr><th>inspect</th><td><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python; "$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py inspect</code>; PID 27275; exit 0; stdout <code>.superpowers/sdd/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html/task6_official_inspect_stdout_antigravity.json</code>; stderr empty</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code>, exactly seven regular leaves, artifact map <code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code></td></tr>
+    <tr><th>equality</th><td>evaluate/inspect payloads exact-equal and authority payload exact-equal; stdout SHA-256 <code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr>
+    <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
   </table>
-<p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
-  <h2>Task 6 전 금지</h2>
-  <p>Task 6 still requires approval after SHIP. 승인 전 공식 evaluate/inspect를 실행하지 않는다. unstable 결과 때문에 Exp459 안에서 threshold tuning, seed/fold 변경, 합성 종류 변경은 금지한다.</p>
-  <h2>검증 체크리스트</h2>
+  <p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
+  <h2>Post-run boundary</h2>
   <table>
-    <tr><th>항목</th><th>기준</th></tr>
-    <tr><td>문서 4개</td><td>모두 self-contained HTML, Markdown duplicate 없음</td></tr>
-    <tr><td>세 ledger</td><td>status implementation_verified_awaiting_official_evaluation, official count 0, label query 0, result hash null</td></tr>
-    <tr><td>code map</td><td>CLI, authority, launcher, tests까지 HTML/JSON/lock 동기화</td></tr>
+    <tr><td>세 ledger</td><td>status official_evaluation_inspected_complete_unstable_no_promotion, official evaluate 1, official inspect 1, label query 0, result hashes populated</td></tr>
     <tr><td>Exp458 predecessor</td><td>공식 결과와 product code를 수정하지 않음</td></tr>
+    <tr><td>Next research</td><td>Failure-fold analysis may be proposed separately; this Task 6 run does not automatically promote or route.</td></tr>
   </table>
 </main></body></html>

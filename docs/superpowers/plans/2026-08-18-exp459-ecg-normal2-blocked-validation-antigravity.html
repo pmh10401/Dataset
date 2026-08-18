@@ -190,22 +190,22 @@ qualification_passed = all(summary.passed for summary in seed_summaries)</code><
   <h2>Task 6: 별도 승인 후 공식 1회 실행과 truth closeout</h2>
   <p class="stop"><strong>중지 경계:</strong> Task 5 final review가 SHIP이어도 Task 6 approval을 사용자에게 다시 받기 전에는 실행하지 않는다.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — exact clean reviewed commit, runtime, Exp458 predecessor, Exp459 공식 root 부재를 확인한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — 아래 evaluate 명령을 정확히 한 번 실행하고 stdout/stderr/exit를 보존한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — exact clean reviewed commit, runtime, Exp458 predecessor, Exp459 공식 root 부재를 확인한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — 아래 evaluate 명령을 정확히 한 번 실행하고 stdout/stderr/exit를 보존한다.</label></li>
   </ul>
   <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
 REVIEWED_COMMIT=$(git rev-parse HEAD)
 "$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 3 — evaluate가 nonzero면 영구 중단하고 inspect를 실행하지 않는다. 재시도하지 않는다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — evaluate 성공과 exact 7 leaves를 확인한 경우에만 bare inspect를 정확히 한 번 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — evaluate가 nonzero면 영구 중단하고 inspect를 실행하지 않는다. 재시도하지 않는다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — evaluate 성공과 exact 7 leaves를 확인한 경우에만 bare inspect를 정확히 한 번 실행한다.</label></li>
   </ul>
   <pre><code>"$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py inspect</code></pre>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 5 — evaluate/inspect payload equality, artifact hash, 10 fold evidence, stable/unstable decision, label0를 독립 재계산한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — HTML dashboard/report/plan/ledgers/map을 관찰된 truth로 갱신하고 완료한 체크박스만 checked로 바꾼다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 7 — truth commit과 map-only child를 만들고 새 read-only 결과 review를 받는다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 8 — stable이면 다른 ECG 데이터셋 검증을 다음 실험으로 제안하고, unstable이면 실패 fold 분석을 제안한다. 자동 승격하지 않는다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — evaluate/inspect payload equality, artifact hash, 10 fold evidence, stable/unstable decision, label0를 독립 재계산한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — HTML dashboard/report/plan/ledgers/map을 관찰된 truth로 갱신하고 완료한 체크박스만 checked로 바꾼다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 7 — truth commit과 map-only child를 만들고 새 read-only 결과 review를 받는다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 8 — stable이면 다른 ECG 데이터셋 검증을 다음 실험으로 제안하고, unstable이면 실패 fold 분석을 제안한다. 자동 승격하지 않는다.</label></li>
   </ul>
 
   <h2>전체 검증 명령 모음</h2>
@@ -236,7 +236,7 @@ git diff --check</code></pre>
     <li><label><input type="checkbox" checked disabled>Task 3 완료</label></li>
     <li><label><input type="checkbox" checked disabled>Task 4 완료</label></li>
     <li><label><input type="checkbox" checked disabled>Task 5 완료</label></li>
-    <li><label><input type="checkbox" disabled>Task 6 완료</label></li>
+    <li><label><input type="checkbox" checked disabled>Task 6 완료</label></li>
   </ul>
 </main></body>
 </html>

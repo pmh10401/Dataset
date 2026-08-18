@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp459 Task 5 CLI/authority code map."""
+"""Build and validate the bounded Exp459 Task 6 official-truth code map."""
 
 from __future__ import annotations
 
@@ -161,8 +161,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp459 Task 5 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp459 Task 5 CLI/authority 코드맵</h1><p>Task 5는 CLI, fixed-runtime launcher, exact private-run frozen authority, unstable validation truth, updated ledgers/docs, and bounded tests/map을 추가한다. 공식 evaluate/inspect, label query, 공식 root 생성, champion 변경은 여전히 없다.</p>'
+        '<title>Exp459 Task 6 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp459 Task 6 공식 truth 코드맵</h1><p>Task 6는 exactly-one official evaluate, exactly-one bare inspect, seven-leaf official root, unstable validation truth, updated ledgers/docs, and bounded tests/map을 보존한다. label query, champion 변경, routing 변경, promotion, tuning, retry는 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -278,58 +278,58 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1–4 execution and future Task 5 operator sequence. Effect: records checked Task 1, Task 2, Task 3, and Task 4 steps while Task 5 now explicitly requires private qualification/evaluation twice, canonical equality, version-controlled authority, full tests, fresh review, and Task 6 approval after SHIP.",
+            "role": "Caller: Task 1–6 execution. Effect: records completed official evaluate/inspect, authority equality, observed unstable truth, non-promotion, and no tuning/retry boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 4: stable 판단, 7-leaf 결과, replay와 대시보드")],
+            "evidence": [evidence_antigravity(plan, "Task 6: 별도 승인 후 공식 1회 실행과 truth closeout")],
         },
         {
             "id": "preregistration",
             "path": "docs/EXP459_PREREGISTRATION_antigravity.html",
-            "role": "Caller: governance review. Effect: states Task 5 private unstable validation truth, fixed thresholds, zero official actions, and null result hashes.",
+            "role": "Caller: governance review. Effect: states Task 6 official unstable truth, fixed thresholds, one evaluate, one inspect, label_query_count 0, and non-promotion.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_PREREGISTRATION_antigravity.html", "implementation_verified_awaiting_official_evaluation")],
+            "evidence": [evidence_antigravity("docs/EXP459_PREREGISTRATION_antigravity.html", "official_evaluation_inspected_complete_unstable_no_promotion")],
         },
         {
             "id": "runbook",
             "path": "docs/EXP459_RUNBOOK_antigravity.html",
-            "role": "Caller: future operators. Effect: records that Task 4 completed evaluation, artifacts, replay, and dashboard export while official commands, root creation, label access, actual authority values, and Task 6 execution remain blocked until the exact Task 5 authority sequence completes.",
+            "role": "Caller: future operators. Effect: records official command evidence, result root, exact equality, unstable truth, label_query_count 0, and the post-run no-retry/no-tuning boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 5 authority 순서")],
+            "evidence": [evidence_antigravity("docs/EXP459_RUNBOOK_antigravity.html", "Task 6 official command evidence")],
         },
         {
             "id": "implementation_report",
             "path": "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: implementation review. Effect: reports the Task 5 private unstable validation result, frozen authority digest/file, CLI/import boundary, and unchanged official lifecycle.",
+            "role": "Caller: implementation review. Effect: reports the Task 6 official lifecycle, exact command counts/exits, seven-leaf root, authority equality, unstable decision, and unchanged predecessor/champion state.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 5 private validation result")],
+            "evidence": [evidence_antigravity("docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "Task 6 official lifecycle")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP459_DASHBOARD_antigravity.html",
-            "role": "Caller: reader-facing review. Effect: shows Task 5/6 progress, unstable status, zero official commands, present frozen authority file, failed fold rows, tuning prohibition, and unchanged champion state.",
+            "role": "Caller: reader-facing review. Effect: shows Task 6/6 progress, official unstable status, official root present, failed fold rows, result hashes, tuning prohibition, and unchanged champion state.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "Task 5 private validation result")],
+            "evidence": [evidence_antigravity("docs/EXP459_DASHBOARD_antigravity.html", "official root present")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: records Exp459 Task 5 private unstable authority truth, zero official invocations, label_query_count 0, null hashes, and unchanged pending candidate.",
+            "role": "Caller: governance review. Effect: records Exp459 Task 6 official unstable truth, one evaluate, one inspect, label_query_count 0, populated result hashes, and unchanged pending candidate.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_5_private_unstable_authority_frozen\"")],
+            "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_6_official_unstable_preserved\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 5 private unstable authority status, frozen predecessor link, official-zero status, and no-result truth.",
+            "role": "Caller: catalog review. Effect: registers Exp459 documents, Task 6 official unstable result, frozen predecessor link, official counts, and no-promotion truth.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_5_private_unstable_authority_frozen\"")],
+            "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"task_6_official_unstable_preserved\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: records Exp459 Task 5 private unstable authority truth without changing champion, pending candidate, routing, or promotion.",
+            "role": "Caller: champion review. Effect: records Exp459 Task 6 official unstable truth without changing champion, pending candidate, routing, or promotion.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_5_private_unstable_authority_frozen\"")],
+            "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_6_official_unstable_preserved\"")],
         },
         {
             "id": "task2_config",
@@ -495,14 +495,14 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 5 private unstable authority truth, official-root absence, non-promotion, and bounded code-map parity.",
+            "role": "Caller: governance verification. Effect: freezes the self-contained documents, Task 6 official unstable truth, official-root presence, non-promotion, and bounded code-map parity.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")],
+            "evidence": [evidence_antigravity(governance_test, "test_exp459_task6_truth_and_non_promotion_antigravity")],
         },
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 5 validation. Effect: recomputes the bounded Task 5 graph, fingerprints, source-parent rule, and HTML/JSON/lock parity.",
+            "role": "Caller: Task 6 validation. Effect: recomputes the bounded Task 6 graph, fingerprints, source-parent rule, and HTML/JSON/lock parity.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -521,8 +521,8 @@ def build_map_antigravity(
         {"from": "approved_design", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(design, "결과 파일과 대시보드")},
         {"from": "approved_design", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(design, "source-free replay")},
         {"from": "approved_design", "to": "task4_dashboard_export", "type": "governs", "evidence": evidence_antigravity(design, "원시 TRAIN 행")},
-        {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "SHIP 후에만 Task 6 approval")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 완료")},
+        {"from": "implementation_plan", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(plan, "evaluate/inspect payload equality")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 6 완료")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(plan, "exact config와 immutable dataclass 계약을 구현한다.")},
         {"from": "implementation_plan", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(plan, "FoldEvidenceAntigravity")},
         {"from": "implementation_plan", "to": "task2_blocked_folds", "type": "governs", "evidence": evidence_antigravity(plan, "def blocked_plan_antigravity(n_rows: int):")},
@@ -575,13 +575,13 @@ def build_map_antigravity(
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")},
         {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")},
         {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity")},
-        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_task5_truth_and_non_promotion_antigravity")},
-        {"from": "governance_regression", "to": "experiment_catalog", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_task5_truth_and_non_promotion_antigravity")},
-        {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_task5_truth_and_non_promotion_antigravity")},
+        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_task6_truth_and_non_promotion_antigravity")},
+        {"from": "governance_regression", "to": "experiment_catalog", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_task6_truth_and_non_promotion_antigravity")},
+        {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_exp459_task6_truth_and_non_promotion_antigravity")},
     ]
 
     graph = {
-        "schema": "exp459_task5_cli_authority_codemap_v1",
+        "schema": "exp459_task6_official_truth_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -589,7 +589,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp459_task5_cli_authority_codemap_lock_v1",
+        "schema": "exp459_task6_official_truth_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),

@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-13T14:54:00+09:00",
+  "updated_at": "2026-08-18T19:32:07+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -2027,8 +2027,8 @@
       "id": "Exp459",
       "experiment": "Exp459",
       "kind": "ecg_normal2_blocked_validation",
-      "status": "implementation_verified_awaiting_official_evaluation",
-      "implementation_status": "task_5_private_unstable_authority_frozen",
+      "status": "official_evaluation_inspected_complete_unstable_no_promotion",
+      "implementation_status": "task_6_official_unstable_preserved",
       "documents": [
         "docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html",
         "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html",
@@ -2043,7 +2043,7 @@
       "approved_design": "docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html",
       "approved_design_sha256": "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275",
       "approved_plan": "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html",
-      "approved_plan_sha256": "4e5d44e3a180e0541e75a558b64993f050e67ad4e863e97d6133c7afd5e6d0f0",
+      "approved_plan_sha256": "db1aaf8f959a55c8ee7758edb61b95e6f7bf8d9ee8ea821ca39733213692d994",
       "predecessor": {
         "experiment": "Exp458",
         "reviewed_commit": "fc530cd2b392394aa7ffbd1408bc06d5b1b7c806",
@@ -2075,24 +2075,47 @@
         "shuffle_allowed": false,
         "final_decision_rule": "all_10_fold_seed_records_must_pass_for_stable"
       },
-      "official_evaluate_started": false,
-      "official_inspect_started": false,
-      "official_evaluate_invocations": 0,
-      "official_inspect_invocations": 0,
-      "result_root_created": false,
-      "official_result": null,
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "official_evaluate_invocations": 1,
+      "official_inspect_invocations": 1,
+      "result_root_created": true,
+      "official_result": {
+        "status": "unstable",
+        "passed": false,
+        "fold_plan_rows": 5,
+        "fold_records": 10,
+        "seed_summaries": 2,
+        "failed_fold_count": 2,
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194
+          }
+        ]
+      },
       "prediction_sha256": null,
-      "evaluation_sha256": null,
-      "decision_sha256": null,
-      "artifact_map_sha256": null,
-      "dashboard_snapshot_sha256": null,
+      "evaluation_sha256": "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364",
+      "decision_sha256": "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
+      "artifact_map_sha256": "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+      "dashboard_snapshot_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
       "test_labels_opened": false,
       "label_query_count": 0,
       "routing_allowed": false,
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
-      "notes": "Task 5 completed exactly two private TRAIN qualification/evaluation runs without public CLI, official root, TEST labels, or official evaluate/inspect. Both temporary seven-leaf roots matched exactly on fold plan, 10 evidence rows, 2 seed summaries, decision, dashboard, digest, and leaf hashes. The frozen validation authority digest is f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee; observed decision is unstable because seed 20260721 fold 3 and seed 20261721 fold 4 fail period_change AUC. The official Exp459 root remains absent, all official result hashes remain null, champion and pending candidate are unchanged, and Task 6 still requires separate approval. No threshold tuning is allowed in Exp459.",
+      "notes": "Task 6 official evaluate and bare inspect each ran exactly once with exit 0 at reviewed commit 05bca7e3b03e14ddc9200e24174606bcb951827e and emitted exact-equal aggregate JSON. The official non-symlink result root has 7 leaves, exact artifact-map recomputation, and source-free authority payload equality. Official decision is unstable because seed 20260721 fold 3 and seed 20261721 fold 4 fail period_change AUC. TEST labels remain unopened, label_query_count is 0, and champion, pending candidate, routing, promotion, and operational alert eligibility remain unchanged. No threshold tuning is allowed in Exp459.",
       "frozen_validation_authority": "experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py",
       "frozen_validation_authority_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
       "private_validation": {
@@ -2122,6 +2145,60 @@
             "normal_wilson_upper": 0.013439124039399194
           }
         ]
+      },
+      "official_lifecycle": {
+        "reviewed_commit": "05bca7e3b03e14ddc9200e24174606bcb951827e",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "evaluate_pid": 26273,
+        "evaluate_elapsed_seconds": 106,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "inspect_pid": 27275,
+        "inspect_elapsed_seconds": 0,
+        "aggregate_json_equal": true,
+        "semantic_replay_equal": true,
+        "authority_payload_equal": true,
+        "passed": false,
+        "status": "unstable",
+        "label_access_count": 0,
+        "label_query_count": 0,
+        "result_root_created": true,
+        "result_root_leaf_count": 7,
+        "result_root_is_non_symlink_directory": true,
+        "artifact_map_non_map_leaf_recomputation": "exact_match",
+        "authority_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+        "evaluate_stdout_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "inspect_stdout_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "artifact_map_sha256": "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+        "dashboard_snapshot_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "decision_sha256": "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
+        "evaluation_sha256": "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364",
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194
+          }
+        ]
+      },
+      "leaf_sha256": {
+        "artifact_sha256_antigravity.json": "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+        "context_antigravity.json": "757f1af091ce7efba11d9dfb4ab6fc9ad5b53a6527a0da102033ed5a71b556be",
+        "dashboard_snapshot_antigravity.json": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "decision_antigravity.json": "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
+        "fold_evidence_antigravity.jsonl": "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364",
+        "fold_plan_antigravity.jsonl": "7e2b60c31ff493077fbe6e501f25704d5b527b3cea8496e8b265e66b71191985",
+        "seed_summary_antigravity.jsonl": "f530e4c411085f3406be896f1802357b5ce67a53b5e1a4f753ac02fdf2b061d7"
       }
     }
   ]
