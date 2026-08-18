@@ -529,7 +529,9 @@
       "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "selected_coordinate_identity_sha256": "db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048",
       "scientific_changes": [],
-      "engineering_changes": ["normalize inactive terminal eta_seconds to JSON null before publication"],
+      "engineering_changes": [
+        "normalize inactive terminal eta_seconds to JSON null before publication"
+      ],
       "backend": "cpu",
       "cpu_workers": 11,
       "official_readiness": true,
@@ -602,8 +604,18 @@
         }
       },
       "evaluation": {
-        "baseline_confusion": {"tp": 1915, "fp": 303, "fn": 2003, "tn": 191679},
-        "union_confusion": {"tp": 1930, "fp": 318, "fn": 1988, "tn": 191664},
+        "baseline_confusion": {
+          "tp": 1915,
+          "fp": 303,
+          "fn": 2003,
+          "tn": 191679
+        },
+        "union_confusion": {
+          "tp": 1930,
+          "fp": 318,
+          "fn": 1988,
+          "tn": 191664
+        },
         "candidate_count": 30,
         "candidate_tp": 15,
         "candidate_fp": 15,
@@ -615,8 +627,14 @@
         "union_f1": 0.6260136230943887,
         "micro_delta": 0.0018284861973874023,
         "macro_delta": 0.012444046553267682,
-        "micro_bootstrap_ci95": [5.373870255999115e-05, 0.003814109586073529],
-        "macro_bootstrap_ci95": [0.006535362578334826, 0.019158460161145925],
+        "micro_bootstrap_ci95": [
+          5.373870255999115e-05,
+          0.003814109586073529
+        ],
+        "macro_bootstrap_ci95": [
+          0.006535362578334826,
+          0.019158460161145925
+        ],
         "bootstrap_samples": 20000,
         "bootstrap_seed": 44120260808
       },
@@ -715,19 +733,47 @@
       "evaluation": {
         "label_query_calls": 1117,
         "label_rows": 195900,
-        "baseline_confusion": [1915, 303, 2003, 191679],
-        "control_confusion": [1915, 303, 2003, 191679],
-        "exclude_nonfinite_row_confusion": [1915, 303, 2003, 191679],
-        "leave_one_out_peer_median_confusion": [1916, 303, 2002, 191679],
+        "baseline_confusion": [
+          1915,
+          303,
+          2003,
+          191679
+        ],
+        "control_confusion": [
+          1915,
+          303,
+          2003,
+          191679
+        ],
+        "exclude_nonfinite_row_confusion": [
+          1915,
+          303,
+          2003,
+          191679
+        ],
+        "leave_one_out_peer_median_confusion": [
+          1916,
+          303,
+          2002,
+          191679
+        ],
         "peer_median_added_tp": 1,
         "peer_median_added_fp": 0,
-        "peer_median_rescued_datasets": ["MelbournePedestrian_normal_8"],
+        "peer_median_rescued_datasets": [
+          "MelbournePedestrian_normal_8"
+        ],
         "peer_median_regressed_dataset_count": 0,
         "peer_median_micro_f1": 0.6244093205149096,
         "peer_median_micro_delta": 0.00022418361790832453,
         "peer_median_macro_delta": 0.00022381378692926113,
-        "peer_median_micro_bootstrap_ci95": [0.0, 0.0007423410221952668],
-        "peer_median_macro_bootstrap_ci95": [0.0, 0.0006714413607878246],
+        "peer_median_micro_bootstrap_ci95": [
+          0.0,
+          0.0007423410221952668
+        ],
+        "peer_median_macro_bootstrap_ci95": [
+          0.0,
+          0.0006714413607878246
+        ],
         "status": "no_retrospective_improvement_signal"
       },
       "official_run_purpose": "controlled_missing_normal_train_policy_comparison",
@@ -986,8 +1032,31 @@
       "implementation_verification": {
         "functional_commit": "8f5dbec4e87e093a255d1f065de930b85b141e0c",
         "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
-        "fresh_sol_high_review": {"verdict": "ship", "critical_findings": 0, "important_findings": 0},
-        "full_regression": {"exp447_tests": 66, "exp447_runs": 2, "exp447_seconds": [75.485, 76.28], "exp447_exit_codes": [0, 0], "exp444_tests": 206, "exp445_tests": 39, "exp446_tests": 50, "predecessor_exit_codes": [0, 0, 0]},
+        "fresh_sol_high_review": {
+          "verdict": "ship",
+          "critical_findings": 0,
+          "important_findings": 0
+        },
+        "full_regression": {
+          "exp447_tests": 66,
+          "exp447_runs": 2,
+          "exp447_seconds": [
+            75.485,
+            76.28
+          ],
+          "exp447_exit_codes": [
+            0,
+            0
+          ],
+          "exp444_tests": 206,
+          "exp445_tests": 39,
+          "exp446_tests": 50,
+          "predecessor_exit_codes": [
+            0,
+            0,
+            0
+          ]
+        },
         "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
         "database_inode": 1048138,
         "database_nlink": 1,
@@ -1049,7 +1118,11 @@
         "instance_index_storage_type": "integer",
         "dataset_names_or_positions_used": false
       },
-      "commands": ["readiness", "evaluate", "inspect"],
+      "commands": [
+        "readiness",
+        "evaluate",
+        "inspect"
+      ],
       "scientific_success_criterion": null,
       "evaluation_status": "failed_immutable_no_retry_no_result_artifact",
       "scientific_winner_selected": false,
@@ -1100,20 +1173,85 @@
       "decision_sha256": null,
       "reviewed_implementation_candidate": "7815382ee8a155651286946951d30e0539bfc8ed",
       "official_reviewed_commit": "4994d8f28127e8b6d5ba8b192af495392a1c669e",
-      "verification_test_counts": {"Exp449": [213, 213], "Exp249_250": 13, "Exp444": 206, "Exp445": 39, "Exp446": 50, "Exp447": 66, "Exp448": 62},
-      "descriptor_authority": {"database_inode": 1048138, "database_nlink": 1, "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c", "exp448_population": 1117, "exp448_target_datasets": 48, "sqlite_loaded": false},
+      "verification_test_counts": {
+        "Exp449": [
+          213,
+          213
+        ],
+        "Exp249_250": 13,
+        "Exp444": 206,
+        "Exp445": 39,
+        "Exp446": 50,
+        "Exp447": 66,
+        "Exp448": 62
+      },
+      "descriptor_authority": {
+        "database_inode": 1048138,
+        "database_nlink": 1,
+        "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+        "exp448_population": 1117,
+        "exp448_target_datasets": 48,
+        "sqlite_loaded": false
+      },
       "label_access_count": 1,
       "test_labels_opened": true,
       "official_readiness_started": true,
       "official_predict_started": true,
       "official_evaluate_started": true,
       "official_inspect_started": false,
-      "official_lifecycle": {"readiness_invocations": 1, "readiness_exit_code": 0, "predict_invocations": 1, "predict_exit_code": 0, "predict_candidate_count": 96, "predict_dataset_count": 48, "predict_label_access_count": 0, "prediction_authority_validation": "independent_capture_authority_passed", "evaluate_invocations": 1, "evaluate_exit_code": 1, "evaluate_error_type": "ValueError", "evaluate_error": "frozen prediction indices differ from evidence", "inspect_invocations": 0, "label_sessions": 1, "evaluate_label_access_count": 1, "evaluate_label_query_count": 48, "evaluate_label_row_count": 72300, "staging_directory": "/Users/mac/Documents/Dataset/.exp449_residual_fn_method_qualification_evaluation_antigravity_20260812.staging_dfeedd9bf543d1e03a0667c814318413_antigravity", "staging_inode": 21764083, "staging_regular_leaf_count": 12, "staging_artifact_map_sha256": "b7c19bd9fb74c99d8d6890a77e98a5cea89d74249f7a03d8851fd54cb177de7f", "staging_evaluation_sha256": "fa1674f4a1d7fce88d0176008ac462f416dc6c737e2c1ce7424d9af42cd5fbbc", "staging_dashboard_snapshot_sha256": "f115c6c69f76a5e48d0c6723f11b0eef82a40116846f0ede2b8d8090c49cd0d1", "staging_dashboard_snapshot_status": "synthetic_complete", "staging_qualified_candidate_count": 2, "receipt_state": "stopped", "receipt_leaves": ["readiness_complete_antigravity.json", "predict_started_antigravity.json", "predict_complete_antigravity.json", "evaluate_started_antigravity.json", "stopped_antigravity.json"], "permanent_stop": true, "failure_audit_path": "/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json", "failure_audit_sha256": "bdbb09216fa1c23c63df6202b97e83867596c4da421a7f00687d70206bd4716e", "recovery_state": "stopped", "prediction_root": "exists_immutable", "evaluation_root": "absent"},
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "predict_invocations": 1,
+        "predict_exit_code": 0,
+        "predict_candidate_count": 96,
+        "predict_dataset_count": 48,
+        "predict_label_access_count": 0,
+        "prediction_authority_validation": "independent_capture_authority_passed",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "evaluate_error_type": "ValueError",
+        "evaluate_error": "frozen prediction indices differ from evidence",
+        "inspect_invocations": 0,
+        "label_sessions": 1,
+        "evaluate_label_access_count": 1,
+        "evaluate_label_query_count": 48,
+        "evaluate_label_row_count": 72300,
+        "staging_directory": "/Users/mac/Documents/Dataset/.exp449_residual_fn_method_qualification_evaluation_antigravity_20260812.staging_dfeedd9bf543d1e03a0667c814318413_antigravity",
+        "staging_inode": 21764083,
+        "staging_regular_leaf_count": 12,
+        "staging_artifact_map_sha256": "b7c19bd9fb74c99d8d6890a77e98a5cea89d74249f7a03d8851fd54cb177de7f",
+        "staging_evaluation_sha256": "fa1674f4a1d7fce88d0176008ac462f416dc6c737e2c1ce7424d9af42cd5fbbc",
+        "staging_dashboard_snapshot_sha256": "f115c6c69f76a5e48d0c6723f11b0eef82a40116846f0ede2b8d8090c49cd0d1",
+        "staging_dashboard_snapshot_status": "synthetic_complete",
+        "staging_qualified_candidate_count": 2,
+        "receipt_state": "stopped",
+        "receipt_leaves": [
+          "readiness_complete_antigravity.json",
+          "predict_started_antigravity.json",
+          "predict_complete_antigravity.json",
+          "evaluate_started_antigravity.json",
+          "stopped_antigravity.json"
+        ],
+        "permanent_stop": true,
+        "failure_audit_path": "/Users/mac/Documents/Dataset/exp449_failure_audit_antigravity.json",
+        "failure_audit_sha256": "bdbb09216fa1c23c63df6202b97e83867596c4da421a7f00687d70206bd4716e",
+        "recovery_state": "stopped",
+        "prediction_root": "exists_immutable",
+        "evaluation_root": "absent"
+      },
       "logical_cpu_count": 12,
       "cpu_workers": 11,
       "promotion_allowed": false,
       "routing_allowed": false,
-      "dashboard_presentation": {"dashboard_access": "blocked", "scope": "presentation_only_not_a_scientific_gate", "authenticated_metadata": "future_only_not_accessed", "exp448_site_source_commit": "500ccbe12b07475e51e8cdcbfa8619d9fbdefddb", "exp448_site_version": 6, "exp448_access": "custom_owner_only_one_account_no_groups"},
+      "dashboard_presentation": {
+        "dashboard_access": "blocked",
+        "scope": "presentation_only_not_a_scientific_gate",
+        "authenticated_metadata": "future_only_not_accessed",
+        "exp448_site_source_commit": "500ccbe12b07475e51e8cdcbfa8619d9fbdefddb",
+        "exp448_site_version": 6,
+        "exp448_access": "custom_owner_only_one_account_no_groups"
+      },
       "notes": "At official reviewed commit 4994d8f28127e8b6d5ba8b192af495392a1c669e, readiness once and zero-label prediction once succeeded (96 candidates, 48 datasets, aggregate a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d). Independent capture.authority validation passed. Evaluation opened exactly one TEST-label session (48 queries, 72,300 rows) and retained immutable local staging evidence (inode 21764083, 12 regular leaves, synthetic_complete dashboard snapshot, two qualified candidates) before prepublication replay failed with ValueError: frozen prediction indices differ from evidence. Its terminal stopped receipt and create-only audit make the outcome immutable. Evaluation root is absent; inspect, retry, dashboard access/publication, champion change, pending-candidate change, promotion, and routing are prohibited."
     },
     {
@@ -1229,9 +1367,32 @@
       "target_dataset_count": 48,
       "target_test_rows": 72300,
       "reused_dataset_count": 1069,
-      "baseline_confusion": {"tp": 1930, "fp": 314, "fn": 1988, "tn": 191668, "f1": 0.6264199935},
-      "rdst": {"class": "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform", "source_sha256": "900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2", "max_shapelets": 1024, "seeds": [20260721, 20261721], "n_jobs": 1, "labels": "y=None normal TRAIN only"},
-      "local_gap": {"folds": 5, "neighbors": 3, "reference_limit": 1000, "alpha": 0.005, "cpu_worker_rule": "max(1, logical_cpus - 1)", "backend_gate": "LocalGap-only; finite, identical candidates, normalized error <= 1e-5, speedup >= 1.1"},
+      "baseline_confusion": {
+        "tp": 1930,
+        "fp": 314,
+        "fn": 1988,
+        "tn": 191668,
+        "f1": 0.6264199935
+      },
+      "rdst": {
+        "class": "aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform",
+        "source_sha256": "900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2",
+        "max_shapelets": 1024,
+        "seeds": [
+          20260721,
+          20261721
+        ],
+        "n_jobs": 1,
+        "labels": "y=None normal TRAIN only"
+      },
+      "local_gap": {
+        "folds": 5,
+        "neighbors": 3,
+        "reference_limit": 1000,
+        "alpha": 0.005,
+        "cpu_worker_rule": "max(1, logical_cpus - 1)",
+        "backend_gate": "LocalGap-only; finite, identical candidates, normalized error <= 1e-5, speedup >= 1.1"
+      },
       "prediction_sha256": null,
       "evaluation_sha256": null,
       "label_access_count": 0,
@@ -1258,7 +1419,11 @@
       ],
       "reviewed_design_commit": "b9ff4bf6b76e37f00146f3080edb9c58068d43ee",
       "reviewed_design_sha256": "59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075",
-      "document_sha256": {"preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2", "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754", "implementation_report": "ddc38f6c597ea1a819785ce0c426661480adef46ee9d25475ebae99a9bf7b7e2"},
+      "document_sha256": {
+        "preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2",
+        "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754",
+        "implementation_report": "ddc38f6c597ea1a819785ce0c426661480adef46ee9d25475ebae99a9bf7b7e2"
+      },
       "run_identity": "exp452-exp449-index-order-repair-antigravity-20260813",
       "artifact_schema": "exp452",
       "predecessor_prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
@@ -1277,15 +1442,45 @@
       "official_readiness_started": true,
       "official_evaluate_started": false,
       "official_inspect_started": false,
-      "official_lifecycle": {"readiness_invocations": 1, "evaluate_invocations": 0, "inspect_invocations": 0, "label_sessions": 0, "label_query_count": 0, "label_row_count": 0, "readiness_exit_code": 1, "evaluate_exit_code": null, "inspect_exit_code": null},
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "evaluate_invocations": 0,
+        "inspect_invocations": 0,
+        "label_sessions": 0,
+        "label_query_count": 0,
+        "label_row_count": 0,
+        "readiness_exit_code": 1,
+        "evaluate_exit_code": null,
+        "inspect_exit_code": null
+      },
       "scientific_winner_selected": false,
       "promotion_allowed": false,
       "routing_allowed": false,
       "pending_candidate_changed": false,
       "implementation_candidate_commit": "538bb932b61f42e7c56bd4e2c7dbdf9c24b4fca3",
       "official_reviewed_commit": "96e42f78659d3b892f8c137dfa8f74f718982001",
-      "implementation_test_counts": {"exp452_discovery_runs": [81, 81], "focused_cli_readiness_replay_runs": [15, 15], "exp449_corresponding": 32},
-      "official_failure": {"phase": "readiness", "error": "ValueError: Exp452 requires the exact fixed Python and NumPy runtime", "observed_python_version": "3.14.6", "observed_numpy_version": "2.4.6", "required_numpy_version": "2.3.5", "stopped_receipt_sha256": "8f7238ea20499a4136ffa1aaa730c9d94e35670b45eb780ccbe9d5594aff97e2", "failure_audit_sha256": "e55985a66d18561a403c4927bfcd45a1cd20fe5af74841b96997e9c6e59a5b86", "evaluation_root_created": false, "retry_permitted": false},
+      "implementation_test_counts": {
+        "exp452_discovery_runs": [
+          81,
+          81
+        ],
+        "focused_cli_readiness_replay_runs": [
+          15,
+          15
+        ],
+        "exp449_corresponding": 32
+      },
+      "official_failure": {
+        "phase": "readiness",
+        "error": "ValueError: Exp452 requires the exact fixed Python and NumPy runtime",
+        "observed_python_version": "3.14.6",
+        "observed_numpy_version": "2.4.6",
+        "required_numpy_version": "2.3.5",
+        "stopped_receipt_sha256": "8f7238ea20499a4136ffa1aaa730c9d94e35670b45eb780ccbe9d5594aff97e2",
+        "failure_audit_sha256": "e55985a66d18561a403c4927bfcd45a1cd20fe5af74841b96997e9c6e59a5b86",
+        "evaluation_root_created": false,
+        "retry_permitted": false
+      },
       "notes": "Readiness ran once for the user-authorized reviewed commit and stopped permanently before label access because the fixed interpreter exposed NumPy 2.4.6 instead of frozen 2.3.5. Exp449 artifacts remain immutable predecessor evidence and its qualified-2 staging result cannot guide Exp452. Champion and pending candidate are unchanged; evaluate and inspect are forbidden and this lifecycle cannot retry."
     },
     {
@@ -1293,15 +1488,30 @@
       "experiment": "Exp453",
       "kind": "exp452_fixed_interpreter_binding_repair",
       "status": "official_readiness_passed_evaluation_failed_immutable_no_retry",
-      "documents": ["docs/superpowers/specs/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity-design.html", "docs/superpowers/plans/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity.html", "docs/EXP453_PREREGISTRATION_antigravity_KO.html", "docs/EXP453_RUNBOOK_antigravity_KO.html", "docs/EXP453_IMPLEMENTATION_REPORT_antigravity.html"],
+      "documents": [
+        "docs/superpowers/specs/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-13-exp453-fixed-interpreter-binding-repair-antigravity.html",
+        "docs/EXP453_PREREGISTRATION_antigravity_KO.html",
+        "docs/EXP453_RUNBOOK_antigravity_KO.html",
+        "docs/EXP453_IMPLEMENTATION_REPORT_antigravity.html"
+      ],
       "reviewed_design_commit": "bcc42496d027389954f6d26760f13211ac6903d0",
       "reviewed_design_sha256": "8f76c032c574dc17965a190f547dd51e41743f54cd13d5dbb8e74cdc527bc97a",
-      "document_sha256": {"preregistration": "aef633ec4a34ad71f1ef9d936e89d4cd5c06018d625aa6632276e9cf4b66f879", "runbook": "fcb5f796f3ed95ab5a2e05de1ac43e30c34046a01080983334a507f29301fe4a", "implementation_report": "72a3ebefa1d9259e8ffd3e71069a8f8ea90b80efdf8967011617b731ce21ea32"},
+      "document_sha256": {
+        "preregistration": "aef633ec4a34ad71f1ef9d936e89d4cd5c06018d625aa6632276e9cf4b66f879",
+        "runbook": "fcb5f796f3ed95ab5a2e05de1ac43e30c34046a01080983334a507f29301fe4a",
+        "implementation_report": "72a3ebefa1d9259e8ffd3e71069a8f8ea90b80efdf8967011617b731ce21ea32"
+      },
       "run_identity": "exp453-exp452-fixed-interpreter-binding-repair-antigravity-20260813",
       "artifact_schema": "exp453",
       "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
       "fixed_prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
-      "runtime_versions": {"python": "3.14.6", "numpy": "2.3.5", "aeon": "1.4.0", "scikit_learn": "1.7.2"},
+      "runtime_versions": {
+        "python": "3.14.6",
+        "numpy": "2.3.5",
+        "aeon": "1.4.0",
+        "scikit_learn": "1.7.2"
+      },
       "predecessor_prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
       "target_dataset_count": 48,
       "target_prediction_count": 96,
@@ -1329,7 +1539,15 @@
       "promotion_allowed": false,
       "routing_allowed": false,
       "pending_candidate_changed": false,
-      "official_failure": {"reviewed_commit": "53c4cf16ba981b4177735fdf77081cf025fc0508", "phase": "evaluate", "error": "ValueError: Exp448 target identity differs", "failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276", "evaluation_root_created": false, "inspect_permitted": false, "retry_permitted": false},
+      "official_failure": {
+        "reviewed_commit": "53c4cf16ba981b4177735fdf77081cf025fc0508",
+        "phase": "evaluate",
+        "error": "ValueError: Exp448 target identity differs",
+        "failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276",
+        "evaluation_root_created": false,
+        "inspect_permitted": false,
+        "retry_permitted": false
+      },
       "notes": "Readiness ran once and passed. Evaluate ran once and stopped before label access because the real Exp449 authority classes did not match copied Exp453 classes. No scientific result exists; inspect and retry are forbidden. Routing, champion, pending candidate, and promotion are unchanged."
     },
     {
@@ -1337,22 +1555,40 @@
       "experiment": "Exp454",
       "kind": "exp453_exp449_authority_boundary_repair",
       "status": "official_evaluation_complete_review_reinspection_failed_stopped_immutable",
-      "documents": ["docs/superpowers/specs/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity-design.html", "docs/superpowers/plans/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity.html", "docs/EXP454_PREREGISTRATION_antigravity_KO.html", "docs/EXP454_RUNBOOK_antigravity_KO.html", "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html"],
+      "documents": [
+        "docs/superpowers/specs/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-14-exp454-exp449-authority-boundary-repair-antigravity.html",
+        "docs/EXP454_PREREGISTRATION_antigravity_KO.html",
+        "docs/EXP454_RUNBOOK_antigravity_KO.html",
+        "docs/EXP454_IMPLEMENTATION_REPORT_antigravity.html"
+      ],
       "reviewed_design_commit": "2a8486c42b385f4e589c7062a1c16f4be4372f4f",
       "reviewed_design_sha256": "b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f",
-      "document_sha256": {"preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7", "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081", "implementation_report": "6976a2e5966f1489f4ac13fa2278b8b9340ea18c6b14abc15df6b78373a547de"},
+      "document_sha256": {
+        "preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7",
+        "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081",
+        "implementation_report": "6976a2e5966f1489f4ac13fa2278b8b9340ea18c6b14abc15df6b78373a547de"
+      },
       "official_reviewed_implementation_report_sha256": "9c85fd7b3a8fc648e6f169f0e96d58f1680f91e1f7ddb35660c543ecf30aaa10",
       "run_identity": "exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814",
       "artifact_schema": "exp454",
       "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
       "fixed_prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
-      "runtime_versions": {"python": "3.14.6", "numpy": "2.3.5", "aeon": "1.4.0", "scikit_learn": "1.7.2"},
+      "runtime_versions": {
+        "python": "3.14.6",
+        "numpy": "2.3.5",
+        "aeon": "1.4.0",
+        "scikit_learn": "1.7.2"
+      },
       "predecessor_prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
       "predecessor_failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276",
       "target_dataset_count": 48,
       "target_prediction_count": 96,
       "target_family_method_pair_count": 16,
-      "seeds": [20260721, 20261721],
+      "seeds": [
+        20260721,
+        20261721
+      ],
       "alpha": 0.005,
       "prediction_sha256": null,
       "result_sha256": "748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65",
@@ -1372,14 +1608,20 @@
       "official_evaluate_invocations": 1,
       "official_evaluate_exit_code": 0,
       "official_inspect_invocations": 2,
-      "official_inspect_exit_codes": [0, 1],
+      "official_inspect_exit_codes": [
+        0,
+        1
+      ],
       "official_inspect_successes": 1,
       "official_inspect_failures": 1,
       "label_sessions": 1,
       "label_queries": 48,
       "label_rows": 72300,
       "qualified_count": 2,
-      "qualified_candidates": ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"],
+      "qualified_candidates": [
+        "ECG5000:hydra_local_gap",
+        "ChlorineConcentration:multirocket_local_gap"
+      ],
       "routing_research_eligible": true,
       "permanent_stop": true,
       "stopped_receipt_sha256": "b6bab58bd99c8857b5476d578c4f8cf4719569b6e58e99cd82bd80628ebb3d3d",
@@ -1397,11 +1639,24 @@
       "kind": "conservative_label_free_routing",
       "status": "official_evaluation_failed_immutable_no_retry",
       "implementation_status": "verified_implementation_official_evaluation_failed",
-      "documents": ["docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html", "docs/superpowers/plans/2026-08-17-exp455-conservative-label-free-routing-antigravity.html", "docs/EXP455_PREREGISTRATION_antigravity_KO.html", "docs/EXP455_RUNBOOK_antigravity_KO.html", "docs/EXP455_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP455_DASHBOARD_antigravity.html"],
+      "documents": [
+        "docs/superpowers/specs/2026-08-17-exp455-conservative-label-free-routing-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-17-exp455-conservative-label-free-routing-antigravity.html",
+        "docs/EXP455_PREREGISTRATION_antigravity_KO.html",
+        "docs/EXP455_RUNBOOK_antigravity_KO.html",
+        "docs/EXP455_IMPLEMENTATION_REPORT_antigravity.html",
+        "docs/EXP455_DASHBOARD_antigravity.html"
+      ],
       "run_identity": "exp455-exp454-conservative-label-free-routing-antigravity-20260817",
       "artifact_root": "/Users/mac/Documents/Dataset/exp455_exp454_conservative_label_free_routing_antigravity_20260817",
-      "qualified_candidates": ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"],
-      "target_family_counts": {"ECG5000": 5, "ChlorineConcentration": 3},
+      "qualified_candidates": [
+        "ECG5000:hydra_local_gap",
+        "ChlorineConcentration:multirocket_local_gap"
+      ],
+      "target_family_counts": {
+        "ECG5000": 5,
+        "ChlorineConcentration": 3
+      },
       "target_dataset_count": 8,
       "baseline_dataset_count": 40,
       "prediction_sha256": null,
@@ -1413,8 +1668,19 @@
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
-      "independent_reviews": {"terra_high": "clean", "agy_gemini_3_7_flash_high": "clean"},
-      "official_lifecycle": {"reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613", "evaluate_invocations": 1, "evaluate_exit_code": 1, "evaluate_error_type": "ValueError", "evaluate_error": "features must match authority targets in order", "inspect_invocations": 0, "label_access_count": 0},
+      "independent_reviews": {
+        "terra_high": "clean",
+        "agy_gemini_3_7_flash_high": "clean"
+      },
+      "official_lifecycle": {
+        "reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "evaluate_error_type": "ValueError",
+        "evaluate_error": "features must match authority targets in order",
+        "inspect_invocations": 0,
+        "label_access_count": 0
+      },
       "notes": "The one approved official evaluate failed before aggregation because the approved feature order and frozen authority target order differed. No official result root or performance metrics exist; inspect was not run. Exp455 is immutable and must not be retried. Routing and promotion stay disabled."
     },
     {
@@ -1423,11 +1689,24 @@
       "kind": "exp455_dataset_key_order_repair",
       "status": "official_evaluation_inspected_complete_not_qualified",
       "implementation_status": "task_5_official_evaluation_and_inspection_complete",
-      "documents": ["docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html", "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html", "docs/EXP456_PREREGISTRATION_antigravity_KO.html", "docs/EXP456_RUNBOOK_antigravity_KO.html", "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP456_DASHBOARD_antigravity.html"],
+      "documents": [
+        "docs/superpowers/specs/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-17-exp456-exp455-dataset-key-order-repair-antigravity.html",
+        "docs/EXP456_PREREGISTRATION_antigravity_KO.html",
+        "docs/EXP456_RUNBOOK_antigravity_KO.html",
+        "docs/EXP456_IMPLEMENTATION_REPORT_antigravity.html",
+        "docs/EXP456_DASHBOARD_antigravity.html"
+      ],
       "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
       "artifact_root": "/Users/mac/Documents/Dataset/exp456_exp455_dataset_key_order_repair_antigravity_20260817",
-      "qualified_candidates": ["ECG5000:hydra_local_gap", "ChlorineConcentration:multirocket_local_gap"],
-      "target_family_counts": {"ECG5000": 5, "ChlorineConcentration": 3},
+      "qualified_candidates": [
+        "ECG5000:hydra_local_gap",
+        "ChlorineConcentration:multirocket_local_gap"
+      ],
+      "target_family_counts": {
+        "ECG5000": 5,
+        "ChlorineConcentration": 3
+      },
       "target_dataset_count": 8,
       "baseline_dataset_count": 40,
       "prediction_sha256": null,
@@ -1444,9 +1723,53 @@
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
-      "official_lifecycle": {"reviewed_commit": "a45ff019e0736bbf895bb698b8eccfcbc69cd190", "evaluate_invocations": 1, "evaluate_exit_code": 0, "inspect_invocations": 1, "inspect_exit_code": 0, "aggregate_json_equal": true, "completed_folds": 8, "passed": false, "status": "routing_candidate_not_qualified_for_external_validation", "label_access_count": 0, "label_query_count": 0, "result_root_created": true, "result_root_leaf_count": 8, "result_root_is_non_symlink_directory": true, "artifact_map_non_map_leaf_recomputation": "exact_match"},
-      "comparisons": [{"name": "always_baseline", "fn": 837, "fp": 66, "f1": 0.5742574257425742}, {"name": "family_wide_local_gap", "fn": 835, "fp": 63, "f1": 0.5764150943396227}, {"name": "oracle_per_dataset", "fn": 828, "fp": 64, "f1": 0.5808270676691729}, {"name": "lodo_router", "fn": 843, "fp": 65, "f1": 0.5704824976348155}],
-      "family_fn_delta": {"ECG5000": 6, "ChlorineConcentration": 0},
+      "official_lifecycle": {
+        "reviewed_commit": "a45ff019e0736bbf895bb698b8eccfcbc69cd190",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "aggregate_json_equal": true,
+        "completed_folds": 8,
+        "passed": false,
+        "status": "routing_candidate_not_qualified_for_external_validation",
+        "label_access_count": 0,
+        "label_query_count": 0,
+        "result_root_created": true,
+        "result_root_leaf_count": 8,
+        "result_root_is_non_symlink_directory": true,
+        "artifact_map_non_map_leaf_recomputation": "exact_match"
+      },
+      "comparisons": [
+        {
+          "name": "always_baseline",
+          "fn": 837,
+          "fp": 66,
+          "f1": 0.5742574257425742
+        },
+        {
+          "name": "family_wide_local_gap",
+          "fn": 835,
+          "fp": 63,
+          "f1": 0.5764150943396227
+        },
+        {
+          "name": "oracle_per_dataset",
+          "fn": 828,
+          "fp": 64,
+          "f1": 0.5808270676691729
+        },
+        {
+          "name": "lodo_router",
+          "fn": 843,
+          "fp": 65,
+          "f1": 0.5704824976348155
+        }
+      ],
+      "family_fn_delta": {
+        "ECG5000": 6,
+        "ChlorineConcentration": 0
+      },
       "notes": "Official evaluate and then inspect each ran exactly once with exit 0 at reviewed commit a45ff019e0736bbf895bb698b8eccfcbc69cd190 and emitted the same aggregate JSON. The immutable 8-leaf non-symlink result root has artifact-map recomputation exact-match evidence. family-wide methods slightly improve FN/FP/F1 and oracle shows theoretical room, but the learned LODO router is worse than baseline by FN +6 and lower F1. Status is routing_candidate_not_qualified_for_external_validation; routing, champion, pending candidate, and promotion remain unchanged."
     },
     {
@@ -1455,11 +1778,46 @@
       "kind": "ecg_train_synthetic_confidence_routing",
       "status": "stopped_before_official_evaluation_train_gate_failed",
       "implementation_status": "task_5_candidate_verification_complete",
-      "documents": ["docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html", "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html", "docs/EXP457_PREREGISTRATION_antigravity_KO.html", "docs/EXP457_RUNBOOK_antigravity_KO.html", "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP457_DASHBOARD_antigravity.html"],
+      "documents": [
+        "docs/superpowers/specs/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-18-exp457-ecg-train-synthetic-confidence-routing-antigravity.html",
+        "docs/EXP457_PREREGISTRATION_antigravity_KO.html",
+        "docs/EXP457_RUNBOOK_antigravity_KO.html",
+        "docs/EXP457_IMPLEMENTATION_REPORT_antigravity.html",
+        "docs/EXP457_DASHBOARD_antigravity.html"
+      ],
       "run_identity": "exp457-ecg-train-synthetic-confidence-routing-antigravity-20260818",
       "artifact_root": "/Users/mac/Documents/Dataset/exp457_ecg_train_synthetic_confidence_routing_antigravity_20260818",
       "approved_design_sha256": "3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20",
-      "scientific_contract": {"target_family": "ECG5000", "candidate": "hydra_local_gap", "chlorine_route": "multirocket_local_gap_for_all_three_datasets", "hydra_seeds": [20260721, 20261721], "folds": 5, "alpha": 0.005, "knn_k": 3, "kernels": 8, "groups": 64, "synthetic_primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "normal_wilson_upper_max": 0.05, "pooled_sensitivity_min": 0.70, "per_type_sensitivity_min": 0.50, "finite_required": true, "structure_gate": "added_count > removed_count", "final_fn_max": 834, "final_fp_max": 66, "final_f1_strictly_above": 0.5764150943396227, "test_metrics_may_inform_routing": false},
+      "scientific_contract": {
+        "target_family": "ECG5000",
+        "candidate": "hydra_local_gap",
+        "chlorine_route": "multirocket_local_gap_for_all_three_datasets",
+        "hydra_seeds": [
+          20260721,
+          20261721
+        ],
+        "folds": 5,
+        "alpha": 0.005,
+        "knn_k": 3,
+        "kernels": 8,
+        "groups": 64,
+        "synthetic_primary_types": [
+          "level_shift",
+          "gradual_drift",
+          "amplitude_scaling",
+          "period_change"
+        ],
+        "normal_wilson_upper_max": 0.05,
+        "pooled_sensitivity_min": 0.7,
+        "per_type_sensitivity_min": 0.5,
+        "finite_required": true,
+        "structure_gate": "added_count > removed_count",
+        "final_fn_max": 834,
+        "final_fp_max": 66,
+        "final_f1_strictly_above": 0.5764150943396227,
+        "test_metrics_may_inform_routing": false
+      },
       "official_evaluate_started": false,
       "official_inspect_started": false,
       "official_evaluate_invocations": 0,
@@ -1485,18 +1843,67 @@
       "kind": "ecg_normal2_rank_confidence_routing",
       "status": "official_evaluation_inspected_complete_qualified_for_external_validation",
       "implementation_status": "task_6_official_evaluation_and_inspection_complete",
-      "documents": ["docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html", "docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html", "docs/EXP458_PREREGISTRATION_antigravity.html", "docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP458_DASHBOARD_antigravity.html"],
+      "documents": [
+        "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html",
+        "docs/EXP458_PREREGISTRATION_antigravity.html",
+        "docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html",
+        "docs/EXP458_DASHBOARD_antigravity.html"
+      ],
       "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
       "artifact_root": "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
       "approved_design": "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
       "approved_design_sha256": "52abe997c0e14badc2c886b888e3b2b2074cf002216891f173ab3b1dd6d7ea5d",
-      "scientific_contract": {"target_dataset": "ECG5000_normal_2", "hydra_seeds": [20260721, 20261721], "folds": 5, "primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "per_type_auc_min": 0.85, "pooled_auc_min": 0.90, "normal_wilson_upper_max": 0.05, "structure_gate": "added_count > removed_count", "projected_result": {"tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}, "final_fn_max": 834, "final_fp_max": 66, "final_f1_strictly_above": 0.5764150943396227, "test_metrics_may_inform_routing": false, "runtime_contract": {"executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python", "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314", "python_version": "3.14.6", "numpy_version": "2.3.5", "aeon_version": "1.4.0"}},
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "hydra_seeds": [
+          20260721,
+          20261721
+        ],
+        "folds": 5,
+        "primary_types": [
+          "level_shift",
+          "gradual_drift",
+          "amplitude_scaling",
+          "period_change"
+        ],
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "structure_gate": "added_count > removed_count",
+        "projected_result": {
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        },
+        "final_fn_max": 834,
+        "final_fp_max": 66,
+        "final_f1_strictly_above": 0.5764150943396227,
+        "test_metrics_may_inform_routing": false,
+        "runtime_contract": {
+          "executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+          "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+          "python_version": "3.14.6",
+          "numpy_version": "2.3.5",
+          "aeon_version": "1.4.0"
+        }
+      },
       "official_evaluate_started": true,
       "official_inspect_started": true,
       "official_evaluate_invocations": 1,
       "official_inspect_invocations": 1,
       "result_root_created": true,
-      "official_result": {"status": "routing_candidate_qualified_for_external_validation", "passed": true, "tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311},
+      "official_result": {
+        "status": "routing_candidate_qualified_for_external_validation",
+        "passed": true,
+        "tp": 617,
+        "fp": 66,
+        "fn": 829,
+        "tn": 70788,
+        "f1": 0.5796148426491311
+      },
       "prediction_sha256": null,
       "evaluation_sha256": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
       "decision_sha256": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
@@ -1538,10 +1945,78 @@
         ],
         "official_hashes_remain_null": false
       },
-      "official_lifecycle": {"reviewed_commit": "2c836e371993b865b87d1b0b96595d0befd6ee3d", "evaluate_invocations": 1, "evaluate_exit_code": 0, "inspect_invocations": 1, "inspect_exit_code": 0, "aggregate_json_equal": true, "semantic_replay_equal": true, "passed": true, "status": "routing_candidate_qualified_for_external_validation", "label_access_count": 0, "label_query_count": 0, "result_root_created": true, "result_root_leaf_count": 9, "result_root_is_non_symlink_directory": true, "artifact_map_non_map_leaf_recomputation": "exact_match"},
-      "comparisons": [{"name": "always_baseline", "tp": 609, "fp": 66, "fn": 837, "tn": 70788, "f1": 0.5742574257425742}, {"name": "family_wide_local_gap", "tp": 611, "fp": 63, "fn": 835, "tn": 70791, "f1": 0.5764150943396227}, {"name": "oracle_per_dataset", "tp": 618, "fp": 64, "fn": 828, "tn": 70790, "f1": 0.5808270676691729}, {"name": "normal2_rank_router", "tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}],
-      "effective_routes": {"ChlorineConcentration_normal_1": "candidate", "ChlorineConcentration_normal_2": "candidate", "ChlorineConcentration_normal_3": "candidate", "ECG5000_normal_1": "baseline", "ECG5000_normal_2": "candidate", "ECG5000_normal_3": "baseline", "ECG5000_normal_4": "baseline", "ECG5000_normal_5": "baseline"},
-      "leaf_sha256": {"artifact_sha256_antigravity.json": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9", "comparison_metrics_antigravity.json": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230", "context_antigravity.json": "b08051a5742479d6062367acd437683342d76e69a50faf8f7324a34b725c5f1d", "dashboard_snapshot_antigravity.json": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1", "decision_antigravity.json": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0", "family_metrics_antigravity.json": "f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6", "features_antigravity.jsonl": "bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5", "route_decisions_antigravity.jsonl": "d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed", "train_qualification_antigravity.jsonl": "a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4"},
+      "official_lifecycle": {
+        "reviewed_commit": "2c836e371993b865b87d1b0b96595d0befd6ee3d",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "aggregate_json_equal": true,
+        "semantic_replay_equal": true,
+        "passed": true,
+        "status": "routing_candidate_qualified_for_external_validation",
+        "label_access_count": 0,
+        "label_query_count": 0,
+        "result_root_created": true,
+        "result_root_leaf_count": 9,
+        "result_root_is_non_symlink_directory": true,
+        "artifact_map_non_map_leaf_recomputation": "exact_match"
+      },
+      "comparisons": [
+        {
+          "name": "always_baseline",
+          "tp": 609,
+          "fp": 66,
+          "fn": 837,
+          "tn": 70788,
+          "f1": 0.5742574257425742
+        },
+        {
+          "name": "family_wide_local_gap",
+          "tp": 611,
+          "fp": 63,
+          "fn": 835,
+          "tn": 70791,
+          "f1": 0.5764150943396227
+        },
+        {
+          "name": "oracle_per_dataset",
+          "tp": 618,
+          "fp": 64,
+          "fn": 828,
+          "tn": 70790,
+          "f1": 0.5808270676691729
+        },
+        {
+          "name": "normal2_rank_router",
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        }
+      ],
+      "effective_routes": {
+        "ChlorineConcentration_normal_1": "candidate",
+        "ChlorineConcentration_normal_2": "candidate",
+        "ChlorineConcentration_normal_3": "candidate",
+        "ECG5000_normal_1": "baseline",
+        "ECG5000_normal_2": "candidate",
+        "ECG5000_normal_3": "baseline",
+        "ECG5000_normal_4": "baseline",
+        "ECG5000_normal_5": "baseline"
+      },
+      "leaf_sha256": {
+        "artifact_sha256_antigravity.json": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9",
+        "comparison_metrics_antigravity.json": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
+        "context_antigravity.json": "b08051a5742479d6062367acd437683342d76e69a50faf8f7324a34b725c5f1d",
+        "dashboard_snapshot_antigravity.json": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1",
+        "decision_antigravity.json": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
+        "family_metrics_antigravity.json": "f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6",
+        "features_antigravity.jsonl": "bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5",
+        "route_decisions_antigravity.jsonl": "d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed",
+        "train_qualification_antigravity.jsonl": "a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4"
+      },
       "routing_allowed": false,
       "promotion_allowed": false,
       "pending_candidate_changed": false,
@@ -1552,18 +2027,54 @@
       "id": "Exp459",
       "experiment": "Exp459",
       "kind": "ecg_normal2_blocked_validation",
-      "status": "planned_not_started",
-      "implementation_status": "task_4_evaluation_artifacts_replay_dashboard_complete",
-      "documents": ["docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html", "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html", "docs/EXP459_PREREGISTRATION_antigravity.html", "docs/EXP459_RUNBOOK_antigravity.html", "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP459_DASHBOARD_antigravity.html"],
+      "status": "implementation_verified_awaiting_official_evaluation",
+      "implementation_status": "task_5_private_unstable_authority_frozen",
+      "documents": [
+        "docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html",
+        "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html",
+        "docs/EXP459_PREREGISTRATION_antigravity.html",
+        "docs/EXP459_RUNBOOK_antigravity.html",
+        "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html",
+        "docs/EXP459_DASHBOARD_antigravity.html"
+      ],
       "run_identity": "exp459-ecg-normal2-blocked-validation-antigravity-20260818",
       "run_root": "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818",
       "package": "experiments/exp459_ecg_normal2_blocked_validation_antigravity",
       "approved_design": "docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html",
       "approved_design_sha256": "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275",
       "approved_plan": "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html",
-      "approved_plan_sha256": "ec5e1cd933424ba7776df5b6cf766e8a765608fb8e3f72436a5bc78c1124b229",
-      "predecessor": {"experiment": "Exp458", "reviewed_commit": "fc530cd2b392394aa7ffbd1408bc06d5b1b7c806", "artifact_map_sha256": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9"},
-      "scientific_contract": {"target_dataset": "ECG5000_normal_2", "hydra_seeds": [20260721, 20261721], "fold_sizes": [283, 283, 283, 282, 282], "fold_count": 5, "primary_types": ["level_shift", "gradual_drift", "amplitude_scaling", "period_change"], "per_type_auc_min": 0.85, "pooled_auc_min": 0.90, "normal_wilson_upper_max": 0.05, "shuffle_allowed": false, "final_decision_rule": "all_10_fold_seed_records_must_pass_for_stable"},
+      "approved_plan_sha256": "a915dbb16bbe8e8609b56c44e6769f140a080e43be11aaf3bb17e5ea456b5381",
+      "predecessor": {
+        "experiment": "Exp458",
+        "reviewed_commit": "fc530cd2b392394aa7ffbd1408bc06d5b1b7c806",
+        "artifact_map_sha256": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9"
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "hydra_seeds": [
+          20260721,
+          20261721
+        ],
+        "fold_sizes": [
+          283,
+          283,
+          283,
+          282,
+          282
+        ],
+        "fold_count": 5,
+        "primary_types": [
+          "level_shift",
+          "gradual_drift",
+          "amplitude_scaling",
+          "period_change"
+        ],
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "shuffle_allowed": false,
+        "final_decision_rule": "all_10_fold_seed_records_must_pass_for_stable"
+      },
       "official_evaluate_started": false,
       "official_inspect_started": false,
       "official_evaluate_invocations": 0,
@@ -1581,7 +2092,37 @@
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
-      "notes": "Task 4 added stable/unstable evaluation, canonical seven-leaf publication, authority-gated source-free replay, aggregate dashboard export, focused Task4 tests, and an expanded bounded code map. Task 5 sequence now explicitly requires private qualification/evaluation twice without public CLI, exact canonical equality, then version-controlled frozen_validation_authority_antigravity.py before CLI evaluate/inspect require it. Official evaluate and inspect remain at zero, all result hashes null, the official Exp459 root absent, and champion plus pending candidate unchanged."
+      "notes": "Task 5 completed exactly two private TRAIN qualification/evaluation runs without public CLI, official root, TEST labels, or official evaluate/inspect. Both temporary seven-leaf roots matched exactly on fold plan, 10 evidence rows, 2 seed summaries, decision, dashboard, digest, and leaf hashes. The frozen validation authority digest is f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee; observed decision is unstable because seed 20260721 fold 3 and seed 20261721 fold 4 fail period_change AUC. The official Exp459 root remains absent, all official result hashes remain null, champion and pending candidate are unchanged, and Task 6 still requires separate approval. No threshold tuning is allowed in Exp459.",
+      "frozen_validation_authority": "experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py",
+      "frozen_validation_authority_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+      "private_validation": {
+        "run_count": 2,
+        "status": "unstable",
+        "passed": false,
+        "canonical_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+        "fold_plan_rows": 5,
+        "fold_evidence_rows": 10,
+        "seed_summary_rows": 2,
+        "leaf_count": 7,
+        "temporary_roots_cleaned": true,
+        "official_root_absent": true,
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194
+          }
+        ]
+      }
     }
   ]
 }

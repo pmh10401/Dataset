@@ -1,56 +1,19 @@
 <!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Exp459 구현 보고서</title>
-  <style>
-    body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
-    table{width:100%;border-collapse:collapse;margin:1rem 0}
-    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
-    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
-  </style>
-</head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 구현 보고서</title><style>body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}</style></head>
 <body><main>
   <h1>Exp459 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 4의 stable/unstable 판단, exact 7-leaf 결과 publication, trusted authority-gated source-free replay, dashboard payload까지 완료했다. 상태는 여전히 <code>planned_not_started</code>이며 실제 frozen validation authority 값은 아직 없다.</p>
-
-  <h2>Task 1–4에서 준비한 것</h2>
+  <p><strong>현재 단계:</strong> Task 5 private validation result is <code>unstable</code>. CLI, launcher, version-controlled frozen authority, private evidence, docs, ledgers, and map are prepared for final verification. Official evaluate/inspect remain 0.</p>
+  <h2>Task 5 private validation result</h2>
   <table>
-    <tr><th>항목</th><th>설명</th></tr>
-    <tr><td>Exp458 선행 정리</td><td>Task 6 이후 stale truth가 된 Exp458 CLI 테스트 2개를 private synthetic root 기준으로 고쳤고, Exp458 전체 62개 테스트를 다시 녹색으로 맞췄다.</td></tr>
-    <tr><td>Exp459 문서 4개</td><td>사전등록, runbook, 구현 보고서, 대시보드를 self-contained HTML로 추가했다.</td></tr>
-    <tr><td>세 ledger</td><td>Exp459를 <code>planned_not_started</code>로 등록하고 공식 실행 수 0, label query 0, 결과 hash null을 고정했다.</td></tr>
-    <tr><td>Task 2 config</td><td><code>config_antigravity.py</code>에 실험 정체성, predecessor, runtime, seed, fold 크기와 함께 Exp458의 승인 후보 <code>hydra_local_gap</code>, <code>alpha=0.005</code>, <code>knn=3</code>, <code>kernels=8</code>, <code>groups=64</code>를 exact freeze했다.</td></tr>
-    <tr><td>Task 2 contracts</td><td><code>contracts_antigravity.py</code>에 immutable dataclass, bytes-backed immutable ndarray snapshot, Wilson/AUC semantic recomputation을 추가하고 Exp458 구현에 과학 경계를 묶어 type/order/count/mutation 공격을 막았다.</td></tr>
-    <tr><td>Task 2 fold planner</td><td><code>blocked_folds_antigravity.py</code>가 <code>np.arange</code> + <code>np.array_split</code>만으로 5개 연속 query 구간과 sorted fit 보완 집합을 만든다.</td></tr>
-    <tr><td>Task 3 source</td><td><code>sources_antigravity.py</code>가 <code>ECG5000_normal_2</code> TRAIN values만 한 번 조회하고 label/TEST surface 없이 owned read-only <code>float32</code> 1413×140 행렬을 반환한다.</td></tr>
-    <tr><td>Task 3 qualification</td><td><code>qualification_antigravity.py</code>가 seed outer order, fold inner order로 정확히 10번 scorer를 호출하고, fold별 Wilson/AUC/pass, seed pass, overall pass를 Task 2 immutable evidence로 만든다.</td></tr>
-    <tr><td>Task 4 evaluation</td><td><code>evaluation_antigravity.py</code>가 10개 fold-seed record 모두 통과해야 <code>stable</code>로 판단하고, exact 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / canonical digest를 담는 <code>FrozenValidationAuthorityAntigravity</code> 계약을 제공한다. Exp458 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311은 immutable predecessor context로만 노출한다.</td></tr>
-    <tr><td>Task 4 artifacts/replay</td><td><code>artifacts_antigravity.py</code>와 <code>replay_antigravity.py</code>가 canonical 7 leaves, self-excluding artifact map, trusted authority-gated source-free replay, rehashed/coordinated tamper rejection을 담당한다.</td></tr>
-    <tr><td>Task 4 dashboard</td><td><code>dashboard_export_antigravity.py</code>가 raw rows, labels, DB path 없이 aggregate TRAIN-only fields와 fixed Exp458 metrics만 내보낸다.</td></tr>
-    <tr><td>Exp459 code map</td><td>Task 4의 evaluation/artifacts/replay/dashboard/test 경계까지 담도록 bounded map triplet을 확장했다.</td></tr>
+    <tr><th>authority file</th><td><code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code></td></tr>
+    <tr><th>canonical digest</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
+    <tr><th>private runs</th><td>Run 1 PID 15100 and run 2 PID 15421 completed sequentially; both produced seven leaves and were exact-equal on every required canonical surface.</td></tr>
+    <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</td></tr>
+    <tr><th>official state</th><td>official root absent, evaluate 0, inspect 0, label query 0, official result hashes null.</td></tr>
   </table>
-
-  <h2>아직 하지 않은 것</h2>
-  <table>
-    <tr><th>항목</th><th>현재 truth</th></tr>
-    <tr><td>Exp459 package 구현</td><td>Task 4의 evaluation·artifacts·replay·dashboard export까지 존재하고 CLI와 <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>는 아직 없음</td></tr>
-    <tr><td>공식 evaluate / inspect</td><td>둘 다 0회</td></tr>
-    <tr><td>공식 결과 폴더</td><td>아직 없음</td></tr>
-    <tr><td>결과 hash</td><td>prediction / evaluation / decision / artifact map / dashboard 모두 <code>null</code></td></tr>
-    <tr><td>champion / pending candidate / promotion</td><td>모두 변경 없음</td></tr>
-  </table>
-
-  <h2>전임 실험 보호</h2>
-  <p>Exp458 product code와 공식 결과 root는 변경하지 않았다. Exp459는 Exp458의 완료된 truth를 읽기 전용 predecessor로만 사용한다.</p>
-
-  <h2>2026-08-18 보강 메모</h2>
-  <p>후속 리뷰에서 지적된 세부 경계도 보강했다. BlockedFold는 <code>n_rows</code>를 명시적으로 기록해 <code>np.array_split</code> 기준의 query 범위와 fit 보완 집합을 스스로 검증하고, ndarray-backed contract는 외부 alias나 <code>writeable</code> 재설정으로 변조할 수 없도록 bytes-backed snapshot만 받아들인다.</p>
-  <p>Task 3은 실제 TRAIN/Hydra 전체 계산을 수행하지 않았다. 테스트는 synthetic source와 fake scorer 주입으로 call order, coverage, bad score, threshold, source SQL boundary를 검증했고 private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행하는 작업은 Task 5에 남겨 둔다.</p>
-  <p>Task 4도 실제 TRAIN/Hydra 전체 계산이나 공식 root 생성을 수행하지 않았다. 테스트는 synthetic qualification과 injected frozen authority로 stable/unstable result logic, exact 7-leaf publication, authority-gated source-free replay, wrong/digest-mutated authority rejection, coordinated AUC+pooled+dashboard+decision+map tamper rejection, dashboard aggregate contract를 검증했다. 실제 authority 값 생성은 Task 5의 두 private TRAIN run exact-equal 확인과 최종 검토 뒤로 남겨 둔다.</p>
-  <h2>Task 5 sequence is now explicit</h2>
-  <p>Task 5는 먼저 private qualification/evaluation 두 번을 public CLI 없이 temp root로 실행하고, canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest exact-equal을 확인한다. 그 다음에만 Task5-owned <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>를 version-control한다.</p>
-  <p>CLI evaluate와 bare inspect는 모두 version-controlled authority module을 require하며, bare inspect import boundary는 authority + replay only; sources/SQLite/Hydra 금지다. authority commit을 full tests 후 fresh final review에 올리고, SHIP 후에만 Task 6 approval을 요청한다. no actual authority values exist yet.</p>
-</main></body>
-</html>
+  <p>Because the result is unstable, no threshold tuning or in-experiment retry is allowed. The next useful research direction is failure-fold analysis or a separately approved successor experiment, not Task 5 tuning.</p>
+  <h2>CLI and replay boundary</h2>
+  <p><code>cli_antigravity.py</code> accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>. Runtime and frozen authority validate before TRAIN source qualification or root creation. The launcher re-execs the fixed Python runtime outside CWD. Inspect remains source/SQLite/Hydra-free where possible and replays only against trusted authority.</p>
+  <h2>Predecessor protection</h2>
+  <p>Exp458 product code and official result root were not modified. Champion and pending candidate remain unchanged.</p>
+</main></body></html>

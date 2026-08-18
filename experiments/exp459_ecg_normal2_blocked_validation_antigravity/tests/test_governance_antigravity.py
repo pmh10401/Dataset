@@ -34,14 +34,50 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "ec5e1cd933424ba7776df5b6cf766e8a765608fb8e3f72436a5bc78c1124b229"
+    "a915dbb16bbe8e8609b56c44e6769f140a080e43be11aaf3bb17e5ea456b5381"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
 )
 IMPLEMENTATION_STATUS_ANTIGRAVITY = (
-    "task_4_evaluation_artifacts_replay_dashboard_complete"
+    "task_5_private_unstable_authority_frozen"
 )
+STATUS_ANTIGRAVITY = "implementation_verified_awaiting_official_evaluation"
+AUTHORITY_DIGEST_ANTIGRAVITY = (
+    "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee"
+)
+AUTHORITY_MODULE_ANTIGRAVITY = (
+    "experiments/exp459_ecg_normal2_blocked_validation_antigravity/"
+    "frozen_validation_authority_antigravity.py"
+)
+PRIVATE_VALIDATION_ANTIGRAVITY = {
+    "run_count": 2,
+    "status": "unstable",
+    "passed": False,
+    "canonical_digest": AUTHORITY_DIGEST_ANTIGRAVITY,
+    "fold_plan_rows": 5,
+    "fold_evidence_rows": 10,
+    "seed_summary_rows": 2,
+    "leaf_count": 7,
+    "temporary_roots_cleaned": True,
+    "official_root_absent": True,
+    "failed_folds": [
+        {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194,
+        },
+        {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194,
+        },
+    ],
+}
 RUN_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818"
 )
@@ -187,7 +223,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             checked = [tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)]
-            if task_number in {1, 2, 3, 4}:
+            if task_number in {1, 2, 3, 4, 5}:
                 self.assertEqual(len(checked), len(tags))
             else:
                 self.assertEqual(len(checked), 0)
@@ -198,7 +234,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             plan,
             flags=re.IGNORECASE,
         )
-        self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료", "Task 3 완료", "Task 4 완료"])
+        self.assertEqual(
+            initial_checked,
+            ["Task 1 완료", "Task 2 완료", "Task 3 완료", "Task 4 완료", "Task 5 완료"],
+        )
 
     def test_task5_authority_sequence_and_import_surface_are_unambiguous_antigravity(self) -> None:
         """Break caught: Task 5 can create or use authority before exact private equality/review."""
@@ -225,29 +264,31 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 position = task5.group(0).find(phrase, previous + 1)
                 self.assertGreater(position, previous)
                 previous = position
-        self.assertNotRegex(task5.group(0), r"<input\b[^>]*checked")
         authority_path = (
             ROOT_ANTIGRAVITY
             / PACKAGE_ANTIGRAVITY
             / "frozen_validation_authority_antigravity.py"
         )
-        self.assertFalse(authority_path.exists())
+        self.assertTrue(authority_path.is_file())
 
         document_expectations = {
             "docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html": (
-                "Task 5 sequence is now explicit",
+                "Task 5 private validation result",
                 "frozen_validation_authority_antigravity.py",
-                "no actual authority values exist yet",
+                AUTHORITY_DIGEST_ANTIGRAVITY,
+                "unstable",
             ),
             "docs/EXP459_RUNBOOK_antigravity.html": (
-                "private qualification/evaluation twice before authority creation",
+                "private qualification/evaluation twice completed",
                 "bare inspect imports only authority + replay",
                 "Task 6 approval is requested only after SHIP",
+                AUTHORITY_DIGEST_ANTIGRAVITY,
             ),
             "docs/EXP459_DASHBOARD_antigravity.html": (
-                "Task 5 authority sequence clarified",
-                "actual authority file absent",
+                "Task 5 private validation result",
+                "actual authority file present",
                 "Task 6 still requires approval after SHIP",
+                AUTHORITY_DIGEST_ANTIGRAVITY,
             ),
         }
         for relative, phrases in document_expectations.items():
@@ -256,7 +297,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 with self.subTest(relative=relative, phrase=phrase):
                     self.assertIn(phrase, text)
 
-    def test_exp459_planned_truth_and_non_promotion_antigravity(self) -> None:
+    def test_exp459_task5_truth_and_non_promotion_antigravity(self) -> None:
         """Break caught: Exp459 records an official result, changes champion, or loses frozen hashes."""
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         catalog = strict_json_antigravity(ROOT_ANTIGRAVITY / "EXPERIMENT_CATALOG.json")
@@ -275,8 +316,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
             with self.subTest(record=record["experiment"]):
                 self.assertEqual(record["experiment"], "Exp459")
                 self.assertEqual(record["kind"], "ecg_normal2_blocked_validation")
-                self.assertEqual(record["status"], "planned_not_started")
+                self.assertEqual(record["status"], STATUS_ANTIGRAVITY)
                 self.assertEqual(record["implementation_status"], IMPLEMENTATION_STATUS_ANTIGRAVITY)
+                self.assertEqual(record["frozen_validation_authority"], AUTHORITY_MODULE_ANTIGRAVITY)
+                self.assertEqual(record["frozen_validation_authority_digest"], AUTHORITY_DIGEST_ANTIGRAVITY)
+                self.assertEqual(record["private_validation"], PRIVATE_VALIDATION_ANTIGRAVITY)
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], str(RUN_ROOT_ANTIGRAVITY))
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -357,7 +401,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
-        self.assertLessEqual(len(graph["nodes"]), 32)
+        self.assertLessEqual(len(graph["nodes"]), 38)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
         self.assertIn("governance_regression", node_by_id)
         self.assertIn("task2_config", node_by_id)
@@ -369,6 +413,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("task4_artifacts", node_by_id)
         self.assertIn("task4_replay", node_by_id)
         self.assertIn("task4_dashboard_export", node_by_id)
+        self.assertIn("task5_cli", node_by_id)
+        self.assertIn("task5_frozen_authority", node_by_id)
+        self.assertIn("task5_launcher", node_by_id)
+        self.assertIn("task5_cli_tests", node_by_id)
         self.assertIn("research_state", node_by_id)
         self.assertIn("experiment_catalog", node_by_id)
         self.assertIn("champion_ledger", node_by_id)
@@ -440,6 +488,30 @@ class GovernanceAntigravityTest(unittest.TestCase):
             any(
                 edge["from"] == "task4_dashboard_tests"
                 and edge["to"] == "task4_dashboard_export"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task5_cli_tests"
+                and edge["to"] == "task5_cli"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task5_cli_tests"
+                and edge["to"] == "task5_frozen_authority"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task5_cli_tests"
+                and edge["to"] == "task5_launcher"
                 and edge["type"] == "tests"
                 for edge in graph["edges"]
             )

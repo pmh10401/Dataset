@@ -1,61 +1,25 @@
 <!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Exp459 실행 가이드</title>
-  <style>
-    body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
-    table{width:100%;border-collapse:collapse;margin:1rem 0}
-    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
-    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
-  </style>
-</head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 실행 가이드</title><style>body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}</style></head>
 <body><main>
   <h1>Exp459 실행 가이드</h1>
-  <p><strong>상태:</strong> <code>planned_not_started</code>. 지금은 Task 4의 stable/unstable 판단, exact 7-leaf publication, trusted authority-gated source-free replay, dashboard payload까지 준비된 단계다. 실제 frozen validation authority 값은 아직 없다.</p>
-
-  <h2>Task 1–4에서 완료한 일</h2>
+  <p><strong>상태:</strong> <code>implementation_verified_awaiting_official_evaluation</code>. private qualification/evaluation twice completed, exact equality confirmed, and <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code> is now the version-controlled frozen authority. Official evaluate/inspect remain 0 and Task 6 approval is requested only after SHIP.</p>
+  <h2>Task 5 authority 순서 결과</h2>
   <table>
-    <tr><th>완료</th><th>설명</th></tr>
-    <tr><td>문서와 ledger</td><td>사전등록, runbook, 구현 보고서, 대시보드를 HTML로 준비하고 Exp459 상태를 <code>planned_not_started</code>로 유지했다.</td></tr>
-    <tr><td>고정 계약</td><td><code>config_antigravity.py</code>와 <code>contracts_antigravity.py</code>에 Exp458의 승인 후보·alpha·Hydra 설정·AUC/Wilson 과학 경계를 그대로 물려받는 exact contract를 고정했다.</td></tr>
-    <tr><td>연속 fold planner</td><td><code>blocked_folds_antigravity.py</code>가 shuffle 없이 5개 연속 query 구간을 생성한다.</td></tr>
-    <tr><td>TRAIN source</td><td><code>sources_antigravity.py</code>가 normal_2 TRAIN values만 한 번 조회하고 label/TEST query surface를 만들지 않는다.</td></tr>
-    <tr><td>Qualification</td><td><code>qualification_antigravity.py</code>가 두 seed와 다섯 blocked fold를 exact order로 평가하고 Task 2 evidence contract로 결과를 묶는다.</td></tr>
-    <tr><td>Evaluation/artifacts/replay</td><td><code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>가 stable/unstable 판단, exact 7 leaves, self-excluding hash map, trusted immutable validation authority 기반 source-free replay를 담당한다. root-local evidence·dashboard·decision·map이 함께 rehash되어도 authority와 다르면 거부한다.</td></tr>
-    <tr><td>Dashboard payload</td><td><code>dashboard_export_antigravity.py</code>가 10 fold aggregate row, 2 seed summaries, label query 0, fixed Exp458 metrics만 내보낸다.</td></tr>
-    <tr><td>code map</td><td>Task 4 범위의 문서·ledger·evaluation·authority·artifacts·replay·dashboard·테스트 경계를 기록한다.</td></tr>
+    <tr><th>private runs</th><td>2회. public CLI 없이 별도 temporary non-official 7-leaf root에서 순차 실행했고 temp roots는 정리했다.</td></tr>
+    <tr><th>equality</th><td>canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest / dashboard / 7 leaf hashes exact-equal.</td></tr>
+    <tr><th>digest</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
+    <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063.</td></tr>
+    <tr><th>CLI boundary</th><td>CLI evaluate and bare inspect require the version-controlled authority. bare inspect imports only authority + replay; bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지.</td></tr>
+    <tr><th>official boundary</th><td>공식 root 없음, evaluate 0회, inspect 0회, label query 0, result hashes null.</td></tr>
   </table>
-
-  <h2>Task 5 이전까지 금지한 일</h2>
+  <h2>Task 6 전 금지</h2>
+  <p>Task 6 still requires approval after SHIP. 승인 전 공식 evaluate/inspect를 실행하지 않는다. unstable 결과 때문에 Exp459 안에서 threshold tuning, seed/fold 변경, 합성 종류 변경은 금지한다.</p>
+  <h2>검증 체크리스트</h2>
   <table>
-    <tr><th>금지</th><th>이유</th></tr>
-    <tr><td>공식 evaluate / inspect</td><td>별도 승인 전 0회를 유지해야 한다.</td></tr>
-    <tr><td>공식 결과 폴더 생성</td><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code>는 아직 없어야 한다.</td></tr>
-    <tr><td>TEST label 조회</td><td>Task 1–4는 label-free governance, TRAIN-only qualification contract, synthetic result publication/replay만 다루므로 TEST label은 여전히 열지 않는다.</td></tr>
-    <tr><td>실제 frozen authority 생성</td><td>Task 5에서 두 private TRAIN run이 exact-equal이고 최종 검토가 끝나기 전에는 실제 authority 값을 만들지 않는다.</td></tr>
-    <tr><td>champion / pending candidate 변경</td><td>Exp458 이후 운영 truth를 바꾸지 않는다.</td></tr>
-  </table>
-
-  <h2>Task 5 authority 순서</h2>
-  <table>
-    <tr><th>순서</th><th>기준</th></tr>
-    <tr><td>1</td><td>private qualification/evaluation twice before authority creation: public CLI 없이 temp root 두 개에서 먼저 실행한다.</td></tr>
-    <tr><td>2</td><td>canonical 5 fold plan / 10 fold evidence / 2 seed summaries / decision input / digest exact-equal과 7 leaf hashes exact-equal을 확인한다.</td></tr>
-    <tr><td>3</td><td>exact-equal 후에만 <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py</code>를 생성·version-control한다.</td></tr>
-    <tr><td>4</td><td>CLI evaluate와 bare inspect는 모두 version-controlled authority module을 require한다. bare inspect imports only authority + replay; bare inspect import boundary: authority + replay only; sources/SQLite/Hydra 금지.</td></tr>
-    <tr><td>5</td><td>authority 포함 clean commit에서 full tests를 실행하고 fresh final review SHIP을 받아야 한다.</td></tr>
-    <tr><td>6</td><td>Task 6 approval is requested only after SHIP. 승인 전 공식 evaluate / inspect는 여전히 0회다.</td></tr>
-  </table>
-
-  <h2>다음 Task로 넘어가기 전 체크리스트</h2>
-  <table>
-    <tr><th>체크</th><th>기준</th></tr>
+    <tr><th>항목</th><th>기준</th></tr>
     <tr><td>문서 4개</td><td>모두 self-contained HTML, Markdown duplicate 없음</td></tr>
-    <tr><td>세 ledger</td><td>공식 횟수 0, label query 0, 결과 hash null</td></tr>
-    <tr><td>code map</td><td>HTML/JSON/lock 동기화, source parent 규칙 통과</td></tr>
+    <tr><td>세 ledger</td><td>status implementation_verified_awaiting_official_evaluation, official count 0, label query 0, result hash null</td></tr>
+    <tr><td>code map</td><td>CLI, authority, launcher, tests까지 HTML/JSON/lock 동기화</td></tr>
     <tr><td>Exp458 predecessor</td><td>공식 결과와 product code를 수정하지 않음</td></tr>
   </table>
-</main></body>
-</html>
+</main></body></html>
