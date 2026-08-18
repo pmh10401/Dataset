@@ -187,6 +187,10 @@ class ReplayAntigravityTest(unittest.TestCase):
             ),
             replace(
                 evidence.exp456_authority,
+                authority=replace(evidence.exp456_authority.authority, label_query_count=False),
+            ),
+            replace(
+                evidence.exp456_authority,
                 authority=replace(evidence.exp456_authority.authority, label_query_count=1),
             ),
         )

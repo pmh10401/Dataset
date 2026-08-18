@@ -292,6 +292,7 @@ def _validate_authority_antigravity(
         or value.decision_sha256 != _EXP456_IDENTITIES_ANTIGRAVITY["decision_antigravity.json"]
         or value.predecessor_comparisons != _expected_predecessor_antigravity()
         or value.label_query_count != 0
+        or type(value.authority.label_query_count) is not int
         or value.authority.label_query_count != 0
     ):
         raise ValueError("Exp456 immutable result binding differs")

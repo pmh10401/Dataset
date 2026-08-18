@@ -187,6 +187,7 @@ class EvaluationAntigravityTest(unittest.TestCase):
             replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=inventory + (("extra_antigravity.json", "0" * 64),))),
             replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=(inventory[1], inventory[0]) + inventory[2:])),
             replace(authority, authority=replace(authority.authority, exp454_leaf_sha256=list(inventory))),  # type: ignore[arg-type]
+            replace(authority, authority=replace(authority.authority, label_query_count=False)),  # type: ignore[arg-type]
             replace(authority, authority=replace(authority.authority, label_query_count=1)),
         )
         for case in cases:
