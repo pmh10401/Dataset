@@ -34,10 +34,13 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "e6f66547f25b837898b64b0bf5321f4355a03ce51cecd790450e8597daf61a01"
+    "00929a257fa86be42428632a0cf03e36574b2eb764a5a703e9da6d943f526b9e"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
+)
+IMPLEMENTATION_STATUS_ANTIGRAVITY = (
+    "task_2_contracts_and_blocked_folds_complete"
 )
 RUN_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818"
@@ -159,7 +162,7 @@ def unresolved_evidence_antigravity(graph: dict[str, object]) -> list[dict[str, 
 
 class GovernanceAntigravityTest(unittest.TestCase):
     def test_task1_documents_triplet_and_checkboxes_antigravity(self) -> None:
-        """Break caught: Task 1 claims governance completion without HTML/docs/map truth."""
+        """Break caught: Task 2 claims progress without HTML/docs/map truth."""
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             with self.subTest(relative=relative):
                 path = ROOT_ANTIGRAVITY / relative
@@ -184,7 +187,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             checked = [tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)]
-            if task_number == 1:
+            if task_number in {1, 2}:
                 self.assertEqual(len(checked), len(tags))
             else:
                 self.assertEqual(len(checked), 0)
@@ -195,7 +198,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             plan,
             flags=re.IGNORECASE,
         )
-        self.assertEqual(initial_checked, ["Task 1 완료"])
+        self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료"])
 
     def test_exp459_planned_truth_and_non_promotion_antigravity(self) -> None:
         """Break caught: Exp459 records an official result, changes champion, or loses frozen hashes."""
@@ -217,7 +220,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp459")
                 self.assertEqual(record["kind"], "ecg_normal2_blocked_validation")
                 self.assertEqual(record["status"], "planned_not_started")
-                self.assertEqual(record["implementation_status"], "task_1_governance_documentation_complete")
+                self.assertEqual(record["implementation_status"], IMPLEMENTATION_STATUS_ANTIGRAVITY)
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], str(RUN_ROOT_ANTIGRAVITY))
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -301,6 +304,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertLessEqual(len(graph["nodes"]), 20)
         node_by_id = {node["id"]: node for node in graph["nodes"]}
         self.assertIn("governance_regression", node_by_id)
+        self.assertIn("task2_config", node_by_id)
+        self.assertIn("task2_contracts", node_by_id)
+        self.assertIn("task2_blocked_folds", node_by_id)
         self.assertIn("research_state", node_by_id)
         self.assertIn("experiment_catalog", node_by_id)
         self.assertIn("champion_ledger", node_by_id)
@@ -316,6 +322,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
             any(
                 edge["from"] == "governance_regression"
                 and edge["to"] == "champion_ledger"
+                and edge["type"] == "tests"
+                for edge in graph["edges"]
+            )
+        )
+        self.assertTrue(
+            any(
+                edge["from"] == "task2_contract_tests"
+                and edge["to"] == "task2_contracts"
                 and edge["type"] == "tests"
                 for edge in graph["edges"]
             )
