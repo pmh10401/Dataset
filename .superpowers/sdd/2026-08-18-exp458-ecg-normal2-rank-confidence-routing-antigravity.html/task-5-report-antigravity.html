@@ -123,5 +123,49 @@
       <tr><td>Full synthetic 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 59 tests in 2.416s</code></td><td><code>2.28s user 0.44s system 97% cpu 2.776 total</code></td><td>OK</td></tr>
     </tbody>
   </table>
+
+  <h2>Final whole-branch fix wave — runtime provenance binding</h2>
+  <p>No live TRAIN/Hydra process was run in this final wave, and no official command/root was invoked. The result-relevant fix binds the public evaluate and replay path to the exact runtime: executable <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>, prefix <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314</code>, Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, aeon <code>1.4.0</code>.</p>
+  <ul>
+    <li>Corrected Exp458 plan/runtime documentation from the stale NumPy value to NumPy 2.3.5.</li>
+    <li>Added exact runtime fields to the frozen config and a validated <code>RuntimeProvenanceAntigravity</code> contract.</li>
+    <li>Public evaluate now validates runtime provenance before qualification, authority capture, publisher, inspector, or root creation.</li>
+    <li>Publication still has exactly 9 leaves; <code>context_antigravity.json</code> now records runtime provenance inside the existing leaf.</li>
+    <li>Inspect remains label/source-free and validates recorded runtime provenance as part of semantic replay, without importing qualification.</li>
+    <li>Replay rejects a rehashed runtime-provenance tamper.</li>
+    <li>Ledgers now carry the Exp458 runtime contract while official evaluate/inspect counts, official root status, official hashes, Task 6 unchecked status, and historical actual-run evidence remain unchanged.</li>
+  </ul>
+  <h3>Final-wave RED/GREEN</h3>
+  <table>
+    <thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>RED affected slice</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_config_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_contracts_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_artifacts_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_replay_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity -v</code></td><td><code>Ran 29 tests</code>; failed with missing runtime config fields, missing runtime contract import, missing context runtime, replay runtime KeyError, and CLI reaching qualifier before runtime mismatch.</td></tr>
+      <tr><td>GREEN affected slice</td><td>same affected slice</td><td><code>Ran 29 tests in 0.572s</code>, OK.</td></tr>
+      <tr><td>Pre-map synthetic slice</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest</code> over all Exp458 non-governance modules</td><td><code>Ran 60 tests in 3.243s</code>, OK.</td></tr>
+    </tbody>
+  </table>
+  <h3>Final-wave commits</h3>
+  <ul>
+    <li>Functional runtime-provenance fix: <code>8ca305cb36a0108cb0d7afe9b9c428e5e5df3ce2</code> — <code>fix(exp458): bind runtime provenance</code></li>
+    <li>Map/report child: exact child SHA is returned in the task final response; the map lock source parent is the functional commit above.</li>
+  </ul>
+  <h3>Final-wave verification</h3>
+  <table>
+    <thead><tr><th>Run</th><th>Exact command</th><th>unittest count/time</th><th>shell timing</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>CLI focused 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 10 tests in 0.378s</code></td><td><code>0.37s user 0.07s system 94% cpu 0.462 total</code></td><td>OK</td></tr>
+      <tr><td>CLI focused 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 10 tests in 0.361s</code></td><td><code>0.36s user 0.07s system 98% cpu 0.435 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 62 tests in 2.758s</code></td><td><code>2.33s user 0.48s system 89% cpu 3.129 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 62 tests in 2.649s</code></td><td><code>2.32s user 0.46s system 92% cpu 3.002 total</code></td><td>OK</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><span class="ok">PASS</span> Exp458 codemap <code>--validate-only</code>.</li>
+    <li><span class="ok">PASS</span> <code>py_compile</code> for touched Exp458 Python files, launcher, and map builder.</li>
+    <li><span class="ok">PASS</span> <code>git diff --check</code>.</li>
+    <li><span class="ok">PASS</span> Exp457 byte guard from <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>.</li>
+    <li><span class="ok">PASS</span> official root absence check.</li>
+    <li><span class="ok">PASS</span> targeted Exp458 stale-runtime scan: no stale runtime numeric value or generic Python 3.14/NumPy wording outside deliberate negative tests.</li>
+  </ul>
 </main></body>
 </html>

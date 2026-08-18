@@ -118,7 +118,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp458 Task 5 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp458 Task 5 CLI 코드맵</h1><p>Task 5까지 실제로 만든 normal_2 router, frozen Exp456 evaluator, nine-leaf publication, semantic replay, dashboard export, closed CLI, fixed-runtime launcher를 기록한다. Task 6 official evaluation은 아직 실행되지 않았다.</p>'
+        '<h1>Exp458 Task 5 CLI 코드맵</h1><p>Task 5까지 실제로 만든 normal_2 router, frozen Exp456 evaluator, nine-leaf publication, runtime-provenance-bound semantic replay, dashboard export, closed CLI, exact-runtime launcher를 기록한다. Task 6 official evaluation은 아직 실행되지 않았다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -271,16 +271,16 @@ def build_map_antigravity(
         {
             "id": "frozen_config",
             "path": f"{package}/config_antigravity.py",
-            "role": "Caller: contracts, qualification, governance review. Effect: freezes Exp458 identity, exact dataset, seed order, thresholds, and structure gate.",
-            "tests": [config_test, controlled_fork_test],
+            "role": "Caller: contracts, qualification, governance review. Effect: freezes Exp458 identity, exact dataset, seed order, thresholds, structure gate, executable, prefix, Python, NumPy, and aeon versions.",
+            "tests": [config_test, controlled_fork_test, governance_test],
             "evidence": [evidence_antigravity(f"{package}/config_antigravity.py", "FROZEN_CONFIG_ANTIGRAVITY")],
         },
         {
             "id": "result_contracts",
             "path": f"{package}/contracts_antigravity.py",
-            "role": "Caller: Task 3–4 qualification and result flow. Effect: validates exact normal_2 rank evidence, route/result contracts, pooled AUC semantics, and both-seed qualification truth.",
-            "tests": [contracts_test, router_test, evaluation_test],
-            "evidence": [evidence_antigravity(f"{package}/contracts_antigravity.py", "RankSeedEvidenceAntigravity")],
+            "role": "Caller: Task 3–5 qualification, result, publication, replay, and CLI flow. Effect: validates exact normal_2 rank evidence, route/result contracts, pooled AUC semantics, both-seed qualification truth, and exact runtime provenance.",
+            "tests": [contracts_test, router_test, evaluation_test, artifacts_test, replay_test, cli_test],
+            "evidence": [evidence_antigravity(f"{package}/contracts_antigravity.py", "RuntimeProvenanceAntigravity")],
         },
         {
             "id": "rank_auc",
@@ -320,14 +320,14 @@ def build_map_antigravity(
         {
             "id": "artifacts",
             "path": f"{package}/artifacts_antigravity.py",
-            "role": "Caller: Task 4 temporary publication and future CLI. Effect: validates evidence and publishes the canonical nine-leaf create-only result inventory.",
+            "role": "Caller: Task 4 temporary publication and future CLI. Effect: validates evidence and publishes the canonical nine-leaf create-only result inventory with runtime provenance inside context_antigravity.json.",
             "tests": [artifacts_test, replay_test],
             "evidence": [evidence_antigravity(f"{package}/artifacts_antigravity.py", "publish_result_antigravity")],
         },
         {
             "id": "replay",
             "path": f"{package}/replay_antigravity.py",
-            "role": "Caller: Task 4 inspect path and future CLI. Effect: verifies inventory, hashes, canonical JSON/JSONL, and semantically replays qualification, route, metrics, dashboard, and decision.",
+            "role": "Caller: Task 4 inspect path and future CLI. Effect: verifies inventory, hashes, canonical JSON/JSONL, runtime provenance, and semantically replays qualification, route, metrics, dashboard, and decision.",
             "tests": [replay_test],
             "evidence": [evidence_antigravity(f"{package}/replay_antigravity.py", "inspect_result_at_antigravity")],
         },
@@ -341,7 +341,7 @@ def build_map_antigravity(
         {
             "id": "cli",
             "path": f"{package}/cli_antigravity.py",
-            "role": "Caller: Task 5 private verification and future Task 6 operator. Effect: exposes only evaluate --reviewed-commit LOWER40HEX and bare inspect, lazy-loads selected phase, and drives qualification, authority, route, evaluation, nine-leaf publication, replay, dashboard emission.",
+            "role": "Caller: Task 5 private verification and future Task 6 operator. Effect: exposes only evaluate --reviewed-commit LOWER40HEX and bare inspect, fail-closes evaluate on runtime mismatch before qualification/root creation, lazy-loads selected phase, and drives qualification, authority, route, evaluation, nine-leaf publication, replay, dashboard emission.",
             "tests": [cli_test, governance_test],
             "evidence": [evidence_antigravity(f"{package}/cli_antigravity.py", "_evaluate_with_dependencies_antigravity")],
         },
@@ -533,6 +533,18 @@ def build_map_antigravity(
             "evidence": evidence_antigravity(f"{package}/replay_antigravity.py", "_payloads_antigravity"),
         },
         {
+            "from": "result_contracts",
+            "to": "artifacts",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/artifacts_antigravity.py", "observe_runtime_provenance_antigravity"),
+        },
+        {
+            "from": "result_contracts",
+            "to": "replay",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/replay_antigravity.py", "RuntimeProvenanceAntigravity"),
+        },
+        {
             "from": "implementation_plan",
             "to": "cli",
             "type": "governs",
@@ -555,6 +567,12 @@ def build_map_antigravity(
             "to": "train_qualification",
             "type": "governs",
             "evidence": evidence_antigravity(f"{package}/cli_antigravity.py", "qualify_normal2_antigravity"),
+        },
+        {
+            "from": "result_contracts",
+            "to": "cli",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/cli_antigravity.py", "observe_runtime_provenance_antigravity"),
         },
         {
             "from": "cli",
