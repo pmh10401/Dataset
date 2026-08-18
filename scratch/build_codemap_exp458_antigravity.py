@@ -257,9 +257,9 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: historical Task 5 truth verification. Effect: records the pre-official regression boundary retained as context for Task 6 closeout.",
+            "role": "Caller: Task 6 governance truth verification. Effect: guards the official 9-leaf result, one-shot evaluate/inspect evidence, ledger hashes, routes, metrics, label_query_count 0, completed HTML checkboxes, and unchanged promotion boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(governance_test, "test_exp458_is_planned_without_official_result_antigravity")],
+            "evidence": [evidence_antigravity(governance_test, "test_exp458_task6_official_result_truth_antigravity")],
         },
         {
             "id": "map_builder",
@@ -376,7 +376,7 @@ def build_map_antigravity(
             "type": "tests",
             "evidence": evidence_antigravity(
                 governance_test,
-                "test_exp458_is_planned_without_official_result_antigravity",
+                "test_exp458_task6_official_result_truth_antigravity",
             ),
         },
         {
@@ -385,7 +385,7 @@ def build_map_antigravity(
             "type": "tests",
             "evidence": evidence_antigravity(
                 governance_test,
-                "test_dashboard_plan_and_map_stay_truthful_antigravity",
+                "test_dashboard_plan_and_map_record_task6_closeout_antigravity",
             ),
         },
         {
