@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 Task 4 Report</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.6 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    .ok{color:#087a45}.warn{color:#8a5a00}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 Task 4 Report</h1>
+  <p><strong>Status:</strong> <span class="ok">implemented, verified, committed-ready before final commit</span>. Task4 uses synthetic/frozen evidence only; no real Hydra/TRAIN smoke, TEST-label query, official command, official root, network, MLX, Exp456 mutation, or Exp457 mutation was performed.</p>
+
+  <h2>Implemented Modules</h2>
+  <ul>
+    <li><code>router_antigravity.py</code>: normal_2-only route decision with recomputed rank and strict added&gt;removed structure gates.</li>
+    <li><code>evaluation_antigravity.py</code>: immutable Exp456 authority validation, four comparison recomputation, family deltas, pass criteria, shared semantic result validator.</li>
+    <li><code>artifacts_antigravity.py</code>: create-only canonical nine-leaf temporary publication.</li>
+    <li><code>replay_antigravity.py</code>: canonical JSON/JSONL, artifact hash, and independent semantic replay.</li>
+    <li><code>dashboard_export_antigravity.py</code>: aggregate/TRAIN-only payload after shared semantic validation.</li>
+    <li><code>contracts_antigravity.py</code>: Task4 result, publication, route, criteria, and authority dataclasses.</li>
+  </ul>
+
+  <h2>RED/GREEN Evidence</h2>
+  <table>
+    <thead><tr><th>Phase</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>RED</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest ...test_router... ...test_dashboard_export...</code></td><td>Expected failures: missing <code>router/evaluation/artifacts/replay/dashboard_export</code> modules and missing Task4 contract classes.</td></tr>
+      <tr><td>GREEN 1</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_router_antigravity ... test_dashboard_export_antigravity</code></td><td>16 tests OK in 0.116s.</td></tr>
+      <tr><td>GREEN 2</td><td><code>PYTHONPATH=. /usr/local/bin/python3 -m unittest experiments.exp458...test_router_antigravity ... test_dashboard_export_antigravity</code></td><td>16 tests OK in 0.123s.</td></tr>
+      <tr><td>Full Exp458 synthetic</td><td><code>PYTHONPATH=. /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>44 tests OK in 2.360s.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Route/Evaluation Matrix</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Covered Cases</th></tr></thead>
+    <tbody>
+      <tr><td>Route truth table</td><td>pass/pass to candidate; rank fail, structure equality, and structure reversal to baseline; forged rank pass rejected; non-normal2 feature remains baseline even with passing rank evidence.</td></tr>
+      <tr><td>Evaluation authority</td><td>48 unique rows required; extra, missing, reordered, duplicate dataset rows rejected; predecessor comparisons must match exact Exp456 values.</td></tr>
+      <tr><td>Criteria</td><td>FN 834 inclusive pass, FP 66 inclusive pass, F1 equal to 0.5764150943396227 fails because the F1 comparison is strict.</td></tr>
+      <tr><td>Dashboard</td><td>Only experiment/status/pass, two-seed rank evidence, normal2 route, four aggregate method rows, and three criteria are exported; unapproved dataset names are rejected.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Comparison Arithmetic</h2>
+  <table>
+    <thead><tr><th>Method</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th></tr></thead>
+    <tbody>
+      <tr><td>always_baseline</td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td></tr>
+      <tr><td>family_wide_local_gap</td><td>611</td><td>63</td><td>835</td><td>70791</td><td>0.5764150943396227</td></tr>
+      <tr><td>oracle_per_dataset</td><td>618</td><td>64</td><td>828</td><td>70790</td><td>0.5808270676691729</td></tr>
+      <tr><td>normal2_rank_router</td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td></tr>
+    </tbody>
+  </table>
+  <p>The proposed row is computed by selecting per-dataset frozen baseline/candidate confusion rows, not returned as a literal. Conservation was asserted: TP+FN=1446 and FP+TN=70854.</p>
+
+  <h2>Nine Leaves</h2>
+  <p><code>context_antigravity.json</code>, <code>train_qualification_antigravity.jsonl</code>, <code>features_antigravity.jsonl</code>, <code>route_decisions_antigravity.jsonl</code>, <code>comparison_metrics_antigravity.json</code>, <code>family_metrics_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>decision_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code>. The artifact map excludes itself.</p>
+
+  <h2>Replay Tamper Matrix</h2>
+  <table>
+    <thead><tr><th>Domain</th><th>Mutations Rejected After Rehash</th></tr></thead>
+    <tbody>
+      <tr><td>Rank evidence</td><td>per-type AUC, pooled AUC, Wilson upper, seed pass, aggregate pass.</td></tr>
+      <tr><td>Feature/structure</td><td>added count and removed count drift.</td></tr>
+      <tr><td>Route</td><td>stored route drift.</td></tr>
+      <tr><td>Comparisons</td><td>first-three Exp456 comparison drift and proposed F1/confusion drift.</td></tr>
+      <tr><td>Family/dashboard/decision</td><td>family delta, dashboard pass, and decision status drift.</td></tr>
+      <tr><td>Byte shape</td><td>missing/extra leaf, wrong hash, noncanonical JSON/JSONL, duplicate JSON key, bool-as-number.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Regression and Boundary Checks</h2>
+  <ul>
+    <li>Exp457 evaluation/replay/artifact/dashboard: <code>14 tests OK in 1.811s</code>.</li>
+    <li>Exp456 evaluation: <code>3 tests OK in 0.011s</code>.</li>
+    <li>Governance: <code>2 tests OK in 0.038s</code>.</li>
+    <li><code>py_compile</code>: Task4 modules, Task4 tests, governance test, and map builder passed.</li>
+    <li><code>scratch/build_codemap_exp458_antigravity.py --validate-only</code>: passed.</li>
+    <li><code>git diff --check</code>: passed.</li>
+    <li>Exp457 byte guard: <code>git diff --exit-code 6e8e500d19afcb17907ef53ad1527b5781c6d007 -- experiments/exp457_ecg_train_synthetic_confidence_routing_antigravity</code> passed.</li>
+    <li>Official root check: <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code> absent.</li>
+  </ul>
+
+  <h2>Self-Review</h2>
+  <p>The implementation keeps Task4 scoped to frozen synthetic/Exp456 authority evidence and temporary publication. The shared validator is used by publication, replay, and dashboard. No champion, promotion, deployment, or official result claim is made. Remaining future work is Task5 CLI and any later user-approved official evaluation path.</p>
+
+  <h2>Concerns</h2>
+  <p class="warn">No unresolved Task4 implementation concerns. The only scope note is intentional: Task4 did not run a real Hydra/TRAIN smoke and did not create the official result root.</p>
+</main></body>
+</html>

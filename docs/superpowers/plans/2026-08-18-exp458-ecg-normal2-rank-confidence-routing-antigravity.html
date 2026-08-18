@@ -174,7 +174,7 @@ $PY -m unittest experiments.exp457_ecg_train_synthetic_confidence_routing_antigr
   </section>
 
   <section>
-    <h2><label><input type="checkbox" disabled>Task 4: 라우터·평가·9-leaf 결과·재생·대시보드</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 4: 라우터·평가·9-leaf 결과·재생·대시보드</label></h2>
     <h3>Files</h3>
     <ul>
       <li>Create: <code>router_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
@@ -191,14 +191,14 @@ publish_result_antigravity(root, evidence) -&gt; PublishedResultAntigravity
 inspect_result_at_antigravity(root) -&gt; EvaluationResultAntigravity
 export_dashboard_antigravity(result) -&gt; dict[str, object]
 </code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED route truth table</label><pre><code># only normal_2 may become candidate
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED route truth table</label><pre><code># only normal_2 may become candidate
 (auc_gate=True, structure=14&gt;5)  -&gt; candidate
 (auc_gate=False, structure=14&gt;5) -&gt; baseline
 (auc_gate=True, structure=5&gt;14)   -&gt; baseline
 normal_1/3/4/5                    -&gt; baseline
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 평가·재생·대시보드 tests</label><p>예상 TP/FP/FN/TN/F1, 네 비교 순서, 9-leaf inventory, AUC/route/comparison을 다시 해시한 의미 변조 거부, dashboard 필드·값 일치를 각각 실패 테스트로 먼저 만든다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: 최소 router/evaluator 구현</label><p>qualification 수치에서 AUC 게이트를 다시 계산하고, frozen feature의 14/5 구조 게이트를 결합한다. 예상 final confusion은 literal로 반환하지 않고 데이터셋별 고정 혼동행렬 합으로 계산한다.</p><pre><code>def route_normal2_antigravity(feature, qualification):
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: RED 평가·재생·대시보드 tests</label><p>예상 TP/FP/FN/TN/F1, 네 비교 순서, 9-leaf inventory, AUC/route/comparison을 다시 해시한 의미 변조 거부, dashboard 필드·값 일치를 각각 실패 테스트로 먼저 만든다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: 최소 router/evaluator 구현</label><p>qualification 수치에서 AUC 게이트를 다시 계산하고, frozen feature의 14/5 구조 게이트를 결합한다. 예상 final confusion은 literal로 반환하지 않고 데이터셋별 고정 혼동행렬 합으로 계산한다.</p><pre><code>def route_normal2_antigravity(feature, qualification):
     validate_rank_qualification_semantics_antigravity(qualification)
     if feature.dataset != "ECG5000_normal_2":
         return RouteDecisionAntigravity(feature.dataset, False, False, "baseline")
@@ -213,7 +213,7 @@ def evaluate_routes_antigravity(authority, decision):
     aggregate = sum_confusions_antigravity(rows)
     return build_exact_four_comparisons_and_criteria(aggregate)
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: 정확한 9-leaf publication</label><pre><code>context_antigravity.json
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: 정확한 9-leaf publication</label><pre><code>context_antigravity.json
 train_qualification_antigravity.jsonl
 features_antigravity.jsonl
 route_decisions_antigravity.jsonl
@@ -223,21 +223,21 @@ dashboard_snapshot_antigravity.json
 decision_antigravity.json
 artifact_sha256_antigravity.json
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: semantic replay·dashboard</label><p>재생 검사는 AUC, pooled 평균, 두 gate, route, 네 비교, family metric, 세 기준을 다시 계산한다. dashboard는 같은 검증기를 통과한 결과만 표시한다.</p><pre><code>recomputed = evaluate_routes_antigravity(
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: semantic replay·dashboard</label><p>재생 검사는 AUC, pooled 평균, 두 gate, route, 네 비교, family metric, 세 기준을 다시 계산한다. dashboard는 같은 검증기를 통과한 결과만 표시한다.</p><pre><code>recomputed = evaluate_routes_antigravity(
     capture_authority_from_context(payloads),
     route_normal2_antigravity(feature, qualification),
 )
 if recomputed != stored_result:
     raise ValueError("Exp458 semantic replay differs")
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: GREEN 두 번·Exp457/Exp456 회귀</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: GREEN 두 번·Exp457/Exp456 회귀</label><pre><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
 $PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'
 $PY -m unittest \
   experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.tests.test_evaluation_antigravity \
   experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.tests.test_replay_antigravity \
   experiments.exp456_exp455_dataset_key_order_repair_antigravity.tests.test_evaluation_antigravity
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 7: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): evaluate normal2 rank routing"
+    <div class="step"><label><input type="checkbox" checked disabled>Step 7: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): evaluate normal2 rank routing"
 </code></pre></div>
   </section>
 

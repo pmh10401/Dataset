@@ -15,12 +15,12 @@
 <body><main>
   <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
   <table>
-    <tr><th>진행</th><td>Task 3/6</td></tr>
+    <tr><th>진행</th><td>Task 4/6</td></tr>
     <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
     <tr><th>현재 판단</th><td><strong>공식 결과 없음</strong></td></tr>
     <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
     <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
-    <tr><th>현재 구현</th><td>Task 3 source/qualification 완료. 고정 설정 / rank contracts / AUC 계산기 / normal_2 TRAIN loader / two-seed qualification 완료, route·evaluation·CLI는 아직 미구현</td></tr>
+    <tr><th>현재 구현</th><td>Task 4 router/evaluation/replay 완료. 고정 설정 / rank contracts / AUC 계산기 / normal_2 TRAIN loader / two-seed qualification / router / evaluator / 9-leaf temporary publication / semantic replay / dashboard export 완료, CLI는 아직 미구현</td></tr>
   </table>
 
   <div class="box">
@@ -45,7 +45,7 @@
 
   <h2>예상 후보 결과</h2>
   <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
-  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 3에서는 route를 아직 실제 계산하지 않고, normal_2 TRAIN source와 two-seed qualification까지 실제로 검증했다.</p>
+  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 4에서는 공식 root를 만들지 않고 synthetic/frozen Exp456 authority와 Task3 TRAIN evidence로 route/evaluation/replay semantics를 검증했다.</p>
 
   <h2>Task 3 실제 TRAIN smoke</h2>
   <table>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp458 Task 3 rank-qualification code map."""
+"""Build and validate the bounded Exp458 Task 4 route-evaluation code map."""
 
 from __future__ import annotations
 
@@ -33,15 +33,25 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/config_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/contracts_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/artifacts_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/dashboard_export_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/evaluation_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/qualification_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/rank_auc_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/replay_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/router_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/sources_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_artifacts_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_config_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_controlled_fork_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_dashboard_export_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_evaluation_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_qualification_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_rank_auc_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_router_antigravity.py",
     "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp458_antigravity.py",
 )
@@ -104,8 +114,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp458 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp458 Task 3 rank-qualification 코드맵</h1><p>Task 3까지 실제로 만든 고정 설정, rank contracts, AUC 계산기, normal_2 TRAIN source, qualification을 기록하고, 아직 만들지 않은 Task 4+ 경계만 future_unknown으로 남긴다.</p>'
+        '<title>Exp458 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp458 Task 4 route-evaluation 코드맵</h1><p>Task 4까지 실제로 만든 normal_2 router, frozen Exp456 evaluator, nine-leaf publication, semantic replay, dashboard export를 기록하고, 아직 만들지 않은 Task 5 CLI 경계만 future_unknown으로 남긴다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -156,6 +166,26 @@ def build_map_antigravity(
         "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/"
         "test_controlled_fork_antigravity.py"
     )
+    router_test = (
+        "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/"
+        "test_router_antigravity.py"
+    )
+    evaluation_test = (
+        "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/"
+        "test_evaluation_antigravity.py"
+    )
+    artifacts_test = (
+        "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/"
+        "test_artifacts_antigravity.py"
+    )
+    replay_test = (
+        "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/"
+        "test_replay_antigravity.py"
+    )
+    dashboard_export_test = (
+        "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/"
+        "test_dashboard_export_antigravity.py"
+    )
     builder = "scratch/build_codemap_exp458_antigravity.py"
     package = "experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity"
 
@@ -170,9 +200,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Tasks 1–6. Effect: records that Tasks 1–3 are complete while Tasks 4–6 remain unchecked.",
+            "role": "Caller: Tasks 1–6. Effect: records that Tasks 1–4 are complete while Tasks 5–6 remain unchecked.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 3: TRAIN 점수와 normal_2 자격 평가")],
+            "evidence": [evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드")],
         },
         {
             "id": "preregistration",
@@ -184,16 +214,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": "docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: Task 3 closeout. Effect: explains the normal_2 source, two-seed qualification, real smoke evidence, and remaining Task 4+ boundary.",
+            "role": "Caller: Task 4 closeout. Effect: explains the normal_2 source, two-seed qualification, route/evaluation/replay, and zero official-action boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html", "Task 1부터 Task 3까지 완료했다")],
+            "evidence": [evidence_antigravity("docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html", "Task 1부터 Task 4까지 완료했다")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP458_DASHBOARD_antigravity.html",
-            "role": "Caller: reader-facing review. Effect: shows planned_not_started status, exact Task 3 smoke evidence, and the verified two-seed AUC gate without claiming an official outcome.",
+            "role": "Caller: reader-facing review. Effect: shows planned_not_started status, exact Task 3 smoke evidence, Task 4 synthetic/frozen route evaluation, and no official outcome.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP458_DASHBOARD_antigravity.html", "Task 3/6")],
+            "evidence": [evidence_antigravity("docs/EXP458_DASHBOARD_antigravity.html", "Task 4/6")],
         },
         {
             "id": "research_state",
@@ -226,7 +256,7 @@ def build_map_antigravity(
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 3 validation. Effect: validates HTML/JSON/lock parity, fingerprints, and Task 4+ future_unknown boundaries.",
+            "role": "Caller: Task 4 validation. Effect: validates HTML/JSON/lock parity, fingerprints, implemented Task 4 nodes, and Task 5 future_unknown boundaries.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -240,8 +270,8 @@ def build_map_antigravity(
         {
             "id": "result_contracts",
             "path": f"{package}/contracts_antigravity.py",
-            "role": "Caller: future Tasks 3–4 qualification flow. Effect: validates exact normal_2 rank evidence, pooled AUC semantics, and both-seed qualification truth.",
-            "tests": [contracts_test],
+            "role": "Caller: Task 3–4 qualification and result flow. Effect: validates exact normal_2 rank evidence, route/result contracts, pooled AUC semantics, and both-seed qualification truth.",
+            "tests": [contracts_test, router_test, evaluation_test],
             "evidence": [evidence_antigravity(f"{package}/contracts_antigravity.py", "RankSeedEvidenceAntigravity")],
         },
         {
@@ -268,42 +298,37 @@ def build_map_antigravity(
         {
             "id": "router",
             "path": f"{package}/router_antigravity.py",
-            "role": "Caller: future Tasks 4–6. Effect: will combine AUC and structure gates into the normal_2 route decision.",
-            "tests": [],
-            "evidence": [],
-            "status": "future_unknown",
+            "role": "Caller: Task 4 evaluation, publication, replay, dashboard. Effect: combines AUC and structure gates into the normal_2-only route decision and preserves route provenance.",
+            "tests": [router_test, evaluation_test, replay_test],
+            "evidence": [evidence_antigravity(f"{package}/router_antigravity.py", "route_normal2_antigravity")],
         },
         {
             "id": "evaluation",
             "path": f"{package}/evaluation_antigravity.py",
-            "role": "Caller: future Tasks 4–6. Effect: will recompute the frozen four comparisons and final criteria.",
-            "tests": [],
-            "evidence": [],
-            "status": "future_unknown",
+            "role": "Caller: Task 4 publication, replay, dashboard. Effect: validates Exp456 authority, recomputes four comparisons, proposed result, family deltas, criteria, and shared result semantics.",
+            "tests": [evaluation_test, artifacts_test, replay_test, dashboard_export_test],
+            "evidence": [evidence_antigravity(f"{package}/evaluation_antigravity.py", "validate_evaluation_result_semantics_antigravity")],
         },
         {
             "id": "artifacts",
             "path": f"{package}/artifacts_antigravity.py",
-            "role": "Caller: future Tasks 4–6. Effect: will publish the canonical 9-leaf result inventory.",
-            "tests": [],
-            "evidence": [],
-            "status": "future_unknown",
+            "role": "Caller: Task 4 temporary publication and future CLI. Effect: validates evidence and publishes the canonical nine-leaf create-only result inventory.",
+            "tests": [artifacts_test, replay_test],
+            "evidence": [evidence_antigravity(f"{package}/artifacts_antigravity.py", "publish_result_antigravity")],
         },
         {
             "id": "replay",
             "path": f"{package}/replay_antigravity.py",
-            "role": "Caller: future Tasks 4–6. Effect: will replay saved AUC, route, and comparison evidence from source data.",
-            "tests": [],
-            "evidence": [],
-            "status": "future_unknown",
+            "role": "Caller: Task 4 inspect path and future CLI. Effect: verifies inventory, hashes, canonical JSON/JSONL, and semantically replays qualification, route, metrics, dashboard, and decision.",
+            "tests": [replay_test],
+            "evidence": [evidence_antigravity(f"{package}/replay_antigravity.py", "inspect_result_at_antigravity")],
         },
         {
             "id": "dashboard_export",
             "path": f"{package}/dashboard_export_antigravity.py",
-            "role": "Caller: future Tasks 4–6. Effect: will expose the reviewed dashboard payload only after semantic validation.",
-            "tests": [],
-            "evidence": [],
-            "status": "future_unknown",
+            "role": "Caller: Task 4 publication and reader surfaces. Effect: invokes the shared semantic validator before exposing only aggregate/TRAIN evidence.",
+            "tests": [dashboard_export_test],
+            "evidence": [evidence_antigravity(f"{package}/dashboard_export_antigravity.py", "export_dashboard_antigravity")],
         },
         {
             "id": "cli",
@@ -432,32 +457,74 @@ def build_map_antigravity(
         {
             "from": "implementation_plan",
             "to": "router",
-            "type": "future_unknown",
+            "type": "governs",
             "evidence": evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드"),
         },
         {
             "from": "implementation_plan",
             "to": "evaluation",
-            "type": "future_unknown",
+            "type": "governs",
             "evidence": evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드"),
         },
         {
             "from": "implementation_plan",
             "to": "artifacts",
-            "type": "future_unknown",
+            "type": "governs",
             "evidence": evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드"),
         },
         {
             "from": "implementation_plan",
             "to": "replay",
-            "type": "future_unknown",
+            "type": "governs",
             "evidence": evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드"),
         },
         {
             "from": "implementation_plan",
             "to": "dashboard_export",
-            "type": "future_unknown",
+            "type": "governs",
             "evidence": evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드"),
+        },
+        {
+            "from": "result_contracts",
+            "to": "router",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/router_antigravity.py", "RankQualificationAntigravity"),
+        },
+        {
+            "from": "router",
+            "to": "evaluation",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/evaluation_antigravity.py", "RouteDecisionAntigravity"),
+        },
+        {
+            "from": "evaluation",
+            "to": "artifacts",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/artifacts_antigravity.py", "evaluate_routes_antigravity"),
+        },
+        {
+            "from": "evaluation",
+            "to": "replay",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/replay_antigravity.py", "evaluate_routes_antigravity"),
+        },
+        {
+            "from": "evaluation",
+            "to": "dashboard_export",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/dashboard_export_antigravity.py", "EvaluationResultAntigravity"),
+        },
+        {
+            "from": "dashboard_export",
+            "to": "artifacts",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/artifacts_antigravity.py", "export_dashboard_antigravity"),
+        },
+        {
+            "from": "artifacts",
+            "to": "replay",
+            "type": "governs",
+            "evidence": evidence_antigravity(f"{package}/replay_antigravity.py", "_payloads_antigravity"),
         },
         {
             "from": "implementation_plan",
@@ -473,16 +540,11 @@ def build_map_antigravity(
         },
     ]
     unknown_relationships = [
-        {"from": "implementation_plan", "to": "router", "reason": "Task 4 router is planned but not implemented yet."},
-        {"from": "implementation_plan", "to": "evaluation", "reason": "Task 4 evaluator is planned but not implemented yet."},
-        {"from": "implementation_plan", "to": "artifacts", "reason": "Task 4 publication layer is planned but not implemented yet."},
-        {"from": "implementation_plan", "to": "replay", "reason": "Task 4 replay path is planned but not implemented yet."},
-        {"from": "implementation_plan", "to": "dashboard_export", "reason": "Task 4 dashboard exporter is planned but not implemented yet."},
         {"from": "implementation_plan", "to": "cli", "reason": "Task 5 CLI is planned but not implemented yet."},
         {"from": "implementation_plan", "to": "cli_launcher", "reason": "Task 5 launcher is planned but not implemented yet."},
     ]
     graph = {
-        "schema": "exp458_task3_rank_qualification_codemap_v1",
+        "schema": "exp458_task4_route_evaluation_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -490,7 +552,7 @@ def build_map_antigravity(
         "unknown_relationships": unknown_relationships,
     }
     lock = {
-        "schema": "exp458_task3_rank_qualification_codemap_lock_v1",
+        "schema": "exp458_task4_route_evaluation_codemap_lock_v1",
         "source_parent_commit": source_commit,
         "working_tree_dirty": False,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),

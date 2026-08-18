@@ -216,20 +216,21 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "14&gt;5",
             "TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311",
             "공식 결과가 아니라 예상 후보 결과",
-            "Task 3/6",
+            "Task 4/6",
             "공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음",
             "두 seed 20260721와 20261721가 각각 모든 gate를 만족해야 한다.",
-            "Task 3 source/qualification 완료",
+            "Task 4 router/evaluation/replay 완료",
         ):
             self.assertIn(value, dashboard)
 
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("planned_not_started", report)
-        self.assertIn("Task 1부터 Task 3까지 완료했다", report)
+        self.assertIn("Task 1부터 Task 4까지 완료했다", report)
         self.assertIn("공식 evaluate/inspect, TEST label", report)
         self.assertIn("6e8e500d19afcb17907ef53ad1527b5781c6d007", report)
         self.assertIn("0.9796866524522819", report)
         self.assertIn("0.9485180577280324", report)
+        self.assertIn("Task4 uses synthetic/frozen evidence only", report)
 
         plan = plan_path.read_text(encoding="utf-8")
         self.assertIn('<input type="checkbox" checked disabled>Task 1:', plan)
@@ -240,9 +241,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
         task2 = plan.split("Task 2:", 1)[1].split("Task 3:", 1)[0]
         self.assertEqual(task2.count('<input type="checkbox" checked disabled>'), 7)
         task3 = plan.split("Task 3:", 1)[1].split("Task 4:", 1)[0]
-        self.assertEqual(task3.count('<input type="checkbox" checked disabled>'), 6)
+        self.assertEqual(task3.count('<input type="checkbox" checked disabled>'), 7)
+        task4 = plan.split("Task 4:", 1)[1].split("Task 5:", 1)[0]
+        self.assertEqual(task4.count('<input type="checkbox" checked disabled>'), 7)
         for task_number in range(2, 7):
-            if task_number in {2, 3}:
+            if task_number in {2, 3, 4}:
                 continue
             task = plan.split(f"Task {task_number}:", 1)[1]
             if task_number < 6:
@@ -279,15 +282,15 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "rank_auc",
             "train_source",
             "train_qualification",
-        ):
-            self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
-            self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
-        for node_id in (
             "router",
             "evaluation",
             "artifacts",
             "replay",
             "dashboard_export",
+        ):
+            self.assertNotEqual(nodes[node_id].get("status"), "future_unknown")
+            self.assertTrue((ROOT_ANTIGRAVITY / nodes[node_id]["path"]).exists())
+        for node_id in (
             "cli",
             "cli_launcher",
         ):
