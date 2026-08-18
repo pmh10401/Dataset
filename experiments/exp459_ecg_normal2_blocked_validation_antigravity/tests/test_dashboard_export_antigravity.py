@@ -29,7 +29,7 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             },
         )
         self.assertEqual(dashboard["experiment_id"], "Exp459")
-        self.assertEqual(dashboard["progress"], "Task 4/6")
+        self.assertEqual(dashboard["progress"], "Task 5/6")
         self.assertEqual(dashboard["status"], "unstable")
         self.assertFalse(dashboard["passed"])
         self.assertEqual(dashboard["label_query_count"], 0)

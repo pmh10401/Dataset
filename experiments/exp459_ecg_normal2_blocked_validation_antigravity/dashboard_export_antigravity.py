@@ -1,4 +1,4 @@
-"""Strict aggregate dashboard payload for Exp459 Task 4."""
+"""Strict aggregate dashboard payload for Exp459 Task 5."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def _dashboard_payload_antigravity(
 ) -> dict[str, object]:
     return {
         "experiment_id": FROZEN_CONFIG_ANTIGRAVITY.experiment,
-        "progress": "Task 4/6",
+        "progress": "Task 5/6",
         "status": decision.status,
         "passed": decision.passed,
         "label_query_count": 0,
