@@ -54,6 +54,24 @@ def _vector_antigravity(values: object, name: str) -> np.ndarray:
     return result
 
 
+def _indices_antigravity(
+    values: object,
+    name: str,
+    *,
+    upper: int,
+) -> np.ndarray:
+    if not isinstance(values, np.ndarray) or values.ndim != 1 or values.size < 1:
+        raise ValueError(f"{name} must be a non-empty one-dimensional ndarray")
+    if values.dtype.kind not in {"i", "u"}:
+        raise ValueError(f"{name} must use an exact integer dtype")
+    indices = np.asarray(values, dtype=np.int64)
+    if np.any(indices < 0) or np.any(indices >= upper):
+        raise ValueError(f"{name} must stay within TRAIN index range")
+    if np.unique(indices).size != indices.size:
+        raise ValueError(f"{name} must remain unique within each fold")
+    return indices
+
+
 @dataclass(frozen=True, slots=True)
 class FoldScoresAntigravity:
     original: np.ndarray
@@ -160,9 +178,20 @@ def _qualify_normal2_with_dependencies_antigravity(
         }
         coverage = np.zeros(len(values), dtype=np.uint8)
         dimensions: set[int] = set()
-        for fold_index, (fit_indices, query_indices) in enumerate(
-            crossfit_plan_antigravity(len(values), seed=seed)
-        ):
+        folds = tuple(crossfit_plan_antigravity(len(values), seed=seed))
+        if len(folds) != FROZEN_CONFIG_ANTIGRAVITY.folds:
+            raise ValueError("cross-fit must contain the exact five folds")
+        for fold_index, (fit_indices, query_indices) in enumerate(folds):
+            fit_indices = _indices_antigravity(
+                fit_indices,
+                "fit indices",
+                upper=len(values),
+            )
+            query_indices = _indices_antigravity(
+                query_indices,
+                "query indices",
+                upper=len(values),
+            )
             if np.intersect1d(fit_indices, query_indices).size:
                 raise ValueError("fit and query indices must remain disjoint")
             fold = fold_scorer(
@@ -177,7 +206,7 @@ def _qualify_normal2_with_dependencies_antigravity(
             original[query_indices] = fold.original
             for name in _EXPECTED_PRIMARY_TYPES_ANTIGRAVITY:
                 primary[name][query_indices] = fold.primary[name]
-            coverage[query_indices] += 1
+            np.add.at(coverage, query_indices, 1)
             dimensions.add(fold.feature_dimension)
         if not np.all(coverage == 1):
             raise ValueError("cross-fit must cover every TRAIN row exactly once")

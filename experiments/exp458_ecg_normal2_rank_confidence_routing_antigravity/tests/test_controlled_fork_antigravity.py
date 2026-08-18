@@ -17,6 +17,20 @@ EXP458_PACKAGE_ANTIGRAVITY = (
 EXP457_BASE_COMMIT_ANTIGRAVITY = "6e8e500d19afcb17907ef53ad1527b5781c6d007"
 
 
+def _function_node_antigravity(tree: ast.Module, name: str) -> ast.FunctionDef:
+    function = next(
+        (
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == name
+        ),
+        None,
+    )
+    if function is None:
+        raise AssertionError(f"missing function: {name}")
+    return function
+
+
 class ControlledForkAntigravityTest(unittest.TestCase):
     def test_exp457_frozen_constants_remain_unchanged_antigravity(self) -> None:
         from experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.config_antigravity import (
@@ -116,6 +130,97 @@ class ControlledForkAntigravityTest(unittest.TestCase):
             constants["_EXPECTED_PRIMARY_TYPES_ANTIGRAVITY"],
             ("level_shift", "gradual_drift", "amplitude_scaling", "period_change"),
         )
+
+        scorer_function = _function_node_antigravity(
+            qualification_tree,
+            "_score_fold_antigravity",
+        )
+        call = next(
+            (
+                node.value
+                for node in scorer_function.body
+                if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "fold" for target in node.targets)
+                and isinstance(node.value, ast.Call)
+            ),
+            None,
+        )
+        self.assertIsNotNone(call)
+        assert isinstance(call, ast.Call)
+        self.assertIsInstance(call.func, ast.Name)
+        self.assertEqual(call.func.id, "_exp457_score_fold_antigravity")
+        self.assertEqual(
+            [arg.id for arg in call.args if isinstance(arg, ast.Name)],
+            ["train", "fit_indices", "query_indices"],
+        )
+        self.assertEqual(
+            [(keyword.arg, getattr(keyword.value, "id", None)) for keyword in call.keywords],
+            [("seed", "seed"), ("fold_index", "fold_index")],
+        )
+
+        import_aliases = [
+            (alias.name, alias.asname)
+            for node in qualification_tree.body
+            if isinstance(node, ast.ImportFrom)
+            and node.module
+            == "experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.qualification_antigravity"
+            for alias in node.names
+        ]
+        self.assertIn(
+            ("_score_fold_antigravity", "_exp457_score_fold_antigravity"),
+            import_aliases,
+        )
+
+        qualify_function = _function_node_antigravity(
+            qualification_tree,
+            "_qualify_normal2_with_dependencies_antigravity",
+        )
+        folds_assignment = next(
+            (
+                node
+                for node in ast.walk(qualify_function)
+                if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "folds" for target in node.targets)
+            ),
+            None,
+        )
+        self.assertIsNotNone(folds_assignment)
+        assert isinstance(folds_assignment, ast.Assign)
+        self.assertIsInstance(folds_assignment.value, ast.Call)
+        self.assertIsInstance(folds_assignment.value.func, ast.Name)
+        self.assertEqual(folds_assignment.value.func.id, "tuple")
+        self.assertEqual(len(folds_assignment.value.args), 1)
+        inner_call = folds_assignment.value.args[0]
+        self.assertIsInstance(inner_call, ast.Call)
+        self.assertIsInstance(inner_call.func, ast.Name)
+        self.assertEqual(inner_call.func.id, "crossfit_plan_antigravity")
+        self.assertEqual(len(inner_call.args), 1)
+        self.assertIsInstance(inner_call.args[0], ast.Call)
+        self.assertIsInstance(inner_call.args[0].func, ast.Name)
+        self.assertEqual(inner_call.args[0].func.id, "len")
+        self.assertEqual(
+            [arg.id for arg in inner_call.args[0].args if isinstance(arg, ast.Name)],
+            ["values"],
+        )
+        self.assertEqual(
+            [(keyword.arg, getattr(keyword.value, "id", None)) for keyword in inner_call.keywords],
+            [("seed", "seed")],
+        )
+
+        exact_fold_check = any(
+            isinstance(node, ast.If)
+            and isinstance(node.test, ast.Compare)
+            and isinstance(node.test.left, ast.Call)
+            and isinstance(node.test.left.func, ast.Name)
+            and node.test.left.func.id == "len"
+            and len(node.test.left.args) == 1
+            and isinstance(node.test.left.args[0], ast.Name)
+            and node.test.left.args[0].id == "folds"
+            and len(node.test.ops) == 1
+            and isinstance(node.test.ops[0], ast.NotEq)
+            for node in ast.walk(qualify_function)
+        )
+        self.assertTrue(exact_fold_check)
 
 
 if __name__ == "__main__":

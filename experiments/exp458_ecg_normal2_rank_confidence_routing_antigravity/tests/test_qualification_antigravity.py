@@ -307,8 +307,11 @@ class QualificationAntigravityTest(unittest.TestCase):
             )
 
         missing_plan = (
-            (np.asarray([3, 4, 5]), np.asarray([0, 1, 2])),
-            (np.asarray([0, 1, 2]), np.asarray([3, 4])),
+            (np.asarray([1, 2, 3, 4, 5]), np.asarray([0])),
+            (np.asarray([0, 2, 3, 4, 5]), np.asarray([1])),
+            (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+            (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+            (np.asarray([0, 1, 2, 3, 5]), np.asarray([4])),
         )
         with patch.object(qualification, "crossfit_plan_antigravity", return_value=missing_plan), self.assertRaisesRegex(
             ValueError, "exactly once"
@@ -324,8 +327,11 @@ class QualificationAntigravityTest(unittest.TestCase):
             )
 
         duplicate_plan = (
-            (np.asarray([2, 3, 4, 5]), np.asarray([0, 1])),
-            (np.asarray([0, 1, 4, 5]), np.asarray([2, 2, 3])),
+            (np.asarray([1, 2, 3, 4, 5]), np.asarray([0])),
+            (np.asarray([0, 2, 3, 4, 5]), np.asarray([1])),
+            (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+            (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+            (np.asarray([0, 1, 2, 4]), np.asarray([3, 5])),
         )
         with patch.object(qualification, "crossfit_plan_antigravity", return_value=duplicate_plan), self.assertRaisesRegex(
             ValueError, "exactly once"
@@ -340,9 +346,34 @@ class QualificationAntigravityTest(unittest.TestCase):
                 ),
             )
 
+        duplicate_with_full_union_plan = (
+            (np.asarray([2, 3, 4, 5]), np.asarray([0, 0])),
+            (np.asarray([0, 1, 3, 4, 5]), np.asarray([1])),
+            (np.asarray([0, 1, 2, 4, 5]), np.asarray([2])),
+            (np.asarray([0, 1, 2, 3, 5]), np.asarray([3])),
+            (np.asarray([0, 1, 2, 3, 4]), np.asarray([4, 5])),
+        )
+        with patch.object(
+            qualification,
+            "crossfit_plan_antigravity",
+            return_value=duplicate_with_full_union_plan,
+        ), self.assertRaisesRegex(ValueError, "unique"):
+            qualification._qualify_normal2_with_dependencies_antigravity(
+                loader=lambda: rows_antigravity(6),
+                fold_scorer=fold_scorer_from_vectors_antigravity(
+                    {
+                        20260721: vectors_antigravity(6, level_shift_wins=36, gradual_drift_wins=36, amplitude_scaling_wins=36, period_change_wins=36),
+                        20261721: vectors_antigravity(6, level_shift_wins=36, gradual_drift_wins=36, amplitude_scaling_wins=36, period_change_wins=36),
+                    }
+                ),
+            )
+
         overlap_plan = (
-            (np.asarray([0, 1, 2, 3]), np.asarray([3, 4, 5])),
-            (np.asarray([0, 1, 2]), np.asarray([0, 1, 2])),
+            (np.asarray([1, 2, 3, 4, 5]), np.asarray([0])),
+            (np.asarray([0, 2, 3, 4, 5]), np.asarray([1])),
+            (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+            (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+            (np.asarray([0, 1, 2, 3, 4]), np.asarray([4, 5])),
         )
         with patch.object(qualification, "crossfit_plan_antigravity", return_value=overlap_plan), self.assertRaisesRegex(
             ValueError, "disjoint"
@@ -356,6 +387,102 @@ class QualificationAntigravityTest(unittest.TestCase):
                     }
                 ),
             )
+
+    def test_qualification_requires_exact_five_folds_and_valid_index_vectors_antigravity(self) -> None:
+        """Break caught: fold count, dtype, bounds, or per-fold uniqueness drifts from the frozen cross-fit contract."""
+        from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity import (
+            qualification_antigravity as qualification,
+        )
+
+        passing = {
+            seed: vectors_antigravity(
+                6,
+                level_shift_wins=36,
+                gradual_drift_wins=36,
+                amplitude_scaling_wins=36,
+                period_change_wins=36,
+            )
+            for seed in SEEDS_ANTIGRAVITY
+        }
+
+        cases = (
+            (
+                "four-folds",
+                (
+                    (np.asarray([2, 3, 4, 5]), np.asarray([0, 1])),
+                    (np.asarray([0, 1, 4, 5]), np.asarray([2])),
+                    (np.asarray([0, 1, 2, 5]), np.asarray([3, 4])),
+                    (np.asarray([0, 1, 2, 3]), np.asarray([5])),
+                ),
+                "five folds",
+            ),
+            (
+                "six-folds",
+                (
+                    (np.asarray([1, 2, 3, 4, 5]), np.asarray([0])),
+                    (np.asarray([0, 2, 3, 4, 5]), np.asarray([1])),
+                    (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+                    (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+                    (np.asarray([0, 1, 2, 3, 5]), np.asarray([4])),
+                    (np.asarray([0, 1, 2, 3, 4]), np.asarray([5])),
+                ),
+                "five folds",
+            ),
+            (
+                "float-query",
+                (
+                    (np.asarray([2, 3, 4, 5]), np.asarray([0.0, 1.0])),
+                    (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+                    (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+                    (np.asarray([0, 1, 2, 3, 5]), np.asarray([4])),
+                    (np.asarray([0, 1, 2, 3, 4]), np.asarray([5])),
+                ),
+                "integer",
+            ),
+            (
+                "bool-fit",
+                (
+                    (np.asarray([True, False, True, False, True, False]), np.asarray([0])),
+                    (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+                    (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+                    (np.asarray([0, 1, 2, 3, 5]), np.asarray([4])),
+                    (np.asarray([0, 1, 2, 3, 4]), np.asarray([5])),
+                ),
+                "integer",
+            ),
+            (
+                "out-of-range",
+                (
+                    (np.asarray([2, 3, 4, 5]), np.asarray([0, 6])),
+                    (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+                    (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+                    (np.asarray([0, 1, 2, 3, 5]), np.asarray([4])),
+                    (np.asarray([0, 1, 2, 3, 4]), np.asarray([5])),
+                ),
+                "range",
+            ),
+            (
+                "duplicate-fit",
+                (
+                    (np.asarray([2, 2, 4, 5]), np.asarray([0])),
+                    (np.asarray([0, 1, 3, 4, 5]), np.asarray([2])),
+                    (np.asarray([0, 1, 2, 4, 5]), np.asarray([3])),
+                    (np.asarray([0, 1, 2, 3, 5]), np.asarray([4])),
+                    (np.asarray([0, 1, 2, 3, 4]), np.asarray([5])),
+                ),
+                "unique",
+            ),
+        )
+        for name, plan, message in cases:
+            with self.subTest(name=name), patch.object(
+                qualification,
+                "crossfit_plan_antigravity",
+                return_value=plan,
+            ), self.assertRaisesRegex(ValueError, message):
+                qualification._qualify_normal2_with_dependencies_antigravity(
+                    loader=lambda: rows_antigravity(6),
+                    fold_scorer=fold_scorer_from_vectors_antigravity(passing),
+                )
 
 
 if __name__ == "__main__":
