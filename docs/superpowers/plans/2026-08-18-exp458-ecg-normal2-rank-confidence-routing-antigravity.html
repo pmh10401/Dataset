@@ -122,7 +122,7 @@ git diff --exit-code 6e8e500d -- experiments/exp457_ecg_train_synthetic_confiden
   </section>
 
   <section>
-    <h2><label><input type="checkbox" disabled>Task 3: TRAIN 점수와 normal_2 자격 평가</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 3: TRAIN 점수와 normal_2 자격 평가</label></h2>
     <h3>Files</h3>
     <ul>
       <li>Create: <code>sources_antigravity.py</code>, <code>qualification_antigravity.py</code></li>
@@ -139,7 +139,7 @@ _qualify_normal2_with_dependencies_antigravity(
   fold_scorer: Callable[..., FoldScoresAntigravity]
 ) -&gt; RankQualificationAntigravity
 </code></pre>
-    <div class="step"><label><input type="checkbox" disabled>Step 1: RED 합성 자격 평가 테스트</label><pre><code>def test_both_seeds_and_all_four_auc_types_are_required_antigravity():
+    <div class="step"><label><input type="checkbox" checked disabled>Step 1: RED 합성 자격 평가 테스트</label><pre><code>def test_both_seeds_and_all_four_auc_types_are_required_antigravity():
     q = qualify_fixture(seed_1=(.91,.91,.91,.91), seed_2=(.91,.91,.84,.91))
     self.assertFalse(q.passed)
 
@@ -147,11 +147,11 @@ def test_only_normal2_source_is_accepted_antigravity():
     with self.assertRaises(ValueError):
         load_named_train_antigravity("ECG5000_normal_1")
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 2: RED 확인</label><pre><code>$PY -m unittest \
+    <div class="step"><label><input type="checkbox" checked disabled>Step 2: RED 확인</label><pre><code>$PY -m unittest \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_sources_antigravity \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_qualification_antigravity
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 3: Exp457 계산 경로를 그대로 연결</label><p>TRAIN loader, 5분할, Hydra score fold, Exp417 네 perturbation을 재사용한다. 각 query 행은 한 번만 점수를 받고, normal/anomaly 배열로 AUC를 계산한다. 기존 <code>p≤0.005</code>는 정상 Wilson 계산에만 남긴다.</p><pre><code>for seed in (20260721, 20261721):
+    <div class="step"><label><input type="checkbox" checked disabled>Step 3: Exp457 계산 경로를 그대로 연결</label><p>TRAIN loader는 dedicated no-argument normal_2 source로 고정했고, qualification은 Exp457의 5분할 Hydra score fold를 그대로 재사용했다. 각 query 행은 한 번만 점수를 받고, normal/anomaly 배열로 AUC를 계산한다. 기존 <code>p≤0.005</code>는 정상 Wilson 계산에만 남겼다.</p><pre><code>for seed in (20260721, 20261721):
     normal, primary = collect_exact_crossfit_scores(train, seed)
     aucs = {name: mann_whitney_auc_antigravity(normal, primary[name])
             for name in PRIMARY_TYPES}
@@ -160,7 +160,7 @@ return RankQualificationAntigravity(
     dataset, tuple(seed_evidence), all(row.passed for row in seed_evidence)
 )
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 4: GREEN 두 번·기존 회귀</label><pre><code>$PY -m unittest \
+    <div class="step"><label><input type="checkbox" checked disabled>Step 4: GREEN 두 번·기존 회귀</label><pre><code>$PY -m unittest \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_sources_antigravity \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_qualification_antigravity
 $PY -m unittest \
@@ -168,8 +168,8 @@ $PY -m unittest \
   experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_qualification_antigravity
 $PY -m unittest experiments.exp457_ecg_train_synthetic_confidence_routing_antigravity.tests.test_qualification_antigravity
 </code></pre></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 5: 실제 TRAIN 읽기 전용 smoke 1회</label><p>normal_2만 계산해 두 seed의 8개 AUC, 평균 AUC, Wilson, label query 0을 확인한다. 이 smoke는 공식 결과 폴더를 만들지 않는다.</p></div>
-    <div class="step"><label><input type="checkbox" disabled>Step 6: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): qualify normal2 by score rank"
+    <div class="step"><label><input type="checkbox" checked disabled>Step 5: 실제 TRAIN 읽기 전용 smoke 1회</label><p>normal_2만 계산해 두 seed의 8개 AUC, 평균 AUC, Wilson, label query 0을 확인했다. 이 smoke는 공식 결과 폴더를 만들지 않았고, 103.54300962504931초에 1413×140 float32 read-only TRAIN matrix와 exact expected AUC를 반환했다.</p></div>
+    <div class="step"><label><input type="checkbox" checked disabled>Step 6: map·HTML·검토·커밋</label><pre><code>git commit -m "feat(exp458): qualify normal2 by score rank"
 </code></pre></div>
   </section>
 

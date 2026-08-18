@@ -12,19 +12,21 @@
 </head>
 <body><main>
   <h1>Exp458 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 1과 Task 2를 완료했다. 상태는 여전히 <code>planned_not_started</code>이며 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
-  <p><strong>Task 2 범위:</strong> Exp458의 고정 설정, normal_2 전용 순위 계약, chunked Mann-Whitney AUC 계산기, Exp457 controlled-fork byte guard, Task 2 경계까지의 code map을 추가했다. TRAIN source 연결, qualification 실행, 라우터, 평가기, CLI는 아직 구현하지 않았다.</p>
+  <p><strong>현재 단계:</strong> Task 1부터 Task 3까지 완료했다. 상태는 여전히 <code>planned_not_started</code>이며 공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 0회다.</p>
+  <p><strong>Task 3 범위:</strong> Exp458의 고정 설정, normal_2 전용 순위 계약, chunked Mann-Whitney AUC 계산기, normal_2 TRAIN source, two-seed rank qualification, Exp457 controlled-fork byte guard, Task 3 경계까지의 code map을 추가했다. 라우터, 평가기, artifacts, replay, CLI는 아직 구현하지 않았다.</p>
 
   <h2>이번 단계에서 만든 것</h2>
   <ul>
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/config_antigravity.py</code>: Exp458 identity, dataset, seed, gate, structure rule을 exact 값으로 고정</li>
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/contracts_antigravity.py</code>: two-seed rank evidence와 qualification semantics를 exact type과 boundary로 검증</li>
     <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/rank_auc_antigravity.py</code>: <code>(anomaly&gt;normal wins + 0.5*ties)/(n_normal*n_anomaly)</code> 공식을 chunk 단위로 그대로 계산</li>
-    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_rank_auc_antigravity.py</code>, <code>test_controlled_fork_antigravity.py</code>: Task 2 RED/GREEN regression과 Exp457 byte guard</li>
-    <li><code>docs/EXP458_DASHBOARD_antigravity.html</code>, <code>docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html</code>, <code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code>: Task 2 truth 반영</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/sources_antigravity.py</code>: 정확히 한 번의 TRAIN-only SQL로 <code>ECG5000_normal_2</code>의 1413×140 float32 finite owned read-only matrix를 읽는다.</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/qualification_antigravity.py</code>: Exp457의 5-fold Hydra score path를 그대로 재사용하고, normal alerts는 기존 <code>p≤0.005</code>로 Wilson에만 남기고, candidate sensitivity는 Task 2 AUC로 다시 계산한다.</li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_sources_antigravity.py</code>, <code>test_qualification_antigravity.py</code>, <code>test_controlled_fork_antigravity.py</code>: Task 3 RED/GREEN regression과 Exp457 science boundary guard</li>
+    <li><code>docs/EXP458_DASHBOARD_antigravity.html</code>, <code>docs/superpowers/plans/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html</code>, <code>docs/codemap/codemap_exp458_antigravity.html/json/lock</code>: Task 3 truth 반영</li>
   </ul>
 
-  <h2>Task 2 진실 계약</h2>
+  <h2>Task 3 진실 계약</h2>
   <ul>
     <li>대상 dataset은 <code>ECG5000_normal_2</code> 하나뿐이다.</li>
     <li>seed는 <code>20260721</code>, <code>20261721</code> 두 개를 exact order로 유지한다.</li>
@@ -33,13 +35,20 @@
     <li>qualification 통과는 두 seed가 각각 모두 통과할 때만 참이다.</li>
   </ul>
 
-  <h2>AUC 증거</h2>
-  <p>RED 테스트는 모듈 부재 상태에서 시작했고, GREEN에서는 세 기준 예제를 통과했다: <code>[0,1]</code> 대 <code>[1,2]</code>는 0.875, 방향을 바꾸면 0.125, 완전 동점은 0.5다. 구현은 anomaly block과 normal vector를 chunk로 비교하지만, duplicate와 tie를 포함한 direct pairwise 공식과 정확히 같은 값을 반환한다.</p>
+  <h2>실제 TRAIN smoke 증거</h2>
+  <p>Task 3 synthetic GREEN 뒤에 read-only public smoke를 정확히 1회 실행했다. 실행 시간은 103.54300962504931초였고, SQL은 <code>ECG5000_normal_2</code> 파라미터로 TRAIN query 한 번만 수행했다. label query 수는 0이었다.</p>
+  <table>
+    <thead><tr><th>seed</th><th>level_shift</th><th>gradual_drift</th><th>amplitude_scaling</th><th>period_change</th><th>pooled AUC</th><th>normal alerts</th><th>Wilson</th><th>pass</th></tr></thead>
+    <tbody>
+      <tr><td>20260721</td><td>0.9796866524522819</td><td>0.9052489545815847</td><td>0.9951992643379718</td><td>0.9104679076956519</td><td>0.9476506947668726</td><td>6</td><td>0.00923330730695328</td><td>true</td></tr>
+      <tr><td>20261721</td><td>0.9761215364958586</td><td>0.895775202359648</td><td>0.9943593234193259</td><td>0.9278161686372973</td><td>0.9485180577280324</td><td>6</td><td>0.00923330730695328</td><td>true</td></tr>
+    </tbody>
+  </table>
+  <p>shape는 1413×140, dtype은 <code>float32</code>, finite/owned/read-only는 각각 true/true/true였다. smoke 결과는 승인 설계에 적힌 expected AUC와 exact match했다.</p>
 
   <h2>아직 하지 않은 것</h2>
   <ul>
     <li>공식 evaluate/inspect, TEST label, 공식 root 생성</li>
-    <li>실제 TRAIN source 연결과 two-seed qualification 실행</li>
     <li>normal_2 route 결정, 9-leaf publication, replay, dashboard export, CLI</li>
   </ul>
 
@@ -48,15 +57,18 @@
 
   <h2>검증</h2>
   <ul>
-    <li>Task 2 focused suite를 두 번 실행</li>
+    <li>Task 3 focused suite를 두 번 실행</li>
+    <li>Task 1–2 affected suite를 한 번 실행</li>
+    <li>Exp457 source/qualification regression을 한 번 실행</li>
     <li><code>py_compile</code>로 새 Python 파일 문법 확인</li>
     <li><code>git diff --check</code> 확인</li>
     <li>Exp457 byte guard 확인</li>
     <li>Exp458 code map validate-only 확인</li>
     <li>official root 부재 확인</li>
+    <li>read-only public smoke 1회 확인</li>
   </ul>
 
   <h2>금지 경계</h2>
-  <p>공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 금지 상태를 유지한다. 본 보고서는 <strong>공식 evaluate/inspect, TEST label</strong>이 0회라는 점과 Task 3 이후 경계가 여전히 future임을 truthfully 기록하는 데만 사용된다.</p>
+  <p>공식 evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 금지 상태를 유지한다. 본 보고서는 <strong>공식 evaluate/inspect, TEST label</strong>이 0회라는 점과 Task 4 이후 경계만 future라는 점을 truthfully 기록하는 데만 사용된다.</p>
 </main></body>
 </html>

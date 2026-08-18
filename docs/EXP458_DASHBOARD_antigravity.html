@@ -15,12 +15,12 @@
 <body><main>
   <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
   <table>
-    <tr><th>진행</th><td>Task 2/6</td></tr>
+    <tr><th>진행</th><td>Task 3/6</td></tr>
     <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
     <tr><th>현재 판단</th><td><strong>공식 결과 없음</strong></td></tr>
     <tr><th>공식 실행</th><td>공식 evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
     <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
-    <tr><th>현재 구현</th><td>고정 설정 / rank contracts / AUC 계산기 완료, qualification·route·evaluation·CLI는 아직 미구현</td></tr>
+    <tr><th>현재 구현</th><td>Task 3 source/qualification 완료. 고정 설정 / rank contracts / AUC 계산기 / normal_2 TRAIN loader / two-seed qualification 완료, route·evaluation·CLI는 아직 미구현</td></tr>
   </table>
 
   <div class="box">
@@ -45,12 +45,28 @@
 
   <h2>예상 후보 결과</h2>
   <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
-  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 2에서는 route를 아직 실제 계산하지 않고, 그 전단의 고정 계약과 AUC 계산기만 완성했다.</p>
+  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. Task 3에서는 route를 아직 실제 계산하지 않고, normal_2 TRAIN source와 two-seed qualification까지 실제로 검증했다.</p>
+
+  <h2>Task 3 실제 TRAIN smoke</h2>
+  <table>
+    <thead><tr><th>항목</th><th>값</th></tr></thead>
+    <tbody>
+      <tr><td>실행 수</td><td>1회 read-only smoke</td></tr>
+      <tr><td>소요 시간</td><td>103.54300962504931초</td></tr>
+      <tr><td>TRAIN shape / dtype</td><td>1413×140 / <code>float32</code></td></tr>
+      <tr><td>finite / owned / writeable</td><td>true / true / false</td></tr>
+      <tr><td>SQL query 수</td><td>1</td></tr>
+      <tr><td>label query 수</td><td>0</td></tr>
+      <tr><td>dataset parameter</td><td><code>ECG5000_normal_2</code></td></tr>
+      <tr><td>seed 20260721</td><td>level_shift 0.9796866524522819 / gradual_drift 0.9052489545815847 / amplitude_scaling 0.9951992643379718 / period_change 0.9104679076956519 / pooled 0.9476506947668726 / Wilson 0.00923330730695328 / pass true</td></tr>
+      <tr><td>seed 20261721</td><td>level_shift 0.9761215364958586 / gradual_drift 0.895775202359648 / amplitude_scaling 0.9943593234193259 / period_change 0.9278161686372973 / pooled 0.9485180577280324 / Wilson 0.00923330730695328 / pass true</td></tr>
+    </tbody>
+  </table>
 
   <h2>현재 설명</h2>
   <div class="box">
     <p>normal_2만 다시 보는 이유는 구조 진단이 <code>14&gt;5</code>로 유일하게 긍정적이었기 때문이다. 나머지 ECG 네 개는 아직 baseline으로 고정한다.</p>
-    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 2에서도 새로 도입하지 않는다.</p>
+    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 3에서도 새로 도입하지 않는다.</p>
   </div>
 </main></body>
 </html>
