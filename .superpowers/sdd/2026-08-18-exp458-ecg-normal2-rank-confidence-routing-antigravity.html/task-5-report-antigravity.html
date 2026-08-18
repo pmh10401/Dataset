@@ -33,7 +33,7 @@
       <tr><td>RED 1</td><td><code>$PY -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td>8 tests ran; failures were missing <code>cli_antigravity.py</code>, missing launcher, plus one test-harness syntax issue.</td></tr>
       <tr><td>RED 2</td><td>same focused CLI command</td><td>8 tests ran; intended missing CLI/launcher failures remained after fixing the test harness.</td></tr>
       <tr><td>GREEN focused</td><td>same focused CLI command</td><td>Passed 3 times after implementation/correction: <code>Ran 8 tests ... OK</code>.</td></tr>
-      <tr><td>Full Exp458 synthetic</td><td><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>Final two required Task5 full-suite passes succeeded: <code>Ran 58 tests ... OK</code> and <code>Ran 58 tests ... OK</code>. Earlier attempts failed only on expected governance/map truth drift during implementation.</td></tr>
+      <tr><td>Full Exp458 synthetic</td><td><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>Original Task5 final two full-suite passes succeeded: <code>Ran 58 tests ... OK</code> and <code>Ran 58 tests ... OK</code>. Round 1 added launcher seam coverage, so the current suite reports 59 tests.</td></tr>
     </tbody>
   </table>
 
@@ -85,9 +85,12 @@
 
   <h2>Commit chain</h2>
   <ul>
-    <li>Functional implementation: <code>5f0876ddd6404318476804706ff6da92a6b24137</code> — <code>feat(exp458): freeze normal2 rank candidate</code></li>
-    <li>Functional test follow-up: <code>9278c5ad8ba4ef5fb130a8dce5fc37a4cfe69b7e</code> — <code>test(exp458): bound task5 plan checkbox assertions</code></li>
-    <li>Final map-only child: <code>ac891ffcf79fccdcd9efa0783c64c29704f1e63a</code> — <code>chore(exp458): sync task5 codemap after governance assertion</code></li>
+    <li>Original Task5 functional implementation: <code>5f0876ddd6404318476804706ff6da92a6b24137</code> — <code>feat(exp458): freeze normal2 rank candidate</code></li>
+    <li>Original Task5 functional test follow-up: <code>9278c5ad8ba4ef5fb130a8dce5fc37a4cfe69b7e</code> — <code>test(exp458): bound task5 plan checkbox assertions</code></li>
+    <li>Original Task5 map child: <code>ac891ffcf79fccdcd9efa0783c64c29704f1e63a</code> — <code>chore(exp458): sync task5 codemap after governance assertion</code></li>
+    <li>Round 1 functional/evidence fix: <code>a87aeed7cf830628e94921b5ff19a9eb76942ddd</code> — <code>fix(exp458): preserve task5 evidence and test launcher seam</code></li>
+    <li>Round 1 map child: <code>b9b8817f00f60cfa1cc953e4c85d302ab44ba259</code> — <code>chore(exp458): sync task5 codemap round1</code></li>
+    <li>Round 2 convention: one report/test-evidence functional commit followed by one map-only child bound to that clean functional parent.</li>
   </ul>
 
   <h2>Self-review</h2>
@@ -108,5 +111,17 @@
     <li>The private seam is not a public CLI option or environment override. It requires an in-process module named <code>_exp458_cli_private_test_antigravity</code> with exact capability <code>exp458_cli_private_test_antigravity_v1</code>.</li>
     <li>No real Hydra/TRAIN process was rerun in this round.</li>
   </ul>
+
+  <h2>Round 2/5 test evidence refresh</h2>
+  <p>No live TRAIN/Hydra process was run. The current CLI focused suite was run twice and the current full Exp458 synthetic suite was run twice.</p>
+  <table>
+    <thead><tr><th>Run</th><th>Exact command</th><th>unittest count/time</th><th>shell timing</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>CLI focused 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 9 tests in 0.342s</code></td><td><code>0.33s user 0.06s system 93% cpu 0.426 total</code></td><td>OK</td></tr>
+      <tr><td>CLI focused 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 9 tests in 0.337s</code></td><td><code>0.34s user 0.06s system 98% cpu 0.407 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 59 tests in 2.791s</code></td><td><code>2.27s user 0.48s system 86% cpu 3.169 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 59 tests in 2.416s</code></td><td><code>2.28s user 0.44s system 97% cpu 2.776 total</code></td><td>OK</td></tr>
+    </tbody>
+  </table>
 </main></body>
 </html>
