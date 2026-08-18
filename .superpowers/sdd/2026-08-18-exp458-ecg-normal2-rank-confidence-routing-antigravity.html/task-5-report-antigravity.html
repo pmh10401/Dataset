@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 Task 5 Report</title>
+  <style>
+    body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    h1,h2{line-height:1.25} table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    pre{background:#101827;color:#eef4ff;padding:1rem;overflow:auto}
+    .ok{color:#087a45}.warn{color:#8a5a00}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 Task 5 — closed CLI and private TRAIN reproducibility report</h1>
+  <p><strong>Status:</strong> <code>implementation_verified_awaiting_official_evaluation</code>. Task 5 is complete; Task 6 remains unchecked and unrun.</p>
+  <p><strong>Official boundary:</strong> public <code>evaluate</code> invocations 0, public <code>inspect</code> invocations 0, TEST label queries 0, official root absent, official result hashes null.</p>
+
+  <h2>Implemented files</h2>
+  <ul>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/cli_antigravity.py</code></li>
+    <li><code>scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py</code></li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_cli_antigravity.py</code></li>
+    <li>Updated dashboard, implementation report, plan, governance test, three ledgers, and Exp458 codemap triplet.</li>
+  </ul>
+
+  <h2>RED/GREEN record</h2>
+  <table>
+    <thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>RED 1</td><td><code>$PY -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td>8 tests ran; failures were missing <code>cli_antigravity.py</code>, missing launcher, plus one test-harness syntax issue.</td></tr>
+      <tr><td>RED 2</td><td>same focused CLI command</td><td>8 tests ran; intended missing CLI/launcher failures remained after fixing the test harness.</td></tr>
+      <tr><td>GREEN focused</td><td>same focused CLI command</td><td>Passed 3 times after implementation/correction: <code>Ran 8 tests ... OK</code>.</td></tr>
+      <tr><td>Full Exp458 synthetic</td><td><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>Final two required Task5 full-suite passes succeeded: <code>Ran 58 tests ... OK</code> and <code>Ran 58 tests ... OK</code>. Earlier attempts failed only on expected governance/map truth drift during implementation.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Actual TRAIN candidate runs</h2>
+  <p>Executed exactly twice, sequentially, in one process, through the private dependency seam. No public CLI command was invoked. Each run used a different temporary non-official root, then removed it.</p>
+  <p><strong>Stable evidence file:</strong> <code>.superpowers/sdd/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html/task-5-actual-run-evidence-antigravity.json</code>. This file preserves the already-completed session output; no live TRAIN/Hydra rerun was performed in round 1.</p>
+  <table>
+    <thead><tr><th>Run</th><th>Elapsed</th><th>Exit</th><th>Route</th><th>Label queries</th><th>Payload SHA-256</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>98.6050003329292s</td><td>0</td><td>candidate</td><td>0</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
+      <tr><td>2</td><td>99.41886049997993s</td><td>0</td><td>candidate</td><td>0</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
+    </tbody>
+  </table>
+  <p>Equality proof: qualification equal, route equal, dashboard equal, all 9 leaf hashes equal, canonical payload hash equal. Official root was absent before run 1, between runs, after run 2, and after cleanup.</p>
+
+  <h2>TRAIN evidence</h2>
+  <table>
+    <thead><tr><th>Seed</th><th>level_shift</th><th>gradual_drift</th><th>amplitude_scaling</th><th>period_change</th><th>pooled</th><th>Wilson</th><th>pass</th></tr></thead>
+    <tbody>
+      <tr><td>20260721</td><td>0.9796866524522819</td><td>0.9052489545815847</td><td>0.9951992643379718</td><td>0.9104679076956519</td><td>0.9476506947668726</td><td>0.00923330730695328</td><td>true</td></tr>
+      <tr><td>20261721</td><td>0.9761215364958586</td><td>0.895775202359648</td><td>0.9943593234193259</td><td>0.9278161686372973</td><td>0.9485180577280324</td><td>0.00923330730695328</td><td>true</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Projected candidate metrics</h2>
+  <table>
+    <thead><tr><th>Method</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th></tr></thead>
+    <tbody>
+      <tr><td>always_baseline</td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td></tr>
+      <tr><td>family_wide_local_gap</td><td>611</td><td>63</td><td>835</td><td>70791</td><td>0.5764150943396227</td></tr>
+      <tr><td>oracle_per_dataset</td><td>618</td><td>64</td><td>828</td><td>70790</td><td>0.5808270676691729</td></tr>
+      <tr><td>normal2_rank_router</td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td></tr>
+    </tbody>
+  </table>
+  <p>Criteria: FN 829 ≤ 834 pass; FP 66 ≤ 66 pass; F1 0.5796148426491311 &gt; 0.5764150943396227 pass.</p>
+
+  <h2>Verification</h2>
+  <ul>
+    <li><span class="ok">PASS</span> Exp458 full synthetic suite twice: 58 tests OK, 58 tests OK.</li>
+    <li><span class="ok">PASS</span> Exp457 non-governance science/product suite: 46 tests OK.</li>
+    <li><span class="ok">PASS</span> Exp456 non-governance product/science suite: 30 tests OK.</li>
+    <li><span class="ok">PASS</span> Exp457 byte guard from <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>.</li>
+    <li><span class="ok">PASS</span> <code>py_compile</code> on new/changed Exp458 Python files and map builder.</li>
+    <li><span class="ok">PASS</span> Exp458 map <code>--validate-only</code>.</li>
+    <li><span class="ok">PASS</span> <code>git diff --check</code>.</li>
+    <li><span class="ok">PASS</span> Official root absence check.</li>
+    <li><span class="warn">Historical governance only:</span> Exp457 full package and explicit Exp457 map validate fail with <code>invalid source parent</code> because its map is bound to older HEAD rules. Exp456 full package and explicit Exp456 map validate fail with old map fingerprint/report expectations. Non-governance predecessor science/product suites passed.</li>
+  </ul>
+
+  <h2>Commit chain</h2>
+  <ul>
+    <li>Functional implementation: <code>5f0876ddd6404318476804706ff6da92a6b24137</code> — <code>feat(exp458): freeze normal2 rank candidate</code></li>
+    <li>Functional test follow-up: <code>9278c5ad8ba4ef5fb130a8dce5fc37a4cfe69b7e</code> — <code>test(exp458): bound task5 plan checkbox assertions</code></li>
+    <li>Final map-only child: <code>ac891ffcf79fccdcd9efa0783c64c29704f1e63a</code> — <code>chore(exp458): sync task5 codemap after governance assertion</code></li>
+  </ul>
+
+  <h2>Self-review</h2>
+  <ul>
+    <li>The public parser accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>; abbreviations, overrides, retries, extra args, and help tokens are rejected.</li>
+    <li><code>main_antigravity</code> parses before loading selected phase; public evaluate validates clean current commit before loading candidate dependencies.</li>
+    <li>Private verification did not use the public official CLI or official root and did not access TEST labels.</li>
+    <li>Task 6 remains unchecked and requires explicit separate approval.</li>
+  </ul>
+
+  <h2>Concerns</h2>
+  <p>No Task5 blocking concern remains. The only caveat is historical predecessor governance-map validation tied to older HEAD/map assumptions; the predecessor non-governance science/product tests passed.</p>
+
+  <h2>Round 1/5 follow-up</h2>
+  <ul>
+    <li>Added stable actual-run evidence JSON with command semantics, session completion, temp-root identities, per-run AUC/pooled/Wilson/pass, route, comparisons, criteria, 9 leaf hash map, canonical hash construction, no exclusions, cleanup, and root-absence facts.</li>
+    <li>Added a RED/GREEN outside-CWD subprocess test that executes the actual launcher via <code>runpy.run_path</code>, uses a private in-memory test seam, performs synthetic non-official-root <code>evaluate --reviewed-commit LOWER40HEX</code>, writes 9 leaves, then runs bare <code>inspect</code> against the same root and verifies equal dashboard payloads.</li>
+    <li>The private seam is not a public CLI option or environment override. It requires an in-process module named <code>_exp458_cli_private_test_antigravity</code> with exact capability <code>exp458_cli_private_test_antigravity_v1</code>.</li>
+    <li>No real Hydra/TRAIN process was rerun in this round.</li>
+  </ul>
+</main></body>
+</html>

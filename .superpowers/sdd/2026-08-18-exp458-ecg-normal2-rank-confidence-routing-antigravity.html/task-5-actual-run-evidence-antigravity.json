@@ -1,0 +1,212 @@
+{
+  "schema": "exp458_task5_actual_run_evidence_antigravity_v1",
+  "source": {
+    "kind": "recovered_from_current_agent_tool_session_output",
+    "raw_log_file_found_before_round1": false,
+    "raw_log_file_unavailable_reason": "The two temporary roots were cleaned and no standalone raw stdout log file was found under the SDD workspace; this file preserves the complete JSON object printed by the already-completed tool session.",
+    "rerun_performed_in_round1": false
+  },
+  "reviewed_commit_at_actual_run": "b9d18dc77178542e9b4101bb8814cd7006446f0d",
+  "single_process_session": {
+    "tool_session_id": 22661,
+    "pid": null,
+    "pid_unavailable_reason": "The prior tool output exposed a session id and exit code, not an operating-system PID.",
+    "process_exit_code": 0,
+    "process_completion": "completed",
+    "command": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python - <<'PY' ... private dependency seam actual TRAIN candidate verification script ... PY",
+    "command_semantics": "One Python process executed exactly two sequential calls to cli_antigravity._evaluate_with_dependencies_antigravity using two temporary non-official roots, then printed one combined JSON proof.",
+    "public_cli_evaluate_invocations": 0,
+    "public_cli_inspect_invocations": 0
+  },
+  "official_boundary": {
+    "official_root": "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818",
+    "official_root_absent_before_run1": true,
+    "official_root_absent_between_runs": true,
+    "official_root_absent_after_run2": true,
+    "official_root_absent_after_cleanup": true,
+    "test_label_queries": 0,
+    "official_result_hashes": {
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null
+    }
+  },
+  "canonical_equality": {
+    "construction": "sha256(b''.join(name.encode() + b'\\0' + leaves[name] for name in _LEAVES_ANTIGRAVITY))",
+    "leaf_order": [
+      "context_antigravity.json",
+      "train_qualification_antigravity.jsonl",
+      "features_antigravity.jsonl",
+      "route_decisions_antigravity.jsonl",
+      "comparison_metrics_antigravity.json",
+      "family_metrics_antigravity.json",
+      "dashboard_snapshot_antigravity.json",
+      "decision_antigravity.json",
+      "artifact_sha256_antigravity.json"
+    ],
+    "exclusions": [],
+    "exclusion_note": "No fields were excluded from the canonical payload hash. Temporary root paths were recorded outside the artifact payload and were not present in the hashed leaves.",
+    "qualification_equal": true,
+    "route_equal": true,
+    "dashboard_equal": true,
+    "leaf_hashes_equal": true,
+    "canonical_payload_hash_equal": true,
+    "canonical_payload_sha256": "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "elapsed_seconds": 98.6050003329292,
+      "exit_code": 0,
+      "temp_root": "/var/folders/th/yvv115s11t7glkfvzp688vsm0000gn/T/exp458_actual_candidate_1_antigravity_hv1wkq4r/result_antigravity",
+      "temp_root_exists_after_cleanup": false,
+      "official_root_absent_before": true,
+      "official_root_absent_after": true,
+      "official_root_absent_after_cleanup": true,
+      "authority_label_query_counts": [
+        0
+      ],
+      "qualification": {
+        "dataset": "ECG5000_normal_2",
+        "passed": true,
+        "seeds": [
+          {
+            "seed": 20260721,
+            "normal_trials": 1413,
+            "normal_alerts": 6,
+            "normal_wilson_upper": 0.00923330730695328,
+            "per_type_auc": {
+              "level_shift": 0.9796866524522819,
+              "gradual_drift": 0.9052489545815847,
+              "amplitude_scaling": 0.9951992643379718,
+              "period_change": 0.9104679076956519
+            },
+            "pooled_auc": 0.9476506947668726,
+            "passed": true
+          },
+          {
+            "seed": 20261721,
+            "normal_trials": 1413,
+            "normal_alerts": 6,
+            "normal_wilson_upper": 0.00923330730695328,
+            "per_type_auc": {
+              "level_shift": 0.9761215364958586,
+              "gradual_drift": 0.895775202359648,
+              "amplitude_scaling": 0.9943593234193259,
+              "period_change": 0.9278161686372973
+            },
+            "pooled_auc": 0.9485180577280324,
+            "passed": true
+          }
+        ]
+      },
+      "route": {
+        "dataset": "ECG5000_normal_2",
+        "rank_gate": true,
+        "structure_gate": true,
+        "route": "candidate"
+      },
+      "comparisons": [
+        {"method": "always_baseline", "tp": 609, "fp": 66, "fn": 837, "tn": 70788, "f1": 0.5742574257425742},
+        {"method": "family_wide_local_gap", "tp": 611, "fp": 63, "fn": 835, "tn": 70791, "f1": 0.5764150943396227},
+        {"method": "oracle_per_dataset", "tp": 618, "fp": 64, "fn": 828, "tn": 70790, "f1": 0.5808270676691729},
+        {"method": "normal2_rank_router", "tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}
+      ],
+      "criteria": [
+        {"metric": "final_fn", "operator": "<=", "threshold": 834, "actual": 829, "passed": true},
+        {"metric": "final_fp", "operator": "<=", "threshold": 66, "actual": 66, "passed": true},
+        {"metric": "final_f1", "operator": ">", "threshold": 0.5764150943396227, "actual": 0.5796148426491311, "passed": true}
+      ],
+      "leaf_sha256": {
+        "artifact_sha256_antigravity.json": "8e01a8325afa4562b2e6c0e452a2a67754e01c04b40b313d6631201a037dd888",
+        "comparison_metrics_antigravity.json": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
+        "context_antigravity.json": "408152f19b10e5ce685a2acdffdab4d44a276b7899d77caa6f19c246dd5ba5a8",
+        "dashboard_snapshot_antigravity.json": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1",
+        "decision_antigravity.json": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
+        "family_metrics_antigravity.json": "f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6",
+        "features_antigravity.jsonl": "bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5",
+        "route_decisions_antigravity.jsonl": "d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed",
+        "train_qualification_antigravity.jsonl": "a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4"
+      },
+      "canonical_payload_sha256": "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8"
+    },
+    {
+      "run": 2,
+      "elapsed_seconds": 99.41886049997993,
+      "exit_code": 0,
+      "temp_root": "/var/folders/th/yvv115s11t7glkfvzp688vsm0000gn/T/exp458_actual_candidate_2_antigravity_9f6b_hhh/result_antigravity",
+      "temp_root_exists_after_cleanup": false,
+      "official_root_absent_before": true,
+      "official_root_absent_after": true,
+      "official_root_absent_after_cleanup": true,
+      "authority_label_query_counts": [
+        0
+      ],
+      "qualification": {
+        "dataset": "ECG5000_normal_2",
+        "passed": true,
+        "seeds": [
+          {
+            "seed": 20260721,
+            "normal_trials": 1413,
+            "normal_alerts": 6,
+            "normal_wilson_upper": 0.00923330730695328,
+            "per_type_auc": {
+              "level_shift": 0.9796866524522819,
+              "gradual_drift": 0.9052489545815847,
+              "amplitude_scaling": 0.9951992643379718,
+              "period_change": 0.9104679076956519
+            },
+            "pooled_auc": 0.9476506947668726,
+            "passed": true
+          },
+          {
+            "seed": 20261721,
+            "normal_trials": 1413,
+            "normal_alerts": 6,
+            "normal_wilson_upper": 0.00923330730695328,
+            "per_type_auc": {
+              "level_shift": 0.9761215364958586,
+              "gradual_drift": 0.895775202359648,
+              "amplitude_scaling": 0.9943593234193259,
+              "period_change": 0.9278161686372973
+            },
+            "pooled_auc": 0.9485180577280324,
+            "passed": true
+          }
+        ]
+      },
+      "route": {
+        "dataset": "ECG5000_normal_2",
+        "rank_gate": true,
+        "structure_gate": true,
+        "route": "candidate"
+      },
+      "comparisons": [
+        {"method": "always_baseline", "tp": 609, "fp": 66, "fn": 837, "tn": 70788, "f1": 0.5742574257425742},
+        {"method": "family_wide_local_gap", "tp": 611, "fp": 63, "fn": 835, "tn": 70791, "f1": 0.5764150943396227},
+        {"method": "oracle_per_dataset", "tp": 618, "fp": 64, "fn": 828, "tn": 70790, "f1": 0.5808270676691729},
+        {"method": "normal2_rank_router", "tp": 617, "fp": 66, "fn": 829, "tn": 70788, "f1": 0.5796148426491311}
+      ],
+      "criteria": [
+        {"metric": "final_fn", "operator": "<=", "threshold": 834, "actual": 829, "passed": true},
+        {"metric": "final_fp", "operator": "<=", "threshold": 66, "actual": 66, "passed": true},
+        {"metric": "final_f1", "operator": ">", "threshold": 0.5764150943396227, "actual": 0.5796148426491311, "passed": true}
+      ],
+      "leaf_sha256": {
+        "artifact_sha256_antigravity.json": "8e01a8325afa4562b2e6c0e452a2a67754e01c04b40b313d6631201a037dd888",
+        "comparison_metrics_antigravity.json": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
+        "context_antigravity.json": "408152f19b10e5ce685a2acdffdab4d44a276b7899d77caa6f19c246dd5ba5a8",
+        "dashboard_snapshot_antigravity.json": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1",
+        "decision_antigravity.json": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
+        "family_metrics_antigravity.json": "f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6",
+        "features_antigravity.jsonl": "bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5",
+        "route_decisions_antigravity.jsonl": "d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed",
+        "train_qualification_antigravity.jsonl": "a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4"
+      },
+      "canonical_payload_sha256": "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8"
+    }
+  ]
+}

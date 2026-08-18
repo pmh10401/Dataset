@@ -375,6 +375,96 @@ class CliAntigravityTest(unittest.TestCase):
         self.assertIn("only bare inspect", completed.stderr)
         self.assertNotIn("ModuleNotFoundError", completed.stderr)
 
+    def test_launcher_private_synthetic_evaluate_then_inspect_from_outside_cwd_antigravity(self) -> None:
+        """Break caught: launcher success path is untested outside CWD or requires a public override."""
+        self.assertTrue(_LAUNCHER_ANTIGRAVITY.is_file())
+        with tempfile.TemporaryDirectory(prefix="exp458_launcher_success_antigravity_") as temporary:
+            root = Path(temporary) / "synthetic_result_antigravity"
+            script = r'''
+from __future__ import annotations
+
+from contextlib import redirect_stdout
+from pathlib import Path
+import io
+import json
+import runpy
+import sys
+import types
+
+launcher = Path(sys.argv[1])
+root = Path(sys.argv[2])
+private = types.ModuleType("_exp458_cli_private_test_antigravity")
+private.CAPABILITY_ANTIGRAVITY = "exp458_cli_private_test_antigravity_v1"
+private.root_antigravity = root
+
+def validate_clean_current_commit_antigravity(reviewed_commit):
+    if reviewed_commit != "b" * 40:
+        raise AssertionError("unexpected reviewed commit")
+
+def evaluate_dependencies_antigravity():
+    from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.artifacts_antigravity import publish_result_antigravity
+    from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.evaluation_antigravity import evaluate_routes_antigravity
+    from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.replay_antigravity import inspect_result_at_antigravity
+    from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.router_antigravity import route_normal2_antigravity
+    from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_evaluation_antigravity import exp456_authority_antigravity
+    from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_router_antigravity import qualification_antigravity
+
+    return (
+        lambda: qualification_antigravity(True),
+        exp456_authority_antigravity,
+        route_normal2_antigravity,
+        evaluate_routes_antigravity,
+        publish_result_antigravity,
+        inspect_result_at_antigravity,
+    )
+
+private.validate_clean_current_commit_antigravity = validate_clean_current_commit_antigravity
+private.evaluate_dependencies_antigravity = evaluate_dependencies_antigravity
+sys.modules[private.__name__] = private
+
+def invoke(argv):
+    output = io.StringIO()
+    old_argv = sys.argv
+    try:
+        sys.argv = [str(launcher), *argv]
+        with redirect_stdout(output):
+            try:
+                runpy.run_path(str(launcher), run_name="__main__")
+            except SystemExit as exited:
+                code = 0 if exited.code is None else exited.code
+            else:
+                code = 0
+    finally:
+        sys.argv = old_argv
+    return code, json.loads(output.getvalue())
+
+evaluate_code, evaluate_payload = invoke(["evaluate", "--reviewed-commit", "b" * 40])
+inspect_code, inspect_payload = invoke(["inspect"])
+print(json.dumps({
+    "evaluate_code": evaluate_code,
+    "inspect_code": inspect_code,
+    "payloads_equal": evaluate_payload == inspect_payload,
+    "leaf_count": len(tuple(root.iterdir())),
+    "route": evaluate_payload["normal2_route"]["route"],
+    "official_root_exists": Path("/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818").exists(),
+}, sort_keys=True))
+'''
+            completed = subprocess.run(
+                [sys.executable, "-c", script, str(_LAUNCHER_ANTIGRAVITY), str(root)],
+                cwd=temporary,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        proof = json.loads(completed.stdout)
+        self.assertEqual(proof["evaluate_code"], 0)
+        self.assertEqual(proof["inspect_code"], 0)
+        self.assertTrue(proof["payloads_equal"])
+        self.assertEqual(proof["leaf_count"], 9)
+        self.assertEqual(proof["route"], "candidate")
+        self.assertFalse(proof["official_root_exists"])
+
 
 if __name__ == "__main__":
     unittest.main()

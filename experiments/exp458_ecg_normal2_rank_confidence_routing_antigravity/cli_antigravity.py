@@ -16,6 +16,8 @@ _REPOSITORY_ANTIGRAVITY = Path(__file__).resolve().parents[2]
 _OFFICIAL_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818"
 )
+_PRIVATE_TEST_MODULE_ANTIGRAVITY = "_exp458_cli_private_test_antigravity"
+_PRIVATE_TEST_CAPABILITY_ANTIGRAVITY = "exp458_cli_private_test_antigravity_v1"
 
 
 class _ExactSurfaceParserAntigravity(argparse.ArgumentParser):
@@ -55,6 +57,10 @@ def parser_antigravity() -> argparse.ArgumentParser:
 
 def _validate_clean_current_commit_antigravity(reviewed_commit: str) -> None:
     """Bind the public official write to the exact clean reviewed commit."""
+    private = _private_test_seam_antigravity()
+    if private is not None and hasattr(private, "validate_clean_current_commit_antigravity"):
+        private.validate_clean_current_commit_antigravity(reviewed_commit)
+        return
     head = subprocess.check_output(
         ("git", "rev-parse", "HEAD"), cwd=_REPOSITORY_ANTIGRAVITY, text=True
     ).strip()
@@ -63,6 +69,27 @@ def _validate_clean_current_commit_antigravity(reviewed_commit: str) -> None:
     )
     if reviewed_commit != head or dirty:
         raise ValueError("reviewed commit must be the exact clean current commit")
+
+
+def _private_test_seam_antigravity() -> object | None:
+    private = sys.modules.get(_PRIVATE_TEST_MODULE_ANTIGRAVITY)
+    if (
+        private is not None
+        and getattr(private, "CAPABILITY_ANTIGRAVITY", None)
+        == _PRIVATE_TEST_CAPABILITY_ANTIGRAVITY
+    ):
+        return private
+    return None
+
+
+def _selected_root_antigravity(default: Path) -> Path:
+    private = _private_test_seam_antigravity()
+    if private is None:
+        return default
+    root = getattr(private, "root_antigravity", None)
+    if not isinstance(root, Path) or root == _OFFICIAL_ROOT_ANTIGRAVITY:
+        raise ValueError("private test root must be a non-official Path")
+    return root
 
 
 def emit_dashboard_json_antigravity(result: object) -> None:
@@ -133,6 +160,22 @@ def _evaluate_with_dependencies_antigravity(
 
 
 def _evaluate_antigravity(reviewed_commit: str) -> int:
+    private = _private_test_seam_antigravity()
+    if private is not None and hasattr(private, "evaluate_dependencies_antigravity"):
+        dependencies = private.evaluate_dependencies_antigravity()
+        if type(dependencies) is not tuple or len(dependencies) != 6:
+            raise ValueError("private test dependencies are invalid")
+        return _evaluate_with_dependencies_antigravity(
+            reviewed_commit,
+            _selected_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY),
+            dependencies[0],
+            dependencies[1],
+            dependencies[2],
+            dependencies[3],
+            dependencies[4],
+            dependencies[5],
+        )
+
     from .artifacts_antigravity import publish_result_antigravity
     from .evaluation_antigravity import (
         capture_exp456_result_authority_antigravity,
@@ -144,7 +187,7 @@ def _evaluate_antigravity(reviewed_commit: str) -> int:
 
     return _evaluate_with_dependencies_antigravity(
         reviewed_commit,
-        _OFFICIAL_ROOT_ANTIGRAVITY,
+        _selected_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY),
         qualify_normal2_antigravity,
         capture_exp456_result_authority_antigravity,
         route_normal2_antigravity,
@@ -166,7 +209,7 @@ def _inspect_antigravity() -> int:
     from .replay_antigravity import inspect_result_at_antigravity
 
     return _inspect_with_dependencies_antigravity(
-        _OFFICIAL_ROOT_ANTIGRAVITY,
+        _selected_root_antigravity(_OFFICIAL_ROOT_ANTIGRAVITY),
         inspect_result_at_antigravity,
     )
 
