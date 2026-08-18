@@ -157,13 +157,13 @@ qualification_passed = all(summary.passed for summary in seed_summaries)</code><
     <li><code>artifact_sha256_antigravity.json</code></li>
   </ol>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — stable 10/10, unstable 9/10, exact Exp458 metrics, create-only publication, semantic tamper replay RED를 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — evaluator가 fold records를 정렬하지 않고 exact seed→fold 순서로 요구하며, 모든 10개 pass일 때만 stable을 반환하게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — canonical JSON/JSONL로 7 leaves를 저장하고 artifact map은 자신을 제외한 6개 leaf hash만 기록한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — replay가 fold plan, 네 AUC, pooled 평균, Wilson, seed pass, final decision, dashboard payload를 source-free로 재계산하게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — dashboard payload를 status, 10개 aggregate row, seed summary, Exp458 고정 metrics, label_query_count=0만 허용하도록 구현한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — rehashed fold/AUC/Wilson/decision/dashboard/map tamper와 extra/missing/reordered leaf를 거부하는 테스트를 통과시킨다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 7 — focused GREEN 두 번, Tasks 2–3 및 Exp458 replay 회귀, map/diff/HTML 검증 후 커밋·검토한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — stable 10/10, unstable 9/10, exact Exp458 metrics, create-only publication, semantic tamper replay RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — evaluator가 fold records를 정렬하지 않고 exact seed→fold 순서로 요구하며, 모든 10개 pass일 때만 stable을 반환하게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — canonical JSON/JSONL로 7 leaves를 저장하고 artifact map은 자신을 제외한 6개 leaf hash만 기록한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — replay가 fold plan, 네 AUC, pooled 평균, Wilson, seed pass, final decision, dashboard payload를 source-free로 재계산하게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — dashboard payload를 status, 10개 aggregate row, seed summary, Exp458 고정 metrics, label_query_count=0만 허용하도록 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — rehashed fold/AUC/Wilson/decision/dashboard/map tamper와 extra/missing/reordered leaf를 거부하는 테스트를 통과시킨다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 7 — focused GREEN 두 번, Tasks 2–3 및 Exp458 replay 회귀, map/diff/HTML 검증 후 커밋·검토한다.</label></li>
   </ul>
 
   <h2>Task 5: 닫힌 CLI, 실제 TRAIN 두 번, 최종 후보 검토</h2>
@@ -232,7 +232,7 @@ git diff --check</code></pre>
     <li><label><input type="checkbox" checked disabled>Task 1 완료</label></li>
     <li><label><input type="checkbox" checked disabled>Task 2 완료</label></li>
     <li><label><input type="checkbox" checked disabled>Task 3 완료</label></li>
-    <li><label><input type="checkbox" disabled>Task 4 완료</label></li>
+    <li><label><input type="checkbox" checked disabled>Task 4 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 5 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 6 완료</label></li>
   </ul>

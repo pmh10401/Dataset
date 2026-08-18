@@ -15,9 +15,9 @@
 <body><main>
   <h1>Exp459 ECG5000 normal_2 연속 구간 검증</h1>
   <table>
-    <tr><th>진행</th><td>Task 3/6</td></tr>
+    <tr><th>진행</th><td>Task 4/6</td></tr>
     <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
-    <tr><th>현재 판단</th><td>문서·ledger·고정 config/contracts/folds/source/qualification까지 준비됐고, 공식 결과는 아직 없다.</td></tr>
+    <tr><th>현재 판단</th><td>stable/unstable 판단, 7-leaf artifact publication, source-free replay, aggregate dashboard payload까지 준비됐고, 공식 결과는 아직 없다.</td></tr>
     <tr><th>공식 실행</th><td>evaluate 0회 / inspect 0회 / 공식 root 없음</td></tr>
     <tr><th>label query 수</th><td>0</td></tr>
     <tr><th>champion / pending candidate</th><td>변경 없음</td></tr>
@@ -25,7 +25,7 @@
 
   <div class="box">
     <p><strong>Exp459의 목표:</strong> Exp458의 <code>ECG5000_normal_2</code> 후보가 저장 순서 기반 다섯 연속 구간에서도 안정적인지 확인한다.</p>
-    <p><strong>Task 3 결과:</strong> 실제 TRAIN/Hydra 전체 계산은 아직 시작하지 않았다. Synthetic tests로 TRAIN-only source와 10개 fold-seed qualification logic만 검증했다.</p>
+    <p><strong>Task 4 결과:</strong> 실제 TRAIN/Hydra 전체 계산은 아직 시작하지 않았다. Synthetic qualification으로 10/10 stable, 9/10 unstable, canonical 7-leaf publication, source-free replay, and dashboard filtering을 검증했다.</p>
   </div>
 
   <h2>고정 기준 요약</h2>
@@ -37,6 +37,7 @@
       <tr><td>평균 AUC</td><td>≥ 0.90</td></tr>
       <tr><td>Wilson 상한</td><td>≤ 0.05</td></tr>
       <tr><td>최종 판단</td><td>10개 fold-seed 판단이 모두 통과할 때만 <code>stable</code></td></tr>
+      <tr><td>결과 leaf</td><td><code>context</code>, <code>fold_plan</code>, <code>fold_evidence</code>, <code>seed_summary</code>, <code>decision</code>, <code>dashboard_snapshot</code>, <code>artifact_sha256</code></td></tr>
     </tbody>
   </table>
 

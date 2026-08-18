@@ -34,13 +34,13 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
 PLAN_SHA256_ANTIGRAVITY = (
-    "3be3e493131b558a579b2de22b280f47761c695fab2eac25ba89a81f0836f453"
+    "d0a2a2643593b973b4ec8ac1f24a43fdd109916b1f73956dea9bc4cffcb572ef"
 )
 RUN_IDENTITY_ANTIGRAVITY = (
     "exp459-ecg-normal2-blocked-validation-antigravity-20260818"
 )
 IMPLEMENTATION_STATUS_ANTIGRAVITY = (
-    "task_3_source_and_qualification_complete"
+    "task_4_evaluation_artifacts_replay_dashboard_complete"
 )
 RUN_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818"
@@ -187,7 +187,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert section is not None
             tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
             checked = [tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)]
-            if task_number in {1, 2, 3}:
+            if task_number in {1, 2, 3, 4}:
                 self.assertEqual(len(checked), len(tags))
             else:
                 self.assertEqual(len(checked), 0)
@@ -198,7 +198,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             plan,
             flags=re.IGNORECASE,
         )
-        self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료", "Task 3 완료"])
+        self.assertEqual(initial_checked, ["Task 1 완료", "Task 2 완료", "Task 3 완료", "Task 4 완료"])
 
     def test_exp459_planned_truth_and_non_promotion_antigravity(self) -> None:
         """Break caught: Exp459 records an official result, changes champion, or loses frozen hashes."""

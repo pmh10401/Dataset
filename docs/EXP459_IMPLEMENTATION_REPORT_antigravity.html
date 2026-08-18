@@ -13,9 +13,9 @@
 </head>
 <body><main>
   <h1>Exp459 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 3의 TRAIN source와 10개 fold-seed qualification 표면까지 완료했다. 상태는 여전히 <code>planned_not_started</code>다.</p>
+  <p><strong>현재 단계:</strong> Task 4의 stable/unstable 판단, 7-leaf 결과 publication, source-free replay, dashboard payload까지 완료했다. 상태는 여전히 <code>planned_not_started</code>다.</p>
 
-  <h2>Task 1–3에서 준비한 것</h2>
+  <h2>Task 1–4에서 준비한 것</h2>
   <table>
     <tr><th>항목</th><th>설명</th></tr>
     <tr><td>Exp458 선행 정리</td><td>Task 6 이후 stale truth가 된 Exp458 CLI 테스트 2개를 private synthetic root 기준으로 고쳤고, Exp458 전체 62개 테스트를 다시 녹색으로 맞췄다.</td></tr>
@@ -26,13 +26,16 @@
     <tr><td>Task 2 fold planner</td><td><code>blocked_folds_antigravity.py</code>가 <code>np.arange</code> + <code>np.array_split</code>만으로 5개 연속 query 구간과 sorted fit 보완 집합을 만든다.</td></tr>
     <tr><td>Task 3 source</td><td><code>sources_antigravity.py</code>가 <code>ECG5000_normal_2</code> TRAIN values만 한 번 조회하고 label/TEST surface 없이 owned read-only <code>float32</code> 1413×140 행렬을 반환한다.</td></tr>
     <tr><td>Task 3 qualification</td><td><code>qualification_antigravity.py</code>가 seed outer order, fold inner order로 정확히 10번 scorer를 호출하고, fold별 Wilson/AUC/pass, seed pass, overall pass를 Task 2 immutable evidence로 만든다.</td></tr>
-    <tr><td>Exp459 code map</td><td>Task 3의 source/qualification/test 경계까지 담도록 bounded map triplet을 확장했다.</td></tr>
+    <tr><td>Task 4 evaluation</td><td><code>evaluation_antigravity.py</code>가 10개 fold-seed record 모두 통과해야 <code>stable</code>로 판단하고 Exp458 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311을 predecessor context로만 노출한다.</td></tr>
+    <tr><td>Task 4 artifacts/replay</td><td><code>artifacts_antigravity.py</code>와 <code>replay_antigravity.py</code>가 canonical 7 leaves, self-excluding artifact map, source-free semantic replay, rehashed tamper rejection을 담당한다.</td></tr>
+    <tr><td>Task 4 dashboard</td><td><code>dashboard_export_antigravity.py</code>가 raw rows, labels, DB path 없이 aggregate TRAIN-only fields와 fixed Exp458 metrics만 내보낸다.</td></tr>
+    <tr><td>Exp459 code map</td><td>Task 4의 evaluation/artifacts/replay/dashboard/test 경계까지 담도록 bounded map triplet을 확장했다.</td></tr>
   </table>
 
   <h2>아직 하지 않은 것</h2>
   <table>
     <tr><th>항목</th><th>현재 truth</th></tr>
-    <tr><td>Exp459 package 구현</td><td>Task 3의 source·qualification까지 존재하고 evaluation·artifacts·replay·dashboard export·CLI는 아직 없음</td></tr>
+    <tr><td>Exp459 package 구현</td><td>Task 4의 evaluation·artifacts·replay·dashboard export까지 존재하고 CLI는 아직 없음</td></tr>
     <tr><td>공식 evaluate / inspect</td><td>둘 다 0회</td></tr>
     <tr><td>공식 결과 폴더</td><td>아직 없음</td></tr>
     <tr><td>결과 hash</td><td>prediction / evaluation / decision / artifact map / dashboard 모두 <code>null</code></td></tr>
@@ -45,5 +48,6 @@
   <h2>2026-08-18 보강 메모</h2>
   <p>후속 리뷰에서 지적된 세부 경계도 보강했다. BlockedFold는 <code>n_rows</code>를 명시적으로 기록해 <code>np.array_split</code> 기준의 query 범위와 fit 보완 집합을 스스로 검증하고, ndarray-backed contract는 외부 alias나 <code>writeable</code> 재설정으로 변조할 수 없도록 bytes-backed snapshot만 받아들인다.</p>
   <p>Task 3은 실제 TRAIN/Hydra 전체 계산을 수행하지 않았다. 테스트는 synthetic source와 fake scorer 주입으로 call order, coverage, bad score, threshold, source SQL boundary를 검증했고 실제 두 번의 TRAIN qualification은 Task 5에 남겨 둔다.</p>
+  <p>Task 4도 실제 TRAIN/Hydra 전체 계산이나 공식 root 생성을 수행하지 않았다. 테스트는 synthetic qualification으로 stable/unstable result logic, exact 7-leaf publication, source-free replay, dashboard aggregate contract를 검증했다.</p>
 </main></body>
 </html>
