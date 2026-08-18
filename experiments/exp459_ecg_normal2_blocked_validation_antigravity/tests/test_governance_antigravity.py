@@ -30,6 +30,20 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp459_antigravity.json",
     "docs/codemap/codemap_exp459_antigravity.lock",
 )
+EXP458_IMMUTABLE_TRIPLET_ANTIGRAVITY = {
+    "docs/codemap/codemap_exp458_antigravity.html": (
+        "7fa2cf91c4442aff6c1adad906b1387290594c008435426444431ba0988503cc"
+    ),
+    "docs/codemap/codemap_exp458_antigravity.json": (
+        "9e2c8e4866e4b30c29b39e4a62e1c7f1af5500e7f16976ed76edf8df5b90eed7"
+    ),
+    "docs/codemap/codemap_exp458_antigravity.lock": (
+        "a56d24fb607bd2cd20422c23384df3f33ebd9394a0dc014e29b5b19881f17edc"
+    ),
+}
+EXP458_IMMUTABLE_MAP_SOURCE_PARENT_ANTIGRAVITY = (
+    "e6d9e6e1f4febc5c8e8cd549c2ee20d5b7eccde6"
+)
 DESIGN_SHA256_ANTIGRAVITY = (
     "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275"
 )
@@ -631,6 +645,32 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         self.assertEqual(graph["unknown_relationships"], [])
         builder.validate_map_antigravity(graph, lock, rendered)
+
+    def test_exp459_map_child_preserves_exp458_triplet_antigravity(self) -> None:
+        """Break caught: Exp459 map-only child rewrites the prior Exp458 map triplet."""
+        actual = {
+            relative: hashlib.sha256((ROOT_ANTIGRAVITY / relative).read_bytes()).hexdigest()
+            for relative in EXP458_IMMUTABLE_TRIPLET_ANTIGRAVITY
+        }
+        self.assertEqual(actual, EXP458_IMMUTABLE_TRIPLET_ANTIGRAVITY)
+        graph = strict_json_antigravity(
+            ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp458_antigravity.json"
+        )
+        lock = strict_json_antigravity(
+            ROOT_ANTIGRAVITY / "docs/codemap/codemap_exp458_antigravity.lock"
+        )
+        self.assertEqual(
+            graph["source_parent_commit"],
+            EXP458_IMMUTABLE_MAP_SOURCE_PARENT_ANTIGRAVITY,
+        )
+        self.assertEqual(
+            lock["source_parent_commit"],
+            EXP458_IMMUTABLE_MAP_SOURCE_PARENT_ANTIGRAVITY,
+        )
+        self.assertNotEqual(
+            EXP458_IMMUTABLE_MAP_SOURCE_PARENT_ANTIGRAVITY,
+            "57199eb1b66b56e30b8cb4ed091bf21fe2b0c27e",
+        )
 
     def test_exp459_map_evidence_symbols_resolve_in_cited_sources_antigravity(self) -> None:
         """Break caught: map evidence cites HTML or Python symbols that do not resolve in the cited file."""
