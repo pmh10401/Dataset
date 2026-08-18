@@ -1,0 +1,31 @@
+{
+  "schema": "exp449-paper-package-antigravity.v1",
+  "package_date": "2026-08-18",
+  "source_git_commit": "18e4d31aec9e9de2cce779d3fecd8a211cdaaeb0",
+  "active_experiment": "Exp449",
+  "title": "AI-Driven Equipment Intelligence: Equipment Anomaly Detection",
+  "evaluation_status": "retrospective_comparison_complete_no_promotion",
+  "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "dataset_count": 1117,
+  "test_row_count": 195900,
+  "common_support_dataset_count": 922,
+  "common_support_test_row_count": 186150,
+  "public_baseline_count": 6,
+  "proposal_continuous_score_available": true,
+  "proposal_score_semantics": "route_preserving_composite_anomaly_score",
+  "raw_database_included": false,
+  "raw_series_included": false,
+  "test_labels_included": false,
+  "official_report_validation": {
+    "charts": 5,
+    "tables": 3,
+    "desktop_viewport": 1440,
+    "mobile_viewport": 390,
+    "status": "passed"
+  },
+  "notes": [
+    "The final official artifacts supersede the early design assumption that a proposal continuous score was unavailable.",
+    "DROCC MPS parity is user-confirmed and has no machine-readable independent parity artifact.",
+    "The continuous proposal score is an anomaly-ranking score, not a calibrated failure probability."
+  ]
+}

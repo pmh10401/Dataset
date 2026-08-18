@@ -1,0 +1,195 @@
+<svg width="768" height="320" viewBox="0 0 768 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="portable-static-chart-svg" focusable="false" preserveAspectRatio="xMidYMid meet">
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<line x1="153" y1="0" x2="153" y2="282" clip-path="none" clip-rule="nonzero" fill="none" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="rgba(26, 28, 31, 0.05)" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</line>
+<line x1="358" y1="0" x2="358" y2="282" clip-path="none" clip-rule="nonzero" fill="none" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="rgba(26, 28, 31, 0.05)" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</line>
+<line x1="563" y1="0" x2="563" y2="282" clip-path="none" clip-rule="nonzero" fill="none" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="rgba(26, 28, 31, 0.05)" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</line>
+<line x1="768" y1="0" x2="768" y2="282" clip-path="none" clip-rule="nonzero" fill="none" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="rgba(26, 28, 31, 0.05)" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</line>
+</g>
+</g>
+</g>
+<g opacity="1">
+</g>
+<defs>
+<clipPath id="portable-1-light-0">
+<rect x="153" y="0" height="282" width="615" clip-path="none" clip-rule="nonzero" fill="rgb(0, 0, 0)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</rect>
+</clipPath>
+</defs>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+<g id="portable-1-light-1" opacity="1">
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<path d="M768,4.7L 611.9634,4.7A 6,6,0,0,0,
+        605.9634,10.7L 605.9634,35.7A 6,6,0,0,0,
+        611.9634,41.7L 768,41.7Z" clip-path="none" clip-rule="nonzero" fill="rgb(0, 63, 122)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</path>
+</g>
+</g>
+<g opacity="1">
+<g opacity="1">
+<path d="M768,51.7L 600.7122,51.7A 6,6,0,0,0,
+        594.7122,57.7L 594.7122,82.7A 6,6,0,0,0,
+        600.7122,88.7L 768,88.7Z" clip-path="none" clip-rule="nonzero" fill="rgb(0, 63, 122)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</path>
+</g>
+</g>
+<g opacity="1">
+<g opacity="1">
+<path d="M768,98.7L 504.3821,98.7A 6,6,0,0,0,
+        498.3821,104.7L 498.3821,129.7A 6,6,0,0,0,
+        504.3821,135.7L 768,135.7Z" clip-path="none" clip-rule="nonzero" fill="rgb(0, 63, 122)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</path>
+</g>
+</g>
+<g opacity="1">
+<g opacity="1">
+<path d="M768,145.7L 367.2168,145.7A 6,6,0,0,0,
+        361.2168,151.7L 361.2168,176.7A 6,6,0,0,0,
+        367.2168,182.7L 768,182.7Z" clip-path="none" clip-rule="nonzero" fill="rgb(0, 63, 122)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</path>
+</g>
+</g>
+<g opacity="1">
+<g opacity="1">
+<path d="M768,192.7L 361.9854,192.7A 6,6,0,0,0,
+        355.9854,198.7L 355.9854,223.7A 6,6,0,0,0,
+        361.9854,229.7L 768,229.7Z" clip-path="none" clip-rule="nonzero" fill="rgb(0, 63, 122)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</path>
+</g>
+</g>
+<g opacity="1">
+<g opacity="1">
+<path d="M768,239.7L 286.1699,239.7A 6,6,0,0,0,
+        280.1699,245.7L 280.1699,270.7A 6,6,0,0,0,
+        286.1699,276.7L 768,276.7Z" clip-path="none" clip-rule="nonzero" fill="rgb(0, 63, 122)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none">
+</path>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+</g>
+</g>
+</g>
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+</g>
+</g>
+</g>
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+</g>
+<g opacity="1">
+<g opacity="1">
+<g opacity="1">
+<text x="153" y="290" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">
+<tspan x="153" dy="0.71em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">-60%</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="358" y="290" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">
+<tspan x="358" dy="0.71em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">-40%</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="563" y="290" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">
+<tspan x="563" dy="0.71em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">-20%</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="757.2578125" y="290" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">
+<tspan x="757.2578125" dy="0.71em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="middle" word-spacing="0px">0%</tspan>
+</text>
+</g>
+</g>
+<text x="460.5" y="316" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="500" letter-spacing="normal" text-anchor="middle" word-spacing="0px">
+<tspan x="460.5" dy="0em" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="500" letter-spacing="normal" text-anchor="middle" word-spacing="0px">기준선 − 제안기술 Macro F1</tspan>
+</text>
+<g opacity="1">
+<g opacity="1">
+<text x="145" y="23.5" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">
+<tspan x="145" dy="0.355em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">One-Class SVM</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="145" y="70.5" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">
+<tspan x="145" dy="0.355em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">kNN distance</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="145" y="117.5" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">
+<tspan x="145" dy="0.355em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">LOF novelty</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="145" y="164.5" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">
+<tspan x="145" dy="0.355em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">Deep SVDD</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="145" y="211.5" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">
+<tspan x="145" dy="0.355em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">Isolation Forest</tspan>
+</text>
+</g>
+<g opacity="1">
+<text x="145" y="258.5" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">
+<tspan x="145" dy="0.355em" clip-path="none" clip-rule="nonzero" fill="rgba(26, 28, 31, 0.7)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="auto" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="normal" font-variant-numeric="normal" font-weight="400" letter-spacing="normal" text-anchor="end" word-spacing="0px">DROCC (MPS)</tspan>
+</text>
+</g>
+</g>
+<g opacity="1">
+<text x="597.9634029921963" y="23.2" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="middle" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="tabular-nums" font-variant-numeric="tabular-nums" font-weight="600" letter-spacing="normal" text-anchor="end" word-spacing="0px">-15.8%</text>
+<text x="586.7121586713673" y="70.2" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="middle" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="tabular-nums" font-variant-numeric="tabular-nums" font-weight="600" letter-spacing="normal" text-anchor="end" word-spacing="0px">-16.9%</text>
+<text x="490.38209767825447" y="117.2" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="middle" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="tabular-nums" font-variant-numeric="tabular-nums" font-weight="600" letter-spacing="normal" text-anchor="end" word-spacing="0px">-26.3%</text>
+<text x="353.21680992440264" y="164.2" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="middle" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="tabular-nums" font-variant-numeric="tabular-nums" font-weight="600" letter-spacing="normal" text-anchor="end" word-spacing="0px">-39.7%</text>
+<text x="347.9853721580849" y="211.2" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="middle" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="tabular-nums" font-variant-numeric="tabular-nums" font-weight="600" letter-spacing="normal" text-anchor="end" word-spacing="0px">-40.2%</text>
+<text x="272.16985185821454" y="258.2" clip-path="none" clip-rule="nonzero" fill="rgb(26, 28, 31)" fill-opacity="1" fill-rule="nonzero" opacity="1" paint-order="normal" shape-rendering="auto" stroke="none" stroke-dasharray="none" stroke-dashoffset="0px" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-opacity="1" stroke-width="1px" vector-effect="none" alignment-baseline="auto" baseline-shift="0px" dominant-baseline="middle" font-family="-apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif" font-size="12px" font-style="normal" font-variant="tabular-nums" font-variant-numeric="tabular-nums" font-weight="600" letter-spacing="normal" text-anchor="end" word-spacing="0px">-47.6%</text>
+</g>
+</g>
+</svg>

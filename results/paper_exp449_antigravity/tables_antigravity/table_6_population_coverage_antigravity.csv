@@ -1,0 +1,8 @@
+method_id,method_label,target_datasets,completed_datasets,abstained_datasets,coverage,continuous_dataset_count
+proposed_equipment_anomaly_detection,Proposed,1117,1117,0,1.0,1117
+knn_distance,kNN distance,1117,1116,1,0.999104744852283,1116
+lof_novelty,LOF novelty,1117,1115,2,0.9982094897045658,1115
+ocsvm_rbf,OC-SVM (RBF),1117,1116,1,0.999104744852283,1116
+isolation_forest,Isolation Forest,1117,1116,1,0.999104744852283,1116
+deep_svdd_1d,Deep SVDD (1D),1117,922,195,0.8254252461951657,922
+drocc_1d,DROCC (1D),1117,922,195,0.8254252461951657,922

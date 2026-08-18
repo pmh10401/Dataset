@@ -1,0 +1,3467 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "AI-Driven Equipment Intelligence: 공식 이상 탐지 비교 결과",
+    "description": "1,117개 데이터셋과 195,900개 TEST 시계열에서 Exp449 연속 이상 점수를 포함해 제안기술과 여섯 공개 이상 탐지 기준선을 비교한 기술 보고서",
+    "generatedAt": "2026-08-18T00:20:00Z",
+    "cards": [
+      {
+        "id": "dataset_count_card",
+        "description": "평가에 포함된 전체 데이터셋 수",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "데이터셋",
+            "field": "dataset_count",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "test_row_count_card",
+        "description": "평가에 포함된 전체 TEST 시계열 수",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "TEST 시계열",
+            "field": "test_row_count",
+            "format": "compact"
+          }
+        ]
+      },
+      {
+        "id": "proposal_micro_f1_card",
+        "description": "동일 경보 예산에서 전체 행을 합산한 제안기술 F1",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "제안기술 Micro F1",
+            "field": "proposal_micro_f1",
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": "proposal_macro_f1_card",
+        "description": "데이터셋별 F1의 산술평균",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "제안기술 Macro F1",
+            "field": "proposal_macro_f1",
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": "best_baseline_margin_card",
+        "description": "가장 강한 공개 기준선인 One-Class SVM 대비 Micro F1 절대 차이",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "최고 기준선 대비 F1 우위",
+            "field": "best_baseline_micro_f1_margin",
+            "format": "percent",
+            "signed": true
+          }
+        ]
+      },
+      {
+        "id": "proposal_ap_card",
+        "description": "Exp449 고정 연속 이상 점수의 전체 TEST Micro AP",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "제안기술 AP",
+            "field": "proposal_average_precision",
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": "proposal_auroc_card",
+        "description": "Exp449 고정 연속 이상 점수의 전체 TEST Micro AUROC",
+        "dataset": "headline_metrics",
+        "sourceId": "official_summary",
+        "metrics": [
+          {
+            "label": "제안기술 AUROC",
+            "field": "proposal_auroc",
+            "format": "percent"
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "matched_f1_chart",
+        "title": "동일 경보 예산 기준 Micro 및 Macro F1",
+        "subtitle": "전체 1,117개 데이터셋 기준. Deep SVDD와 DROCC는 922개 데이터셋에서 완료되어 미완료 데이터셋은 전수 평가 집계에서 성능 기여가 없습니다.",
+        "intent": "comparison",
+        "question": "제안기술은 동일 경보 예산에서 공개 기준선보다 높은 F1을 보이는가?",
+        "rationale": "7개 방법의 두 F1 지표를 직접 비교하기 위해 수평 그룹 막대를 사용합니다.",
+        "comparisonContext": {
+          "denominator": "1,117 datasets",
+          "grain": "method",
+          "unit": "F1 fraction"
+        },
+        "type": "horizontalBar",
+        "dataset": "matched_f1_chart_rows",
+        "sourceId": "official_summary",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "method_label",
+            "type": "nominal",
+            "label": "방법"
+          },
+          "y": {
+            "field": "f1",
+            "type": "quantitative",
+            "label": "F1"
+          },
+          "color": {
+            "field": "aggregation",
+            "type": "nominal",
+            "label": "집계 방식"
+          },
+          "tooltip": [
+            {
+              "field": "precision",
+              "type": "quantitative",
+              "label": "Precision",
+              "format": "percent"
+            },
+            {
+              "field": "recall",
+              "type": "quantitative",
+              "label": "Recall",
+              "format": "percent"
+            },
+            {
+              "field": "coverage",
+              "type": "quantitative",
+              "label": "Coverage",
+              "format": "percent"
+            },
+            {
+              "field": "alerts",
+              "type": "quantitative",
+              "label": "Alerts",
+              "format": "number"
+            }
+          ]
+        },
+        "palette": {
+          "kind": "categorical",
+          "name": "blue-orange"
+        },
+        "legend": {
+          "position": "bottom",
+          "sort": "spec",
+          "title": "집계 방식"
+        },
+        "labels": {
+          "values": "all"
+        },
+        "layout": "full",
+        "surface": {
+          "surface": "export",
+          "viewMode": "both"
+        }
+      },
+      {
+        "id": "bootstrap_advantage_chart",
+        "title": "제안기술 대비 공개 기준선의 Macro F1 차이",
+        "subtitle": "막대는 기준선−제안기술 점추정치입니다. 모든 값과 95% 신뢰구간이 0보다 작으며 정확한 구간은 아래 표에 제시합니다.",
+        "intent": "comparison",
+        "question": "데이터셋 재표집에서도 제안기술의 Macro F1 우위가 유지되는가?",
+        "rationale": "기준선과 제안기술 간 차이의 방향과 크기를 한 축에서 비교합니다.",
+        "comparisonContext": {
+          "baseline": "proposed method",
+          "denominator": "2,000 paired dataset bootstrap draws",
+          "grain": "baseline method",
+          "unit": "Macro F1 difference"
+        },
+        "type": "horizontalBar",
+        "dataset": "bootstrap_matched",
+        "sourceId": "official_bootstrap",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "method_label",
+            "type": "nominal",
+            "label": "공개 기준선"
+          },
+          "y": {
+            "field": "baseline_minus_proposal",
+            "type": "quantitative",
+            "label": "기준선 − 제안기술 Macro F1"
+          },
+          "tooltip": [
+            {
+              "field": "ci_lower",
+              "type": "quantitative",
+              "label": "95% CI lower",
+              "format": "percent"
+            },
+            {
+              "field": "ci_upper",
+              "type": "quantitative",
+              "label": "95% CI upper",
+              "format": "percent"
+            },
+            {
+              "field": "draw_count",
+              "type": "quantitative",
+              "label": "Bootstrap draws",
+              "format": "number"
+            }
+          ]
+        },
+        "palette": {
+          "kind": "semantic",
+          "name": "comparison"
+        },
+        "labels": {
+          "values": "all"
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0,
+            "label": "동일 성능",
+            "color": "neutral",
+            "lineStyle": "solid"
+          }
+        ],
+        "layout": "full",
+        "surface": {
+          "surface": "export",
+          "viewMode": "both"
+        }
+      },
+      {
+        "id": "continuous_ap_auroc_chart",
+        "title": "연속 이상 점수의 Micro AP 및 AUROC",
+        "subtitle": "전체 195,900개 TEST 시계열 기준. AP와 AUROC는 0–1 범위이며 높을수록 이상 순위 품질이 우수합니다.",
+        "intent": "comparison",
+        "question": "제안기술의 연속 이상 점수는 공개 기준선보다 이상 순위를 잘 구분하는가?",
+        "rationale": "7개 방법의 AP와 AUROC를 같은 0–1 축에서 직접 비교하기 위해 그룹형 가로 막대를 사용합니다.",
+        "comparisonContext": {
+          "denominator": "195,900 TEST series",
+          "grain": "method",
+          "unit": "score fraction"
+        },
+        "type": "horizontalBar",
+        "dataset": "continuous_score_chart_rows",
+        "sourceId": "official_summary",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "method_label",
+            "type": "nominal",
+            "label": "방법"
+          },
+          "y": {
+            "field": "score",
+            "type": "quantitative",
+            "label": "점수"
+          },
+          "color": {
+            "field": "metric",
+            "type": "nominal",
+            "label": "지표"
+          },
+          "tooltip": [
+            {
+              "field": "coverage",
+              "type": "quantitative",
+              "label": "Coverage",
+              "format": "percent"
+            },
+            {
+              "field": "completed_datasets",
+              "type": "quantitative",
+              "label": "완료 데이터셋",
+              "format": "number"
+            },
+            {
+              "field": "alerts",
+              "type": "quantitative",
+              "label": "Alerts",
+              "format": "number"
+            },
+            {
+              "field": "micro_f1",
+              "type": "quantitative",
+              "label": "Micro F1",
+              "format": "percent"
+            }
+          ]
+        },
+        "palette": {
+          "kind": "categorical",
+          "name": "blue-orange"
+        },
+        "legend": {
+          "position": "bottom",
+          "sort": "spec",
+          "title": "연속 점수 지표"
+        },
+        "labels": {
+          "values": "all"
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0.5,
+            "label": "무작위 AUROC 기준"
+          }
+        ],
+        "layout": "full",
+        "surface": {
+          "surface": "export",
+          "viewMode": "both"
+        }
+      },
+      {
+        "id": "common_support_roc_curve",
+        "title": "7개 방법의 공통지원 Micro ROC 곡선",
+        "subtitle": "공통 922개 데이터셋·186,150개 TEST 시계열. x축은 FPR 0–100%를 10%p 간격으로 고정했습니다.",
+        "intent": "comparison",
+        "question": "동일 공통지원 표본에서 제안기술과 여섯 공개 기법의 ROC 곡선은 어떻게 다른가?",
+        "rationale": "연속 축 왜곡을 막기 위해 모든 방법을 동일한 0–100% 축에 놓고 10%p 표시점으로 연결한 다중 선형 곡선입니다. AP/AUROC는 표시점이 아니라 원래 전체 점수로 계산했습니다.",
+        "comparisonContext": {
+          "denominator": "186,150 TEST series",
+          "grain": "threshold point by method",
+          "unit": "rate"
+        },
+        "type": "line",
+        "dataset": "roc_curve_common_support",
+        "sourceId": "official_common_support_curves",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "x_percent",
+            "type": "ordinal",
+            "label": "False Positive Rate"
+          },
+          "y": {
+            "field": "curve_value",
+            "type": "quantitative",
+            "label": "True Positive Rate"
+          },
+          "color": {
+            "field": "method_label",
+            "type": "nominal",
+            "label": "방법"
+          },
+          "order": {
+            "field": "x_order",
+            "type": "quantitative"
+          },
+          "tooltip": [
+            {
+              "field": "x_rate",
+              "type": "quantitative",
+              "label": "FPR",
+              "format": "percent"
+            },
+            {
+              "field": "curve_value",
+              "type": "quantitative",
+              "label": "TPR",
+              "format": "percent"
+            },
+            {
+              "field": "average_precision",
+              "type": "quantitative",
+              "label": "AP",
+              "format": "decimal"
+            },
+            {
+              "field": "auroc",
+              "type": "quantitative",
+              "label": "AUROC",
+              "format": "decimal"
+            }
+          ]
+        },
+        "palette": {
+          "kind": "categorical",
+          "name": "multi-method"
+        },
+        "legend": {
+          "position": "bottom",
+          "sort": "spec"
+        },
+        "labels": {
+          "values": "none"
+        },
+        "layout": "full",
+        "surface": {
+          "surface": "export",
+          "viewMode": "both"
+        }
+      },
+      {
+        "id": "common_support_pr_curve",
+        "title": "7개 방법의 공통지원 Micro Precision–Recall 곡선",
+        "subtitle": "동일 공통 표본. x축은 Recall 0–100%를 10%p 간격으로 고정했으며 이상 비율은 2.00%입니다.",
+        "intent": "comparison",
+        "question": "동일 공통지원 표본에서 제안기술과 여섯 공개 기법의 Precision–Recall 곡선은 어떻게 다른가?",
+        "rationale": "연속 축 왜곡을 막기 위해 모든 방법을 동일한 0–100% 축에 놓고 10%p 표시점으로 연결한 다중 선형 곡선입니다. AP/AUROC는 표시점이 아니라 원래 전체 점수로 계산했습니다.",
+        "comparisonContext": {
+          "denominator": "186,150 TEST series",
+          "grain": "threshold point by method",
+          "unit": "rate"
+        },
+        "type": "line",
+        "dataset": "pr_curve_common_support",
+        "sourceId": "official_common_support_curves",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "x_percent",
+            "type": "ordinal",
+            "label": "Recall"
+          },
+          "y": {
+            "field": "curve_value",
+            "type": "quantitative",
+            "label": "Precision"
+          },
+          "color": {
+            "field": "method_label",
+            "type": "nominal",
+            "label": "방법"
+          },
+          "order": {
+            "field": "x_order",
+            "type": "quantitative"
+          },
+          "tooltip": [
+            {
+              "field": "x_rate",
+              "type": "quantitative",
+              "label": "Recall",
+              "format": "percent"
+            },
+            {
+              "field": "curve_value",
+              "type": "quantitative",
+              "label": "Precision",
+              "format": "percent"
+            },
+            {
+              "field": "average_precision",
+              "type": "quantitative",
+              "label": "AP",
+              "format": "decimal"
+            },
+            {
+              "field": "auroc",
+              "type": "quantitative",
+              "label": "AUROC",
+              "format": "decimal"
+            }
+          ]
+        },
+        "palette": {
+          "kind": "categorical",
+          "name": "multi-method"
+        },
+        "legend": {
+          "position": "bottom",
+          "sort": "spec"
+        },
+        "labels": {
+          "values": "none"
+        },
+        "layout": "full",
+        "surface": {
+          "surface": "export",
+          "viewMode": "both"
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0.02,
+            "label": "이상 비율 2%"
+          }
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "id": "matched_metrics_table",
+        "title": "동일 경보 예산 상세 결과",
+        "subtitle": "Micro 지표는 전체 TEST 행을 합산하고 Macro F1은 데이터셋별 F1을 평균합니다.",
+        "dataset": "matched_metrics",
+        "sourceId": "official_summary",
+        "density": "compact",
+        "defaultSort": {
+          "field": "micro_f1",
+          "direction": "desc"
+        },
+        "columns": [
+          {
+            "field": "method_label",
+            "label": "방법",
+            "type": "text"
+          },
+          {
+            "field": "coverage",
+            "label": "Coverage",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "alerts",
+            "label": "Alerts",
+            "format": "number",
+            "type": "number"
+          },
+          {
+            "field": "precision",
+            "label": "Precision",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "recall",
+            "label": "Recall",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "micro_f1",
+            "label": "Micro F1",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "macro_f1",
+            "label": "Macro F1",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "tp",
+            "label": "TP",
+            "format": "number",
+            "type": "number"
+          },
+          {
+            "field": "fp",
+            "label": "FP",
+            "format": "number",
+            "type": "number"
+          }
+        ]
+      },
+      {
+        "id": "continuous_metrics_table",
+        "title": "제안기술 및 공개 기준선의 연속 점수 AP/AUROC",
+        "subtitle": "Exp449 제안기술은 고정된 복합 이상 점수를 사용하며, 값은 고장 확률이 아니라 순위 성능입니다.",
+        "dataset": "continuous_metrics",
+        "sourceId": "official_summary",
+        "density": "compact",
+        "defaultSort": {
+          "field": "average_precision",
+          "direction": "desc"
+        },
+        "columns": [
+          {
+            "field": "method_label",
+            "label": "방법",
+            "type": "text"
+          },
+          {
+            "field": "coverage",
+            "label": "Coverage",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "average_precision",
+            "label": "Micro AP",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "auroc",
+            "label": "Micro AUROC",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "macro_average_precision",
+            "label": "Macro AP",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "macro_auroc",
+            "label": "Macro AUROC",
+            "format": "percent",
+            "type": "percent"
+          }
+        ]
+      },
+      {
+        "id": "bootstrap_table",
+        "title": "동일 경보 예산 Macro F1 차이의 95% 신뢰구간",
+        "subtitle": "차이는 공개 기준선−제안기술입니다. 음수일수록 제안기술이 우세합니다.",
+        "dataset": "bootstrap_matched",
+        "sourceId": "official_bootstrap",
+        "density": "compact",
+        "defaultSort": {
+          "field": "baseline_minus_proposal",
+          "direction": "desc"
+        },
+        "columns": [
+          {
+            "field": "method_label",
+            "label": "공개 기준선",
+            "type": "text"
+          },
+          {
+            "field": "baseline_minus_proposal",
+            "label": "점추정",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "ci_lower",
+            "label": "95% CI 하한",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "ci_upper",
+            "label": "95% CI 상한",
+            "format": "percent",
+            "type": "percent"
+          },
+          {
+            "field": "draw_count",
+            "label": "재표집 수",
+            "format": "number",
+            "type": "number"
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "official_summary",
+        "label": "공식 6개 기준선 통합 요약",
+        "path": "paper_public_baselines_official_comparison_antigravity_20260817/official_comparison_summary_antigravity.json",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "sql": "SELECT metric.* FROM (SELECT UNNEST(summaries) AS metric FROM read_json_auto('official_comparison_summary_antigravity.json')) WHERE metric.support = 'full_population' AND metric.protocol IN ('proposal_frozen', 'matched_alert_budget')",
+          "description": "검증된 세 점수 루트의 full-population 공식 평가 요약을 여섯 공개 기준선과 제안기술 행으로 결합했습니다.",
+          "executed_at": "2026-08-17T09:03:27Z",
+          "tables_used": [
+            "official_comparison_summary_antigravity.json"
+          ],
+          "filters": [
+            "support = full_population",
+            "primary protocol = matched_alert_budget",
+            "public methods = exact six-method inventory"
+          ],
+          "metric_definitions": [
+            "Micro Precision = sum(TP) / (sum(TP) + sum(FP))",
+            "Micro Recall = sum(TP) / (sum(TP) + sum(FN))",
+            "Micro F1 = harmonic mean of Micro Precision and Recall",
+            "Macro F1 = arithmetic mean of per-dataset F1",
+            "Coverage = completed datasets / 1117"
+          ]
+        }
+      },
+      {
+        "id": "official_bootstrap",
+        "label": "공식 paired bootstrap 결과",
+        "path": "paper_public_baselines_official_comparison_antigravity_20260817/official_comparison_bootstrap_antigravity.json",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "sql": "SELECT metric.* FROM (SELECT UNNEST(rows) AS metric FROM read_json_auto('official_comparison_bootstrap_antigravity.json')) WHERE metric.support = 'full_population' AND metric.protocol = 'matched_alert_budget'",
+          "description": "1,117개 데이터셋을 동일 인덱스로 재표집하여 기준선−제안기술 Macro F1 차이를 2,000회 계산했습니다.",
+          "executed_at": "2026-08-17T09:03:27Z",
+          "tables_used": [
+            "official_comparison_bootstrap_antigravity.json"
+          ],
+          "filters": [
+            "support = full_population",
+            "protocol = matched_alert_budget",
+            "seed = 20260812"
+          ],
+          "metric_definitions": [
+            "Point estimate = baseline Macro F1 - proposal Macro F1",
+            "95% interval = empirical paired-bootstrap percentile interval from 2000 draws"
+          ]
+        }
+      },
+      {
+        "id": "official_dataset_metrics",
+        "label": "데이터셋별 공식 평가 지표",
+        "path": "paper_public_baselines_official_comparison_antigravity_20260817/official_comparison_dataset_metrics_antigravity.csv",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "sql": "SELECT * FROM read_csv_auto('official_comparison_dataset_metrics_antigravity.csv') WHERE support = 'full_population' AND protocol = 'matched_alert_budget'",
+          "description": "여섯 공개 기준선의 26,808개 데이터셋-프로토콜 지표 행을 생성하고 공식 요약을 독립 재합산했습니다.",
+          "executed_at": "2026-08-17T09:03:27Z",
+          "tables_used": [
+            "official_comparison_dataset_metrics_antigravity.csv"
+          ],
+          "filters": [
+            "dataset count = 1117",
+            "protocols = matched_alert_budget plus conformal alpha 0.005, 0.01, 0.02"
+          ],
+          "metric_definitions": [
+            "Dataset F1 uses each dataset TP, FP, FN",
+            "Abstained datasets contribute no true-positive detection in full-population aggregation"
+          ]
+        }
+      },
+      {
+        "id": "official_common_support_curves",
+        "label": "공통지원 ROC/PR 곡선 산출물",
+        "path": "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817/report_antigravity/official_common_support_roc_pr_curves_antigravity.json",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "검증된 고정 점수를 재학습 없이 읽고, 7개 방법이 모두 완료된 동일 922개 데이터셋에서 Micro ROC 및 Precision–Recall 곡선을 계산했습니다.",
+          "executed_at": "2026-08-18T00:00:00Z",
+          "tables_used": [
+            "verified Exp449 proposal shards",
+            "verified public-baseline score shards"
+          ],
+          "filters": [
+            "common support = exact intersection of 7 methods",
+            "dataset count = 922",
+            "TEST row count = 186150",
+            "TEST labels loaded only after score-root verification"
+          ],
+          "metric_definitions": [
+            "ROC = false-positive rate versus true-positive rate over concatenated TEST rows",
+            "Precision–Recall = recall versus precision over concatenated TEST rows",
+            "Baseline score = 1 - upper-tail conformal p-value",
+            "Proposal score = frozen route-preserving composite anomaly score"
+          ],
+          "sql": "SELECT * FROM roc_curve_common_support\nUNION ALL\nSELECT * FROM pr_curve_common_support"
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "report_title",
+        "type": "markdown",
+        "body": "# AI-Driven Equipment Intelligence: 공식 이상 탐지 비교 결과\n\n사내 논문 작성용 공식 기술 보고서 · Exp449 연속 점수 포함 · 2026-08-17"
+      },
+      {
+        "id": "technical_summary",
+        "type": "markdown",
+        "sourceId": "official_summary",
+        "body": "## 기술 요약\n\n제안기술은 **1,117개 데이터셋, 195,900개 TEST 시계열**의 전수 평가에서 동일 경보 예산 기준 **Micro F1 0.6306, Macro F1 0.6229**를 기록했습니다. 가장 강한 공개 기준선인 One-Class SVM은 Micro F1 0.5086, Macro F1 0.4649였으며, 제안기술의 절대 우위는 각각 **+0.1221, +0.1581**입니다. Exp449에 고정된 연속 이상 점수로 계산한 제안기술의 **AP는 0.6741, AUROC는 0.9611**입니다."
+      },
+      {
+        "id": "headline_metrics_block",
+        "type": "metric-strip",
+        "cardIds": [
+          "dataset_count_card",
+          "test_row_count_card",
+          "proposal_micro_f1_card",
+          "proposal_macro_f1_card",
+          "proposal_ap_card",
+          "proposal_auroc_card",
+          "best_baseline_margin_card"
+        ]
+      },
+      {
+        "id": "primary_finding",
+        "type": "markdown",
+        "sourceId": "official_summary",
+        "body": "## 동일 경보 예산에서 제안기술이 여섯 공개 기준선을 상회\n\n사전 고정된 primary protocol인 matched-alert-budget에서 제안기술의 Micro F1과 Macro F1은 kNN distance, LOF novelty, One-Class SVM, Isolation Forest, Deep SVDD, DROCC를 모두 상회했습니다. Exp449 제안기술의 경보 예산은 **2,276개**입니다. 고전 기준선은 1,115–1,116개 데이터셋에서 완료되었고, 심층 기준선 두 개는 922개 데이터셋에서 완료되었습니다. 미완료 데이터셋을 제외해 성능을 과대평가하지 않도록 표와 그래프는 **full-population support**를 사용합니다."
+      },
+      {
+        "id": "matched_f1_block",
+        "type": "chart",
+        "chartId": "matched_f1_chart"
+      },
+      {
+        "id": "matched_metrics_table_block",
+        "type": "table",
+        "tableId": "matched_metrics_table"
+      },
+      {
+        "id": "robustness_finding",
+        "type": "markdown",
+        "sourceId": "official_bootstrap",
+        "body": "## 데이터셋 재표집에서도 성능 우위가 유지\n\n1,117개 데이터셋을 단위로 2,000회 paired bootstrap을 수행했습니다. 여섯 기준선 모두 `기준선 − 제안기술` Macro F1 차이의 95% 신뢰구간 상한이 0보다 작았습니다. 가장 강한 One-Class SVM의 구간도 **[-0.1827, -0.1343]**로, 데이터셋 구성 변화에 대한 제안기술 우위가 일관됩니다."
+      },
+      {
+        "id": "bootstrap_chart_block",
+        "type": "chart",
+        "chartId": "bootstrap_advantage_chart"
+      },
+      {
+        "id": "bootstrap_table_block",
+        "type": "table",
+        "tableId": "bootstrap_table"
+      },
+      {
+        "id": "continuous_metrics_section",
+        "type": "markdown",
+        "sourceId": "official_summary",
+        "body": "## 제안기술 연속 점수 AP/AUROC\n\nExp449가 고정한 **route-preserving composite anomaly score**를 사용해 제안기술 AP/AUROC를 직접 계산했습니다. 아래 그래프에서 제안기술의 Micro AP는 **0.6741**, Micro AUROC는 **0.9611**로 여섯 공개 기준선보다 모두 높습니다. 막대는 전체 TEST 시계열을 합쳐 계산한 Micro 지표이며, 정확한 Micro/Macro 값은 이어지는 표에서 확인할 수 있습니다. 이 점수는 이상 순위 점수이며 고장 확률로 보정된 값은 아닙니다."
+      },
+      {
+        "id": "continuous_ap_auroc_chart_block",
+        "type": "chart",
+        "chartId": "continuous_ap_auroc_chart"
+      },
+      {
+        "id": "continuous_metrics_table_block",
+        "type": "table",
+        "tableId": "continuous_metrics_table"
+      },
+      {
+        "id": "common_support_curve_section",
+        "type": "markdown",
+        "sourceId": "official_common_support_curves",
+        "body": "## 공통지원 ROC와 Precision–Recall 곡선\n\n방법별 완료 범위 차이를 제거하기 위해 **7개 방법 모두 점수를 가진 동일 922개 데이터셋(186,150개 TEST 시계열)**만 사용했습니다. 모든 곡선에는 제안기술과 **kNN, LOF, OCSVM, Isolation Forest, Deep SVDD, DROCC**를 포함했습니다. x축은 방법마다 서로 다른 임계값 개수를 단순 나열하지 않고 **0–100%의 동일한 10%p 표시 간격**으로 맞췄습니다. 공통 표본에서 제안기술은 **AP 0.6697, AUROC 0.9642**로 가장 높았습니다."
+      },
+      {
+        "id": "common_support_roc_curve_block",
+        "type": "chart",
+        "chartId": "common_support_roc_curve"
+      },
+      {
+        "id": "common_support_pr_interpretation",
+        "type": "markdown",
+        "sourceId": "official_common_support_curves",
+        "body": "### 불균형 데이터에서는 PR 곡선을 함께 봅니다\n\n이 공통 표본의 실제 이상 비율은 **2.00%**입니다. ROC는 전체 분리 능력을, PR은 희소 이상 조건의 오탐 부담을 더 직접적으로 보여줍니다. 제안기술은 여섯 공개 비교군보다 전반적으로 높은 Precision을 유지합니다. 곡선은 표시용 공통 격자로 보간했으며, **AP와 AUROC 수치는 원래의 전체 연속 점수에서 직접 계산한 값**입니다."
+      },
+      {
+        "id": "common_support_pr_curve_block",
+        "type": "chart",
+        "chartId": "common_support_pr_curve"
+      },
+      {
+        "id": "methodology_section",
+        "type": "markdown",
+        "sourceId": "official_dataset_metrics",
+        "body": "## 범위와 지표\n\n- **모집단:** 1,117개 데이터셋, 195,900개 TEST 시계열\n- **Primary:** Exp449 제안기술의 2,276개 경보 수에 맞춘 matched-alert-budget\n- **Secondary:** conformal α = 0.005, 0.01, 0.02\n- **Micro:** 전체 TEST 행의 TP·FP·FN·TN 또는 연속 점수·라벨을 합산\n- **Macro:** 데이터셋별 지표의 산술평균\n- **AP/AUROC:** 제안기술과 공개 기준선의 고정 연속 이상 점수로 산출\n- **불확실성:** 데이터셋 단위 paired bootstrap 2,000회, seed 20260812"
+      },
+      {
+        "id": "reproducibility_section",
+        "type": "markdown",
+        "sourceId": "official_summary",
+        "body": "## 방법과 재현성\n\nExp449 제안기술 manifest와 1,117개 shard의 크기·SHA-256·정책 순서·점수 길이·유한성·0.5 경보 경계를 검증한 뒤 TEST 라벨을 읽었습니다. 공개 기준선은 classical 4개 방법, byte-preserving Deep SVDD 단일 방법 뷰, MPS-DROCC 루트의 고정 점수를 사용했습니다. 재학습 없이 경보 예산만 Exp449의 2,276개에 맞춰 다시 집계했습니다. MPS-DROCC의 CPU/MPS 동등성은 사용자가 직접 확인해 이상이 없다고 승인했으며, 별도 기계 판독 동등성 산출물은 없습니다."
+      },
+      {
+        "id": "limitations_section",
+        "type": "markdown",
+        "body": "## 한계와 해석 주의\n\n1. 제안기술 점수는 경보 경계를 보존하는 **복합 이상 순위 점수**이며, 고장 확률로 보정된 값이 아닙니다. AP/AUROC에는 사용할 수 있지만 확률로 해석하면 안 됩니다.\n2. Deep SVDD와 DROCC는 195개 데이터셋에서 abstain하여 coverage가 82.54%입니다. full-population 집계가 이 미완료를 반영합니다.\n3. 결과는 공개 benchmark 데이터의 retrospective 비교이며 실제 설비 운영 성능을 직접 보장하지 않습니다.\n4. MPS-DROCC 동등성 근거는 사용자 확인이며 별도 기계 판독 artifact는 없습니다."
+      },
+      {
+        "id": "paper_recommendation_section",
+        "type": "markdown",
+        "sourceId": "official_summary",
+        "body": "## 논문 반영 권고\n\n본문에는 **‘동일 경보 예산의 full-population 평가에서 제안기술이 여섯 공개 이상 탐지 기준선보다 높은 Micro/Macro F1을 보였고, paired bootstrap에서도 우위가 유지되었다’**고 기술할 수 있습니다. 연속 점수 비교에서는 **AP 0.6741, AUROC 0.9611**를 함께 제시하되, 점수가 고장 확률이 아니라 경보 경계를 보존하는 복합 이상 점수임을 명시하십시오."
+      },
+      {
+        "id": "follow_up_section",
+        "type": "markdown",
+        "body": "## 후속 질문\n\n- 실설비 데이터에서 설비군별 오탐 비용과 탐지 지연을 어떻게 검증할 것인가?\n- 연속 이상 점수를 실제 고장 확률로 보정할 필요가 있는가?\n- 195개 심층 기준선 abstain 데이터셋의 실패 유형을 부록에서 어떻게 분류할 것인가?"
+      }
+    ],
+    "notes": [
+      "Chart map · continuous AP/AUROC: comparison/grouped horizontal bar; method × {Micro AP, Micro AUROC}; two-root blue-orange palette; source official_summary; takeaway proposal ranks first on both metrics.",
+      "Chart map · common-support ROC: comparison/line; uniform 10pp displayed FPR grid × TPR; proposed plus six public methods and random reference; line style plus categorical color; source official_common_support_curves.",
+      "Chart map · common-support Precision–Recall: comparison/line; uniform 10pp displayed recall grid × precision; proposed plus six public methods and prevalence reference; line style plus categorical color; source official_common_support_curves."
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-18T00:20:00Z",
+    "status": "ready",
+    "datasets": {
+      "headline_metrics": [
+        {
+          "dataset_count": 1117,
+          "test_row_count": 195900,
+          "proposal_micro_f1": 0.6306102680012916,
+          "proposal_macro_f1": 0.6229455052797667,
+          "proposal_average_precision": 0.6740861245645129,
+          "proposal_auroc": 0.9610767903207958,
+          "best_baseline_micro_f1_margin": 0.12205360025831458
+        }
+      ],
+      "matched_metrics": [
+        {
+          "rank": 1,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안기술",
+          "coverage": 1,
+          "completed_datasets": 1117,
+          "alerts": 2276,
+          "precision": 0.8580843585237259,
+          "recall": 0.498468606431853,
+          "micro_f1": 0.6306102680012916,
+          "macro_f1": 0.6229455052797667,
+          "tp": 1953,
+          "fp": 323,
+          "fn": 1965,
+          "tn": 191659
+        },
+        {
+          "rank": 2,
+          "method_id": "ocsvm_rbf",
+          "method_label": "One-Class SVM",
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "precision": 0.6920035149384886,
+          "recall": 0.40199081163859113,
+          "micro_f1": 0.508556667742977,
+          "macro_f1": 0.4648610203941045,
+          "tp": 1575,
+          "fp": 701,
+          "fn": 2343,
+          "tn": 191281
+        },
+        {
+          "rank": 3,
+          "method_id": "knn_distance",
+          "method_label": "kNN distance",
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "precision": 0.6862917398945518,
+          "recall": 0.39867279224093927,
+          "micro_f1": 0.5043590571520826,
+          "macro_f1": 0.4538841966664665,
+          "tp": 1562,
+          "fp": 714,
+          "fn": 2356,
+          "tn": 191268
+        },
+        {
+          "rank": 4,
+          "method_id": "lof_novelty",
+          "method_label": "LOF novelty",
+          "coverage": 0.9982094897045658,
+          "completed_datasets": 1115,
+          "alerts": 2275,
+          "precision": 0.5054945054945055,
+          "recall": 0.293517100561511,
+          "micro_f1": 0.3713870498950428,
+          "macro_f1": 0.3599036493561124,
+          "tp": 1150,
+          "fp": 1125,
+          "fn": 2768,
+          "tn": 190857
+        },
+        {
+          "rank": 5,
+          "method_id": "isolation_forest",
+          "method_label": "Isolation Forest",
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "precision": 0.36072056239015815,
+          "recall": 0.20954568657478306,
+          "micro_f1": 0.265095253471101,
+          "macro_f1": 0.2209800147022884,
+          "tp": 821,
+          "fp": 1455,
+          "fn": 3097,
+          "tn": 190527
+        },
+        {
+          "rank": 6,
+          "method_id": "deep_svdd_1d",
+          "method_label": "Deep SVDD",
+          "coverage": 0.8254252461951657,
+          "completed_datasets": 922,
+          "alerts": 2089,
+          "precision": 0.3379607467687889,
+          "recall": 0.18019397651863195,
+          "micro_f1": 0.23505909771932745,
+          "macro_f1": 0.22608385642552528,
+          "tp": 706,
+          "fp": 1383,
+          "fn": 3212,
+          "tn": 190599
+        },
+        {
+          "rank": 7,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC (MPS)",
+          "coverage": 0.8254252461951657,
+          "completed_datasets": 922,
+          "alerts": 2089,
+          "precision": 0.24222115844901868,
+          "recall": 0.12914752424706483,
+          "micro_f1": 0.16847011819543867,
+          "macro_f1": 0.1470136534341222,
+          "tp": 506,
+          "fp": 1583,
+          "fn": 3412,
+          "tn": 190399
+        }
+      ],
+      "matched_f1_chart_rows": [
+        {
+          "rank": 1,
+          "method_label": "제안기술",
+          "aggregation": "Micro F1",
+          "f1": 0.6306102680012916,
+          "precision": 0.8580843585237259,
+          "recall": 0.498468606431853,
+          "coverage": 1,
+          "alerts": 2276
+        },
+        {
+          "rank": 1,
+          "method_label": "제안기술",
+          "aggregation": "Macro F1",
+          "f1": 0.6229455052797667,
+          "precision": 0.8580843585237259,
+          "recall": 0.498468606431853,
+          "coverage": 1,
+          "alerts": 2276
+        },
+        {
+          "rank": 2,
+          "method_label": "One-Class SVM",
+          "aggregation": "Micro F1",
+          "f1": 0.508556667742977,
+          "precision": 0.6920035149384886,
+          "recall": 0.40199081163859113,
+          "coverage": 0.999104744852283,
+          "alerts": 2276
+        },
+        {
+          "rank": 2,
+          "method_label": "One-Class SVM",
+          "aggregation": "Macro F1",
+          "f1": 0.4648610203941045,
+          "precision": 0.6920035149384886,
+          "recall": 0.40199081163859113,
+          "coverage": 0.999104744852283,
+          "alerts": 2276
+        },
+        {
+          "rank": 3,
+          "method_label": "kNN distance",
+          "aggregation": "Micro F1",
+          "f1": 0.5043590571520826,
+          "precision": 0.6862917398945518,
+          "recall": 0.39867279224093927,
+          "coverage": 0.999104744852283,
+          "alerts": 2276
+        },
+        {
+          "rank": 3,
+          "method_label": "kNN distance",
+          "aggregation": "Macro F1",
+          "f1": 0.4538841966664665,
+          "precision": 0.6862917398945518,
+          "recall": 0.39867279224093927,
+          "coverage": 0.999104744852283,
+          "alerts": 2276
+        },
+        {
+          "rank": 4,
+          "method_label": "LOF novelty",
+          "aggregation": "Micro F1",
+          "f1": 0.3713870498950428,
+          "precision": 0.5054945054945055,
+          "recall": 0.293517100561511,
+          "coverage": 0.9982094897045658,
+          "alerts": 2275
+        },
+        {
+          "rank": 4,
+          "method_label": "LOF novelty",
+          "aggregation": "Macro F1",
+          "f1": 0.3599036493561124,
+          "precision": 0.5054945054945055,
+          "recall": 0.293517100561511,
+          "coverage": 0.9982094897045658,
+          "alerts": 2275
+        },
+        {
+          "rank": 5,
+          "method_label": "Isolation Forest",
+          "aggregation": "Micro F1",
+          "f1": 0.265095253471101,
+          "precision": 0.36072056239015815,
+          "recall": 0.20954568657478306,
+          "coverage": 0.999104744852283,
+          "alerts": 2276
+        },
+        {
+          "rank": 5,
+          "method_label": "Isolation Forest",
+          "aggregation": "Macro F1",
+          "f1": 0.2209800147022884,
+          "precision": 0.36072056239015815,
+          "recall": 0.20954568657478306,
+          "coverage": 0.999104744852283,
+          "alerts": 2276
+        },
+        {
+          "rank": 6,
+          "method_label": "Deep SVDD",
+          "aggregation": "Micro F1",
+          "f1": 0.23505909771932745,
+          "precision": 0.3379607467687889,
+          "recall": 0.18019397651863195,
+          "coverage": 0.8254252461951657,
+          "alerts": 2089
+        },
+        {
+          "rank": 6,
+          "method_label": "Deep SVDD",
+          "aggregation": "Macro F1",
+          "f1": 0.22608385642552528,
+          "precision": 0.3379607467687889,
+          "recall": 0.18019397651863195,
+          "coverage": 0.8254252461951657,
+          "alerts": 2089
+        },
+        {
+          "rank": 7,
+          "method_label": "DROCC (MPS)",
+          "aggregation": "Micro F1",
+          "f1": 0.16847011819543867,
+          "precision": 0.24222115844901868,
+          "recall": 0.12914752424706483,
+          "coverage": 0.8254252461951657,
+          "alerts": 2089
+        },
+        {
+          "rank": 7,
+          "method_label": "DROCC (MPS)",
+          "aggregation": "Macro F1",
+          "f1": 0.1470136534341222,
+          "precision": 0.24222115844901868,
+          "recall": 0.12914752424706483,
+          "coverage": 0.8254252461951657,
+          "alerts": 2089
+        }
+      ],
+      "continuous_metrics": [
+        {
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안기술",
+          "coverage": 1,
+          "average_precision": 0.6740861245645129,
+          "auroc": 0.9610767903207958,
+          "macro_average_precision": 0.7608446688676428,
+          "macro_auroc": 0.9562008939869896
+        },
+        {
+          "method_id": "knn_distance",
+          "method_label": "kNN distance",
+          "coverage": 0.999104744852283,
+          "average_precision": 0.46784428611613177,
+          "auroc": 0.9027977031561392,
+          "macro_average_precision": 0.6368285920825242,
+          "macro_auroc": 0.9423565565672268
+        },
+        {
+          "method_id": "ocsvm_rbf",
+          "method_label": "One-Class SVM",
+          "coverage": 0.999104744852283,
+          "average_precision": 0.3446483393007672,
+          "auroc": 0.6942694616192743,
+          "macro_average_precision": 0.6520004519571752,
+          "macro_auroc": 0.8982705003132295
+        },
+        {
+          "method_id": "lof_novelty",
+          "method_label": "LOF novelty",
+          "coverage": 0.9982094897045658,
+          "average_precision": 0.22855066153824347,
+          "auroc": 0.7887921076295479,
+          "macro_average_precision": 0.4810102266958961,
+          "macro_auroc": 0.8113067864339185
+        },
+        {
+          "method_id": "isolation_forest",
+          "method_label": "Isolation Forest",
+          "coverage": 0.999104744852283,
+          "average_precision": 0.2002410448008815,
+          "auroc": 0.7891703320099916,
+          "macro_average_precision": 0.3450608356647406,
+          "macro_auroc": 0.81131519206972
+        },
+        {
+          "method_id": "deep_svdd_1d",
+          "method_label": "Deep SVDD",
+          "coverage": 0.8254252461951657,
+          "average_precision": 0.1369319140365357,
+          "auroc": 0.6991165118518717,
+          "macro_average_precision": 0.3592959011910816,
+          "macro_auroc": 0.736720469712029
+        },
+        {
+          "method_id": "drocc_1d",
+          "method_label": "DROCC (MPS)",
+          "coverage": 0.8254252461951657,
+          "average_precision": 0.03645645787369375,
+          "auroc": 0.5520178437002756,
+          "macro_average_precision": 0.2425710018540354,
+          "macro_auroc": 0.5540524028379288
+        }
+      ],
+      "bootstrap_matched": [
+        {
+          "method_id": "ocsvm_rbf",
+          "method_label": "One-Class SVM",
+          "baseline_minus_proposal": -0.1580844848856622,
+          "ci_lower": -0.18274647855672166,
+          "ci_upper": -0.13431562733049546,
+          "draw_count": 2000
+        },
+        {
+          "method_id": "knn_distance",
+          "method_label": "kNN distance",
+          "baseline_minus_proposal": -0.16906130861330018,
+          "ci_lower": -0.19330468585439675,
+          "ci_upper": -0.14397029019587265,
+          "draw_count": 2000
+        },
+        {
+          "method_id": "lof_novelty",
+          "method_label": "LOF novelty",
+          "baseline_minus_proposal": -0.2630418559236542,
+          "ci_lower": -0.2890839882062136,
+          "ci_upper": -0.23752042341140625,
+          "draw_count": 2000
+        },
+        {
+          "method_id": "deep_svdd_1d",
+          "method_label": "Deep SVDD",
+          "baseline_minus_proposal": -0.39686164885424136,
+          "ci_lower": -0.4246743194542724,
+          "ci_upper": -0.3700086293630199,
+          "draw_count": 2000
+        },
+        {
+          "method_id": "isolation_forest",
+          "method_label": "Isolation Forest",
+          "baseline_minus_proposal": -0.4019654905774782,
+          "ci_lower": -0.4296820692218261,
+          "ci_upper": -0.37485117529363426,
+          "draw_count": 2000
+        },
+        {
+          "method_id": "drocc_1d",
+          "method_label": "DROCC (MPS)",
+          "baseline_minus_proposal": -0.4759318518456444,
+          "ci_lower": -0.503705878780109,
+          "ci_upper": -0.44706445800525707,
+          "draw_count": 2000
+        }
+      ],
+      "continuous_score_chart_rows": [
+        {
+          "rank": 1,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안기술",
+          "metric": "Micro AP",
+          "score": 0.6740861245645129,
+          "coverage": 1,
+          "completed_datasets": 1117,
+          "alerts": 2276,
+          "micro_f1": 0.6306102680012916,
+          "macro_score": 0.7608446688676428
+        },
+        {
+          "rank": 1,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안기술",
+          "metric": "Micro AUROC",
+          "score": 0.9610767903207958,
+          "coverage": 1,
+          "completed_datasets": 1117,
+          "alerts": 2276,
+          "micro_f1": 0.6306102680012916,
+          "macro_score": 0.9562008939869896
+        },
+        {
+          "rank": 2,
+          "method_id": "knn_distance",
+          "method_label": "kNN distance",
+          "metric": "Micro AP",
+          "score": 0.46784428611613177,
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "micro_f1": 0.5043590571520826,
+          "macro_score": 0.6368285920825242
+        },
+        {
+          "rank": 2,
+          "method_id": "knn_distance",
+          "method_label": "kNN distance",
+          "metric": "Micro AUROC",
+          "score": 0.9027977031561392,
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "micro_f1": 0.5043590571520826,
+          "macro_score": 0.9423565565672268
+        },
+        {
+          "rank": 3,
+          "method_id": "ocsvm_rbf",
+          "method_label": "One-Class SVM",
+          "metric": "Micro AP",
+          "score": 0.3446483393007672,
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "micro_f1": 0.508556667742977,
+          "macro_score": 0.6520004519571752
+        },
+        {
+          "rank": 3,
+          "method_id": "ocsvm_rbf",
+          "method_label": "One-Class SVM",
+          "metric": "Micro AUROC",
+          "score": 0.6942694616192743,
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "micro_f1": 0.508556667742977,
+          "macro_score": 0.8982705003132295
+        },
+        {
+          "rank": 4,
+          "method_id": "lof_novelty",
+          "method_label": "LOF novelty",
+          "metric": "Micro AP",
+          "score": 0.22855066153824347,
+          "coverage": 0.9982094897045658,
+          "completed_datasets": 1115,
+          "alerts": 2275,
+          "micro_f1": 0.3713870498950428,
+          "macro_score": 0.4810102266958961
+        },
+        {
+          "rank": 4,
+          "method_id": "lof_novelty",
+          "method_label": "LOF novelty",
+          "metric": "Micro AUROC",
+          "score": 0.7887921076295479,
+          "coverage": 0.9982094897045658,
+          "completed_datasets": 1115,
+          "alerts": 2275,
+          "micro_f1": 0.3713870498950428,
+          "macro_score": 0.8113067864339185
+        },
+        {
+          "rank": 5,
+          "method_id": "isolation_forest",
+          "method_label": "Isolation Forest",
+          "metric": "Micro AP",
+          "score": 0.2002410448008815,
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "micro_f1": 0.265095253471101,
+          "macro_score": 0.3450608356647406
+        },
+        {
+          "rank": 5,
+          "method_id": "isolation_forest",
+          "method_label": "Isolation Forest",
+          "metric": "Micro AUROC",
+          "score": 0.7891703320099916,
+          "coverage": 0.999104744852283,
+          "completed_datasets": 1116,
+          "alerts": 2276,
+          "micro_f1": 0.265095253471101,
+          "macro_score": 0.81131519206972
+        },
+        {
+          "rank": 6,
+          "method_id": "deep_svdd_1d",
+          "method_label": "Deep SVDD",
+          "metric": "Micro AP",
+          "score": 0.1369319140365357,
+          "coverage": 0.8254252461951657,
+          "completed_datasets": 922,
+          "alerts": 2089,
+          "micro_f1": 0.23505909771932745,
+          "macro_score": 0.3592959011910816
+        },
+        {
+          "rank": 6,
+          "method_id": "deep_svdd_1d",
+          "method_label": "Deep SVDD",
+          "metric": "Micro AUROC",
+          "score": 0.6991165118518717,
+          "coverage": 0.8254252461951657,
+          "completed_datasets": 922,
+          "alerts": 2089,
+          "micro_f1": 0.23505909771932745,
+          "macro_score": 0.736720469712029
+        },
+        {
+          "rank": 7,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC (MPS)",
+          "metric": "Micro AP",
+          "score": 0.03645645787369375,
+          "coverage": 0.8254252461951657,
+          "completed_datasets": 922,
+          "alerts": 2089,
+          "micro_f1": 0.16847011819543867,
+          "macro_score": 0.2425710018540354
+        },
+        {
+          "rank": 7,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC (MPS)",
+          "metric": "Micro AUROC",
+          "score": 0.5520178437002756,
+          "coverage": 0.8254252461951657,
+          "completed_datasets": 922,
+          "alerts": 2089,
+          "micro_f1": 0.16847011819543867,
+          "macro_score": 0.5540524028379288
+        }
+      ],
+      "roc_curve_common_support": [
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.0,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.8889754202563103,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9393295495684872,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9731794520224719,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9909432677180461,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9965081923180231,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9990054020718124,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 1.0,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 1.0,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 1.0,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 1.0,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.0,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.7580578156341712,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.8507748004653679,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9003719166449883,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.939929469854403,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9625129832129737,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9771417604299114,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9883235086964678,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9947955322332842,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9971179147447605,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 1.0,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.0,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.5704149149530543,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.6751654278405768,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.7436047982542077,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.797112450167112,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.8422787319388301,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.8862655212014695,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.9211004167719928,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.9466760237162513,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.9731090212010634,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 1.0,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.0502283105022831,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.4424178976714056,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.504371464596805,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.5663250315222044,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.6282785984476038,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.6902321653730031,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.7521857322984026,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.814139299223802,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.8760928661492013,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.9380464330746007,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 1.0,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.0,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.5502446183953033,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.6685484056636353,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.7414351820837664,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.7921931005641102,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.8395198114597142,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.874018722583955,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.9127426211895043,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.9422288471864282,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.9679764324642804,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 1.0,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.0,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.40640431563474827,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.5179588704186058,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.6019402499931876,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.6612624658395492,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.7253806896836712,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.7834462528534868,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.8438001200163334,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.9062030970815962,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.9586067682526639,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 1.0,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.0,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.17396932538503576,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.2821979763911036,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.37921858933140157,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.4707331961497547,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.5521331001224592,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.6502591100367087,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.7412052818417283,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.8294736279189046,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.9214554314876636,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 1.0,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        }
+      ],
+      "pr_curve_common_support": [
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 1.0,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.975179638036388,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9486529775455741,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.9144353531311146,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.8807609187066974,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.8359158992972652,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.7016802803959629,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.504698469851606,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.292761991099983,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.13735701135925618,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "curve_value": 0.028266646420165516,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 1.0,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.9562070256108646,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.8885253309476687,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.7750093460756656,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.6024975041601968,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.43208253394634427,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.31880627354180724,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.18994816532657818,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.10589551328671225,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.05795857425905061,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "curve_value": 0.02,
+          "method_id": "knn_distance",
+          "method_label": "kNN",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 1.0,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.6263790692253904,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.47543027535864474,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.3375420091758667,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.20556733440350933,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.1318569284413527,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.09227489414218754,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.05751960541535994,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.03872564833510867,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.02806726735988253,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "curve_value": 0.02,
+          "method_id": "lof_novelty",
+          "method_label": "LOF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 1.0,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.9556357559029764,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.9028112164296999,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.7974591686604026,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.16955283078143019,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.1212233722102508,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.10097869776820065,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.08073402332615048,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.060489348884100326,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.040244674442050175,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "curve_value": 0.02,
+          "method_id": "ocsvm_rbf",
+          "method_label": "OCSVM",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 1.0,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.5628228544730828,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.36010541338347185,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.24460443547567706,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.16796939922591128,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.12050011458467418,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.07981582873881392,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.0560325392406699,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.03757441590256877,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.02683585354957903,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "curve_value": 0.02,
+          "method_id": "isolation_forest",
+          "method_label": "IF",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 1.0,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.38141374407275225,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.18129248156568833,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.11248960251506261,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.07902851058490729,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.05385978068742328,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.03943513321899559,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.03002712114667233,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.025361906244231347,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.022724190029410087,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "curve_value": 0.02,
+          "method_id": "deep_svdd_1d",
+          "method_label": "SVDD",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 1.0,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 0,
+          "x_percent": "0.0%",
+          "x_rate": 0.0
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.0535168260267832,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 20,
+          "x_percent": "10.0%",
+          "x_rate": 0.1
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.03134468795986912,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 40,
+          "x_percent": "20.0%",
+          "x_rate": 0.2
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.027117721129628555,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 60,
+          "x_percent": "30.0%",
+          "x_rate": 0.3
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.024643812152744846,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 80,
+          "x_percent": "40.0%",
+          "x_rate": 0.4
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.02289815642387438,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 100,
+          "x_percent": "50.0%",
+          "x_rate": 0.5
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.021590124058059955,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 120,
+          "x_percent": "60.0%",
+          "x_rate": 0.6
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.02127098055230115,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 140,
+          "x_percent": "70.0%",
+          "x_rate": 0.7000000000000001
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.020848236382927002,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 160,
+          "x_percent": "80.0%",
+          "x_rate": 0.8
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.0204452438415669,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 180,
+          "x_percent": "90.0%",
+          "x_rate": 0.9
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "curve_value": 0.02,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC",
+          "support_dataset_count": 922,
+          "test_row_count": 186150,
+          "x_order": 200,
+          "x_percent": "100.0%",
+          "x_rate": 1.0
+        }
+      ],
+      "curve_metric_summary": [
+        {
+          "auroc": 0.9641703115297314,
+          "average_precision": 0.6696752913120665,
+          "method_id": "proposed_equipment_anomaly_detection",
+          "method_label": "제안기술",
+          "score_count": 186150
+        },
+        {
+          "auroc": 0.9141842571843053,
+          "average_precision": 0.4871527786772481,
+          "method_id": "knn_distance",
+          "method_label": "kNN distance",
+          "score_count": 186150
+        },
+        {
+          "auroc": 0.8014084634806903,
+          "average_precision": 0.23840723336079714,
+          "method_id": "lof_novelty",
+          "method_label": "LOF novelty",
+          "score_count": 186150
+        },
+        {
+          "auroc": 0.6893264327980887,
+          "average_precision": 0.34100706074063514,
+          "method_id": "ocsvm_rbf",
+          "method_label": "One-Class SVM",
+          "score_count": 186150
+        },
+        {
+          "auroc": 0.7930269668753367,
+          "average_precision": 0.20795772629073683,
+          "method_id": "isolation_forest",
+          "method_label": "Isolation Forest",
+          "score_count": 186150
+        },
+        {
+          "auroc": 0.6991165118518717,
+          "average_precision": 0.1369319140365357,
+          "method_id": "deep_svdd_1d",
+          "method_label": "Deep SVDD",
+          "score_count": 186150
+        },
+        {
+          "auroc": 0.5520178437002756,
+          "average_precision": 0.03645645787369375,
+          "method_id": "drocc_1d",
+          "method_label": "DROCC (MPS)",
+          "score_count": 186150
+        }
+      ]
+    },
+    "accessIssues": []
+  },
+  "sources": [
+    {
+      "id": "official_summary",
+      "label": "Exp449 연속 점수 포함 공식 6개 기준선 통합 요약",
+      "path": "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817/official_comparison_summary_antigravity.json",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "sql": "SELECT metric.* FROM (SELECT UNNEST(summaries) AS metric FROM read_json_auto('official_comparison_summary_antigravity.json')) WHERE metric.support = 'full_population' AND metric.protocol IN ('proposal_frozen', 'matched_alert_budget')",
+        "description": "Exp449 제안기술 연속 점수와 검증된 세 공개 기준선 점수 루트의 full-population 공식 평가를 결합했습니다.",
+        "executed_at": "2026-08-17T13:30:00Z",
+        "tables_used": [
+          "official_comparison_summary_antigravity.json"
+        ],
+        "filters": [
+          "support = full_population",
+          "primary protocol = matched_alert_budget",
+          "public methods = exact six-method inventory"
+        ],
+        "metric_definitions": [
+          "Micro Precision = sum(TP) / (sum(TP) + sum(FP))",
+          "Micro Recall = sum(TP) / (sum(TP) + sum(FN))",
+          "Micro F1 = harmonic mean of Micro Precision and Recall",
+          "Macro F1 = arithmetic mean of per-dataset F1",
+          "Coverage = completed datasets / 1117",
+          "Proposal AP/AUROC use the frozen route-preserving composite anomaly score; it is not a calibrated failure probability"
+        ]
+      }
+    },
+    {
+      "id": "official_bootstrap",
+      "label": "공식 paired bootstrap 결과",
+      "path": "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817/official_comparison_bootstrap_antigravity.json",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "sql": "SELECT metric.* FROM (SELECT UNNEST(rows) AS metric FROM read_json_auto('official_comparison_bootstrap_antigravity.json')) WHERE metric.support = 'full_population' AND metric.protocol = 'matched_alert_budget'",
+        "description": "1,117개 데이터셋을 동일 인덱스로 재표집하여 기준선−제안기술 Macro F1 차이를 2,000회 계산했습니다.",
+        "executed_at": "2026-08-17T13:30:00Z",
+        "tables_used": [
+          "official_comparison_bootstrap_antigravity.json"
+        ],
+        "filters": [
+          "support = full_population",
+          "protocol = matched_alert_budget",
+          "seed = 20260812"
+        ],
+        "metric_definitions": [
+          "Point estimate = baseline Macro F1 - proposal Macro F1",
+          "95% interval = empirical paired-bootstrap percentile interval from 2000 draws"
+        ]
+      }
+    },
+    {
+      "id": "official_dataset_metrics",
+      "label": "데이터셋별 공식 평가 지표",
+      "path": "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817/official_comparison_dataset_metrics_antigravity.csv",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "sql": "SELECT * FROM read_csv_auto('official_comparison_dataset_metrics_antigravity.csv') WHERE support = 'full_population' AND protocol = 'matched_alert_budget'",
+        "description": "여섯 공개 기준선의 26,808개 데이터셋-프로토콜 지표 행을 생성하고 공식 요약을 독립 재합산했습니다.",
+        "executed_at": "2026-08-17T13:30:00Z",
+        "tables_used": [
+          "official_comparison_dataset_metrics_antigravity.csv"
+        ],
+        "filters": [
+          "dataset count = 1117",
+          "protocols = matched_alert_budget plus conformal alpha 0.005, 0.01, 0.02"
+        ],
+        "metric_definitions": [
+          "Dataset F1 uses each dataset TP, FP, FN",
+          "Abstained datasets contribute no true-positive detection in full-population aggregation"
+        ]
+      }
+    },
+    {
+      "id": "official_common_support_curves",
+      "label": "공통지원 ROC/PR 곡선 산출물",
+      "path": "paper_public_baselines_official_comparison_exp449_continuous_antigravity_20260817/report_antigravity/official_common_support_roc_pr_curves_antigravity.json",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "검증된 고정 점수를 재학습 없이 읽고, 7개 방법이 모두 완료된 동일 922개 데이터셋에서 Micro ROC 및 Precision–Recall 곡선을 계산했습니다.",
+        "executed_at": "2026-08-18T00:00:00Z",
+        "tables_used": [
+          "verified Exp449 proposal shards",
+          "verified public-baseline score shards"
+        ],
+        "filters": [
+          "common support = exact intersection of 7 methods",
+          "dataset count = 922",
+          "TEST row count = 186150",
+          "TEST labels loaded only after score-root verification"
+        ],
+        "metric_definitions": [
+          "ROC = false-positive rate versus true-positive rate over concatenated TEST rows",
+          "Precision–Recall = recall versus precision over concatenated TEST rows",
+          "Baseline score = 1 - upper-tail conformal p-value",
+          "Proposal score = frozen route-preserving composite anomaly score"
+        ],
+        "sql": "SELECT * FROM roc_curve_common_support\nUNION ALL\nSELECT * FROM pr_curve_common_support"
+      }
+    }
+  ]
+}
