@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp459 대시보드</title>
+  <style>
+    body{max-width:1040px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem}
+    .box{background:#f5f7fa;padding:1rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp459 ECG5000 normal_2 연속 구간 검증</h1>
+  <table>
+    <tr><th>진행</th><td>Task 1/6</td></tr>
+    <tr><th>상태</th><td><code>planned_not_started</code></td></tr>
+    <tr><th>현재 판단</th><td>문서와 거버넌스만 준비됨. 공식 결과는 아직 없다.</td></tr>
+    <tr><th>공식 실행</th><td>evaluate 0회 / inspect 0회 / 공식 root 없음</td></tr>
+    <tr><th>label query 수</th><td>0</td></tr>
+    <tr><th>champion / pending candidate</th><td>변경 없음</td></tr>
+  </table>
+
+  <div class="box">
+    <p><strong>Exp459의 목표:</strong> Exp458의 <code>ECG5000_normal_2</code> 후보가 저장 순서 기반 다섯 연속 구간에서도 안정적인지 확인한다.</p>
+    <p><strong>Task 1 결과:</strong> 아직 계산은 시작하지 않았고, 통과선과 문서 경계만 고정했다.</p>
+  </div>
+
+  <h2>고정 기준 요약</h2>
+  <table>
+    <thead><tr><th>조건</th><th>기준</th></tr></thead>
+    <tbody>
+      <tr><td>fold 구성</td><td><code>283/283/283/282/282</code>, shuffle 금지</td></tr>
+      <tr><td>종류별 AUC</td><td>모두 ≥ 0.85</td></tr>
+      <tr><td>평균 AUC</td><td>≥ 0.90</td></tr>
+      <tr><td>Wilson 상한</td><td>≤ 0.05</td></tr>
+      <tr><td>최종 판단</td><td>10개 fold-seed 판단이 모두 통과할 때만 <code>stable</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>현재 미실행 항목</h2>
+  <table>
+    <thead><tr><th>항목</th><th>현재 truth</th></tr></thead>
+    <tbody>
+      <tr><td>prediction SHA-256</td><td><code>null</code></td></tr>
+      <tr><td>evaluation SHA-256</td><td><code>null</code></td></tr>
+      <tr><td>decision SHA-256</td><td><code>null</code></td></tr>
+      <tr><td>artifact map SHA-256</td><td><code>null</code></td></tr>
+      <tr><td>dashboard snapshot SHA-256</td><td><code>null</code></td></tr>
+    </tbody>
+  </table>
+</main></body>
+</html>

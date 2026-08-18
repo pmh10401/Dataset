@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp459 사전등록</title>
+  <style>
+    body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    .box{background:#f5f7fa;padding:1rem;margin:1rem 0}
+  </style>
+</head>
+<body><main>
+  <h1>Exp459 사전등록</h1>
+  <p><strong>상태:</strong> <code>planned_not_started</code>. 이 문서는 공식 실행 전에 고정한 계약이다.</p>
+  <div class="box">
+    <p><strong>핵심 질문:</strong> Exp458의 <code>ECG5000_normal_2</code> 후보 판단이 저장 순서 기반 다섯 연속 구간에서도 안정적인지 확인한다.</p>
+    <p><strong>중요:</strong> Exp459는 통과선을 다시 고르지 않는다. 5 fold × 2 seed의 10개 판단이 모두 통과할 때만 <code>stable</code>이다.</p>
+  </div>
+
+  <h2>고정 정체성</h2>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>실험</td><td><code>Exp459</code> / <code>ecg_normal2_blocked_validation</code></td></tr>
+    <tr><td>실행 이름</td><td><code>exp459-ecg-normal2-blocked-validation-antigravity-20260818</code></td></tr>
+    <tr><td>공식 결과 폴더</td><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code></td></tr>
+    <tr><td>전임 실험</td><td>Exp458 최종 커밋 <code>fc530cd2b392394aa7ffbd1408bc06d5b1b7c806</code>, artifact map SHA-256 <code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code></td></tr>
+    <tr><td>승인 설계 SHA-256</td><td><code>47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275</code></td></tr>
+    <tr><td>승인 계획 SHA-256</td><td><code>e6f66547f25b837898b64b0bf5321f4355a03ce51cecd790450e8597daf61a01</code></td></tr>
+  </table>
+
+  <h2>고정 과학 계약</h2>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>대상</td><td><code>ECG5000_normal_2</code> TRAIN 1413행 × 140값</td></tr>
+    <tr><td>seed</td><td><code>20260721</code>, <code>20261721</code></td></tr>
+    <tr><td>연속 fold</td><td><code>283/283/283/282/282</code>, shuffle 금지</td></tr>
+    <tr><td>합성 이상</td><td><code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code></td></tr>
+    <tr><td>종류별 AUC 기준</td><td>모두 ≥ 0.85</td></tr>
+    <tr><td>평균 AUC 기준</td><td>≥ 0.90</td></tr>
+    <tr><td>정상 Wilson 상한</td><td>≤ 0.05</td></tr>
+    <tr><td>최종 판단 규칙</td><td><code>all_10_fold_seed_records_must_pass_for_stable</code></td></tr>
+  </table>
+
+  <h2>Task 1 경계</h2>
+  <table>
+    <tr><th>항목</th><th>현재 truth</th></tr>
+    <tr><td>공식 evaluate</td><td>0회</td></tr>
+    <tr><td>공식 inspect</td><td>0회</td></tr>
+    <tr><td>label query 수</td><td>0</td></tr>
+    <tr><td>공식 결과 hash</td><td>모두 <code>null</code></td></tr>
+    <tr><td>공식 결과 폴더</td><td>아직 만들지 않음</td></tr>
+    <tr><td>champion / pending candidate</td><td>변경하지 않음</td></tr>
+  </table>
+</main></body>
+</html>

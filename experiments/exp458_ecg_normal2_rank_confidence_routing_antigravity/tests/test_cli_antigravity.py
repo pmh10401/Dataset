@@ -229,8 +229,9 @@ class CliAntigravityTest(unittest.TestCase):
                 (final["tp"], final["fp"], final["fn"], final["tn"], final["f1"]),
                 (617, 66, 829, 70788, 0.5796148426491311),
             )
+            self.assertTrue(root.is_dir())
             self.assertEqual(len({entry.name for entry in root.iterdir()}), 9)
-            self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
+            self.assertNotEqual(root.resolve(), _OFFICIAL_ROOT_ANTIGRAVITY.resolve())
 
     def test_evaluate_fails_closed_on_runtime_mismatch_before_qualifier_or_root_antigravity(self) -> None:
         """Break caught: public evaluate can create a root or qualify under the wrong runtime."""
@@ -476,9 +477,9 @@ print(json.dumps({
     "evaluate_code": evaluate_code,
     "inspect_code": inspect_code,
     "payloads_equal": evaluate_payload == inspect_payload,
+    "root_exists": root.is_dir(),
     "leaf_count": len(tuple(root.iterdir())),
     "route": evaluate_payload["normal2_route"]["route"],
-    "official_root_exists": Path("/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818").exists(),
 }, sort_keys=True))
 '''
             completed = subprocess.run(
@@ -493,9 +494,9 @@ print(json.dumps({
         self.assertEqual(proof["evaluate_code"], 0)
         self.assertEqual(proof["inspect_code"], 0)
         self.assertTrue(proof["payloads_equal"])
+        self.assertTrue(proof["root_exists"])
         self.assertEqual(proof["leaf_count"], 9)
         self.assertEqual(proof["route"], "candidate")
-        self.assertFalse(proof["official_root_exists"])
 
 
 if __name__ == "__main__":

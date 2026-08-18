@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp459 실행 가이드</title>
+  <style>
+    body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+  </style>
+</head>
+<body><main>
+  <h1>Exp459 실행 가이드</h1>
+  <p><strong>상태:</strong> <code>planned_not_started</code>. 지금은 문서와 거버넌스만 준비된 단계다.</p>
+
+  <h2>Task 1에서 허용한 일</h2>
+  <table>
+    <tr><th>허용</th><th>설명</th></tr>
+    <tr><td>문서 작성</td><td>사전등록, runbook, 구현 보고서, 대시보드를 HTML로 준비한다.</td></tr>
+    <tr><td>ledger 갱신</td><td>Exp459 상태를 <code>planned_not_started</code>로 등록한다.</td></tr>
+    <tr><td>code map 작성</td><td>Task 1 범위의 문서·ledger·테스트 경계를 기록한다.</td></tr>
+  </table>
+
+  <h2>Task 1에서 금지한 일</h2>
+  <table>
+    <tr><th>금지</th><th>이유</th></tr>
+    <tr><td>공식 evaluate / inspect</td><td>별도 승인 전 0회를 유지해야 한다.</td></tr>
+    <tr><td>공식 결과 폴더 생성</td><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code>는 아직 없어야 한다.</td></tr>
+    <tr><td>TEST label 조회</td><td>Task 1은 label-free governance만 다룬다.</td></tr>
+    <tr><td>champion / pending candidate 변경</td><td>Exp458 이후 운영 truth를 바꾸지 않는다.</td></tr>
+  </table>
+
+  <h2>다음 Task로 넘어가기 전 체크리스트</h2>
+  <table>
+    <tr><th>체크</th><th>기준</th></tr>
+    <tr><td>문서 4개</td><td>모두 self-contained HTML, Markdown duplicate 없음</td></tr>
+    <tr><td>세 ledger</td><td>공식 횟수 0, label query 0, 결과 hash null</td></tr>
+    <tr><td>code map</td><td>HTML/JSON/lock 동기화, source parent 규칙 통과</td></tr>
+    <tr><td>Exp458 predecessor</td><td>공식 결과와 product code를 수정하지 않음</td></tr>
+  </table>
+</main></body>
+</html>

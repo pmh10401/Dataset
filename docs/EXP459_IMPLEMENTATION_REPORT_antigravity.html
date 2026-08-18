@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp459 구현 보고서</title>
+  <style>
+    body{max-width:980px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+  </style>
+</head>
+<body><main>
+  <h1>Exp459 구현 보고서</h1>
+  <p><strong>현재 단계:</strong> Task 1 거버넌스와 문서화만 완료했다. 상태는 <code>planned_not_started</code>다.</p>
+
+  <h2>Task 1에서 준비한 것</h2>
+  <table>
+    <tr><th>항목</th><th>설명</th></tr>
+    <tr><td>Exp458 선행 정리</td><td>Task 6 이후 stale truth가 된 Exp458 CLI 테스트 2개를 private synthetic root 기준으로 고쳤고, Exp458 전체 62개 테스트를 다시 녹색으로 맞췄다.</td></tr>
+    <tr><td>Exp459 문서 4개</td><td>사전등록, runbook, 구현 보고서, 대시보드를 self-contained HTML로 추가했다.</td></tr>
+    <tr><td>세 ledger</td><td>Exp459를 <code>planned_not_started</code>로 등록하고 공식 실행 수 0, label query 0, 결과 hash null을 고정했다.</td></tr>
+    <tr><td>Exp459 code map</td><td>Task 1 경계만 담은 bounded map triplet을 추가했다.</td></tr>
+  </table>
+
+  <h2>아직 하지 않은 것</h2>
+  <table>
+    <tr><th>항목</th><th>현재 truth</th></tr>
+    <tr><td>Exp459 package 구현</td><td>아직 없음</td></tr>
+    <tr><td>공식 evaluate / inspect</td><td>둘 다 0회</td></tr>
+    <tr><td>공식 결과 폴더</td><td>아직 없음</td></tr>
+    <tr><td>결과 hash</td><td>prediction / evaluation / decision / artifact map / dashboard 모두 <code>null</code></td></tr>
+    <tr><td>champion / pending candidate / promotion</td><td>모두 변경 없음</td></tr>
+  </table>
+
+  <h2>전임 실험 보호</h2>
+  <p>Exp458 product code와 공식 결과 root는 변경하지 않았다. Exp459는 Exp458의 완료된 truth를 읽기 전용 predecessor로만 사용한다.</p>
+</main></body>
+</html>

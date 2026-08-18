@@ -66,9 +66,9 @@
   </ul>
   <p><strong>인터페이스:</strong> Exp458 공식 root는 읽기 전용 predecessor이며, Exp459 상태는 <code>planned_not_started</code>, label query 0, official command 0, result hash null로 시작한다.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — Exp458 CLI 테스트 2개가 공식 root 존재 때문에 실패하는 RED를 보존하고, 테스트의 성공 경로가 주입된 임시 root만 검사하도록 수정한다. 제품 코드와 공식 root는 수정하지 않는다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — Exp458 62개 테스트와 map 검증을 실행해 62/62 GREEN을 확인한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — Exp459 거버넌스 RED를 작성한다. 아래 핵심을 실제 assertion으로 고정한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — Exp458 CLI 테스트 2개가 공식 root 존재 때문에 실패하는 RED를 보존하고, 테스트의 성공 경로가 주입된 임시 root만 검사하도록 수정한다. 제품 코드와 공식 root는 수정하지 않는다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — Exp458 62개 테스트와 map 검증을 실행해 62/62 GREEN을 확인한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — Exp459 거버넌스 RED를 작성한다. 아래 핵심을 실제 assertion으로 고정한다.</label></li>
   </ul>
   <pre><code>assert state["experiment_id"] == "Exp459"
 assert state["status"] == "planned_not_started"
@@ -78,9 +78,9 @@ assert state["label_query_count"] == 0
 assert champion_before == champion_after
 assert pending_before == pending_after</code></pre>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 4 — 네 HTML 문서, 세 ledger의 Exp459 non-promotion 항목, 진행 대시보드, code map을 최소 구현한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — governance GREEN을 두 번 실행하고 HTML parse, JSON duplicate-key, map validate, diff check를 실행한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — 완료한 Task 1 heading과 모든 Step 체크박스를 checked로 바꾸고 기능+map 경계를 커밋한 뒤 새 검토를 받는다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — 네 HTML 문서, 세 ledger의 Exp459 non-promotion 항목, 진행 대시보드, code map을 최소 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — governance GREEN을 두 번 실행하고 HTML parse, JSON duplicate-key, map validate, diff check를 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — 완료한 Task 1 heading과 모든 Step 체크박스를 checked로 바꾸고 기능+map 경계를 커밋한 뒤 새 검토를 받는다.</label></li>
   </ul>
 
   <h2>Task 2: 고정 계약과 연속 fold 생성</h2>
@@ -229,7 +229,7 @@ git diff --check</code></pre>
 
   <h2>초기 상태</h2>
   <ul>
-    <li><label><input type="checkbox" disabled>Task 1 완료</label></li>
+    <li><label><input type="checkbox" checked disabled>Task 1 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 2 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 3 완료</label></li>
     <li><label><input type="checkbox" disabled>Task 4 완료</label></li>
