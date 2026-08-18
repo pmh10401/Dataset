@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp459 ECG normal_2 연속 구간 검증 구현 계획</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    h1,h2,h3{line-height:1.3} table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code,pre{background:#eef2f7} code{padding:.1rem .3rem;overflow-wrap:anywhere}
+    pre{padding:.8rem;overflow:auto;white-space:pre-wrap}.box{background:#f5f7fa;padding:1rem;margin:1rem 0}
+    input[type=checkbox]{margin-right:.45rem}.stop{color:#a62121}.ok{color:#087a45}
+  </style>
+</head>
+<body><main>
+  <h1>Exp459 ECG normal_2 연속 구간 검증 구현 계획</h1>
+  <blockquote><strong>에이전트 작업 규칙:</strong> <code>superpowers:subagent-driven-development</code>를 사용해 Task별로 구현하고, 각 Task 뒤에 새 검토자를 둔다. 모든 진행 항목은 아래 비활성 체크박스로 기록한다.</blockquote>
+
+  <p><strong>목표:</strong> Exp458의 <code>ECG5000_normal_2</code> 라우팅 규칙이 저장 순서 기반 다섯 연속 구간에서도 안정적인지, Exp458 통과선을 바꾸지 않고 검증한다.</p>
+  <p><strong>구조:</strong> Exp458의 TRAIN loader, Hydra/LocalGap 점수 계산, AUC와 Wilson 공식을 통제된 복제로 재사용한다. 달라지는 과학 요소는 무작위 fold 대신 정확한 다섯 연속 query 구간을 사용하는 것뿐이다. 결과는 10개 fold-seed 판단, 두 seed 요약, 최종 <code>stable/unstable</code>로 저장하고 source-free replay와 HTML 대시보드로 검증한다.</p>
+  <p><strong>기술:</strong> Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, SQLite read-only TRAIN source, unittest, canonical JSON/JSONL, HTML.</p>
+  <p><strong>설계서:</strong> <code>docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html</code> / SHA-256 <code>47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275</code></p>
+
+  <h2>전역 고정 조건</h2>
+  <ul>
+    <li>과학 기준 predecessor는 Exp458 최종 커밋 <code>fc530cd2b392394aa7ffbd1408bc06d5b1b7c806</code>와 공식 artifact-map SHA-256 <code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code>다.</li>
+    <li>대상은 <code>ECG5000_normal_2</code> TRAIN 1413×140 하나뿐이다. TEST 라벨 조회는 항상 0이다.</li>
+    <li>fold query 크기와 순서는 정확히 <code>(283,283,283,282,282)</code>이며 shuffle을 호출하지 않는다.</li>
+    <li>seed는 정확히 <code>(20260721, 20261721)</code>, 합성 종류는 정확히 <code>(level_shift, gradual_drift, amplitude_scaling, period_change)</code>다.</li>
+    <li>각 fold·seed에서 종류별 AUC 모두 ≥0.85, 평균 AUC ≥0.90, 정상 Wilson 상한 ≤0.05를 요구한다.</li>
+    <li>10개 판단이 모두 통과해야 <code>stable</code>이다. 하나라도 실패하면 <code>unstable</code>이며 같은 실험에서 기준을 바꾸지 않는다.</li>
+    <li>Exp458 공식 결과, 제품 코드, champion, pending candidate, 운영 route는 바꾸지 않는다.</li>
+    <li>Hydra는 aeon CPU 구현을 유지한다. MLX 재구현은 고정 방법을 바꾸므로 하지 않는다.</li>
+    <li>새 문서와 대시보드는 HTML이며, 모든 새 파일 이름에 <code>antigravity</code>를 포함한다.</li>
+    <li>공식 Exp459 명령은 Task 5 구현·비공식 실측·독립 검토와 별도 사용자 승인 전 0회다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <thead><tr><th>파일</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr><td><code>config_antigravity.py</code></td><td>Exp459 정체성, runtime, seed, fold 크기, AUC/Wilson 기준 고정</td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>fold 계획, fold 증거, seed 요약, 최종 판단의 exact type/값 검증</td></tr>
+      <tr><td><code>blocked_folds_antigravity.py</code></td><td>shuffle 없는 다섯 연속 query 구간과 보완 fit 구간 생성</td></tr>
+      <tr><td><code>sources_antigravity.py</code></td><td>Exp458 공식 권한과 단 한 번의 TRAIN-only 입력 제공</td></tr>
+      <tr><td><code>qualification_antigravity.py</code></td><td>두 seed×다섯 fold Hydra/LocalGap 점수와 AUC/Wilson 계산</td></tr>
+      <tr><td><code>evaluation_antigravity.py</code></td><td>10개 판단을 stable/unstable로 집계하고 Exp458 고정 성능을 함께 표시</td></tr>
+      <tr><td><code>artifacts_antigravity.py</code></td><td>정확한 7-leaf 결과를 create-only로 저장</td></tr>
+      <tr><td><code>replay_antigravity.py</code></td><td>저장된 fold·AUC·판단을 source-free로 다시 계산</td></tr>
+      <tr><td><code>dashboard_export_antigravity.py</code></td><td>TRAIN aggregate만 포함한 HTML용 결과 payload 생성</td></tr>
+      <tr><td><code>cli_antigravity.py</code>와 launcher</td><td>정확한 evaluate/inspect 표면과 고정 runtime 실행</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+  <h2>Task 1: Exp458 완료 상태 정리와 Exp459 거버넌스</h2>
+  <p><strong>파일</strong></p>
+  <ul>
+    <li>Modify: <code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_cli_antigravity.py</code></li>
+    <li>Modify: <code>scratch/build_codemap_exp458_antigravity.py</code>와 Exp458 map triplet</li>
+    <li>Create: <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests/test_governance_antigravity.py</code></li>
+    <li>Create: <code>docs/EXP459_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP459_RUNBOOK_antigravity.html</code>, <code>docs/EXP459_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP459_DASHBOARD_antigravity.html</code></li>
+    <li>Modify: <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code></li>
+    <li>Create: <code>scratch/build_codemap_exp459_antigravity.py</code>와 Exp459 map triplet</li>
+  </ul>
+  <p><strong>인터페이스:</strong> Exp458 공식 root는 읽기 전용 predecessor이며, Exp459 상태는 <code>planned_not_started</code>, label query 0, official command 0, result hash null로 시작한다.</p>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 1 — Exp458 CLI 테스트 2개가 공식 root 존재 때문에 실패하는 RED를 보존하고, 테스트의 성공 경로가 주입된 임시 root만 검사하도록 수정한다. 제품 코드와 공식 root는 수정하지 않는다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — Exp458 62개 테스트와 map 검증을 실행해 62/62 GREEN을 확인한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — Exp459 거버넌스 RED를 작성한다. 아래 핵심을 실제 assertion으로 고정한다.</label></li>
+  </ul>
+  <pre><code>assert state["experiment_id"] == "Exp459"
+assert state["status"] == "planned_not_started"
+assert state["official_evaluate_count"] == 0
+assert state["official_inspect_count"] == 0
+assert state["label_query_count"] == 0
+assert champion_before == champion_after
+assert pending_before == pending_after</code></pre>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 4 — 네 HTML 문서, 세 ledger의 Exp459 non-promotion 항목, 진행 대시보드, code map을 최소 구현한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 5 — governance GREEN을 두 번 실행하고 HTML parse, JSON duplicate-key, map validate, diff check를 실행한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — 완료한 Task 1 heading과 모든 Step 체크박스를 checked로 바꾸고 기능+map 경계를 커밋한 뒤 새 검토를 받는다.</label></li>
+  </ul>
+
+  <h2>Task 2: 고정 계약과 연속 fold 생성</h2>
+  <p><strong>파일</strong></p>
+  <ul>
+    <li>Create: <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/config_antigravity.py</code></li>
+    <li>Create: <code>contracts_antigravity.py</code>, <code>blocked_folds_antigravity.py</code></li>
+    <li>Create tests: <code>test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_blocked_folds_antigravity.py</code>, <code>test_controlled_fork_antigravity.py</code></li>
+  </ul>
+  <p><strong>Produces:</strong> <code>blocked_plan_antigravity(n_rows: int) -&gt; tuple[BlockedFoldAntigravity, ...]</code>, <code>FoldEvidenceAntigravity</code>, <code>SeedSummaryAntigravity</code>, <code>ValidationDecisionAntigravity</code>.</p>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 1 — 모듈이 없는 상태에서 config/contracts/fold 테스트가 import RED인지 확인한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — exact config와 immutable dataclass 계약을 구현한다. bool은 int로 받지 않고, dataset/seed/type/threshold 값은 exact 일치만 허용한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — 아래 규칙 그대로 연속 fold를 구현한다.</label></li>
+  </ul>
+  <pre><code>def blocked_plan_antigravity(n_rows: int):
+    indices = np.arange(n_rows, dtype=np.int64)
+    queries = tuple(np.array(part, dtype=np.int64, copy=True)
+                    for part in np.array_split(indices, 5))
+    return tuple(
+        BlockedFoldAntigravity(
+            fold_index=i,
+            fit_indices=np.concatenate(queries[:i] + queries[i + 1:]),
+            query_indices=query,
+        )
+        for i, query in enumerate(queries)
+    )</code></pre>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 4 — 1413행에서 query 크기 283/283/283/282/282, exact range, 교집합 0, coverage 1, shuffle 호출 0을 검증한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 5 — controlled-fork 검사가 Exp458과 달라질 수 있는 항목을 identity와 fold planner로만 제한하고, AUC/Wilson/Hydra/seed/합성 종류 변경을 거부하게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — focused GREEN 두 번, Exp458 contract/AUC 회귀, compile/diff/map 검증 후 체크박스와 map을 갱신하고 커밋·검토한다.</label></li>
+  </ul>
+
+  <h2>Task 3: TRAIN source와 10개 fold-seed 자격 평가</h2>
+  <p><strong>파일</strong></p>
+  <ul>
+    <li>Create: <code>sources_antigravity.py</code>, <code>qualification_antigravity.py</code></li>
+    <li>Create tests: <code>test_sources_antigravity.py</code>, <code>test_qualification_antigravity.py</code></li>
+  </ul>
+  <p><strong>Consumes:</strong> Task 2 <code>blocked_plan_antigravity(1413)</code>. <strong>Produces:</strong> <code>qualify_blocked_normal2_antigravity() -&gt; BlockedQualificationAntigravity</code> with 10 ordered fold records and two seed summaries.</p>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 1 — synthetic 1413×140 source와 fake fold scorer로 RED를 작성한다: query exact order, fit/query disjoint, 10 calls, coverage once, label0.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — Exp458 source loader를 통제 복제해 TRAIN을 한 번만 읽고 float32/finite/owned/read-only 1413×140을 요구한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — 각 seed의 각 fold에서 Hydra를 fit indices에만 맞추고 query 정상과 네 합성 이상 점수를 계산한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 4 — fold별 AUC/Wilson과 pass를 계산하고, seed pass는 다섯 fold 모두 pass, 전체 pass는 두 seed 모두 pass로 구현한다.</label></li>
+  </ul>
+  <pre><code>fold_passed = (
+    wilson_upper &lt;= 0.05
+    and pooled_auc &gt;= 0.90
+    and all(per_type_auc[name] &gt;= 0.85 for name in PRIMARY_TYPES)
+)
+seed_passed = all(record.passed for record in seed_records)
+qualification_passed = all(summary.passed for summary in seed_summaries)</code></pre>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 5 — 한 fold/한 seed 실패, 경계값, nonfinite, 누락/중복 query, 무작위 fold 순서 공격을 표 기반 테스트로 검증한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — synthetic GREEN 두 번과 Exp458 source/qualification 회귀를 실행한다. 실제 전체 TRAIN 계산은 Task 5까지 미룬다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 7 — 문서·대시보드·map·체크박스를 갱신하고 커밋·검토한다.</label></li>
+  </ul>
+
+  <h2>Task 4: stable 판단, 7-leaf 결과, replay와 대시보드</h2>
+  <p><strong>파일</strong></p>
+  <ul>
+    <li>Create: <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
+    <li>Create tests: <code>test_evaluation_antigravity.py</code>, <code>test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code></li>
+  </ul>
+  <p><strong>Exact 7 leaves:</strong></p>
+  <ol>
+    <li><code>context_antigravity.json</code></li>
+    <li><code>fold_plan_antigravity.jsonl</code> — 5 rows</li>
+    <li><code>fold_evidence_antigravity.jsonl</code> — 10 rows</li>
+    <li><code>seed_summary_antigravity.jsonl</code> — 2 rows</li>
+    <li><code>decision_antigravity.json</code></li>
+    <li><code>dashboard_snapshot_antigravity.json</code></li>
+    <li><code>artifact_sha256_antigravity.json</code></li>
+  </ol>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 1 — stable 10/10, unstable 9/10, exact Exp458 metrics, create-only publication, semantic tamper replay RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — evaluator가 fold records를 정렬하지 않고 exact seed→fold 순서로 요구하며, 모든 10개 pass일 때만 stable을 반환하게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — canonical JSON/JSONL로 7 leaves를 저장하고 artifact map은 자신을 제외한 6개 leaf hash만 기록한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 4 — replay가 fold plan, 네 AUC, pooled 평균, Wilson, seed pass, final decision, dashboard payload를 source-free로 재계산하게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 5 — dashboard payload를 status, 10개 aggregate row, seed summary, Exp458 고정 metrics, label_query_count=0만 허용하도록 구현한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — rehashed fold/AUC/Wilson/decision/dashboard/map tamper와 extra/missing/reordered leaf를 거부하는 테스트를 통과시킨다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 7 — focused GREEN 두 번, Tasks 2–3 및 Exp458 replay 회귀, map/diff/HTML 검증 후 커밋·검토한다.</label></li>
+  </ul>
+
+  <h2>Task 5: 닫힌 CLI, 실제 TRAIN 두 번, 최종 후보 검토</h2>
+  <p><strong>파일</strong></p>
+  <ul>
+    <li>Create: <code>cli_antigravity.py</code>, <code>scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py</code></li>
+    <li>Create test: <code>test_cli_antigravity.py</code></li>
+    <li>Modify: Exp459 HTML 문서·세 ledgers·map builder/triplet</li>
+  </ul>
+  <p><strong>Public commands:</strong> 정확히 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>. 다른 subcommand, root/threshold/fold/seed override, 약식 option은 허용하지 않는다.</p>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 1 — CLI/launcher missing RED, parser exact surface, lazy import, wrong runtime, outside-CWD launcher 테스트를 작성한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — fixed Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0을 확인한 뒤에만 evaluate가 qualification→evaluation→temporary publication→replay를 실행하게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 3 — inspect는 TRAIN/SQLite/Hydra를 import하지 않고 완성된 7-leaf root만 replay하게 한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 4 — 전체 synthetic suite를 두 번 실행하고 Exp458 62/62와 Exp457 과학 회귀를 확인한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 5 — 공식 root가 없는 상태에서 private temporary root로 실제 TRAIN qualification을 순차적으로 정확히 두 번 실행한다. 두 실행의 10 fold AUC, pass, decision, 7 leaf hashes가 exact 같은지 확인하고 temp root를 정리한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — 실제 결과가 stable이든 unstable이든 그대로 HTML 대시보드와 보고서에 기록한다. 실패 결과를 통과로 바꾸지 않는다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 7 — 상태를 <code>implementation_verified_awaiting_official_evaluation</code>로 갱신하되 official counts 0, result hashes null, champion/pending unchanged를 유지한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 8 — map/diff/byte/root/clean 검증, 새 독립 최종 review SHIP을 받고 Task 5 체크박스를 완료한다.</label></li>
+  </ul>
+
+  <h2>Task 6: 별도 승인 후 공식 1회 실행과 truth closeout</h2>
+  <p class="stop"><strong>중지 경계:</strong> Task 5 최종 review가 SHIP이어도 사용자에게 공식 Task 6 승인을 다시 받기 전에는 실행하지 않는다.</p>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 1 — exact clean reviewed commit, runtime, Exp458 predecessor, Exp459 공식 root 부재를 확인한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 2 — 아래 evaluate 명령을 정확히 한 번 실행하고 stdout/stderr/exit를 보존한다.</label></li>
+  </ul>
+  <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+"$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 3 — evaluate가 nonzero면 영구 중단하고 inspect를 실행하지 않는다. 재시도하지 않는다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 4 — evaluate 성공과 exact 7 leaves를 확인한 경우에만 bare inspect를 정확히 한 번 실행한다.</label></li>
+  </ul>
+  <pre><code>"$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py inspect</code></pre>
+  <ul>
+    <li><label><input type="checkbox" disabled>Step 5 — evaluate/inspect payload equality, artifact hash, 10 fold evidence, stable/unstable decision, label0를 독립 재계산한다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 6 — HTML dashboard/report/plan/ledgers/map을 관찰된 truth로 갱신하고 완료한 체크박스만 checked로 바꾼다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 7 — truth commit과 map-only child를 만들고 새 read-only 결과 review를 받는다.</label></li>
+    <li><label><input type="checkbox" disabled>Step 8 — stable이면 다른 ECG 데이터셋 검증을 다음 실험으로 제안하고, unstable이면 실패 fold 분석을 제안한다. 자동 승격하지 않는다.</label></li>
+  </ul>
+
+  <h2>전체 검증 명령 모음</h2>
+  <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+
+# Exp459 전체
+"$PY" -m unittest discover \
+  -s experiments/exp459_ecg_normal2_blocked_validation_antigravity/tests \
+  -p 'test_*_antigravity.py'
+
+# Exp458 predecessor
+"$PY" -m unittest discover \
+  -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests \
+  -p 'test_*_antigravity.py'
+
+# code map
+"$PY" scratch/build_codemap_exp459_antigravity.py --validate-only
+
+# 문법과 diff
+"$PY" -m compileall experiments/exp459_ecg_normal2_blocked_validation_antigravity \
+  scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py
+git diff --check</code></pre>
+
+  <h2>초기 상태</h2>
+  <ul>
+    <li><label><input type="checkbox" disabled>Task 1 완료</label></li>
+    <li><label><input type="checkbox" disabled>Task 2 완료</label></li>
+    <li><label><input type="checkbox" disabled>Task 3 완료</label></li>
+    <li><label><input type="checkbox" disabled>Task 4 완료</label></li>
+    <li><label><input type="checkbox" disabled>Task 5 완료</label></li>
+    <li><label><input type="checkbox" disabled>Task 6 완료</label></li>
+  </ul>
+</main></body>
+</html>
