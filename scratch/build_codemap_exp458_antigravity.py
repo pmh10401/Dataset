@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp458 Task 5 CLI code map."""
+"""Build and validate the bounded Exp458 Task 6 official closeout code map."""
 
 from __future__ import annotations
 
@@ -117,8 +117,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp458 Task 5 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp458 Task 5 CLI 코드맵</h1><p>Task 5까지 실제로 만든 normal_2 router, frozen Exp456 evaluator, nine-leaf publication, runtime-provenance-bound semantic replay, dashboard export, closed CLI, exact-runtime launcher를 기록한다. Task 6 official evaluation은 아직 실행되지 않았다.</p>'
+        '<title>Exp458 Task 6 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp458 Task 6 공식 closeout 코드맵</h1><p>Task 6 official evaluate와 inspect가 각각 정확히 1회 exit 0으로 완료된 뒤의 normal_2 router, frozen Exp456 evaluator, nine-leaf official publication, runtime-provenance-bound semantic replay, dashboard export, closed CLI, exact-runtime launcher, truth ledgers를 기록한다. champion, pending candidate, routing, promotion은 바뀌지 않았다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -208,63 +208,63 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Tasks 1–6. Effect: records that Tasks 1–5 are complete while Task 6 remains unchecked.",
+            "role": "Caller: Tasks 1–6. Effect: records Task 6 official evaluate/inspect one-shot completion, 9-leaf verification, official metrics, and unchanged non-promotion boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 4: 라우터·평가·9-leaf 결과·재생·대시보드")],
+            "evidence": [evidence_antigravity(plan, "Task 6: 별도 승인 후 공식 평가 1회와 HTML 결과 분석")],
         },
         {
             "id": "preregistration",
             "path": "docs/EXP458_PREREGISTRATION_antigravity.html",
-            "role": "Caller: governance review. Effect: records planned identity, AUC thresholds, projected result, and official-action firewall.",
+            "role": "Caller: governance review. Effect: preserves preregistered identity, AUC thresholds, projected result, and the pre-Task-6 official-action firewall.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("docs/EXP458_PREREGISTRATION_antigravity.html", "planned_not_started")],
         },
         {
             "id": "implementation_report",
             "path": "docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: Task 4 closeout. Effect: explains the normal_2 source, two-seed qualification, route/evaluation/replay, and zero official-action boundary.",
+            "role": "Caller: Task 6 closeout. Effect: explains the normal_2 source, two-seed qualification, official route/evaluation/replay, 9-leaf hashes, one-shot command counts, and unchanged champion/promotion boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html", "Task 1부터 Task 5까지 완료했다")],
+            "evidence": [evidence_antigravity("docs/EXP458_IMPLEMENTATION_REPORT_antigravity.html", "Task 1부터 Task 6까지 완료했다")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP458_DASHBOARD_antigravity.html",
-            "role": "Caller: reader-facing review. Effect: shows implementation_verified_awaiting_official_evaluation status, exact Task 3 smoke evidence, Task 5 two-run private TRAIN candidate verification, and no official outcome.",
+            "role": "Caller: reader-facing review. Effect: shows official_evaluation_inspected_complete_qualified_for_external_validation status, exact Task 3 smoke evidence, Task 5 private reproducibility, Task 6 official result, hashes, routes, and no promotion.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity("docs/EXP458_DASHBOARD_antigravity.html", "Task 5/6")],
+            "evidence": [evidence_antigravity("docs/EXP458_DASHBOARD_antigravity.html", "Task 6/6")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: records Exp458 as implementation_verified_awaiting_official_evaluation with zero official activity and null official hashes.",
+            "role": "Caller: governance review. Effect: records Exp458 as official_evaluation_inspected_complete_qualified_for_external_validation with one evaluate, one inspect, 9-leaf official hashes, label_query_count 0, and no promotion.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"exp458\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: registers Exp458 documents, frozen scientific contract, and private candidate verification while keeping predecessor truth intact.",
+            "role": "Caller: catalog review. Effect: registers Exp458 documents, frozen scientific contract, private candidate verification, official result hashes, and unchanged predecessor/promotion truth.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"id\": \"Exp458\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: records private candidate verification without changing champion or pending candidate.",
+            "role": "Caller: champion review. Effect: records the qualified external-validation candidate without changing champion, pending candidate, routing, promotion, or operational alert eligibility.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"experiment\": \"Exp458\"")],
         },
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: Task 5 truth verification. Effect: rejects missing surfaces, ledger drift, fake official activity, or a dishonest Task 5 code map.",
+            "role": "Caller: historical Task 5 truth verification. Effect: records the pre-official regression boundary retained as context for Task 6 closeout.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_exp458_is_planned_without_official_result_antigravity")],
         },
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 5 validation. Effect: validates HTML/JSON/lock parity, fingerprints, implemented Task 5 nodes, and absence of future_unknown Task 5 boundaries.",
+            "role": "Caller: Task 6 validation. Effect: validates HTML/JSON/lock parity, fingerprints, implemented Task 6 closeout nodes, and absence of future_unknown Task 6 boundaries.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -278,7 +278,7 @@ def build_map_antigravity(
         {
             "id": "result_contracts",
             "path": f"{package}/contracts_antigravity.py",
-            "role": "Caller: Task 3–5 qualification, result, publication, replay, and CLI flow. Effect: validates exact normal_2 rank evidence, route/result contracts, pooled AUC semantics, both-seed qualification truth, and exact runtime provenance.",
+            "role": "Caller: Task 3–6 qualification, result, publication, replay, and CLI flow. Effect: validates exact normal_2 rank evidence, route/result contracts, pooled AUC semantics, both-seed qualification truth, and exact runtime provenance.",
             "tests": [contracts_test, router_test, evaluation_test, artifacts_test, replay_test, cli_test],
             "evidence": [evidence_antigravity(f"{package}/contracts_antigravity.py", "RuntimeProvenanceAntigravity")],
         },
@@ -299,7 +299,7 @@ def build_map_antigravity(
         {
             "id": "train_qualification",
             "path": f"{package}/qualification_antigravity.py",
-            "role": "Caller: Task 3, Task 4 route gating, and Task 5 CLI candidate verification. Effect: computes the two-seed AUC qualification for normal_2 only and validates exact seed order and full OOF coverage.",
+            "role": "Caller: Task 3, Task 4 route gating, Task 5 candidate verification, and Task 6 official evaluate. Effect: computes the two-seed AUC qualification for normal_2 only and validates exact seed order and full OOF coverage.",
             "tests": [qualification_test, controlled_fork_test, governance_test],
             "evidence": [evidence_antigravity(f"{package}/qualification_antigravity.py", "qualify_normal2_antigravity")],
         },
@@ -313,42 +313,42 @@ def build_map_antigravity(
         {
             "id": "evaluation",
             "path": f"{package}/evaluation_antigravity.py",
-            "role": "Caller: Task 4 publication, replay, dashboard. Effect: validates Exp456 authority, recomputes four comparisons, proposed result, family deltas, criteria, and shared result semantics.",
+            "role": "Caller: Task 4 publication plus Task 6 official publication, replay, dashboard. Effect: validates Exp456 authority, recomputes four comparisons, official result, family deltas, criteria, and shared result semantics.",
             "tests": [evaluation_test, artifacts_test, replay_test, dashboard_export_test],
             "evidence": [evidence_antigravity(f"{package}/evaluation_antigravity.py", "validate_evaluation_result_semantics_antigravity")],
         },
         {
             "id": "artifacts",
             "path": f"{package}/artifacts_antigravity.py",
-            "role": "Caller: Task 4 temporary publication and future CLI. Effect: validates evidence and publishes the canonical nine-leaf create-only result inventory with runtime provenance inside context_antigravity.json.",
+            "role": "Caller: Task 4 temporary publication and Task 6 official CLI. Effect: validates evidence and published the canonical nine-leaf create-only official result inventory with runtime provenance inside context_antigravity.json.",
             "tests": [artifacts_test, replay_test],
             "evidence": [evidence_antigravity(f"{package}/artifacts_antigravity.py", "publish_result_antigravity")],
         },
         {
             "id": "replay",
             "path": f"{package}/replay_antigravity.py",
-            "role": "Caller: Task 4 inspect path and future CLI. Effect: verifies inventory, hashes, canonical JSON/JSONL, runtime provenance, and semantically replays qualification, route, metrics, dashboard, and decision.",
+            "role": "Caller: Task 4 inspect path and Task 6 official inspect. Effect: verifies inventory, hashes, canonical JSON/JSONL, runtime provenance, and semantically replays qualification, route, metrics, dashboard, and decision.",
             "tests": [replay_test],
             "evidence": [evidence_antigravity(f"{package}/replay_antigravity.py", "inspect_result_at_antigravity")],
         },
         {
             "id": "dashboard_export",
             "path": f"{package}/dashboard_export_antigravity.py",
-            "role": "Caller: Task 4 publication and reader surfaces. Effect: invokes the shared semantic validator before exposing only aggregate/TRAIN evidence.",
+            "role": "Caller: Task 4 publication, Task 6 official stdout, and reader surfaces. Effect: invokes the shared semantic validator before exposing only aggregate/TRAIN evidence.",
             "tests": [dashboard_export_test],
             "evidence": [evidence_antigravity(f"{package}/dashboard_export_antigravity.py", "export_dashboard_antigravity")],
         },
         {
             "id": "cli",
             "path": f"{package}/cli_antigravity.py",
-            "role": "Caller: Task 5 private verification and future Task 6 operator. Effect: exposes only evaluate --reviewed-commit LOWER40HEX and bare inspect, fail-closes evaluate on runtime mismatch before qualification/root creation, lazy-loads selected phase, and drives qualification, authority, route, evaluation, nine-leaf publication, replay, dashboard emission.",
+            "role": "Caller: Task 5 private verification and Task 6 official operator. Effect: exposes only evaluate --reviewed-commit LOWER40HEX and bare inspect, fail-closes evaluate on runtime mismatch before qualification/root creation, lazy-loads selected phase, and drove the official qualification, authority, route, evaluation, nine-leaf publication, replay, dashboard emission.",
             "tests": [cli_test, governance_test],
             "evidence": [evidence_antigravity(f"{package}/cli_antigravity.py", "_evaluate_with_dependencies_antigravity")],
         },
         {
             "id": "cli_launcher",
             "path": launcher,
-            "role": "Caller: Task 5 outside-CWD operator and future Task 6 public command. Effect: binds the fixed aeon Python runtime and repository import path before importing the package CLI.",
+            "role": "Caller: Task 5 outside-CWD operator and Task 6 public command. Effect: binds the fixed aeon Python runtime and repository import path before importing the package CLI.",
             "tests": [cli_test, governance_test],
             "evidence": [evidence_antigravity(launcher, "main_antigravity")],
         },
@@ -548,13 +548,13 @@ def build_map_antigravity(
             "from": "implementation_plan",
             "to": "cli",
             "type": "governs",
-            "evidence": evidence_antigravity(plan, "Task 5: 닫힌 CLI·후보 재현성·최종 검토"),
+            "evidence": evidence_antigravity(plan, "Task 6: 별도 승인 후 공식 평가 1회와 HTML 결과 분석"),
         },
         {
             "from": "implementation_plan",
             "to": "cli_launcher",
             "type": "governs",
-            "evidence": evidence_antigravity(plan, "Task 5: 닫힌 CLI·후보 재현성·최종 검토"),
+            "evidence": evidence_antigravity(plan, "Task 6: 별도 승인 후 공식 평가 1회와 HTML 결과 분석"),
         },
         {
             "from": "cli_launcher",
@@ -607,7 +607,7 @@ def build_map_antigravity(
     ]
     unknown_relationships: list[dict[str, str]] = []
     graph = {
-        "schema": "exp458_task5_cli_codemap_v1",
+        "schema": "exp458_task6_official_closeout_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -615,7 +615,7 @@ def build_map_antigravity(
         "unknown_relationships": unknown_relationships,
     }
     lock = {
-        "schema": "exp458_task5_cli_codemap_lock_v1",
+        "schema": "exp458_task6_official_closeout_codemap_lock_v1",
         "source_parent_commit": source_commit,
         "working_tree_dirty": False,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),
