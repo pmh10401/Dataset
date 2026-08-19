@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp460 ECG 엄격 복귀 규칙 설계</title>
+  <style>
+    body{max-width:1040px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    h1,h2{line-height:1.3} table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #ccd3dd;padding:.55rem;text-align:left;vertical-align:top}
+    th{background:#eef2f7}.box{background:#f5f7fa;border-left:4px solid #5078b8;padding:1rem;margin:1rem 0}
+    .good{color:#087a45}.warn{color:#9a5a00}.bad{color:#a62121}code{background:#eef1f5;padding:.1rem .3rem}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp460 — ECG5000 normal_2 엄격 복귀 규칙</h1>
+  <p><strong>상태:</strong> 대화에서 1번 엄격 복귀 방향 선택 완료, 문서 검토 대기</p>
+  <p><strong>목표:</strong> Exp459에서 확인된 두 개의 불안정한 주기 변화 구간을 무시하지 않고, 후보 방법을 써도 되는지 보수적으로 판단한다.</p>
+
+  <div class="box">
+    <strong>한 문장 요약</strong>
+    <p>10번의 연속 구간 검증 중 한 번이라도 실패하면 <code>ECG5000_normal_2</code>에는 후보 방법을 쓰지 않고 기존 방법으로 돌아간다.</p>
+  </div>
+
+  <h2>1. 왜 이 실험을 하는가?</h2>
+  <p>Exp458에서는 전체 TRAIN 데이터를 한 번에 보았을 때 후보 방법이 좋아 보였다. FN은 837개에서 829개로 8개 줄었다.</p>
+  <p>하지만 Exp459에서 TRAIN 데이터를 시간 순서대로 다섯 구간으로 나누어 다시 확인하자, 총 10번 중 2번에서 <code>period_change</code> AUC가 기준 0.85보다 낮았다.</p>
+  <ul>
+    <li>seed <code>20260721</code>, fold 3: <code>0.8208339620743423</code></li>
+    <li>seed <code>20261721</code>, fold 4: <code>0.8004124541019063</code></li>
+  </ul>
+  <p>즉, 평균 성능은 괜찮아도 일부 시간 구간에서는 심전도 반복 주기의 변화를 잘 찾지 못했다.</p>
+
+  <h2>2. 고정할 규칙</h2>
+  <table>
+    <thead><tr><th>규칙</th><th>판단 방법</th><th>Exp459 자료에 적용한 결과</th></tr></thead>
+    <tbody>
+      <tr><td><strong>항상 기존 방식</strong></td><td>검증 결과와 관계없이 baseline</td><td>baseline</td></tr>
+      <tr><td><strong>항상 후보 방식</strong></td><td>검증 결과와 관계없이 candidate</td><td>candidate</td></tr>
+      <tr><td><strong>8/10 다수결</strong></td><td>10번 중 8번 이상 통과하면 candidate</td><td>candidate — 비교용이며 승인 대상이 아님</td></tr>
+      <tr><td><strong>10/10 엄격 복귀</strong></td><td>10번을 모두 통과할 때만 candidate, 하나라도 실패하면 baseline</td><td>baseline</td></tr>
+    </tbody>
+  </table>
+  <p>공식 판단 대상은 <strong>10/10 엄격 복귀</strong> 하나다. 다른 세 규칙은 성능 차이를 이해하기 위한 비교 기준으로만 사용한다.</p>
+
+  <h2>3. 바꾸지 않는 것</h2>
+  <ul>
+    <li>Exp459의 다섯 연속 fold, 두 seed, 네 합성 이상 종류와 AUC 값</li>
+    <li>AUC 기준 <code>0.85</code>와 pooled AUC 기준 <code>0.90</code></li>
+    <li>Exp458과 Exp459에 저장된 baseline/candidate 혼동행렬</li>
+    <li>다른 ECG 네 개와 ChlorineConcentration의 기존 route</li>
+    <li>FN·FP·F1 계산식</li>
+  </ul>
+  <p>Exp460에서는 새 특징, 새 모델, 새 seed, 새 임계값을 추가하지 않는다. TEST 라벨도 새로 읽지 않는다.</p>
+
+  <h2>4. 성능 비교</h2>
+  <table>
+    <thead><tr><th>방법</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th><th>최악 period AUC</th></tr></thead>
+    <tbody>
+      <tr><td>항상 기존 방식</td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td><td>적용 안 함</td></tr>
+      <tr><td>항상 후보 방식</td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td><td>0.8004124541019063</td></tr>
+      <tr><td>8/10 다수결</td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td><td>0.8004124541019063</td></tr>
+      <tr><td>10/10 엄격 복귀</td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td><td>실패를 감지해 baseline</td></tr>
+    </tbody>
+  </table>
+  <p class="warn"><strong>예상되는 절충:</strong> 엄격 복귀는 불안정한 후보를 차단하지만, 후보 방식이 줄였던 FN 8개도 포기한다. 이 표는 기존에 고정된 결과를 규칙별로 재집계한 예상이며, Exp460 공식 결과로 미리 간주하지 않는다.</p>
+
+  <h2>5. 성공 기준</h2>
+  <p>후보 방법을 유지하려면 다음 조건을 모두 만족해야 한다.</p>
+  <ol>
+    <li>10개 fold-seed 판단이 모두 통과한다.</li>
+    <li>모든 <code>period_change</code> AUC가 <code>0.85</code> 이상이다.</li>
+    <li>FN이 baseline의 837보다 적다.</li>
+    <li>FP가 66보다 많지 않다.</li>
+    <li>F1이 baseline의 0.5742574257425742보다 높다.</li>
+  </ol>
+  <p>현재 Exp459 자료에서는 1번과 2번을 만족하지 못하므로 엄격 규칙은 baseline을 선택한다. 따라서 <strong>현재 후보는 안정성과 FN 개선을 동시에 만족하지 못한다</strong>는 결론이 예상된다.</p>
+
+  <h2>6. 결과에 따른 다음 행동</h2>
+  <table>
+    <thead><tr><th>결과</th><th>의미</th><th>다음 단계</th></tr></thead>
+    <tbody>
+      <tr><td class="good">모든 조건 통과</td><td>후보 방법이 구간별로도 안정적이며 FN을 줄임</td><td>후보 route를 다음 외부 검증 대상으로 제안</td></tr>
+      <tr><td class="warn">엄격 복귀만 정상 작동</td><td>불안정한 후보는 막았지만 FN 개선도 사라짐</td><td>Exp461에서 주기 변화 특징을 추가</td></tr>
+      <tr><td class="bad">실패 구간을 놓침</td><td>보수적 규칙이 제 역할을 하지 못함</td><td>규칙을 폐기하고 route를 baseline으로 고정</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. 구성 요소</h2>
+  <ol>
+    <li><strong>입력:</strong> Exp459의 고정된 10개 fold-seed 결과와 Exp458의 고정 성능표</li>
+    <li><strong>규칙 비교:</strong> 네 규칙의 route와 FN·FP·F1을 다시 계산</li>
+    <li><strong>엄격 판단:</strong> 10/10 통과가 아니면 baseline</li>
+    <li><strong>결과 저장:</strong> 비교표, 결정 이유, 최종 route를 재생 가능한 작은 결과 묶음으로 저장</li>
+    <li><strong>HTML 대시보드:</strong> 네 규칙의 성능과 두 실패 구간을 쉬운 말로 표시</li>
+  </ol>
+
+  <h2>8. 검증 체크리스트</h2>
+  <ul>
+    <li><label><input type="checkbox" disabled>Exp459의 10개 기록과 두 실패 AUC가 정확히 같은지 확인</label></li>
+    <li><label><input type="checkbox" disabled>9/10 또는 8/10 통과도 엄격 규칙에서는 baseline인지 확인</label></li>
+    <li><label><input type="checkbox" disabled>10/10 통과일 때만 candidate인지 확인</label></li>
+    <li><label><input type="checkbox" disabled>네 규칙의 FN·FP·F1이 고정 혼동행렬에서 정확히 재계산되는지 확인</label></li>
+    <li><label><input type="checkbox" disabled>새 seed·새 임계값·새 TEST 라벨이 사용되지 않았는지 확인</label></li>
+    <li><label><input type="checkbox" disabled>HTML 대시보드가 최종 결과와 정확히 같은지 확인</label></li>
+  </ul>
+
+  <h2>9. 승인 경계</h2>
+  <p>이 설계 승인만으로 공식 평가를 실행하지 않는다. 구현, 두 번의 비공식 재현, 독립 검토가 끝난 뒤 별도로 공식 실행 승인을 받는다.</p>
+  <p><strong>현재 요청:</strong> 이 HTML 설계서의 과학 규칙과 성공 기준을 검토해 달라.</p>
+</main>
+</body>
+</html>
