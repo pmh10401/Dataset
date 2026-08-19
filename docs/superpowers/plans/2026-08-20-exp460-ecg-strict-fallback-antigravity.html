@@ -68,19 +68,19 @@
 $PY -m unittest experiments.exp460_ecg_strict_fallback_antigravity.tests.test_governance_antigravity
 $PY scratch/build_codemap_exp460_antigravity.py --validate-only</code></pre>
 
-  <h2>Task 2 — 고정 입력과 자료형</h2>
+  <h2><label><input type="checkbox" checked disabled>Task 2 — 고정 입력과 자료형</label></h2>
   <p><strong>Interfaces</strong></p>
   <ul>
     <li>Produces: <code>capture_exp459_fallback_authority_antigravity() -&gt; Exp459FallbackAuthorityAntigravity</code></li>
     <li>Authority fields: 10개 ordered fold records, 두 seed summaries, Exp459 decision <code>unstable</code>, baseline/candidate confusion, predecessor hashes</li>
   </ul>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — config/contracts/predecessor import RED와 순서·수치 변조 RED를 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — exact config와 immutable dataclass를 구현한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — Exp459 공식 10개 기록, 두 실패 AUC, 혼동행렬, hash를 읽어 authority로 만드는 함수를 구현한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — 누락·중복·순서 변경·다른 AUC·다른 혼동행렬을 거부하는 표 기반 테스트를 통과시킨다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — focused GREEN 두 번과 Exp459 replay/governance 회귀를 실행한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — map·대시보드·체크박스를 갱신하고 커밋·검토한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — config/contracts/predecessor import RED와 순서·수치 변조 RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — exact config와 immutable dataclass를 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — Exp459 공식 10개 기록, 두 실패 AUC, 혼동행렬, hash를 읽어 authority로 만드는 함수를 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — 누락·중복·순서 변경·다른 AUC·다른 혼동행렬을 거부하는 표 기반 테스트를 통과시킨다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — focused GREEN 두 번과 Exp459 replay/governance 회귀를 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — map·대시보드·체크박스를 갱신하고 커밋·검토한다.</label></li>
   </ul>
   <pre><code>def capture_exp459_fallback_authority_antigravity() -&gt; Exp459FallbackAuthorityAntigravity:
     """Return the exact frozen Exp459 scientific result needed by Exp460."""</code></pre>

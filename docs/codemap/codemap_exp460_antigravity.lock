@@ -1,7 +1,7 @@
 {
-  "schema": "exp460_task1_governance_codemap_lock_v1",
+  "schema": "exp460_task2_foundations_codemap_lock_v1",
   "generated_at": "2026-08-19T00:00:00Z",
-  "source_parent_commit": "c4bcccec251c807c0b6a8db3e084a93b9bd8acbb",
+  "source_parent_commit": "7f90147023d8c3bcf67d8f8ff365d5797fd2def8",
   "represented_paths": [
     "docs/codemap/codemap_exp460_antigravity.html",
     "docs/codemap/codemap_exp460_antigravity.json",
@@ -11,20 +11,26 @@
     "CHAMPION_LEDGER.json": "88124777e4bc19740d1045ec182a7f5fe0ac13db98b23c680ec99c1692de0b2e",
     "EXPERIMENT_CATALOG.json": "6dc65d0a25cc6b6fe2c6f0288b308ce9eba326e47e96a2a96a84658c4dcfa21f",
     "RESEARCH_STATE.json": "e3e456be10903db34fe6c760297afe76e79e72c88239fb9fbeccf6fb97f996e9",
-    "docs/EXP460_DASHBOARD_antigravity.html": "2caec32437fbcf6246a5dc710642942a20f19fede0a063ff9e4afd4fc2c2e28c",
-    "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html": "bf5c580740ff8f823f655f43f2dbf280e9ab2d5121cd8bafa2db8e42d2331b67",
+    "docs/EXP460_DASHBOARD_antigravity.html": "e6596c15943f6b9bb78a755c1d3e9856115cf804191e6a0b69f1ce6368143358",
+    "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html": "8ccfb5a37c1865d399941a4cff22e3330472a70c963eb88d2d540a45951ac3a5",
     "docs/EXP460_PREREGISTRATION_antigravity.html": "8faf9070ee48aea1f4ff1e926c64c1ad197a5a67567aeabdf4150001780d8f5e",
     "docs/EXP460_RUNBOOK_antigravity.html": "91c9a7716626b5d8c4daa81fb17694960b6bd3ac762d085426579980d9f21c65",
-    "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html": "fcde56b8b9277a55ca60a4be7dc9716b4a623c7410828a04b2fda03e8f3287c2",
+    "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html": "85d66b1c2c7e1a4fee1a9622dfef8b4175dc0ad6486c667978a6bfe3806b862e",
     "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html": "2f0c5789ef161d253072a342e6a8a1bdbebc3afd0ef4cad616a1deb09eb83f91",
-    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py": "fb0fded88557ecbc2234f795b790c1d331d088f6c018ff3be360ba8546e25a37",
-    "scratch/build_codemap_exp460_antigravity.py": "273a9c3df0e12aaabe8ac34baf0654aac70b7a599d3e8fc1aa5588c42871a027"
+    "experiments/exp460_ecg_strict_fallback_antigravity/config_antigravity.py": "41983e48fe8a21e400a8d0cff3b8038eee2cb094765e6a106f2e471ae8dbcf8b",
+    "experiments/exp460_ecg_strict_fallback_antigravity/contracts_antigravity.py": "b08902f73770d3999a0aa0bf83ac7a43f4aa8abfca9f4186c65f1a8e01df3f0f",
+    "experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py": "2a4c7a02ebe01242760098957b374ebbfa9fd12fcb761b7708f852847ec100e6",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_config_antigravity.py": "d89fcbcde5bca50845473d6bf57e68df6948b07b1c6061c0a5efd6133ae41e99",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_contracts_antigravity.py": "ecb2defa3b88733fa82bc31e97f6a808c626c9dfbc2a5b894d742eb1cad627e3",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py": "c9180d8ca6aa4613d5929ccffccf8804480e1397709b7853dac11010b400372f",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py": "c5b020a19706d235f6b0a8ef335a2db17c640c568a5a6721a61ca03af855cea8",
+    "scratch/build_codemap_exp460_antigravity.py": "42c771773b5427cca273645b692e7a301eefff5a5c76da23ec14ab32fb444978"
   },
   "module_fingerprints": {
-    "docs": "c17b7be0b0ee37c42a4ddeb73fb490619765d9c2950a9b1f9d567afc9ce187f1",
-    "experiments": "3cb108f08dc23dab4c11212f2e560cef6effe2160bcff64b94b58c0bafd931d9",
+    "docs": "71c6b0149ab8b157a4ad3e50c08fb816a1ef9d31b4abf5741bebc120f05f9374",
+    "experiments": "7cd3f736cee7adf1fce8e3107dd928dafcf379676ffc18d06c6ac32d3bbf462e",
     "root": "895550eed607178e1934e078797bc2ad46fdc7281b233381f7df37e2032a3f2b",
-    "scratch": "1f8278ab3d69ffdfbe299ea1b4c4d3519fe30728a26b94b673562e9bcfcc8cf3"
+    "scratch": "ef14b4966e174eb2bc4f3c82078f87ef23462da7d337676943e10a0aa68cbc18"
   },
   "working_tree_dirty": false
 }

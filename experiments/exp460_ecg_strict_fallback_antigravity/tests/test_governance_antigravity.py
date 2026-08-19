@@ -165,15 +165,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
             FROZEN_CHAMPION_ANTIGRAVITY,
         )
 
-    def test_task1_plan_dashboard_and_map_antigravity(self) -> None:
-        """Break caught: Task 1 leaves checklist, dashboard, or bounded map inconsistent."""
+    def test_task2_plan_dashboard_and_map_antigravity(self) -> None:
+        """Break caught: Task 2 progress, dashboard, or bounded map drift from the implemented input freeze."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 1/6",
+            "Task 2/6",
             "governance_complete_implementation_not_started",
             "official evaluate/inspect counts",
             "0/0",
             "label query count",
+            "frozen predecessor authority",
+            "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+            "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+            "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
             "strict_10_of_10",
             "always_baseline",
             "always_candidate",
@@ -183,6 +187,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "0.8208339620743423",
             "20261721",
             "0.8004124541019063",
+            "Task 2 foundations",
+            "Task 2 foundations only",
             "design expectation only",
             "result and artifact hashes",
             "null",
@@ -192,7 +198,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
         self.assertIn('<h2><label><input type="checkbox" checked disabled>Task 1', plan)
         task1 = plan.split("Task 1", 1)[1].split("Task 2", 1)[0]
-        self.assertEqual(task1.count('<input type="checkbox" checked disabled>'), 6)
+        self.assertEqual(
+            task1.count('<label><input type="checkbox" checked disabled>Step '),
+            6,
+        )
         for step_label in (
             "Step 1",
             "Step 2",
@@ -205,10 +214,28 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 f'<label><input type="checkbox" checked disabled>{step_label}',
                 task1,
             )
-        task2 = plan.split("Task 2", 1)[1]
+        self.assertIn('<h2><label><input type="checkbox" checked disabled>Task 2', plan)
+        task2 = plan.split("Task 2", 1)[1].split("Task 3", 1)[0]
+        self.assertEqual(
+            task2.count('<label><input type="checkbox" checked disabled>Step '),
+            6,
+        )
+        for step_label in (
+            "Step 1",
+            "Step 2",
+            "Step 3",
+            "Step 4",
+            "Step 5",
+            "Step 6",
+        ):
+            self.assertIn(
+                f'<label><input type="checkbox" checked disabled>{step_label}',
+                task2,
+            )
+        task3 = plan.split("Task 3", 1)[1]
         self.assertNotIn(
             '<label><input type="checkbox" checked disabled>Step 1',
-            task2.split("Task 3", 1)[0],
+            task3.split("Task 4", 1)[0],
         )
 
         spec = importlib.util.spec_from_file_location(
@@ -222,7 +249,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
-        self.assertLessEqual(len(graph["nodes"]), 20)
+        self.assertLessEqual(len(graph["nodes"]), 24)
         node_ids = {node["id"] for node in graph["nodes"]}
         for node_id in (
             "approved_design",
@@ -236,8 +263,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "champion_ledger",
             "governance_regression",
             "map_builder",
-            "future_predecessor_capture",
-            "future_predecessor_tests",
+            "task2_config",
+            "task2_contracts",
+            "task2_predecessor_capture",
+            "task2_config_tests",
+            "task2_contracts_tests",
+            "task2_predecessor_tests",
             "future_rule_evaluation",
             "future_rule_tests",
             "future_artifacts_replay_dashboard",
@@ -278,7 +309,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         html_path = ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]
         original = html_path.read_text(encoding="utf-8")
-        mutated = original.replace("Task 1 governance 코드맵", "Task 1 governance 코드맵 tampered", 1)
+        mutated = original.replace("Task 2 foundations 코드맵", "Task 2 foundations 코드맵 tampered", 1)
         self.assertNotEqual(mutated, original)
         html_path.write_text(mutated, encoding="utf-8")
         try:
