@@ -2,7 +2,7 @@
 
 ## Status
 
-Written design awaiting user review. No Exp450 implementation or experiment run is authorized by this document alone.
+Approved by the user on 2026-08-20. Implementation and experiment execution follow the separate Exp450 implementation plan; this document alone does not start a run.
 
 ## Purpose
 
