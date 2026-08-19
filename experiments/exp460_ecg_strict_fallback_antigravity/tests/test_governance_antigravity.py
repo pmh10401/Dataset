@@ -4,6 +4,7 @@ import html.parser
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 
@@ -236,11 +237,62 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "governance_regression",
             "map_builder",
             "future_predecessor_capture",
+            "future_predecessor_tests",
             "future_rule_evaluation",
-            "future_artifacts_cli",
+            "future_rule_tests",
+            "future_artifacts_replay_dashboard",
+            "future_artifacts_tests",
+            "future_cli_launcher",
+            "future_cli_tests",
         ):
             self.assertIn(node_id, node_ids)
+        future_nodes = {
+            node["id"]: node
+            for node in graph["nodes"]
+            if node["id"].startswith("future_")
+        }
+        for node_id, node in future_nodes.items():
+            self.assertTrue(node["evidence"], node_id)
+            if node_id.endswith("_tests"):
+                self.assertEqual(node.get("status"), "future_planned")
+                self.assertFalse(node["tests"])
+            else:
+                self.assertTrue(node["tests"], node_id)
         builder.validate_map_antigravity(graph, lock, rendered)
+
+    def test_validate_only_reads_stored_triplet_and_rejects_stale_bytes_antigravity(self) -> None:
+        """Break caught: validate-only ignores the packaged triplet and validates rebuilt bytes instead."""
+        command = [
+            "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+            "scratch/build_codemap_exp460_antigravity.py",
+            "--validate-only",
+        ]
+        success = subprocess.run(
+            command,
+            cwd=ROOT_ANTIGRAVITY,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(success.returncode, 0, success.stderr)
+
+        html_path = ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]
+        original = html_path.read_text(encoding="utf-8")
+        mutated = original.replace("Task 1 governance 코드맵", "Task 1 governance 코드맵 tampered", 1)
+        self.assertNotEqual(mutated, original)
+        html_path.write_text(mutated, encoding="utf-8")
+        try:
+            failure = subprocess.run(
+                command,
+                cwd=ROOT_ANTIGRAVITY,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        finally:
+            html_path.write_text(original, encoding="utf-8")
+        self.assertNotEqual(failure.returncode, 0)
+        self.assertIn("rendered HTML is not in sync with graph JSON", failure.stderr)
 
 
 if __name__ == "__main__":

@@ -204,24 +204,68 @@ def build_map_antigravity(source_parent_commit: str, generated_at: str) -> tuple
             "id": "future_predecessor_capture",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py",
             "role": "Caller: future Task 2 scientific implementation. Effect: will capture frozen Exp459 authority into Exp460-owned contracts.",
+            "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py"],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "capture_exp459_fallback_authority_antigravity")],
+            "status": "future_planned",
+        },
+        {
+            "id": "future_predecessor_tests",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py",
+            "role": "Caller: future Task 2 verification. Effect: will reject missing, reordered, duplicated, or mutated Exp459 authority records and hashes.",
             "tests": [],
-            "evidence": [],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "누락·중복·순서 변경·다른 AUC·다른 혼동행렬을 거부하는 표 기반 테스트를 통과시킨다.")],
             "status": "future_planned",
         },
         {
             "id": "future_rule_evaluation",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/evaluation_antigravity.py",
             "role": "Caller: future Tasks 3-4. Effect: will compare the four rules and derive the strict fallback decision from frozen Exp459 evidence.",
-            "tests": [],
-            "evidence": [],
+            "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py"],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "compare_fallback_rules_antigravity")],
             "status": "future_planned",
         },
         {
-            "id": "future_artifacts_cli",
-            "path": "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py",
-            "role": "Caller: future Tasks 4-6. Effect: will expose evaluate and inspect only after Task 5 implementation and approval boundaries are met.",
+            "id": "future_rule_tests",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py",
+            "role": "Caller: future Task 3 verification. Effect: will prove 10/10, 9/10, 8/10, and 0/10 route truth plus confusion-matrix F1 recomputation.",
             "tests": [],
-            "evidence": [],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "10/10, 9/10, 8/10, 0/10 route RED와 성능 재계산 RED를 작성한다.")],
+            "status": "future_planned",
+        },
+        {
+            "id": "future_artifacts_replay_dashboard",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py",
+            "role": "Caller: future Tasks 4-5. Effect: will publish the six result leaves, replay them from frozen authority, and export the bounded dashboard payload.",
+            "tests": [
+                "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py",
+                "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py",
+                "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py",
+            ],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "정확한 6개 결과 파일")],
+            "status": "future_planned",
+        },
+        {
+            "id": "future_artifacts_tests",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py",
+            "role": "Caller: future Task 4 verification. Effect: will reject stored-result, replay, route, AUC, confusion, and dashboard tamper across the six-leaf publication boundary.",
+            "tests": [],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다.")],
+            "status": "future_planned",
+        },
+        {
+            "id": "future_cli_launcher",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py",
+            "role": "Caller: future Tasks 5-6. Effect: will expose only evaluate --reviewed-commit LOWER40HEX and inspect after implementation and approval boundaries are met.",
+            "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py"],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "evaluate --reviewed-commit LOWER40HEX")],
+            "status": "future_planned",
+        },
+        {
+            "id": "future_cli_tests",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py",
+            "role": "Caller: future Task 5 verification. Effect: will prove exact CLI surface, outside-CWD launcher behavior, and repeated unofficial evaluate→inspect equality.",
+            "tests": [],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "CLI·outside-CWD launcher 부재 RED를 작성한다.")],
             "status": "future_planned",
         },
     ]
@@ -236,8 +280,13 @@ def build_map_antigravity(source_parent_commit: str, generated_at: str) -> tuple
         {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py", "test_task1_governance_surface_antigravity")},
         {"from": "map_builder", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity("scratch/build_codemap_exp460_antigravity.py", "validate_map_antigravity")},
         {"from": "research_state", "to": "future_predecessor_capture", "type": "governs", "evidence": evidence_antigravity("RESEARCH_STATE.json", "\"ecg_strict_fallback\"")},
-        {"from": "future_predecessor_capture", "to": "future_rule_evaluation", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "capture_exp459_fallback_authority_antigravity()")},
-        {"from": "future_rule_evaluation", "to": "future_artifacts_cli", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "evaluate --reviewed-commit LOWER40HEX")},
+        {"from": "future_predecessor_tests", "to": "future_predecessor_capture", "type": "tests", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "누락·중복·순서 변경·다른 AUC·다른 혼동행렬을 거부하는 표 기반 테스트를 통과시킨다.")},
+        {"from": "future_predecessor_capture", "to": "future_rule_evaluation", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "compare_fallback_rules_antigravity")},
+        {"from": "future_rule_tests", "to": "future_rule_evaluation", "type": "tests", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "10/10, 9/10, 8/10, 0/10 route RED와 성능 재계산 RED를 작성한다.")},
+        {"from": "future_rule_evaluation", "to": "future_artifacts_replay_dashboard", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "정확한 6개 결과 파일")},
+        {"from": "future_artifacts_tests", "to": "future_artifacts_replay_dashboard", "type": "tests", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다.")},
+        {"from": "future_artifacts_replay_dashboard", "to": "future_cli_launcher", "type": "governs", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "dashboard payload를 진행 상태, 네 비교 행, 두 실패 fold, 최종 route, label_query_count 0으로 제한한다.")},
+        {"from": "future_cli_tests", "to": "future_cli_launcher", "type": "tests", "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "CLI·outside-CWD launcher 부재 RED를 작성한다.")},
     ]
     graph = {
         "schema": "exp460_task1_governance_codemap_v1",
@@ -263,6 +312,14 @@ def build_map_antigravity(source_parent_commit: str, generated_at: str) -> tuple
     return graph, lock, html_antigravity(graph)
 
 
+def load_triplet_antigravity() -> tuple[dict[str, object], dict[str, object], str]:
+    graph = strict_json_antigravity(JSON_PATH_ANTIGRAVITY)
+    lock = strict_json_antigravity(LOCK_PATH_ANTIGRAVITY)
+    rendered = HTML_PATH_ANTIGRAVITY.read_text(encoding="utf-8")
+    assert isinstance(graph, dict) and isinstance(lock, dict)
+    return graph, lock, rendered
+
+
 def validate_map_antigravity(graph: dict[str, object], lock: dict[str, object], rendered: str) -> None:
     if graph["schema"] != "exp460_task1_governance_codemap_v1":
         raise ValueError("unexpected graph schema")
@@ -270,8 +327,8 @@ def validate_map_antigravity(graph: dict[str, object], lock: dict[str, object], 
         raise ValueError("unexpected lock schema")
     if graph["source_parent_commit"] != lock["source_parent_commit"]:
         raise ValueError("source_parent_commit mismatch")
-    escaped_payload = html_module.escape(canonical_bytes_antigravity(graph).decode("utf-8"))
-    if escaped_payload not in rendered:
+    expected_rendered = html_antigravity(graph)
+    if rendered.rstrip("\n") != expected_rendered:
         raise ValueError("rendered HTML is not in sync with graph JSON")
     node_ids = set()
     for node in graph["nodes"]:
@@ -303,6 +360,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
+    if args.validate_only:
+        graph, lock, rendered = load_triplet_antigravity()
+        validate_map_antigravity(graph, lock, rendered)
+        return
     source_parent_commit = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=ROOT_ANTIGRAVITY,
@@ -312,9 +373,6 @@ def main() -> None:
     ).stdout.strip()
     generated_at = "2026-08-19T00:00:00Z"
     graph, lock, rendered = build_map_antigravity(source_parent_commit, generated_at)
-    if args.validate_only:
-        validate_map_antigravity(graph, lock, rendered)
-        return
     JSON_PATH_ANTIGRAVITY.write_text(
         json.dumps(graph, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
