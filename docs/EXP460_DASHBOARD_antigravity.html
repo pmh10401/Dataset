@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp460 ECG 엄격 복귀 대시보드</h1>
+  <table>
+    <tr><th>progress</th><td>Task 1/6</td></tr>
+    <tr><th>status</th><td><code>governance_complete_implementation_not_started</code></td></tr>
+    <tr><th>official evaluate/inspect counts</th><td>0/0</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>result and artifact hashes</th><td><code>null</code></td></tr>
+    <tr><th>official decision rule</th><td><code>strict_10_of_10</code> only</td></tr>
+  </table>
+  <div class="box">
+    <p><strong>Frozen rule order:</strong> <code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code>.</p>
+    <p><strong>Exp459 official outcome remains unstable:</strong> seed 20260721 fold 3 period_change AUC 0.8208339620743423 and seed 20261721 fold 4 period_change AUC 0.8004124541019063 failed the predecessor validation.</p>
+    <p><strong>Design expectation only:</strong> expected metrics and the strict fallback outcome are design expectation only, not observed Exp460 results.</p>
+  </div>
+  <h2>Rule comparison frame</h2>
+  <table>
+    <thead><tr><th>rule</th><th>officially eligible</th><th>design note</th></tr></thead>
+    <tbody>
+      <tr><td><code>always_baseline</code></td><td>no</td><td>Comparator only</td></tr>
+      <tr><td><code>always_candidate</code></td><td>no</td><td>Comparator only</td></tr>
+      <tr><td><code>majority_8_of_10</code></td><td>no</td><td>Comparator only</td></tr>
+      <tr><td><code>strict_10_of_10</code></td><td>yes</td><td>Any one failed record forces <code>baseline</code></td></tr>
+    </tbody>
+  </table>
+</main></body></html>

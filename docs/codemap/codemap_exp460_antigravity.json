@@ -1,0 +1,296 @@
+{
+  "schema": "exp460_task1_governance_codemap_v1",
+  "generated_at": "2026-08-19T00:00:00Z",
+  "source_parent_commit": "16baa6db803900b6404d8c12ed8e42456d923fcd",
+  "unknown_relationships": [],
+  "nodes": [
+    {
+      "id": "approved_design",
+      "path": "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html",
+      "role": "Caller: Task 1 governance and future Tasks 2-6. Effect: freezes target dataset, rule order, failed predecessor folds, and strict-only official decision rule.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html",
+          "symbol": "10/10 엄격 복귀"
+        }
+      ]
+    },
+    {
+      "id": "implementation_plan",
+      "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+      "role": "Caller: Task 1-6 execution. Effect: records Task 1 completion while leaving future tasks unchecked.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+          "symbol": "Task 1 — 문서, 진행 대시보드, 코드맵"
+        }
+      ]
+    },
+    {
+      "id": "preregistration",
+      "path": "docs/EXP460_PREREGISTRATION_antigravity.html",
+      "role": "Caller: governance review. Effect: states planned-only Exp460 contract, zero official counts, and null result hashes.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/EXP460_PREREGISTRATION_antigravity.html",
+          "symbol": "governance_complete_implementation_not_started"
+        }
+      ]
+    },
+    {
+      "id": "runbook",
+      "path": "docs/EXP460_RUNBOOK_antigravity.html",
+      "role": "Caller: future operators. Effect: records Task 1-only allowed scope and official execution firewall.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/EXP460_RUNBOOK_antigravity.html",
+          "symbol": "Task 1 operating boundary"
+        }
+      ]
+    },
+    {
+      "id": "implementation_report",
+      "path": "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html",
+      "role": "Caller: implementation review. Effect: reports Task 1 progress, zero official actions, and no scientific implementation yet.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html",
+          "symbol": "Task 1 lifecycle"
+        }
+      ]
+    },
+    {
+      "id": "dashboard",
+      "path": "docs/EXP460_DASHBOARD_antigravity.html",
+      "role": "Caller: result-facing governance review. Effect: shows Task 1/6 progress, four-rule frame, unstable predecessor truth, and design-expectation-only boundary.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "docs/EXP460_DASHBOARD_antigravity.html",
+          "symbol": "Task 1/6"
+        }
+      ]
+    },
+    {
+      "id": "research_state",
+      "path": "RESEARCH_STATE.json",
+      "role": "Caller: governance review. Effect: records Exp460 as planned-only with zero official actions and unchanged pending candidate.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"task_1_governance_complete\""
+        }
+      ]
+    },
+    {
+      "id": "experiment_catalog",
+      "path": "EXPERIMENT_CATALOG.json",
+      "role": "Caller: catalog review. Effect: registers Exp460 documents, scientific contract, and planned-only lifecycle.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"Exp460\""
+        }
+      ]
+    },
+    {
+      "id": "champion_ledger",
+      "path": "CHAMPION_LEDGER.json",
+      "role": "Caller: champion review. Effect: records Exp460 as non-promoted planned work without changing champion or pending candidate.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "CHAMPION_LEDGER.json",
+          "symbol": "\"task_1_governance_complete\""
+        }
+      ]
+    },
+    {
+      "id": "governance_regression",
+      "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
+      "role": "Caller: Task 1 verification. Effect: rejects missing docs, wrong rule order, nonzero official counters, changed champion state, stale plan checkboxes, or invalid map triplet.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
+          "symbol": "test_task1_governance_surface_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "map_builder",
+      "path": "scratch/build_codemap_exp460_antigravity.py",
+      "role": "Caller: Task 1 validation. Effect: rebuilds and validates the bounded governance-only Exp460 graph and triplet fingerprints.",
+      "tests": [
+        "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
+      ],
+      "evidence": [
+        {
+          "path": "scratch/build_codemap_exp460_antigravity.py",
+          "symbol": "validate_map_antigravity"
+        }
+      ]
+    },
+    {
+      "id": "future_predecessor_capture",
+      "path": "experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py",
+      "role": "Caller: future Task 2 scientific implementation. Effect: will capture frozen Exp459 authority into Exp460-owned contracts.",
+      "tests": [],
+      "evidence": [],
+      "status": "future_planned"
+    },
+    {
+      "id": "future_rule_evaluation",
+      "path": "experiments/exp460_ecg_strict_fallback_antigravity/evaluation_antigravity.py",
+      "role": "Caller: future Tasks 3-4. Effect: will compare the four rules and derive the strict fallback decision from frozen Exp459 evidence.",
+      "tests": [],
+      "evidence": [],
+      "status": "future_planned"
+    },
+    {
+      "id": "future_artifacts_cli",
+      "path": "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py",
+      "role": "Caller: future Tasks 4-6. Effect: will expose evaluate and inspect only after Task 5 implementation and approval boundaries are met.",
+      "tests": [],
+      "evidence": [],
+      "status": "future_planned"
+    }
+  ],
+  "edges": [
+    {
+      "from": "approved_design",
+      "to": "preregistration",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html",
+        "symbol": "10/10 엄격 복귀"
+      }
+    },
+    {
+      "from": "approved_design",
+      "to": "dashboard",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html",
+        "symbol": "현재 Exp459 자료에서는 1번과 2번을 만족하지 못하므로 엄격 규칙은 baseline을 선택한다"
+      }
+    },
+    {
+      "from": "implementation_plan",
+      "to": "dashboard",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+        "symbol": "Task 1 — 문서, 진행 대시보드, 코드맵"
+      }
+    },
+    {
+      "from": "implementation_plan",
+      "to": "research_state",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+        "symbol": "Exp460을 non-promotion 실험으로 ledger에 추가"
+      }
+    },
+    {
+      "from": "governance_regression",
+      "to": "preregistration",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
+        "symbol": "test_task1_governance_surface_antigravity"
+      }
+    },
+    {
+      "from": "governance_regression",
+      "to": "dashboard",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
+        "symbol": "test_task1_plan_dashboard_and_map_antigravity"
+      }
+    },
+    {
+      "from": "governance_regression",
+      "to": "research_state",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
+        "symbol": "test_task1_governance_surface_antigravity"
+      }
+    },
+    {
+      "from": "governance_regression",
+      "to": "champion_ledger",
+      "type": "tests",
+      "evidence": {
+        "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
+        "symbol": "test_task1_governance_surface_antigravity"
+      }
+    },
+    {
+      "from": "map_builder",
+      "to": "dashboard",
+      "type": "tests",
+      "evidence": {
+        "path": "scratch/build_codemap_exp460_antigravity.py",
+        "symbol": "validate_map_antigravity"
+      }
+    },
+    {
+      "from": "research_state",
+      "to": "future_predecessor_capture",
+      "type": "governs",
+      "evidence": {
+        "path": "RESEARCH_STATE.json",
+        "symbol": "\"ecg_strict_fallback\""
+      }
+    },
+    {
+      "from": "future_predecessor_capture",
+      "to": "future_rule_evaluation",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+        "symbol": "capture_exp459_fallback_authority_antigravity()"
+      }
+    },
+    {
+      "from": "future_rule_evaluation",
+      "to": "future_artifacts_cli",
+      "type": "governs",
+      "evidence": {
+        "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+        "symbol": "evaluate --reviewed-commit LOWER40HEX"
+      }
+    }
+  ]
+}
