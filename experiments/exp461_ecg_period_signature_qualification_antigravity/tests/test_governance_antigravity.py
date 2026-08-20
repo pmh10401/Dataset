@@ -280,18 +280,19 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1 governance report",
+            "Task 2 frozen-input report",
             "SHA-256",
             DESIGN_SHA256_ANTIGRAVITY,
             PREREGISTRATION_SHA256_ANTIGRAVITY,
             RUNBOOK_SHA256_ANTIGRAVITY,
-            "Task1 complete / Task2 next",
+            "Task2 implemented pending external review / Task3 next",
             "docs/EXP461_PREREGISTRATION_antigravity.html",
             "docs/EXP461_RUNBOOK_antigravity.html",
             "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
             "Task 2 handoff",
-            "설계서, 사전등록, 실행 가이드",
-            "living progress 파일은 직접 읽는다",
+            "Task 2 scope truth",
+            "config_antigravity.py",
+            "sources_antigravity.py",
         ):
             self.assertIn(phrase, report)
         for phrase in (
@@ -306,9 +307,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1/6",
+            "Task 2/6",
             "planned_implementation_not_started",
-            "Task1 complete / Task2 next",
+            "Task2 implemented pending external review / Task3 next",
             "공식 실행 0회",
             "label query count",
             "artifact map SHA-256",
@@ -321,6 +322,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "hydra_local_gap",
             "period_signature_local_gap",
             "hydra_period_rank_max",
+            "capture_exp460_period_authority_antigravity",
+            "load_normal2_train_antigravity",
         ):
             self.assertIn(phrase, dashboard)
 
@@ -356,8 +359,31 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict) and isinstance(lock, dict)
         self.assertLessEqual(len(graph["nodes"]), 25)
-        self.assertEqual(graph["schema"], "exp461_task1_governance_codemap_v1")
-        self.assertEqual(lock["schema"], "exp461_task1_governance_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp461_task2_inputs_codemap_v1")
+        self.assertEqual(lock["schema"], "exp461_task2_inputs_codemap_lock_v1")
+        node_ids = {node["id"] for node in graph["nodes"]}
+        for node_id in (
+            "approved_design",
+            "implementation_plan",
+            "preregistration",
+            "runbook",
+            "implementation_report",
+            "dashboard",
+            "research_state",
+            "experiment_catalog",
+            "champion_ledger",
+            "governance_regression",
+            "map_builder",
+            "task2_config",
+            "task2_contracts",
+            "task2_predecessor_capture",
+            "task2_sources",
+            "task2_config_tests",
+            "task2_contracts_tests",
+            "task2_predecessor_tests",
+            "task2_sources_tests",
+        ):
+            self.assertIn(node_id, node_ids)
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))
         builder.validate_map_antigravity(graph, lock, rendered)
 

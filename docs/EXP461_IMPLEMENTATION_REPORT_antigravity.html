@@ -2,10 +2,10 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
 <body><main>
   <h1>Exp461 구현 보고서</h1>
-  <p><strong>Task 1 governance report:</strong> 이번 변경은 governance, always-visible dashboard, ledger pre-registration, bounded code map만 추가했다. 과학 소스, TRAIN 계산, official 명령은 아직 없다.</p>
+  <p><strong>Task 2 frozen-input report:</strong> 이번 변경은 Exp460 predecessor authority, exact TRAIN source replay, immutable Task 2 contracts, focused regression tests, 그리고 Task 2 code map 갱신만 추가했다. Task 3 scoring, qualification 실행, official 명령은 아직 없다.</p>
   <table>
     <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
-    <tr><th>implementation status</th><td><code>Task1 complete / Task2 next</code></td></tr>
+    <tr><th>implementation status</th><td><code>Task2 implemented pending external review / Task3 next</code></td></tr>
     <tr><th>official command count</th><td>0</td></tr>
     <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
@@ -19,8 +19,8 @@
     <tr><td><code>docs/EXP461_RUNBOOK_antigravity.html</code></td><td><code>3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807</code></td></tr>
   </table>
   <div class="box">
-    <p><strong>Task 2 handoff:</strong> 다음 단계는 위의 설계서, 사전등록, 실행 가이드 세 문서의 SHA-256만 authority로 사용해 source/config/contracts 경계를 연다. living progress 파일은 직접 읽는다.</p>
+    <p><strong>Task 2 handoff:</strong> 다음 단계는 이미 고정된 Exp460 authority와 TRAIN replay를 사용해 period feature and scoring 경계를 여는 것이다. 설계서, 사전등록, 실행 가이드의 SHA-256 authority는 유지되고 living progress 파일은 직접 읽는다.</p>
     <p><strong>Note:</strong> <code>docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html</code>의 자기 해시는 self-reference를 피하기 위해 표에 넣지 않았다.</p>
-    <p><strong>Task 1 scope truth:</strong> docs/EXP461_PREREGISTRATION_antigravity.html, docs/EXP461_RUNBOOK_antigravity.html, docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html, docs/EXP461_DASHBOARD_antigravity.html, docs/codemap/codemap_exp461_antigravity.json, ledgers, governance test, map builder만 변경됐다.</p>
+    <p><strong>Task 2 scope truth:</strong> <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code>, 대응 Task 2 test 4개, Exp461 dashboard/report/plan, governance assertions, map builder/triplet만 변경됐다.</p>
   </div>
 </main></body></html>

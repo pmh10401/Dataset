@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp461 Task 1 governance code map."""
+"""Build and validate the bounded Exp461 Task 2 frozen-input code map."""
 
 from __future__ import annotations
 
@@ -34,7 +34,15 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/EXP461_RUNBOOK_antigravity.html",
     "docs/superpowers/plans/2026-08-20-exp461-ecg-period-signature-qualification-antigravity.html",
     "docs/superpowers/specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/config_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/contracts_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/predecessor_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/sources_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_config_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_governance_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp461_antigravity.py",
 )
 ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "tests"}
@@ -138,8 +146,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp461 Task 1 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 1 governance 코드맵</h1><p>Task 1은 governance docs, planned ledgers, always-visible dashboard, bounded map, and the Task 1 regression test만 보존한다. 공식 실행, 결과 root, scientific source implementation은 아직 없다.</p>'
+        '<title>Exp461 Task 2 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp461 Task 2 frozen-input 코드맵</h1><p>Task 2는 governance truth를 유지한 채 Exp460 predecessor authority, TRAIN replay source, immutable contracts, focused tests, and the updated bounded map만 보존한다. Task 3 scoring, qualification runs, 공식 실행은 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -170,6 +178,34 @@ def build_map_antigravity(
         "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
         "test_governance_antigravity.py"
     )
+    task2_config = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/config_antigravity.py"
+    )
+    task2_contracts = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/contracts_antigravity.py"
+    )
+    task2_predecessor = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/predecessor_antigravity.py"
+    )
+    task2_sources = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/sources_antigravity.py"
+    )
+    task2_config_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_config_antigravity.py"
+    )
+    task2_contracts_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_contracts_antigravity.py"
+    )
+    task2_predecessor_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_predecessor_antigravity.py"
+    )
+    task2_sources_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_sources_antigravity.py"
+    )
     builder = "scratch/build_codemap_exp461_antigravity.py"
 
     nodes: list[dict[str, object]] = [
@@ -183,7 +219,7 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records the owned files, Task 1 step checkboxes, current pending-external-review state, and later task boundaries.",
+            "role": "Caller: Task 1-6 execution. Effect: records the owned files, Task 2 pending-external-review note, unchanged Task 2 checkboxes, and later task boundaries.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(plan, "Task 1 — 문서, 진행 대시보드, 코드맵")],
         },
@@ -204,16 +240,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 2 handoff. Effect: records the immutable design/preregistration/runbook SHA-256 authority and states that living progress files are read directly.",
+            "role": "Caller: Task 3 handoff. Effect: records the immutable document authority plus the Task 2 config/contracts/predecessor/source boundary that is ready for external review.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(report, "Task 1 governance report")],
+            "evidence": [evidence_antigravity(report, "Task 2 frozen-input report")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 1/6, planned status, official execution 0, null artifact hashes, and the two inherited period-change failures.",
+            "role": "Caller: always-visible status review. Effect: shows Task 2/6, planned status, official execution 0, null artifact hashes, the two inherited period-change failures, and the frozen Task 2 entrypoints.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 1/6")],
+            "evidence": [evidence_antigravity(dashboard, "Task 2/6")],
         },
         {
             "id": "research_state",
@@ -239,16 +275,102 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: Task 1 verification. Effect: rejects missing docs, wrong planned ledger truth, wrong Task 1 checkbox state, or invalid stored map bytes.",
+            "role": "Caller: Task 2 governance verification. Effect: rejects missing frozen-input docs, wrong planned ledger truth, checked Task 2 boxes before review, or invalid stored map bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_task1_governance_antigravity")],
         },
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 1 validation. Effect: rebuilds and validates the bounded Exp461 governance graph plus the stored HTML/JSON/lock triplet bytes.",
+            "role": "Caller: Task 2 validation. Effect: rebuilds and validates the bounded Exp461 frozen-input graph plus the stored HTML/JSON/lock triplet bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
+        },
+        {
+            "id": "task2_config",
+            "path": task2_config,
+            "role": "Caller: predecessor capture, source validation, and future Task 3 scoring. Effect: freezes the exact Exp461 runtime, dataset, method order, thresholds, and predecessor hashes without opening labels or results.",
+            "tests": [task2_config_test],
+            "evidence": [evidence_antigravity(task2_config, "FROZEN_CONFIG_ANTIGRAVITY")],
+        },
+        {
+            "id": "task2_contracts",
+            "path": task2_contracts,
+            "role": "Caller: predecessor capture and future replay consumers. Effect: enforces the exact Exp460 fallback snapshot, immutable failed-fold rows, strict baseline routing, and six-leaf hash order.",
+            "tests": [task2_contracts_test],
+            "evidence": [
+                evidence_antigravity(
+                    task2_contracts,
+                    "validate_exp460_period_authority_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task2_predecessor_capture",
+            "path": task2_predecessor,
+            "role": "Caller: future Task 3 scoring and qualification setup. Effect: replays the exact two failed Exp459 period-change folds into the frozen Exp460 fallback authority for Exp461.",
+            "tests": [task2_predecessor_test],
+            "evidence": [
+                evidence_antigravity(
+                    task2_predecessor,
+                    "capture_exp460_period_authority_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task2_sources",
+            "path": task2_sources,
+            "role": "Caller: future Task 3 feature extraction. Effect: replays the exact owned, read-only, C-contiguous float32 normal_2 TRAIN matrix from the established Exp459 loader with no new data path.",
+            "tests": [task2_sources_test],
+            "evidence": [evidence_antigravity(task2_sources, "load_normal2_train_antigravity")],
+        },
+        {
+            "id": "task2_config_tests",
+            "path": task2_config_test,
+            "role": "Caller: Task 2 RED/GREEN verification. Effect: rejects exact-value, type, or order drift in the frozen Exp461 config surface.",
+            "tests": [task2_config_test],
+            "evidence": [
+                evidence_antigravity(
+                    task2_config_test,
+                    "test_frozen_config_preserves_the_exact_task2_contract_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task2_contracts_tests",
+            "path": task2_contracts_test,
+            "role": "Caller: Task 2 RED/GREEN verification. Effect: rejects mutable containers, bool-as-int aliases, wrong strict-route semantics, or any Exp460 snapshot drift.",
+            "tests": [task2_contracts_test],
+            "evidence": [
+                evidence_antigravity(
+                    task2_contracts_test,
+                    "test_validator_rejects_snapshot_drift_and_mutable_containers_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task2_predecessor_tests",
+            "path": task2_predecessor_test,
+            "role": "Caller: Task 2 RED/GREEN verification. Effect: rejects wrong Exp460 hashes, wrong failed-fold rows, or source drift away from the frozen Exp459 authority.",
+            "tests": [task2_predecessor_test],
+            "evidence": [
+                evidence_antigravity(
+                    task2_predecessor_test,
+                    "test_capture_returns_the_exact_frozen_exp460_authority_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task2_sources_tests",
+            "path": task2_sources_test,
+            "role": "Caller: Task 2 RED/GREEN verification. Effect: rejects TRAIN-shape drift, aliasing drift, or any new TEST or label-capable source path.",
+            "tests": [task2_sources_test],
+            "evidence": [
+                evidence_antigravity(
+                    task2_sources_test,
+                    "test_loader_replays_the_exact_exp459_train_matrix_without_aliasing_antigravity",
+                )
+            ],
         },
     ]
 
@@ -328,10 +450,70 @@ def build_map_antigravity(
             "type": "tests",
             "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity"),
         },
+        {
+            "from": "implementation_plan",
+            "to": "task2_config",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "Task 2 — 고정 입력, 자료형, TRAIN source"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task2_contracts",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "capture_exp460_period_authority_antigravity"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task2_predecessor_capture",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "Exp460 six-leaf official root"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task2_sources",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "load_normal2_train_antigravity()"),
+        },
+        {
+            "from": "task2_config_tests",
+            "to": "task2_config",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task2_config_test,
+                "test_frozen_config_preserves_the_exact_task2_contract_antigravity",
+            ),
+        },
+        {
+            "from": "task2_contracts_tests",
+            "to": "task2_contracts",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task2_contracts_test,
+                "test_validator_rejects_snapshot_drift_and_mutable_containers_antigravity",
+            ),
+        },
+        {
+            "from": "task2_predecessor_tests",
+            "to": "task2_predecessor_capture",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task2_predecessor_test,
+                "test_capture_returns_the_exact_frozen_exp460_authority_antigravity",
+            ),
+        },
+        {
+            "from": "task2_sources_tests",
+            "to": "task2_sources",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task2_sources_test,
+                "test_loader_replays_the_exact_exp459_train_matrix_without_aliasing_antigravity",
+            ),
+        },
     ]
 
     graph = {
-        "schema": "exp461_task1_governance_codemap_v1",
+        "schema": "exp461_task2_inputs_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -339,7 +521,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp461_task1_governance_codemap_lock_v1",
+        "schema": "exp461_task2_inputs_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),
