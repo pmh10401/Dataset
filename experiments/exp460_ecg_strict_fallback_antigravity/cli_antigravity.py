@@ -86,7 +86,9 @@ def _selected_root_antigravity(default: Path) -> Path:
     if private is None:
         return default
     root = getattr(private, "root_antigravity", None)
-    if not isinstance(root, Path) or root == OFFICIAL_ROOT_ANTIGRAVITY:
+    if not isinstance(root, Path) or root.resolve(
+        strict=False
+    ) == OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False):
         raise ValueError("private test root must be a non-official Path")
     return root
 

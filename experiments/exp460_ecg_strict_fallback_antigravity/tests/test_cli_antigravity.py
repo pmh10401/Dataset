@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
@@ -168,6 +169,65 @@ class CliAntigravityTest(unittest.TestCase):
             validate.assert_called_once_with(_COMMIT_ANTIGRAVITY)
             evaluate.assert_called_once_with()
 
+    def test_private_root_guard_rejects_resolved_official_alias_for_evaluate_and_inspect_antigravity(
+        self,
+    ) -> None:
+        """Break caught: a lexical path alias lets a private seam select the official root."""
+        from experiments.exp460_ecg_strict_fallback_antigravity import (
+            cli_antigravity as cli,
+        )
+
+        alias = (
+            _OFFICIAL_ROOT_ANTIGRAVITY.parent
+            / ".."
+            / _OFFICIAL_ROOT_ANTIGRAVITY.parent.name
+            / _OFFICIAL_ROOT_ANTIGRAVITY.name
+        )
+        self.assertNotEqual(alias, _OFFICIAL_ROOT_ANTIGRAVITY)
+        self.assertEqual(
+            alias.resolve(strict=False),
+            _OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False),
+        )
+        private = types.ModuleType("_exp460_cli_private_test_antigravity")
+        private.CAPABILITY_ANTIGRAVITY = (
+            "exp460_cli_private_test_antigravity_v1"
+        )
+        private.root_antigravity = alias
+
+        with (
+            patch.dict(sys.modules, {private.__name__: private}),
+            patch.object(
+                cli,
+                "_validate_clean_current_commit_antigravity",
+                return_value=None,
+            ),
+            patch.object(
+                cli,
+                "_evaluate_with_dependencies_antigravity",
+                side_effect=AssertionError("evaluate accepted official alias"),
+            ),
+            self.assertRaisesRegex(
+                ValueError, "private test root must be a non-official Path"
+            ),
+        ):
+            cli.main_antigravity(
+                ["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY]
+            )
+
+        with (
+            patch.dict(sys.modules, {private.__name__: private}),
+            patch.object(
+                cli,
+                "_inspect_with_dependencies_antigravity",
+                side_effect=AssertionError("inspect accepted official alias"),
+            ),
+            self.assertRaisesRegex(
+                ValueError, "private test root must be a non-official Path"
+            ),
+        ):
+            cli.main_antigravity(["inspect"])
+        self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
+
     def test_private_evaluate_then_inspect_returns_exact_payload_and_six_leaves_antigravity(
         self,
     ) -> None:
@@ -192,7 +252,10 @@ class CliAntigravityTest(unittest.TestCase):
             prefix="exp460_cli_private_antigravity_"
         ) as temporary:
             root = Path(temporary) / "result_antigravity"
-            self.assertNotEqual(root, _OFFICIAL_ROOT_ANTIGRAVITY)
+            self.assertNotEqual(
+                root.resolve(strict=False),
+                _OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False),
+            )
             evaluated = cli._evaluate_with_dependencies_antigravity(
                 root,
                 capture_exp459_fallback_authority_antigravity,
@@ -353,7 +416,10 @@ print(json.dumps({
             prefix="exp460_launcher_private_antigravity_"
         ) as temporary:
             root = Path(temporary) / "result_antigravity"
-            self.assertNotEqual(root, _OFFICIAL_ROOT_ANTIGRAVITY)
+            self.assertNotEqual(
+                root.resolve(strict=False),
+                _OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False),
+            )
             completed = subprocess.run(
                 [sys.executable, "-c", script, str(_LAUNCHER_ANTIGRAVITY), str(root)],
                 cwd=temporary,

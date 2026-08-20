@@ -313,7 +313,7 @@ def build_map_antigravity(
         {
             "id": "task5_cli",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py",
-            "role": "Caller: fixed launcher and private dependency interfaces. Effect: exposes only evaluate --reviewed-commit LOWER40HEX and bare inspect, chains existing Task 2-4 functions, rejects overwrites, and returns the bounded payload.",
+            "role": "Caller: fixed launcher and private dependency interfaces. Effect: exposes only evaluate --reviewed-commit LOWER40HEX and bare inspect, chains existing Task 2-4 functions, rejects resolved official-root aliases and overwrites, and returns the bounded payload.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py"],
             "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py", "_evaluate_with_dependencies_antigravity")],
         },
@@ -327,7 +327,7 @@ def build_map_antigravity(
         {
             "id": "task5_cli_tests",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py",
-            "role": "Caller: Task 5 verification. Effect: proves exact CLI surface, lazy dispatch, private evaluate/inspect equality, create-only roots, exact fixed-interpreter re-exec, and outside-CWD launcher success.",
+            "role": "Caller: Task 5 verification. Effect: proves exact CLI surface, lazy dispatch, resolved official-root alias rejection in evaluate/inspect seams, private equality, create-only roots, exact fixed-interpreter re-exec, and outside-CWD launcher success.",
             "tests": [],
             "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py", "test_launcher_private_evaluate_then_inspect_from_outside_cwd_antigravity")],
         },

@@ -1,7 +1,7 @@
 {
   "schema": "exp460_task5_strict_fallback_codemap_lock_v1",
-  "generated_at": "2026-08-20T01:06:29Z",
-  "source_parent_commit": "c5c7346eef297d037901e8c88c125ff92acabb2f",
+  "generated_at": "2026-08-20T01:15:03Z",
+  "source_parent_commit": "aede1372e3ffa188c25d53ca443fe74029fe592f",
   "represented_paths": [
     "docs/codemap/codemap_exp460_antigravity.html",
     "docs/codemap/codemap_exp460_antigravity.json",
@@ -25,7 +25,7 @@
     "experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py": "50ab02a09fced74e005b4896dac3f4ef5cb4583243b76412eba491786e2a3d5f",
     "experiments/exp460_ecg_strict_fallback_antigravity/replay_antigravity.py": "0294c1e3cc85c4020f834a92c12423cf6996217f5840bddee5f201b49e5ddc9a",
     "experiments/exp460_ecg_strict_fallback_antigravity/dashboard_export_antigravity.py": "152a7c6bae471d2dce405d8c7eb43dcb9a10f6cde309ca994a2d75db7b2e09e1",
-    "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py": "985c853ebd33a1f4c102aba52ed92f3859b616f10ee9b46fe9e7e7fe33ab35a2",
+    "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py": "5b35833ed936d56c3153b0386ae7bc291ecbdaa95793cd8976e6bd80fb6ccc33",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_config_antigravity.py": "d89fcbcde5bca50845473d6bf57e68df6948b07b1c6061c0a5efd6133ae41e99",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_contracts_antigravity.py": "ecb2defa3b88733fa82bc31e97f6a808c626c9dfbc2a5b894d742eb1cad627e3",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_fallback_antigravity.py": "0884023e72c8714dc27c2d4933b3bf354edb57e9f4583015753188498701c411",
@@ -35,15 +35,15 @@
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py": "fbbd213f64e941026f60e509bd100842f0f5d00944fd32c299797bd1737f676e",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py": "e13b757460a61be8b001562bba3b39deffbff442c47630c9402e6d0d51bf873e",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py": "4fd6b18a8f74caeb45bafbdbb2e8f0703c47ab3e1c244defed8d0492ba7788e9",
-    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py": "85428203ec0d39605149a27940a25cf923b73221cf7ba32142498392fe70e429",
-    "scratch/build_codemap_exp460_antigravity.py": "1238e5a313116a10943f2d6c78dfde627fd0bf64c0b919d3c800e4575a3b0b74",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py": "8c9a9daf0fc9490441338719e78b07f7cced42ebaeee42d13786243c78564582",
+    "scratch/build_codemap_exp460_antigravity.py": "4f192b91e32f56643a2dac076e863bbce954cc5beea1437065bf1e11dd757abd",
     "scratch/run_exp460_ecg_strict_fallback_antigravity.py": "a1ab49cd3612a61c9a50f0fbc3b34cc00352dbd8f01be3d3a0d5e9736f574ccc"
   },
   "module_fingerprints": {
     "docs": "4af44af52a95a7b30feb1e2bf573614f349ee7e69b97fe5f41fde88c7660a28f",
-    "experiments": "3139706dd90d74714a0db77838044b632e94393bfb2ddfddd10a745d60aa9513",
+    "experiments": "373a2eb62a637d995f032578391144ac47c1899c9b95df7f1b88f7e0874d5c32",
     "root": "0d3268edafe96cfecba5eb821c31400807054f57521225f0d53a2123ccc4431e",
-    "scratch": "8f409ddef64946170609229d99e28cbaf1d96723d6c37a654c75e03ce965d8f1"
+    "scratch": "ef93b29b2c8580bec2c0fc57564f3eee16fdb64584275296055ca3577e3a70aa"
   },
   "working_tree_dirty": false
 }
