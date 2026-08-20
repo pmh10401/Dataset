@@ -354,11 +354,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 f'<label><input type="checkbox" checked disabled>{step_label}',
                 task4,
             )
-        self.assertIn('<h2><label><input type="checkbox" disabled>Task 5', plan)
+        self.assertIn(
+            '<h2><label><input type="checkbox" checked disabled>Task 5',
+            plan,
+        )
         task5 = plan.split("Task 5", 1)[1].split("Task 6", 1)[0]
         self.assertEqual(
             task5.count('<label><input type="checkbox" checked disabled>Step '),
-            5,
+            6,
         )
         for step_label in (
             "Step 1",
@@ -366,14 +369,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "Step 3",
             "Step 4",
             "Step 5",
+            "Step 6",
         ):
             self.assertIn(
                 f'<label><input type="checkbox" checked disabled>{step_label}',
-                task5,
-            )
-        for step_label in ("Step 6",):
-            self.assertIn(
-                f'<label><input type="checkbox" disabled>{step_label}',
                 task5,
             )
         task6 = plan.split("<h2>Task 6", 1)[1]
