@@ -1,7 +1,7 @@
 {
   "schema": "exp460_task4_strict_fallback_codemap_lock_v1",
-  "generated_at": "2026-08-20T00:34:10Z",
-  "source_parent_commit": "0ed57f303a6a56815cc12c362893f70da0f9c575",
+  "generated_at": "2026-08-20T00:43:56Z",
+  "source_parent_commit": "7cd039574d10c65c5891bf14b813cde981f39bc2",
   "represented_paths": [
     "docs/codemap/codemap_exp460_antigravity.html",
     "docs/codemap/codemap_exp460_antigravity.json",
@@ -31,14 +31,14 @@
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py": "d761a6dc24c90caddb37ee513ec2b34e612565d864529cef5188dcdf049565a3",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py": "c76c55ba2484f0a9bbafa5f4a2d295a41dabdfc2cd5df2b240975f26d509cefc",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py": "c5b020a19706d235f6b0a8ef335a2db17c640c568a5a6721a61ca03af855cea8",
-    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py": "518a7b5a360b0ba5681c6694e8132686bb2e1656b68a7a60f4dc9e5cf5a6a4e0",
-    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py": "25cf83c697e95c5cd92a45101386935f4ec04c73172d44d0a5df73c3719dd411",
-    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py": "c385ba51182aacd234097e8a8b048318b2c649865042cc80dc14a866c548abc8",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py": "fbbd213f64e941026f60e509bd100842f0f5d00944fd32c299797bd1737f676e",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py": "e13b757460a61be8b001562bba3b39deffbff442c47630c9402e6d0d51bf873e",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py": "4fd6b18a8f74caeb45bafbdbb2e8f0703c47ab3e1c244defed8d0492ba7788e9",
     "scratch/build_codemap_exp460_antigravity.py": "9ba721da58c6863ee7552ef0b2100d3e07f10f4bfaaf6bd82d58db5b41c30b8b"
   },
   "module_fingerprints": {
     "docs": "a00127de00ea19ca7590fdb57b0594c4cb832640b5c356e6cc1b85bae6b63b02",
-    "experiments": "0670eb149a6a9279f8472660c077d236bd0d847a8819a5beea963783bab513a8",
+    "experiments": "89f3f8d4dc89781c5767e03e4dc13968f66c4361c595e3946b115e3428cc7ff3",
     "root": "895550eed607178e1934e078797bc2ad46fdc7281b233381f7df37e2032a3f2b",
     "scratch": "9016b05a3ab00edfc7761c156b12c0efd01c8d62ba93fad3df6cb5ee43374988"
   },

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import copy
+import math
 import unittest
 
 from experiments.exp460_ecg_strict_fallback_antigravity.tests.test_artifacts_antigravity import (
     authority_antigravity,
+    expected_dashboard_antigravity,
     result_antigravity,
 )
 
@@ -16,6 +19,7 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         )
 
         dashboard = export_dashboard_antigravity(authority_antigravity(), result_antigravity())
+        expected = expected_dashboard_antigravity()
         self.assertEqual(
             set(dashboard),
             {
@@ -37,40 +41,7 @@ class DashboardExportAntigravityTest(unittest.TestCase):
                 "worst_period_change_auc",
             },
         )
-        self.assertEqual(dashboard["experiment_id"], "Exp460")
-        self.assertEqual(dashboard["dataset"], "ECG5000_normal_2")
-        self.assertEqual(dashboard["predecessor_experiment_id"], "Exp459")
-        self.assertEqual(
-            dashboard["predecessor_authority_digest"],
-            "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
-        )
-        self.assertEqual(dashboard["progress"], "Task 4/6")
-        self.assertEqual(dashboard["status"], "fallback_triggered_performance_not_improved")
-        self.assertFalse(dashboard["implementation_official"])
-        self.assertFalse(dashboard["joint_success"])
-        self.assertEqual(dashboard["label_query_count"], 0)
-        self.assertEqual(dashboard["official_evaluate_invocations"], 0)
-        self.assertEqual(dashboard["official_inspect_invocations"], 0)
-        self.assertEqual(dashboard["strict_route"], "baseline")
-        self.assertEqual(
-            dashboard["strict_status"],
-            "fallback_triggered_performance_not_improved",
-        )
-        self.assertEqual(dashboard["worst_period_change_auc"], 0.8004124541019063)
-        self.assertEqual(len(dashboard["comparison_rows"]), 4)
-        self.assertEqual(len(dashboard["failed_folds"]), 2)
-        self.assertEqual(
-            dashboard["comparison_rows"][0],
-            {
-                "f1": 0.5742574257425742,
-                "fn": 837,
-                "fp": 66,
-                "route": "baseline",
-                "rule": "always_baseline",
-                "tn": 70788,
-                "tp": 609,
-            },
-        )
+        self._assert_exact_json_antigravity(dashboard, expected)
 
         rendered = repr(dashboard)
         for forbidden in (
@@ -86,6 +57,20 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, rendered)
 
+        mutations = (
+            lambda value: value["comparison_rows"][0].__setitem__("tp", False),
+            lambda value: value["failed_folds"][0].__setitem__("fold_index", True),
+            lambda value: value.__setitem__("worst_period_change_auc", float("nan")),
+            lambda value: value.__setitem__("comparison_rows", tuple(value["comparison_rows"])),
+            lambda value: value["comparison_rows"][1].__setitem__("f1", "0.5796148426491311"),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                mutated = copy.deepcopy(dashboard)
+                mutate(mutated)
+                with self.assertRaises(AssertionError):
+                    self._assert_exact_json_antigravity(mutated, expected)
+
     def test_dashboard_rejects_inconsistent_result_and_nested_mutation_antigravity(self) -> None:
         """Break caught: dashboard accepts semantically inconsistent result objects."""
         from experiments.exp460_ecg_strict_fallback_antigravity.dashboard_export_antigravity import (
@@ -98,6 +83,22 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         object.__setattr__(mutated, "joint_success", True)
         with self.assertRaises(ValueError):
             export_dashboard_antigravity(authority, mutated)
+
+    def _assert_exact_json_antigravity(self, actual: object, expected: object) -> None:
+        self.assertIs(type(actual), type(expected))
+        if type(expected) is dict:
+            self.assertEqual(set(actual), set(expected))
+            for key in expected:
+                self._assert_exact_json_antigravity(actual[key], expected[key])  # type: ignore[index]
+            return
+        if type(expected) is list:
+            self.assertEqual(len(actual), len(expected))  # type: ignore[arg-type]
+            for actual_item, expected_item in zip(actual, expected, strict=True):  # type: ignore[arg-type]
+                self._assert_exact_json_antigravity(actual_item, expected_item)
+            return
+        if type(expected) is float:
+            self.assertTrue(math.isfinite(actual))  # type: ignore[arg-type]
+        self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":

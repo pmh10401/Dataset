@@ -93,6 +93,44 @@ class ReplayAntigravityTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     inspect_replay_at_antigravity(root, authority_antigravity())
 
+    def test_rejects_rehashed_whitespace_and_key_order_mutations_antigravity(self) -> None:
+        """Break caught: serializer and replay drift together so noncanonical whitespace or key order still pass."""
+        from experiments.exp460_ecg_strict_fallback_antigravity.artifacts_antigravity import (
+            publish_result_antigravity,
+        )
+        from experiments.exp460_ecg_strict_fallback_antigravity.replay_antigravity import (
+            inspect_replay_at_antigravity,
+        )
+
+        mutations = (
+            lambda root: self._rewrite_json_with_whitespace_antigravity(root, "context_antigravity.json"),
+            lambda root: self._rewrite_json_with_key_order_antigravity(
+                root,
+                "decision_antigravity.json",
+                (
+                    "worst_period_change_auc",
+                    "strict_status",
+                    "strict_route",
+                    "passed_record_count",
+                    "joint_success",
+                    "all_records_passed",
+                ),
+            ),
+            lambda root: self._rewrite_first_jsonl_row_with_key_order_antigravity(
+                root,
+                "rule_comparisons_antigravity.jsonl",
+                ("tp", "tn", "rule", "route", "fp", "fn", "f1"),
+            ),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "artifact_root_antigravity"
+                publish_result_antigravity(root, authority_antigravity(), result_antigravity())
+                mutate(root)
+                rehash_antigravity(root)
+                with self.assertRaises(ValueError):
+                    inspect_replay_at_antigravity(root, authority_antigravity())
+
     def test_rejects_rehashed_semantic_tamper_across_result_leaves_antigravity(self) -> None:
         """Break caught: replay accepts rehashed route, confusion, F1, status, failed-fold, dashboard, or map tamper."""
         from experiments.exp460_ecg_strict_fallback_antigravity.artifacts_antigravity import (
@@ -181,6 +219,53 @@ class ReplayAntigravityTest(unittest.TestCase):
         rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
         mutate(rows)
         path.write_bytes(b"".join(canonical_antigravity(row) for row in rows))
+
+    @staticmethod
+    def _rewrite_json_with_whitespace_antigravity(root: Path, name: str) -> None:
+        path = root / name
+        value = json.loads(path.read_text(encoding="utf-8"))
+        path.write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _rewrite_json_with_key_order_antigravity(
+        root: Path,
+        name: str,
+        key_order: tuple[str, ...],
+    ) -> None:
+        path = root / name
+        value = json.loads(path.read_text(encoding="utf-8"))
+        path.write_text(
+            "{"
+            + ", ".join(
+                f"{json.dumps(key, ensure_ascii=False)}: {json.dumps(value[key], ensure_ascii=False)}"
+                for key in key_order
+            )
+            + "}\n",
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _rewrite_first_jsonl_row_with_key_order_antigravity(
+        root: Path,
+        name: str,
+        key_order: tuple[str, ...],
+    ) -> None:
+        path = root / name
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        first = rows[0]
+        first_line = (
+            "{"
+            + ", ".join(
+                f"{json.dumps(key, ensure_ascii=False)}: {json.dumps(first[key], ensure_ascii=False)}"
+                for key in key_order
+            )
+            + "}\n"
+        ).encode("utf-8")
+        remaining = b"".join(canonical_antigravity(row) for row in rows[1:])
+        path.write_bytes(first_line + remaining)
 
 
 if __name__ == "__main__":
