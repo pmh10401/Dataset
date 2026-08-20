@@ -164,7 +164,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp462 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp462 Task 4 코드맵</h1><p>Task 4 is implemented pending external review and maps governance, frozen Task 2 authority/source, Task 3 scoring, qualification/evaluation, seven-leaf publication, source-free replay, dashboard projection, and focused tests. Task 5 remains explicitly unknown and not implemented.</p>'
+        '<h1>Exp462 Task 4 코드맵</h1><p>Task 4 is complete after independent review C/I/M 0 and maps governance, frozen Task 2 authority/source, Task 3 scoring, qualification/evaluation, seven-leaf publication, source-free replay, dashboard projection, and focused tests. Task 5 remains explicitly unknown and not implemented.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -286,9 +286,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records Task 4 implemented pending external review / Task 5 next, checked Task 1-3 controls, official0/label0, and the unchecked Task 4 boundary.",
+            "role": "Caller: Task 1-6 execution. Effect: records Task 4 complete / Task 5 next after independent review C/I/M 0, checked Task 1-4 controls, official0/label0, and the unchecked Task 5-6 boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 4 implemented pending external review / Task 5 next")],
+            "evidence": [evidence_antigravity(plan, "Task 4 complete / Task 5 next")],
         },
         {
             "id": "preregistration",
@@ -307,16 +307,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 4 handoff. Effect: records frozen authority, Task 3 feature/scoring interfaces, Task 4 qualification/replay/publication interfaces, null official hashes, official0/label0, and pending review.",
+            "role": "Caller: Task 4 handoff. Effect: records frozen authority, Task 3 feature/scoring interfaces, Task 4 qualification/replay/publication interfaces, null official hashes, official0/label0, and independent review C/I/M 0 closeout.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 4 implementation")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 4 implemented pending external review / Task 5 next, public interfaces, selected CPU backend, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 4 complete / Task 5 next after independent review C/I/M 0, public interfaces, selected CPU backend, official0, label0, and null hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 4 implemented pending external review / Task 5 next")],
+            "evidence": [evidence_antigravity(dashboard, "Task 4 complete / Task 5 next")],
         },
         {
             "id": "research_state",
@@ -370,7 +370,7 @@ def build_map_antigravity(
         {
             "id": "task4_report",
             "path": task4_report,
-            "role": "Caller: Task 4 review. Effect: records TDD evidence, seven-leaf/replay boundary, lifecycle guards, and pending external review without checking Task 4 controls.",
+            "role": "Caller: Task 4 review. Effect: records TDD evidence, seven-leaf/replay boundary, lifecycle guards, independent review C/I/M 0, and checked Task 4 controls while leaving Task 5-6 unchecked.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(task4_report, "Exp462 Task 4 report")],
         },
@@ -540,7 +540,7 @@ def build_map_antigravity(
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "gradual_drift AUC ≥ 0.85")},
         {"from": "approved_design", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "0.9216148584075248")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 4 implemented pending external review / Task 5 next")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 4 complete / Task 5 next")},
         {"from": "implementation_plan", "to": "governance_regression", "type": "governs", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
