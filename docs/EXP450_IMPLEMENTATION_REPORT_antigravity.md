@@ -8,7 +8,7 @@
 
 ## 검증
 
-- Exp450 bounded test discovery: 86 tests passed (the full discovery was rerun after the PNG-label regression).
+- Exp450 bounded test discovery: 86 tests passed (139.056s; rerun after the PNG-label regression).
 - Public baseline test discovery: 91 tests passed (6.413s).
 - Task 8 회귀 테스트는 report 축/열 방법, scorer·label-free `status`/`verify`, root 부재, progress schema, evaluate gate를 검사한다.
 - `generate_exp450_codemap_antigravity.py --check`, `py_compile`, `git diff --check`가 통과했다.
