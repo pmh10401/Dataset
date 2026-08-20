@@ -51,17 +51,17 @@
     <h3>인터페이스</h3>
     <p>Produces: Exp461 planned/non-promoted truth, label count 0, 공식 명령 0회, Task 2가 읽을 설계·문서 SHA, 최대 25-node code map.</p>
     <ol>
-      <li><label><input type="checkbox" disabled>Step 1 — governance RED 테스트에 HTML 4개, Exp461 ledger 레코드, 대시보드 상태 <code>Task 1/6</code>, 결과 hash null, Task 1 체크박스를 명시한다.</label>
+      <li><label><input type="checkbox" checked disabled>Step 1 — governance RED 테스트에 HTML 4개, Exp461 ledger 레코드, 대시보드 상태 <code>Task 1/6</code>, 결과 hash null, Task 1 체크박스를 명시한다.</label>
         <pre><code>def test_task1_governance_antigravity(self):
     self.assertEqual(state["status"], "planned_implementation_not_started")
     self.assertEqual(state["label_query_count"], 0)
     self.assertIsNone(state["artifact_map_sha256"])
     self.assertIn("Task 1/6", dashboard_html)</code></pre></li>
-      <li><label><input type="checkbox" disabled>Step 2 — 고정 Python으로 테스트를 실행해 누락 문서·레코드 실패를 확인한다.</label>
+      <li><label><input type="checkbox" checked disabled>Step 2 — 고정 Python으로 테스트를 실행해 누락 문서·레코드 실패를 확인한다.</label>
         <pre><code>"$PY" -m unittest experiments.exp461_ecg_period_signature_qualification_antigravity.tests.test_governance_antigravity</code></pre></li>
-      <li><label><input type="checkbox" disabled>Step 3 — 쉬운 한국어 HTML 4개, planned ledger, code map builder/triplet을 작성한다. Dashboard에는 목표, 현재 Task, 기존 실패 2건, 공식 실행 0회를 표시한다.</label></li>
-      <li><label><input type="checkbox" disabled>Step 4 — governance를 두 번 실행하고 strict JSON, HTML parse, map validate, <code>git diff --check</code>를 통과시킨다.</label></li>
-      <li><label><input type="checkbox" disabled>Step 5 — fresh read-only review에서 Critical/Important 0을 확인하고 Task 1 heading/steps를 체크한 뒤 governance+map commit을 만든다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 3 — 쉬운 한국어 HTML 4개, planned ledger, code map builder/triplet을 작성한다. Dashboard에는 목표, 현재 Task, 기존 실패 2건, 공식 실행 0회를 표시한다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 4 — governance를 두 번 실행하고 strict JSON, HTML parse, map validate, <code>git diff --check</code>를 통과시킨다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 5 — fresh read-only review에서 Critical/Important 0을 확인하고 Task 1 heading은 외부 review 전까지 체크하지 않은 채로 governance+map commit을 만든다.</label></li>
     </ol>
   </section>
 

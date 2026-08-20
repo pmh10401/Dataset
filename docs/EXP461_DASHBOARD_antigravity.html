@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp461 ECG 주기 특징 검증 대시보드</h1>
+  <table>
+    <tr><th>progress</th><td>Task 1/6</td></tr>
+    <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
+    <tr><th>goal</th><td>Exp460에서 실패한 두 <code>period_change</code> fold를 포함해 주기 특징과 결합 방법의 qualification 실험 경계를 고정한다.</td></tr>
+    <tr><th>current task</th><td>문서, ledger, dashboard, code map만 만드는 governance 단계</td></tr>
+    <tr><th>공식 실행 0회</th><td>official evaluate 0 / official inspect 0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>artifact map SHA-256</th><td><code>null</code></td></tr>
+    <tr><th>result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
+    <tr><th>planned methods</th><td><code>hydra_local_gap</code>, <code>period_signature_local_gap</code>, <code>hydra_period_rank_max</code></td></tr>
+  </table>
+  <div class="box">
+    <p><strong>왜 Exp461이 필요한가:</strong> Exp460 strict fallback은 TRAIN-only 경계는 지켰지만 period_change 2건이 기준을 넘지 못했다.</p>
+    <p><strong>prior failure 1:</strong> seed <code>20260721</code> fold <code>3</code> period_change AUC <code>0.8208339620743423</code></p>
+    <p><strong>prior failure 2:</strong> seed <code>20261721</code> fold <code>4</code> period_change AUC <code>0.8004124541019063</code></p>
+    <p><strong>current truth:</strong> 아직 어떤 과학 결과도 생성하지 않았다. planned_implementation_not_started 상태로 문서와 code map만 준비됐다.</p>
+  </div>
+  <h2>Frozen comparison boundary</h2>
+  <table>
+    <thead><tr><th>method</th><th>role</th><th>official result</th></tr></thead>
+    <tbody>
+      <tr><td><code>hydra_local_gap</code></td><td>Exp460 기준선 재비교</td><td>아직 없음</td></tr>
+      <tr><td><code>period_signature_local_gap</code></td><td>주기 특징 단독 진단</td><td>아직 없음</td></tr>
+      <tr><td><code>hydra_period_rank_max</code></td><td>주 후보 결합 방법</td><td>아직 없음</td></tr>
+    </tbody>
+  </table>
+</main></body></html>
