@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp463 prefix ramp gated qualification 구현 계획</title>
+<style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}section{border-top:2px solid #d5dbe3;padding-top:1rem;margin-top:2rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}pre{padding:1rem}label{display:block}input{margin-right:.45rem}.stop{border-left:6px solid #b42318;padding:1rem;background:#fff4f2}</style></head><body><main>
+<h1>Exp463 앞부분 기준 경사·보수적 결합 구현 계획</h1>
+<blockquote><strong>Agent 실행 규칙:</strong> 구현자는 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용해 Task별로 진행한다. 완료된 Task와 Step만 검토 후 체크한다.</blockquote>
+<table>
+<tr><th>Goal</th><td>Exp461의 period 성능을 보존하면서, 뒤쪽 상승이 매우 확실할 때만 새 1차원 ramp 점수를 적용해 gradual 성능을 개선한다.</td></tr>
+<tr><th>Architecture</th><td>Exp462 구조를 통제된 복사로 사용하되 24D LocalGap 주 후보를 prefix-scaled 1D ramp와 <code>0.995</code> gated max로 교체한다. M0–M6을 같은 blocked folds에서 계산하고, M2만 사전 등록된 합격선으로 판정한다.</td></tr>
+<tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, 기존 aeon/Hydra CPU 경로, unittest, canonical JSON/JSONL, HTML.</td></tr>
+<tr><th>Spec</th><td><a href="../specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html">승인된 Exp463 설계서</a> — SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
+<tr><th>Current status</th><td><code>design_approved_plan_written_awaiting_execution_choice</code>. 구현·private TRAIN·공식 실행·TEST label query는 모두 0회다.</td></tr>
+</table>
+
+<h2>Global constraints</h2>
+<ul>
+<li>실험 ID <code>Exp463</code>, kind <code>ecg_prefix_ramp_gated_qualification</code>, run identity <code>exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821</code>.</li>
+<li>공식 root는 <code>/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821</code>이며 Task 6 별도 승인 전까지 없어야 한다.</li>
+<li>전임 권위는 Exp462 terminal commit <code>040422f62406e3ca19038b9609903c4ba76e1694</code>와 그 고정 TRAIN 결과다.</li>
+<li>데이터는 <code>ECG5000_normal_2</code> TRAIN <code>1413×140</code>, seeds <code>20260721, 20261721</code>, 시간 순서 blocked folds 5개다.</li>
+<li>주 후보는 M2 <code>hydra_period_ramp_gated_max</code> 하나다. onset <code>56</code>, alpha <code>0.005</code>, gate <code>0.995</code>를 결과 확인 후 바꾸지 않는다.</li>
+<li>TEST label, TEST FN/FP/F1, 라우팅 적용, champion/pending 변경은 금지한다.</li>
+<li>새 파일명에는 <code>antigravity</code>가 포함되어야 하며 새 <code>__init__.py</code>를 만들지 않는다. 사용자 문서와 Task 보고서는 HTML로 작성한다.</li>
+<li>새 score-source 전체 실행 전 CPU와 MLX를 같은 입력·seed로 비교한다. finite·순서·수치 parity와 1.1배 속도를 모두 만족하지 않으면 CPU를 쓴다. 패키지는 설치하지 않는다.</li>
+<li>코드 변경 전 Exp463 code map의 callers/effects/tests를 확인한다. 경계 변경 시 HTML/JSON/lock을 함께 갱신한다.</li>
+</ul>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 1 — governance, dashboard, code map</label></h2>
+<p><strong>Files:</strong> Create <code>docs/EXP463_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP463_RUNBOOK_antigravity.html</code>, <code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp463_antigravity.py</code>, <code>docs/codemap/codemap_exp463_antigravity.{html,json,lock}</code>. Modify <code>docs/EXP463_DASHBOARD_antigravity.html</code>, three ledgers, and this plan.</p>
+<p><strong>Produces:</strong> 승인된 설계 SHA, planned ledger record, 쉬운 한국어 dashboard, 이후 Task 경계를 unknown으로 표시한 map.</p>
+<ol>
+<li><label><input type="checkbox" disabled>Step 1 — RED: 문서·ledger·map 부재와 공식0/label0/null result를 검사한다.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
+self.assertEqual(record["label_query_count"], 0)
+self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
+<li><label><input type="checkbox" disabled>Step 2 — governance 단독 테스트를 실행해 예상 부재 실패를 남긴다.</label><pre><code>"$PY" -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_governance_antigravity</code></pre></li>
+<li><label><input type="checkbox" disabled>Step 3 — preregistration/runbook/report와 세 ledger를 작성한다. M0–M6, M2 유일 주 후보, 고정 합격선과 실패 시 중단을 그대로 기록한다.</label></li>
+<li><label><input type="checkbox" disabled>Step 4 — 실제 문서/ledger와 future Task2–5 노드를 구분하는 Exp463 map builder와 triplet을 만든다.</label></li>
+<li><label><input type="checkbox" disabled>Step 5 — GREEN 두 번, HTML parse, strict JSON, map validate, root 부재, pending/champion 불변을 확인한다.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — 기능 커밋과 map-only child를 만들고 fresh review C/I0 뒤 Task 1 체크박스를 닫는다.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 2 — frozen Exp462 authority and TRAIN source</label></h2>
+<p><strong>Files:</strong> Create <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code> and four matching tests under <code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/</code>. Modify dashboard/report/plan/map.</p>
+<p><strong>Produces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>capture_exp462_authority_antigravity()</code>, <code>load_normal2_train_antigravity()</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled>Step 1 — RED exact identity/data/seeds/folds/M0–M6/gates, immutable contracts, Exp462 30 rows/3 summaries/7 leaves, source shape·dtype·finite·read-only, label0.</label></li>
+<li><label><input type="checkbox" disabled>Step 2 — focused tests를 실행해 missing-module 실패를 확인한다.</label><pre><code>"$PY" -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_config_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_contracts_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_sources_antigravity</code></pre></li>
+<li><label><input type="checkbox" disabled>Step 3 — Exp462 대응 모듈을 통제된 복사하고 Exp463 정체성, M0–M6, 0.995 gate만 바꾼다.</label></li>
+<li><label><input type="checkbox" disabled>Step 4 — 전임 결과의 고정 aggregate와 TRAIN loader를 연결한다. TEST 테이블이나 label SQL은 import하지 않는다.</label></li>
+<li><label><input type="checkbox" disabled>Step 5 — focused 두 번, Task1 regression, read-only TRAIN source smoke 한 번, compile/map/diff/root/label 검증.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — dashboard/report/map 갱신, 커밋, fresh review C/I0 후 Task 2 체크.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 3 — prefix-scaled ramp and seven method scores</label></h2>
+<p><strong>Files:</strong> Create <code>ramp_features_antigravity.py</code>, <code>scoring_antigravity.py</code> and matching tests. Modify dashboard/report/plan/map.</p>
+<p><strong>Produces:</strong> <code>prefix_ramp_score_antigravity(values: numpy.ndarray) -&gt; float</code> and <code>score_fold_methods_antigravity(...) -&gt; FoldMethodScoresAntigravity</code> with ordered M0–M6 scores.</p>
+<ol>
+<li><label><input type="checkbox" disabled>Step 1 — RED independent NumPy reference for prefix median/MAD, onset 56, normalized ramp vector, signed dot product, exact rank formula and 0.995 boundary.</label><pre><code>expected_rank = (1 + numpy.count_nonzero(reference &lt;= score)) / (len(reference) + 1)
+expected = numpy.maximum(r461, rramp) if rramp &gt;= 0.995 else r461</code></pre></li>
+<li><label><input type="checkbox" disabled>Step 2 — RED M0–M6 exact order and semantics: M2 gated max, M3 always max, M4 template residual, M5 whole-series normalization, M6 Exp462 replay control.</label></li>
+<li><label><input type="checkbox" disabled>Step 3 — 최소 deterministic feature/scoring 구현. LocalGap은 M6 대조군에만 남기고 M1/M2/M3/M4/M5에는 사용하지 않는다.</label></li>
+<li><label><input type="checkbox" disabled>Step 4 — focused 두 번과 Task2 regression; 입력 불변, finite, 동일 seed 동일 결과를 확인한다.</label></li>
+<li><label><input type="checkbox" disabled>Step 5 — bounded CPU-vs-MLX smoke를 한 번 실행해 parity·속도와 CPU fallback 이유를 기록한다.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — dashboard/report/map 갱신, 커밋, fresh result-focused review C/I0 후 Task 3 체크.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 4 — blocked qualification, publication, semantic replay</label></h2>
+<p><strong>Files:</strong> Create <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code> and five tests. Modify dashboard/report/plan/map.</p>
+<p><strong>Produces:</strong> 70 ordered metric rows (7 methods × 2 seeds × 5 folds), seven summaries, decision, aggregate dashboard, exact canonical publication and source-free replay.</p>
+<ol>
+<li><label><input type="checkbox" disabled>Step 1 — RED blocked qualification: four ordered AUCs, pooled mean, Wilson, finite, M0/M6 predecessor reproduction, M2 primary 10/10 and all frozen gates.</label></li>
+<li><label><input type="checkbox" disabled>Step 2 — 평가기가 stored score evidence에서 metrics/summaries/decision을 다시 계산하도록 구현한다. 호출자가 넘긴 pass boolean은 신뢰하지 않는다.</label></li>
+<li><label><input type="checkbox" disabled>Step 3 — RED→GREEN canonical leaves: context, method_fold_metrics, failed_folds, method_summary, decision, dashboard_snapshot, self-excluding artifact_sha256.</label></li>
+<li><label><input type="checkbox" disabled>Step 4 — replay가 M0–M6 점수, 70 rows, seven summaries, M2 gates, decision/dashboard를 재계산하도록 한다. 자체 재해시된 score/metric/decision tamper도 거부한다.</label></li>
+<li><label><input type="checkbox" disabled>Step 5 — focused 두 번, Tasks2–3 regression, temp publish→inspect equality, compile/map/html/root/label 검증.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — dashboard/report/map 갱신, 커밋, fresh review C/I0 후 Task 4 체크.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 5 — closed CLI and two private TRAIN reproductions</label></h2>
+<p><strong>Files:</strong> Create <code>cli_antigravity.py</code>, <code>tests/test_cli_antigravity.py</code>, <code>scratch/run_exp463_ecg_prefix_ramp_gated_qualification_antigravity.py</code>. Modify HTML docs, ledgers, plan and map.</p>
+<p><strong>CLI:</strong> exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled>Step 1 — RED parser/lazy import/outside-CWD launcher/TEST-label firewall; 최소 CLI 구현 후 focused 두 번 GREEN.</label></li>
+<li><label><input type="checkbox" disabled>Step 2 — clean commit, fixed interpreter, 공식 root 부재를 확인하고 private temp root 1에서 TRAIN evaluate→inspect 한 번.</label></li>
+<li><label><input type="checkbox" disabled>Step 3 — run1 종료 후 temp root 2에서 한 번. 70 rows, seven summaries, decision/dashboard, 모든 leaf bytes/hashes exact 비교.</label></li>
+<li><label><input type="checkbox" disabled>Step 4 — Exp463 discovery 두 번, Exp462 scientific regression 한 번, map/html/diff/root/label 검증.</label></li>
+<li><label><input type="checkbox" disabled>Step 5 — M0/M6 재현과 M2 모든 합격선이 통과하면 <code>implementation_verified_awaiting_official_evaluation</code>; 하나라도 실패하면 <code>stopped_before_official_evaluation_qualification_failed</code>로 기록하고 Task6 금지.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — Grok read-only 결과 검토와 Codex 최종 판단 후 truth/dashboard/map 커밋. 통과한 경우에도 Task6는 시작하지 않는다.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 6 — separately approved official result preservation</label></h2>
+<p>Task5가 모든 과학 기준을 통과하고 사용자가 별도로 승인한 경우에만 실행한다.</p>
+<ol>
+<li><label><input type="checkbox" disabled>Step 1 — exact clean reviewed commit, 공식 root 부재, label0, 중복 실행 없음 확인.</label></li>
+<li><label><input type="checkbox" disabled>Step 2 — official evaluate를 정확히 한 번 실행.</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+"$PY" scratch/run_exp463_ecg_prefix_ramp_gated_qualification_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre></li>
+<li><label><input type="checkbox" disabled>Step 3 — evaluate exit 0과 완전한 root가 있을 때만 bare inspect 한 번.</label><pre><code>"$PY" scratch/run_exp463_ecg_prefix_ramp_gated_qualification_antigravity.py inspect</code></pre></li>
+<li><label><input type="checkbox" disabled>Step 4 — leaf hashes, semantic replay, 70 rows, seven summaries, M2 gates, decision/dashboard equality, label0를 독립 검증.</label></li>
+<li><label><input type="checkbox" disabled>Step 5 — official truth/dashboard/ledgers/map 커밋. champion/pending/routing은 바꾸지 않는다.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — fresh read-only final review C/I0 뒤 Task6 체크박스를 닫고 결과 논의에서 멈춘다.</label></li>
+</ol>
+</section>
+
+<div class="stop"><strong>중단 규칙:</strong> private M2가 한 조건이라도 실패하면 공식 실행은 없다. M4나 M5가 좋아 보여도 Exp463의 주 후보로 바꾸지 않고 다음 실험 설계 근거로만 사용한다.</div>
+
+<h2>Execution choice</h2>
+<p><strong>Option 1 — Task별 서브에이전트 (recommended):</strong> Task마다 fresh implementer를 배정하고 독립 review 후 체크박스를 닫는다.</p>
+<p><strong>Option 2 — 현재 세션 직접 실행:</strong> 이 세션에서 Task를 순서대로 구현하고 각 경계에서 checkpoint를 제공한다.</p>
+</main></body></html>
