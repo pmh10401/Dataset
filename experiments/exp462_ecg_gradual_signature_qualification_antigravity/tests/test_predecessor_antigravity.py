@@ -13,7 +13,8 @@ class PredecessorAntigravityTest(unittest.TestCase):
 
         authority = capture_exp461_gradual_authority_antigravity()
         self.assertEqual(authority.predecessor_experiment, "Exp461")
-        self.assertEqual(authority.terminal_commit, "0340b6ee737da84777283668449738d0c1585566")
+        self.assertEqual(authority.reviewed_code_commit, "3a306ff3e276dae13b28b9733db30e9934da7eb2")
+        self.assertEqual(authority.terminal_closeout_commit, "0340b6ee737da84777283668449738d0c1585566")
         self.assertEqual(authority.artifact_map_sha256, "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be")
         self.assertEqual(authority.decision_sha256, "27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315")
         self.assertEqual(authority.dashboard_snapshot_sha256, "e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc")

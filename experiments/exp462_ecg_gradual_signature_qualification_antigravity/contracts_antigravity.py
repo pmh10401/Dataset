@@ -76,7 +76,8 @@ class Exp461HistoricalPeriodFoldAntigravity:
 @dataclass(frozen=True, slots=True)
 class Exp461GradualAuthorityAntigravity:
     predecessor_experiment: str
-    terminal_commit: str
+    reviewed_code_commit: str
+    terminal_closeout_commit: str
     artifact_map_sha256: str
     decision_sha256: str
     dashboard_snapshot_sha256: str
@@ -94,7 +95,8 @@ class Exp461GradualAuthorityAntigravity:
     def __post_init__(self) -> None:
         if type(self.predecessor_experiment) is not str:
             raise ValueError("predecessor_experiment must be str")
-        _sha40_antigravity(self.terminal_commit, "terminal_commit")
+        _sha40_antigravity(self.reviewed_code_commit, "reviewed_code_commit")
+        _sha40_antigravity(self.terminal_closeout_commit, "terminal_closeout_commit")
         _sha64_antigravity(self.artifact_map_sha256, "artifact_map_sha256")
         _sha64_antigravity(self.decision_sha256, "decision_sha256")
         _sha64_antigravity(self.dashboard_snapshot_sha256, "dashboard_snapshot_sha256")
@@ -124,7 +126,8 @@ class Exp461GradualAuthorityAntigravity:
             raise ValueError("label_query_count must remain zero")
         actual_snapshot = {
             "predecessor_experiment": _scalar_signature_antigravity(self.predecessor_experiment),
-            "terminal_commit": _scalar_signature_antigravity(self.terminal_commit),
+            "reviewed_code_commit": _scalar_signature_antigravity(self.reviewed_code_commit),
+            "terminal_closeout_commit": _scalar_signature_antigravity(self.terminal_closeout_commit),
             "artifact_map_sha256": _scalar_signature_antigravity(self.artifact_map_sha256),
             "decision_sha256": _scalar_signature_antigravity(self.decision_sha256),
             "dashboard_snapshot_sha256": _scalar_signature_antigravity(self.dashboard_snapshot_sha256),
@@ -154,7 +157,8 @@ class Exp461GradualAuthorityAntigravity:
         }
         frozen_snapshot = {
             "predecessor_experiment": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_experiment),
-            "terminal_commit": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_terminal_commit),
+            "reviewed_code_commit": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_reviewed_code_commit),
+            "terminal_closeout_commit": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_terminal_closeout_commit),
             "artifact_map_sha256": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_artifact_map_sha256),
             "decision_sha256": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_decision_sha256),
             "dashboard_snapshot_sha256": _scalar_signature_antigravity(FROZEN_CONFIG_ANTIGRAVITY.predecessor_dashboard_snapshot_sha256),

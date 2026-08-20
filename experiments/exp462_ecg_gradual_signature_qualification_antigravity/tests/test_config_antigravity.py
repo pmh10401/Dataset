@@ -50,7 +50,11 @@ class ConfigAntigravityTest(unittest.TestCase):
         self.assertEqual(config.period_change_auc_global_min, 0.907392736783864)
         self.assertEqual(config.predecessor_experiment, "Exp461")
         self.assertEqual(
-            config.predecessor_terminal_commit,
+            config.predecessor_reviewed_code_commit,
+            "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+        )
+        self.assertEqual(
+            config.predecessor_terminal_closeout_commit,
             "0340b6ee737da84777283668449738d0c1585566",
         )
         self.assertEqual(config.predecessor_passed_record_count, 9)
@@ -83,7 +87,8 @@ class ConfigAntigravityTest(unittest.TestCase):
             ("primary_candidate", "hydra_period_rank_max"),
             ("gradual_drift_auc_min", 0.8402306222021025),
             ("period_change_auc_global_min", 0.9073927367838639),
-            ("predecessor_terminal_commit", "3a306ff3e276dae13b28b9733db30e9934da7eb2"),
+            ("predecessor_reviewed_code_commit", "0340b6ee737da84777283668449738d0c1585566"),
+            ("predecessor_terminal_closeout_commit", "3a306ff3e276dae13b28b9733db30e9934da7eb2"),
             ("predecessor_passed_record_count", 10),
             ("label_query_count_must_remain", 1),
             ("official_command_invocations_must_remain", 1),

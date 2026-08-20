@@ -124,7 +124,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp462")
                 self.assertEqual(record["kind"], "ecg_gradual_signature_qualification")
                 self.assertEqual(record["status"], "planned_implementation_not_started")
-                self.assertEqual(record["implementation_status"], "task_1_complete_pending_task_2")
+                self.assertEqual(record["implementation_status"], "task_2_implemented_pending_review")
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -144,7 +144,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
                     record["predecessor"],
                     {
                         "experiment": "Exp461",
-                        "truth_commit": "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+                        "reviewed_code_commit": "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+                        "terminal_closeout_commit": "0340b6ee737da84777283668449738d0c1585566",
                         "artifact_map_sha256": (
                             "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be"
                         ),
@@ -228,6 +229,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertTrue(record["review_only"])
 
         self.assertEqual(state["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
+        self.assertEqual(state["active_phase"], "task_2_implemented_pending_review")
         self.assertEqual(champion["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["champion_status"], "no_new_champion_verified_in_current_loop")
 

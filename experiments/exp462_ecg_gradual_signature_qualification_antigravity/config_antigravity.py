@@ -41,7 +41,8 @@ class Exp462ConfigAntigravity:
     gradual_drift_auc_min: float
     period_change_auc_global_min: float
     predecessor_experiment: str
-    predecessor_terminal_commit: str
+    predecessor_reviewed_code_commit: str
+    predecessor_terminal_closeout_commit: str
     predecessor_artifact_map_sha256: str
     predecessor_decision_sha256: str
     predecessor_dashboard_snapshot_sha256: str
@@ -94,7 +95,8 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "gradual_drift_auc_min": 0.85,
         "period_change_auc_global_min": 0.907392736783864,
         "predecessor_experiment": "Exp461",
-        "predecessor_terminal_commit": "0340b6ee737da84777283668449738d0c1585566",
+        "predecessor_reviewed_code_commit": "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+        "predecessor_terminal_closeout_commit": "0340b6ee737da84777283668449738d0c1585566",
         "predecessor_artifact_map_sha256": "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
         "predecessor_decision_sha256": "27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315",
         "predecessor_dashboard_snapshot_sha256": "e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc",

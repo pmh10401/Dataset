@@ -307,7 +307,7 @@ def build_map_antigravity(
         {
             "id": "task2_config",
             "path": config,
-            "role": "Caller: Task 3 scoring and future qualification. Effect: freezes Exp462 identity, TRAIN shape, seeds, folds, method order, gates, Exp461 terminal commit, private hashes, official0, and label0.",
+            "role": "Caller: Task 3 scoring and future qualification. Effect: freezes Exp462 identity, TRAIN shape, seeds, folds, method order, gates, Exp461 reviewed code commit, Exp461 terminal closeout commit, private hashes, official0, and label0.",
             "tests": [config_test, governance_test],
             "evidence": [evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")],
         },
@@ -349,7 +349,7 @@ def build_map_antigravity(
         {
             "id": "task2_predecessor_tests",
             "path": predecessor_test,
-            "role": "Caller: Task 2 focused regression. Effect: covers exact Exp461 terminal commit, values, hashes, historical period folds, and source-free capture.",
+            "role": "Caller: Task 2 focused regression. Effect: covers exact Exp461 reviewed code and terminal closeout commits, values, hashes, historical period folds, and source-free capture.",
             "tests": [predecessor_test],
             "evidence": [evidence_antigravity(predecessor_test, "test_capture_returns_exact_frozen_exp461_authority_antigravity")],
         },

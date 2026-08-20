@@ -31,7 +31,8 @@ class ContractsAntigravityTest(unittest.TestCase):
             tuple(field.name for field in fields(Exp461GradualAuthorityAntigravity)),
             (
                 "predecessor_experiment",
-                "terminal_commit",
+                "reviewed_code_commit",
+                "terminal_closeout_commit",
                 "artifact_map_sha256",
                 "decision_sha256",
                 "dashboard_snapshot_sha256",
@@ -69,7 +70,10 @@ class ContractsAntigravityTest(unittest.TestCase):
         self.assertIs(type(validate_exp461_gradual_authority_antigravity(authority)), type(authority))
         mutations = []
         mutated = _clone_antigravity(authority)
-        object.__setattr__(mutated, "terminal_commit", "3a306ff3e276dae13b28b9733db30e9934da7eb2")
+        object.__setattr__(mutated, "reviewed_code_commit", "0340b6ee737da84777283668449738d0c1585566")
+        mutations.append(mutated)
+        mutated = _clone_antigravity(authority)
+        object.__setattr__(mutated, "terminal_closeout_commit", "3a306ff3e276dae13b28b9733db30e9934da7eb2")
         mutations.append(mutated)
         mutated = _clone_antigravity(authority)
         object.__setattr__(mutated, "label_query_count", True)

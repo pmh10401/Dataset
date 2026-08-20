@@ -12,11 +12,12 @@ from .contracts_antigravity import (
 
 
 def capture_exp461_gradual_authority_antigravity() -> Exp461GradualAuthorityAntigravity:
-    """Return the exact frozen Exp461 terminal snapshot consumed by Exp462."""
+    """Return the exact frozen Exp461 code and closeout provenance consumed by Exp462."""
 
     authority = Exp461GradualAuthorityAntigravity(
         predecessor_experiment=FROZEN_CONFIG_ANTIGRAVITY.predecessor_experiment,
-        terminal_commit=FROZEN_CONFIG_ANTIGRAVITY.predecessor_terminal_commit,
+        reviewed_code_commit=FROZEN_CONFIG_ANTIGRAVITY.predecessor_reviewed_code_commit,
+        terminal_closeout_commit=FROZEN_CONFIG_ANTIGRAVITY.predecessor_terminal_closeout_commit,
         artifact_map_sha256=FROZEN_CONFIG_ANTIGRAVITY.predecessor_artifact_map_sha256,
         decision_sha256=FROZEN_CONFIG_ANTIGRAVITY.predecessor_decision_sha256,
         dashboard_snapshot_sha256=FROZEN_CONFIG_ANTIGRAVITY.predecessor_dashboard_snapshot_sha256,
