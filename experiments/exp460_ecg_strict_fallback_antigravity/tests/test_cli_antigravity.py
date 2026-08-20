@@ -177,6 +177,9 @@ class CliAntigravityTest(unittest.TestCase):
             cli_antigravity as cli,
         )
 
+        official_root_existed_before_antigravity = (
+            _OFFICIAL_ROOT_ANTIGRAVITY.exists()
+        )
         alias = (
             _OFFICIAL_ROOT_ANTIGRAVITY.parent
             / ".."
@@ -226,7 +229,10 @@ class CliAntigravityTest(unittest.TestCase):
             ),
         ):
             cli.main_antigravity(["inspect"])
-        self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
+        self.assertEqual(
+            _OFFICIAL_ROOT_ANTIGRAVITY.exists(),
+            official_root_existed_before_antigravity,
+        )
 
     def test_private_evaluate_then_inspect_returns_exact_payload_and_six_leaves_antigravity(
         self,

@@ -129,16 +129,17 @@ $PY scratch/run_exp460_ecg_strict_fallback_antigravity.py evaluate --reviewed-co
 $PY scratch/run_exp460_ecg_strict_fallback_antigravity.py inspect</code></pre>
 
   <h2>Task 6 — 별도 승인 후 공식 결과 보존</h2>
-  <p><strong>승인 전 상태:</strong> 공식 evaluate 0회, inspect 0회. Task 5 final review가 통과해도 자동 실행하지 않는다.</p>
+  <p><strong>공식 결과:</strong> reviewed commit <code>ca51813450f26b8a3fada6f39cf810452467297e</code>에서 공식 evaluate와 inspect를 각각 정확히 한 번 실행했고 둘 다 exit 0이었다. 결과는 strict baseline 복귀와 성능 미개선이다.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — 사용자가 Exp460 Task 6 공식 실행을 명시적으로 승인했는지 확인한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — 승인된 clean commit에서 evaluate를 정확히 한 번 실행한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — evaluate 성공 시 inspect를 정확히 한 번 실행한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — 6개 파일, 네 비교, 두 실패 fold, 엄격 baseline route, dashboard equality를 독립 검증한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — 공식 결론과 hash를 HTML dashboard/report, ledger, map에 기록한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — Task 6 체크박스를 갱신하고 truth commit과 map commit을 만든다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 사용자가 Exp460 Task 6 공식 실행을 명시적으로 승인했는지 확인한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — 승인된 clean commit에서 evaluate를 정확히 한 번 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — evaluate 성공 시 inspect를 정확히 한 번 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — 6개 파일, 네 비교, 두 실패 fold, 엄격 baseline route, dashboard equality를 독립 검증한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — 공식 결론과 hash를 HTML dashboard/report, ledger, map에 기록한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — Task 6 체크박스를 갱신하고 truth commit과 map commit을 만든다.</label></li>
     <li><label><input type="checkbox" disabled>Step 7 — fresh read-only result review에서 Critical/Important 0인지 확인한다.</label></li>
   </ul>
+  <p><strong>검토 상태:</strong> 로컬 Grok read-only 검토는 HTTP 402 usage balance exhausted로 시작하지 못했다. 결과 finding은 없으며 controller fresh review가 남아 있으므로 Step 7과 Task 6 heading은 아직 체크하지 않는다.</p>
 
   <h2>완료 판단</h2>
   <p>Exp460의 가장 중요한 결과는 “엄격 복귀가 불안정한 후보를 막았는가?”와 “그 상태에서도 FN 개선이 남았는가?” 두 가지다. 예상대로 baseline으로 돌아가 FN이 837이 되면 규칙은 안전하게 작동했지만 성능 목표는 달성하지 못한 것이다. 이 경우 다음 실험은 임계값을 느슨하게 바꾸는 것이 아니라 <code>period_change</code>에 강한 새 특징을 검증한다.</p>
