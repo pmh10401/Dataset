@@ -1,16 +1,38 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
 <body><main>
   <h1>Exp460 실행 가이드</h1>
-  <p><strong>상태:</strong> <code>governance_complete_implementation_not_started</code>. Task 1 creates governance only. Official evaluate/inspect counts are 0/0 and no official root exists.</p>
-  <h2>Task 1 operating boundary</h2>
+  <p><strong>상태:</strong> <code>implementation_verified_awaiting_official_evaluation</code>. Task 5 implementation and private reproduction are complete; official evaluate/inspect counts 0/0, label query count 0, result hashes null, and the official root remains absent.</p>
+  <h2>Task 5 operating boundary</h2>
   <table>
-    <tr><th>allowed</th><td>HTML governance docs, planned ledger entries, Exp460-only code map, governance tests, Task 1 plan checkbox updates</td></tr>
-    <tr><th>forbidden</th><td>scientific modules, official command, official result root, new TRAIN calculation, new seed, new threshold, TEST-label access, promotion, routing change</td></tr>
-    <tr><th>frozen rule order</th><td><code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code></td></tr>
-    <tr><th>official decision</th><td>Only <code>strict_10_of_10</code> can decide the official route, and any one failed Exp459 fold record forces strict route <code>baseline</code></td></tr>
-    <tr><th>frozen predecessor truth</th><td>Exp459 official outcome remains unstable because seed 20260721 fold 3 period_change AUC 0.8208339620743423 and seed 20261721 fold 4 period_change AUC 0.8004124541019063 fail the 0.85 threshold</td></tr>
-    <tr><th>status counters</th><td>Task 1/6, official evaluate/inspect counts 0/0, label query count 0, result and artifact hashes <code>null</code></td></tr>
+    <tr><th>CLI surface</th><td>exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and <code>bare inspect</code></td></tr>
+    <tr><th>fixed runtime</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></td></tr>
+    <tr><th>future official root</th><td><code>/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820</code>; currently absent</td></tr>
+    <tr><th>evaluate sequence</th><td>Task 2 authority capture → Task 3 four-rule evaluation → Task 4 six-leaf publication → Task 4 semantic replay → Task 4 dashboard payload</td></tr>
+    <tr><th>inspect sequence</th><td>Task 2 authority capture → Task 4 replay of the existing root → Task 4 dashboard payload</td></tr>
+    <tr><th>private evidence</th><td>2 sequential non-official roots; payload exact-equal, all 6 leaf hashes exact-equal, roots cleaned</td></tr>
+    <tr><th>forbidden before Task 6</th><td>official command execution, official root creation, new/resume/retry/override, root override, TRAIN recomputation, new seed/threshold, TEST labels, champion/pending change</td></tr>
   </table>
-  <p>Expected metrics may be shown only as design expectation only text. They must never be presented as observed Exp460 results before later tasks execute.</p>
+  <h2>Task 6 command forms — documentation only</h2>
+  <p>Do not run either command until the user gives <strong>separate approval</strong> for Task 6 and supplies the clean reviewed commit.</p>
+  <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY scratch/run_exp460_ecg_strict_fallback_antigravity.py evaluate --reviewed-commit LOWER40HEX
+$PY scratch/run_exp460_ecg_strict_fallback_antigravity.py inspect</code></pre>
+  <h2>Expected frozen-authority outcome</h2>
+  <table>
+    <tr><th>records</th><td>8/10 pass; two failures</td></tr>
+    <tr><th>failed folds</th><td>seed 20260721 fold 3 AUC 0.8208339620743423; seed 20261721 fold 4 AUC 0.8004124541019063</td></tr>
+    <tr><th>worst AUC</th><td>0.8004124541019063</td></tr>
+    <tr><th>majority route</th><td>candidate</td></tr>
+    <tr><th>strict route</th><td>baseline</td></tr>
+    <tr><th>status</th><td><code>fallback_triggered_performance_not_improved</code>; joint success false</td></tr>
+  </table>
+  <h2>Pre-Task 6 checklist</h2>
+  <ul>
+    <li>Confirm Task 6 has explicit separate approval.</li>
+    <li>Confirm the reviewed commit is the exact clean current commit.</li>
+    <li>Confirm the official root does not exist.</li>
+    <li>Run evaluate exactly once; only after success run inspect exactly once.</li>
+    <li>Preserve official evaluate/inspect counts, hashes, and label count as official truth only after those commands finish.</li>
+  </ul>
 </main></body></html>

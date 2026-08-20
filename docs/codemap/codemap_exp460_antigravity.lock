@@ -1,21 +1,21 @@
 {
-  "schema": "exp460_task4_strict_fallback_codemap_lock_v1",
-  "generated_at": "2026-08-20T00:43:56Z",
-  "source_parent_commit": "7cd039574d10c65c5891bf14b813cde981f39bc2",
+  "schema": "exp460_task5_strict_fallback_codemap_lock_v1",
+  "generated_at": "2026-08-20T01:06:29Z",
+  "source_parent_commit": "c5c7346eef297d037901e8c88c125ff92acabb2f",
   "represented_paths": [
     "docs/codemap/codemap_exp460_antigravity.html",
     "docs/codemap/codemap_exp460_antigravity.json",
     "docs/codemap/codemap_exp460_antigravity.lock"
   ],
   "tracked_fingerprints": {
-    "CHAMPION_LEDGER.json": "88124777e4bc19740d1045ec182a7f5fe0ac13db98b23c680ec99c1692de0b2e",
-    "EXPERIMENT_CATALOG.json": "6dc65d0a25cc6b6fe2c6f0288b308ce9eba326e47e96a2a96a84658c4dcfa21f",
-    "RESEARCH_STATE.json": "e3e456be10903db34fe6c760297afe76e79e72c88239fb9fbeccf6fb97f996e9",
-    "docs/EXP460_DASHBOARD_antigravity.html": "05cf0b2174c8cfc659dc4a53c42b35a9b05630a39d895c66dbac019c694cf2d7",
-    "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html": "716c1400a8ba979799397899410e710ea0cc336c797241f6ae00e1f7da7cb63d",
+    "CHAMPION_LEDGER.json": "6ae538d4e9b724de04d7ebc80944b779c17e07b02d05eeb2208914809746b849",
+    "EXPERIMENT_CATALOG.json": "ec5159acf9a4eae0d64ccbe3124ff904bbaae9119a6336530869e27970f2655f",
+    "RESEARCH_STATE.json": "d0e1cea8065f91069c9dd9c76bb33af5328d72b8bc6674b4c4563b21076597fc",
+    "docs/EXP460_DASHBOARD_antigravity.html": "1a93bea7fa354bb7fc464c1820677ed89f74b995e57f37e5ddbcde9e5199f77a",
+    "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html": "62c30b6b006844f11696211ecb822683f415c620404c506f408a39619dd9bccd",
     "docs/EXP460_PREREGISTRATION_antigravity.html": "8faf9070ee48aea1f4ff1e926c64c1ad197a5a67567aeabdf4150001780d8f5e",
-    "docs/EXP460_RUNBOOK_antigravity.html": "91c9a7716626b5d8c4daa81fb17694960b6bd3ac762d085426579980d9f21c65",
-    "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html": "55ac540a154e50f96e1675a84b1be9714869ae72b8f79cd59767fe83f6169c99",
+    "docs/EXP460_RUNBOOK_antigravity.html": "12fecf6081c2b07ffaa2d56862bba5b72823ce5cfdd37c50be44ba332495688d",
+    "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html": "572cdcf8a4bb96c792be5b904e2b2f5ffcbf2bf65b2ca6a9e4c51925131756c5",
     "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html": "2f0c5789ef161d253072a342e6a8a1bdbebc3afd0ef4cad616a1deb09eb83f91",
     "experiments/exp460_ecg_strict_fallback_antigravity/config_antigravity.py": "41983e48fe8a21e400a8d0cff3b8038eee2cb094765e6a106f2e471ae8dbcf8b",
     "experiments/exp460_ecg_strict_fallback_antigravity/contracts_antigravity.py": "a0c35d10cf095c880ed4442cb2c4705a0dc8936417cb5a413a38f09f1dcc9e7e",
@@ -25,22 +25,25 @@
     "experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py": "50ab02a09fced74e005b4896dac3f4ef5cb4583243b76412eba491786e2a3d5f",
     "experiments/exp460_ecg_strict_fallback_antigravity/replay_antigravity.py": "0294c1e3cc85c4020f834a92c12423cf6996217f5840bddee5f201b49e5ddc9a",
     "experiments/exp460_ecg_strict_fallback_antigravity/dashboard_export_antigravity.py": "152a7c6bae471d2dce405d8c7eb43dcb9a10f6cde309ca994a2d75db7b2e09e1",
+    "experiments/exp460_ecg_strict_fallback_antigravity/cli_antigravity.py": "985c853ebd33a1f4c102aba52ed92f3859b616f10ee9b46fe9e7e7fe33ab35a2",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_config_antigravity.py": "d89fcbcde5bca50845473d6bf57e68df6948b07b1c6061c0a5efd6133ae41e99",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_contracts_antigravity.py": "ecb2defa3b88733fa82bc31e97f6a808c626c9dfbc2a5b894d742eb1cad627e3",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_fallback_antigravity.py": "0884023e72c8714dc27c2d4933b3bf354edb57e9f4583015753188498701c411",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py": "d761a6dc24c90caddb37ee513ec2b34e612565d864529cef5188dcdf049565a3",
-    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py": "c76c55ba2484f0a9bbafa5f4a2d295a41dabdfc2cd5df2b240975f26d509cefc",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py": "a8f2dac65113540f6e860bd51ecb7c715188e580a2e82a7c0e595d972e5f2dd6",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py": "c5b020a19706d235f6b0a8ef335a2db17c640c568a5a6721a61ca03af855cea8",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py": "fbbd213f64e941026f60e509bd100842f0f5d00944fd32c299797bd1737f676e",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py": "e13b757460a61be8b001562bba3b39deffbff442c47630c9402e6d0d51bf873e",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py": "4fd6b18a8f74caeb45bafbdbb2e8f0703c47ab3e1c244defed8d0492ba7788e9",
-    "scratch/build_codemap_exp460_antigravity.py": "9ba721da58c6863ee7552ef0b2100d3e07f10f4bfaaf6bd82d58db5b41c30b8b"
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_cli_antigravity.py": "85428203ec0d39605149a27940a25cf923b73221cf7ba32142498392fe70e429",
+    "scratch/build_codemap_exp460_antigravity.py": "1238e5a313116a10943f2d6c78dfde627fd0bf64c0b919d3c800e4575a3b0b74",
+    "scratch/run_exp460_ecg_strict_fallback_antigravity.py": "a1ab49cd3612a61c9a50f0fbc3b34cc00352dbd8f01be3d3a0d5e9736f574ccc"
   },
   "module_fingerprints": {
-    "docs": "a00127de00ea19ca7590fdb57b0594c4cb832640b5c356e6cc1b85bae6b63b02",
-    "experiments": "89f3f8d4dc89781c5767e03e4dc13968f66c4361c595e3946b115e3428cc7ff3",
-    "root": "895550eed607178e1934e078797bc2ad46fdc7281b233381f7df37e2032a3f2b",
-    "scratch": "9016b05a3ab00edfc7761c156b12c0efd01c8d62ba93fad3df6cb5ee43374988"
+    "docs": "4af44af52a95a7b30feb1e2bf573614f349ee7e69b97fe5f41fde88c7660a28f",
+    "experiments": "3139706dd90d74714a0db77838044b632e94393bfb2ddfddd10a745d60aa9513",
+    "root": "0d3268edafe96cfecba5eb821c31400807054f57521225f0d53a2123ccc4431e",
+    "scratch": "8f409ddef64946170609229d99e28cbaf1d96723d6c37a654c75e03ce965d8f1"
   },
   "working_tree_dirty": false
 }

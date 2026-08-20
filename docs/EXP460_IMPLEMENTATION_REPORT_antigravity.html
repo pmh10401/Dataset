@@ -2,37 +2,40 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
 <body><main>
   <h1>Exp460 구현 보고서</h1>
-  <p><strong>현재 단계:</strong> Task 4 artifact publication, semantic replay, and dashboard export are implemented while the ledger status remains <code>governance_complete_implementation_not_started</code> because Exp460 has not produced official results yet.</p>
-  <h2>Task 4 lifecycle</h2>
+  <p><strong>현재 단계:</strong> Task 5 CLI, fixed-runtime launcher, and two-run private reproduction are implemented and verified. Status is <code>implementation_verified_awaiting_official_evaluation</code>; Task 6 still requires separate approval.</p>
+  <h2>Task 5 lifecycle</h2>
   <table>
-    <tr><th>progress</th><td>Task 4/6</td></tr>
-    <tr><th>RED</th><td>1 run: missing <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, and <code>dashboard_export_antigravity.py</code> produced <code>FAILED (errors=8)</code></td></tr>
-    <tr><th>focused GREEN</th><td>Task 4 artifact/replay/dashboard suite ran <code>Ran 8 tests</code> with <code>OK</code> twice</td></tr>
-    <tr><th>Exp460 regression</th><td>Full Exp460 suite later ran <code>Ran 24 tests</code> with <code>OK</code> after the Task 4 docs/map surface was updated</td></tr>
-    <tr><th>affected Exp459 scientific regression</th><td><code>test_evaluation_antigravity</code> and <code>test_replay_antigravity</code> ran once with <code>Ran 11 tests</code>, <code>OK</code></td></tr>
+    <tr><th>progress</th><td>Task 5/6</td></tr>
+    <tr><th>RED</th><td>Missing CLI and launcher produced <code>Ran 6 tests</code>, <code>FAILED (failures=4, errors=2)</code>.</td></tr>
+    <tr><th>focused GREEN</th><td>The focused CLI/launcher suite ran twice with <code>Ran 6 tests</code>, <code>OK</code>.</td></tr>
+    <tr><th>private reproduction</th><td>Two sequential temporary non-official roots each ran evaluate then inspect; payloads and every leaf hash were exact-equal and both private roots cleaned.</td></tr>
+    <tr><th>Exp460 regression</th><td>The full Exp460 discovery ran twice with <code>Ran 31 tests</code>, <code>OK</code>, after the stored Task 5 map validated.</td></tr>
+    <tr><th>Exp459 scientific regression</th><td>The original full suite ran <code>Ran 57 tests</code> with one known historical map-parent validation limitation, <code>FAILED (errors=1)</code>; all 56 scientific/other tests passed and the Exp459 triplet was not modified.</td></tr>
     <tr><th>official evaluate/inspect counts</th><td>0/0</td></tr>
-    <tr><th>result root</th><td><code>null</code>; no official root created</td></tr>
-    <tr><th>predecessor authority digest</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
-    <tr><th>predecessor artifact map / decision</th><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code> / <code>527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716</code></td></tr>
-    <tr><th>result and artifact hashes</th><td><code>null</code> for Exp460 prediction, evaluation, decision, artifact map, and dashboard snapshot because no official Exp460 run exists yet</td></tr>
+    <tr><th>official root absent</th><td><code>/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820</code> does not exist</td></tr>
+    <tr><th>official result hashes</th><td><code>null</code> for prediction, evaluation, decision, artifact map, and dashboard snapshot</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
     <tr><th>current strict status / joint success</th><td><code>fallback_triggered_performance_not_improved</code> / <code>false</code></td></tr>
-    <tr><th>current authority summary</th><td>8/10 pass, worst period_change AUC <code>0.8004124541019063</code>, majority route <code>candidate</code>, strict route <code>baseline</code></td></tr>
+    <tr><th>current authority summary</th><td>8/10 pass, two failed folds, worst period_change AUC <code>0.8004124541019063</code>, majority route <code>candidate</code>, strict route <code>baseline</code></td></tr>
   </table>
   <div class="box">
-    <p><strong>Task 4 scope only:</strong> this report records the exact six-leaf local artifact, semantic replay, and bounded dashboard payload from the frozen Exp459 authority. No Exp460 official command or observed Exp460 result exists yet.</p>
-    <p><strong>Scientific result on the frozen authority:</strong> baseline rows stay <code>609/66/837/70788</code> with F1 <code>0.5742574257425742</code>; candidate rows stay <code>617/66/829/70788</code> with F1 <code>0.5796148426491311</code>; strict fallback returns to baseline because two <code>period_change</code> records remain below 0.85.</p>
-    <p><strong>Replay and dashboard boundary:</strong> rehashed route, confusion, F1, failed-fold, decision, dashboard, and artifact-map tamper are rejected; the stored payload omits raw TRAIN rows, TEST labels, dataset lists, local roots, and runtime secrets.</p>
-    <p><strong>Exp459 historical governance note:</strong> Task 4 did not touch the Exp459 stored map triplet; the known source-parent governance mismatch remains historical provenance outside the owned Exp460 files.</p>
+    <p><strong>CLI boundary:</strong> only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code> are accepted. Evaluate performs authority capture → four-rule evaluation → six-leaf publication → semantic replay → bounded dashboard payload. Inspect performs authority capture → replay → the same payload.</p>
+    <p><strong>Private equality result:</strong> payload exact-equal, leaf hashes exact-equal, inventory exact-equal, and private roots cleaned. Existing evaluate roots fail rather than overwrite.</p>
+    <p><strong>Scientific result on frozen authority:</strong> baseline stays <code>609/66/837/70788</code>, F1 <code>0.5742574257425742</code>; candidate stays <code>617/66/829/70788</code>, F1 <code>0.5796148426491311</code>. Strict fallback returns to baseline because two period-change records remain below 0.85.</p>
+    <p><strong>semantic replay and bounded dashboard payload:</strong> Task 4 remains the sole source of artifact and payload semantics. Task 5 introduces no scientific recomputation, seed, threshold, TRAIN source, or TEST-label path.</p>
+    <p><strong>Exp459 historical governance note:</strong> the full Exp459 suite exposes its known current-branch historical source-parent limitation in stored map validation. This is reported separately from the passing Exp459 scientific tests and the unchanged Exp459 map triplet.</p>
   </div>
-  <h2>Rule comparison</h2>
+  <h2>Private six-leaf hashes</h2>
+  <p>These hashes describe both identical non-official temporary runs only. They are not Exp460 official result hashes.</p>
   <table>
-    <thead><tr><th>rule</th><th>route</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th></tr></thead>
+    <thead><tr><th>leaf</th><th>private SHA-256</th></tr></thead>
     <tbody>
-      <tr><td><code>always_baseline</code></td><td><code>baseline</code></td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td></tr>
-      <tr><td><code>always_candidate</code></td><td><code>candidate</code></td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td></tr>
-      <tr><td><code>majority_8_of_10</code></td><td><code>candidate</code></td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td></tr>
-      <tr><td><code>strict_10_of_10</code></td><td><code>baseline</code></td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td></tr>
+      <tr><td><code>context_antigravity.json</code></td><td><code>1c30f92d60ca76214f680c4452b1a4418764da84fe5ec1f8a5156f743b84db9f</code></td></tr>
+      <tr><td><code>rule_comparisons_antigravity.jsonl</code></td><td><code>3ed3f05f5359cbe4d1a0dbcad371bb3ed951679c1b153d59ff591933fc13dc75</code></td></tr>
+      <tr><td><code>failed_folds_antigravity.jsonl</code></td><td><code>880d67769d8e4e40b3b504a0573878bdb31a364a33fdd48d70af0fe2b2a7b198</code></td></tr>
+      <tr><td><code>decision_antigravity.json</code></td><td><code>0859be73fb8b7c77cc803d67745ecd1bd42766ea5e3c005ce1bb9d2d3e6342c1</code></td></tr>
+      <tr><td><code>dashboard_snapshot_antigravity.json</code></td><td><code>fea8b4e43d256feddef48545e201f674bfe39fe85559050ed405f4e996709ee5</code></td></tr>
+      <tr><td><code>artifact_sha256_antigravity.json</code></td><td><code>8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916</code></td></tr>
     </tbody>
   </table>
 </main></body></html>

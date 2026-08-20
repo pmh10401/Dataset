@@ -82,6 +82,20 @@ EXPECTED_FAILED_FOLDS_ANTIGRAVITY = [
         "period_change_auc": 0.8004124541019063,
     },
 ]
+EXPECTED_PRIVATE_VALIDATION_ANTIGRAVITY = {
+    "run_count": 2,
+    "payload_exact_equal": True,
+    "leaf_hashes_exact_equal": True,
+    "leaf_count": 6,
+    "temporary_roots_cleaned": True,
+    "official_root_absent": True,
+    "passed_record_count": 8,
+    "failed_fold_count": 2,
+    "worst_period_change_auc": 0.8004124541019063,
+    "strict_route": "baseline",
+    "status": "fallback_triggered_performance_not_improved",
+    "joint_success": False,
+}
 
 
 def strict_json_antigravity(path: Path) -> object:
@@ -106,8 +120,8 @@ class HtmlParserAntigravity(html.parser.HTMLParser):
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
-    def test_task1_governance_surface_antigravity(self) -> None:
-        """Break caught: Task 1 governance truth drifts or omits planned-only Exp460 state."""
+    def test_task5_governance_surface_antigravity(self) -> None:
+        """Break caught: Task 5 truth claims official execution or loses private reproduction evidence."""
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             path = ROOT_ANTIGRAVITY / relative
             self.assertTrue(path.is_file(), relative)
@@ -130,9 +144,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["kind"], "ecg_strict_fallback")
             self.assertEqual(
                 record["status"],
-                "governance_complete_implementation_not_started",
+                "implementation_verified_awaiting_official_evaluation",
             )
-            self.assertEqual(record["implementation_status"], "task_1_governance_complete")
+            self.assertEqual(
+                record["implementation_status"],
+                "task_5_cli_private_reproduction_verified",
+            )
             contract = record["scientific_contract"]
             self.assertEqual(contract["target_dataset"], "ECG5000_normal_2")
             self.assertEqual(contract["rule_order"], EXPECTED_RULE_ORDER_ANTIGRAVITY)
@@ -145,7 +162,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertEqual(record["official_evaluate_invocations"], 0)
             self.assertEqual(record["official_inspect_invocations"], 0)
             self.assertFalse(record["result_root_created"])
-            self.assertIsNone(record["run_root"])
+            self.assertEqual(
+                record["run_root"],
+                "/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820",
+            )
             self.assertIsNone(record["official_result"])
             self.assertIsNone(record["prediction_sha256"])
             self.assertIsNone(record["evaluation_sha256"])
@@ -158,6 +178,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["promotion_allowed"])
             self.assertFalse(record["pending_candidate_changed"])
             self.assertFalse(record["scientific_winner_selected"])
+            self.assertEqual(
+                record["private_validation"],
+                EXPECTED_PRIVATE_VALIDATION_ANTIGRAVITY,
+            )
         self.assertEqual(state["pending_candidate"], FROZEN_PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["pending_candidate"], FROZEN_PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(
@@ -165,12 +189,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             FROZEN_CHAMPION_ANTIGRAVITY,
         )
 
-    def test_task4_plan_dashboard_report_and_map_antigravity(self) -> None:
-        """Break caught: Task 4 progress, artifact boundary, or bounded map drift from the implemented fallback evaluation."""
+    def test_task5_plan_dashboard_report_runbook_and_map_antigravity(self) -> None:
+        """Break caught: Task 5 CLI, private reproduction, completed steps, or bounded map drift."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 4/6",
-            "governance_complete_implementation_not_started",
+            "Task 5/6",
+            "implementation_verified_awaiting_official_evaluation",
             "official evaluate/inspect counts",
             "0/0",
             "label query count",
@@ -186,7 +210,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "fallback_triggered_performance_not_improved",
             "joint success",
             "false",
-            "Task 4 artifact publication and replay",
+            "Task 5 CLI and private reproduction",
             "Current authority summary",
             "Strict route outcome",
             "local artifact inventory",
@@ -196,7 +220,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "decision_antigravity.json",
             "dashboard_snapshot_antigravity.json",
             "artifact_sha256_antigravity.json",
-            "Task 4 dashboard payload boundary",
+            "payload exact-equal",
+            "leaf hashes exact-equal",
+            "private roots cleaned",
+            "exact fixed interpreter",
+            "evaluate --reviewed-commit LOWER40HEX",
+            "bare inspect",
             "20260721",
             "0.8208339620743423",
             "20261721",
@@ -214,12 +243,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for value in (
-            "Task 4 lifecycle",
-            "Task 4/6",
-            "FAILED (errors=8)",
-            "Ran 8 tests",
-            "Ran 24 tests",
-            "Ran 11 tests",
+            "Task 5 lifecycle",
+            "Task 5/6",
+            "FAILED (failures=4, errors=2)",
+            "Ran 6 tests",
+            "Ran 31 tests",
+            "Ran 57 tests",
+            "FAILED (errors=1)",
             "fallback_triggered_performance_not_improved",
             "8/10 pass",
             "majority route",
@@ -229,8 +259,27 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "semantic replay",
             "bounded dashboard payload",
             "Exp459 historical governance note",
+            "8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916",
+            "private roots cleaned",
+            "official root absent",
         ):
             self.assertIn(value, report)
+
+        runbook = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[1]).read_text(encoding="utf-8")
+        for value in (
+            "Task 5 operating boundary",
+            "implementation_verified_awaiting_official_evaluation",
+            "evaluate --reviewed-commit LOWER40HEX",
+            "bare inspect",
+            "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+            "/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820",
+            "Task 6",
+            "separate approval",
+            "official evaluate/inspect counts 0/0",
+            "label query count 0",
+            "result hashes null",
+        ):
+            self.assertIn(value, runbook)
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
         self.assertIn('<h2><label><input type="checkbox" checked disabled>Task 1', plan)
@@ -305,6 +354,33 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 f'<label><input type="checkbox" checked disabled>{step_label}',
                 task4,
             )
+        self.assertIn('<h2><label><input type="checkbox" disabled>Task 5', plan)
+        task5 = plan.split("Task 5", 1)[1].split("Task 6", 1)[0]
+        self.assertEqual(
+            task5.count('<label><input type="checkbox" checked disabled>Step '),
+            5,
+        )
+        for step_label in (
+            "Step 1",
+            "Step 2",
+            "Step 3",
+            "Step 4",
+            "Step 5",
+        ):
+            self.assertIn(
+                f'<label><input type="checkbox" checked disabled>{step_label}',
+                task5,
+            )
+        for step_label in ("Step 6",):
+            self.assertIn(
+                f'<label><input type="checkbox" disabled>{step_label}',
+                task5,
+            )
+        task6 = plan.split("<h2>Task 6", 1)[1]
+        self.assertNotIn(
+            '<label><input type="checkbox" checked disabled>Step ',
+            task6,
+        )
 
         spec = importlib.util.spec_from_file_location(
             "exp460_map_builder_antigravity",
@@ -318,8 +394,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
         self.assertLessEqual(len(graph["nodes"]), 25)
-        self.assertEqual(graph["schema"], "exp460_task4_strict_fallback_codemap_v1")
-        self.assertEqual(lock["schema"], "exp460_task4_strict_fallback_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp460_task5_strict_fallback_codemap_v1")
+        self.assertEqual(lock["schema"], "exp460_task5_strict_fallback_codemap_lock_v1")
         node_ids = {node["id"] for node in graph["nodes"]}
         for node_id in (
             "approved_design",
@@ -341,26 +417,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task2_predecessor_tests",
             "task3_strict_route",
             "task3_rule_evaluation",
-            "task3_rule_tests",
             "task4_artifacts_publication",
             "task4_replay",
             "task4_dashboard_export",
-            "future_cli_launcher",
-            "future_cli_tests",
+            "task5_cli",
+            "task5_launcher",
+            "task5_cli_tests",
         ):
             self.assertIn(node_id, node_ids)
-        future_nodes = {
-            node["id"]: node
-            for node in graph["nodes"]
-            if node["id"].startswith("future_")
-        }
-        for node_id, node in future_nodes.items():
-            self.assertTrue(node["evidence"], node_id)
-            if node_id.endswith("_tests"):
-                self.assertEqual(node.get("status"), "future_planned")
-                self.assertFalse(node["tests"])
-            else:
-                self.assertTrue(node["tests"], node_id)
+        self.assertFalse(
+            any(node["id"].startswith("future_") for node in graph["nodes"])
+        )
         builder.validate_map_antigravity(graph, lock, rendered)
 
     def test_validate_only_reads_stored_triplet_and_rejects_stale_bytes_antigravity(self) -> None:
@@ -381,7 +448,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         html_path = ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]
         original = html_path.read_text(encoding="utf-8")
-        mutated = original.replace("Task 4 strict fallback 코드맵", "Task 4 strict fallback 코드맵 tampered", 1)
+        mutated = original.replace("Task 5 strict fallback 코드맵", "Task 5 strict fallback 코드맵 tampered", 1)
         self.assertNotEqual(mutated, original)
         html_path.write_text(mutated, encoding="utf-8")
         try:

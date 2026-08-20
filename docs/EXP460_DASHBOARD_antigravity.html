@@ -3,25 +3,28 @@
 <body><main>
   <h1>Exp460 ECG 엄격 복귀 대시보드</h1>
   <table>
-    <tr><th>progress</th><td>Task 4/6</td></tr>
-    <tr><th>status</th><td><code>governance_complete_implementation_not_started</code> (ledger state unchanged; Task 4 now publishes and replays the scientific-only six-leaf local artifact from the frozen predecessor authority)</td></tr>
+    <tr><th>progress</th><td>Task 5/6</td></tr>
+    <tr><th>status</th><td><code>implementation_verified_awaiting_official_evaluation</code></td></tr>
     <tr><th>official evaluate/inspect counts</th><td>0/0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820</code> is absent</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
     <tr><th>frozen predecessor authority</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
     <tr><th>predecessor artifact map / decision</th><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code> / <code>527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716</code></td></tr>
-    <tr><th>result and artifact hashes</th><td><code>null</code> for Exp460 official evaluate/inspect outputs</td></tr>
+    <tr><th>result and artifact hashes</th><td><code>null</code> for all Exp460 official outputs</td></tr>
     <tr><th>official decision rule</th><td><code>strict_10_of_10</code> only</td></tr>
     <tr><th>strict final status</th><td><code>fallback_triggered_performance_not_improved</code></td></tr>
     <tr><th>joint success</th><td><code>false</code></td></tr>
     <tr><th>local artifact inventory</th><td><code>context_antigravity.json</code>, <code>rule_comparisons_antigravity.jsonl</code>, <code>failed_folds_antigravity.jsonl</code>, <code>decision_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code></td></tr>
   </table>
   <div class="box">
-    <p><strong>Task 4 artifact publication and replay:</strong> <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, and <code>dashboard_export_antigravity.py</code> now publish the exact six leaves, recompute the result from the frozen Task 2 authority, and reject semantic tamper even when the artifact hash map is rehashed.</p>
+    <p><strong>Task 5 CLI and private reproduction:</strong> the closed CLI accepts exactly <code>evaluate --reviewed-commit LOWER40HEX</code> or <code>bare inspect</code>. It rejects aliases, abbreviations, extra arguments, root overrides, new/resume/retry/override flags, and existing evaluate roots.</p>
+    <p><strong>Outside-CWD launcher:</strong> the launcher re-execs the <strong>exact fixed interpreter</strong> <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code> and imports the package without depending on caller CWD.</p>
+    <p><strong>Private equality:</strong> two sequential non-official temporary roots each completed evaluate then inspect. The two dashboard payloads were <strong>payload exact-equal</strong>, all six leaf hashes were <strong>leaf hashes exact-equal</strong>, and both <strong>private roots cleaned</strong> after verification.</p>
     <p><strong>Frozen rule order:</strong> <code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code>.</p>
-    <p><strong>Current authority summary:</strong> 8 of 10 records pass; seed <code>20260721</code> fold <code>3</code> stays at <code>0.8208339620743423</code>, seed <code>20261721</code> fold <code>4</code> stays at <code>0.8004124541019063</code>, and the worst <code>period_change</code> AUC therefore remains <code>0.8004124541019063</code>.</p>
-    <p><strong>Strict route outcome:</strong> majority stays <code>candidate</code>, but <code>strict_10_of_10</code> falls back to <code>baseline</code>, so the FN improvement from <code>829</code> is not retained and the final status is <code>fallback_triggered_performance_not_improved</code>.</p>
-    <p><strong>Task 4 dashboard payload boundary:</strong> the exported payload stays limited to dataset and predecessor identifiers, four comparison rows, two failed folds, strict route, strict status, worst period AUC, official evaluate/inspect counts <code>0/0</code>, and <code>label_query_count</code> <code>0</code>.</p>
-    <p><strong>Task 4 scientific-only boundary:</strong> no Exp460 official command ran, no Exp460 result root exists, no raw TRAIN rows were stored, and no TEST label access was added while publishing or replaying these six leaves.</p>
+    <p><strong>Current authority summary:</strong> 8 of 10 records pass; seed <code>20260721</code> fold <code>3</code> stays at <code>0.8208339620743423</code>, seed <code>20261721</code> fold <code>4</code> stays at <code>0.8004124541019063</code>, and worst <code>period_change</code> AUC remains <code>0.8004124541019063</code>.</p>
+    <p><strong>Strict route outcome:</strong> majority stays <code>candidate</code>, but <code>strict_10_of_10</code> falls back to <code>baseline</code>. Candidate FN 829 is not retained; strict FN remains 837 and status is <code>fallback_triggered_performance_not_improved</code>.</p>
+    <p><strong>Task 4 dashboard payload boundary:</strong> the payload remains the frozen Task 4 scientific payload with dataset/predecessor identifiers, four comparison rows, two failed folds, strict route/status, worst AUC, official counts <code>0/0</code>, and label query count <code>0</code>.</p>
+    <p><strong>Scientific-only boundary:</strong> no official command ran, no official root was created, no TRAIN value was recomputed, no new seed or threshold was introduced, and no TEST label was opened.</p>
   </div>
   <h2>Failed folds</h2>
   <table>

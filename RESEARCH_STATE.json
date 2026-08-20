@@ -2358,10 +2358,10 @@
   "exp460": {
     "experiment": "Exp460",
     "kind": "ecg_strict_fallback",
-    "status": "governance_complete_implementation_not_started",
-    "implementation_status": "task_1_governance_complete",
+    "status": "implementation_verified_awaiting_official_evaluation",
+    "implementation_status": "task_5_cli_private_reproduction_verified",
     "run_identity": "exp460-ecg-strict-fallback-antigravity-20260819",
-    "run_root": null,
+    "run_root": "/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820",
     "package": "experiments/exp460_ecg_strict_fallback_antigravity",
     "approved_design": "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html",
     "approved_plan": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
@@ -2418,6 +2418,20 @@
     "promotion_allowed": false,
     "pending_candidate_changed": false,
     "scientific_winner_selected": false,
-    "notes": "Task 1 created the governance surface only: four self-contained HTML documents, planned ledger entries, one governance regression, and the bounded Exp460 code map. Official evaluate/inspect counts remain 0/0, result and artifact hashes are null, label query count is 0, and champion plus pending candidate remain unchanged. Any metric table is design expectation only, not observed Exp460 evidence."
+    "private_validation": {
+      "run_count": 2,
+      "payload_exact_equal": true,
+      "leaf_hashes_exact_equal": true,
+      "leaf_count": 6,
+      "temporary_roots_cleaned": true,
+      "official_root_absent": true,
+      "passed_record_count": 8,
+      "failed_fold_count": 2,
+      "worst_period_change_auc": 0.8004124541019063,
+      "strict_route": "baseline",
+      "status": "fallback_triggered_performance_not_improved",
+      "joint_success": false
+    },
+    "notes": "Task 5 implemented the exact lazy CLI and fixed-runtime outside-CWD launcher. Two sequential private non-official evaluate-to-inspect roots reproduced exact-equal dashboard payloads and all six leaf hashes, then were cleaned. The frozen authority still yields 8/10 passing records, two failed period-change folds, strict baseline route, status fallback_triggered_performance_not_improved, and joint success false. Official evaluate/inspect counts remain 0/0, the official root is absent, all official result hashes remain null, label query count is 0, and champion plus pending candidate remain unchanged. Task 6 requires separate approval."
   }
 }
