@@ -3,9 +3,9 @@
 <style>body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}code{background:#eef2f7;padding:.1rem .3rem}</style></head>
 <body><main><h1>Exp462 ECG gradual signature 대시보드</h1>
 <table>
-  <tr><th>progress</th><td>Task 3 complete / Task 4 next</td></tr>
+  <tr><th>progress</th><td>Task 4 implemented pending external review / Task 5 next</td></tr>
   <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
-  <tr><th>implementation status</th><td><code>task_3_complete_task_4_next</code></td></tr>
+  <tr><th>implementation status</th><td><code>task_4_implemented_pending_review_task_5_next</code></td></tr>
   <tr><th>goal</th><td>Exp461 period 성능을 보존하면서 gradual_drift 최소 AUC를 0.85 이상으로 올리기</td></tr>
   <tr><th>official execution</th><td>official evaluate 0 / official inspect 0</td></tr>
   <tr><th>label query count</th><td>0</td></tr>
@@ -13,7 +13,7 @@
   <tr><th>official artifact map SHA-256</th><td><code>null</code></td></tr>
   <tr><th>result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
 </table>
-<div class="box"><p><strong>쉬운 설명:</strong> Task 3은 review C/I/M 0으로 닫혔다. 24D gradual signature, <code>gradual_signature_local_gap</code>, Exp461 위임 기준선 <code>hydra_period_rank_max</code>, 그리고 원소별 max 결합 <code>hydra_period_gradual_rank_max</code>가 구현됐다. CLI, qualification 실행, 공식 root 생성은 아직 하지 않았다. Exp461 failure 9/10의 원인은 gradual_drift <code>0.8402306222021025</code>였다.</p></div>
+<div class="box"><p><strong>쉬운 설명:</strong> Task 4의 TRAIN-only qualification/evaluation, 정확한 7개 결과 파일 publication, source-free replay, aggregate dashboard projection이 구현됐다. 3개 방법 × 2개 seed × 5개 blocked fold = 30개 기록의 AUC/Wilson/finite 상태와 pass 이유를 score evidence에서 다시 계산한다. Task 4 박스는 독립 review 전까지 체크하지 않았다. CLI, private TRAIN 재현, 공식 root 생성은 아직 하지 않았다. Exp461 failure 9/10의 원인은 gradual_drift <code>0.8402306222021025</code>였다.</p></div>
 <h2>Task 2 boundary</h2>
 <table>
   <tr><th>public config</th><td><code>FROZEN_CONFIG_ANTIGRAVITY</code></td></tr>
@@ -29,6 +29,14 @@
   <tr><th>fold scores</th><td><code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index)</code></td></tr>
   <tr><th>rank formula</th><td><code>(1 + count(r_i ≤ s)) / (n + 1)</code></td></tr>
   <tr><th>backend decision</th><td><code>numpy_cpu</code>; MLX smoke parity passed but speed gate failed with speedup <code>0.274</code></td></tr>
+</table>
+<h2>Task 4 boundary</h2>
+<table>
+  <tr><th>qualification</th><td><code>_qualify_methods_with_dependencies_antigravity()</code> emits exact ordered 30 score-evidence rows and recomputed metric/pass fields</td></tr>
+  <tr><th>evaluation</th><td><code>evaluate_qualification_antigravity()</code> enforces primary 10/10, per-type/pooled/Wilson, gradual, global period, and two historical period gates without routing or labels</td></tr>
+  <tr><th>publication</th><td><code>publish_result_antigravity()</code> writes the exact seven canonical leaves create-only to an injected temporary/private path</td></tr>
+  <tr><th>replay</th><td><code>inspect_replay_at_antigravity()</code> is source-free, validates the inventory/hash map, and recomputes rows, summaries, decision, and dashboard</td></tr>
+  <tr><th>dashboard projection</th><td><code>export_dashboard_antigravity()</code> exposes aggregate method counts/minima and period preservation only</td></tr>
 </table>
 <h2>Frozen targets</h2>
 <table>

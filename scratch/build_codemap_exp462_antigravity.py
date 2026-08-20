@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp462 Task 3 code map."""
+"""Build and validate the bounded Exp462 Task 4 code map."""
 
 from __future__ import annotations
 
@@ -36,11 +36,17 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html",
     ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-2-report-antigravity.html",
     ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html",
+    ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-4-report-antigravity.html",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/config_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/contracts_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/gradual_features_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/predecessor_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/scoring_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/qualification_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/evaluation_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/artifacts_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/replay_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/dashboard_export_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/sources_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_contracts_antigravity.py",
@@ -48,6 +54,11 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_predecessor_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_scoring_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_artifacts_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_dashboard_export_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp462_antigravity.py",
 )
@@ -152,8 +163,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp462 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp462 Task 3 코드맵</h1><p>Task 3 is implemented pending review and maps governance documents, frozen Task 2 authority/source nodes, gradual feature, scoring boundary, and focused tests. Future Task 4-5 boundaries remain explicitly unknown and not implemented.</p>'
+        '<title>Exp462 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp462 Task 4 코드맵</h1><p>Task 4 is implemented pending external review and maps governance, frozen Task 2 authority/source, Task 3 scoring, qualification/evaluation, seven-leaf publication, source-free replay, dashboard projection, and focused tests. Task 5 remains explicitly unknown and not implemented.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -182,6 +193,7 @@ def build_map_antigravity(
     dashboard = "docs/EXP462_DASHBOARD_antigravity.html"
     task2_report = ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-2-report-antigravity.html"
     task3_report = ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html"
+    task4_report = ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-4-report-antigravity.html"
     governance_test = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
         "test_governance_antigravity.py"
@@ -229,11 +241,38 @@ def build_map_antigravity(
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
         "test_scoring_antigravity.py"
     )
-    task4_boundary = (
+    task4_qualification = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/qualification_antigravity.py"
+    )
+    task4_evaluation = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/evaluation_antigravity.py"
+    )
+    task4_artifacts = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/artifacts_antigravity.py"
+    )
+    task4_replay = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/replay_antigravity.py"
+    )
+    task4_dashboard = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/dashboard_export_antigravity.py"
     )
     task5_boundary = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/cli_antigravity.py"
+    )
+    task4_qualification_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_qualification_antigravity.py"
+    )
+    task4_evaluation_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_evaluation_antigravity.py"
+    )
+    task4_artifacts_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_artifacts_antigravity.py"
+    )
+    task4_replay_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_replay_antigravity.py"
+    )
+    task4_dashboard_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_dashboard_export_antigravity.py"
     )
 
     nodes: list[dict[str, object]] = [
@@ -247,9 +286,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records Task 3 complete / Task 4 next, checked Task 1-3 controls, official0/label0, and future Task 4-5 boundaries.",
+            "role": "Caller: Task 1-6 execution. Effect: records Task 4 implemented pending external review / Task 5 next, checked Task 1-3 controls, official0/label0, and the unchecked Task 4 boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 3 complete / Task 4 next")],
+            "evidence": [evidence_antigravity(plan, "Task 4 implemented pending external review / Task 5 next")],
         },
         {
             "id": "preregistration",
@@ -268,16 +307,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 3 handoff. Effect: records frozen authority, Task 3 feature/scoring public interfaces, backend decision, null official hashes, official0/label0, and review closeout.",
+            "role": "Caller: Task 4 handoff. Effect: records frozen authority, Task 3 feature/scoring interfaces, Task 4 qualification/replay/publication interfaces, null official hashes, official0/label0, and pending review.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(report, "Task 3 implementation")],
+            "evidence": [evidence_antigravity(report, "Task 4 implementation")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 3 complete / Task 4 next, public interfaces, selected CPU backend, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 4 implemented pending external review / Task 5 next, public interfaces, selected CPU backend, official0, label0, and null hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 3 complete / Task 4 next")],
+            "evidence": [evidence_antigravity(dashboard, "Task 4 implemented pending external review / Task 5 next")],
         },
         {
             "id": "research_state",
@@ -310,7 +349,7 @@ def build_map_antigravity(
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 3 validation. Effect: rebuilds and validates the bounded Exp462 graph plus stored HTML/JSON/lock triplet bytes.",
+            "role": "Caller: Task 4 validation. Effect: rebuilds and validates the bounded Exp462 graph plus stored HTML/JSON/lock triplet bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -327,6 +366,13 @@ def build_map_antigravity(
             "role": "Caller: Task 3 review. Effect: records complete reviewed state, RED/GREEN evidence, backend decision, public interfaces, official0, label0, and absent official root.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(task3_report, "Exp462 Task 3 report")],
+        },
+        {
+            "id": "task4_report",
+            "path": task4_report,
+            "role": "Caller: Task 4 review. Effect: records TDD evidence, seven-leaf/replay boundary, lifecycle guards, and pending external review without checking Task 4 controls.",
+            "tests": [governance_test],
+            "evidence": [evidence_antigravity(task4_report, "Exp462 Task 4 report")],
         },
         {
             "id": "task2_config",
@@ -413,11 +459,74 @@ def build_map_antigravity(
             "evidence": [evidence_antigravity(scoring_test, "test_fold_scoring_delegates_baseline_and_combines_gradual_rank_antigravity")],
         },
         {
-            "id": "task4_qualification_unknown",
-            "path": task4_boundary,
-            "role": "Caller: future Task 4 only. Effect: unknown and not implemented in Task 1; expected to implement blocked qualification and replay later.",
-            "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")],
+            "id": "task4_qualification",
+            "path": task4_qualification,
+            "role": "Caller: Task 4 evaluation/publication and Task 5 private runs. Effect: creates exactly 30 method/seed/fold metric rows, recomputes AUC/Wilson/finite gates from score evidence, and preserves ordered change types.",
+            "tests": [task4_qualification_test, governance_test],
+            "evidence": [evidence_antigravity(task4_qualification, "_qualify_methods_with_dependencies_antigravity")],
+        },
+        {
+            "id": "task4_evaluation",
+            "path": task4_evaluation,
+            "role": "Caller: Task 4 artifacts/replay/dashboard and Task 5. Effect: applies primary 10/10, gradual, pooled, Wilson, period-global, and historical preservation gates without routing or TEST labels.",
+            "tests": [task4_evaluation_test, governance_test],
+            "evidence": [evidence_antigravity(task4_evaluation, "evaluate_qualification_antigravity")],
+        },
+        {
+            "id": "task4_artifacts",
+            "path": task4_artifacts,
+            "role": "Caller: Task 5 private publication. Effect: writes the exact seven canonical leaves create-only to an injected path with a self-excluding SHA-256 map.",
+            "tests": [task4_artifacts_test, governance_test],
+            "evidence": [evidence_antigravity(task4_artifacts, "publish_result_antigravity")],
+        },
+        {
+            "id": "task4_replay",
+            "path": task4_replay,
+            "role": "Caller: Task 5 inspect and independent verification. Effect: validates canonical inventory/hashes and source-free replays rows, summaries, failed folds, decision, and dashboard.",
+            "tests": [task4_replay_test, governance_test],
+            "evidence": [evidence_antigravity(task4_replay, "inspect_replay_at_antigravity")],
+        },
+        {
+            "id": "task4_dashboard",
+            "path": task4_dashboard,
+            "role": "Caller: Task 4 publication and HTML dashboard handoff. Effect: projects aggregate method counts, four-type minima, pooled/Wilson bounds, period preservation, and label-free decision state only.",
+            "tests": [task4_dashboard_test, governance_test],
+            "evidence": [evidence_antigravity(task4_dashboard, "export_dashboard_antigravity")],
+        },
+        {
+            "id": "task4_qualification_tests",
+            "path": task4_qualification_test,
+            "role": "Caller: Task 4 focused regression. Effect: covers exact 30-row ordering, frozen gates, and caller-metric/boolean forgery rejection.",
+            "tests": [task4_qualification_test],
+            "evidence": [evidence_antigravity(task4_qualification_test, "test_qualification_has_exact_method_seed_fold_and_type_order_antigravity")],
+        },
+        {
+            "id": "task4_evaluation_tests",
+            "path": task4_evaluation_test,
+            "role": "Caller: Task 4 focused regression. Effect: covers decision recomputation, no routing, and zero label queries.",
+            "tests": [task4_evaluation_test],
+            "evidence": [evidence_antigravity(task4_evaluation_test, "test_decision_recomputes_primary_ten_of_ten_without_routing_or_labels_antigravity")],
+        },
+        {
+            "id": "task4_artifacts_tests",
+            "path": task4_artifacts_test,
+            "role": "Caller: Task 4 focused regression. Effect: covers exact seven-leaf canonical create-only publication and self-excluding hashes.",
+            "tests": [task4_artifacts_test],
+            "evidence": [evidence_antigravity(task4_artifacts_test, "test_publish_is_exact_seven_leaf_canonical_create_only_and_self_excluding_antigravity")],
+        },
+        {
+            "id": "task4_replay_tests",
+            "path": task4_replay_test,
+            "role": "Caller: Task 4 focused regression. Effect: covers source-free equality and inventory/canonical/rehashed semantic tamper rejection.",
+            "tests": [task4_replay_test],
+            "evidence": [evidence_antigravity(task4_replay_test, "test_replay_rejects_inventory_noncanonical_and_rehashed_metric_tamper_antigravity")],
+        },
+        {
+            "id": "task4_dashboard_tests",
+            "path": task4_dashboard_test,
+            "role": "Caller: Task 4 focused regression. Effect: covers aggregate-only dashboard fields, minima, and TEST/path/raw-evidence firewall.",
+            "tests": [task4_dashboard_test],
+            "evidence": [evidence_antigravity(task4_dashboard_test, "test_dashboard_is_aggregate_only_and_exposes_four_type_minima_antigravity")],
         },
         {
             "id": "task5_cli_unknown",
@@ -431,7 +540,7 @@ def build_map_antigravity(
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "gradual_drift AUC ≥ 0.85")},
         {"from": "approved_design", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "0.9216148584075248")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 3 complete / Task 4 next")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 4 implemented pending external review / Task 5 next")},
         {"from": "implementation_plan", "to": "governance_regression", "type": "governs", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
@@ -453,18 +562,32 @@ def build_map_antigravity(
         {"from": "implementation_plan", "to": "task3_report", "type": "governs", "evidence": evidence_antigravity(task3_report, "Task 3 complete after focused review")},
         {"from": "implementation_plan", "to": "task3_gradual_signature", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
         {"from": "implementation_plan", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
+        {"from": "implementation_plan", "to": "task4_report", "type": "governs", "evidence": evidence_antigravity(task4_report, "Exp462 Task 4 report")},
         {"from": "task3_gradual_feature_tests", "to": "task3_gradual_signature", "type": "tests", "evidence": evidence_antigravity(gradual_features_test, "test_gradual_signature_matches_independent_reference_and_contract_antigravity")},
         {"from": "task3_scoring_tests", "to": "task3_scoring", "type": "tests", "evidence": evidence_antigravity(scoring_test, "test_fold_scoring_delegates_baseline_and_combines_gradual_rank_antigravity")},
         {"from": "task2_config", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")},
         {"from": "task2_predecessor", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(predecessor, "capture_exp461_gradual_authority_antigravity")},
         {"from": "task2_sources", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(sources, "load_normal2_train_antigravity")},
         {"from": "task3_gradual_signature", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(scoring, "score_fold_methods_antigravity")},
-        {"from": "implementation_plan", "to": "task4_qualification_unknown", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
+        {"from": "implementation_plan", "to": "task4_qualification", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
+        {"from": "implementation_plan", "to": "task4_evaluation", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
+        {"from": "implementation_plan", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
+        {"from": "implementation_plan", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
+        {"from": "implementation_plan", "to": "task4_dashboard", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
+        {"from": "task4_qualification", "to": "task4_evaluation", "type": "governs", "evidence": evidence_antigravity(task4_qualification, "MethodQualificationAntigravity")},
+        {"from": "task4_evaluation", "to": "task4_artifacts", "type": "governs", "evidence": evidence_antigravity(task4_evaluation, "QualificationDecisionAntigravity")},
+        {"from": "task4_evaluation", "to": "task4_dashboard", "type": "governs", "evidence": evidence_antigravity(task4_evaluation, "QualificationDecisionAntigravity")},
+        {"from": "task4_artifacts", "to": "task4_replay", "type": "governs", "evidence": evidence_antigravity(task4_artifacts, "_LEAVES_ANTIGRAVITY")},
+        {"from": "task4_qualification_tests", "to": "task4_qualification", "type": "tests", "evidence": evidence_antigravity(task4_qualification_test, "test_qualification_has_exact_method_seed_fold_and_type_order_antigravity")},
+        {"from": "task4_evaluation_tests", "to": "task4_evaluation", "type": "tests", "evidence": evidence_antigravity(task4_evaluation_test, "test_decision_recomputes_primary_ten_of_ten_without_routing_or_labels_antigravity")},
+        {"from": "task4_artifacts_tests", "to": "task4_artifacts", "type": "tests", "evidence": evidence_antigravity(task4_artifacts_test, "test_publish_is_exact_seven_leaf_canonical_create_only_and_self_excluding_antigravity")},
+        {"from": "task4_replay_tests", "to": "task4_replay", "type": "tests", "evidence": evidence_antigravity(task4_replay_test, "test_replay_rejects_inventory_noncanonical_and_rehashed_metric_tamper_antigravity")},
+        {"from": "task4_dashboard_tests", "to": "task4_dashboard", "type": "tests", "evidence": evidence_antigravity(task4_dashboard_test, "test_dashboard_is_aggregate_only_and_exposes_four_type_minima_antigravity")},
         {"from": "implementation_plan", "to": "task5_cli_unknown", "type": "governs", "evidence": evidence_antigravity(plan, "Task 5 — closed CLI and two private TRAIN reproductions")},
     ]
 
     graph = {
-        "schema": "exp462_task3_boundary_codemap_v1",
+        "schema": "exp462_task4_boundary_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -472,7 +595,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp462_task3_boundary_codemap_lock_v1",
+        "schema": "exp462_task4_boundary_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),
