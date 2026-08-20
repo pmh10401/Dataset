@@ -19,6 +19,7 @@ from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import (
     score_hard_sources,
 )
 from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
+    SEEDS_PAPER,
     score_minirocket_confirmations,
 )
 
@@ -196,9 +197,38 @@ class Exp450DatasetScoringTests(unittest.TestCase):
         )
         n_test = len(values.test_rows)
         for condition in (CONDITION_B, CONDITION_C, CONDITION_D):
-            result = scoring_antigravity.score_dataset_condition_exp450_antigravity(
-                values, condition, BACKEND_CPU
+            captured_mini = []
+            real_minirocket = (
+                scoring_antigravity.score_minirocket_confirmations_exp450_antigravity
             )
+
+            def capture_minirocket(*arguments, **keywords):
+                mini = real_minirocket(*arguments, **keywords)
+                captured_mini.append(mini)
+                return mini
+
+            with patch.object(
+                scoring_antigravity,
+                "score_minirocket_confirmations_exp450_antigravity",
+                side_effect=capture_minirocket,
+            ):
+                result = scoring_antigravity.score_dataset_condition_exp450_antigravity(
+                    values, condition, BACKEND_CPU
+                )
+            self.assertEqual(len(captured_mini), 1)
+            mini = captured_mini[0]
+            self.assertEqual(set(mini.by_kernel), {1024, 4096})
+            for requested, candidates in ((1024, mini.k1024), (4096, mini.k4096)):
+                kernel = mini.by_kernel[requested]
+                self.assertEqual(kernel.candidate, candidates)
+                self.assertEqual(set(kernel.by_seed), set(SEEDS_PAPER))
+                self.assertLessEqual(len(candidates), n_test)
+                self.assertTrue(all(0 <= index < n_test for index in candidates))
+                for score in kernel.by_seed.values():
+                    self.assertEqual(score.train_oof.shape, (len(values.train_rows),))
+                    self.assertEqual(score.test_score.shape, (n_test,))
+                    self.assertTrue(np.isfinite(score.train_oof).all())
+                    self.assertTrue(np.isfinite(score.test_score).all())
             self.assertIsInstance(result, Exp450DatasetConditionResult)
             self.assertEqual((result.dataset, result.condition_id), (values.dataset, condition.condition_id))
             self.assertEqual(result.sources.source_names, (
@@ -215,6 +245,12 @@ class Exp450DatasetScoringTests(unittest.TestCase):
                     self.assertTrue(np.isfinite(source.test_score).all())
             route = result.route
             self.assertEqual(route.n_test, n_test)
+            self.assertEqual(
+                route.promoted,
+                frozenset(
+                    set(route.exp236.standard) & (set(mini.k1024) | set(mini.k4096))
+                ),
+            )
             self.assertEqual(route.exp253.hard, route.exp236.hard | route.promoted)
             self.assertEqual(route.exp253.standard, route.exp236.standard - route.promoted)
             for indices in (
