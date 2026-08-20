@@ -18,7 +18,7 @@ import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
 
 from experiments.paper_public_baselines.calibration import upper_tail_p_values
-from experiments.paper_public_baselines.runner import verify_score_root
+from experiments.paper_public_baselines.runner import FrozenScoreManifest, verify_score_root
 
 
 CLASSICAL_ROOT = Path("/Users/mac/Documents/Dataset/paper_public_baselines_classical_v1")
@@ -320,7 +320,7 @@ def _baseline_identity_and_shards(
             for method, rows in methods.items() if isinstance(method, str) and isinstance(rows, Mapping)
             for dataset, shard in rows.items() if isinstance(dataset, str) and isinstance(shard, Mapping)
         }
-    else:
+    elif isinstance(manifest, FrozenScoreManifest):
         root = getattr(manifest, "run_root", None)
         db = getattr(manifest, "database_sha256", None)
         entries = getattr(manifest, "shards", None)
@@ -346,6 +346,8 @@ def _baseline_identity_and_shards(
         if tuple(identities) != tuple(datasets):
             raise ValueError("baseline dataset identity differs")
         shards = loaded
+    else:
+        raise ValueError("baseline score manifest differs")
     if type(db) is not str or len(db) != 64:
         raise ValueError("baseline database identity differs")
     return identities, db, shards

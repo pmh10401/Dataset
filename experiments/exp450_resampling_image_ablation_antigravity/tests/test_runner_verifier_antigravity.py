@@ -354,6 +354,23 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "score root"):
             verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
 
+    def test_verifier_derives_manifest_test_identity_from_verified_shards(self) -> None:
+        """Rebound manifest identity text cannot replace the immutable shard identity."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        freeze_all_conditions_antigravity({condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}, self.root, self.context, self.catalog)
+        manifest = self.root / "score_roots_antigravity" / "A_antigravity" / "condition_score_manifest_antigravity.json"
+
+        def corrupt(value):
+            identity = value["test_identities"][0]
+            identity["values_blob_sha256"][0] = "9" * 64
+            bare = {key: item for key, item in identity.items() if key not in {"row_digest", "count"}}
+            identity["row_digest"] = sha256(canonical_json_bytes(bare)).hexdigest()
+
+        _rebind_score_json(manifest, corrupt)
+        with self.assertRaisesRegex(ValueError, "score root manifest TEST identity differs"):
+            verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
     def test_verifier_rejects_a_checkpoint_hash_change_after_freeze(self) -> None:
         """A score root must not certify a local checkpoint whose bound bytes changed."""
         for condition in CONDITIONS:

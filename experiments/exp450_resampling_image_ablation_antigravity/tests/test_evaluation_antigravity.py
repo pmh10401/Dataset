@@ -240,6 +240,32 @@ class Exp450EvaluationTests(unittest.TestCase):
             self.assertEqual(result.metric_tables.method_order, METHOD_ORDER)
             self.assertEqual(events, ["classical", "deep_svdd", "drocc"])
 
+            class FrozenScoreManifestImpostor:
+                def __init__(self, value: FrozenScoreManifest) -> None:
+                    self.run_root = value.run_root
+                    self.run_config_sha256 = value.run_config_sha256
+                    self.database_sha256 = value.database_sha256
+                    self.pair_count = value.pair_count
+                    self.shards = value.shards
+
+            labels_called = False
+            legacy_manifests["drocc"] = FrozenScoreManifestImpostor(
+                legacy("impostor", ("drocc_1d",), DB_SHA256)
+            )
+
+            def impostor_labels(_: tuple[str, ...]):
+                nonlocal labels_called
+                labels_called = True
+                return LABELS
+
+            with self.assertRaisesRegex(ValueError, "baseline score manifest"):
+                evaluate_exp450_antigravity(
+                    Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+                    verifier=lambda condition: MANIFESTS[condition], label_loader=impostor_labels,
+                    baseline_verifier=verifier,
+                )
+            self.assertFalse(labels_called)
+
             labels_called = False
             legacy_manifests["drocc"] = legacy("wrong_db", ("drocc_1d",), "e" * 64)
 

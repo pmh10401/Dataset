@@ -129,13 +129,6 @@ def _test_identity(value: object) -> dict[str, object]:
     return value
 
 
-def _test_identities(entries: list[dict[str, object]]) -> list[dict[str, object]]:
-    identities = [_test_identity(entry.get("test")) for entry in entries]
-    if [identity["dataset"] for identity in identities] != [entry["dataset"] for entry in entries]:
-        raise ValueError("score root TEST identity differs")
-    return identities
-
-
 def _json_float_vector(value: object, size: int) -> np.ndarray:
     if not isinstance(value, list) or len(value) != size or any(type(item) is not float for item in value):
         raise ValueError("score root continuous score differs")
@@ -260,7 +253,7 @@ def _check_shard(
     backend: dict[str, object],
     entry: dict[str, object],
     descriptor: dict[str, object],
-) -> None:
+) -> dict[str, object]:
     dataset = entry["dataset"]
     token = sha256(dataset.encode("utf-8")).hexdigest()
     expected_file = f"score_roots_antigravity/{condition['condition_id']}_antigravity/{token}_antigravity/{_SHARD_NAME}"
@@ -303,6 +296,7 @@ def _check_shard(
         threshold_alerts = np.flatnonzero(scores >= 0.5).tolist()
         if alerts != threshold_alerts or not np.array_equal(mask, scores >= 0.5):
             raise ValueError("score root alert threshold differs")
+    return _test_identity(value["test_identity"])
 
 
 def verify_exp450_score_root_antigravity(
@@ -334,7 +328,7 @@ def verify_exp450_score_root_antigravity(
     condition = manifest["condition"]
     if not isinstance(condition, dict) or set(condition) != {"condition_id", "length_mode", "image_mode"} or condition["condition_id"] != condition_id or (condition["length_mode"], condition["image_mode"]) != _CONDITIONS[condition_id]:
         raise ValueError("score root condition differs")
-    if manifest["database_sha256"] != database_sha256 or manifest["context_sha256"] != context_sha256 or manifest["catalog_sha256"] != catalog["catalog_sha256"] or manifest["backend"] != backend or manifest["datasets"] != entries or manifest["test_identities"] != _test_identities(entries):
+    if manifest["database_sha256"] != database_sha256 or manifest["context_sha256"] != context_sha256 or manifest["catalog_sha256"] != catalog["catalog_sha256"] or manifest["backend"] != backend or manifest["datasets"] != entries:
         raise ValueError("score root manifest binding differs")
     expected_datasets = [entry["dataset"] for entry in entries]
     checkpoint_hashes = manifest["checkpoint_hashes"]
@@ -353,8 +347,12 @@ def verify_exp450_score_root_antigravity(
         raise ValueError("score root shard inventory differs")
     if [item.get("dataset") if isinstance(item, dict) else None for item in shards] != expected_datasets:
         raise ValueError("score root shard inventory differs")
-    for entry, descriptor in zip(entries, shards, strict=True):
+    shard_test_identities = [
         _check_shard(root, condition, context_sha256, catalog["catalog_sha256"], backend, entry, descriptor)
+        for entry, descriptor in zip(entries, shards, strict=True)
+    ]
+    if _canonical_bytes(manifest["test_identities"]) != _canonical_bytes(shard_test_identities):
+        raise ValueError("score root manifest TEST identity differs")
     return manifest
 
 
