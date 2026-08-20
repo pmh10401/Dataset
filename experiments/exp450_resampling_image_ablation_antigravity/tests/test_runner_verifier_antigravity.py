@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -27,6 +28,8 @@ from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import (
 )
 
 from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
+    append_dataset_condition_failure_antigravity,
+    verify_dataset_condition_inventory_antigravity,
     write_dataset_condition_success_antigravity,
 )
 from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity import (
@@ -46,6 +49,12 @@ from experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity
 )
 from experiments.exp450_resampling_image_ablation_antigravity.verifier_antigravity import (
     verify_exp450_score_root_antigravity,
+)
+from scratch.generate_exp450_codemap_antigravity import (
+    REPOSITORY_ROOT,
+    ast_callers_antigravity,
+    build_codemap_payload_antigravity,
+    tracked_existing_paths_antigravity,
 )
 
 
@@ -115,6 +124,18 @@ def _score(raw: RawDataset, condition: Exp450Condition) -> Exp450ConditionScore:
                                 {raw.dataset: result.route}, object(), object(), policies, BACKEND_CPU, {})
 
 
+def _rebind_score_json(path: Path, mutate) -> None:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    mutate(value)
+    if "shard_sha256" in value:
+        bare = {key: item for key, item in value.items() if key != "shard_sha256"}
+        value["shard_sha256"] = sha256(canonical_json_bytes(bare)).hexdigest()
+    if "manifest_sha256" in value:
+        bare = {key: item for key, item in value.items() if key != "manifest_sha256"}
+        value["manifest_sha256"] = sha256(canonical_json_bytes(bare)).hexdigest()
+    path.write_bytes(canonical_json_bytes(value))
+
+
 class Exp450RunnerVerifierTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = TemporaryDirectory(prefix="exp450_runner_verifier_antigravity_")
@@ -143,6 +164,24 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         with patch.object(runner_antigravity, "score_low_frequency", side_effect=AssertionError("global stage called")):
             with self.assertRaisesRegex(Exp450Incomplete, "pending=1"):
                 compose_all_conditions_antigravity(results, {self.raw.dataset: self.raw}, BACKEND_CPU, CONDITIONS)
+
+    def test_global_preflight_rejects_extra_or_mismatched_results_before_scoring(self) -> None:
+        """An extra or falsely keyed local result cannot enter global selection."""
+        results = {(self.raw.dataset, condition.condition_id): _result(self.raw, condition) for condition in CONDITIONS}
+        results[("extra_antigravity", "A")] = _result(self.raw, CONDITIONS[0])
+        with patch.object(runner_antigravity, "score_low_frequency", side_effect=AssertionError("global stage called")):
+            with self.assertRaises(Exp450Incomplete):
+                compose_all_conditions_antigravity(results, {self.raw.dataset: self.raw}, BACKEND_CPU, CONDITIONS)
+
+    def test_freeze_preflight_rejects_a_miskeyed_condition_before_any_root_write(self) -> None:
+        """Writing A--C before discovering a bad D would leave a partial freeze."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        scores = {condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}
+        scores["D"] = _score(self.raw, CONDITIONS[0])
+        with self.assertRaises(Exp450Incomplete):
+            freeze_all_conditions_antigravity(scores, self.root, self.context, self.catalog)
+        self.assertFalse((self.root / "score_roots_antigravity").exists())
 
     def test_local_schedule_rejects_a_backend_that_differs_from_its_context(self) -> None:
         """Scoring under one backend but checkpointing another would break provenance."""
@@ -190,6 +229,30 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         self.assertEqual(tuple(completed), tuple((self.raw.dataset, condition.condition_id) for condition in CONDITIONS))
         self.assertEqual(events, ["pool=2", "A", "B", "pool_closed", "C", "D"])
 
+    def test_resume_finishes_never_attempted_wave_one_before_wave_two_retry(self) -> None:
+        """A never-attempted failure must be recorded as wave one, never wave two."""
+        append_dataset_condition_failure_antigravity(self.root, self.context, self.catalog, self.raw, CONDITIONS[0], 1, RuntimeError("interrupted"))
+        events: list[str] = []
+        class FakePool:
+            def __init__(self, *, max_workers: int) -> None: pass
+            def __enter__(self): return self
+            def __exit__(self, *_args) -> None: pass
+            def submit(self, function, *args):
+                future = Future()
+                try: future.set_result(function(*args))
+                except Exception as error: future.set_exception(error)
+                return future
+        def score(values, condition, _backend):
+            events.append(condition.condition_id)
+            if condition.condition_id == "B": raise RuntimeError("still failing")
+            return _result(values, condition)
+        with patch.object(runner_antigravity, "ProcessPoolExecutor", FakePool), patch.object(runner_antigravity, "run_dataset_local_exp450_antigravity", side_effect=score):
+            with self.assertRaises(Exp450Incomplete):
+                runner_antigravity.execute_local_schedule_antigravity(self.root, self.context, self.catalog, {self.raw.dataset: self.raw}, BACKEND_CPU)
+        inventory = verify_dataset_condition_inventory_antigravity(self.root, self.context, self.catalog, {self.raw.dataset: self.raw})
+        self.assertEqual([(item.condition_id, item.wave) for item in inventory.failures], [("A", 1), ("B", 1), ("B", 2)])
+        self.assertEqual(events, ["B", "C", "D", "A", "B"])
+
     def test_four_manifests_verify_before_label_module_can_import(self) -> None:
         """A frozen root must retain four exact policy vectors without label access."""
         for condition in CONDITIONS:
@@ -233,6 +296,59 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         (self.root / "score_roots_antigravity" / "A_antigravity" / "unexpected_antigravity").mkdir()
         with self.assertRaisesRegex(ValueError, "score root"):
             verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
+    def test_verifier_rejects_fully_rebound_invalid_checkpoint_payload(self) -> None:
+        """Rehashing a syntactically valid empty checkpoint payload cannot certify science."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        freeze_all_conditions_antigravity({condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}, self.root, self.context, self.catalog)
+        checkpoint = next((self.root / "checkpoints_antigravity" / "A_antigravity").glob("*_antigravity/dataset_condition_success_antigravity.json"))
+        def corrupt_checkpoint(value):
+            value["payload"] = {}
+            value["payload_sha256"] = sha256(canonical_json_bytes({})).hexdigest()
+        _rebind_score_json(checkpoint, corrupt_checkpoint)
+        manifest = self.root / "score_roots_antigravity" / "A_antigravity" / "condition_score_manifest_antigravity.json"
+        def rebind_manifest(value):
+            value["checkpoint_hashes"][0]["sha256"] = sha256(checkpoint.read_bytes()).hexdigest()
+        _rebind_score_json(manifest, rebind_manifest)
+        with self.assertRaisesRegex(ValueError, "score root"):
+            verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
+    def test_verifier_rejects_fully_rebound_wrong_condition_mode(self) -> None:
+        """Rebinding every score-root hash cannot change frozen A's factor pair."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        freeze_all_conditions_antigravity({condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}, self.root, self.context, self.catalog)
+        shard = next((self.root / "score_roots_antigravity" / "A_antigravity").glob("*_antigravity/condition_score_shard_antigravity.json"))
+        _rebind_score_json(shard, lambda value: value["condition"].update({"image_mode": "area"}))
+        manifest = self.root / "score_roots_antigravity" / "A_antigravity" / "condition_score_manifest_antigravity.json"
+        def rebind(value):
+            value["condition"]["image_mode"] = "area"
+            value["shards"][0]["sha256"] = sha256(shard.read_bytes()).hexdigest()
+        _rebind_score_json(manifest, rebind)
+        with self.assertRaisesRegex(ValueError, "score root"):
+            verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
+    def test_verifier_rejects_fully_rebound_boolean_or_string_scores(self) -> None:
+        """JSON booleans and strings must not coerce into continuous float64 evidence."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        freeze_all_conditions_antigravity({condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}, self.root, self.context, self.catalog)
+        shard = next((self.root / "score_roots_antigravity" / "A_antigravity").glob("*_antigravity/condition_score_shard_antigravity.json"))
+        _rebind_score_json(shard, lambda value: value["policies"][0].update({"scores": [True, "0.2"]}))
+        manifest = self.root / "score_roots_antigravity" / "A_antigravity" / "condition_score_manifest_antigravity.json"
+        _rebind_score_json(manifest, lambda value: value["shards"][0].update({"sha256": sha256(shard.read_bytes()).hexdigest()}))
+        with self.assertRaisesRegex(ValueError, "score root"):
+            verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
+    def test_codemap_includes_runner_direct_paper_import_edges(self) -> None:
+        """Omitting a runner's direct paper imports makes its dependency map false."""
+        paths = tracked_existing_paths_antigravity(REPOSITORY_ROOT)
+        payload = build_codemap_payload_antigravity(paths, ast_callers_antigravity(paths))
+        caller = "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py"
+        edges = {(edge["caller"], edge["callee"]) for edge in payload["edges"]}
+        self.assertIn((caller, "paper/equipment_anomaly_detection/routing_paper.py"), edges)
+        self.assertIn((caller, "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py"), edges)
 
     def test_fresh_verifier_import_does_not_load_scoring_source_route_or_label_modules(self) -> None:
         """Adding a science import to the verifier would violate the post-freeze firewall."""

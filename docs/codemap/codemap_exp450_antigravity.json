@@ -11,6 +11,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
       "kind": "ast_import"
@@ -26,6 +31,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
       "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
       "kind": "ast_import"
@@ -33,6 +43,41 @@
     {
       "callee": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
       "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -41,6 +86,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
       "kind": "ast_import"
@@ -66,13 +116,33 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
       "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
       "kind": "ast_import"
     },
     {
       "callee": "experiments/exp449_reproducible_rebaseline_antigravity/validation_antigravity.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -96,7 +166,17 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
       "kind": "ast_import"
     },
@@ -106,8 +186,28 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -117,6 +217,11 @@
     },
     {
       "callee": "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
       "kind": "ast_import"
     },
@@ -136,13 +241,33 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
       "kind": "ast_import"
     },
     {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -151,7 +276,17 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
       "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
       "kind": "ast_import"
     },
@@ -162,6 +297,11 @@
     },
     {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
       "kind": "ast_import"
     },
@@ -186,12 +326,32 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
       "kind": "ast_import"
     },
@@ -226,6 +386,26 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
       "kind": "ast_import"
@@ -237,6 +417,11 @@
     },
     {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
       "kind": "ast_import"
     },
@@ -277,6 +462,11 @@
     },
     {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
       "kind": "ast_import"
     },
@@ -341,12 +531,27 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "scratch/generate_exp450_codemap_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
       "kind": "ast_import"
     },
@@ -357,6 +562,11 @@
     },
     {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
       "kind": "ast_import"
     },
@@ -396,13 +606,48 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
       "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
       "kind": "ast_import"
     },
     {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/calibration_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/config_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/data_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "kind": "ast_import"
     },
     {
@@ -421,12 +666,32 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/lineage_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
       "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
       "kind": "ast_import"
     },
@@ -441,6 +706,16 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/routing_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "paper/equipment_anomaly_detection/routing_paper.py",
       "kind": "ast_import"
@@ -451,8 +726,23 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/routing_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
       "caller": "paper/equipment_anomaly_detection/sources_paper/canonical_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "kind": "ast_import"
     },
     {
@@ -471,6 +761,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
       "caller": "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
       "kind": "ast_import"
@@ -478,6 +773,16 @@
     {
       "callee": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
       "caller": "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
       "kind": "ast_import"
     },
     {
@@ -491,13 +796,53 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
       "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
       "kind": "ast_import"
     },
     {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_calibration_adapter_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
       "kind": "ast_import"
     },
     {
@@ -526,6 +871,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "caller": "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
       "kind": "ast_import"
@@ -541,8 +891,28 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
       "caller": "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
       "kind": "ast_import"
     },
     {
@@ -551,8 +921,28 @@
       "kind": "ast_import"
     },
     {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
       "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -797,6 +1187,77 @@
     {
       "callers": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        "paper/equipment_anomaly_detection/calibration_paper.py",
+        "paper/equipment_anomaly_detection/config_paper.py",
+        "paper/equipment_anomaly_detection/data_paper.py",
+        "paper/equipment_anomaly_detection/hard_route_paper.py",
+        "paper/equipment_anomaly_detection/lineage_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/routing_paper.py",
+        "paper/equipment_anomaly_detection/runner_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_calibration_adapter_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+        "scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py"
+      ],
+      "effects": "Immutable values shared by the paper rerun provenance boundary.",
+      "module": "paper.equipment_anomaly_detection.contracts_paper",
+      "path": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_calibration_adapter_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
@@ -830,6 +1291,36 @@
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ],
+      "effects": "Exact four-policy proposal routes with continuous threshold-equivalent scores.",
+      "module": "paper.equipment_anomaly_detection.routing_paper",
+      "path": "paper/equipment_anomaly_detection/routing_paper.py",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
       ]
     },
@@ -909,6 +1400,27 @@
     },
     {
       "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ],
+      "effects": "Standalone full-TEST Exp440 low-frequency evidence and Exp441 selection.\n\nThis is the values-only scientific closure for the frozen Exp440 feature,\ncalibration, score, and strict two-depth decision, followed by Exp441's\nHard-empty one-per-dataset budget-30 rule.  It intentionally has no runtime\ndependency on ``experiments.exp440...`` or on historical artifacts.\n\nThis Task 6 source performs no full-dataset acceleration assessment.  Task 9\nmust establish exact CPU/device numerical and candidate parity plus an\nend-to-end 1.1x speed gate before any non-CPU backend can be authorized.",
+      "module": "paper.equipment_anomaly_detection.sources_paper.low_frequency_paper",
+      "path": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ]
+    },
+    {
+      "callers": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py",
@@ -964,13 +1476,44 @@
     },
     {
       "callers": [
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/routing_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ],
+      "effects": "Standalone deterministic TRAIN-omission replay for selected paper candidates.\n\nThe numerical low-frequency calibration remains in ``low_frequency_paper``;\nthis module copies Exp444's pure mask, retained-TRAIN, survival, and partition\nclosure without importing the legacy Exp444 package at runtime.",
+      "module": "paper.equipment_anomaly_detection.sources_paper.stability_paper",
+      "path": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py"
       ],
       "effects": "Generate and verify the self-contained, factual Exp450 code-map triplet.",
       "module": "scratch.generate_exp450_codemap_antigravity",
       "path": "scratch/generate_exp450_codemap_antigravity.py",
       "tests": [
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py"
       ]
     }
   ],

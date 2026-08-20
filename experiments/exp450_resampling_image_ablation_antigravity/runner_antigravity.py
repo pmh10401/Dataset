@@ -97,6 +97,23 @@ def _pending(
     return tuple((entry["dataset"], condition_id) for entry in catalog["datasets"] for condition_id in ("A", "B", "C", "D") if (entry["dataset"], condition_id) not in done)
 
 
+def _verified_result_preflight_antigravity(
+    raw: Mapping[str, RawDataset], results: Mapping[tuple[str, str], object], conditions: tuple[Exp450Condition, ...]
+) -> None:
+    """Reject every missing, extra, or falsely keyed local result before globals."""
+    by_condition = _conditions_by_id(conditions)
+    expected = tuple((dataset, condition_id) for dataset in raw for condition_id in by_condition)
+    actual = dict(results)
+    invalid = set(expected) ^ set(actual)
+    for coordinate in set(expected) & set(actual):
+        value = actual[coordinate]
+        if not isinstance(value, Exp450DatasetConditionResult) or value.dataset != coordinate[0] or value.condition_id != coordinate[1]:
+            invalid.add(coordinate)
+    if invalid:
+        ordered = tuple(coordinate for coordinate in expected if coordinate in invalid) + tuple(sorted(invalid - set(expected)))
+        raise Exp450Incomplete(ordered)
+
+
 def _persist_result(
     coordinate: tuple[str, str],
     result: object,
@@ -193,9 +210,11 @@ def execute_local_schedule_antigravity(
     schedule = build_execution_schedule_antigravity(catalog, backend)
     inventory = verify_dataset_condition_inventory_antigravity(root, context, catalog, raw)
     initial = _pending(catalog, inventory.completed)
+    failed_wave_one = {(record.dataset, record.condition_id) for record in inventory.failures if record.wave == 1}
     if initial and not any(record.wave == 2 for record in inventory.failures):
-        wave = 2 if inventory.failures else 1
-        _execute_wave_antigravity(initial, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=wave)
+        never_attempted = tuple(coordinate for coordinate in initial if coordinate not in failed_wave_one)
+        if never_attempted:
+            _execute_wave_antigravity(never_attempted, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=1)
     inventory = verify_dataset_condition_inventory_antigravity(root, context, catalog, raw)
     if inventory.wave_two:
         _execute_wave_antigravity(inventory.wave_two, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=2)
@@ -246,10 +265,7 @@ def compose_all_conditions_antigravity(
 ) -> dict[str, Exp450ConditionScore]:
     """Refuse all global stages until the complete dataset-condition cartesian product exists."""
     by_condition = _conditions_by_id(tuple(conditions))
-    required = tuple((dataset, condition_id) for dataset in raw for condition_id in by_condition)
-    pending = tuple(coordinate for coordinate in required if coordinate not in results)
-    if pending:
-        raise Exp450Incomplete(pending)
+    _verified_result_preflight_antigravity(raw, results, tuple(conditions))
     started = monotonic()
     scores = {}
     for condition_id, condition in by_condition.items():
@@ -310,7 +326,20 @@ def freeze_all_conditions_antigravity(
 ) -> dict[str, dict[str, object]]:
     """Freeze and independently verify the A--D roots in approved order."""
     if tuple(scores) != ("A", "B", "C", "D"):
-        raise ValueError("score root condition inventory differs")
+        raise Exp450Incomplete(tuple((dataset, condition_id) for dataset in (entry["dataset"] for entry in catalog.get("datasets", ())) for condition_id in ("A", "B", "C", "D")))
+    entries = catalog.get("datasets")
+    invalid: list[tuple[str, str]] = []
+    if not isinstance(entries, list):
+        raise Exp450Incomplete(())
+    expected_raw = tuple(entry.get("dataset") for entry in entries)
+    for condition_id, score in scores.items():
+        if not isinstance(score, Exp450ConditionScore) or score.condition.condition_id != condition_id or tuple(score.raw) != expected_raw or tuple(score.sources) != expected_raw or tuple(score.routes) != expected_raw or score.backend != context.backend:
+            invalid.extend((dataset, condition_id) for dataset in expected_raw if isinstance(dataset, str))
+    if invalid:
+        raise Exp450Incomplete(tuple(invalid))
+    # Reread every local authority before the first create-only score-root write.
+    for condition_id, score in scores.items():
+        verified_checkpoint_hashes_antigravity(root, context, catalog, dict(score.raw), score.condition)
     return {condition_id: freeze_condition_score_antigravity(scores[condition_id], root, context, catalog) for condition_id in ("A", "B", "C", "D")}
 
 

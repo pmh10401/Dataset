@@ -16,6 +16,10 @@ _SHARD_NAME = "condition_score_shard_antigravity.json"
 _MANIFEST_NAME = "condition_score_manifest_antigravity.json"
 _SHARD_SCHEMA = "exp450-condition-score-shard-antigravity.v1"
 _MANIFEST_SCHEMA = "exp450-condition-score-manifest-antigravity.v1"
+_CONDITIONS = {
+    "A": ("linear", "linear"), "B": ("polyphase_pchip", "linear"),
+    "C": ("linear", "area"), "D": ("polyphase_pchip", "area"),
+}
 
 
 def _canonical_bytes(value: object) -> bytes:
@@ -75,7 +79,7 @@ def _backend(context: object) -> dict[str, object]:
 
 
 def _catalog(catalog: object, context: object) -> list[dict[str, object]]:
-    if not isinstance(catalog, dict) or catalog.get("catalog_sha256") != getattr(context, "catalog_sha256", None):
+    if not isinstance(catalog, dict) or set(catalog) != {"schema", "mode", "database", "datasets", "catalog_sha256"} or catalog.get("catalog_sha256") != _digest({key: value for key, value in catalog.items() if key != "catalog_sha256"}) or catalog.get("catalog_sha256") != getattr(context, "catalog_sha256", None):
         raise ValueError("score root catalog differs")
     entries = catalog.get("datasets")
     if not isinstance(entries, list) or not entries:
@@ -84,6 +88,27 @@ def _catalog(catalog: object, context: object) -> list[dict[str, object]]:
     if any(type(dataset) is not str or not dataset for dataset in datasets) or len(set(datasets)) != len(datasets):
         raise ValueError("score root catalog differs")
     return entries
+
+
+def _json_float_vector(value: object, size: int) -> np.ndarray:
+    if not isinstance(value, list) or len(value) != size or any(type(item) not in {int, float} for item in value):
+        raise ValueError("score root continuous score differs")
+    try:
+        result = np.asarray(value, dtype=np.float64)
+    except (OverflowError, TypeError, ValueError) as error:
+        raise ValueError("score root continuous score differs") from error
+    if not np.all(np.isfinite(result)):
+        raise ValueError("score root continuous score differs")
+    return result
+
+
+def _check_checkpoint(value: object, entry: dict[str, object], condition_id: str, context_sha256: str, catalog_sha256: str, backend: dict[str, object]) -> None:
+    required = {"schema", "context_sha256", "catalog_sha256", "condition_id", "dataset", "raw_identity", "backend", "payload", "payload_sha256"}
+    if not isinstance(value, dict) or set(value) != required or value["schema"] != "exp450-dataset-condition-success-antigravity.v1" or value["dataset"] != entry["dataset"] or value["condition_id"] != condition_id or value["raw_identity"] != entry or value["context_sha256"] != context_sha256 or value["catalog_sha256"] != catalog_sha256 or value["backend"] != backend:
+        raise ValueError("score root checkpoint binding differs")
+    payload = value["payload"]
+    if not isinstance(payload, dict) or set(payload) != {"sources", "route"} or not isinstance(payload["sources"], list) or not isinstance(payload["route"], dict) or value["payload_sha256"] != _digest(payload):
+        raise ValueError("score root checkpoint payload differs")
 
 
 def _digest(value: object) -> str:
@@ -129,7 +154,7 @@ def _check_shard(
     for policy in policies:
         if not isinstance(policy, dict) or set(policy) != {"policy_id", "alerts", "score_dtype", "scores", "score_mask"} or policy["score_dtype"] != "float64":
             raise ValueError("score root policy schema differs")
-        scores = np.asarray(policy["scores"], dtype=np.float64)
+        scores = _json_float_vector(policy["scores"], size)
         mask = np.asarray(policy["score_mask"])
         alerts = policy["alerts"]
         if scores.ndim != 1 or scores.size != size or not np.all(np.isfinite(scores)):
@@ -169,7 +194,7 @@ def verify_exp450_score_root_antigravity(
     if manifest["manifest_sha256"] != _digest(bare):
         raise ValueError("score root manifest hash differs")
     condition = manifest["condition"]
-    if not isinstance(condition, dict) or set(condition) != {"condition_id", "length_mode", "image_mode"} or condition["condition_id"] != condition_id:
+    if not isinstance(condition, dict) or set(condition) != {"condition_id", "length_mode", "image_mode"} or condition["condition_id"] != condition_id or (condition["length_mode"], condition["image_mode"]) != _CONDITIONS[condition_id]:
         raise ValueError("score root condition differs")
     if manifest["context_sha256"] != context_sha256 or manifest["catalog_sha256"] != catalog["catalog_sha256"] or manifest["backend"] != backend or manifest["datasets"] != entries:
         raise ValueError("score root manifest binding differs")
@@ -181,9 +206,10 @@ def verify_exp450_score_root_antigravity(
         dataset = entry["dataset"]
         token = sha256(dataset.encode("utf-8")).hexdigest()
         checkpoint = root / "checkpoints_antigravity" / f"{condition_id}_antigravity" / f"{token}_antigravity" / "dataset_condition_success_antigravity.json"
-        _checkpoint_value, checkpoint_data = _read(checkpoint)
+        checkpoint_value, checkpoint_data = _read(checkpoint)
         if sha256(checkpoint_data).hexdigest() != descriptor["sha256"]:
             raise ValueError("score root checkpoint hash differs")
+        _check_checkpoint(checkpoint_value, entry, condition_id, context_sha256, catalog["catalog_sha256"], backend)
     shards = manifest["shards"]
     if not isinstance(shards, list) or len(shards) != len(entries):
         raise ValueError("score root shard inventory differs")
