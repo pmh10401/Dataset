@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp460 Task 3 strict fallback code map."""
+"""Build and validate the bounded Exp460 Task 4 strict fallback code map."""
 
 from __future__ import annotations
 
@@ -33,12 +33,18 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp460_ecg_strict_fallback_antigravity/fallback_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/evaluation_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py",
+    "experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py",
+    "experiments/exp460_ecg_strict_fallback_antigravity/replay_antigravity.py",
+    "experiments/exp460_ecg_strict_fallback_antigravity/dashboard_export_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_config_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_fallback_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py",
     "scratch/build_codemap_exp460_antigravity.py",
 )
 
@@ -125,8 +131,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp460 Task 3 strict fallback 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp460 Task 3 strict fallback 코드맵</h1><p>Task 3 keeps the governance and frozen-authority surface intact while adding strict fallback routing, four-rule evaluation, and immutable Task 3 result validation. Future artifact publication and CLI work remain planned only.</p>'
+        '<title>Exp460 Task 4 strict fallback 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp460 Task 4 strict fallback 코드맵</h1><p>Task 4 keeps the governance and frozen-authority surface intact while adding the six-leaf local artifact, semantic replay, and bounded dashboard payload. Future CLI and official-execution work remain planned only.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -147,9 +153,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
-            "role": "Caller: Task 1-6 execution. Effect: records Tasks 1-3 completion while keeping Tasks 4-6 unchecked.",
+            "role": "Caller: Task 1-6 execution. Effect: records Tasks 1-4 completion while keeping Tasks 5-6 unchecked.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
-            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "Task 3 — 엄격 복귀 규칙과 성능 계산")],
+            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "Task 4 — 결과 저장, 재검사, 대시보드 payload")],
         },
         {
             "id": "preregistration",
@@ -168,49 +174,49 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": "docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html",
-            "role": "Caller: implementation review. Effect: reports Task 3 strict fallback implementation, the four-row recomputation, zero official actions, and unchanged label-access state.",
+            "role": "Caller: implementation review. Effect: reports Task 4 six-leaf publication, semantic replay, bounded dashboard export, zero official actions, and unchanged label-access state.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
-            "evidence": [evidence_antigravity("docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html", "Task 3 lifecycle")],
+            "evidence": [evidence_antigravity("docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html", "Task 4 lifecycle")],
         },
         {
             "id": "dashboard",
             "path": "docs/EXP460_DASHBOARD_antigravity.html",
-            "role": "Caller: result-facing implementation review. Effect: shows Task 3/6 progress, the exact four-rule table, strict fallback status, and unchanged official-zero state.",
+            "role": "Caller: result-facing implementation review. Effect: shows Task 4/6 progress, the exact four-rule table, two failed folds, strict fallback status, and unchanged official-zero state.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
-            "evidence": [evidence_antigravity("docs/EXP460_DASHBOARD_antigravity.html", "Task 3/6")],
+            "evidence": [evidence_antigravity("docs/EXP460_DASHBOARD_antigravity.html", "Task 4/6")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: keeps Exp460 in planned-only ledger state with zero official actions and unchanged pending candidate while Task 3 works only in local files.",
+            "role": "Caller: governance review. Effect: keeps Exp460 in planned-only ledger state with zero official actions and unchanged pending candidate while Task 4 works only in local files.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_1_governance_complete\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: still registers Exp460 as planned-only lifecycle despite Task 3 local implementation progress.",
+            "role": "Caller: catalog review. Effect: still registers Exp460 as planned-only lifecycle despite Task 4 local implementation progress.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"Exp460\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: keeps champion and pending candidate unchanged while Task 3 adds only local fallback-evaluation code.",
+            "role": "Caller: champion review. Effect: keeps champion and pending candidate unchanged while Task 4 adds only local artifact/replay/dashboard code.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_1_governance_complete\"")],
         },
         {
             "id": "governance_regression",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py",
-            "role": "Caller: Task 1-3 verification. Effect: rejects stale docs, wrong progress/checkbox state, changed planned-only ledgers, or invalid stored codemap bytes.",
+            "role": "Caller: Task 1-4 verification. Effect: rejects stale docs, wrong progress/checkbox state, changed planned-only ledgers, or invalid stored codemap bytes.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
-            "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py", "test_task3_plan_dashboard_report_and_map_antigravity")],
+            "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py", "test_task4_plan_dashboard_report_and_map_antigravity")],
         },
         {
             "id": "map_builder",
             "path": "scratch/build_codemap_exp460_antigravity.py",
-            "role": "Caller: Task 3 validation. Effect: rebuilds and validates the bounded Exp460 Task 3 graph plus the stored HTML/JSON/lock triplet bytes.",
+            "role": "Caller: Task 4 validation. Effect: rebuilds and validates the bounded Exp460 Task 4 graph plus the stored HTML/JSON/lock triplet bytes.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("scratch/build_codemap_exp460_antigravity.py", "validate_map_antigravity")],
         },
@@ -276,7 +282,7 @@ def build_map_antigravity(
         {
             "id": "task3_rule_evaluation",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/evaluation_antigravity.py",
-            "role": "Caller: Task 3 implementation and future Task 4 artifacts. Effect: recomputes the four ordered rules, strict fallback status, and joint-success gate from the frozen Task 2 authority.",
+            "role": "Caller: Task 3 implementation and Task 4 artifacts. Effect: recomputes the four ordered rules, strict fallback status, and joint-success gate from the frozen Task 2 authority.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py"],
             "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/evaluation_antigravity.py", "compare_fallback_rules_antigravity")],
         },
@@ -288,24 +294,25 @@ def build_map_antigravity(
             "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py", "test_result_contracts_are_exact_immutable_and_reject_forgery_antigravity")],
         },
         {
-            "id": "future_artifacts_replay_dashboard",
+            "id": "task4_artifacts_publication",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py",
-            "role": "Caller: future Tasks 4-5. Effect: will publish the six result leaves, replay them from frozen authority, and export the bounded dashboard payload.",
-            "tests": [
-                "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py",
-                "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py",
-                "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py",
-            ],
-            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "정확한 6개 결과 파일")],
-            "status": "future_planned",
+            "role": "Caller: Task 4 implementation and future Task 5 CLI. Effect: publishes the exact six leaves with canonical JSON/JSONL bytes and an artifact hash map that excludes itself.",
+            "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py"],
+            "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py", "publish_result_antigravity")],
         },
         {
-            "id": "future_artifacts_tests",
-            "path": "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_artifacts_antigravity.py",
-            "role": "Caller: future Task 4 verification. Effect: will reject stored-result, replay, route, AUC, confusion, and dashboard tamper across the six-leaf publication boundary.",
-            "tests": [],
-            "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다.")],
-            "status": "future_planned",
+            "id": "task4_replay",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/replay_antigravity.py",
+            "role": "Caller: Task 4 verification and future Task 5 inspect. Effect: parses the stored six-leaf inventory, replays semantics from the frozen authority, and rejects rehashed tamper beyond hash-map equality.",
+            "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_replay_antigravity.py"],
+            "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/replay_antigravity.py", "inspect_replay_at_antigravity")],
+        },
+        {
+            "id": "task4_dashboard_export",
+            "path": "experiments/exp460_ecg_strict_fallback_antigravity/dashboard_export_antigravity.py",
+            "role": "Caller: Task 4 publication and future Task 5 dashboard rendering. Effect: exports the bounded scientific-only payload with dataset/predecessor identifiers, four comparison rows, two failed folds, strict status, and official-zero counters.",
+            "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_dashboard_export_antigravity.py"],
+            "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/dashboard_export_antigravity.py", "export_dashboard_antigravity")],
         },
         {
             "id": "future_cli_launcher",
@@ -353,7 +360,7 @@ def build_map_antigravity(
             "from": "governance_regression",
             "to": "dashboard",
             "type": "tests",
-            "evidence": evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py", "test_task3_plan_dashboard_report_and_map_antigravity"),
+            "evidence": evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py", "test_task4_plan_dashboard_report_and_map_antigravity"),
         },
         {
             "from": "governance_regression",
@@ -413,7 +420,7 @@ def build_map_antigravity(
             "from": "task2_predecessor_capture",
             "to": "dashboard",
             "type": "governs",
-            "evidence": evidence_antigravity("docs/EXP460_DASHBOARD_antigravity.html", "Task 3 route and evaluation"),
+            "evidence": evidence_antigravity("docs/EXP460_DASHBOARD_antigravity.html", "Task 4 artifact publication and replay"),
         },
         {
             "from": "task2_predecessor_capture",
@@ -441,18 +448,24 @@ def build_map_antigravity(
         },
         {
             "from": "task3_rule_evaluation",
-            "to": "future_artifacts_replay_dashboard",
+            "to": "task4_artifacts_publication",
             "type": "governs",
             "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "정확한 6개 결과 파일"),
         },
         {
-            "from": "future_artifacts_tests",
-            "to": "future_artifacts_replay_dashboard",
-            "type": "tests",
-            "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다."),
+            "from": "task4_artifacts_publication",
+            "to": "task4_replay",
+            "type": "governs",
+            "evidence": evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/replay_antigravity.py", "from .artifacts_antigravity import ("),
         },
         {
-            "from": "future_artifacts_replay_dashboard",
+            "from": "task4_artifacts_publication",
+            "to": "task4_dashboard_export",
+            "type": "governs",
+            "evidence": evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/artifacts_antigravity.py", "from .dashboard_export_antigravity import export_dashboard_antigravity"),
+        },
+        {
+            "from": "task4_replay",
             "to": "future_cli_launcher",
             "type": "governs",
             "evidence": evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "dashboard payload를 진행 상태, 네 비교 행, 두 실패 fold, 최종 route, label_query_count 0으로 제한한다."),
@@ -465,7 +478,7 @@ def build_map_antigravity(
         },
     ]
     graph = {
-        "schema": "exp460_task3_strict_fallback_codemap_v1",
+        "schema": "exp460_task4_strict_fallback_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_parent_commit,
         "unknown_relationships": [],
@@ -473,7 +486,7 @@ def build_map_antigravity(
         "edges": edges,
     }
     lock = {
-        "schema": "exp460_task3_strict_fallback_codemap_lock_v1",
+        "schema": "exp460_task4_strict_fallback_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_parent_commit,
         "represented_paths": [
@@ -497,9 +510,9 @@ def load_triplet_antigravity() -> tuple[dict[str, object], dict[str, object], st
 
 
 def validate_map_antigravity(graph: dict[str, object], lock: dict[str, object], rendered: str) -> None:
-    if graph["schema"] != "exp460_task3_strict_fallback_codemap_v1":
+    if graph["schema"] != "exp460_task4_strict_fallback_codemap_v1":
         raise ValueError("unexpected graph schema")
-    if lock["schema"] != "exp460_task3_strict_fallback_codemap_lock_v1":
+    if lock["schema"] != "exp460_task4_strict_fallback_codemap_lock_v1":
         raise ValueError("unexpected lock schema")
     if graph["source_parent_commit"] != lock["source_parent_commit"]:
         raise ValueError("source_parent_commit mismatch")
@@ -517,8 +530,8 @@ def validate_map_antigravity(graph: dict[str, object], lock: dict[str, object], 
                 raise ValueError(f"unresolved evidence: {evidence}")
         if node.get("status") != "future_planned" and not (ROOT_ANTIGRAVITY / node["path"]).is_file():
             raise ValueError(f"missing current node path: {node['path']}")
-    if len(graph["nodes"]) > 24:
-        raise ValueError("graph exceeds 24 nodes")
+    if len(graph["nodes"]) > 25:
+        raise ValueError("graph exceeds 25 nodes")
     for edge in graph["edges"]:
         if edge["from"] not in node_ids or edge["to"] not in node_ids:
             raise ValueError(f"edge references unknown node: {edge}")

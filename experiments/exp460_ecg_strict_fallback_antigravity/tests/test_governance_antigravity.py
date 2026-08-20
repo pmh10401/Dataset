@@ -165,11 +165,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
             FROZEN_CHAMPION_ANTIGRAVITY,
         )
 
-    def test_task3_plan_dashboard_report_and_map_antigravity(self) -> None:
-        """Break caught: Task 3 progress, rule table, or bounded map drift from the implemented fallback evaluation."""
+    def test_task4_plan_dashboard_report_and_map_antigravity(self) -> None:
+        """Break caught: Task 4 progress, artifact boundary, or bounded map drift from the implemented fallback evaluation."""
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for value in (
-            "Task 3/6",
+            "Task 4/6",
             "governance_complete_implementation_not_started",
             "official evaluate/inspect counts",
             "0/0",
@@ -186,9 +186,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "fallback_triggered_performance_not_improved",
             "joint success",
             "false",
-            "Task 3 route and evaluation",
+            "Task 4 artifact publication and replay",
             "Current authority summary",
             "Strict route outcome",
+            "local artifact inventory",
+            "context_antigravity.json",
+            "rule_comparisons_antigravity.jsonl",
+            "failed_folds_antigravity.jsonl",
+            "decision_antigravity.json",
+            "dashboard_snapshot_antigravity.json",
+            "artifact_sha256_antigravity.json",
+            "Task 4 dashboard payload boundary",
             "20260721",
             "0.8208339620743423",
             "20261721",
@@ -206,18 +214,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for value in (
-            "Task 3 lifecycle",
-            "Task 3/6",
-            "FAILED (errors=7)",
-            "Ran 7 tests",
-            "Ran 16 tests",
-            "Ran 10 tests",
+            "Task 4 lifecycle",
+            "Task 4/6",
+            "FAILED (errors=8)",
+            "Ran 8 tests",
+            "Ran 24 tests",
+            "Ran 11 tests",
             "fallback_triggered_performance_not_improved",
             "8/10 pass",
             "majority route",
             "candidate",
             "strict route",
             "baseline",
+            "semantic replay",
+            "bounded dashboard payload",
             "Exp459 historical governance note",
         ):
             self.assertIn(value, report)
@@ -277,6 +287,24 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 f'<label><input type="checkbox" checked disabled>{step_label}',
                 task3,
             )
+        self.assertIn('<h2><label><input type="checkbox" checked disabled>Task 4', plan)
+        task4 = plan.split("Task 4", 1)[1].split("Task 5", 1)[0]
+        self.assertEqual(
+            task4.count('<label><input type="checkbox" checked disabled>Step '),
+            6,
+        )
+        for step_label in (
+            "Step 1",
+            "Step 2",
+            "Step 3",
+            "Step 4",
+            "Step 5",
+            "Step 6",
+        ):
+            self.assertIn(
+                f'<label><input type="checkbox" checked disabled>{step_label}',
+                task4,
+            )
 
         spec = importlib.util.spec_from_file_location(
             "exp460_map_builder_antigravity",
@@ -289,9 +317,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict)
-        self.assertLessEqual(len(graph["nodes"]), 24)
-        self.assertEqual(graph["schema"], "exp460_task3_strict_fallback_codemap_v1")
-        self.assertEqual(lock["schema"], "exp460_task3_strict_fallback_codemap_lock_v1")
+        self.assertLessEqual(len(graph["nodes"]), 25)
+        self.assertEqual(graph["schema"], "exp460_task4_strict_fallback_codemap_v1")
+        self.assertEqual(lock["schema"], "exp460_task4_strict_fallback_codemap_lock_v1")
         node_ids = {node["id"] for node in graph["nodes"]}
         for node_id in (
             "approved_design",
@@ -314,8 +342,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task3_strict_route",
             "task3_rule_evaluation",
             "task3_rule_tests",
-            "future_artifacts_replay_dashboard",
-            "future_artifacts_tests",
+            "task4_artifacts_publication",
+            "task4_replay",
+            "task4_dashboard_export",
             "future_cli_launcher",
             "future_cli_tests",
         ):
@@ -352,7 +381,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         html_path = ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]
         original = html_path.read_text(encoding="utf-8")
-        mutated = original.replace("Task 3 strict fallback 코드맵", "Task 3 strict fallback 코드맵 tampered", 1)
+        mutated = original.replace("Task 4 strict fallback 코드맵", "Task 4 strict fallback 코드맵 tampered", 1)
         self.assertNotEqual(mutated, original)
         html_path.write_text(mutated, encoding="utf-8")
         try:

@@ -103,15 +103,15 @@ $PY scratch/build_codemap_exp460_antigravity.py --validate-only</code></pre>
   <pre><code>def strict_route_antigravity(authority):
     return "candidate" if all(row.passed for row in authority.fold_records) else "baseline"</code></pre>
 
-  <h2>Task 4 — 결과 저장, 재검사, 대시보드 payload</h2>
+  <h2><label><input type="checkbox" checked disabled>Task 4 — 결과 저장, 재검사, 대시보드 payload</label></h2>
   <p><strong>정확한 6개 결과 파일:</strong> <code>context_antigravity.json</code>, <code>rule_comparisons_antigravity.jsonl</code>, <code>failed_folds_antigravity.jsonl</code>, <code>decision_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code>.</p>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — 6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — canonical JSON/JSONL로 6개 파일을 임시 root에 저장한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — replay가 Task 2 authority에서 네 규칙과 성능을 다시 계산해 저장값과 비교하게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — dashboard payload를 진행 상태, 네 비교 행, 두 실패 fold, 최종 route, label_query_count 0으로 제한한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — focused GREEN 두 번과 Tasks 2–3 및 Exp459 replay 회귀를 실행한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — HTML 대시보드, map, 체크박스를 갱신하고 커밋·검토한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — canonical JSON/JSONL로 6개 파일을 임시 root에 저장한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — replay가 Task 2 authority에서 네 규칙과 성능을 다시 계산해 저장값과 비교하게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — dashboard payload를 진행 상태, 네 비교 행, 두 실패 fold, 최종 route, label_query_count 0으로 제한한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — focused GREEN 두 번과 Tasks 2–3 및 Exp459 replay 회귀를 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — HTML 대시보드, map, 체크박스를 갱신하고 커밋·검토한다.</label></li>
   </ul>
 
   <h2>Task 5 — CLI, 비공식 재현, 최종 후보</h2>

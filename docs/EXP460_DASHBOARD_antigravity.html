@@ -3,8 +3,8 @@
 <body><main>
   <h1>Exp460 ECG 엄격 복귀 대시보드</h1>
   <table>
-    <tr><th>progress</th><td>Task 3/6</td></tr>
-    <tr><th>status</th><td><code>governance_complete_implementation_not_started</code> (ledger state unchanged; Task 3 recomputed fallback science from the frozen predecessor authority only)</td></tr>
+    <tr><th>progress</th><td>Task 4/6</td></tr>
+    <tr><th>status</th><td><code>governance_complete_implementation_not_started</code> (ledger state unchanged; Task 4 now publishes and replays the scientific-only six-leaf local artifact from the frozen predecessor authority)</td></tr>
     <tr><th>official evaluate/inspect counts</th><td>0/0</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
     <tr><th>frozen predecessor authority</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
@@ -13,14 +13,24 @@
     <tr><th>official decision rule</th><td><code>strict_10_of_10</code> only</td></tr>
     <tr><th>strict final status</th><td><code>fallback_triggered_performance_not_improved</code></td></tr>
     <tr><th>joint success</th><td><code>false</code></td></tr>
+    <tr><th>local artifact inventory</th><td><code>context_antigravity.json</code>, <code>rule_comparisons_antigravity.jsonl</code>, <code>failed_folds_antigravity.jsonl</code>, <code>decision_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code></td></tr>
   </table>
   <div class="box">
-    <p><strong>Task 3 route and evaluation:</strong> <code>fallback_antigravity.py</code> and <code>evaluation_antigravity.py</code> now recompute the exact four fallback rules from the frozen Task 2 authority, while <code>contracts_antigravity.py</code> adds immutable Task 3 result validation.</p>
+    <p><strong>Task 4 artifact publication and replay:</strong> <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, and <code>dashboard_export_antigravity.py</code> now publish the exact six leaves, recompute the result from the frozen Task 2 authority, and reject semantic tamper even when the artifact hash map is rehashed.</p>
     <p><strong>Frozen rule order:</strong> <code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code>.</p>
     <p><strong>Current authority summary:</strong> 8 of 10 records pass; seed <code>20260721</code> fold <code>3</code> stays at <code>0.8208339620743423</code>, seed <code>20261721</code> fold <code>4</code> stays at <code>0.8004124541019063</code>, and the worst <code>period_change</code> AUC therefore remains <code>0.8004124541019063</code>.</p>
     <p><strong>Strict route outcome:</strong> majority stays <code>candidate</code>, but <code>strict_10_of_10</code> falls back to <code>baseline</code>, so the FN improvement from <code>829</code> is not retained and the final status is <code>fallback_triggered_performance_not_improved</code>.</p>
-    <p><strong>Task 3 scientific-only boundary:</strong> no Exp460 official command ran, no Exp460 result root exists, and no TEST label access was added while recomputing these comparison rows.</p>
+    <p><strong>Task 4 dashboard payload boundary:</strong> the exported payload stays limited to dataset and predecessor identifiers, four comparison rows, two failed folds, strict route, strict status, worst period AUC, official evaluate/inspect counts <code>0/0</code>, and <code>label_query_count</code> <code>0</code>.</p>
+    <p><strong>Task 4 scientific-only boundary:</strong> no Exp460 official command ran, no Exp460 result root exists, no raw TRAIN rows were stored, and no TEST label access was added while publishing or replaying these six leaves.</p>
   </div>
+  <h2>Failed folds</h2>
+  <table>
+    <thead><tr><th>seed</th><th>fold</th><th>period_change AUC</th></tr></thead>
+    <tbody>
+      <tr><td><code>20260721</code></td><td><code>3</code></td><td><code>0.8208339620743423</code></td></tr>
+      <tr><td><code>20261721</code></td><td><code>4</code></td><td><code>0.8004124541019063</code></td></tr>
+    </tbody>
+  </table>
   <h2>Rule comparison</h2>
   <table>
     <thead><tr><th>rule</th><th>route</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th><th>officially eligible</th></tr></thead>
