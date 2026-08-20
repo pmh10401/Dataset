@@ -51,6 +51,41 @@ def _evaluation() -> Exp450EvaluationAntigravity:
 
 
 class Exp450ReportingCliTests(unittest.TestCase):
+    def test_resume_eta_uses_only_current_invocation_attempts(self) -> None:
+        """Historical checkpoint counts must not dilute a resumed run's throughput ETA."""
+        import scratch.run_exp450_resampling_image_ablation_antigravity as cli
+        import experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity as runner
+        from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
+            append_dataset_condition_failure_antigravity,
+            write_dataset_condition_success_antigravity,
+        )
+
+        with TemporaryDirectory(prefix="exp450_resume_eta_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            raw = task6_raw("resume_eta_antigravity")
+            catalog = task6_catalog((raw,))
+            context = task6_context(root, catalog)
+            conditions = {condition.condition_id: condition for condition in TASK6_CONDITIONS}
+            for condition_id in ("A", "B"):
+                write_dataset_condition_success_antigravity(root, context, catalog, raw, task6_result(raw, conditions[condition_id]))
+            append_dataset_condition_failure_antigravity(root, context, catalog, raw, conditions["C"], 1, RuntimeError("fixture wave one"))
+            emitted: list[dict[str, object]] = []
+            def resume_schedule(root, context, catalog, raw, backend, progress):
+                progress({"dataset": raw["resume_eta_antigravity"].dataset, "condition": "D", "wave": 1, "attempt": 1, "status": "success"})
+                progress({"dataset": raw["resume_eta_antigravity"].dataset, "condition": "C", "wave": 2, "attempt": 2, "status": "success"})
+                return {}
+            with patch.object(cli, "_science_inputs", return_value=(root, context, catalog, {raw.dataset: raw}, context.backend)), \
+                 patch.object(runner, "execute_local_schedule_antigravity", side_effect=resume_schedule), \
+                 patch.object(runner, "compose_all_conditions_antigravity", return_value={}), \
+                 patch.object(runner, "freeze_all_conditions_antigravity"), \
+                 patch.object(cli, "monotonic", side_effect=(100.0, 110.0, 130.0)), \
+                 patch.object(cli, "_emit", side_effect=emitted.append):
+                self.assertEqual(cli._run("smoke"), 0)
+            self.assertEqual(len(emitted), 2)
+            self.assertEqual((emitted[0]["completed"], emitted[0]["failed"], emitted[0]["remaining"]), (3, 1, 1))
+            self.assertEqual(emitted[0]["eta_seconds"], 10.0)
+            self.assertEqual((emitted[1]["completed"], emitted[1]["failed"], emitted[1]["remaining"], emitted[1]["eta_seconds"]), (4, 1, 0, 0.0))
+
     def test_run_resume_progress_starts_from_verified_checkpoint_inventory(self) -> None:
         """A reduced resumed run counts durable successes/failures without replaying them."""
         import scratch.run_exp450_resampling_image_ablation_antigravity as cli

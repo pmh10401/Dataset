@@ -18,7 +18,7 @@
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "e05dd0165f1fc762bcf30b0db7fca7808a3d920cdf4e20c6b7bfc951c878e58e",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py": "7ff057c92c489c6ee8b4e47aca9b182de46a1545bb8a33019a05171fcae74a0e",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py": "8e096f68c93ead1a119ffd469c0cb5b76dcdb58184b2f14209001805a2a10ee2",
-    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "281403bef1543bec1ab5662467fb53c0fc7bd496419ea950c771552b134e3e0a",
+    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "18b167d138f88a05ca0cc01571b55d3549c662585da47be52a3456cd7c2139ad",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py": "b550be065b001b1a1f7230d129ff0345733eeb56ae5c8523465bb1f0c7fec756",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py": "7cb765a263c4d7f825e18be9b87f9a0d496fd3a8234823519ef7bdf974842ff8",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py": "4fa2d54b5d82669a23bb638911614268b60b3b89191e6e452684cec0af56fa46",
@@ -35,7 +35,7 @@
     "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py": "99bd057400759e242d9f153190da9a9341e5b8a789e25cd21d088a9a8fe4a3f0",
     "paper/equipment_anomaly_detection/sources_paper/stability_paper.py": "56d90cef14f37580c5bc5d126e7fac8637d27053f5876bccb95681b83136d25e",
     "scratch/generate_exp450_codemap_antigravity.py": "b207fb88c3e5b5cbaaa7fdd3e55d63c042ca05fb9d6dde66de2b9ff3e30bbe35",
-    "scratch/run_exp450_resampling_image_ablation_antigravity.py": "fce738beaeb390888f410e72ad548f8d7c77ec5f11fc737372e3395cf9c37de7"
+    "scratch/run_exp450_resampling_image_ablation_antigravity.py": "f449d5ed6345eafd5b7867293b75bc69ffa702ab944e0f8e1c78bf22854c6510"
   },
   "scanned_scope": [
     "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",

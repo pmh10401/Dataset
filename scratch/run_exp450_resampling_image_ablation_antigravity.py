@@ -104,8 +104,9 @@ def _run(mode: str) -> int:
     started = monotonic()
     root, context, catalog, raw, backend = _science_inputs(mode)
     total, succeeded, failed = _verified_progress_state(mode, root, context, catalog, raw)
+    observed_attempts = 0
     def progress(event: dict[str, object]) -> None:
-        nonlocal failed
+        nonlocal failed, observed_attempts
         coordinate = (str(event["dataset"]), str(event["condition"]))
         if event["status"] == "success":
             if coordinate in succeeded:
@@ -113,11 +114,11 @@ def _run(mode: str) -> int:
             succeeded.add(coordinate)
         else:
             failed += 1
+        observed_attempts += 1
         elapsed = monotonic() - started
         completed = len(succeeded)
         remaining = total - completed
-        samples = completed + failed
-        eta = 0.0 if samples == 0 else max(0.0, elapsed / samples * remaining)
+        eta = 0.0 if observed_attempts == 0 else max(0.0, elapsed / observed_attempts * remaining)
         _emit({"experiment": _EXPERIMENT, **event, "completed": completed, "failed": failed, "remaining": remaining, "total": total, "elapsed_seconds": elapsed, "eta_seconds": eta})
     results = execute_local_schedule_antigravity(root, context, catalog, raw, backend, progress=progress)
     scores = compose_all_conditions_antigravity(results, raw, backend)
