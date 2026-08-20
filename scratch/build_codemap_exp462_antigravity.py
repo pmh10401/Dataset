@@ -197,7 +197,7 @@ def build_map_antigravity(
             "path": plan,
             "role": "Caller: Task 1-6 execution. Effect: records owned Task 1 files, unchecked controls, planned status, official0/label0, and future Task 2-5 boundaries.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task1 implemented pending external review / Task2 next")],
+            "evidence": [evidence_antigravity(plan, "Task 1 complete / Task 2 next")],
         },
         {
             "id": "preregistration",
@@ -223,9 +223,9 @@ def build_map_antigravity(
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task1 implemented pending external review / Task2 next, planned status, exact gradual and period targets, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 1 complete / Task 2 next, planned status, exact gradual and period targets, official0, label0, and null hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task1 implemented pending external review / Task2 next")],
+            "evidence": [evidence_antigravity(dashboard, "Task 1 complete / Task 2 next")],
         },
         {
             "id": "research_state",

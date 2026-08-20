@@ -124,7 +124,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp462")
                 self.assertEqual(record["kind"], "ecg_gradual_signature_qualification")
                 self.assertEqual(record["status"], "planned_implementation_not_started")
-                self.assertEqual(record["implementation_status"], "task_1_governance_pending_review")
+                self.assertEqual(record["implementation_status"], "task_1_complete_pending_task_2")
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -271,8 +271,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Task 1 governance implementation report",
             "planned_implementation_not_started",
-            "task_1_governance_pending_review",
-            "Task1 implemented pending external review / Task2 next",
+            "task_1_complete_pending_task_2",
+            "Task 1 complete / Task 2 next",
             "hydra_period_gradual_rank_max",
             "0.8402306222021025",
             "0.907392736783864",
@@ -286,9 +286,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task1 implemented pending external review / Task2 next",
+            "Task 1 complete / Task 2 next",
             "planned_implementation_not_started",
-            "task_1_governance_pending_review",
+            "task_1_complete_pending_task_2",
             "official evaluate 0 / official inspect 0",
             "label query count",
             "official artifact map SHA-256",
@@ -307,10 +307,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn(phrase, dashboard)
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
-        self.assertIn("Task1 implemented pending external review / Task2 next", plan)
+        self.assertIn("Task 1 complete / Task 2 next", plan)
         for task_number in range(1, 7):
             task = re.search(
-                rf"<section>.*?<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?</section>",
+                rf"<section>\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?</section>",
                 plan,
                 flags=re.DOTALL,
             )
@@ -318,8 +318,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert task is not None
             tags = re.findall(r"<input\b[^>]*>", task.group(0), flags=re.IGNORECASE)
             self.assertGreaterEqual(len(tags), 1, f"Task {task_number} inputs missing")
-            for tag in tags:
-                self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)", tag)
+            if task_number == 1:
+                self.assertEqual(len(tags), 7)
+                checked_tags = [
+                    tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)
+                ]
+                self.assertEqual(len(checked_tags), 7, checked_tags)
+            else:
+                self.assertEqual(len(tags), 7)
+                for tag in tags:
+                    self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)", tag)
 
         builder = map_builder_antigravity()
         builder.main_antigravity_validate_only_for_tests()
