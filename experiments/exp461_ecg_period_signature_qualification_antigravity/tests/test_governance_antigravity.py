@@ -285,6 +285,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             DESIGN_SHA256_ANTIGRAVITY,
             PREREGISTRATION_SHA256_ANTIGRAVITY,
             RUNBOOK_SHA256_ANTIGRAVITY,
+            "Task1 complete / Task2 next",
             "docs/EXP461_PREREGISTRATION_antigravity.html",
             "docs/EXP461_RUNBOOK_antigravity.html",
             "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
@@ -307,6 +308,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Task 1/6",
             "planned_implementation_not_started",
+            "Task1 complete / Task2 next",
             "공식 실행 0회",
             "label query count",
             "artifact map SHA-256",
@@ -333,7 +335,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
         tags = re.findall(r"<input\b[^>]*>", task1.group(0), flags=re.IGNORECASE)
         self.assertEqual(len(tags), 6)
         for tag in tags:
-            self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+            self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+
+        for task_number in range(2, 7):
+            section = re.search(
+                rf"<section class=\"task\">\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?(?=<section class=\"task\">|<h2>완료 판단</h2>)",
+                plan,
+                flags=re.DOTALL,
+            )
+            self.assertIsNotNone(section)
+            assert section is not None
+            later_tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
+            self.assertGreaterEqual(len(later_tags), 2)
+            for tag in later_tags:
+                self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
 
         builder = map_builder_antigravity()
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
