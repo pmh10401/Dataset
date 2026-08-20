@@ -157,14 +157,34 @@ def _lanes(value: object, size: int) -> tuple[set[int], set[int], set[int]]:
     return lanes
 
 
+def _check_origin(value: object, expected: dict[str, object]) -> None:
+    """Require the frozen source provenance with exact JSON scalar types."""
+    string_fields = (
+        "node_id", "stage", "input_kind", "module", "source_sha256",
+        "paper_module", "parity_oracle",
+    )
+    if (
+        not isinstance(value, dict)
+        or set(value) != set(expected)
+        or any(type(value[field]) is not str or value[field] != expected[field] for field in string_fields)
+        or not isinstance(value["symbols"], list)
+        or any(type(symbol) is not str for symbol in value["symbols"])
+        or value["symbols"] != expected["symbols"]
+        or type(value["label_access"]) is not bool
+        or value["label_access"] is not False
+    ):
+        raise ValueError("score root checkpoint payload differs")
+
+
 def _check_sources(value: object, n_train: int, n_test: int) -> None:
     required = {"source_id", "order", "origin", "train_oof_score", "test_score", "test_pvalue", "threshold", "test_native_pass", "eligible", "eligibility_reason"}
     if not isinstance(value, list) or len(value) != len(_SOURCES):
         raise ValueError("score root checkpoint payload differs")
     for order, row in enumerate(value):
         source_id = _SOURCES[order]
-        if not isinstance(row, dict) or set(row) != required or row["source_id"] != source_id or type(row["order"]) is not int or row["order"] != order or type(row["threshold"]) is not float or not np.isfinite(row["threshold"]) or row["threshold"] != _ALPHAS[source_id] or type(row["eligible"]) is not bool or row["origin"] != _ORIGINS[order]:
+        if not isinstance(row, dict) or set(row) != required or row["source_id"] != source_id or type(row["order"]) is not int or row["order"] != order or type(row["threshold"]) is not float or not np.isfinite(row["threshold"]) or row["threshold"] != _ALPHAS[source_id] or type(row["eligible"]) is not bool:
             raise ValueError("score root checkpoint payload differs")
+        _check_origin(row["origin"], _ORIGINS[order])
         pvalues = _numbers(row["test_pvalue"], n_test, pvalue=True)
         native = row["test_native_pass"]
         if not isinstance(native, list) or len(native) != n_test or any(type(item) is not bool for item in native):

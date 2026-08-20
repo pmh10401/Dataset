@@ -398,6 +398,21 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "score root"):
             verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
 
+    def test_verifier_rejects_fully_rebound_origin_label_access_zero(self) -> None:
+        """A JSON number must not substitute for the frozen false label-access flag."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        freeze_all_conditions_antigravity({condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}, self.root, self.context, self.catalog)
+        checkpoint = next((self.root / "checkpoints_antigravity" / "A_antigravity").glob("*_antigravity/dataset_condition_success_antigravity.json"))
+        def corrupt(value):
+            value["payload"]["sources"][0]["origin"]["label_access"] = 0
+            value["payload_sha256"] = sha256(canonical_json_bytes(value["payload"])).hexdigest()
+        _rebind_score_json(checkpoint, corrupt)
+        manifest = self.root / "score_roots_antigravity" / "A_antigravity" / "condition_score_manifest_antigravity.json"
+        _rebind_score_json(manifest, lambda value: value["checkpoint_hashes"][0].update({"sha256": sha256(checkpoint.read_bytes()).hexdigest()}))
+        with self.assertRaisesRegex(ValueError, "score root"):
+            verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
     def test_verifier_rejects_fully_rebound_pvalues_and_native_passes_inconsistent_with_scores(self) -> None:
         """P-values and native passes must be recomputed from the frozen score arrays."""
         for condition in CONDITIONS:
