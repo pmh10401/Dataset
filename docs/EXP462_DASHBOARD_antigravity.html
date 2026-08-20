@@ -3,9 +3,9 @@
 <style>body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}code{background:#eef2f7;padding:.1rem .3rem}</style></head>
 <body><main><h1>Exp462 ECG gradual signature 대시보드</h1>
 <table>
-  <tr><th>progress</th><td>Task 1 complete / Task 2 next</td></tr>
+  <tr><th>progress</th><td>Task 2 implemented pending review / Task 3 not started</td></tr>
   <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
-  <tr><th>implementation status</th><td><code>task_1_complete_pending_task_2</code></td></tr>
+  <tr><th>implementation status</th><td><code>task_2_implemented_pending_review</code></td></tr>
   <tr><th>goal</th><td>Exp461 period 성능을 보존하면서 gradual_drift 최소 AUC를 0.85 이상으로 올리기</td></tr>
   <tr><th>official execution</th><td>official evaluate 0 / official inspect 0</td></tr>
   <tr><th>label query count</th><td>0</td></tr>
@@ -13,7 +13,15 @@
   <tr><th>official artifact map SHA-256</th><td><code>null</code></td></tr>
   <tr><th>result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
 </table>
-<div class="box"><p><strong>쉬운 설명:</strong> Task 1은 독립 review C/I/M 0 이후 문서, 장부, 대시보드, 코드맵 closeout을 완료했다. 계산, TRAIN source loading, CLI, 공식 root 생성은 아직 하지 않았다. Exp461 failure 9/10의 원인은 gradual_drift <code>0.8402306222021025</code>였다.</p></div>
+<div class="box"><p><strong>쉬운 설명:</strong> Task 2는 Exp461 terminal authority와 ECG5000_normal_2 TRAIN source boundary를 구현했고 review 대기 중이다. Task 3 scoring/gradual feature 계산, CLI, 공식 root 생성은 아직 하지 않았다. Exp461 failure 9/10의 원인은 gradual_drift <code>0.8402306222021025</code>였다.</p></div>
+<h2>Task 2 boundary</h2>
+<table>
+  <tr><th>public config</th><td><code>FROZEN_CONFIG_ANTIGRAVITY</code></td></tr>
+  <tr><th>authority capture</th><td><code>capture_exp461_gradual_authority_antigravity()</code></td></tr>
+  <tr><th>TRAIN source</th><td><code>load_normal2_train_antigravity()</code> returns owned, C-contiguous, read-only, finite <code>float32</code> <code>1413×140</code></td></tr>
+  <tr><th>Exp461 terminal commit</th><td><code>0340b6ee737da84777283668449738d0c1585566</code></td></tr>
+  <tr><th>Task 3</th><td>not started</td></tr>
+</table>
 <h2>Frozen targets</h2>
 <table>
   <tr><th>Exp461 gradual minimum</th><td><code>gradual_drift</code> <code>0.8402306222021025</code> → Exp462 target <code>0.85</code></td></tr>

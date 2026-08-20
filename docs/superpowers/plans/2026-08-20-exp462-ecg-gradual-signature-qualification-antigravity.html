@@ -9,7 +9,7 @@
   <tr><th>Architecture</th><td>Exp461 reviewed 점수를 기준선으로 재사용하고, 24차원 gradual signature와 LocalGap 순위를 추가한다. 주 후보는 두 순위의 원소별 max이며 10개 blocked 기록과 period 보존 조건으로만 판정한다.</td></tr>
   <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, existing aeon/LocalGap/Hydra CPU stack, unittest, canonical JSON/JSONL, HTML dashboard.</td></tr>
   <tr><th>Spec</th><td><a href="../specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html">승인된 Exp462 설계서</a> — SHA-256 <code>34a950e619b7ddd1accc7cc41281a476611010f27ef02b1a73fa46523d064829</code></td></tr>
-  <tr><th>Current status</th><td><code>planned_implementation_not_started</code>, <code>task_1_complete_pending_task_2</code>, Task <code>1/6</code> complete after independent review C/I/M 0, official command <code>0</code>, label query <code>0</code>. Task 1 complete / Task 2 next.</td></tr>
+  <tr><th>Current status</th><td><code>planned_implementation_not_started</code>, <code>task_2_implemented_pending_review</code>, Task <code>1/6</code> checked; Task 2 implemented pending review / Task 3 not started. official command <code>0</code>, label query <code>0</code>.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -45,6 +45,7 @@ self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
 <h2><label><input type="checkbox" disabled>Task 2 — frozen Exp461 authority and TRAIN source</label></h2>
 <p><strong>Files:</strong> Create <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code> and four corresponding tests. Modify map/dashboard/report/plan only.</p>
 <p><strong>Consumes:</strong> Exp461 terminal commit <code>0340b6ee737da84777283668449738d0c1585566</code> and four frozen private hashes. <strong>Produces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>capture_exp461_gradual_authority_antigravity()</code>, <code>load_normal2_train_antigravity()</code>.</p>
+<p><strong>Current state:</strong> Task 2 implemented pending review / Task 3 not started. The Task 2 heading and six steps remain unchecked until independent review.</p>
 <ol>
   <li><label><input type="checkbox" disabled>Step 1 — RED tests for exact identity/data/seeds/folds/method order/gates, strict predecessor hash/result values, immutable dataclasses, source shape/dtype/finite/owned/read-only, and label0.</label></li>
   <li><label><input type="checkbox" disabled>Step 2 — Run focused Task 2 tests and retain missing-module failures.</label><pre><code>"$PY" -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_config_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_contracts_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_sources_antigravity</code></pre></li>

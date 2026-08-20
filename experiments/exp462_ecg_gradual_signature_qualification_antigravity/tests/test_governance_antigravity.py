@@ -269,10 +269,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1 governance implementation report",
+            "Exp462 implementation report",
             "planned_implementation_not_started",
-            "task_1_complete_pending_task_2",
-            "Task 1 complete / Task 2 next",
+            "Task 2 implemented pending review / Task 3 not started",
             "hydra_period_gradual_rank_max",
             "0.8402306222021025",
             "0.907392736783864",
@@ -280,20 +279,24 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "official command count 0",
             "label query count 0",
             "artifact map null",
-            "future Task 2-5 boundaries are unknown",
+            "capture_exp461_gradual_authority_antigravity()",
+            "load_normal2_train_antigravity()",
         ):
             self.assertIn(phrase, report)
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1 complete / Task 2 next",
+            "Task 2 implemented pending review / Task 3 not started",
             "planned_implementation_not_started",
-            "task_1_complete_pending_task_2",
+            "task_2_implemented_pending_review",
             "official evaluate 0 / official inspect 0",
             "label query count",
             "official artifact map SHA-256",
             "null",
             "Exp461 failure 9/10",
+            "0340b6ee737da84777283668449738d0c1585566",
+            "capture_exp461_gradual_authority_antigravity()",
+            "load_normal2_train_antigravity()",
             "gradual_drift",
             "0.8402306222021025",
             "0.85",
@@ -307,7 +310,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn(phrase, dashboard)
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
-        self.assertIn("Task 1 complete / Task 2 next", plan)
+        self.assertIn("Task 2 implemented pending review / Task 3 not started", plan)
         for task_number in range(1, 7):
             task = re.search(
                 rf"<section>\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?</section>",
@@ -360,7 +363,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "champion_ledger",
             "governance_regression",
             "map_builder",
-            "task2_frozen_authority_unknown",
+            "task2_config",
+            "task2_contracts",
+            "task2_predecessor",
+            "task2_sources",
+            "task2_config_tests",
+            "task2_contract_tests",
+            "task2_predecessor_tests",
+            "task2_source_tests",
             "task3_gradual_signature_unknown",
             "task4_qualification_unknown",
             "task5_cli_unknown",
