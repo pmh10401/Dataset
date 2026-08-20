@@ -164,7 +164,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp461 Task 5 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 5 CLI 코드맵</h1><p>Task5 candidate 상태는 Task 4 qualification, decision, seven-leaf publication, replay, dashboard export를 CLI/launcher 경계에서 호출한다. Real TRAIN private reproducibility is recorded separately; official execution remains forbidden.</p>'
+        '<h1>Exp461 Task 5 CLI 코드맵</h1><p>Task5 complete 상태는 Task 4 qualification, decision, seven-leaf publication, replay, dashboard export를 CLI/launcher 경계에서 호출한다. Real TRAIN private reproducibility and final review SHIP C/I/M0 are recorded separately; official execution remains forbidden.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -293,7 +293,7 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records the owned files, completed prior tasks, unchecked Task 5 controls pending review, and the Task 5 qualification-failed stop before official evaluation.",
+            "role": "Caller: Task 1-6 execution. Effect: records the owned files, completed prior tasks, checked Task 5 controls after final review SHIP C/I/M0, unchecked forbidden Task 6 controls, and the Task 5 qualification-failed stop before official evaluation.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(plan, "Task 1 — 문서, 진행 대시보드, 코드맵")],
         },
@@ -314,35 +314,35 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 5 handoff. Effect: records the CLI boundary, private two-run TRAIN reproducibility, exact qualification failure result, zero official commands, official-root absence, and Task 6 forbidden state.",
+            "role": "Caller: Task 5 handoff. Effect: records the CLI boundary, private two-run TRAIN reproducibility, final review SHIP C/I/M0, exact qualification failure result, zero official commands, official-root absence, and Task 6 forbidden state.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 5 CLI and private TRAIN reproducibility report")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 5/6 candidate state, failed 9/10 primary qualification, exact private reproducibility evidence, official execution 0, null official hashes, and Task 6 forbidden.",
+            "role": "Caller: always-visible status review. Effect: shows Task 5 complete after final review SHIP C/I/M0, failed 9/10 primary qualification, exact private reproducibility evidence, official execution 0, null official hashes, no next official action, and Task 6 forbidden.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 5/6 candidate")],
+            "evidence": [evidence_antigravity(dashboard, "Task 5 complete after final review SHIP C/I/M0")],
         },
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: records the Exp461 planned entry with zero official counts, null hashes, and unchanged pending candidate.",
+            "role": "Caller: governance review. Effect: records the Exp461 terminal Task 5 qualification-failed entry with zero official counts, null hashes, and unchanged pending candidate.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"exp461\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: registers Exp461 as planned-not-started and non-promoted with the frozen predecessor reference to Exp460.",
+            "role": "Caller: catalog review. Effect: registers Exp461 as Task 5 complete, qualification failed before official evaluation, and non-promoted with the frozen predecessor reference to Exp460.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"Exp461\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: records Exp461 planned history without changing champion, pending candidate, routing, or promotion.",
+            "role": "Caller: champion review. Effect: records Exp461 terminal Task 5 qualification-failed history without changing champion, pending candidate, routing, or promotion.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"experiment\": \"Exp461\"")],
         },

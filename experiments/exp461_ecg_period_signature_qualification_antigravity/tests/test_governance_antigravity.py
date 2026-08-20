@@ -314,6 +314,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for phrase in (
             "Task 5 CLI and private TRAIN reproducibility report",
+            "SHIP with Critical/Important/Major 0",
+            "Task 5 is complete",
+            "no next official Exp461 action",
             "stopped_before_official_evaluation_qualification_failed",
             "task_5_private_train_reproducibility_complete_qualification_failed",
             "hydra_period_rank_max",
@@ -338,9 +341,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 5/6 candidate",
+            "Task 5 complete after final review SHIP C/I/M0",
             "stopped_before_official_evaluation_qualification_failed",
-            "Task5 private TRAIN reproducibility complete / Task6 forbidden",
+            "terminal Task5 qualification failed / no next official Exp461 action",
+            "Final review",
+            "Critical/Important/Major 0",
             "official evaluate 0 / official inspect 0",
             "label query count",
             "official artifact map SHA-256",
@@ -413,18 +418,35 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
             self.assertRegex(tag, r"\bdisabled(?:\s|=|>)")
 
-        for task_number in range(5, 7):
-            section = re.search(
-                rf"<section class=\"task\">\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?(?=<section class=\"task\">|<h2>완료 판단</h2>)",
-                plan,
-                flags=re.DOTALL,
-            )
-            self.assertIsNotNone(section)
-            assert section is not None
-            later_tags = re.findall(r"<input\b[^>]*>", section.group(0), flags=re.IGNORECASE)
-            self.assertGreaterEqual(len(later_tags), 2)
-            for tag in later_tags:
-                self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+        task5 = re.search(
+            r"<section class=\"task\">\s*<h2><label><input type=\"checkbox\"[^>]*>Task 5.*?(?=<section class=\"task\">|<h2>완료 판단</h2>)",
+            plan,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(task5)
+        assert task5 is not None
+        self.assertIn("Final review is SHIP with Critical/Important/Major 0", task5.group(0))
+        self.assertIn("there is no next official Exp461 action", task5.group(0))
+        task5_tags = re.findall(r"<input\b[^>]*>", task5.group(0), flags=re.IGNORECASE)
+        self.assertEqual(len(task5_tags), 7)
+        for tag in task5_tags:
+            self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+            self.assertRegex(tag, r"\bdisabled(?:\s|=|>)")
+
+        task6 = re.search(
+            r"<section class=\"task\">\s*<h2><label><input type=\"checkbox\"[^>]*>Task 6.*?(?=<section class=\"task\">|<h2>완료 판단</h2>)",
+            plan,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(task6)
+        assert task6 is not None
+        self.assertIn("Task 6 is forbidden", task6.group(0))
+        self.assertIn("heading and all six steps intentionally remain unchecked and disabled", task6.group(0))
+        task6_tags = re.findall(r"<input\b[^>]*>", task6.group(0), flags=re.IGNORECASE)
+        self.assertEqual(len(task6_tags), 7)
+        for tag in task6_tags:
+            self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
+            self.assertRegex(tag, r"\bdisabled(?:\s|=|>)")
 
         builder = map_builder_antigravity()
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
