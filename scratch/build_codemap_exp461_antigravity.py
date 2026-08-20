@@ -151,7 +151,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp461 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 3 scoring 코드맵</h1><p>Task 3는 Task 2 frozen input truth를 유지한 채 120D period signature, branch anomaly rank, three-method fold scoring, focused tests, and the updated bounded map을 보존한다. Qualification runs, 공식 실행은 아직 없다.</p>'
+        '<h1>Exp461 Task 3 scoring 코드맵</h1><p>Task 3 complete 상태는 Task 2 frozen input truth를 유지한 채 120D period signature, branch anomaly rank, three-method fold scoring, focused tests, checked Task 3 plan controls, and the updated bounded map을 보존한다. Qualification runs, 공식 실행은 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -258,7 +258,7 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 4 handoff. Effect: records the immutable document authority, Task 2 input boundary, and Task 3 scoring boundary pending external review.",
+            "role": "Caller: Task 4 handoff. Effect: records the immutable document authority, Task 2 input boundary, and Task 3 complete scoring boundary after external review.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 3 scoring report")],
         },
@@ -293,7 +293,7 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: Task 3 governance verification. Effect: rejects missing scoring docs, wrong planned ledger truth, checked Task 3 boxes before review, or invalid stored map bytes.",
+            "role": "Caller: Task 3 governance verification. Effect: rejects missing scoring docs, wrong planned ledger truth, unchecked Task 3 boxes after review approval, checked later-task boxes, or invalid stored map bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_task1_governance_antigravity")],
         },

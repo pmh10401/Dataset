@@ -285,7 +285,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             DESIGN_SHA256_ANTIGRAVITY,
             PREREGISTRATION_SHA256_ANTIGRAVITY,
             RUNBOOK_SHA256_ANTIGRAVITY,
-            "Task3 implemented pending external review / Task4 next",
+            "Task3 complete / Task4 next",
             "docs/EXP461_PREREGISTRATION_antigravity.html",
             "docs/EXP461_RUNBOOK_antigravity.html",
             "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
@@ -314,7 +314,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Task 3/6",
             "planned_implementation_not_started",
-            "Task3 implemented pending external review / Task4 next",
+            "Task3 complete / Task4 next",
             "공식 실행 0회",
             "label query count",
             "artifact map SHA-256",
@@ -361,7 +361,20 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for tag in task2_tags:
             self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
 
-        for task_number in range(3, 7):
+        task3 = re.search(
+            r"<section class=\"task\">\s*<h2><label><input type=\"checkbox\"[^>]*>Task 3.*?(?=<section class=\"task\">|<h2>완료 판단</h2>)",
+            plan,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(task3)
+        assert task3 is not None
+        task3_tags = re.findall(r"<input\b[^>]*>", task3.group(0), flags=re.IGNORECASE)
+        self.assertEqual(len(task3_tags), 7)
+        for tag in task3_tags:
+            self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+            self.assertRegex(tag, r"\bdisabled(?:\s|=|>)")
+
+        for task_number in range(4, 7):
             section = re.search(
                 rf"<section class=\"task\">\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?(?=<section class=\"task\">|<h2>완료 판단</h2>)",
                 plan,
