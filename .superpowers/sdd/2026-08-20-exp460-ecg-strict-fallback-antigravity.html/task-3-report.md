@@ -123,5 +123,5 @@
 - Refreshed map metadata:
   - Stored graph schema remains `exp460_task3_strict_fallback_codemap_v1`.
   - Stored lock schema remains `exp460_task3_strict_fallback_codemap_lock_v1`.
-  - Refreshed `generated_at`: `2026-08-19T00:18:36Z`.
-  - Stored source parent remains `deb3eed3f9f5846a6162db211632f4efd6140962` for this fix round.
+  - Refreshed `generated_at`: `2026-08-20T00:20:02Z`.
+  - Stored source parent remains `1f519824754c31e0a2b8d1e95d2432663584b93a` for this fix round.

@@ -545,12 +545,7 @@ def main() -> None:
         capture_output=True,
         text=True,
     ).stdout.strip()
-    current_utc_antigravity = datetime.now(timezone.utc).replace(microsecond=0)
-    generated_at = current_utc_antigravity.replace(
-        year=2026,
-        month=8,
-        day=19,
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    generated_at = datetime.now(timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
     graph, lock, rendered = build_map_antigravity(source_parent_commit, generated_at)
     JSON_PATH_ANTIGRAVITY.write_text(
         json.dumps(graph, ensure_ascii=False, indent=2) + "\n",

@@ -1,7 +1,7 @@
 {
   "schema": "exp460_task3_strict_fallback_codemap_lock_v1",
-  "generated_at": "2026-08-19T00:18:36Z",
-  "source_parent_commit": "deb3eed3f9f5846a6162db211632f4efd6140962",
+  "generated_at": "2026-08-20T00:20:02Z",
+  "source_parent_commit": "1f519824754c31e0a2b8d1e95d2432663584b93a",
   "represented_paths": [
     "docs/codemap/codemap_exp460_antigravity.html",
     "docs/codemap/codemap_exp460_antigravity.json",
@@ -28,13 +28,13 @@
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_evaluation_antigravity.py": "d761a6dc24c90caddb37ee513ec2b34e612565d864529cef5188dcdf049565a3",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py": "ab64a6faa45b23101c225c15b6d582ea97a1f03b27d83c907499f55aca48df54",
     "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py": "c5b020a19706d235f6b0a8ef335a2db17c640c568a5a6721a61ca03af855cea8",
-    "scratch/build_codemap_exp460_antigravity.py": "ce9e34ce58897b8ae8e81c775edcd3bb5c6b7f74448f31a95b87908f77a5ffb8"
+    "scratch/build_codemap_exp460_antigravity.py": "fba2af3008a5375d32da00b43bed2869efc4dc67d7669b9096c5bb8482294d24"
   },
   "module_fingerprints": {
     "docs": "d8234a91a189453ebd4e8ccd9581bd88ca580e2eb898206e336ac5f49ee08bc5",
     "experiments": "603686eb548d81692a51f332874bacd9e4c0cc53625dac72d2bb3977d327c758",
     "root": "895550eed607178e1934e078797bc2ad46fdc7281b233381f7df37e2032a3f2b",
-    "scratch": "d8fbe666f3359f29756d269f1e27014c7922eecdf3e967f2577b27c23e7340ad"
+    "scratch": "c30b67687fe18ca8422d061204a4246362b92a77b6a917a0876fdba66c230677"
   },
   "working_tree_dirty": false
 }
