@@ -161,7 +161,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp461 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 4 qualification 코드맵</h1><p>Task 4 implemented pending external review 상태는 Task 2 frozen input truth와 Task 3 scoring boundary를 유지한 채 qualification, decision, seven-leaf publication with in-row score evidence, source-free replay recomputation, restricted dashboard, and focused tests를 보존한다. Task 5 CLI, real TRAIN run, official execution은 아직 없다.</p>'
+        '<h1>Exp461 Task 4 qualification 코드맵</h1><p>Task4 complete / Task5 next 상태는 Task 2 frozen input truth와 Task 3 scoring boundary를 유지한 채 qualification, decision, seven-leaf publication with in-row score evidence, source-free replay recomputation, restricted dashboard, and focused tests를 보존한다. Task 5 CLI, real TRAIN run, official execution은 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -303,7 +303,7 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 5 handoff. Effect: records the immutable document authority, Task 2 input boundary, Task 3 scoring boundary, and Task 4 qualification/publication/replay boundary pending external review.",
+            "role": "Caller: Task 5 handoff. Effect: records the immutable document authority, Task 2 input boundary, Task 3 scoring boundary, and Task 4 qualification/publication/replay boundary after approved fix re-review.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 4 qualification report")],
         },
