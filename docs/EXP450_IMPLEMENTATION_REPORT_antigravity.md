@@ -8,7 +8,7 @@
 
 ## 검증
 
-- Exp450 bounded test discovery: 85 tests passed (133.636s).
+- Exp450 bounded test discovery: 86 tests passed (the full discovery was rerun after the PNG-label regression).
 - Public baseline test discovery: 91 tests passed (6.413s).
 - Task 8 회귀 테스트는 report 축/열 방법, scorer·label-free `status`/`verify`, root 부재, progress schema, evaluate gate를 검사한다.
 - `generate_exp450_codemap_antigravity.py --check`, `py_compile`, `git diff --check`가 통과했다.
@@ -18,6 +18,7 @@
 - Task 8 최초 RED는 report/CLI API 부재를 확인했다.
 - 수정 RED는 canonical evaluation round-trip, v2 verifier mode, safe embedded JSON/table rendering, short-write completion을 추가해 기존 구현에서 실패하는 것을 확인했다.
 - GREEN은 fixture-only regression으로 위 계약과 durable checkpoint 뒤 live-progress callback 순서를 검증한다.
+- PNG 가시성 RED는 제목, 축 라벨, 10개 method legend 영역이 비어 있음을 확인했고, GREEN은 dependency-free bitmap glyph renderer로 그 영역의 실제 raster ink를 검증한다.
 
 ## Backend 사실
 

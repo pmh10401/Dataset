@@ -9,6 +9,7 @@ import sys
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+import zlib
 
 from experiments.exp450_resampling_image_ablation_antigravity.config_antigravity import (
     EVALUATION_ROOT,
@@ -50,6 +51,33 @@ def _evaluation() -> Exp450EvaluationAntigravity:
 
 
 class Exp450ReportingCliTests(unittest.TestCase):
+    def test_png_visibly_renders_titles_axes_and_method_legends(self) -> None:
+        """The raster figure has text ink outside plotted curves for both panels."""
+        from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
+            write_exp450_report_antigravity,
+        )
+
+        with TemporaryDirectory(prefix="exp450_png_labels_antigravity_") as directory:
+            artifact = write_exp450_report_antigravity(_evaluation(), Path(directory))
+            png = artifact.png_path.read_bytes()
+        offset, chunks = 8, []
+        while offset < len(png):
+            size = int.from_bytes(png[offset:offset + 4], "big")
+            kind = png[offset + 4:offset + 8]
+            chunks.append((kind, png[offset + 8:offset + 8 + size]))
+            offset += 12 + size
+        raw = zlib.decompress(b"".join(payload for kind, payload in chunks if kind == b"IDAT"))
+        row_width = 1200 * 3 + 1
+        def has_ink(left: int, top: int, right: int, bottom: int) -> bool:
+            return any(
+                raw[row * row_width + 1 + column * 3:row * row_width + 4 + column * 3] != b"\xff\xff\xff"
+                for row in range(top, bottom) for column in range(left, right)
+            )
+        # Titles, x-axis labels, and the ten-row legend region all sit outside plots.
+        self.assertTrue(has_ink(70, 18, 270, 55))
+        self.assertTrue(has_ink(200, 520, 430, 555))
+        self.assertTrue(has_ink(75, 76, 230, 230))
+
     def test_report_writes_canonical_tables_figures_and_exact_curve_axes(self) -> None:
         """The paper artifact retains all ten methods and unswapped coordinates."""
         from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (

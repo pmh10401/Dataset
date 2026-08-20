@@ -187,6 +187,34 @@ def _curve_png(curves: Mapping[str, object]) -> bytes:
     """Draw a dependency-free PNG counterpart to the exact standalone SVG."""
     width, height = 1200, 580
     pixels = bytearray(b"\xff" * (width * height * 3))
+    glyphs = {
+        "A": ("01110", "10001", "10001", "11111", "10001", "10001", "10001"),
+        "B": ("11110", "10001", "10001", "11110", "10001", "10001", "11110"),
+        "C": ("01111", "10000", "10000", "10000", "10000", "10000", "01111"),
+        "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+        "E": ("11111", "10000", "10000", "11110", "10000", "10000", "11111"),
+        "F": ("11111", "10000", "10000", "11110", "10000", "10000", "10000"),
+        "G": ("01111", "10000", "10000", "10111", "10001", "10001", "01111"),
+        "H": ("10001", "10001", "10001", "11111", "10001", "10001", "10001"),
+        "I": ("11111", "00100", "00100", "00100", "00100", "00100", "11111"),
+        "J": ("00111", "00010", "00010", "00010", "10010", "10010", "01100"),
+        "K": ("10001", "10010", "10100", "11000", "10100", "10010", "10001"),
+        "L": ("10000", "10000", "10000", "10000", "10000", "10000", "11111"),
+        "M": ("10001", "11011", "10101", "10101", "10001", "10001", "10001"),
+        "N": ("10001", "11001", "10101", "10011", "10001", "10001", "10001"),
+        "O": ("01110", "10001", "10001", "10001", "10001", "10001", "01110"),
+        "P": ("11110", "10001", "10001", "11110", "10000", "10000", "10000"),
+        "Q": ("01110", "10001", "10001", "10001", "10101", "10010", "01101"),
+        "R": ("11110", "10001", "10001", "11110", "10100", "10010", "10001"),
+        "S": ("01111", "10000", "10000", "01110", "00001", "00001", "11110"),
+        "T": ("11111", "00100", "00100", "00100", "00100", "00100", "00100"),
+        "U": ("10001", "10001", "10001", "10001", "10001", "10001", "01110"),
+        "V": ("10001", "10001", "10001", "10001", "10001", "01010", "00100"),
+        "Y": ("10001", "10001", "01010", "00100", "00100", "00100", "00100"),
+        "_": ("00000", "00000", "00000", "00000", "00000", "00000", "11111"),
+        "1": ("00100", "01100", "00100", "00100", "00100", "00100", "01110"),
+        " ": ("000", "000", "000", "000", "000", "000", "000"),
+    }
 
     def point(x: int, y: int, color: tuple[int, int, int]) -> None:
         if 0 <= x < width and 0 <= y < height:
@@ -209,16 +237,41 @@ def _curve_png(curves: Mapping[str, object]) -> bytes:
                 error += dx
                 y0 += sy
 
-    for panel, name in enumerate(("roc", "precision_recall")):
+    def text(x: int, y: int, label: str, color: tuple[int, int, int], scale: int = 1, vertical: bool = False) -> None:
+        """Render an intentionally small, dependency-free 5×7 bitmap label."""
+        for letter_index, character in enumerate(label.upper()):
+            glyph = glyphs.get(character, glyphs[" "])
+            for row, bits in enumerate(glyph):
+                for column, bit in enumerate(bits):
+                    if bit != "1":
+                        continue
+                    for dy in range(scale):
+                        for dx in range(scale):
+                            source_x = (letter_index * 6 + column) * scale + dx
+                            source_y = row * scale + dy
+                            if vertical:
+                                point(x - source_y, y + source_x, color)
+                            else:
+                                point(x + source_x, y + source_y, color)
+
+    panels = (
+        ("roc", "ROC", "FALSE POSITIVE RATE", "TRUE POSITIVE RATE"),
+        ("precision_recall", "PRECISION RECALL", "RECALL", "PRECISION"),
+    )
+    for panel, (name, title, x_label, y_label) in enumerate(panels):
         left, top, panel_width, panel_height = 70 + panel * 590, 70, 480, 400
         line(left, top + panel_height, left + panel_width, top + panel_height, (0, 0, 0))
         line(left, top, left, top + panel_height, (0, 0, 0))
+        text(left, 20, title, (0, 0, 0), scale=2)
+        text(left + 145, 525, x_label, (0, 0, 0), scale=1)
+        text(left - 12, top + 130, y_label, (0, 0, 0), scale=1, vertical=True)
         curve = curves[name]
         assert isinstance(curve, dict)
         x_key, y_key = curve["x_name"], curve["y_name"]
         for index, method in enumerate(METHOD_ORDER):
             rows = [row for row in curve["rows"] if row["method"] == method]
             color = ((41 + index * 53) % 220, (79 + index * 97) % 220, (131 + index * 37) % 220)
+            text(left + 8, top + 12 + index * 14, method, color)
             previous: tuple[int, int] | None = None
             for row in rows:
                 current = (round(left + float(row[x_key]) * panel_width), round(top + panel_height - float(row[y_key]) * panel_height))
