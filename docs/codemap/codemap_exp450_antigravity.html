@@ -359,6 +359,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
       "kind": "ast_import"
@@ -506,6 +511,11 @@
     {
       "callee": "scratch/generate_exp450_codemap_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -1072,6 +1082,7 @@
     },
     {
       "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "effects": "Frozen Exp450 identity, population, policy, and create-only root authority.",
@@ -1101,6 +1112,17 @@
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py"
+      ],
+      "effects": "Label-gated AP/AUROC evaluation for the four frozen Exp450 score roots.\n\nThis module deliberately has no module-level TEST-label import.  The frozen\nscore inventories and all public-baseline identities are checked before the\nsingle evaluation-only label capability is resolved.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py"
       ]
     },
     {
@@ -1150,6 +1172,13 @@
       "effects": "Frozen identity and public-contract tests for Exp450.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_config_contracts_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Fixture-only contracts for Exp450 continuous-score evaluation.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_evaluation_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
       "tests": []
     },
     {
