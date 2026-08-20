@@ -218,8 +218,13 @@ class Exp450DatasetScoringTests(unittest.TestCase):
             self.assertEqual(len(captured_mini), 1)
             mini = captured_mini[0]
             self.assertEqual(set(mini.by_kernel), {1024, 4096})
-            for requested, candidates in ((1024, mini.k1024), (4096, mini.k4096)):
+            for requested, expected_dimension, candidates in (
+                (1024, 1008, mini.k1024),
+                (4096, 4032, mini.k4096),
+            ):
                 kernel = mini.by_kernel[requested]
+                self.assertEqual(kernel.requested_kernels, requested)
+                self.assertEqual(kernel.expected_dimension, expected_dimension)
                 self.assertEqual(kernel.candidate, candidates)
                 self.assertEqual(set(kernel.by_seed), set(SEEDS_PAPER))
                 self.assertLessEqual(len(candidates), n_test)
@@ -253,6 +258,7 @@ class Exp450DatasetScoringTests(unittest.TestCase):
             )
             self.assertEqual(route.exp253.hard, route.exp236.hard | route.promoted)
             self.assertEqual(route.exp253.standard, route.exp236.standard - route.promoted)
+            self.assertEqual(route.exp253.priority, route.exp236.priority)
             for indices in (
                 route.exp253.hard,
                 route.exp253.standard,
