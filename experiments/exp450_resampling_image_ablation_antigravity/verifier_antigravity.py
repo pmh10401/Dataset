@@ -22,8 +22,23 @@ _CONDITIONS = {
 }
 _SOURCES = ("rocket_exp40", "exp55_best", "exp56_best", "exp84", "rocket_block_b", "canonical_normal_state")
 _ALPHAS = {"rocket_exp40": .03, "exp55_best": .03, "exp56_best": .02, "exp84": .02, "rocket_block_b": .015, "canonical_normal_state": .02}
-_ORIGIN_IDS = ("rocket_exp40", "exp55_best", "exp56_best", "exp84_family_guard", "rocket_block_b", "canonical_normal_state")
-_ORIGIN_SHA = ("5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3",)*4 + ("8d38067291d78defeb40410f1dde8dac44e9e3bd9e2a2636eb4c33ce29932fc2", "49f15e39c39a801842abca43cf67f73b79ded0a273029071e079f29100d2cc43")
+_ORIGINS = (
+    {"node_id": "rocket_exp40", "stage": "raw-computable", "input_kind": "raw_train_test_values", "module": "run_experiment_149_150_virtual_run_conformal_policy", "symbols": ["crossfit_source", "source_score_pair"], "source_sha256": "5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3", "paper_module": "paper.equipment_anomaly_detection.sources_paper.rocket_paper", "label_access": False, "parity_oracle": "legacy_artifact:experiment_40"},
+    {"node_id": "exp55_best", "stage": "raw-computable", "input_kind": "raw_train_test_values", "module": "run_experiment_149_150_virtual_run_conformal_policy", "symbols": ["crossfit_source", "source_score_pair"], "source_sha256": "5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3", "paper_module": "paper.equipment_anomaly_detection.sources_paper.imaging_paper", "label_access": False, "parity_oracle": "legacy_artifact:experiment_55"},
+    {"node_id": "exp56_best", "stage": "raw-computable", "input_kind": "raw_train_test_values", "module": "run_experiment_149_150_virtual_run_conformal_policy", "symbols": ["crossfit_source", "source_score_pair"], "source_sha256": "5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3", "paper_module": "paper.equipment_anomaly_detection.sources_paper.imaging_paper", "label_access": False, "parity_oracle": "legacy_artifact:experiment_56"},
+    {"node_id": "exp84_family_guard", "stage": "frozen-rule", "input_kind": "frozen_rule", "module": "run_experiment_149_150_virtual_run_conformal_policy", "symbols": ["source_score_pair"], "source_sha256": "5d9f3ff6e74d32b46d865f8b32b2ea2370acdd9d86aeb36f144c816384180fa3", "paper_module": "paper.equipment_anomaly_detection.sources_paper.multirocket_hydra_paper", "label_access": False, "parity_oracle": "legacy_artifact:experiment_84_family_guard"},
+    {"node_id": "rocket_block_b", "stage": "raw-computable", "input_kind": "raw_train_test_values", "module": "experiments.exp153_157.exp153_157_bridge", "symbols": ["crossfit_confirmation_scores"], "source_sha256": "8d38067291d78defeb40410f1dde8dac44e9e3bd9e2a2636eb4c33ce29932fc2", "paper_module": "paper.equipment_anomaly_detection.sources_paper.rocket_paper", "label_access": False, "parity_oracle": "legacy_artifact:experiment_131"},
+    {"node_id": "canonical_normal_state", "stage": "raw-computable", "input_kind": "raw_train_test_values", "module": "experiments.exp177_185.core", "symbols": ["canonical_features", "crossfit_scores"], "source_sha256": "49f15e39c39a801842abca43cf67f73b79ded0a273029071e079f29100d2cc43", "paper_module": "paper.equipment_anomaly_detection.sources_paper.canonical_paper", "label_access": False, "parity_oracle": "legacy_artifact:experiment_115"},
+)
+_COMMON_ABSTENTION_REASONS = frozenset({"unsupported_n_train_lt_5", "nonfinite_input"})
+_INELIGIBLE_REASONS = {
+    source: _COMMON_ABSTENTION_REASONS for source in _SOURCES
+} | {
+    "exp84": _COMMON_ABSTENTION_REASONS | frozenset({
+        "dependency_unavailable:aeon", "dependency_unavailable:torch",
+        "dependency_unavailable:torch==2.13.0", "dependency_unavailable:hydra_output_type",
+    })
+}
 
 
 def _canonical_bytes(value: object) -> bytes:
@@ -95,7 +110,7 @@ def _catalog(catalog: object, context: object) -> list[dict[str, object]]:
 
 
 def _json_float_vector(value: object, size: int) -> np.ndarray:
-    if not isinstance(value, list) or len(value) != size or any(type(item) not in {int, float} for item in value):
+    if not isinstance(value, list) or len(value) != size or any(type(item) is not float for item in value):
         raise ValueError("score root continuous score differs")
     try:
         result = np.asarray(value, dtype=np.float64)
@@ -119,7 +134,7 @@ def _check_checkpoint(value: object, entry: dict[str, object], condition_id: str
 
 
 def _numbers(value: object, size: int, *, pvalue: bool = False) -> list[float]:
-    if not isinstance(value, list) or len(value) != size or any(type(item) not in {int, float} for item in value):
+    if not isinstance(value, list) or len(value) != size or any(type(item) is not float for item in value):
         raise ValueError("score root checkpoint payload differs")
     values = [float(item) for item in value]
     if not all(np.isfinite(values)) or (pvalue and any(item <= 0.0 or item > 1.0 for item in values)):
@@ -147,8 +162,8 @@ def _check_sources(value: object, n_train: int, n_test: int) -> None:
     if not isinstance(value, list) or len(value) != len(_SOURCES):
         raise ValueError("score root checkpoint payload differs")
     for order, row in enumerate(value):
-        origin = row.get("origin") if isinstance(row, dict) else None
-        if not isinstance(row, dict) or set(row) != required or row["source_id"] != _SOURCES[order] or row["order"] != order or type(row["threshold"]) not in {int, float} or row["threshold"] != _ALPHAS[_SOURCES[order]] or type(row["eligible"]) is not bool or type(row["eligibility_reason"]) is not str or not row["eligibility_reason"] or not isinstance(origin, dict) or set(origin) != {"node_id", "stage", "input_kind", "module", "symbols", "source_sha256", "paper_module", "label_access", "parity_oracle"} or origin["node_id"] != _ORIGIN_IDS[order] or origin["source_sha256"] != _ORIGIN_SHA[order] or origin["label_access"] is not False or not all(isinstance(origin[key], str) and origin[key] for key in ("stage", "input_kind", "module", "paper_module", "parity_oracle")) or not isinstance(origin["symbols"], list) or not all(isinstance(item, str) and item for item in origin["symbols"]):
+        source_id = _SOURCES[order]
+        if not isinstance(row, dict) or set(row) != required or row["source_id"] != source_id or type(row["order"]) is not int or row["order"] != order or type(row["threshold"]) is not float or not np.isfinite(row["threshold"]) or row["threshold"] != _ALPHAS[source_id] or type(row["eligible"]) is not bool or row["origin"] != _ORIGINS[order]:
             raise ValueError("score root checkpoint payload differs")
         pvalues = _numbers(row["test_pvalue"], n_test, pvalue=True)
         native = row["test_native_pass"]
@@ -159,7 +174,13 @@ def _check_sources(value: object, n_train: int, n_test: int) -> None:
             expected = [(1 + sum(item >= query for item in train)) / (len(train) + 1) for query in test]
             if row["eligibility_reason"] != "eligible" or pvalues != expected or native != [item <= row["threshold"] for item in pvalues]:
                 raise ValueError("score root checkpoint payload differs")
-        elif row["train_oof_score"] != [] or row["test_score"] != [] or pvalues != [1.0] * n_test or any(native):
+        elif (
+            row["eligibility_reason"] not in _INELIGIBLE_REASONS[source_id]
+            or row["train_oof_score"] != []
+            or row["test_score"] != []
+            or pvalues != [1.0] * n_test
+            or any(native)
+        ):
             raise ValueError("score root checkpoint payload differs")
 
 

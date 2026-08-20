@@ -326,6 +326,71 @@ def freeze_condition_score_antigravity(
     return verify_exp450_score_root_antigravity(root, context=context, catalog=catalog, condition_id=score.condition.condition_id)
 
 
+def _valid_policy_vector_antigravity(value: object, size: int) -> bool:
+    """Accept only the frozen float64 [0, 1) score/strength representation."""
+    return (
+        isinstance(value, np.ndarray)
+        and value.dtype == np.dtype("float64")
+        and value.ndim == 1
+        and value.size == size
+        and bool(np.all(np.isfinite(value)))
+        and bool(np.all((value >= 0.0) & (value < 1.0)))
+    )
+
+
+def _valid_score_dataset_antigravity(
+    score: object,
+    condition_id: str,
+    dataset: str,
+    expected_datasets: tuple[object, ...],
+    context: Exp450RunContext,
+) -> bool:
+    """Validate one dataset's complete typed policy closure before score-root writes."""
+    if (
+        not isinstance(score, Exp450ConditionScore)
+        or score.condition.condition_id != condition_id
+        or score.backend != context.backend
+        or not isinstance(score.low_frequency, LowFrequencyResult)
+        or not isinstance(score.stability, StabilityPartition)
+        or not isinstance(score.policies, PolicyBundle)
+        or tuple(score.policies.order) != POLICY_ORDER
+        or tuple(policy.name for policy in score.policies.policies) != POLICY_ORDER
+        or not all(isinstance(policy, PolicyRoute) for policy in score.policies.policies)
+        or not all(isinstance(mapping, Mapping) and tuple(mapping) == expected_datasets for mapping in (score.raw, score.sources, score.routes))
+    ):
+        return False
+    try:
+        raw, route, bundle = score.raw[dataset], score.routes[dataset], score.sources[dataset]
+    except (KeyError, TypeError):
+        return False
+    if (
+        not isinstance(raw, RawDataset)
+        or raw.dataset != dataset
+        or tuple(raw.test_indices) != tuple(range(len(raw.test_rows)))
+        or not isinstance(route, HardRouteResult)
+        or route.n_test != len(raw.test_rows)
+        or not isinstance(bundle, HardSourceBundle)
+    ):
+        return False
+    expected_keys = set(expected_datasets)
+    for policy in score.policies.policies:
+        if not all(isinstance(mapping, Mapping) and set(mapping) == expected_keys for mapping in (policy.alerts, policy.scores, policy.strength)):
+            return False
+        try:
+            alerts, scores, strength = policy.alerts[dataset], policy.scores[dataset], policy.strength[dataset]
+        except (KeyError, TypeError):
+            return False
+        if (
+            not isinstance(alerts, frozenset)
+            or any(type(index) is not int or index < 0 or index >= len(raw.test_rows) for index in alerts)
+            or not _valid_policy_vector_antigravity(scores, len(raw.test_rows))
+            or not _valid_policy_vector_antigravity(strength, len(raw.test_rows))
+            or frozenset(np.flatnonzero(scores >= 0.5).tolist()) != alerts
+        ):
+            return False
+    return True
+
+
 def freeze_all_conditions_antigravity(
     scores: Mapping[str, Exp450ConditionScore], root: Path, context: Exp450RunContext, catalog: dict[str, object]
 ) -> dict[str, dict[str, object]]:
@@ -338,46 +403,16 @@ def freeze_all_conditions_antigravity(
     if missing or extra:
         raise Exp450Incomplete(missing + extra)
     entries = catalog.get("datasets")
-    invalid: list[tuple[str, str]] = []
     if not isinstance(entries, list):
         raise Exp450Incomplete(())
     expected_raw = tuple(entry.get("dataset") for entry in entries)
-    for condition_id, score in scores.items():
-        valid = (
-            isinstance(score, Exp450ConditionScore) and score.condition.condition_id == condition_id
-            and tuple(score.raw) == expected_raw and tuple(score.sources) == expected_raw and tuple(score.routes) == expected_raw
-            and score.backend == context.backend and isinstance(score.low_frequency, LowFrequencyResult)
-            and isinstance(score.stability, StabilityPartition) and isinstance(score.policies, PolicyBundle) and tuple(score.policies.order) == POLICY_ORDER and tuple(policy.name for policy in score.policies.policies) == POLICY_ORDER and all(isinstance(policy, PolicyRoute) for policy in score.policies.policies)
-        )
-        if valid:
-            for dataset in expected_raw:
-                raw = score.raw[dataset]
-                route = score.routes[dataset]
-                bundle = score.sources[dataset]
-                if not isinstance(raw, RawDataset) or raw.dataset != dataset or not isinstance(route, HardRouteResult) or route.n_test != len(raw.test_rows) or not isinstance(bundle, HardSourceBundle):
-                    valid = False; break
-                for policy in score.policies.policies:
-                    values = np.asarray(policy.scores.get(dataset)) if dataset in policy.scores else np.asarray(())
-                    strength = np.asarray(policy.strength.get(dataset)) if dataset in policy.strength else np.asarray(())
-                    alerts = policy.alerts.get(dataset, frozenset())
-                    if set(policy.alerts) != set(expected_raw) or set(policy.scores) != set(expected_raw) or set(policy.strength) != set(expected_raw) or not isinstance(alerts, frozenset) or any(type(index) is not int or index < 0 or index >= len(raw.test_rows) for index in alerts) or values.dtype != np.dtype("float64") or values.ndim != 1 or values.size != len(raw.test_rows) or not np.all(np.isfinite(values)) or strength.dtype != np.dtype("float64") or strength.ndim != 1 or strength.size != len(raw.test_rows) or not np.all(np.isfinite(strength)) or frozenset(np.flatnonzero(values >= 0.5).tolist()) != alerts:
-                        valid = False; break
-                if not valid: break
-        if not valid:
-            before = len(invalid)
-            for dataset in expected_raw:
-                if not isinstance(dataset, str): continue
-                try:
-                    raw = score.raw[dataset]
-                    if any(set(mapping) != set(expected_raw) or dataset not in mapping for mapping in (score.sources, score.routes)):
-                        raise ValueError
-                    for policy in score.policies.policies:
-                        if any(dataset not in mapping or set(mapping) != set(expected_raw) for mapping in (policy.alerts, policy.scores, policy.strength)):
-                            raise ValueError
-                except (AttributeError, KeyError, ValueError):
-                    invalid.append((dataset, condition_id))
-            if len(invalid) == before:
-                invalid.extend((dataset, condition_id) for dataset in expected_raw if isinstance(dataset, str))
+    invalid = [
+        (dataset, condition_id)
+        for condition_id in ("A", "B", "C", "D")
+        for dataset in expected_raw
+        if not isinstance(dataset, str)
+        or not _valid_score_dataset_antigravity(scores[condition_id], condition_id, dataset, expected_raw, context)
+    ]
     if invalid:
         raise Exp450Incomplete(tuple(invalid))
     # Build every shard and reread every local authority before the first write.
