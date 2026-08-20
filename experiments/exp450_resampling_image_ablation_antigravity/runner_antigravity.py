@@ -129,7 +129,7 @@ def _persist_result(
     raw: Mapping[str, RawDataset],
     by_condition: Mapping[str, Exp450Condition],
     wave: int,
-) -> None:
+) -> str:
     dataset, condition_id = coordinate
     try:
         if isinstance(result, Exception):
@@ -137,8 +137,10 @@ def _persist_result(
         if not isinstance(result, Exp450DatasetConditionResult) or result.dataset != dataset or result.condition_id != condition_id:
             raise ValueError("dataset-condition scorer result differs")
         write_dataset_condition_success_antigravity(root, context, catalog, raw[dataset], result)
+        return "success"
     except Exception as error:
         append_dataset_condition_failure_antigravity(root, context, catalog, raw[dataset], by_condition[condition_id], wave, error)
+        return "failure"
 
 
 def _run_cpu_wave(
@@ -152,6 +154,7 @@ def _run_cpu_wave(
     backend: Exp450BackendDecision,
     by_condition: Mapping[str, Exp450Condition],
     wave: int,
+    progress: Callable[[dict[str, object]], None] | None,
 ) -> None:
     queue = iter(coordinates)
     with ProcessPoolExecutor(max_workers=workers) as pool:
@@ -169,9 +172,11 @@ def _run_cpu_wave(
                 try:
                     result = future.result()
                 except Exception as error:
-                    _persist_result(coordinate, error, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
+                    status = _persist_result(coordinate, error, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
                 else:
-                    _persist_result(coordinate, result, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
+                    status = _persist_result(coordinate, result, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
+                if progress is not None:
+                    progress({"dataset": coordinate[0], "condition": coordinate[1], "wave": wave, "attempt": wave, "status": status})
                 try:
                     dataset, condition_id = next(queue)
                 except StopIteration:
@@ -189,14 +194,17 @@ def _run_mps_wave(
     backend: Exp450BackendDecision,
     by_condition: Mapping[str, Exp450Condition],
     wave: int,
+    progress: Callable[[dict[str, object]], None] | None,
 ) -> None:
     for dataset, condition_id in coordinates:
         try:
             result = run_dataset_local_exp450_antigravity(raw[dataset], by_condition[condition_id], backend)
         except Exception as error:
-            _persist_result((dataset, condition_id), error, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
+            status = _persist_result((dataset, condition_id), error, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
         else:
-            _persist_result((dataset, condition_id), result, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
+            status = _persist_result((dataset, condition_id), result, root=root, context=context, catalog=catalog, raw=raw, by_condition=by_condition, wave=wave)
+        if progress is not None:
+            progress({"dataset": dataset, "condition": condition_id, "wave": wave, "attempt": wave, "status": status})
 
 
 def execute_local_schedule_antigravity(
@@ -206,6 +214,7 @@ def execute_local_schedule_antigravity(
     raw_datasets: Mapping[str, RawDataset],
     backend: Exp450BackendDecision,
     conditions: tuple[Exp450Condition, ...] = _CONDITIONS,
+    progress: Callable[[dict[str, object]], None] | None = None,
 ) -> dict[tuple[str, str], Exp450DatasetConditionResult]:
     """Run exactly two bounded waves, persisting every result before refill."""
     raw = dict(raw_datasets)
@@ -219,10 +228,10 @@ def execute_local_schedule_antigravity(
     if initial and not any(record.wave == 2 for record in inventory.failures):
         never_attempted = tuple(coordinate for coordinate in initial if coordinate not in failed_wave_one)
         if never_attempted:
-            _execute_wave_antigravity(never_attempted, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=1)
+            _execute_wave_antigravity(never_attempted, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=1, progress=progress)
     inventory = verify_dataset_condition_inventory_antigravity(root, context, catalog, raw)
     if inventory.wave_two:
-        _execute_wave_antigravity(inventory.wave_two, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=2)
+        _execute_wave_antigravity(inventory.wave_two, schedule=schedule, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=2, progress=progress)
     inventory = verify_dataset_condition_inventory_antigravity(root, context, catalog, raw)
     pending = _pending(catalog, inventory.completed)
     if pending:
@@ -237,13 +246,14 @@ def _execute_wave_antigravity(
     coordinates: tuple[tuple[str, str], ...], *, schedule: Exp450ExecutionScheduleAntigravity,
     root: Path, context: Exp450RunContext, catalog: dict[str, object], raw: Mapping[str, RawDataset],
     backend: Exp450BackendDecision, by_condition: Mapping[str, Exp450Condition], wave: int,
+    progress: Callable[[dict[str, object]], None] | None,
 ) -> None:
     cpu = tuple(coordinate for coordinate in coordinates if coordinate[1] in schedule.cpu_conditions)
     if cpu:
-        _run_cpu_wave(cpu, workers=schedule.cpu_workers, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=wave)
+        _run_cpu_wave(cpu, workers=schedule.cpu_workers, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=wave, progress=progress)
     mps = tuple(coordinate for coordinate in coordinates if coordinate[1] in schedule.mps_conditions)
     if mps:
-        _run_mps_wave(mps, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=wave)
+        _run_mps_wave(mps, root=root, context=context, catalog=catalog, raw=raw, backend=backend, by_condition=by_condition, wave=wave, progress=progress)
 
 
 def compose_condition_score_antigravity(

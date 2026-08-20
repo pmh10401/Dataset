@@ -15,6 +15,8 @@ import struct
 from typing import Mapping, Sequence
 import zlib
 
+import numpy as np
+
 from .contracts_antigravity import canonical_json_bytes
 from .evaluation_antigravity import Exp450EvaluationAntigravity, METHOD_ORDER
 
@@ -46,14 +48,14 @@ def write_exp450_report_antigravity(
         raise ValueError("Exp450 report requires a verified evaluation")
     destination = Path(root) / "exp450_report_artifacts_antigravity"
     metrics = evaluation.metric_tables
-    curves = _plain(evaluation.curve_tables)
+    curves = canonicalize_exp450_json_antigravity(evaluation.curve_tables)
     metric_payload = {
         "method_order": list(metrics.method_order),
-        "per_dataset": _plain(metrics.per_dataset),
-        "macro": _plain(metrics.macro),
-        "micro": _plain(metrics.micro),
+        "per_dataset": canonicalize_exp450_json_antigravity(metrics.per_dataset),
+        "macro": canonicalize_exp450_json_antigravity(metrics.macro),
+        "micro": canonicalize_exp450_json_antigravity(metrics.micro),
     }
-    paired_payload = {"paired_statistics": _plain(metrics.paired_statistics)}
+    paired_payload = {"paired_statistics": canonicalize_exp450_json_antigravity(metrics.paired_statistics)}
     leaves = {
         "exp450_metric_tables_antigravity.csv": _csv_bytes(
             metrics.per_dataset,
@@ -102,19 +104,28 @@ def _write_create_only(path: Path, payload: bytes) -> None:
             raise ValueError("Exp450 report artifact already exists with different bytes") from None
         return
     try:
-        os.write(descriptor, payload)
+        view = memoryview(payload)
+        while view:
+            written = os.write(descriptor, view)
+            if written <= 0:
+                raise OSError("Exp450 report artifact write made no progress")
+            view = view[written:]
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
 
 
-def _plain(value: object) -> object:
+def canonicalize_exp450_json_antigravity(value: object) -> object:
     if isinstance(value, Mapping):
-        return {str(key): _plain(item) for key, item in value.items()}
+        return {str(key): canonicalize_exp450_json_antigravity(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
-        return [_plain(item) for item in value]
-    if isinstance(value, float) and not math.isfinite(value):
-        return None
+        return [canonicalize_exp450_json_antigravity(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return canonicalize_exp450_json_antigravity(value.tolist())
+    if isinstance(value, np.generic):
+        return canonicalize_exp450_json_antigravity(value.item())
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
     return value
 
 
@@ -123,7 +134,7 @@ def _csv_bytes(rows: Sequence[Mapping[str, object]], fields: Sequence[str]) -> b
     writer = csv.DictWriter(stream, fieldnames=list(fields), extrasaction="raise", lineterminator="\n")
     writer.writeheader()
     for raw_row in rows:
-        row = _plain(raw_row)
+        row = canonicalize_exp450_json_antigravity(raw_row)
         assert isinstance(row, dict)
         writer.writerow({field: "" if row.get(field) is None else row.get(field) for field in fields})
     return stream.getvalue().encode("utf-8")
@@ -142,7 +153,7 @@ def _curve_csv_bytes(curves: Mapping[str, object]) -> bytes:
 
 
 def _paired_csv_bytes(rows: Sequence[Mapping[str, object]]) -> bytes:
-    plain_rows = _plain(rows)
+    plain_rows = canonicalize_exp450_json_antigravity(rows)
     assert isinstance(plain_rows, list)
     fields = tuple(sorted({field for row in plain_rows for field in row}))
     return _csv_bytes(plain_rows, fields)
@@ -221,17 +232,22 @@ def _curve_png(curves: Mapping[str, object]) -> bytes:
 
 
 def _html_document(metrics: Mapping[str, object], paired: Mapping[str, object], curves: Mapping[str, object], svg: str) -> str:
-    macro = metrics["macro"]
-    assert isinstance(macro, dict)
-    rows = "".join(f"<tr><td>{html.escape(method)}</td><td>{_number(values.get('average_precision'))}</td><td>{_number(values.get('auroc'))}</td></tr>" for method, values in macro.items() if isinstance(values, dict))
-    curve_json = json.dumps(curves, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    paired_json = json.dumps(paired, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    def metric_table(name: str, values: object) -> str:
+        assert isinstance(values, dict)
+        rows = "".join(f"<tr><td>{html.escape(method)}</td><td>{_number(item.get('average_precision'))}</td><td>{_number(item.get('auroc'))}</td></tr>" for method, item in values.items() if isinstance(item, dict))
+        return f"<h2>{name}</h2><table><thead><tr><th>Method</th><th>Average precision</th><th>AUROC</th></tr></thead><tbody>{rows}</tbody></table>"
+    paired_rows = paired["paired_statistics"]
+    assert isinstance(paired_rows, list)
+    paired_table = "".join(f"<tr><td>{html.escape(str(row.get('comparison')))}</td><td>{html.escape(str(row.get('metric')))}</td><td>{_number(row.get('point_estimate'))}</td><td>{_number(row.get('lower'))}</td><td>{_number(row.get('upper'))}</td></tr>" for row in paired_rows if isinstance(row, dict))
+    curve_json = json.dumps(curves, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).replace("</", "<\\/")
+    paired_json = json.dumps(paired, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).replace("</", "<\\/")
     return f"""<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Exp450 resampling/image ablation</title><body>
 <h1>Exp450 continuous resampling/image ablation</h1>
 <p>This is an ablation report only; it makes no automatic promotion claim.</p>
-<h2>AP / AUROC</h2><table><thead><tr><th>Method</th><th>Average precision</th><th>AUROC</th></tr></thead><tbody>{rows}</tbody></table>
-<h2>ROC: False-positive rate × True-positive rate</h2><h2>Precision–recall: Recall × Precision</h2>{svg}
-<script id=\"exp450-curves\" type=\"application/json\">{html.escape(curve_json)}</script><script id=\"exp450-paired\" type=\"application/json\">{html.escape(paired_json)}</script>
+{metric_table("Macro AP / AUROC", metrics["macro"])}{metric_table("Micro AP / AUROC", metrics["micro"])}
+<h2>Paired differences</h2><table><thead><tr><th>Comparison</th><th>Metric</th><th>Difference</th><th>Lower</th><th>Upper</th></tr></thead><tbody>{paired_table}</tbody></table>
+<h2>ROC: False-positive rate × True-positive rate</h2><h2>Precision–recall: Recall × Precision</h2><figure>{svg}</figure>
+<script id=\"exp450-curves\" type=\"application/json\">{curve_json}</script><script id=\"exp450-paired\" type=\"application/json\">{paired_json}</script>
 </body></html>"""
 
 
@@ -239,4 +255,4 @@ def _number(value: object) -> str:
     return "" if value is None else f"{float(value):.12g}"
 
 
-__all__ = ["Exp450ReportArtifactAntigravity", "write_exp450_report_antigravity"]
+__all__ = ["Exp450ReportArtifactAntigravity", "canonicalize_exp450_json_antigravity", "write_exp450_report_antigravity"]

@@ -559,7 +559,17 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
     },
@@ -574,7 +584,22 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "scratch/run_exp450_resampling_image_ablation_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
     },
@@ -1039,11 +1064,6 @@
       "kind": "ast_import"
     },
     {
-      "callee": "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
-      "caller": "scratch/run_exp450_resampling_image_ablation_antigravity.py",
-      "kind": "ast_import"
-    },
-    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
       "caller": "scratch/run_exp450_resampling_image_ablation_antigravity.py",
       "kind": "ast_import"
@@ -1085,6 +1105,12 @@
       "name": "exp450_label_free_score_flow",
       "through": "conditions A,B,C,D and retained Hard-source/route stages",
       "to": "frozen condition score manifests before evaluation"
+    },
+    {
+      "from": "readiness --mode smoke|full",
+      "name": "exp450_cli_lifecycle_flow",
+      "through": "smoke/run durable progress, verify v2 manifests, evaluate label gate",
+      "to": "canonical evaluation artifact and self-contained report"
     }
   ],
   "nodes": [
@@ -1145,8 +1171,8 @@
         "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
-        "scratch/run_exp450_resampling_image_ablation_antigravity.py"
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py"
       ],
       "effects": "Canonical per-dataset-condition Exp450 checkpoints and recovery inventory.\n\nThe typed source and route payload closure below is copied from the verified\nTask4/5 artifact serializer.  Keeping it local binds Exp450 results to its\nfour-condition identity without importing or changing Exp449's artifacts.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity",
@@ -1154,6 +1180,7 @@
       "tests": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py"
       ]
     },
@@ -1193,6 +1220,7 @@
         "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "scratch/run_exp450_resampling_image_ablation_antigravity.py"
@@ -1203,6 +1231,7 @@
       "tests": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py"
       ]
@@ -1249,6 +1278,7 @@
     {
       "callers": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
         "scratch/run_exp450_resampling_image_ablation_antigravity.py"
       ],
@@ -1257,6 +1287,7 @@
       "path": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
       "tests": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py"
       ]
     },
@@ -1313,13 +1344,15 @@
     },
     {
       "callers": [
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py"
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ],
       "effects": "RED/GREEN contracts for Exp450 local scheduling and score-root freezing.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_runner_verifier_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
       "tests": [
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py"
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ]
     },
     {
@@ -1702,6 +1735,17 @@
       "tests": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Closed Exp450 command surface with fixed roots and explicit science gates.",
+      "module": "scratch.run_exp450_resampling_image_ablation_antigravity",
+      "path": "scratch/run_exp450_resampling_image_ablation_antigravity.py",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ]
     }
   ],

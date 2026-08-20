@@ -81,9 +81,12 @@ def tracked_existing_paths_antigravity(root: Path) -> tuple[Path, ...]:
     }
     retained_paths = {resolved_root / relative for relative in _RETAINED_PATHS}
     generator_path = resolved_root / "scratch" / "generate_exp450_codemap_antigravity.py"
+    cli_path = resolved_root / "scratch" / "run_exp450_resampling_image_ablation_antigravity.py"
     path_set = exp450_paths | (retained_paths & tracked_paths)
     if generator_path in tracked_paths:
         path_set.add(generator_path)
+    if cli_path in tracked_paths:
+        path_set.add(cli_path)
     paths = tuple(sorted(path_set))
     if not paths:
         raise ValueError("Exp450 code map has no existing source paths")
@@ -178,7 +181,13 @@ def build_codemap_payload_antigravity(
                 "from": "values-only raw datasets",
                 "through": "conditions A,B,C,D and retained Hard-source/route stages",
                 "to": "frozen condition score manifests before evaluation",
-            }
+            },
+            {
+                "name": "exp450_cli_lifecycle_flow",
+                "from": "readiness --mode smoke|full",
+                "through": "smoke/run durable progress, verify v2 manifests, evaluate label gate",
+                "to": "canonical evaluation artifact and self-contained report",
+            },
         ],
         "unknowns": [],
     }

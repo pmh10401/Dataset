@@ -5,10 +5,11 @@
 작업 디렉터리는 저장소 루트이며, 모든 명령은 아래 고정 인터프리터를 사용한다.
 
 ```bash
-/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py readiness
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py readiness --mode smoke
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py smoke
-/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py verify
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py verify --mode smoke
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py run
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py verify --mode full
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py evaluate
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -B scratch/run_exp450_resampling_image_ablation_antigravity.py report
 ```
