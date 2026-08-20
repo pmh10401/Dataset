@@ -247,9 +247,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records Task 3 implemented pending review, checked Task 1-2 controls, unchecked Task 3 controls, official0/label0, and future Task 4-5 boundaries.",
+            "role": "Caller: Task 1-6 execution. Effect: records Task 3 complete / Task 4 next, checked Task 1-3 controls, official0/label0, and future Task 4-5 boundaries.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 3 implemented pending review")],
+            "evidence": [evidence_antigravity(plan, "Task 3 complete / Task 4 next")],
         },
         {
             "id": "preregistration",
@@ -268,16 +268,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 3 handoff. Effect: records frozen authority, Task 3 feature/scoring public interfaces, backend decision, null official hashes, official0/label0, and review-pending state.",
+            "role": "Caller: Task 3 handoff. Effect: records frozen authority, Task 3 feature/scoring public interfaces, backend decision, null official hashes, official0/label0, and review closeout.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 3 implementation")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 3 implemented pending review, public interfaces, selected CPU backend, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 3 complete / Task 4 next, public interfaces, selected CPU backend, official0, label0, and null hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 3 implemented pending review")],
+            "evidence": [evidence_antigravity(dashboard, "Task 3 complete / Task 4 next")],
         },
         {
             "id": "research_state",
@@ -324,7 +324,7 @@ def build_map_antigravity(
         {
             "id": "task3_report",
             "path": task3_report,
-            "role": "Caller: Task 3 review. Effect: records implemented-pending-review state, RED/GREEN evidence, backend decision, public interfaces, official0, label0, and absent official root.",
+            "role": "Caller: Task 3 review. Effect: records complete reviewed state, RED/GREEN evidence, backend decision, public interfaces, official0, label0, and absent official root.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(task3_report, "Exp462 Task 3 report")],
         },
@@ -431,7 +431,7 @@ def build_map_antigravity(
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "gradual_drift AUC ≥ 0.85")},
         {"from": "approved_design", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "0.9216148584075248")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 3 implemented pending review")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 3 complete / Task 4 next")},
         {"from": "implementation_plan", "to": "governance_regression", "type": "governs", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
@@ -450,7 +450,7 @@ def build_map_antigravity(
         {"from": "task2_config", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")},
         {"from": "task2_contracts", "to": "task2_predecessor", "type": "governs", "evidence": evidence_antigravity(contracts, "Exp461GradualAuthorityAntigravity")},
         {"from": "task2_config", "to": "task2_sources", "type": "governs", "evidence": evidence_antigravity(sources, "load_normal2_train_antigravity")},
-        {"from": "implementation_plan", "to": "task3_report", "type": "governs", "evidence": evidence_antigravity(task3_report, "Task 3 implemented pending review")},
+        {"from": "implementation_plan", "to": "task3_report", "type": "governs", "evidence": evidence_antigravity(task3_report, "Task 3 complete after focused review")},
         {"from": "implementation_plan", "to": "task3_gradual_signature", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
         {"from": "implementation_plan", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
         {"from": "task3_gradual_feature_tests", "to": "task3_gradual_signature", "type": "tests", "evidence": evidence_antigravity(gradual_features_test, "test_gradual_signature_matches_independent_reference_and_contract_antigravity")},

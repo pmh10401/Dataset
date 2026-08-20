@@ -9,7 +9,7 @@
   <tr><th>Architecture</th><td>Exp461 reviewed 점수를 기준선으로 재사용하고, 24차원 gradual signature와 LocalGap 순위를 추가한다. 주 후보는 두 순위의 원소별 max이며 10개 blocked 기록과 period 보존 조건으로만 판정한다.</td></tr>
   <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, existing aeon/LocalGap/Hydra CPU stack, unittest, canonical JSON/JSONL, HTML dashboard.</td></tr>
   <tr><th>Spec</th><td><a href="../specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html">승인된 Exp462 설계서</a> — SHA-256 <code>34a950e619b7ddd1accc7cc41281a476611010f27ef02b1a73fa46523d064829</code></td></tr>
-  <tr><th>Current status</th><td><code>planned_implementation_not_started</code>, <code>task_3_implemented_pending_review</code>, Task <code>2/6</code> checked; Task 3 implemented pending review with Task 3 checkboxes intentionally unchecked. official command <code>0</code>, label query <code>0</code>.</td></tr>
+  <tr><th>Current status</th><td><code>planned_implementation_not_started</code>, <code>task_3_complete_task_4_next</code>, Task <code>3/6</code> checked after Task 3 review C/I/M 0. official command <code>0</code>, label query <code>0</code>.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -57,19 +57,19 @@ self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
 </section>
 
 <section>
-<h2><label><input type="checkbox" disabled>Task 3 — 24D gradual signature and three scores</label></h2>
+<h2><label><input type="checkbox" checked disabled>Task 3 — 24D gradual signature and three scores</label></h2>
 <p><strong>Files:</strong> Create <code>gradual_features_antigravity.py</code>, <code>scoring_antigravity.py</code> and two tests. Modify map/dashboard/report/plan only.</p>
 <p><strong>Produces:</strong> <code>gradual_signature_antigravity(values: numpy.ndarray) -&gt; numpy.ndarray</code>, <code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index) -&gt; FoldMethodScoresAntigravity</code>.</p>
-<p><strong>Current state:</strong> Task 3 implemented pending review. RED/GREEN and CPU-vs-MLX smoke are recorded in <code>.superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html</code>. The Task 3 heading and six steps remain unchecked until review completes.</p>
+<p><strong>Current state:</strong> Task 3 complete / Task 4 next after review C/I/M 0. RED/GREEN, CPU-vs-MLX smoke, and focused independent review evidence are recorded in <code>.superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html</code>.</p>
 <ol>
-  <li><label><input type="checkbox" disabled>Step 1 — RED feature tests against an independent NumPy reference for three views × five normalized basis projections × three quarter-median contrasts = 24 ordered values; reject wrong shape/dtype/nonfinite/MAD-zero and prove input unchanged/output immutable.</label><pre><code>self.assertEqual(signature.shape, (24,))
+  <li><label><input type="checkbox" checked disabled>Step 1 — RED feature tests against an independent NumPy reference for three views × five normalized basis projections × three quarter-median contrasts = 24 ordered values; reject wrong shape/dtype/nonfinite/MAD-zero and prove input unchanged/output immutable.</label><pre><code>self.assertEqual(signature.shape, (24,))
 self.assertEqual(signature.dtype, numpy.dtype(numpy.float64))
 self.assertFalse(signature.flags.writeable)</code></pre></li>
-  <li><label><input type="checkbox" disabled>Step 2 — RED scoring tests for exact method order, Exp461 baseline delegation, gradual LocalGap index/seed flow, exact rank formula, and primary <code>maximum(exp461_rank, gradual_rank)</code>.</label></li>
-  <li><label><input type="checkbox" disabled>Step 3 — Implement the smallest deterministic 24D feature and score boundary with no learned weight or fold-specific selection.</label></li>
-  <li><label><input type="checkbox" disabled>Step 4 — Run focused tests twice and Task 2 regression once; verify finite/deterministic results.</label></li>
-  <li><label><input type="checkbox" disabled>Step 5 — Run one bounded CPU-vs-MLX smoke on the same synthetic input/seed. Record runtime versions, device, timing, numeric/order parity, selected backend, and exact fallback reason. Do not install MLX.</label></li>
-  <li><label><input type="checkbox" disabled>Step 6 — Update map/dashboard/report, commit, fresh review C/I0, then check Task 3 controls.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 2 — RED scoring tests for exact method order, Exp461 baseline delegation, gradual LocalGap index/seed flow, exact rank formula, and primary <code>maximum(exp461_rank, gradual_rank)</code>.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 3 — Implement the smallest deterministic 24D feature and score boundary with no learned weight or fold-specific selection.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 4 — Run focused tests twice and Task 2 regression once; verify finite/deterministic results.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 5 — Run one bounded CPU-vs-MLX smoke on the same synthetic input/seed. Record runtime versions, device, timing, numeric/order parity, selected backend, and exact fallback reason. Do not install MLX.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 6 — Update map/dashboard/report, commit, fresh review C/I0, then check Task 3 controls.</label></li>
 </ol>
 </section>
 

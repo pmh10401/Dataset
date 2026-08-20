@@ -4,7 +4,7 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}</style></head>
 <body><main>
 <h1>Exp462 Task 3 report</h1>
-<p><strong>Status:</strong> Task 3 implemented pending review. Task 3 plan checkboxes intentionally remain unchecked.</p>
+<p><strong>Status:</strong> Task 3 complete after focused review C/I/M 0. Task 3 plan checkboxes were intentionally unchecked until review and are now checked in the implementation plan.</p>
 <table>
 <tr><th>scope</th><td>Created <code>gradual_features_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>test_gradual_features_antigravity.py</code>, and <code>test_scoring_antigravity.py</code>. Updated dashboard, implementation report, plan text, governance assertions, and Exp462 codemap surfaces.</td></tr>
 <tr><th>feature boundary</th><td><code>gradual_signature_antigravity(values)</code> validates one finite floating row of exact length <code>140</code>, uses views <code>[0:140]</code>, <code>[0:70]</code>, <code>[70:140]</code>, and returns owned C-contiguous read-only finite <code>float64</code> shape <code>(24,)</code>.</td></tr>
@@ -21,6 +21,7 @@
 <tr><th>Governance regression</th><td><code>python3 -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_governance_antigravity</code>: <code>Ran 2 tests</code>, <code>OK</code>.</td></tr>
 <tr><th>Map and compile</th><td><code>scratch/build_codemap_exp462_antigravity.py --validate-only</code> passed; <code>py_compile</code> passed for Task 3 modules, tests, and map builder.</td></tr>
 <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> exists <code>false</code>, symlink <code>false</code>.</td></tr>
+<tr><th>review closeout</th><td>Focused review verified exact 24D feature formula/order, strict rejection and immutability, Exp461 baseline delegation, LocalGap seed/index flow, rank formula, elementwise max, no Task 4/TEST/routing access, truthful MLX assessment and CPU selection, status truth before closeout, and clean worktree. Verdict C/I/M 0.</td></tr>
 </table>
 <h2>Backend decision</h2>
 <table>
