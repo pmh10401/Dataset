@@ -31,7 +31,7 @@
 
 | field | value |
 |---|---|
-| smoke_result | `v1_failed_preserved; v2_not_run` |
+| smoke_result | `v1_failed_preserved; v2_verified_92_of_92` |
 | full_run_result | `not_run` |
 | evaluation_result | `not_run` |
 | report_result | `not_run` |
@@ -45,4 +45,12 @@ Exp450은 ablation일 뿐이며 자동 promotion 주장을 하지 않는다.
 - v1 root: `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_antigravity_20260820` 및 log: `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_progress_antigravity_20260820.log`는 변경하지 않고 보존한다.
 - v1은 92개 좌표 중 70개 성공, C/D 22개 좌표는 두 wave에서 총 44회 실패로 종료했다. 실패는 2차원 MPS adaptive pooling에서 한 축은 output보다 작고 다른 축은 큰 mixed-axis 입력의 native shape 제한이었다. TEST label은 열지 않았다.
 - 수정은 해당 native 오류 문구를 기존 MPS-window fallback으로 인식하는 한 줄뿐이다. fallback의 mean/window 수식, 요인 A–D, threshold, score 정의와 CPU 경로는 바꾸지 않는다.
-- Smoke v2 root는 `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_antigravity_20260820`이며 아직 실행하지 않았다. v2는 v1 checkpoint와 code closure를 혼합하지 않는다.
+- Smoke v2 root는 `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_antigravity_20260820`이며 v1 checkpoint와 code closure를 혼합하지 않는다.
+
+## Smoke v2 검증 완료
+
+- 실행: 23 datasets × A--D = 92/92 dataset-condition checkpoint가 첫 wave에서 성공했고 실패와 2차 재시도는 없었다. 로컬 단계 elapsed time은 1,115.429초였다.
+- 고정 backend: PyTorch 2.13.0, MPS available/selected, MLX unavailable/unused, logical CPU 12, CPU workers 11, inner numerical threads 1. MPS-heavy 작업은 한 번에 하나만 실행했다.
+- scorer-free 신선 프로세스 검증: A--D 각각 23 shards와 6,500 TEST-row identities를 검증했다. manifest SHA-256은 각각 `2d13d54c…85dd0`, `624e6d00…9e8616`, `205d9938…4d6d2`, `c1dfe1c7…80afb`이다.
+- 승격 게이트: 모든 score가 finite이고 고정 image shape/TEST identity가 정확하며, backend 변경 및 MPS OOM이 없었다. TEST label, AP/AUROC, alert, 우열 정보는 열거나 검사하지 않았다.
+- durable progress log: `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_progress_antigravity_20260820.log`. 다음 단계는 라벨 없는 1,117-dataset full score run이며 평가·보고서는 그 네 매니페스트가 모두 동결·검증될 때까지 시작하지 않는다.

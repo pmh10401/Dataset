@@ -1,13 +1,13 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-15T03:30:33+09:00",
+  "updated_at": "2026-08-20T14:39:39+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp444-train-only-stability-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
   "last_verified_commit": "cb46a6bcc233d0cfefe226e1c3054dfaca5081a8",
   "active_experiment": "Exp450",
-  "active_phase": "implementation_ready_awaiting_smoke",
-  "status": "implementation_ready_awaiting_smoke",
+  "active_phase": "smoke_verified_ready_for_full_1117",
+  "status": "smoke_verified_ready_for_full_1117",
   "paper_r4_smoke_remediation_antigravity": {
     "status": "verified_v2_smoke_immutable_evidence_v3_absent",
     "failed_smoke_root": "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813",
@@ -1321,7 +1321,7 @@
   },
   "exp450_resampling_image_ablation_antigravity": {
     "experiment": "Exp450",
-    "status": "smoke_v2_authorized_after_mps_pool_limit_repair",
+    "status": "smoke_verified_ready_for_full_1117",
     "design": "docs/superpowers/specs/2026-08-20-exp450-resampling-image-ablation-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-20-exp450-resampling-image-ablation-antigravity.md",
     "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -1346,8 +1346,8 @@
     "mlx_assessed_but_unused": true,
     "smoke_started": true,
     "official_run_started": false,
-    "score_roots_created": false,
-    "score_manifests_frozen": false,
+    "score_roots_created": true,
+    "score_manifests_frozen": true,
     "evaluation_started": false,
     "evaluation_completed": false,
     "report_started": false,
@@ -1362,11 +1362,41 @@
     "prediction_sha256": null,
     "evaluation_sha256": null,
     "report_sha256": null,
-    "implementation_result": "mps_pool_limit_repaired_smoke_v2_ready",
-    "smoke_result": "v1_failed_preserved_v2_not_run",
+    "smoke_backend": {
+      "tensor_backend": "mps",
+      "torch_version": "2.13.0",
+      "mps_available": true,
+      "mlx_available": false,
+      "logical_cpu_count": 12,
+      "cpu_workers": 11,
+      "inner_numerical_threads": 1
+    },
+    "smoke_verified_manifests": {
+      "A": "2d13d54ccdcd9dca51f31c6a4c079af08d026f5ddc60f83aa3a99ddc47a85dd0",
+      "B": "624e6d00d4fed67218940cd69dad5a73452d901f058e7b4d26c84fdbba9e8616",
+      "C": "205d99386f910084e97a7239268f63b038f965b68bd7a2c14990830c2cb4d6d2",
+      "D": "c1dfe1c74144239a49e19263e269364ef95b3e7582534ad71ecb98a045080afb"
+    },
+    "smoke_completed_coordinates": 92,
+    "smoke_total_coordinates": 92,
+    "smoke_failure_attempts": 0,
+    "smoke_test_rows_per_condition": 6500,
+    "smoke_local_elapsed_seconds": 1115.4287781668827,
+    "smoke_progress_log": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_progress_antigravity_20260820.log",
+    "smoke_progress_log_sha256": "b417734265bc66d6ea167626f7558724a7afb60e632d263bd188be353eb8dd4b",
+    "smoke_promotion_gate": {
+      "all_four_manifests_verified": true,
+      "exact_score_lengths_and_identities": true,
+      "finite_scores_and_fixed_image_shapes": true,
+      "backend_unchanged": true,
+      "mps_oom": false,
+      "test_label_access": false
+    },
+    "implementation_result": "mps_pool_limit_repaired_smoke_v2_verified",
+    "smoke_result": "v1_failed_preserved_v2_verified",
     "full_run_result": "not_run",
     "evaluation_result": "not_run",
     "report_result": "not_run",
-    "next_action": "run_smoke_v2_then_fresh_verify_without_test_labels"
+    "next_action": "run_full_1117_then_fresh_verify_without_test_labels"
   }
 }
