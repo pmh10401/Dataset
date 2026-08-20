@@ -19,14 +19,14 @@ from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import (
     score_hard_sources,
 )
 from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
-    MiniRocketKernelResult,
-    MiniRocketResult,
+    score_minirocket_confirmations,
 )
 
 import experiments.exp450_resampling_image_ablation_antigravity.scoring_antigravity as scoring_antigravity
 from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity import (
     Exp450BackendDecision,
     Exp450Condition,
+    Exp450DatasetConditionResult,
 )
 
 
@@ -166,8 +166,8 @@ class Exp450DatasetScoringTests(unittest.TestCase):
             )
         self.assertNotIn("paper.equipment_anomaly_detection.label_access_paper", sys.modules)
 
-    def test_acsf1_values_only_control_matches_frozen_and_variants_are_finite(self) -> None:
-        """A control drift or incomplete B--D TEST vector must fail this bounded real check."""
+    def test_acsf1_unmocked_control_matches_independent_frozen_outputs(self) -> None:
+        """Replacing A with mocked or altered science must break independent bytes."""
         observed_sql: list[str] = []
         values = load_dataset_values(
             Path(FROZEN_CONFIG.database_path),
@@ -176,54 +176,57 @@ class Exp450DatasetScoringTests(unittest.TestCase):
         )
         self.assertFalse(any("split='TEST' AND i.label" in query for query in observed_sql))
         expected_sources = score_hard_sources(values)
-        expected_mini = MiniRocketResult(
-            frozenset(),
-            frozenset(),
-            {
-                requested: MiniRocketKernelResult(
-                    requested, dimension, {}, frozenset()
-                )
-                for requested, dimension in ((1024, 1008), (4096, 4032))
-            },
-        )
+        expected_mini = score_minirocket_confirmations(values)
         expected_route = replay_hard_route(values, expected_sources, expected_mini)
-        with (
-            patch.object(
-                scoring_antigravity, "score_hard_sources", return_value=expected_sources
-            ),
-            patch.object(
-                scoring_antigravity,
-                "score_minirocket_confirmations",
-                return_value=expected_mini,
-            ),
-            patch.object(
-                scoring_antigravity, "replay_hard_route", return_value=expected_route
-            ),
-        ):
-            actual = scoring_antigravity.score_dataset_condition_exp450_antigravity(
-                values, CONDITION_A, BACKEND_CPU
-            )
+        actual = scoring_antigravity.score_dataset_condition_exp450_antigravity(
+            values, CONDITION_A, BACKEND_CPU
+        )
+        self.assertIsInstance(actual, Exp450DatasetConditionResult)
+        self.assertEqual(actual.dataset, values.dataset)
+        self.assertEqual(actual.condition_id, "A")
         self.assertEqual(_pickle_digest(actual.sources), _pickle_digest(expected_sources))
         self.assertEqual(_pickle_digest(actual.route), _pickle_digest(expected_route))
+
+    def test_acsf1_unmocked_bcd_full_paths_return_complete_dataset_results(self) -> None:
+        """Bypassing B--D's public route integration must fail these final invariants."""
+        values = load_dataset_values(
+            Path(FROZEN_CONFIG.database_path),
+            "ACSF1_normal_0",
+            sql_observer=lambda query: self.assertNotIn("split='TEST' AND i.label", query),
+        )
+        n_test = len(values.test_rows)
         for condition in (CONDITION_B, CONDITION_C, CONDITION_D):
-            target = scoring_antigravity.source_metadata_paper(values).train_target_len
-            train = scoring_antigravity.align_rows_exp450_antigravity(
-                values.train_rows, target, mode=condition.length_mode
+            result = scoring_antigravity.score_dataset_condition_exp450_antigravity(
+                values, condition, BACKEND_CPU
             )
-            test = scoring_antigravity.align_rows_exp450_antigravity(
-                values.test_rows, target, mode=condition.length_mode
-            )
-            for source_name in ("exp55_best", "exp56_best"):
-                _, test_score = scoring_antigravity._historical_pair_exp450_antigravity(
-                    source_name,
-                    train,
-                    test,
-                    target,
-                    condition=condition,
-                    backend=BACKEND_CPU,
-                )
-                self.assertEqual(test_score.shape, (len(values.test_rows),))
-                self.assertTrue(np.isfinite(test_score).all())
+            self.assertIsInstance(result, Exp450DatasetConditionResult)
+            self.assertEqual((result.dataset, result.condition_id), (values.dataset, condition.condition_id))
+            self.assertEqual(result.sources.source_names, (
+                "rocket_exp40",
+                "exp55_best",
+                "exp56_best",
+                "exp84",
+                "rocket_block_b",
+                "canonical_normal_state",
+            ))
+            for source in result.sources.by_name.values():
+                if source.eligible:
+                    self.assertEqual(source.test_score.shape, (n_test,))
+                    self.assertTrue(np.isfinite(source.test_score).all())
+            route = result.route
+            self.assertEqual(route.n_test, n_test)
+            self.assertEqual(route.exp253.hard, route.exp236.hard | route.promoted)
+            self.assertEqual(route.exp253.standard, route.exp236.standard - route.promoted)
+            for indices in (
+                route.exp253.hard,
+                route.exp253.standard,
+                route.exp253.priority,
+                route.promoted,
+                route.automatic_hard,
+                route.exact_normal_removed,
+            ):
+                self.assertLessEqual(len(indices), n_test)
+                self.assertTrue(all(0 <= index < n_test for index in indices))
 
 
 if __name__ == "__main__":
