@@ -91,3 +91,37 @@
 
 - Concerns:
   - Historical Exp459 map-parent governance provenance remains outside Task 3 scope. Task 3 did not modify any Exp459 codemap triplet bytes, and the explicit byte guard passed.
+
+## Fix round 1
+
+- Finding addressed:
+  - Important: Task 3 joint-success validation previously trusted authority-carried baseline and candidate confusion rows after only type checks, so forged confusion drift could make the strict candidate path appear successful.
+  - Minor: the regenerated Exp460 Task 3 codemap still carried stale Task 2 wording in some current-node roles and still used the earlier frozen `generated_at`.
+
+- Fix:
+  - `_task3_snapshot_from_authority_antigravity()` now rejects any baseline confusion other than the frozen Exp460 tuple `609/66/837/70788`.
+  - `_task3_snapshot_from_authority_antigravity()` now rejects any candidate confusion other than the frozen Exp458 predecessor tuple `617/66/829/70788`.
+  - This makes confusion drift fail before route evaluation or `joint_success` recomputation, preserving the exact real current result while closing the forged-baseline hole.
+  - `scratch/build_codemap_exp460_antigravity.py` now regenerates `generated_at` with the current session timestamp and refreshes current-node roles to Task 3 wording.
+
+- New regression coverage:
+  - Focused RED: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp460_ecg_strict_fallback_antigravity.tests.test_evaluation_antigravity`
+  - Exact RED summary: `FAILED (failures=1)` because the new forged-confusion regression was accepted before the fix.
+  - Added drift cases:
+    - all-pass authority with forged baseline confusion `609/70/900/70788` must raise `ValueError`
+    - individual baseline drift `610/66/837/70788` must raise `ValueError`
+    - individual candidate drift `617/66/830/70788` must raise `ValueError`
+
+- Post-fix verification:
+  - Focused GREEN: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp460_ecg_strict_fallback_antigravity.tests.test_fallback_antigravity experiments.exp460_ecg_strict_fallback_antigravity.tests.test_evaluation_antigravity` → `Ran 7 tests`, `OK`.
+  - Full Exp460 regressions: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp460_ecg_strict_fallback_antigravity/tests -p 'test_*_antigravity.py'` → `Ran 16 tests`, `OK`.
+  - Affected Exp459 scientific guard: `/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp459_ecg_normal2_blocked_validation_antigravity.tests.test_contracts_antigravity experiments.exp459_ecg_normal2_blocked_validation_antigravity.tests.test_evaluation_antigravity` → `Ran 10 tests`, `OK`.
+  - Exp460 map rebuild + validate-only: passed.
+  - `git diff --check`: passed.
+  - Exp459 triplet byte guard: passed.
+
+- Refreshed map metadata:
+  - Stored graph schema remains `exp460_task3_strict_fallback_codemap_v1`.
+  - Stored lock schema remains `exp460_task3_strict_fallback_codemap_lock_v1`.
+  - Refreshed `generated_at`: `2026-08-19T00:18:36Z`.
+  - Stored source parent remains `deb3eed3f9f5846a6162db211632f4efd6140962` for this fix round.

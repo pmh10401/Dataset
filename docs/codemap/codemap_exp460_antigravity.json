@@ -1,7 +1,7 @@
 {
   "schema": "exp460_task3_strict_fallback_codemap_v1",
-  "generated_at": "2026-08-19T00:00:00Z",
-  "source_parent_commit": "7a51c26d6b0faddbb6884e5d880f7fb327185308",
+  "generated_at": "2026-08-19T00:18:36Z",
+  "source_parent_commit": "deb3eed3f9f5846a6162db211632f4efd6140962",
   "unknown_relationships": [],
   "nodes": [
     {
@@ -49,7 +49,7 @@
     {
       "id": "runbook",
       "path": "docs/EXP460_RUNBOOK_antigravity.html",
-      "role": "Caller: future operators. Effect: keeps the Task 1 official-execution firewall while Task 2 only freezes scientific inputs.",
+      "role": "Caller: future operators. Effect: keeps the Task 1 official-execution firewall while Task 3 only recomputes fallback science from frozen inputs.",
       "tests": [
         "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
       ],
@@ -91,7 +91,7 @@
     {
       "id": "research_state",
       "path": "RESEARCH_STATE.json",
-      "role": "Caller: governance review. Effect: keeps Exp460 in planned-only ledger state with zero official actions and unchanged pending candidate while Task 2 works only in local files.",
+      "role": "Caller: governance review. Effect: keeps Exp460 in planned-only ledger state with zero official actions and unchanged pending candidate while Task 3 works only in local files.",
       "tests": [
         "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
       ],
@@ -105,7 +105,7 @@
     {
       "id": "experiment_catalog",
       "path": "EXPERIMENT_CATALOG.json",
-      "role": "Caller: catalog review. Effect: still registers Exp460 as planned-only lifecycle despite Task 2 local implementation progress.",
+      "role": "Caller: catalog review. Effect: still registers Exp460 as planned-only lifecycle despite Task 3 local implementation progress.",
       "tests": [
         "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
       ],
@@ -119,7 +119,7 @@
     {
       "id": "champion_ledger",
       "path": "CHAMPION_LEDGER.json",
-      "role": "Caller: champion review. Effect: keeps champion and pending candidate unchanged while Task 2 adds only local scientific input code.",
+      "role": "Caller: champion review. Effect: keeps champion and pending candidate unchanged while Task 3 adds only local fallback-evaluation code.",
       "tests": [
         "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"
       ],
@@ -192,7 +192,7 @@
     {
       "id": "task2_predecessor_capture",
       "path": "experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py",
-      "role": "Caller: future Tasks 3-6. Effect: returns the exact frozen Exp459 fallback authority by reusing the version-controlled Exp459 frozen authority and predecessor confusion context without touching TRAIN rows or TEST labels.",
+      "role": "Caller: Task 3 evaluation and future Tasks 4-6. Effect: returns the exact frozen Exp459 fallback authority by reusing the version-controlled Exp459 frozen authority and predecessor confusion context without touching TRAIN rows or TEST labels.",
       "tests": [
         "experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py"
       ],

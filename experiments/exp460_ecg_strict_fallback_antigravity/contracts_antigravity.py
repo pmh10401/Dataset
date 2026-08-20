@@ -1,4 +1,4 @@
-"""Immutable validated Task 2 predecessor contracts for Exp460."""
+"""Immutable validated Task 2/3 predecessor and evaluation contracts for Exp460."""
 
 from __future__ import annotations
 
@@ -121,6 +121,19 @@ def _expected_snapshot_antigravity() -> dict[str, object]:
             FROZEN_CONFIG_ANTIGRAVITY.label_query_count
         ),
     }
+
+
+def _expected_baseline_confusion_antigravity() -> tuple[int, int, int, int]:
+    return FROZEN_CONFIG_ANTIGRAVITY.baseline_confusion
+
+
+def _expected_candidate_confusion_antigravity() -> tuple[int, int, int, int]:
+    return (
+        EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY.tp,
+        EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY.fp,
+        EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY.fn,
+        EXP458_PREDECESSOR_CONTEXT_ANTIGRAVITY.tn,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -435,6 +448,20 @@ def _task3_snapshot_from_authority_antigravity(
     for name in ("tp", "fp", "fn", "tn"):
         _int_antigravity(getattr(baseline_confusion, name), f"baseline_confusion.{name}")
         _int_antigravity(getattr(candidate_confusion, name), f"candidate_confusion.{name}")
+    if (
+        baseline_confusion.tp,
+        baseline_confusion.fp,
+        baseline_confusion.fn,
+        baseline_confusion.tn,
+    ) != _expected_baseline_confusion_antigravity():
+        raise ValueError("baseline_confusion must remain the exact frozen Exp460 baseline")
+    if (
+        candidate_confusion.tp,
+        candidate_confusion.fp,
+        candidate_confusion.fn,
+        candidate_confusion.tn,
+    ) != _expected_candidate_confusion_antigravity():
+        raise ValueError("candidate_confusion must remain the exact frozen Exp458 predecessor")
 
     _sha_antigravity(authority.frozen_authority_digest, "frozen_authority_digest")
     _sha_antigravity(authority.official_artifact_map_sha256, "official_artifact_map_sha256")

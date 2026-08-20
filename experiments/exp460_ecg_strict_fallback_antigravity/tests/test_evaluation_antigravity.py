@@ -15,6 +15,8 @@ def _authority_with_mutations_antigravity(
     *,
     passes: tuple[bool, ...] | None = None,
     period_change_aucs: tuple[float, ...] | None = None,
+    baseline_confusion: tuple[int, int, int, int] | None = None,
+    candidate_confusion: tuple[int, int, int, int] | None = None,
 ) -> object:
     from experiments.exp460_ecg_strict_fallback_antigravity.predecessor_antigravity import (
         capture_exp459_fallback_authority_antigravity,
@@ -62,6 +64,18 @@ def _authority_with_mutations_antigravity(
     object.__setattr__(decision, "passed", decision_passed)
     object.__setattr__(decision, "status", "stable" if decision_passed else "unstable")
     object.__setattr__(authority, "decision", decision)
+
+    if baseline_confusion is not None:
+        confusion = _clone_antigravity(authority.baseline_confusion)
+        for name, value in zip(("tp", "fp", "fn", "tn"), baseline_confusion, strict=True):
+            object.__setattr__(confusion, name, value)
+        object.__setattr__(authority, "baseline_confusion", confusion)
+
+    if candidate_confusion is not None:
+        confusion = _clone_antigravity(authority.candidate_confusion)
+        for name, value in zip(("tp", "fp", "fn", "tn"), candidate_confusion, strict=True):
+            object.__setattr__(confusion, name, value)
+        object.__setattr__(authority, "candidate_confusion", confusion)
     return authority
 
 
@@ -281,6 +295,40 @@ class FallbackEvaluationAntigravityTest(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             compare_fallback_rules_antigravity(malformed)
+
+        with self.assertRaises(ValueError):
+            compare_fallback_rules_antigravity(
+                _authority_with_mutations_antigravity(
+                    passes=(True, True, True, True, True, True, True, True, True, True),
+                    period_change_aucs=(
+                        0.91,
+                        0.92,
+                        0.93,
+                        0.94,
+                        0.95,
+                        0.96,
+                        0.97,
+                        0.98,
+                        0.99,
+                        0.951,
+                    ),
+                    baseline_confusion=(609, 70, 900, 70788),
+                )
+            )
+
+        with self.assertRaises(ValueError):
+            compare_fallback_rules_antigravity(
+                _authority_with_mutations_antigravity(
+                    baseline_confusion=(610, 66, 837, 70788),
+                )
+            )
+
+        with self.assertRaises(ValueError):
+            compare_fallback_rules_antigravity(
+                _authority_with_mutations_antigravity(
+                    candidate_confusion=(617, 66, 830, 70788),
+                )
+            )
 
         with self.assertRaises(ValueError):
             compare_fallback_rules_antigravity(object())

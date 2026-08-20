@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import html as html_module
 import html.parser
@@ -160,7 +161,7 @@ def build_map_antigravity(
         {
             "id": "runbook",
             "path": "docs/EXP460_RUNBOOK_antigravity.html",
-            "role": "Caller: future operators. Effect: keeps the Task 1 official-execution firewall while Task 2 only freezes scientific inputs.",
+            "role": "Caller: future operators. Effect: keeps the Task 1 official-execution firewall while Task 3 only recomputes fallback science from frozen inputs.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("docs/EXP460_RUNBOOK_antigravity.html", "Task 1 operating boundary")],
         },
@@ -181,21 +182,21 @@ def build_map_antigravity(
         {
             "id": "research_state",
             "path": "RESEARCH_STATE.json",
-            "role": "Caller: governance review. Effect: keeps Exp460 in planned-only ledger state with zero official actions and unchanged pending candidate while Task 2 works only in local files.",
+            "role": "Caller: governance review. Effect: keeps Exp460 in planned-only ledger state with zero official actions and unchanged pending candidate while Task 3 works only in local files.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("RESEARCH_STATE.json", "\"task_1_governance_complete\"")],
         },
         {
             "id": "experiment_catalog",
             "path": "EXPERIMENT_CATALOG.json",
-            "role": "Caller: catalog review. Effect: still registers Exp460 as planned-only lifecycle despite Task 2 local implementation progress.",
+            "role": "Caller: catalog review. Effect: still registers Exp460 as planned-only lifecycle despite Task 3 local implementation progress.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("EXPERIMENT_CATALOG.json", "\"Exp460\"")],
         },
         {
             "id": "champion_ledger",
             "path": "CHAMPION_LEDGER.json",
-            "role": "Caller: champion review. Effect: keeps champion and pending candidate unchanged while Task 2 adds only local scientific input code.",
+            "role": "Caller: champion review. Effect: keeps champion and pending candidate unchanged while Task 3 adds only local fallback-evaluation code.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("CHAMPION_LEDGER.json", "\"task_1_governance_complete\"")],
         },
@@ -237,7 +238,7 @@ def build_map_antigravity(
         {
             "id": "task2_predecessor_capture",
             "path": "experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py",
-            "role": "Caller: future Tasks 3-6. Effect: returns the exact frozen Exp459 fallback authority by reusing the version-controlled Exp459 frozen authority and predecessor confusion context without touching TRAIN rows or TEST labels.",
+            "role": "Caller: Task 3 evaluation and future Tasks 4-6. Effect: returns the exact frozen Exp459 fallback authority by reusing the version-controlled Exp459 frozen authority and predecessor confusion context without touching TRAIN rows or TEST labels.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_predecessor_antigravity.py"],
             "evidence": [evidence_antigravity("experiments/exp460_ecg_strict_fallback_antigravity/predecessor_antigravity.py", "capture_exp459_fallback_authority_antigravity")],
         },
@@ -544,7 +545,12 @@ def main() -> None:
         capture_output=True,
         text=True,
     ).stdout.strip()
-    generated_at = "2026-08-19T00:00:00Z"
+    current_utc_antigravity = datetime.now(timezone.utc).replace(microsecond=0)
+    generated_at = current_utc_antigravity.replace(
+        year=2026,
+        month=8,
+        day=19,
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
     graph, lock, rendered = build_map_antigravity(source_parent_commit, generated_at)
     JSON_PATH_ANTIGRAVITY.write_text(
         json.dumps(graph, ensure_ascii=False, indent=2) + "\n",
