@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp462 Task 2 code map."""
+"""Build and validate the bounded Exp462 Task 3 code map."""
 
 from __future__ import annotations
 
@@ -35,14 +35,19 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/plans/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html",
     "docs/superpowers/specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html",
     ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-2-report-antigravity.html",
+    ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/config_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/contracts_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/gradual_features_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/predecessor_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/scoring_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/sources_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_contracts_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_gradual_features_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_scoring_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp462_antigravity.py",
 )
@@ -147,8 +152,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp462 Task 2 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp462 Task 2 코드맵</h1><p>Task 2 is complete and maps real governance documents plus frozen config, authority, predecessor capture, TRAIN source, and focused tests. Future Task 3-5 boundaries remain explicitly unknown and not implemented.</p>'
+        '<title>Exp462 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp462 Task 3 코드맵</h1><p>Task 3 is implemented pending review and maps governance documents, frozen Task 2 authority/source nodes, gradual feature, scoring boundary, and focused tests. Future Task 4-5 boundaries remain explicitly unknown and not implemented.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -176,6 +181,7 @@ def build_map_antigravity(
     report = "docs/EXP462_IMPLEMENTATION_REPORT_antigravity.html"
     dashboard = "docs/EXP462_DASHBOARD_antigravity.html"
     task2_report = ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-2-report-antigravity.html"
+    task3_report = ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html"
     governance_test = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
         "test_governance_antigravity.py"
@@ -193,6 +199,12 @@ def build_map_antigravity(
     sources = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/sources_antigravity.py"
     )
+    gradual_features = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/gradual_features_antigravity.py"
+    )
+    scoring = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/scoring_antigravity.py"
+    )
     config_test = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
         "test_config_antigravity.py"
@@ -209,8 +221,13 @@ def build_map_antigravity(
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
         "test_sources_antigravity.py"
     )
-    task3_boundary = (
-        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/gradual_features_antigravity.py"
+    gradual_features_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
+        "test_gradual_features_antigravity.py"
+    )
+    scoring_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/"
+        "test_scoring_antigravity.py"
     )
     task4_boundary = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/qualification_antigravity.py"
@@ -230,9 +247,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records Task 2 complete, checked Task 2 controls, official0/label0, and future Task 3-5 boundaries.",
+            "role": "Caller: Task 1-6 execution. Effect: records Task 3 implemented pending review, checked Task 1-2 controls, unchecked Task 3 controls, official0/label0, and future Task 4-5 boundaries.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 2 complete / Task 3 next")],
+            "evidence": [evidence_antigravity(plan, "Task 3 implemented pending review")],
         },
         {
             "id": "preregistration",
@@ -251,16 +268,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 2 handoff. Effect: records frozen authority, public interfaces, null official hashes, official0/label0, and Task 3 next.",
+            "role": "Caller: Task 3 handoff. Effect: records frozen authority, Task 3 feature/scoring public interfaces, backend decision, null official hashes, official0/label0, and review-pending state.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(report, "Task 2 implementation")],
+            "evidence": [evidence_antigravity(report, "Task 3 implementation")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 2 complete, Task 3 next, public interfaces, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 3 implemented pending review, public interfaces, selected CPU backend, official0, label0, and null hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 2 complete / Task 3 next")],
+            "evidence": [evidence_antigravity(dashboard, "Task 3 implemented pending review")],
         },
         {
             "id": "research_state",
@@ -293,7 +310,7 @@ def build_map_antigravity(
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 2 validation. Effect: rebuilds and validates the bounded Exp462 graph plus stored HTML/JSON/lock triplet bytes.",
+            "role": "Caller: Task 3 validation. Effect: rebuilds and validates the bounded Exp462 graph plus stored HTML/JSON/lock triplet bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -303,6 +320,13 @@ def build_map_antigravity(
             "role": "Caller: Task 2 review. Effect: records complete state, RED/GREEN boundary, frozen Exp461 authority, and Task 3 next.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(task2_report, "Exp462 Task 2 report")],
+        },
+        {
+            "id": "task3_report",
+            "path": task3_report,
+            "role": "Caller: Task 3 review. Effect: records implemented-pending-review state, RED/GREEN evidence, backend decision, public interfaces, official0, label0, and absent official root.",
+            "tests": [governance_test],
+            "evidence": [evidence_antigravity(task3_report, "Exp462 Task 3 report")],
         },
         {
             "id": "task2_config",
@@ -361,11 +385,32 @@ def build_map_antigravity(
             "evidence": [evidence_antigravity(sources_test, "test_loader_reuses_exp461_train_matrix_without_aliasing_antigravity")],
         },
         {
-            "id": "task3_gradual_signature_unknown",
-            "path": task3_boundary,
-            "role": "Caller: future Task 3 only. Effect: unknown and not implemented in Task 1; expected to implement 24D gradual signature and scoring later.",
-            "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")],
+            "id": "task3_gradual_signature",
+            "path": gradual_features,
+            "role": "Caller: Task 3 scoring and future qualification. Effect: validates one finite 140-length row and returns exact 24D gradual signatures for full/front/back views as owned read-only float64.",
+            "tests": [gradual_features_test, governance_test],
+            "evidence": [evidence_antigravity(gradual_features, "gradual_signature_antigravity")],
+        },
+        {
+            "id": "task3_scoring",
+            "path": scoring,
+            "role": "Caller: future Task 4 qualification. Effect: delegates Exp461 hydra_period_rank_max, computes gradual_signature_local_gap with TRAIN-only LocalGap, ranks scores, and returns hydra_period_gradual_rank_max as exact elementwise maximum.",
+            "tests": [scoring_test, governance_test],
+            "evidence": [evidence_antigravity(scoring, "score_fold_methods_antigravity")],
+        },
+        {
+            "id": "task3_gradual_feature_tests",
+            "path": gradual_features_test,
+            "role": "Caller: Task 3 focused regression. Effect: covers independent NumPy feature reference, order, shape, dtype, finite values, ownership, immutability, input preservation, and rejection matrix.",
+            "tests": [gradual_features_test],
+            "evidence": [evidence_antigravity(gradual_features_test, "test_gradual_signature_matches_independent_reference_and_contract_antigravity")],
+        },
+        {
+            "id": "task3_scoring_tests",
+            "path": scoring_test,
+            "role": "Caller: Task 3 focused regression. Effect: covers method order, Exp461 baseline delegation, LocalGap index/seed flow, exact rank formula, primary max fusion, and public boundary restrictions.",
+            "tests": [scoring_test],
+            "evidence": [evidence_antigravity(scoring_test, "test_fold_scoring_delegates_baseline_and_combines_gradual_rank_antigravity")],
         },
         {
             "id": "task4_qualification_unknown",
@@ -386,7 +431,7 @@ def build_map_antigravity(
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "gradual_drift AUC ≥ 0.85")},
         {"from": "approved_design", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "0.9216148584075248")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 2 complete / Task 3 next")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 3 implemented pending review")},
         {"from": "implementation_plan", "to": "governance_regression", "type": "governs", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
@@ -405,13 +450,21 @@ def build_map_antigravity(
         {"from": "task2_config", "to": "task2_contracts", "type": "governs", "evidence": evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")},
         {"from": "task2_contracts", "to": "task2_predecessor", "type": "governs", "evidence": evidence_antigravity(contracts, "Exp461GradualAuthorityAntigravity")},
         {"from": "task2_config", "to": "task2_sources", "type": "governs", "evidence": evidence_antigravity(sources, "load_normal2_train_antigravity")},
-        {"from": "implementation_plan", "to": "task3_gradual_signature_unknown", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
+        {"from": "implementation_plan", "to": "task3_report", "type": "governs", "evidence": evidence_antigravity(task3_report, "Task 3 implemented pending review")},
+        {"from": "implementation_plan", "to": "task3_gradual_signature", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
+        {"from": "implementation_plan", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(plan, "Task 3 — 24D gradual signature and three scores")},
+        {"from": "task3_gradual_feature_tests", "to": "task3_gradual_signature", "type": "tests", "evidence": evidence_antigravity(gradual_features_test, "test_gradual_signature_matches_independent_reference_and_contract_antigravity")},
+        {"from": "task3_scoring_tests", "to": "task3_scoring", "type": "tests", "evidence": evidence_antigravity(scoring_test, "test_fold_scoring_delegates_baseline_and_combines_gradual_rank_antigravity")},
+        {"from": "task2_config", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(config, "FROZEN_CONFIG_ANTIGRAVITY")},
+        {"from": "task2_predecessor", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(predecessor, "capture_exp461_gradual_authority_antigravity")},
+        {"from": "task2_sources", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(sources, "load_normal2_train_antigravity")},
+        {"from": "task3_gradual_signature", "to": "task3_scoring", "type": "governs", "evidence": evidence_antigravity(scoring, "score_fold_methods_antigravity")},
         {"from": "implementation_plan", "to": "task4_qualification_unknown", "type": "governs", "evidence": evidence_antigravity(plan, "Task 4 — blocked qualification, seven leaves, replay")},
         {"from": "implementation_plan", "to": "task5_cli_unknown", "type": "governs", "evidence": evidence_antigravity(plan, "Task 5 — closed CLI and two private TRAIN reproductions")},
     ]
 
     graph = {
-        "schema": "exp462_task2_boundary_codemap_v1",
+        "schema": "exp462_task3_boundary_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -419,7 +472,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp462_task2_boundary_codemap_lock_v1",
+        "schema": "exp462_task3_boundary_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),

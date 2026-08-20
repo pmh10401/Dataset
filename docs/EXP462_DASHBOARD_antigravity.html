@@ -3,9 +3,9 @@
 <style>body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}code{background:#eef2f7;padding:.1rem .3rem}</style></head>
 <body><main><h1>Exp462 ECG gradual signature 대시보드</h1>
 <table>
-  <tr><th>progress</th><td>Task 2 complete / Task 3 next</td></tr>
+  <tr><th>progress</th><td>Task 3 implemented pending review</td></tr>
   <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
-  <tr><th>implementation status</th><td><code>task_2_complete_pending_task_3</code></td></tr>
+  <tr><th>implementation status</th><td><code>task_3_implemented_pending_review</code></td></tr>
   <tr><th>goal</th><td>Exp461 period 성능을 보존하면서 gradual_drift 최소 AUC를 0.85 이상으로 올리기</td></tr>
   <tr><th>official execution</th><td>official evaluate 0 / official inspect 0</td></tr>
   <tr><th>label query count</th><td>0</td></tr>
@@ -13,7 +13,7 @@
   <tr><th>official artifact map SHA-256</th><td><code>null</code></td></tr>
   <tr><th>result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
 </table>
-<div class="box"><p><strong>쉬운 설명:</strong> Task 2는 독립 review C/I/M 0 이후 완료됐다. Exp461 코드 provenance와 terminal closeout provenance, 그리고 ECG5000_normal_2 TRAIN source boundary가 고정됐다. Task 3 scoring/gradual feature 계산, CLI, 공식 root 생성은 아직 하지 않았다. Exp461 failure 9/10의 원인은 gradual_drift <code>0.8402306222021025</code>였다.</p></div>
+<div class="box"><p><strong>쉬운 설명:</strong> Task 3 구현은 review 대기 상태다. 24D gradual signature, <code>gradual_signature_local_gap</code>, Exp461 위임 기준선 <code>hydra_period_rank_max</code>, 그리고 원소별 max 결합 <code>hydra_period_gradual_rank_max</code>가 구현됐다. CLI, qualification 실행, 공식 root 생성은 아직 하지 않았다. Exp461 failure 9/10의 원인은 gradual_drift <code>0.8402306222021025</code>였다.</p></div>
 <h2>Task 2 boundary</h2>
 <table>
   <tr><th>public config</th><td><code>FROZEN_CONFIG_ANTIGRAVITY</code></td></tr>
@@ -21,7 +21,14 @@
   <tr><th>TRAIN source</th><td><code>load_normal2_train_antigravity()</code> returns owned, C-contiguous, read-only, finite <code>float32</code> <code>1413×140</code></td></tr>
   <tr><th>Exp461 reviewed code commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code> private TRAIN candidate execution/reproduction code</td></tr>
   <tr><th>Exp461 terminal closeout commit</th><td><code>0340b6ee737da84777283668449738d0c1585566</code> terminal truth/docs closeout</td></tr>
-  <tr><th>Task 3</th><td>next; not started</td></tr>
+  <tr><th>Task 3</th><td>implemented pending review; plan checkboxes remain unchecked</td></tr>
+</table>
+<h2>Task 3 boundary</h2>
+<table>
+  <tr><th>gradual feature</th><td><code>gradual_signature_antigravity(values)</code> returns exact 24D finite read-only <code>float64</code></td></tr>
+  <tr><th>fold scores</th><td><code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index)</code></td></tr>
+  <tr><th>rank formula</th><td><code>(1 + count(r_i ≤ s)) / (n + 1)</code></td></tr>
+  <tr><th>backend decision</th><td><code>numpy_cpu</code>; MLX smoke parity passed but speed gate failed with speedup <code>0.274</code></td></tr>
 </table>
 <h2>Frozen targets</h2>
 <table>

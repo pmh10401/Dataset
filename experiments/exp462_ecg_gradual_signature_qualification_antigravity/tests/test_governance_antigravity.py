@@ -124,7 +124,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp462")
                 self.assertEqual(record["kind"], "ecg_gradual_signature_qualification")
                 self.assertEqual(record["status"], "planned_implementation_not_started")
-                self.assertEqual(record["implementation_status"], "task_2_complete_pending_task_3")
+                self.assertEqual(record["implementation_status"], "task_3_implemented_pending_review")
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -229,7 +229,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertTrue(record["review_only"])
 
         self.assertEqual(state["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
-        self.assertEqual(state["active_phase"], "task_2_complete_pending_task_3")
+        self.assertEqual(state["active_phase"], "task_3_implemented_pending_review")
         self.assertEqual(champion["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["champion_status"], "no_new_champion_verified_in_current_loop")
 
@@ -273,7 +273,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Exp462 implementation report",
             "planned_implementation_not_started",
-            "Task 2 complete / Task 3 next",
+            "Task 3 implemented pending review",
             "hydra_period_gradual_rank_max",
             "0.8402306222021025",
             "0.907392736783864",
@@ -288,9 +288,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 2 complete / Task 3 next",
+            "Task 3 implemented pending review",
             "planned_implementation_not_started",
-            "task_2_complete_pending_task_3",
+            "task_3_implemented_pending_review",
             "official evaluate 0 / official inspect 0",
             "label query count",
             "official artifact map SHA-256",
@@ -312,7 +312,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn(phrase, dashboard)
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
-        self.assertIn("Task 2 complete / Task 3 next", plan)
+        self.assertIn("Task 3 implemented pending review", plan)
         for task_number in range(1, 7):
             task = re.search(
                 rf"<section>\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?</section>",
@@ -373,7 +373,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task2_contract_tests",
             "task2_predecessor_tests",
             "task2_source_tests",
-            "task3_gradual_signature_unknown",
+            "task3_gradual_signature",
+            "task3_scoring",
+            "task3_gradual_feature_tests",
+            "task3_scoring_tests",
             "task4_qualification_unknown",
             "task5_cli_unknown",
         ):
