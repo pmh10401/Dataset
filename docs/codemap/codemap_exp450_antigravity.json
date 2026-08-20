@@ -356,11 +356,6 @@
       "kind": "ast_import"
     },
     {
-      "callee": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
-      "caller": "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
-      "kind": "ast_import"
-    },
-    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
       "kind": "ast_import"
@@ -1079,7 +1074,6 @@
     },
     {
       "callers": [
-        "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "effects": "Frozen Exp450 identity, population, policy, and create-only root authority.",

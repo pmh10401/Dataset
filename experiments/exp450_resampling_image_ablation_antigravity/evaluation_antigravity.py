@@ -13,7 +13,6 @@ import hashlib
 import json
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
 
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
@@ -69,14 +68,14 @@ def evaluate_exp450_antigravity(
     verifier: Callable[[str], Mapping[str, object]] | None = None,
     label_loader: Callable[[tuple[str, ...]], Mapping[str, Sequence[object]]] | None = None,
     baseline_verifier: Callable[[Path], object] = verify_score_root,
+    expected_contexts: Mapping[str, Mapping[str, object]] | None = None,
 ) -> Exp450EvaluationAntigravity:
     """Verify every score source and identity before the one TEST-label read.
 
     ``verifier`` is intentionally injected: Task 6's pure verifier needs the
-    already-established run context and catalog, neither of which is an
-    evaluation concern.  It must return the verified manifest for its supplied
-    condition.  Fixture mappings are accepted for baseline roots so this
-    evaluation boundary can be tested without opening any real score root.
+    already-established run context and catalog.  Its verified output must be
+    accompanied by the trusted per-condition context binding; otherwise this
+    function refuses to obtain the label capability.
     """
     if verifier is None:
         raise ValueError("Exp450 manifest verifier is required")
@@ -87,7 +86,9 @@ def evaluate_exp450_antigravity(
             raise ValueError("Exp450 manifest verifier returned an invalid manifest")
         manifests[condition] = manifest
 
-    datasets, test_identities, database_sha256 = _exp450_identity(manifests)
+    datasets, test_identities, database_sha256 = _exp450_identity(
+        manifests, expected_contexts
+    )
     active_baseline_roots = BASELINE_ROOTS if baseline_roots is None else baseline_roots
     baseline_manifests = _verify_baseline_roots(active_baseline_roots, baseline_verifier)
     baseline_scores, baseline_micro_scores = _load_baseline_scores(
@@ -223,32 +224,40 @@ def curve_tables_exp450_antigravity(
 
 def _exp450_identity(
     manifests: Mapping[str, Mapping[str, object]],
+    expected_contexts: Mapping[str, Mapping[str, object]] | None,
 ) -> tuple[tuple[str, ...], Mapping[str, Mapping[str, object]], str]:
+    if not isinstance(expected_contexts, Mapping) or tuple(expected_contexts) != _CONDITIONS:
+        raise ValueError("trusted Exp450 condition contexts are required")
     reference_datasets: tuple[str, ...] | None = None
     reference_identities: dict[str, Mapping[str, object]] | None = None
     database_sha256: str | None = None
+    reference_catalog_sha256: str | None = None
     for condition in _CONDITIONS:
         manifest = manifests[condition]
-        condition_record = manifest.get("condition")
-        if not isinstance(condition_record, Mapping) or condition_record.get("condition_id") != condition:
+        expected = _trusted_condition_context(condition, expected_contexts[condition])
+        condition_record = _condition_record(condition, manifest.get("condition"))
+        if condition_record != expected["condition"]:
             raise ValueError("Exp450 manifest condition differs")
         identities = _manifest_test_identities(manifest)
         datasets = tuple(identities)
-        # Task 6's canonical manifest is verified against a context carrying
-        # this frozen DB digest, rather than repeating it in every manifest.
-        # Fixture verifiers may provide it explicitly to make that binding
-        # independently inspectable here.
         db = manifest.get("database_sha256")
-        if db is None:
-            from .config_antigravity import FROZEN_EXP450_CONFIG
-            db = FROZEN_EXP450_CONFIG.database_sha256
-        if type(db) is not str or len(db) != 64:
+        context_sha256 = manifest.get("context_sha256")
+        catalog_sha256 = manifest.get("catalog_sha256")
+        if (
+            not _sha256(db)
+            or not _sha256(context_sha256)
+            or not _sha256(catalog_sha256)
+            or db != expected["database_sha256"]
+            or context_sha256 != expected["context_sha256"]
+            or catalog_sha256 != expected["catalog_sha256"]
+        ):
             raise ValueError("Exp450 manifest database identity differs")
         if reference_datasets is None:
-            reference_datasets, reference_identities, database_sha256 = datasets, identities, db
+            reference_datasets, reference_identities = datasets, identities
+            database_sha256, reference_catalog_sha256 = db, catalog_sha256
         elif datasets != reference_datasets or identities != reference_identities:
             raise ValueError("Exp450 manifest TEST identity differs")
-        elif db != database_sha256:
+        elif db != database_sha256 or catalog_sha256 != reference_catalog_sha256:
             raise ValueError("Exp450 manifest database identity differs")
     assert reference_datasets is not None and reference_identities is not None and database_sha256 is not None
     return reference_datasets, MappingProxyType(reference_identities), database_sha256
@@ -262,7 +271,9 @@ def _verify_baseline_roots(
     verified: dict[str, object] = {}
     for name in _BASELINE_ROOT_ORDER:
         candidate = roots[name]
-        verified[name] = candidate if isinstance(candidate, Mapping) else baseline_verifier(Path(candidate))
+        if not isinstance(candidate, Path):
+            raise ValueError("baseline root path differs")
+        verified[name] = baseline_verifier(candidate)
     return MappingProxyType(verified)
 
 
@@ -274,10 +285,12 @@ def _load_baseline_scores(
     micro_scores: dict[str, dict[str, np.ndarray]] = {}
     for root_name in _BASELINE_ROOT_ORDER:
         manifest = manifests[root_name]
-        identity, db, shards = _baseline_identity_and_shards(manifest)
+        identity, db, shards, full_identity = _baseline_identity_and_shards(manifest)
         if db != database_sha256:
             raise ValueError("baseline database identity differs")
-        if tuple(identity) != datasets or identity != test_identities:
+        if tuple(identity) != datasets or (
+            identity != test_identities if full_identity else not _same_test_coordinates(identity, test_identities)
+        ):
             raise ValueError("baseline TEST identity differs")
         for method in _BASELINE_METHODS[root_name]:
             raw_scores[method] = {}
@@ -301,7 +314,7 @@ def _load_baseline_scores(
 
 def _baseline_identity_and_shards(
     manifest: object,
-) -> tuple[Mapping[str, Mapping[str, object]], str, Mapping[tuple[str, str], Mapping[str, object]]]:
+) -> tuple[Mapping[str, Mapping[str, object]], str, Mapping[tuple[str, str], Mapping[str, object]], bool]:
     if isinstance(manifest, Mapping):
         db = manifest.get("database_sha256")
         identities = _manifest_test_identities(manifest)
@@ -313,6 +326,7 @@ def _baseline_identity_and_shards(
             for method, rows in methods.items() if isinstance(method, str) and isinstance(rows, Mapping)
             for dataset, shard in rows.items() if isinstance(dataset, str) and isinstance(shard, Mapping)
         }
+        full_identity = True
     else:
         root = getattr(manifest, "run_root", None)
         db = getattr(manifest, "database_sha256", None)
@@ -334,14 +348,15 @@ def _baseline_identity_and_shards(
                 raise ValueError("baseline score manifest differs")
             count = shard.get("n_test")
             indices = shard.get("test_indices")
-            identities[dataset] = _normal_test_identity(dataset, {"split": "TEST", "count": count, "indices": indices})
+            identities[dataset] = _test_coordinate(dataset, {"split": "TEST", "count": count, "indices": indices})
             loaded[(method, dataset)] = shard
         if tuple(identities) != tuple(datasets):
             raise ValueError("baseline dataset identity differs")
         shards = loaded
+        full_identity = False
     if type(db) is not str or len(db) != 64:
         raise ValueError("baseline database identity differs")
-    return identities, db, shards
+    return identities, db, shards, full_identity
 
 
 def _load_exp450_scores(
@@ -479,12 +494,79 @@ def _manifest_test_identities(manifest: Mapping[str, object]) -> dict[str, Mappi
 
 
 def _normal_test_identity(dataset: str, value: object) -> Mapping[str, object]:
-    if not isinstance(value, Mapping) or value.get("dataset") != dataset or value.get("split") != "TEST":
+    required = {"dataset", "dataset_id", "series_length", "split", "indices", "values_blob_sha256", "row_digest", "count"}
+    if not isinstance(value, Mapping) or set(value) != required or value.get("dataset") != dataset or value.get("split") != "TEST":
+        raise ValueError("TEST identity differs")
+    count, indices = value.get("count"), value.get("indices")
+    dataset_id, series_length = value.get("dataset_id"), value.get("series_length")
+    hashes, digest = value.get("values_blob_sha256"), value.get("row_digest")
+    if (
+        type(count) is not int or count < 1 or indices != list(range(count))
+        or type(dataset_id) is not int or dataset_id < 0
+        or type(series_length) is not int or series_length < 1
+        or not isinstance(hashes, list) or len(hashes) != count or any(not _sha256(item) for item in hashes)
+        or not _sha256(digest)
+    ):
+        raise ValueError("TEST identity differs")
+    bare = {key: value[key] for key in required - {"row_digest", "count"}}
+    expected_digest = hashlib.sha256(_canonical_bytes(bare)).hexdigest()
+    if digest != expected_digest:
+        raise ValueError("TEST identity differs")
+    return MappingProxyType({key: value[key] if key != "indices" else list(indices) for key in required})
+
+
+def _test_coordinate(dataset: str, value: object) -> Mapping[str, object]:
+    if not isinstance(value, Mapping) or value.get("split") != "TEST":
         raise ValueError("TEST identity differs")
     count, indices = value.get("count"), value.get("indices")
     if type(count) is not int or count < 1 or indices != list(range(count)):
         raise ValueError("TEST identity differs")
     return MappingProxyType({"dataset": dataset, "split": "TEST", "count": count, "indices": list(indices)})
+
+
+def _same_test_coordinates(
+    baseline: Mapping[str, Mapping[str, object]], exp450: Mapping[str, Mapping[str, object]]
+) -> bool:
+    return all(
+        _test_coordinate(dataset, baseline[dataset]) == _test_coordinate(dataset, exp450[dataset])
+        for dataset in exp450
+    )
+
+
+def _condition_record(condition: str, value: object) -> Mapping[str, str]:
+    expected_modes = {
+        "A": ("linear", "linear"), "B": ("polyphase_pchip", "linear"),
+        "C": ("linear", "area"), "D": ("polyphase_pchip", "area"),
+    }
+    if not isinstance(value, Mapping) or set(value) != {"condition_id", "length_mode", "image_mode"}:
+        raise ValueError("Exp450 manifest condition differs")
+    length_mode, image_mode = expected_modes[condition]
+    if value != {"condition_id": condition, "length_mode": length_mode, "image_mode": image_mode}:
+        raise ValueError("Exp450 manifest condition differs")
+    return MappingProxyType({"condition_id": condition, "length_mode": length_mode, "image_mode": image_mode})
+
+
+def _trusted_condition_context(condition: str, value: object) -> Mapping[str, object]:
+    if not isinstance(value, Mapping) or set(value) != {"database_sha256", "context_sha256", "catalog_sha256", "condition"}:
+        raise ValueError("trusted Exp450 condition context differs")
+    db, context, catalog = value["database_sha256"], value["context_sha256"], value["catalog_sha256"]
+    if not all(_sha256(item) for item in (db, context, catalog)):
+        raise ValueError("trusted Exp450 condition context differs")
+    return MappingProxyType({
+        "database_sha256": db, "context_sha256": context, "catalog_sha256": catalog,
+        "condition": _condition_record(condition, value["condition"]),
+    })
+
+
+def _sha256(value: object) -> bool:
+    return type(value) is str and len(value) == 64 and all(character in "0123456789abcdef" for character in value)
+
+
+def _canonical_bytes(value: object) -> bytes:
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8") + b"\n"
+    except (TypeError, ValueError) as error:
+        raise ValueError("TEST identity differs") from error
 
 
 def _finite_vector(values: object, name: str) -> np.ndarray:

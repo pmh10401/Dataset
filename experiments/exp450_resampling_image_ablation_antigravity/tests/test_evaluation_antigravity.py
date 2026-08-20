@@ -18,6 +18,7 @@ from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigra
 
 
 DB_SHA256 = "a" * 64
+CATALOG_SHA256 = "b" * 64
 DATASETS = ("mixed_antigravity", "normal_antigravity")
 LABELS = {
     "mixed_antigravity": (0, 1, 0),
@@ -25,14 +26,52 @@ LABELS = {
 }
 
 
+def _identity_for(dataset: str, dataset_id: int, count: int) -> dict[str, object]:
+    bare = {
+        "dataset": dataset,
+        "dataset_id": dataset_id,
+        "series_length": 3,
+        "split": "TEST",
+        "indices": list(range(count)),
+        "values_blob_sha256": [
+            hashlib.sha256(f"{dataset}:{index}".encode()).hexdigest()
+            for index in range(count)
+        ],
+    }
+    encoded = __import__("json").dumps(bare, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+    return {**bare, "row_digest": hashlib.sha256(encoded).hexdigest(), "count": count}
+
+
 def _identity(dataset: str, count: int) -> dict[str, object]:
-    return {"dataset": dataset, "split": "TEST", "count": count, "indices": list(range(count))}
+    return _identity_for(dataset, DATASETS.index(dataset), count)
+
+
+def _condition_record(condition: str) -> dict[str, str]:
+    modes = {
+        "A": ("linear", "linear"), "B": ("polyphase_pchip", "linear"),
+        "C": ("linear", "area"), "D": ("polyphase_pchip", "area"),
+    }
+    length_mode, image_mode = modes[condition]
+    return {"condition_id": condition, "length_mode": length_mode, "image_mode": image_mode}
+
+
+EXPECTED_CONTEXTS = {
+    condition: {
+        "database_sha256": DB_SHA256,
+        "context_sha256": f"{index + 1:x}" * 64,
+        "catalog_sha256": CATALOG_SHA256,
+        "condition": _condition_record(condition),
+    }
+    for index, condition in enumerate(("A", "B", "C", "D"))
+}
 
 
 def _manifest(condition: str, values: dict[str, tuple[float, ...]]) -> dict[str, object]:
     return {
-        "condition": {"condition_id": condition},
+        "condition": _condition_record(condition),
         "database_sha256": DB_SHA256,
+        "context_sha256": EXPECTED_CONTEXTS[condition]["context_sha256"],
+        "catalog_sha256": CATALOG_SHA256,
         "datasets": [
             {"dataset": dataset, "test": _identity(dataset, len(values[dataset]))}
             for dataset in DATASETS
@@ -72,12 +111,31 @@ def _baseline_manifest(methods: tuple[str, ...]) -> dict[str, object]:
     }
 
 
-BASELINES = {
+BASELINE_MANIFESTS = {
     "classical": _baseline_manifest(("knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest")),
     "deep_svdd": _baseline_manifest(("deep_svdd_1d",)),
     "drocc": _baseline_manifest(("drocc_1d",)),
 }
+BASELINE_ROOTS = {name: Path(f"/fixture/{name}_antigravity") for name in BASELINE_MANIFESTS}
 ALL_SCORES = {**EXP_SCORES, **{method: EXP_SCORES["A"] for method in METHOD_ORDER[4:]}}
+
+
+def _baseline_verifier(events: list[str] | None = None, manifests=None):
+    verified = BASELINE_MANIFESTS if manifests is None else manifests
+
+    def verify(root: Path) -> dict[str, object]:
+        name = root.name.removesuffix("_antigravity")
+        if events is not None:
+            events.append(name)
+        return verified[name]
+
+    return verify
+
+
+def _rebind_test_identity(identity: dict[str, object]) -> None:
+    bare = {key: value for key, value in identity.items() if key not in {"row_digest", "count"}}
+    encoded = __import__("json").dumps(bare, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+    identity["row_digest"] = hashlib.sha256(encoded).hexdigest()
 
 
 class Exp450EvaluationTests(unittest.TestCase):
@@ -95,10 +153,11 @@ class Exp450EvaluationTests(unittest.TestCase):
             return LABELS
 
         evaluate_exp450_antigravity(
-            Path("/fixture/root_antigravity"), baseline_roots=BASELINES,
-            verifier=verify, label_loader=labels,
+            Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+            verifier=verify, label_loader=labels, baseline_verifier=_baseline_verifier(events),
+            expected_contexts=EXPECTED_CONTEXTS,
         )
-        self.assertEqual(events, ["verify-A", "verify-B", "verify-C", "verify-D", "labels"])
+        self.assertEqual(events, ["verify-A", "verify-B", "verify-C", "verify-D", "classical", "deep_svdd", "drocc", "labels"])
 
     def test_missing_baseline_blocks_the_label_loader(self) -> None:
         """A missing frozen public root must fail before TEST labels become accessible."""
@@ -109,12 +168,13 @@ class Exp450EvaluationTests(unittest.TestCase):
             labels_called = True
             return LABELS
 
-        incomplete = dict(BASELINES)
+        incomplete = dict(BASELINE_ROOTS)
         incomplete.pop("drocc")
         with self.assertRaisesRegex(ValueError, "baseline roots"):
             evaluate_exp450_antigravity(
                 Path("/fixture/root_antigravity"), baseline_roots=incomplete,
                 verifier=lambda condition: MANIFESTS[condition], label_loader=labels,
+                baseline_verifier=_baseline_verifier(), expected_contexts=EXPECTED_CONTEXTS,
             )
         self.assertFalse(labels_called)
 
@@ -131,10 +191,113 @@ class Exp450EvaluationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "TEST identity"):
             evaluate_exp450_antigravity(
-                Path("/fixture/root_antigravity"), baseline_roots=BASELINES,
+                Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
                 verifier=lambda condition: mismatched[condition], label_loader=labels,
+                baseline_verifier=_baseline_verifier(), expected_contexts=EXPECTED_CONTEXTS,
             )
         self.assertFalse(labels_called)
+
+    def test_context_catalog_database_and_full_row_identity_mismatches_block_labels(self) -> None:
+        """Rebound provenance or same-size altered TEST rows must not cross the label gate."""
+        mutations = {
+            "context": lambda values: values["D"].__setitem__("context_sha256", "e" * 64),
+            "catalog": lambda values: values["D"].__setitem__("catalog_sha256", "f" * 64),
+            "database": lambda values: values["D"].__setitem__("database_sha256", "0" * 64),
+            "value_digest": lambda values: values["D"]["datasets"][0]["test"]["values_blob_sha256"].__setitem__(0, "9" * 64),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                labels_called = False
+                altered = deepcopy(MANIFESTS)
+                mutate(altered)
+
+                def labels(_: tuple[str, ...]) -> dict[str, tuple[int, ...]]:
+                    nonlocal labels_called
+                    labels_called = True
+                    return LABELS
+
+                with self.assertRaises(ValueError):
+                    evaluate_exp450_antigravity(
+                        Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+                        verifier=lambda condition: altered[condition], label_loader=labels,
+                        baseline_verifier=_baseline_verifier(), expected_contexts=EXPECTED_CONTEXTS,
+                    )
+                self.assertFalse(labels_called)
+
+    def test_baseline_identity_mismatch_blocks_labels_after_all_baseline_verifiers(self) -> None:
+        """A baseline with matching scores but a different TEST identity is not reusable."""
+        events: list[str] = []
+        labels_called = False
+        altered = deepcopy(BASELINE_MANIFESTS)
+        altered["drocc"]["datasets"][0]["test"]["values_blob_sha256"][0] = "9" * 64
+        _rebind_test_identity(altered["drocc"]["datasets"][0]["test"])
+
+        def labels(_: tuple[str, ...]) -> dict[str, tuple[int, ...]]:
+            nonlocal labels_called
+            labels_called = True
+            return LABELS
+
+        with self.assertRaisesRegex(ValueError, "baseline TEST identity"):
+            evaluate_exp450_antigravity(
+                Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+                verifier=lambda condition: (events.append(condition) or MANIFESTS[condition]),
+                label_loader=labels, baseline_verifier=_baseline_verifier(events, altered),
+                expected_contexts=EXPECTED_CONTEXTS,
+            )
+        self.assertEqual(events, ["A", "B", "C", "D", "classical", "deep_svdd", "drocc"])
+        self.assertFalse(labels_called)
+
+    def test_baseline_dataset_metrics_use_raw_scores_while_micro_uses_calibration(self) -> None:
+        """Using raw cross-dataset values for micro would change the frozen ranking protocol."""
+        labels = {"one_antigravity": (0, 1), "two_antigravity": (0, 1)}
+        datasets = tuple(labels)
+        test_identity = {
+            dataset: _identity_for(dataset, index, len(labels[dataset]))
+            for index, dataset in enumerate(datasets)
+        }
+        raw_scores = {"one_antigravity": (0.1, 0.9), "two_antigravity": (100.0, 99.0)}
+        manifests = {
+            condition: {
+                "condition": _condition_record(condition), "database_sha256": DB_SHA256,
+                "context_sha256": EXPECTED_CONTEXTS[condition]["context_sha256"],
+                "catalog_sha256": CATALOG_SHA256,
+                "datasets": [{"dataset": dataset, "test": test_identity[dataset]} for dataset in datasets],
+                "score_rows": raw_scores,
+            }
+            for condition in ("A", "B", "C", "D")
+        }
+        baseline_methods = {
+            "classical": ("knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest"),
+            "deep_svdd": ("deep_svdd_1d",), "drocc": ("drocc_1d",),
+        }
+        train_scores = {
+            "one_antigravity": [0.2, 0.3, 0.4, 0.5],
+            "two_antigravity": [99.1, 99.2, 99.3, 99.4],
+        }
+        baselines = {
+            root: {
+                "database_sha256": DB_SHA256,
+                "datasets": [{"dataset": dataset, "test": test_identity[dataset]} for dataset in datasets],
+                "methods": {
+                    method: {
+                        dataset: {"status": "complete", "test_indices": [0, 1],
+                                  "train_oof_scores": train_scores[dataset], "test_scores": list(raw_scores[dataset])}
+                        for dataset in datasets
+                    }
+                    for method in methods
+                },
+            }
+            for root, methods in baseline_methods.items()
+        }
+        roots = {name: Path(f"/fixture/{name}_antigravity") for name in baselines}
+        result = evaluate_exp450_antigravity(
+            Path("/fixture/root_antigravity"), baseline_roots=roots,
+            verifier=lambda condition: manifests[condition], label_loader=lambda _: labels,
+            baseline_verifier=_baseline_verifier(manifests=baselines), expected_contexts=EXPECTED_CONTEXTS,
+        ).metric_tables
+        per_dataset = next(row for row in result.per_dataset if row["method"] == "knn_distance" and row["dataset"] == "two_antigravity")
+        self.assertEqual((per_dataset["average_precision"], per_dataset["auroc"]), (0.5, 0.0))
+        self.assertEqual((result.micro["knn_distance"]["average_precision"], result.micro["knn_distance"]["auroc"]), (0.5, 0.5))
 
     def test_curve_axes_are_not_swapped(self) -> None:
         """Swapping ROC or PR coordinate columns makes the paper curves false."""
