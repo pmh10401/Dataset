@@ -87,18 +87,29 @@ def _science_inputs(mode: str):
     return root, context, catalog, raw, backend
 
 
+def _verified_progress_state(mode: str, root, context, catalog, raw: dict[str, object]) -> tuple[int, set[tuple[str, str]], int]:
+    """Recover live-progress counters from the exact durable mode inventory."""
+    from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import verify_dataset_condition_inventory_antigravity
+
+    if mode not in {"smoke", "full"} or context.mode != mode:
+        raise ValueError("Exp450 progress mode differs from run context")
+    inventory = verify_dataset_condition_inventory_antigravity(root, context, catalog, raw)
+    total = len(catalog["datasets"]) * len(_CONDITIONS)
+    return total, set(inventory.completed), len(inventory.failures)
+
+
 def _run(mode: str) -> int:
     from experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity import compose_all_conditions_antigravity, execute_local_schedule_antigravity, freeze_all_conditions_antigravity
 
     started = monotonic()
     root, context, catalog, raw, backend = _science_inputs(mode)
-    total = len(catalog["datasets"]) * len(_CONDITIONS)
-    succeeded: set[tuple[str, str]] = set()
-    failed = 0
+    total, succeeded, failed = _verified_progress_state(mode, root, context, catalog, raw)
     def progress(event: dict[str, object]) -> None:
         nonlocal failed
         coordinate = (str(event["dataset"]), str(event["condition"]))
         if event["status"] == "success":
+            if coordinate in succeeded:
+                raise ValueError("Exp450 progress cannot re-emit an existing completed coordinate")
             succeeded.add(coordinate)
         else:
             failed += 1
@@ -107,7 +118,7 @@ def _run(mode: str) -> int:
         remaining = total - completed
         samples = completed + failed
         eta = 0.0 if samples == 0 else max(0.0, elapsed / samples * remaining)
-        _emit({"experiment": _EXPERIMENT, **event, "completed": completed, "failed": failed, "remaining": remaining, "elapsed_seconds": elapsed, "eta_seconds": eta})
+        _emit({"experiment": _EXPERIMENT, **event, "completed": completed, "failed": failed, "remaining": remaining, "total": total, "elapsed_seconds": elapsed, "eta_seconds": eta})
     results = execute_local_schedule_antigravity(root, context, catalog, raw, backend, progress=progress)
     scores = compose_all_conditions_antigravity(results, raw, backend)
     freeze_all_conditions_antigravity(scores, root, context, catalog)

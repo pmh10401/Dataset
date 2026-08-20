@@ -172,13 +172,14 @@ def _curve_svg(curves: Mapping[str, object]) -> str:
         assert isinstance(rows, list)
         for index, method in enumerate(METHOD_ORDER):
             points = [row for row in rows if isinstance(row, dict) and row["method"] == method]
-            if not points:
-                continue
-            x_key, y_key = curve["x_name"], curve["y_name"]
-            encoded = " ".join(f"{left + float(row[x_key]) * width:.12g},{top + height - float(row[y_key]) * height:.12g}" for row in points)
             hue = (index * 47) % 360
-            parts.append(f'<polyline fill="none" stroke="hsl({hue},65%,42%)" stroke-width="1.5" points="{encoded}"><title>{method}</title></polyline>')
-            parts.append(f'<text x="{left + 8}" y="{top + 18 + index * 15}" font-size="11" fill="hsl({hue},65%,32%)">{method}</text>')
+            legend_y = top + 14 + index * 15
+            parts.append(f'<line data-legend-method="{method}" x1="{left + 8}" y1="{legend_y}" x2="{left + 18}" y2="{legend_y}" stroke="hsl({hue},65%,42%)" stroke-width="2"/>')
+            parts.append(f'<text x="{left + 22}" y="{top + 18 + index * 15}" font-size="11" fill="hsl({hue},65%,32%)">{method}</text>')
+            if points:
+                x_key, y_key = curve["x_name"], curve["y_name"]
+                encoded = " ".join(f"{left + float(row[x_key]) * width:.12g},{top + height - float(row[y_key]) * height:.12g}" for row in points)
+                parts.append(f'<polyline fill="none" stroke="hsl({hue},65%,42%)" stroke-width="1.5" points="{encoded}"><title>{method}</title></polyline>')
     parts.append('</svg>')
     return "".join(parts)
 

@@ -51,6 +51,58 @@ def _evaluation() -> Exp450EvaluationAntigravity:
 
 
 class Exp450ReportingCliTests(unittest.TestCase):
+    def test_run_resume_progress_starts_from_verified_checkpoint_inventory(self) -> None:
+        """A reduced resumed run counts durable successes/failures without replaying them."""
+        import scratch.run_exp450_resampling_image_ablation_antigravity as cli
+        import experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity as runner
+        from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
+            append_dataset_condition_failure_antigravity,
+            write_dataset_condition_success_antigravity,
+        )
+
+        with TemporaryDirectory(prefix="exp450_resume_progress_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            raw = task6_raw("resume_progress_antigravity")
+            catalog = task6_catalog((raw,))
+            context = task6_context(root, catalog)
+            conditions = {condition.condition_id: condition for condition in TASK6_CONDITIONS}
+            for condition_id in ("A", "B", "D"):
+                write_dataset_condition_success_antigravity(root, context, catalog, raw, task6_result(raw, conditions[condition_id]))
+            append_dataset_condition_failure_antigravity(root, context, catalog, raw, conditions["C"], 1, RuntimeError("fixture wave one"))
+            emitted: list[dict[str, object]] = []
+            def resume_schedule(root, context, catalog, raw, backend, progress):
+                self.assertEqual(len(emitted), 0)
+                progress({"dataset": raw["resume_progress_antigravity"].dataset, "condition": "C", "wave": 2, "attempt": 2, "status": "success"})
+                return {}
+            with patch.object(cli, "_science_inputs", return_value=(root, context, catalog, {raw.dataset: raw}, context.backend)), \
+                 patch.object(runner, "execute_local_schedule_antigravity", side_effect=resume_schedule), \
+                 patch.object(runner, "compose_all_conditions_antigravity", return_value={}), \
+                 patch.object(runner, "freeze_all_conditions_antigravity"), \
+                 patch.object(cli, "_emit", side_effect=emitted.append):
+                self.assertEqual(cli._run("smoke"), 0)
+            self.assertEqual(len(emitted), 1)
+            final = emitted[0]
+            self.assertEqual((final["completed"], final["failed"], final["remaining"], final.get("total")), (4, 1, 0, 4))
+            self.assertGreaterEqual(float(final["elapsed_seconds"]), 0.0)
+            self.assertGreaterEqual(float(final["eta_seconds"]), 0.0)
+
+    def test_svg_keeps_full_method_legend_when_a_curve_has_no_points(self) -> None:
+        """Legend order is frozen independently from whether a method has drawable points."""
+        from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
+            _curve_svg,
+            canonicalize_exp450_json_antigravity,
+        )
+
+        curves = canonicalize_exp450_json_antigravity(_evaluation().curve_tables)
+        self.assertIsInstance(curves, dict)
+        missing = "drocc_1d"
+        for curve in curves.values():
+            curve["rows"] = [row for row in curve["rows"] if row["method"] != missing]
+        svg = _curve_svg(curves)
+        self.assertEqual(svg.count(f">{missing}</text>"), 2)
+        self.assertEqual(svg.count(f'data-legend-method="{missing}"'), 2)
+        self.assertNotIn(f"<title>{missing}</title>", svg)
+
     def test_png_visibly_renders_titles_axes_and_method_legends(self) -> None:
         """The raster figure has text ink outside plotted curves for both panels."""
         from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
