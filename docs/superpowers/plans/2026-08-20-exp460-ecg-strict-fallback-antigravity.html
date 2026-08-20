@@ -85,7 +85,7 @@ $PY scratch/build_codemap_exp460_antigravity.py --validate-only</code></pre>
   <pre><code>def capture_exp459_fallback_authority_antigravity() -&gt; Exp459FallbackAuthorityAntigravity:
     """Return the exact frozen Exp459 scientific result needed by Exp460."""</code></pre>
 
-  <h2>Task 3 — 엄격 복귀 규칙과 성능 계산</h2>
+  <h2><label><input type="checkbox" checked disabled>Task 3 — 엄격 복귀 규칙과 성능 계산</label></h2>
   <p><strong>Interfaces</strong></p>
   <ul>
     <li>Consumes: <code>Exp459FallbackAuthorityAntigravity</code></li>
@@ -93,12 +93,12 @@ $PY scratch/build_codemap_exp460_antigravity.py --validate-only</code></pre>
     <li>Produces: <code>strict_route_antigravity(authority) -&gt; Literal["baseline", "candidate"]</code></li>
   </ul>
   <ul>
-    <li><label><input type="checkbox" disabled>Step 1 — 10/10, 9/10, 8/10, 0/10 route RED와 성능 재계산 RED를 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 2 — 네 규칙을 exact order로 계산하는 최소 구현을 작성한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 3 — 엄격 규칙은 <code>all(record.passed)</code>일 때만 candidate가 되게 한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 4 — baseline 609/66/837/70788과 candidate 617/66/829/70788의 F1을 혼동행렬에서 다시 계산한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 5 — 현재 authority에서 다수결은 candidate, 엄격 규칙은 baseline이며 최종 상태가 <code>fallback_triggered_performance_not_improved</code>인지 검증한다.</label></li>
-    <li><label><input type="checkbox" disabled>Step 6 — focused GREEN 두 번과 Tasks 1–2 회귀 후 map·대시보드·체크박스를 갱신하고 커밋·검토한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 10/10, 9/10, 8/10, 0/10 route RED와 성능 재계산 RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — 네 규칙을 exact order로 계산하는 최소 구현을 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — 엄격 규칙은 <code>all(record.passed)</code>일 때만 candidate가 되게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — baseline 609/66/837/70788과 candidate 617/66/829/70788의 F1을 혼동행렬에서 다시 계산한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — 현재 authority에서 다수결은 candidate, 엄격 규칙은 baseline이며 최종 상태가 <code>fallback_triggered_performance_not_improved</code>인지 검증한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — focused GREEN 두 번과 Tasks 1–2 회귀 후 map·대시보드·체크박스를 갱신하고 커밋·검토한다.</label></li>
   </ul>
   <pre><code>def strict_route_antigravity(authority):
     return "candidate" if all(row.passed for row in authority.fold_records) else "baseline"</code></pre>
