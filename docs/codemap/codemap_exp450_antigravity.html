@@ -194,6 +194,51 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
       "kind": "ast_import"
@@ -221,6 +266,31 @@
     {
       "callee": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -506,17 +576,21 @@
       "callers": [
         "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py"
       ],
       "effects": "Typed, label-free Exp450 score and backend contracts.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
       "tests": [
-        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py"
       ]
     },
     {
       "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py"
       ],
       "effects": "Variant-aware Exp55/56 imaging with frozen downstream scoring semantics.\n\n``linear`` delegates directly to the retained paper scorer.  ``area`` replaces\nonly its fixed-size resize: spectrograms use two-dimensional adaptive local\nmeans and recurrence plots pool the one-dimensional series before recomputing\ntheir symmetric distance matrices.  The copied scoring closure below records\nits immutable source module and SHA-256 for Exp450 provenance.",
@@ -524,6 +598,17 @@
       "path": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
       "tests": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "effects": "Dataset-local A--D hard-score integration for the Exp450 ablation.\n\nCondition A calls the frozen Exp449-compatible paper closures directly.  The\nremaining conditions retain those closures' constants, fold plans, repair,\nand selector algebra, replacing only series alignment and Exp55/56 image\nconstruction with the approved factor pair.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.scoring_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py"
       ]
     },
     {
@@ -542,6 +627,13 @@
     },
     {
       "callers": [],
+      "effects": "Behavioral contracts for Exp450's dataset-local A--D scoring boundary.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_scoring_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
       "effects": "RED/GREEN tests for Exp450 pure transforms and backend selection.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_transforms_backend_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
@@ -550,6 +642,7 @@
     {
       "callers": [
         "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
       ],
@@ -570,6 +663,8 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/artifacts_paper.py",
         "paper/equipment_anomaly_detection/proposal_score_paper.py",
         "paper/equipment_anomaly_detection/routing_paper.py",
@@ -587,6 +682,7 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
@@ -600,6 +696,8 @@
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/artifacts_paper.py",
         "paper/equipment_anomaly_detection/hard_route_paper.py",
         "paper/equipment_anomaly_detection/proposal_score_paper.py",
@@ -617,6 +715,7 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
@@ -626,6 +725,7 @@
     {
       "callers": [
         "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
         "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
         "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
@@ -643,6 +743,7 @@
       "callers": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
         "paper/equipment_anomaly_detection/hard_route_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
         "scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py"
@@ -662,6 +763,8 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/hard_route_paper.py",
         "paper/equipment_anomaly_detection/proposal_score_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
@@ -674,6 +777,7 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py"
       ]
@@ -683,6 +787,7 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
         "paper/equipment_anomaly_detection/proposal_score_paper.py",
