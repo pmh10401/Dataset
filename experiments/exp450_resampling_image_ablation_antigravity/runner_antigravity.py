@@ -16,6 +16,8 @@ from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult
 from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult
 from paper.equipment_anomaly_detection.routing_paper import (
     POLICY_ORDER,
+    PolicyBundle,
+    PolicyRoute,
     build_hard_evidence_surface,
     build_policies,
 )
@@ -345,7 +347,7 @@ def freeze_all_conditions_antigravity(
             isinstance(score, Exp450ConditionScore) and score.condition.condition_id == condition_id
             and tuple(score.raw) == expected_raw and tuple(score.sources) == expected_raw and tuple(score.routes) == expected_raw
             and score.backend == context.backend and isinstance(score.low_frequency, LowFrequencyResult)
-            and isinstance(score.stability, StabilityPartition) and tuple(score.policies.order) == POLICY_ORDER
+            and isinstance(score.stability, StabilityPartition) and isinstance(score.policies, PolicyBundle) and tuple(score.policies.order) == POLICY_ORDER and tuple(policy.name for policy in score.policies.policies) == POLICY_ORDER and all(isinstance(policy, PolicyRoute) for policy in score.policies.policies)
         )
         if valid:
             for dataset in expected_raw:
@@ -356,11 +358,26 @@ def freeze_all_conditions_antigravity(
                     valid = False; break
                 for policy in score.policies.policies:
                     values = np.asarray(policy.scores.get(dataset)) if dataset in policy.scores else np.asarray(())
-                    if set(policy.alerts) != set(expected_raw) or set(policy.scores) != set(expected_raw) or set(policy.strength) != set(expected_raw) or values.dtype != np.dtype("float64") or values.ndim != 1 or values.size != len(raw.test_rows) or not np.all(np.isfinite(values)):
+                    strength = np.asarray(policy.strength.get(dataset)) if dataset in policy.strength else np.asarray(())
+                    alerts = policy.alerts.get(dataset, frozenset())
+                    if set(policy.alerts) != set(expected_raw) or set(policy.scores) != set(expected_raw) or set(policy.strength) != set(expected_raw) or not isinstance(alerts, frozenset) or any(type(index) is not int or index < 0 or index >= len(raw.test_rows) for index in alerts) or values.dtype != np.dtype("float64") or values.ndim != 1 or values.size != len(raw.test_rows) or not np.all(np.isfinite(values)) or strength.dtype != np.dtype("float64") or strength.ndim != 1 or strength.size != len(raw.test_rows) or not np.all(np.isfinite(strength)) or frozenset(np.flatnonzero(values >= 0.5).tolist()) != alerts:
                         valid = False; break
                 if not valid: break
         if not valid:
-            invalid.extend((dataset, condition_id) for dataset in expected_raw if isinstance(dataset, str))
+            before = len(invalid)
+            for dataset in expected_raw:
+                if not isinstance(dataset, str): continue
+                try:
+                    raw = score.raw[dataset]
+                    if any(set(mapping) != set(expected_raw) or dataset not in mapping for mapping in (score.sources, score.routes)):
+                        raise ValueError
+                    for policy in score.policies.policies:
+                        if any(dataset not in mapping or set(mapping) != set(expected_raw) for mapping in (policy.alerts, policy.scores, policy.strength)):
+                            raise ValueError
+                except (AttributeError, KeyError, ValueError):
+                    invalid.append((dataset, condition_id))
+            if len(invalid) == before:
+                invalid.extend((dataset, condition_id) for dataset in expected_raw if isinstance(dataset, str))
     if invalid:
         raise Exp450Incomplete(tuple(invalid))
     # Build every shard and reread every local authority before the first write.
