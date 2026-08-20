@@ -148,7 +148,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp462 Task 2 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp462 Task 2 코드맵</h1><p>Task 2 maps real governance documents plus frozen config, authority, predecessor capture, TRAIN source, and focused tests. Future Task 3-5 boundaries remain explicitly unknown and not implemented.</p>'
+        '<h1>Exp462 Task 2 코드맵</h1><p>Task 2 is complete and maps real governance documents plus frozen config, authority, predecessor capture, TRAIN source, and focused tests. Future Task 3-5 boundaries remain explicitly unknown and not implemented.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -230,9 +230,9 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records Task 2 implemented pending review, unchecked Task 2 controls, official0/label0, and future Task 3-5 boundaries.",
+            "role": "Caller: Task 1-6 execution. Effect: records Task 2 complete, checked Task 2 controls, official0/label0, and future Task 3-5 boundaries.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 2 implemented pending review / Task 3 not started")],
+            "evidence": [evidence_antigravity(plan, "Task 2 complete / Task 3 next")],
         },
         {
             "id": "preregistration",
@@ -251,16 +251,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 2 handoff. Effect: records frozen authority, public interfaces, null official hashes, official0/label0, and Task 3 not started.",
+            "role": "Caller: Task 2 handoff. Effect: records frozen authority, public interfaces, null official hashes, official0/label0, and Task 3 next.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 2 implementation")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 2 implemented pending review, Task 3 not started, public interfaces, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 2 complete, Task 3 next, public interfaces, official0, label0, and null hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 2 implemented pending review / Task 3 not started")],
+            "evidence": [evidence_antigravity(dashboard, "Task 2 complete / Task 3 next")],
         },
         {
             "id": "research_state",
@@ -300,7 +300,7 @@ def build_map_antigravity(
         {
             "id": "task2_report",
             "path": task2_report,
-            "role": "Caller: Task 2 review. Effect: records implemented pending review state, RED/GREEN boundary, frozen Exp461 authority, and Task 3 not started.",
+            "role": "Caller: Task 2 review. Effect: records complete state, RED/GREEN boundary, frozen Exp461 authority, and Task 3 next.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(task2_report, "Exp462 Task 2 report")],
         },
@@ -386,7 +386,7 @@ def build_map_antigravity(
     edges = [
         {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "gradual_drift AUC ≥ 0.85")},
         {"from": "approved_design", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "0.9216148584075248")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 2 implemented pending review")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 2 complete / Task 3 next")},
         {"from": "implementation_plan", "to": "governance_regression", "type": "governs", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
@@ -397,7 +397,7 @@ def build_map_antigravity(
         {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(plan, "Task 2 — frozen Exp461 authority and TRAIN source")},
-        {"from": "implementation_plan", "to": "task2_report", "type": "governs", "evidence": evidence_antigravity(task2_report, "Task 2 implemented pending review")},
+        {"from": "implementation_plan", "to": "task2_report", "type": "governs", "evidence": evidence_antigravity(task2_report, "Task 2 complete / Task 3 next")},
         {"from": "task2_config_tests", "to": "task2_config", "type": "tests", "evidence": evidence_antigravity(config_test, "test_frozen_config_preserves_task2_identity_and_gates_antigravity")},
         {"from": "task2_contract_tests", "to": "task2_contracts", "type": "tests", "evidence": evidence_antigravity(contracts_test, "test_validator_rejects_snapshot_drift_and_mutable_containers_antigravity")},
         {"from": "task2_predecessor_tests", "to": "task2_predecessor", "type": "tests", "evidence": evidence_antigravity(predecessor_test, "test_capture_returns_exact_frozen_exp461_authority_antigravity")},
