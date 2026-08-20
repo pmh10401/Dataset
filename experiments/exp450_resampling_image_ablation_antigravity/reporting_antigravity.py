@@ -1,0 +1,242 @@
+"""Immutable paper artifacts for the frozen Exp450 continuous-score ablation."""
+
+from __future__ import annotations
+
+import csv
+from dataclasses import dataclass
+from hashlib import sha256
+import html
+import io
+import json
+import math
+import os
+from pathlib import Path
+import struct
+from typing import Mapping, Sequence
+import zlib
+
+from .contracts_antigravity import canonical_json_bytes
+from .evaluation_antigravity import Exp450EvaluationAntigravity, METHOD_ORDER
+
+
+@dataclass(frozen=True, slots=True)
+class Exp450ReportArtifactAntigravity:
+    root: Path
+    metric_csv_path: Path
+    metric_json_path: Path
+    curve_csv_path: Path
+    curve_json_path: Path
+    paired_csv_path: Path
+    paired_json_path: Path
+    png_path: Path
+    svg_path: Path
+    html_path: Path
+    manifest_path: Path
+
+
+def write_exp450_report_antigravity(
+    evaluation: Exp450EvaluationAntigravity, root: Path
+) -> Exp450ReportArtifactAntigravity:
+    """Write exact evaluation leaves and standalone figures below one supplied root.
+
+    The caller supplies an evaluation that has already crossed the label boundary;
+    this module never loads score roots or labels itself.
+    """
+    if not isinstance(evaluation, Exp450EvaluationAntigravity):
+        raise ValueError("Exp450 report requires a verified evaluation")
+    destination = Path(root) / "exp450_report_artifacts_antigravity"
+    metrics = evaluation.metric_tables
+    curves = _plain(evaluation.curve_tables)
+    metric_payload = {
+        "method_order": list(metrics.method_order),
+        "per_dataset": _plain(metrics.per_dataset),
+        "macro": _plain(metrics.macro),
+        "micro": _plain(metrics.micro),
+    }
+    paired_payload = {"paired_statistics": _plain(metrics.paired_statistics)}
+    leaves = {
+        "exp450_metric_tables_antigravity.csv": _csv_bytes(
+            metrics.per_dataset,
+            ("method", "dataset", "average_precision", "auroc", "average_precision_exclusion", "auroc_exclusion"),
+        ),
+        "exp450_metric_tables_antigravity.json": canonical_json_bytes(metric_payload),
+        "exp450_curve_tables_antigravity.csv": _curve_csv_bytes(curves),
+        "exp450_curve_tables_antigravity.json": canonical_json_bytes(curves),
+        "exp450_paired_differences_antigravity.csv": _paired_csv_bytes(metrics.paired_statistics),
+        "exp450_paired_differences_antigravity.json": canonical_json_bytes(paired_payload),
+    }
+    svg = _curve_svg(curves)
+    png = _curve_png(curves)
+    document = _html_document(metric_payload, paired_payload, curves, svg)
+    leaves.update({
+        "exp450_curves_antigravity.svg": svg.encode("utf-8"),
+        "exp450_curves_antigravity.png": png,
+        "exp450_paper_report_antigravity.html": document.encode("utf-8"),
+    })
+    manifest = {name: sha256(payload).hexdigest() for name, payload in sorted(leaves.items())}
+    for name, payload in leaves.items():
+        _write_create_only(destination / name, payload)
+    manifest_path = destination / "exp450_report_manifest_antigravity.json"
+    _write_create_only(manifest_path, canonical_json_bytes(manifest))
+    return Exp450ReportArtifactAntigravity(
+        root=destination,
+        metric_csv_path=destination / "exp450_metric_tables_antigravity.csv",
+        metric_json_path=destination / "exp450_metric_tables_antigravity.json",
+        curve_csv_path=destination / "exp450_curve_tables_antigravity.csv",
+        curve_json_path=destination / "exp450_curve_tables_antigravity.json",
+        paired_csv_path=destination / "exp450_paired_differences_antigravity.csv",
+        paired_json_path=destination / "exp450_paired_differences_antigravity.json",
+        png_path=destination / "exp450_curves_antigravity.png",
+        svg_path=destination / "exp450_curves_antigravity.svg",
+        html_path=destination / "exp450_paper_report_antigravity.html",
+        manifest_path=manifest_path,
+    )
+
+
+def _write_create_only(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        if path.read_bytes() != payload:
+            raise ValueError("Exp450 report artifact already exists with different bytes") from None
+        return
+    try:
+        os.write(descriptor, payload)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _plain(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _plain(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_plain(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def _csv_bytes(rows: Sequence[Mapping[str, object]], fields: Sequence[str]) -> bytes:
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=list(fields), extrasaction="raise", lineterminator="\n")
+    writer.writeheader()
+    for raw_row in rows:
+        row = _plain(raw_row)
+        assert isinstance(row, dict)
+        writer.writerow({field: "" if row.get(field) is None else row.get(field) for field in fields})
+    return stream.getvalue().encode("utf-8")
+
+
+def _curve_csv_bytes(curves: Mapping[str, object]) -> bytes:
+    rows: list[dict[str, object]] = []
+    for curve_name in ("roc", "precision_recall"):
+        curve = curves[curve_name]
+        assert isinstance(curve, dict)
+        for row in curve["rows"]:
+            assert isinstance(row, dict)
+            rows.append({"curve": curve_name, **row})
+    fields = ("curve", "method", "false_positive_rate", "true_positive_rate", "threshold", "recall", "precision")
+    return _csv_bytes(rows, fields)
+
+
+def _paired_csv_bytes(rows: Sequence[Mapping[str, object]]) -> bytes:
+    plain_rows = _plain(rows)
+    assert isinstance(plain_rows, list)
+    fields = tuple(sorted({field for row in plain_rows for field in row}))
+    return _csv_bytes(plain_rows, fields)
+
+
+def _curve_svg(curves: Mapping[str, object]) -> str:
+    panels = (("roc", "False-positive rate", "True-positive rate"), ("precision_recall", "Recall", "Precision"))
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="580" viewBox="0 0 1200 580">', '<rect width="1200" height="580" fill="white"/>']
+    for panel, (name, x_label, y_label) in enumerate(panels):
+        left = 70 + panel * 590
+        top, width, height = 70, 480, 400
+        parts.extend((f'<text x="{left}" y="35" font-size="18">{html.escape(name)}</text>', f'<line x1="{left}" y1="{top + height}" x2="{left + width}" y2="{top + height}" stroke="black"/>', f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + height}" stroke="black"/>', f'<text x="{left + 160}" y="510" font-size="16">{x_label}</text>', f'<text x="{left - 42}" y="{top + 230}" font-size="16" transform="rotate(-90 {left - 42} {top + 230})">{y_label}</text>'))
+        curve = curves[name]
+        assert isinstance(curve, dict)
+        rows = curve["rows"]
+        assert isinstance(rows, list)
+        for index, method in enumerate(METHOD_ORDER):
+            points = [row for row in rows if isinstance(row, dict) and row["method"] == method]
+            if not points:
+                continue
+            x_key, y_key = curve["x_name"], curve["y_name"]
+            encoded = " ".join(f"{left + float(row[x_key]) * width:.12g},{top + height - float(row[y_key]) * height:.12g}" for row in points)
+            hue = (index * 47) % 360
+            parts.append(f'<polyline fill="none" stroke="hsl({hue},65%,42%)" stroke-width="1.5" points="{encoded}"><title>{method}</title></polyline>')
+            parts.append(f'<text x="{left + 8}" y="{top + 18 + index * 15}" font-size="11" fill="hsl({hue},65%,32%)">{method}</text>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def _curve_png(curves: Mapping[str, object]) -> bytes:
+    """Draw a dependency-free PNG counterpart to the exact standalone SVG."""
+    width, height = 1200, 580
+    pixels = bytearray(b"\xff" * (width * height * 3))
+
+    def point(x: int, y: int, color: tuple[int, int, int]) -> None:
+        if 0 <= x < width and 0 <= y < height:
+            offset = (y * width + x) * 3
+            pixels[offset:offset + 3] = bytes(color)
+
+    def line(x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int]) -> None:
+        dx, sx = abs(x1 - x0), 1 if x0 < x1 else -1
+        dy, sy = -abs(y1 - y0), 1 if y0 < y1 else -1
+        error = dx + dy
+        while True:
+            point(x0, y0, color)
+            if (x0, y0) == (x1, y1):
+                return
+            twice = 2 * error
+            if twice >= dy:
+                error += dy
+                x0 += sx
+            if twice <= dx:
+                error += dx
+                y0 += sy
+
+    for panel, name in enumerate(("roc", "precision_recall")):
+        left, top, panel_width, panel_height = 70 + panel * 590, 70, 480, 400
+        line(left, top + panel_height, left + panel_width, top + panel_height, (0, 0, 0))
+        line(left, top, left, top + panel_height, (0, 0, 0))
+        curve = curves[name]
+        assert isinstance(curve, dict)
+        x_key, y_key = curve["x_name"], curve["y_name"]
+        for index, method in enumerate(METHOD_ORDER):
+            rows = [row for row in curve["rows"] if row["method"] == method]
+            color = ((41 + index * 53) % 220, (79 + index * 97) % 220, (131 + index * 37) % 220)
+            previous: tuple[int, int] | None = None
+            for row in rows:
+                current = (round(left + float(row[x_key]) * panel_width), round(top + panel_height - float(row[y_key]) * panel_height))
+                if previous is not None:
+                    line(*previous, *current, color)
+                previous = current
+    raw = b"".join(b"\x00" + bytes(pixels[row * width * 3:(row + 1) * width * 3]) for row in range(height))
+    def chunk(kind: bytes, payload: bytes) -> bytes:
+        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload) & 0xffffffff)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, level=9)) + chunk(b"IEND", b"")
+
+
+def _html_document(metrics: Mapping[str, object], paired: Mapping[str, object], curves: Mapping[str, object], svg: str) -> str:
+    macro = metrics["macro"]
+    assert isinstance(macro, dict)
+    rows = "".join(f"<tr><td>{html.escape(method)}</td><td>{_number(values.get('average_precision'))}</td><td>{_number(values.get('auroc'))}</td></tr>" for method, values in macro.items() if isinstance(values, dict))
+    curve_json = json.dumps(curves, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    paired_json = json.dumps(paired, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return f"""<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Exp450 resampling/image ablation</title><body>
+<h1>Exp450 continuous resampling/image ablation</h1>
+<p>This is an ablation report only; it makes no automatic promotion claim.</p>
+<h2>AP / AUROC</h2><table><thead><tr><th>Method</th><th>Average precision</th><th>AUROC</th></tr></thead><tbody>{rows}</tbody></table>
+<h2>ROC: False-positive rate × True-positive rate</h2><h2>Precision–recall: Recall × Precision</h2>{svg}
+<script id=\"exp450-curves\" type=\"application/json\">{html.escape(curve_json)}</script><script id=\"exp450-paired\" type=\"application/json\">{html.escape(paired_json)}</script>
+</body></html>"""
+
+
+def _number(value: object) -> str:
+    return "" if value is None else f"{float(value):.12g}"
+
+
+__all__ = ["Exp450ReportArtifactAntigravity", "write_exp450_report_antigravity"]
