@@ -104,6 +104,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             hashlib.sha256((ROOT_ANTIGRAVITY / DESIGN_ANTIGRAVITY).read_bytes()).hexdigest(),
             DESIGN_SHA256_ANTIGRAVITY,
         )
+        run_root = Path(RUN_ROOT_ANTIGRAVITY)
+        self.assertFalse(run_root.exists(), RUN_ROOT_ANTIGRAVITY)
+        self.assertFalse(run_root.is_symlink(), RUN_ROOT_ANTIGRAVITY)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         catalog = strict_json_antigravity(ROOT_ANTIGRAVITY / "EXPERIMENT_CATALOG.json")

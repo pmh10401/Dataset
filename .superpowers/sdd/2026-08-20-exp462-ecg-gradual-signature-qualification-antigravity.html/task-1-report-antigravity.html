@@ -10,6 +10,7 @@
 <table>
   <tr><th>Verified source parent / pre-commit</th><td><code>aacdb6752033b4f0709615d9d65f56c49f4004b4</code></td></tr>
   <tr><th>Final commit</th><td>Supplied in handoff. The report intentionally does not contain a self-referential commit hash.</td></tr>
+  <tr><th>Fix round 1 source parent</th><td><code>68a000fbf977b2dda8ae69bcc3ed237b0607c879</code></td></tr>
   <tr><th>Worktree</th><td><code>/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity</code></td></tr>
   <tr><th>Branch</th><td><code>codex/exp462-ecg-gradual-signature-antigravity</code></td></tr>
 </table>
@@ -21,16 +22,26 @@
   <tr><th>Validation</th><td>Strict duplicate-key parse passed for five modified JSON files; HTML parse passed for six HTML files; map validate-only passed; root absence, label0, unchanged champion/pending, unchecked controls, no <code>__init__.py</code>, and <code>git diff --check</code> passed.</td></tr>
 </table>
 
+<h2>Fix round 1 — physical root absence assertion</h2>
+<p><strong>Fix note:</strong> The governance regression now directly checks the physical official root path with <code>assertFalse(run_root.exists())</code> and <code>assertFalse(run_root.is_symlink())</code>, so ledger claims that the root is absent cannot pass while the path exists or is a symlink.</p>
+<table>
+  <tr><th>Focused RED command</th><td><code>PYTHONDONTWRITEBYTECODE=1 python3 - &lt;&lt;'PY' ... patch.object(Path, 'exists', exists_with_root_present) ... GovernanceAntigravityTest.test_task1_planned_governance_antigravity</code></td></tr>
+  <tr><th>Focused RED output</th><td><code>FAIL: test_task1_planned_governance_antigravity ... AssertionError: True is not false : /Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820 ... Ran 1 test ... FAILED (failures=1)</code></td></tr>
+  <tr><th>GREEN command</th><td><code>PYTHONDONTWRITEBYTECODE=1 python3 -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_governance_antigravity</code></td></tr>
+  <tr><th>GREEN output</th><td><code>Ran 2 tests in 0.078s ... OK</code></td></tr>
+  <tr><th>Codemap</th><td>Regenerated because the governance test fingerprint changed. Graph and lock source parent are <code>68a000fbf977b2dda8ae69bcc3ed237b0607c879</code>.</td></tr>
+</table>
+
 <h2>Document and map hashes</h2>
 <table>
   <tr><th><code>docs/EXP462_PREREGISTRATION_antigravity.html</code></th><td><code>a2745f6aba585487a50363f002221c8c6366608696c47fabe1e966b158262494</code></td></tr>
   <tr><th><code>docs/EXP462_RUNBOOK_antigravity.html</code></th><td><code>03c7de096c11fa4805945aa0df076d6f2f1fb14e75348ebc99f1b89f52cb76f5</code></td></tr>
   <tr><th><code>docs/EXP462_IMPLEMENTATION_REPORT_antigravity.html</code></th><td><code>24e11f3ac4bc7fc25e14ad78bc3b707b1eb75a2529d9f3f7b88eed5307db57ef</code></td></tr>
   <tr><th><code>docs/EXP462_DASHBOARD_antigravity.html</code></th><td><code>94e02c1c2768d8465ba06784fbcf5fb86f1ef6c77125501c662ff57bd6dc82f9</code></td></tr>
-  <tr><th><code>docs/codemap/codemap_exp462_antigravity.html</code></th><td><code>2ed8d4f92043c867cc1a225b6055a6908c9210f0ce5a657b21c46cc8d460d276</code></td></tr>
-  <tr><th><code>docs/codemap/codemap_exp462_antigravity.json</code></th><td><code>04246235990e37ac3f7158a092dc58081459c682295f2ceb09267993faeae9e4</code></td></tr>
-  <tr><th><code>docs/codemap/codemap_exp462_antigravity.lock</code></th><td><code>b1b73d3911e8f9c19074f977ae88f187d7f798029a83674f02b9dbb199c5bfc6</code></td></tr>
-  <tr><th><code>experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py</code></th><td><code>13a6dd2eae0136ab2405d79525468cabc51c4db91b80c81aa4e820e82bccdda3</code></td></tr>
+  <tr><th><code>docs/codemap/codemap_exp462_antigravity.html</code></th><td><code>34afaefdcde53ed984647578a260b61ad6bf65af2c0fa721799cd1e8f5becf3c</code></td></tr>
+  <tr><th><code>docs/codemap/codemap_exp462_antigravity.json</code></th><td><code>14c1879b9e4791f2d062a7b7b43e6c123f79e85ee04365ec557fee95abc05973</code></td></tr>
+  <tr><th><code>docs/codemap/codemap_exp462_antigravity.lock</code></th><td><code>714e0ba72f211ee4ef9e64a0611a74d9e86abb8b08582de70125e0011e8aee47</code></td></tr>
+  <tr><th><code>experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py</code></th><td><code>072a877ce2f132664859c958d5a72eaf08181c5b67f7ade7644f57d013760bcc</code></td></tr>
   <tr><th><code>scratch/build_codemap_exp462_antigravity.py</code></th><td><code>23078423e166376f518efffaa370dabab9017cde8f80d5edc4dd1a4f3fb3d52e</code></td></tr>
 </table>
 
@@ -41,7 +52,7 @@
   <tr><th>Hashes</th><td>prediction, evaluation, decision, artifact map, and dashboard snapshot hashes are <code>null</code>.</td></tr>
   <tr><th>Labels</th><td>TEST labels not opened; label query count <code>0</code>.</td></tr>
   <tr><th>Champion / pending</th><td>Champion status remains <code>no_new_champion_verified_in_current_loop</code>; pending candidate remains the existing <code>none_exp446_publication_inspected_complete_not_pending_champion</code> null candidate.</td></tr>
-  <tr><th>Map</th><td>HTML embedded JSON equals JSON; lock represented paths are exact; source parent is <code>aacdb6752033b4f0709615d9d65f56c49f4004b4</code>; real Task 1 governance nodes are represented; future Task 2-5 nodes are unknown and not implemented.</td></tr>
+  <tr><th>Map</th><td>HTML embedded JSON equals JSON; lock represented paths are exact; current fix source parent is <code>68a000fbf977b2dda8ae69bcc3ed237b0607c879</code>; real Task 1 governance nodes are represented; future Task 2-5 nodes are unknown and not implemented.</td></tr>
 </table>
 
 <div class="box warn">
