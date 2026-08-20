@@ -204,7 +204,7 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 2 handoff. Effect: records the final Task 1 document SHA-256 values and the exact governance-only scope that was completed.",
+            "role": "Caller: Task 2 handoff. Effect: records the immutable design/preregistration/runbook SHA-256 authority and states that living progress files are read directly.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 1 governance report")],
         },

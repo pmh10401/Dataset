@@ -37,6 +37,9 @@ PACKAGE_ANTIGRAVITY = "experiments/exp461_ecg_period_signature_qualification_ant
 DESIGN_SHA256_ANTIGRAVITY = (
     "3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2"
 )
+PREREGISTRATION_SHA256_ANTIGRAVITY = (
+    "9595d1f898b309ac899c821867a2f38e6f0eb24f147e6888970e1095534490cb"
+)
 RUNBOOK_SHA256_ANTIGRAVITY = (
     "3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807"
 )
@@ -280,14 +283,25 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "Task 1 governance report",
             "SHA-256",
             DESIGN_SHA256_ANTIGRAVITY,
+            PREREGISTRATION_SHA256_ANTIGRAVITY,
             RUNBOOK_SHA256_ANTIGRAVITY,
             "docs/EXP461_PREREGISTRATION_antigravity.html",
             "docs/EXP461_RUNBOOK_antigravity.html",
             "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
+            "Task 2 handoff",
+            "설계서, 사전등록, 실행 가이드",
+            "living progress 파일은 직접 읽는다",
+        ):
+            self.assertIn(phrase, report)
+        for phrase in (
+            "docs/superpowers/plans/2026-08-20-exp461-ecg-period-signature-qualification-antigravity.html",
             "docs/EXP461_DASHBOARD_antigravity.html",
             "docs/codemap/codemap_exp461_antigravity.json",
         ):
-            self.assertIn(phrase, report)
+            self.assertNotIn(
+                f"</code></td><td><code>{phrase}",
+                report,
+            )
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
