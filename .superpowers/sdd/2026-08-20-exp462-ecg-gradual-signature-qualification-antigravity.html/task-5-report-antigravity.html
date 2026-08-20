@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 Task 5 report antigravity</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}.ok{border-left:6px solid #16794b}</style></head>
 <body><main>
 <h1>Exp462 Task 5 report — closed CLI and private TRAIN reproductions</h1>
-<p><strong>현재 상태:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. The closed CLI, fixed-runtime launcher, and two sequential private TRAIN evaluate→inspect reproductions are implemented. Fresh independent result review is pending, so Task 5 controls remain unchecked and Task 6 is forbidden.</p>
+<p><strong>현재 상태:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. The closed CLI, fixed-runtime launcher, and two sequential private TRAIN evaluate→inspect reproductions are implemented and verified. Final independent result review is SHIP with Critical/Important/Major 0, completing Task 5 (7/7 checked). Task 6 is forbidden (0/7 unchecked).</p>
 <table>
 <tr><th>reviewed commit</th><td><code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code> (clean, exact 40-hex)</td></tr>
 <tr><th>private runs</th><td>Exactly two explicit temporary roots, sequential and non-overlapping; evaluate and inspect exited <code>0</code> in each. Only those two roots were removed after comparison.</td></tr>
@@ -30,5 +30,5 @@
 <tr><th>dashboard_snapshot_antigravity.json</th><td><code>d2f1ed5c289aa4eb061c04065cc7b49420f3ca4ebe894b269853703bb36a558b</code></td></tr>
 <tr><th>artifact_sha256_antigravity.json</th><td><code>5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50</code></td></tr>
 </tbody></table>
-<p class="ok"><strong>Gate outcome:</strong> frozen qualification failed before official evaluation. No tuning, extra private run, official command, label access, routing, champion, pending-candidate, or Task 6 action is authorized. CPU remains canonical because the existing MLX parity/speed gate did not pass.</p>
+<p class="ok"><strong>Gate outcome:</strong> frozen qualification failed before official evaluation. Final review is SHIP with Critical/Important/Major 0. No tuning, extra private run, official command, label access, routing, champion, pending-candidate, or Task 6 action is authorized. CPU remains canonical because the existing MLX parity/speed gate did not pass.</p>
 </main></body></html>

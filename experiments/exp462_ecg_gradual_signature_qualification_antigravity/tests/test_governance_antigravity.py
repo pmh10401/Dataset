@@ -124,7 +124,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp462")
                 self.assertEqual(record["kind"], "ecg_gradual_signature_qualification")
                 self.assertEqual(record["status"], "stopped_before_official_evaluation_qualification_failed")
-                self.assertEqual(record["implementation_status"], "task_5_private_train_reproducibility_complete_qualification_failed")
+                self.assertEqual(record["implementation_status"], "task_5_complete_qualification_failed_task_6_forbidden")
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -242,7 +242,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(private_result["label_query_count"], 0)
 
         self.assertEqual(state["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
-        self.assertEqual(state["active_phase"], "task_5_private_train_reproducibility_complete_qualification_failed")
+        self.assertEqual(state["active_phase"], "task_5_complete_qualification_failed_task_6_forbidden")
         self.assertEqual(champion["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["champion_status"], "no_new_champion_verified_in_current_loop")
 
@@ -285,7 +285,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Exp462 ECG gradual signature 구현 보고서",
             "stopped_before_official_evaluation_qualification_failed",
-            "task_5_private_train_reproducibility_complete_qualification_failed",
+            "task_5_complete_qualification_failed_task_6_forbidden",
             "hydra_period_gradual_rank_max",
             "0.8402306222021025",
             "0.907392736783864",
@@ -299,9 +299,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 5 implementation/private reproduction complete",
+            "Task 5 complete after final review SHIP C/I/M0",
             "stopped_before_official_evaluation_qualification_failed",
-            "task_5_private_train_reproducibility_complete_qualification_failed",
+            "task_5_complete_qualification_failed_task_6_forbidden",
             "evaluate 0 / inspect 0",
             "label query count",
             "all <code>null</code>",
@@ -319,7 +319,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn(phrase, dashboard)
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
-        self.assertIn("Task 5 implementation and exactly two private TRAIN reproductions", plan)
+        self.assertIn("Task 5 — closed CLI and two private TRAIN reproductions", plan)
+        self.assertIn("Task 5 complete after final review SHIP C/I/M0", plan)
         for task_number in range(1, 7):
             task = re.search(
                 rf"<section>\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?</section>",
@@ -330,7 +331,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert task is not None
             tags = re.findall(r"<input\b[^>]*>", task.group(0), flags=re.IGNORECASE)
             self.assertGreaterEqual(len(tags), 1, f"Task {task_number} inputs missing")
-            if task_number in (1, 2, 3, 4):
+            if task_number in (1, 2, 3, 4, 5):
                 self.assertEqual(len(tags), 7)
                 checked_tags = [
                     tag for tag in tags if re.search(r"\bchecked(?:\s|=|>)", tag)
