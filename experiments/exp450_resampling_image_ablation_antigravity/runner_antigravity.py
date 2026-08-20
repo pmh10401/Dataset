@@ -12,14 +12,17 @@ from typing import Any
 
 import numpy as np
 
-from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult, RawDataset
+from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult
 from paper.equipment_anomaly_detection.routing_paper import (
     POLICY_ORDER,
     build_hard_evidence_surface,
     build_policies,
 )
 from paper.equipment_anomaly_detection.sources_paper.low_frequency_paper import score_low_frequency
+from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import HardSourceBundle
 from paper.equipment_anomaly_detection.sources_paper.stability_paper import classify_stability
+from paper.equipment_anomaly_detection.sources_paper.stability_paper import StabilityPartition
 
 from .artifacts_antigravity import (
     append_dataset_condition_failure_antigravity,
@@ -325,21 +328,46 @@ def freeze_all_conditions_antigravity(
     scores: Mapping[str, Exp450ConditionScore], root: Path, context: Exp450RunContext, catalog: dict[str, object]
 ) -> dict[str, dict[str, object]]:
     """Freeze and independently verify the A--D roots in approved order."""
-    if tuple(scores) != ("A", "B", "C", "D"):
-        raise Exp450Incomplete(tuple((dataset, condition_id) for dataset in (entry["dataset"] for entry in catalog.get("datasets", ())) for condition_id in ("A", "B", "C", "D")))
+    if not isinstance(catalog.get("datasets"), list):
+        raise Exp450Incomplete(())
+    datasets = tuple(entry.get("dataset") for entry in catalog["datasets"] if isinstance(entry, dict) and isinstance(entry.get("dataset"), str))
+    missing = tuple((dataset, condition_id) for condition_id in ("A", "B", "C", "D") if condition_id not in scores for dataset in datasets)
+    extra = tuple((dataset, condition_id) for condition_id in scores if condition_id not in {"A", "B", "C", "D"} for dataset in datasets)
+    if missing or extra:
+        raise Exp450Incomplete(missing + extra)
     entries = catalog.get("datasets")
     invalid: list[tuple[str, str]] = []
     if not isinstance(entries, list):
         raise Exp450Incomplete(())
     expected_raw = tuple(entry.get("dataset") for entry in entries)
     for condition_id, score in scores.items():
-        if not isinstance(score, Exp450ConditionScore) or score.condition.condition_id != condition_id or tuple(score.raw) != expected_raw or tuple(score.sources) != expected_raw or tuple(score.routes) != expected_raw or score.backend != context.backend:
+        valid = (
+            isinstance(score, Exp450ConditionScore) and score.condition.condition_id == condition_id
+            and tuple(score.raw) == expected_raw and tuple(score.sources) == expected_raw and tuple(score.routes) == expected_raw
+            and score.backend == context.backend and isinstance(score.low_frequency, LowFrequencyResult)
+            and isinstance(score.stability, StabilityPartition) and tuple(score.policies.order) == POLICY_ORDER
+        )
+        if valid:
+            for dataset in expected_raw:
+                raw = score.raw[dataset]
+                route = score.routes[dataset]
+                bundle = score.sources[dataset]
+                if not isinstance(raw, RawDataset) or raw.dataset != dataset or not isinstance(route, HardRouteResult) or route.n_test != len(raw.test_rows) or not isinstance(bundle, HardSourceBundle):
+                    valid = False; break
+                for policy in score.policies.policies:
+                    values = np.asarray(policy.scores.get(dataset)) if dataset in policy.scores else np.asarray(())
+                    if set(policy.alerts) != set(expected_raw) or set(policy.scores) != set(expected_raw) or set(policy.strength) != set(expected_raw) or values.dtype != np.dtype("float64") or values.ndim != 1 or values.size != len(raw.test_rows) or not np.all(np.isfinite(values)):
+                        valid = False; break
+                if not valid: break
+        if not valid:
             invalid.extend((dataset, condition_id) for dataset in expected_raw if isinstance(dataset, str))
     if invalid:
         raise Exp450Incomplete(tuple(invalid))
-    # Reread every local authority before the first create-only score-root write.
+    # Build every shard and reread every local authority before the first write.
     for condition_id, score in scores.items():
         verified_checkpoint_hashes_antigravity(root, context, catalog, dict(score.raw), score.condition)
+        for entry in entries:
+            _score_shard(score, entry["dataset"], entry, context)
     return {condition_id: freeze_condition_score_antigravity(scores[condition_id], root, context, catalog) for condition_id in ("A", "B", "C", "D")}
 
 

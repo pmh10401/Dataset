@@ -20,6 +20,8 @@ _CONDITIONS = {
     "A": ("linear", "linear"), "B": ("polyphase_pchip", "linear"),
     "C": ("linear", "area"), "D": ("polyphase_pchip", "area"),
 }
+_SOURCES = ("rocket_exp40", "exp55_best", "exp56_best", "exp84", "rocket_block_b", "canonical_normal_state")
+_ALPHAS = {"rocket_exp40": .03, "exp55_best": .03, "exp56_best": .02, "exp84": .02, "rocket_block_b": .015, "canonical_normal_state": .02}
 
 
 def _canonical_bytes(value: object) -> bytes:
@@ -107,7 +109,70 @@ def _check_checkpoint(value: object, entry: dict[str, object], condition_id: str
     if not isinstance(value, dict) or set(value) != required or value["schema"] != "exp450-dataset-condition-success-antigravity.v1" or value["dataset"] != entry["dataset"] or value["condition_id"] != condition_id or value["raw_identity"] != entry or value["context_sha256"] != context_sha256 or value["catalog_sha256"] != catalog_sha256 or value["backend"] != backend:
         raise ValueError("score root checkpoint binding differs")
     payload = value["payload"]
-    if not isinstance(payload, dict) or set(payload) != {"sources", "route"} or not isinstance(payload["sources"], list) or not isinstance(payload["route"], dict) or value["payload_sha256"] != _digest(payload):
+    if not isinstance(payload, dict) or set(payload) != {"sources", "route"} or value["payload_sha256"] != _digest(payload):
+        raise ValueError("score root checkpoint payload differs")
+    n_train, n_test = entry["train"]["count"], entry["test"]["count"]
+    _check_sources(payload["sources"], n_train, n_test)
+    _check_route(payload["route"], n_test)
+
+
+def _numbers(value: object, size: int, *, pvalue: bool = False) -> list[float]:
+    if not isinstance(value, list) or len(value) != size or any(type(item) not in {int, float} for item in value):
+        raise ValueError("score root checkpoint payload differs")
+    values = [float(item) for item in value]
+    if not all(np.isfinite(values)) or (pvalue and any(item <= 0.0 or item > 1.0 for item in values)):
+        raise ValueError("score root checkpoint payload differs")
+    return values
+
+
+def _indices(value: object, size: int) -> set[int]:
+    if not isinstance(value, list) or value != sorted(set(value)) or any(type(item) is not int or item < 0 or item >= size for item in value):
+        raise ValueError("score root checkpoint payload differs")
+    return set(value)
+
+
+def _lanes(value: object, size: int) -> tuple[set[int], set[int], set[int]]:
+    if not isinstance(value, dict) or set(value) != {"hard", "standard", "priority"}:
+        raise ValueError("score root checkpoint payload differs")
+    lanes = tuple(_indices(value[key], size) for key in ("hard", "standard", "priority"))
+    if lanes[0] & lanes[1] or lanes[0] & lanes[2] or lanes[1] & lanes[2]:
+        raise ValueError("score root checkpoint payload differs")
+    return lanes
+
+
+def _check_sources(value: object, n_train: int, n_test: int) -> None:
+    required = {"source_id", "order", "origin", "train_oof_score", "test_score", "test_pvalue", "threshold", "test_native_pass", "eligible", "eligibility_reason"}
+    if not isinstance(value, list) or len(value) != len(_SOURCES):
+        raise ValueError("score root checkpoint payload differs")
+    for order, row in enumerate(value):
+        if not isinstance(row, dict) or set(row) != required or row["source_id"] != _SOURCES[order] or row["order"] != order or row["threshold"] != _ALPHAS[_SOURCES[order]] or type(row["eligible"]) is not bool or type(row["eligibility_reason"]) is not str or not row["eligibility_reason"] or not isinstance(row["origin"], dict):
+            raise ValueError("score root checkpoint payload differs")
+        pvalues = _numbers(row["test_pvalue"], n_test, pvalue=True)
+        native = row["test_native_pass"]
+        if not isinstance(native, list) or len(native) != n_test or any(type(item) is not bool for item in native):
+            raise ValueError("score root checkpoint payload differs")
+        if row["eligible"]:
+            _numbers(row["train_oof_score"], n_train); _numbers(row["test_score"], n_test)
+            if row["eligibility_reason"] != "eligible" or native != [item <= row["threshold"] for item in pvalues]:
+                raise ValueError("score root checkpoint payload differs")
+        elif row["train_oof_score"] != [] or row["test_score"] != [] or pvalues != [1.0] * n_test or any(native):
+            raise ValueError("score root checkpoint payload differs")
+
+
+def _check_route(value: object, size: int) -> None:
+    required = {"n_test", "exp74d", "exp89", "exp90", "exp93", "exp137", "exp234", "exp236", "promoted", "exp253", "exact_normal_removed", "automatic_hard"}
+    if not isinstance(value, dict) or set(value) != required or value["n_test"] != size:
+        raise ValueError("score root checkpoint payload differs")
+    _lanes(value["exp74d"], size); _indices(value["exp89"], size); _indices(value["exp90"], size); _indices(value["exp93"], size); _lanes(value["exp137"], size)
+    if not isinstance(value["exp234"], dict) or set(value["exp234"]) != {"minimum_two", "minimum_three"}:
+        raise ValueError("score root checkpoint payload differs")
+    two, three = _indices(value["exp234"]["minimum_two"], size), _indices(value["exp234"]["minimum_three"], size)
+    if not three <= two: raise ValueError("score root checkpoint payload differs")
+    hard236, standard236, priority236 = _lanes(value["exp236"], size)
+    promoted = _indices(value["promoted"], size)
+    hard253, standard253, priority253 = _lanes(value["exp253"], size)
+    removed, automatic = _indices(value["exact_normal_removed"], size), _indices(value["automatic_hard"], size)
+    if not promoted <= standard236 or hard253 != hard236 | promoted or standard253 != standard236 - promoted or priority253 != priority236 or not removed <= hard253 or automatic != hard253 - removed:
         raise ValueError("score root checkpoint payload differs")
 
 

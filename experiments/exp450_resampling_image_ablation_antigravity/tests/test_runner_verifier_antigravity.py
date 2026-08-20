@@ -26,6 +26,8 @@ from paper.equipment_anomaly_detection.sources_paper.hard_sources_paper import (
     HardSourceBundle,
     _completed_paper,
 )
+from paper.equipment_anomaly_detection.sources_paper.low_frequency_paper import score_low_frequency
+from paper.equipment_anomaly_detection.sources_paper.stability_paper import classify_stability
 
 from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
     append_dataset_condition_failure_antigravity,
@@ -120,8 +122,10 @@ def _score(raw: RawDataset, condition: Exp450Condition) -> Exp450ConditionScore:
         for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
     ))
     result = _result(raw, condition)
+    low = score_low_frequency({raw.dataset: raw}, {raw.dataset: frozenset()})
+    stability = classify_stability(low, {raw.dataset: raw})
     return Exp450ConditionScore(condition, {raw.dataset: raw}, {raw.dataset: result.sources},
-                                {raw.dataset: result.route}, object(), object(), policies, BACKEND_CPU, {})
+                                {raw.dataset: result.route}, low, stability, policies, BACKEND_CPU, {})
 
 
 def _rebind_score_json(path: Path, mutate) -> None:
@@ -181,6 +185,20 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         scores["D"] = _score(self.raw, CONDITIONS[0])
         with self.assertRaises(Exp450Incomplete):
             freeze_all_conditions_antigravity(scores, self.root, self.context, self.catalog)
+        self.assertFalse((self.root / "score_roots_antigravity").exists())
+
+    def test_freeze_preflight_rejects_d_policy_population_before_any_root_write(self) -> None:
+        """A valid typed D container cannot freeze policies for another dataset."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        scores = {condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}
+        other = "other_antigravity"
+        policies = PolicyBundle(tuple(PolicyRoute(name, {other: frozenset()}, {other: np.zeros(2)}, {other: np.zeros(2)}) for name in ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")))
+        d = scores["D"]
+        scores["D"] = Exp450ConditionScore(d.condition, d.raw, d.sources, d.routes, d.low_frequency, d.stability, policies, d.backend, d.stage_seconds)
+        with self.assertRaises(Exp450Incomplete) as raised:
+            freeze_all_conditions_antigravity(scores, self.root, self.context, self.catalog)
+        self.assertEqual(raised.exception.pending, ((self.raw.dataset, "D"),))
         self.assertFalse((self.root / "score_roots_antigravity").exists())
 
     def test_local_schedule_rejects_a_backend_that_differs_from_its_context(self) -> None:
@@ -311,6 +329,21 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
         def rebind_manifest(value):
             value["checkpoint_hashes"][0]["sha256"] = sha256(checkpoint.read_bytes()).hexdigest()
         _rebind_score_json(manifest, rebind_manifest)
+        with self.assertRaisesRegex(ValueError, "score root"):
+            verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
+
+    def test_verifier_rejects_fully_rebound_outer_shaped_route_payload(self) -> None:
+        """A payload with all outer keys still needs valid route lane algebra."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        freeze_all_conditions_antigravity({condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS}, self.root, self.context, self.catalog)
+        checkpoint = next((self.root / "checkpoints_antigravity" / "A_antigravity").glob("*_antigravity/dataset_condition_success_antigravity.json"))
+        def corrupt(value):
+            value["payload"]["route"]["automatic_hard"] = [99]
+            value["payload_sha256"] = sha256(canonical_json_bytes(value["payload"])).hexdigest()
+        _rebind_score_json(checkpoint, corrupt)
+        manifest = self.root / "score_roots_antigravity" / "A_antigravity" / "condition_score_manifest_antigravity.json"
+        _rebind_score_json(manifest, lambda value: value["checkpoint_hashes"][0].update({"sha256": sha256(checkpoint.read_bytes()).hexdigest()}))
         with self.assertRaisesRegex(ValueError, "score root"):
             verify_exp450_score_root_antigravity(self.root, context=self.context, catalog=self.catalog, condition_id="A")
 
