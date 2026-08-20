@@ -72,7 +72,7 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "runtime_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
         "approved_design_sha256": "3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2",
         "preregistration_sha256": "9595d1f898b309ac899c821867a2f38e6f0eb24f147e6888970e1095534490cb",
-        "runbook_sha256": "3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807",
+        "runbook_sha256": "e4bbd256e5ab5cd84a3bbc85feb8c17fc1ebf7fc78cce0384243d5bb3110581a",
         "dataset": "ECG5000_normal_2",
         "data_split": "TRAIN_only",
         "normal2_train_rows": 1413,

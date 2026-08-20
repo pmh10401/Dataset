@@ -91,7 +91,7 @@ class ConfigAntigravityTest(unittest.TestCase):
         )
         self.assertEqual(
             config.runbook_sha256,
-            "3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807",
+            "e4bbd256e5ab5cd84a3bbc85feb8c17fc1ebf7fc78cce0384243d5bb3110581a",
         )
         self.assertEqual(config.dataset, "ECG5000_normal_2")
         self.assertEqual(config.data_split, "TRAIN_only")

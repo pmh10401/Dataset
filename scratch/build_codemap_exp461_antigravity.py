@@ -307,9 +307,9 @@ def build_map_antigravity(
         {
             "id": "runbook",
             "path": runbook,
-            "role": "Caller: future operators. Effect: records the Task 1 operator boundary, exact root that must stay absent, and the commands that remain forbidden for now.",
+            "role": "Caller: future operators. Effect: records the Task 5 terminal operator boundary, exact root that must stay absent, and the official commands that remain forbidden after qualification failure.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(runbook, "Task 1 operator boundary")],
+            "evidence": [evidence_antigravity(runbook, "Task 5 terminal operator boundary")],
         },
         {
             "id": "implementation_report",

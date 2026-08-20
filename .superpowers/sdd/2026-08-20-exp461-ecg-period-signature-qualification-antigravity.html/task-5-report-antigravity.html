@@ -46,6 +46,20 @@
     <tr><th>private roots</th><td>both removed after evidence capture</td></tr>
     <tr><th>review status</th><td>fresh result-focused review still pending; Task 5 boxes intentionally unchecked</td></tr>
   </table>
+  <h2>Final review fix evidence — 2026-08-20</h2>
+  <table>
+    <tr><th>active process precheck</th><td><code>ps -axo pid,command | rg 'exp461|TRAIN|MLX|MPS'</code>: exit <code>0</code>, no active Exp461/TRAIN/MLX/MPS process after excluding the check commands.</td></tr>
+    <tr><th>Exp461 full discovery 1</th><td><code>python -m unittest discover -s experiments/exp461_ecg_period_signature_qualification_antigravity/tests -p 'test_*_antigravity.py'</code>: exit <code>0</code>, ran <code>37</code> tests in <code>5.289s</code>, <code>OK</code>.</td></tr>
+    <tr><th>Exp461 full discovery 2</th><td>same command, sequential run: exit <code>0</code>, ran <code>37</code> tests in <code>5.289s</code>, <code>OK</code>.</td></tr>
+    <tr><th>Exp460 non-governance/product regression</th><td><code>python -m unittest</code> over Exp460 CLI/config/dashboard/predecessor/replay/evaluation/artifacts/fallback/contracts tests, excluding <code>test_governance_antigravity.py</code>: exit <code>0</code>, ran <code>29</code> tests in <code>0.387s</code>, <code>OK</code>.</td></tr>
+    <tr><th>post-edit focused check</th><td>Exp461 config and governance tests after the runbook hash/assertion update: exit <code>0</code>, ran <code>4</code> tests in <code>0.151s</code>, <code>OK</code>.</td></tr>
+    <tr><th>py_compile</th><td>Exp461 CLI, config, qualification, CLI/config/governance tests, launcher, and codemap builder: exit <code>0</code>.</td></tr>
+    <tr><th>map validate</th><td><code>scratch/build_codemap_exp461_antigravity.py --validate-only</code>: exit <code>0</code>.</td></tr>
+    <tr><th>HTML parse</th><td>Task 5 report, dashboard, implementation report, runbook, plan, and codemap HTML: exit <code>0</code>, <code>html_parse_ok 6</code>.</td></tr>
+    <tr><th>diff check</th><td><code>git diff --check</code>: exit <code>0</code>.</td></tr>
+    <tr><th>official-root and label0 guard</th><td>official root <code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent; research/result <code>label_query_count</code> both <code>0</code>; official evaluate/inspect invocations <code>0</code>; routing/promotion/pending change false. Guard command exit <code>0</code>.</td></tr>
+    <tr><th>runbook hash after stale-wording fix</th><td><code>docs/EXP461_RUNBOOK_antigravity.html</code> SHA-256 <code>e4bbd256e5ab5cd84a3bbc85feb8c17fc1ebf7fc78cce0384243d5bb3110581a</code>.</td></tr>
+  </table>
   <h2>Concern</h2>
   <p>Task 5 used a clean code commit before writing this result report. The final Task 5 commit amends in documentation, ledger, governance, and map updates after the private campaign. The scientific code path and private artifact hashes above came from the clean reviewed code commit shown in this report.</p>
 </main></body></html>

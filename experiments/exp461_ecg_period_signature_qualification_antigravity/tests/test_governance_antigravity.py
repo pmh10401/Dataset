@@ -41,7 +41,7 @@ PREREGISTRATION_SHA256_ANTIGRAVITY = (
     "9595d1f898b309ac899c821867a2f38e6f0eb24f147e6888970e1095534490cb"
 )
 RUNBOOK_SHA256_ANTIGRAVITY = (
-    "3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807"
+    "e4bbd256e5ab5cd84a3bbc85feb8c17fc1ebf7fc78cce0384243d5bb3110581a"
 )
 PENDING_CANDIDATE_ANTIGRAVITY = {
     "evaluation": None,
@@ -300,7 +300,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         runbook = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[1]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1 operator boundary",
+            "Task 5 terminal operator boundary",
+            "Terminal Task 5 qualification failed / Task 6 forbidden",
+            "stopped_before_official_evaluation_qualification_failed",
             RUN_ROOT_ANTIGRAVITY,
             "must stay absent",
             "Do not run official evaluate",
