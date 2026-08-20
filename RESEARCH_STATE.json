@@ -6,7 +6,7 @@
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity",
   "last_verified_commit": "aacdb6752033b4f0709615d9d65f56c49f4004b4",
   "active_experiment": "Exp462",
-  "active_phase": "task_4_complete_pending_task_5",
+  "active_phase": "task_5_private_train_reproducibility_complete_qualification_failed",
   "status": "planned_implementation_not_started",
   "dataset_count": 48,
   "active_documents": {
@@ -2645,9 +2645,9 @@
   "exp462": {
     "experiment": "Exp462",
     "kind": "ecg_gradual_signature_qualification",
-    "status": "planned_implementation_not_started",
-    "implementation_status": "task_4_complete_pending_task_5",
-    "reason": "Task 4 qualification/evaluation, exact seven-leaf create-only publication, source-free replay, and aggregate dashboard projection are complete after independent review C/I/M 0. Official root, TEST labels, routing, champion change, and pending-candidate change remain absent.",
+    "status": "stopped_before_official_evaluation_qualification_failed",
+    "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
+    "reason": "Task 5 closed CLI and exactly two sequential private TRAIN evaluate-to-inspect reproductions completed at clean reviewed commit ff57925ae2d5542fe6ec34131686ffa0bc37fe0c. The two roots matched exactly for all 30 rows, failed rows, three summaries, decision, dashboard, seven leaf bytes, and hashes. The primary hydra_period_gradual_rank_max candidate passed 3/10; minimum gradual_drift AUC 0.7953196519289775 and minimum period_change AUC 0.8960376741612595 failed frozen gates. Official evaluate/inspect, official root, TEST labels, routing, champion, pending candidate, and promotion remain absent; Task 6 is forbidden.",
     "run_identity": "exp462-ecg-gradual-signature-qualification-antigravity-20260820",
     "run_root": "/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820",
     "package": "experiments/exp462_ecg_gradual_signature_qualification_antigravity",
@@ -2742,6 +2742,76 @@
     "pending_candidate_changed": false,
     "scientific_winner_selected": false,
     "official_root_present": false,
-    "review_only": true
+    "task5_private_train_result": {
+      "reviewed_commit": "ff57925ae2d5542fe6ec34131686ffa0bc37fe0c",
+      "runs": [
+        {"run": 1, "evaluate_exit": 0, "inspect_exit": 0},
+        {"run": 2, "evaluate_exit": 0, "inspect_exit": 0}
+      ],
+      "temporary_roots_removed": true,
+      "exact_equality": {
+        "rows_exact_equal": true,
+        "failed_rows_exact_equal": true,
+        "summaries_exact_equal": true,
+        "decision_exact_equal": true,
+        "dashboard_exact_equal": true,
+        "leaf_bytes_exact_equal": true,
+        "leaf_hashes_exact_equal": true,
+        "artifact_map_hash_equal": true
+      },
+      "row_count": 30,
+      "failed_row_count": 18,
+      "leaf_count": 7,
+      "leaf_sha256": {
+        "context_antigravity.json": "fd5a5271ae68183d9a121ba46f8dfb18aab8a8399140ee9d224e87af7bfd1291",
+        "method_fold_metrics_antigravity.jsonl": "f3d0eab11fa3902c9e4ea30a4d83b19cb5cff52cc3f51a20034c9b3b553ccf0b",
+        "failed_folds_antigravity.jsonl": "e7848e96f5380448eb38a21ecfe6e9a19fcca830fead0058b85a285f13da90ea",
+        "method_summary_antigravity.json": "0f63f0ee9d1788810fddb27fcb576225c73301098e3ddbf24704710a627eb0a9",
+        "decision_antigravity.json": "6eec416030c0b01f945feee824468dc0766dfd036945b1e9e7307e9498d0d58b",
+        "dashboard_snapshot_antigravity.json": "d2f1ed5c289aa4eb061c04065cc7b49420f3ca4ebe894b269853703bb36a558b",
+        "artifact_sha256_antigravity.json": "5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50"
+      },
+      "artifact_map_sha256": "5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50",
+      "method_pass_counts": {
+        "hydra_period_rank_max": {"passed_count": 9, "fold_count": 10, "failed_count": 1, "passed": false},
+        "gradual_signature_local_gap": {"passed_count": 0, "fold_count": 10, "failed_count": 10, "passed": false},
+        "hydra_period_gradual_rank_max": {"passed_count": 3, "fold_count": 10, "failed_count": 7, "passed": false}
+      },
+      "primary_candidate": "hydra_period_gradual_rank_max",
+      "primary_passed_count": 3,
+      "primary_required_count": 10,
+      "primary_min_per_type_auc": {
+        "level_shift": 0.9377483526985564,
+        "gradual_drift": 0.7953196519289775,
+        "amplitude_scaling": 0.9574971077913585,
+        "period_change": 0.8960376741612595
+      },
+      "primary_min_pooled_auc": 0.9010220185101353,
+      "primary_max_normal_wilson_upper": 0.013439124039399194,
+      "decision": {
+        "status": "qualification_failed_blocked_before_routing_research",
+        "eligible_for_routing_research": false,
+        "failure_reasons": [
+          "gradual_drift_auc_below_min",
+          "gradual_drift_not_strictly_improved_over_exp461",
+          "historical_period_change_below_min:20260721:3",
+          "period_change_auc_below_global_min",
+          "primary_candidate_not_10_of_10",
+          "primary_gradual_drift_min_below_0.85",
+          "primary_gradual_drift_not_strictly_improved_over_exp461",
+          "primary_period_change_min_below_exp461_global_floor"
+        ],
+        "routing_applied": false,
+        "test_labels_opened": false,
+        "label_query_count": 0
+      },
+      "historical_improvements": [
+        {"seed": 20260721, "fold_index": 3, "previous_period_change_auc": 0.907392736783864, "candidate_period_change_auc": 0.8960376741612595, "strictly_improved": false},
+        {"seed": 20261721, "fold_index": 4, "previous_period_change_auc": 0.9216148584075248, "candidate_period_change_auc": 0.9285624465570143, "strictly_improved": true}
+      ],
+      "label_query_count": 0,
+      "official_root_exists_after": false
+    },
+    "review_only": false
   }
 }

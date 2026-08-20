@@ -83,8 +83,8 @@ class HtmlParserAntigravity(html.parser.HTMLParser):
 
 
 class GovernanceAntigravityTest(unittest.TestCase):
-    def test_task1_planned_governance_antigravity(self) -> None:
-        """Break caught: Task 1 planned truth drifts into result or official lifecycle work."""
+    def test_terminal_task5_governance_antigravity(self) -> None:
+        """Break caught: terminal private result drifts into official lifecycle or promotion."""
         missing = [
             relative
             for relative in DOCUMENTS_ANTIGRAVITY[:3] + TRIPLET_ANTIGRAVITY
@@ -123,8 +123,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             with self.subTest(record=record["experiment"]):
                 self.assertEqual(record["experiment"], "Exp462")
                 self.assertEqual(record["kind"], "ecg_gradual_signature_qualification")
-                self.assertEqual(record["status"], "planned_implementation_not_started")
-                self.assertEqual(record["implementation_status"], "task_4_complete_pending_task_5")
+                self.assertEqual(record["status"], "stopped_before_official_evaluation_qualification_failed")
+                self.assertEqual(record["implementation_status"], "task_5_private_train_reproducibility_complete_qualification_failed")
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -226,10 +226,23 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertFalse(record["pending_candidate_changed"])
                 self.assertFalse(record["scientific_winner_selected"])
                 self.assertFalse(record["official_root_present"])
-                self.assertTrue(record["review_only"])
+                self.assertFalse(record["review_only"])
+                private_result = record["task5_private_train_result"]
+                self.assertEqual(private_result["reviewed_commit"], "ff57925ae2d5542fe6ec34131686ffa0bc37fe0c")
+                self.assertEqual(private_result["row_count"], 30)
+                self.assertEqual(private_result["failed_row_count"], 18)
+                self.assertEqual(private_result["leaf_count"], 7)
+                self.assertTrue(private_result["temporary_roots_removed"])
+                self.assertTrue(all(private_result["exact_equality"].values()))
+                self.assertEqual(private_result["primary_candidate"], "hydra_period_gradual_rank_max")
+                self.assertEqual(private_result["primary_passed_count"], 3)
+                self.assertEqual(private_result["primary_required_count"], 10)
+                self.assertEqual(private_result["primary_min_per_type_auc"]["gradual_drift"], 0.7953196519289775)
+                self.assertEqual(private_result["primary_min_per_type_auc"]["period_change"], 0.8960376741612595)
+                self.assertEqual(private_result["label_query_count"], 0)
 
         self.assertEqual(state["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
-        self.assertEqual(state["active_phase"], "task_4_complete_pending_task_5")
+        self.assertEqual(state["active_phase"], "task_5_private_train_reproducibility_complete_qualification_failed")
         self.assertEqual(champion["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["champion_status"], "no_new_champion_verified_in_current_loop")
 
@@ -245,9 +258,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             encoding="utf-8"
         )
         for phrase in (
-            "planned-only governance",
-            "planned_implementation_not_started",
-            "Task 1/6",
+            "승인된 TRAIN-only 과학 계약",
+            "stopped_before_official_evaluation_qualification_failed",
             "official command count 0",
             "label query count 0",
             "result and artifact hashes",
@@ -259,46 +271,41 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         runbook = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[1]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1 governance ready / Task 2 next",
+            "Task 5 terminal boundary",
             RUN_ROOT_ANTIGRAVITY,
             "must stay absent",
-            "Do not run official evaluate",
-            "Do not run official inspect",
-            "official command count 0",
-            "label query count 0",
+            "Do not run",
+            "Task 6 is forbidden",
+            "official commands",
+            "label query count",
         ):
             self.assertIn(phrase, runbook)
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for phrase in (
-            "Exp462 implementation report",
-            "planned_implementation_not_started",
-            "Task 4 complete / Task 5 next",
+            "Exp462 ECG gradual signature 구현 보고서",
+            "stopped_before_official_evaluation_qualification_failed",
+            "task_5_private_train_reproducibility_complete_qualification_failed",
             "hydra_period_gradual_rank_max",
             "0.8402306222021025",
             "0.907392736783864",
             "0.9216148584075248",
             "official command count 0",
             "label query count 0",
-            "artifact map null",
-            "capture_exp461_gradual_authority_antigravity()",
-            "load_normal2_train_antigravity()",
+            "ff57925ae2d5542fe6ec34131686ffa0bc37fe0c",
+            "5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50",
         ):
             self.assertIn(phrase, report)
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 4 complete / Task 5 next",
-            "planned_implementation_not_started",
-            "task_4_complete_pending_task_5",
-            "official evaluate 0 / official inspect 0",
+            "Task 5 implementation/private reproduction complete",
+            "stopped_before_official_evaluation_qualification_failed",
+            "task_5_private_train_reproducibility_complete_qualification_failed",
+            "evaluate 0 / inspect 0",
             "label query count",
-            "official artifact map SHA-256",
-            "null",
-            "Exp461 failure 9/10",
-            "0340b6ee737da84777283668449738d0c1585566",
-            "capture_exp461_gradual_authority_antigravity()",
-            "load_normal2_train_antigravity()",
+            "all <code>null</code>",
+            "ff57925ae2d5542fe6ec34131686ffa0bc37fe0c",
             "gradual_drift",
             "0.8402306222021025",
             "0.85",
@@ -312,7 +319,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn(phrase, dashboard)
 
         plan = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
-        self.assertIn("Task 4 complete / Task 5 next", plan)
+        self.assertIn("Task 5 implementation and exactly two private TRAIN reproductions", plan)
         for task_number in range(1, 7):
             task = re.search(
                 rf"<section>\s*<h2><label><input type=\"checkbox\"[^>]*>Task {task_number}.*?</section>",
@@ -387,7 +394,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task4_artifacts_tests",
             "task4_replay_tests",
             "task4_dashboard_tests",
-            "task5_cli_unknown",
+            "task5_cli",
+            "task5_cli_tests",
+            "task5_launcher",
         ):
             self.assertIn(node_id, node_ids)
         for node in graph["nodes"]:

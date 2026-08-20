@@ -1,61 +1,52 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 implementation report antigravity</title>
-<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}</style></head><body><main>
-<h1>Exp462 implementation report</h1>
-<p><strong>Task 4 complete / Task 5 next</strong>. Ledger status remains <code>planned_implementation_not_started</code>; implementation status is <code>task_4_complete_pending_task_5</code>. Task 4 controls are checked after independent review C/I/M 0. Official evaluate/inspect remain at zero.</p>
-<table>
-<tr><th>scope</th><td>Created five Task 4 modules and five focused tests for blocked qualification/evaluation, exact seven-leaf publication, source-free replay, and aggregate dashboard projection. Closed Task 4 after independent review C/I/M 0 and updated dashboard, implementation plan/report, governance assertions, ledgers, and the Exp462 map builder/triplet.</td></tr>
-<tr><th>primary candidate planned</th><td><code>hydra_period_gradual_rank_max</code></td></tr>
-<tr><th>Exp461 gradual evidence</th><td>primary 9/10, worst gradual_drift AUC <code>0.8402306222021025</code></td></tr>
-<tr><th>Exp462 gradual target</th><td><code>0.85</code></td></tr>
-<tr><th>period preservation</th><td>global <code>0.907392736783864</code>; historical thresholds <code>0.907392736783864</code> and <code>0.9216148584075248</code></td></tr>
-<tr><th>official command count 0</th><td>evaluate 0, inspect 0</td></tr>
-<tr><th>label query count 0</th><td>no TEST labels opened</td></tr>
-<tr><th>hash state</th><td>prediction null, evaluation null, decision null, artifact map null, dashboard snapshot null</td></tr>
-</table>
-<div class="box">Task 4 is qualification-only and complete after independent review C/I/M 0: no CLI, private TRAIN reproduction, official root/result, TEST labels, routing, threshold tuning, or Task 5/6 implementation.</div>
-<h2>Task 2 implementation</h2>
-<table>
-<tr><th>public interfaces</th><td><code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>capture_exp461_gradual_authority_antigravity()</code>, <code>load_normal2_train_antigravity()</code></td></tr>
-<tr><th>Exp461 reviewed code commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code> private TRAIN candidate execution/reproduction code</td></tr>
-<tr><th>Exp461 terminal closeout commit</th><td><code>0340b6ee737da84777283668449738d0c1585566</code> terminal truth/docs closeout</td></tr>
-<tr><th>authority hashes</th><td>artifact map <code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code>; decision <code>27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315</code>; dashboard <code>e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc</code>; summary <code>7500d2599060b257a171856fb68bed39a0ec0f4ddb26ca6084e606c911251e25</code></td></tr>
-<tr><th>TRAIN source smoke</th><td>verified owned, C-contiguous, read-only, finite <code>float32</code> <code>1413×140</code>; official root absent and label query count remains <code>0</code></td></tr>
-<tr><th>Task 3</th><td>complete after review C/I/M 0</td></tr>
-</table>
-<h2>Task 3 implementation</h2>
-<table>
-<tr><th>public interfaces</th><td><code>gradual_signature_antigravity(values)</code>, <code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index)</code>, <code>FoldMethodScoresAntigravity</code></td></tr>
-<tr><th>feature contract</th><td>three views <code>[0:140]</code>, <code>[0:70]</code>, <code>[70:140]</code>; median/MAD normalization; five ordered centered unit bases; three adjacent quarter-median differences; output exact <code>24</code>D read-only <code>float64</code></td></tr>
-<tr><th>score contract</th><td>method order <code>hydra_period_rank_max</code>, <code>gradual_signature_local_gap</code>, <code>hydra_period_gradual_rank_max</code>; Exp461 baseline delegated; rank formula <code>(1 + count(r_i ≤ s)) / (n + 1)</code>; primary exact elementwise max</td></tr>
-<tr><th>backend decision</th><td><code>numpy_cpu</code>; MLX <code>0.32.0</code>, <code>mlx.metal</code> unavailable, device <code>Device(gpu, 0)</code>, CPU <code>0.011300167068839073</code>s, MLX smoke <code>0.04128483310341835</code>s, finite/order parity true, numeric max abs diff <code>0.0</code>, speedup <code>0.274</code></td></tr>
-</table>
-<h2>Task 3 verification</h2>
-<table>
-<tr><th>RED</th><td>focused Task 3 suite failed with six expected missing-module errors before implementation.</td></tr>
-<tr><th>GREEN</th><td><code>python3 -m unittest</code> focused Task 3 suite: <code>Ran 6 tests</code>, <code>OK</code>.</td></tr>
-<tr><th>regression required</th><td>Focused Task 3 repeat and Task 2 regression are recorded in the Task 3 report.</td></tr>
-<tr><th>review closeout</th><td>Focused review verified exact 24D feature order, strict rejection/immutability, Exp461 delegation, LocalGap seed/index flow, rank formula, elementwise max, no TEST/routing/official access, truthful CPU backend selection, clean worktree, and Task 3 boxes unchecked before closeout. Verdict C/I/M 0.</td></tr>
-</table>
-<h2>Task 2 verification</h2>
-<table>
-<tr><th>RED</th><td>focused Task 2 suite failed with 9 expected missing-module errors before implementation.</td></tr>
-<tr><th>GREEN twice</th><td><code>python3 -m unittest</code> focused Task 2 suite: <code>Ran 9 tests</code>, <code>OK</code>; repeated with the same result.</td></tr>
-<tr><th>Governance</th><td>Task 1 governance regression: <code>Ran 2 tests</code>, <code>OK</code>.</td></tr>
-<tr><th>Map and compile</th><td><code>scratch/build_codemap_exp462_antigravity.py --validate-only</code> passed; <code>py_compile</code> passed for Task 2 modules and tests.</td></tr>
-</table>
-<h2>Task 4 implementation</h2>
-<table>
-<tr><th>qualification</th><td><code>_qualify_methods_with_dependencies_antigravity()</code> emits exactly 30 ordered method/seed/fold rows and recomputes four AUCs, pooled mean, Wilson upper bound, finite state, and pass reasons from score evidence.</td></tr>
-<tr><th>evaluation</th><td><code>evaluate_qualification_antigravity()</code> enforces primary 10/10, per-type <code>0.85</code>, pooled <code>0.90</code>, Wilson <code>0.05</code>, gradual improvement, global period, and two historical period floors with routing/labels disabled.</td></tr>
-<tr><th>publication</th><td><code>publish_result_antigravity()</code> writes the exact seven canonical leaves create-only to an injected temporary/private path; the artifact map binds only the preceding six leaves.</td></tr>
-<tr><th>replay</th><td><code>inspect_replay_at_antigravity()</code> is source-free and rejects inventory, canonical, score/metric, summary, decision, dashboard, and hash inconsistencies.</td></tr>
-<tr><th>dashboard</th><td><code>export_dashboard_antigravity()</code> exposes aggregate method counts, four-type minima, pooled/Wilson bounds, period preservation, and label-free decision state only.</td></tr>
-</table>
-<h2>Task 4 verification</h2>
-<table>
-<tr><th>RED</th><td>Focused Task 4 suite initially ran <code>7</code> tests and failed with expected missing-module errors for all five absent interfaces.</td></tr>
-<tr><th>GREEN</th><td>Focused Task 4 suite passed <code>7</code> tests twice; Task 2–3 regression passed <code>15</code> tests; independent Spark contract review found no defect and Grok 4.6 High final review returned SHIP C/I/M 0.</td></tr>
-<tr><th>boundary</th><td>Official evaluate/inspect remain <code>0</code>, official root remains absent/non-symlink, label query count remains <code>0</code>, and champion/pending state is unchanged.</td></tr>
-</table>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}.ok{border-left:6px solid #16794b}</style></head>
+<body><main>
+  <h1>Exp462 ECG gradual signature 구현 보고서</h1>
+  <p><strong>현재 상태:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. Task 5 closed CLI와 두 번의 private TRAIN 재현은 구현·검증됐지만 주 후보가 frozen qualification gate를 통과하지 못했다. Task 6은 영구 금지이며 공식 evaluate/inspect는 실행하지 않았다.</p>
+  <table>
+    <tr><th>implementation status</th><td><code>task_5_private_train_reproducibility_complete_qualification_failed</code></td></tr>
+    <tr><th>reviewed clean implementation commit</th><td><code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code></td></tr>
+    <tr><th>official execution</th><td>evaluate 0 / inspect 0; official command count 0</td></tr>
+    <tr><th>label boundary</th><td>label query count 0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> absent and non-symlink</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>official result hashes</th><td>all <code>null</code>; no official result exists</td></tr>
+  </table>
+  <h2>Task 5 boundary</h2>
+  <ul>
+    <li><code>cli_antigravity.py</code> accepts exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>, uses lazy phase imports, validates a clean reviewed commit, rejects official-root aliases for private injection, and emits only the aggregate dashboard payload.</li>
+    <li><code>scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py</code> binds the fixed Python 3.14.6 interpreter and works outside the repository CWD.</li>
+    <li><code>tests/test_cli_antigravity.py</code> covers RED/GREEN parser closure, lazy/source-free inspect, private root and create-only publication, outside-CWD loading, and fixed-runtime re-exec.</li>
+  </ul>
+  <h2>TDD and regression evidence</h2>
+  <table>
+    <tr><th>RED</th><td>Focused CLI suite initially failed with the expected missing <code>cli_antigravity.py</code> and launcher module/file errors.</td></tr>
+    <tr><th>GREEN</th><td>Focused CLI suite passed <code>7/7</code>; repeated run also passed <code>7/7</code>.</td></tr>
+    <tr><th>private campaign</th><td>Exactly two sequential private TRAIN evaluate→inspect cycles ran in explicit non-official roots. Both evaluate and inspect exited <code>0</code>; roots were removed only after comparison.</td></tr>
+    <tr><th>discovery/regression</th><td>Exp462 discovery and the Exp461 scientific regression are recorded in the terminal verification closeout after map synchronization.</td></tr>
+  </table>
+  <h2>Private TRAIN result</h2>
+  <div class="box bad">
+    <p>Both runs produced exact-equal 30 metric rows, 18 failed rows, three summaries, decision, dashboard, seven leaf byte streams, and seven leaf SHA-256 values. Artifact-map SHA-256: <code>5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50</code>.</p>
+    <p>The primary <code>hydra_period_gradual_rank_max</code> passed <code>3/10</code>. Its minimum <code>gradual_drift</code> AUC was <code>0.7953196519289775</code> (&lt; <code>0.85</code>), minimum <code>period_change</code> AUC was <code>0.8960376741612595</code> (&lt; <code>0.907392736783864</code>), and primary pooled minimum was <code>0.9010220185101353</code>. Normal Wilson maximum was finite at <code>0.013439124039399194</code>.</p>
+    <p>Historical period folds: seed <code>20260721</code> fold <code>3</code> = <code>0.8960376741612595</code> (failed preservation); seed <code>20261721</code> fold <code>4</code> = <code>0.9285624465570143</code> (preserved). The frozen Exp461 comparison threshold is <code>0.9216148584075248</code>.</p>
+  </div>
+  <h2>Method summaries</h2>
+  <table><thead><tr><th>method</th><th>passed</th><th>min gradual</th><th>min period</th><th>min pooled</th><th>max Wilson</th><th>finite</th></tr></thead><tbody>
+    <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td>0.8402306222021025</td><td>0.907392736783864</td><td>0.9212266108344651</td><td>0.013439124039399194</td><td>true</td></tr>
+    <tr><td><code>gradual_signature_local_gap</code></td><td>0/10</td><td>0.6966125185730875</td><td>0.8093657260701171</td><td>0.7431184296564559</td><td>0.013439124039399194</td><td>true</td></tr>
+    <tr><td><code>hydra_period_gradual_rank_max</code></td><td>3/10</td><td>0.7953196519289775</td><td>0.8960376741612595</td><td>0.9010220185101353</td><td>0.013439124039399194</td><td>true</td></tr>
+  </tbody></table>
+  <h2>Private leaf hashes</h2>
+  <table><tbody>
+    <tr><th>context</th><td><code>fd5a5271ae68183d9a121ba46f8dfb18aab8a8399140ee9d224e87af7bfd1291</code></td></tr>
+    <tr><th>method rows</th><td><code>f3d0eab11fa3902c9e4ea30a4d83b19cb5cff52cc3f51a20034c9b3b553ccf0b</code></td></tr>
+    <tr><th>failed rows</th><td><code>e7848e96f5380448eb38a21ecfe6e9a19fcca830fead0058b85a285f13da90ea</code></td></tr>
+    <tr><th>summary</th><td><code>0f63f0ee9d1788810fddb27fcb576225c73301098e3ddbf24704710a627eb0a9</code></td></tr>
+    <tr><th>decision</th><td><code>6eec416030c0b01f945feee824468dc0766dfd036945b1e9e7307e9498d0d58b</code></td></tr>
+    <tr><th>dashboard snapshot</th><td><code>d2f1ed5c289aa4eb061c04065cc7b49420f3ca4ebe894b269853703bb36a558b</code></td></tr>
+    <tr><th>artifact map</th><td><code>5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50</code></td></tr>
+  </tbody></table>
+  <div class="box ok"><p><strong>MLX decision:</strong> Task 3's existing same-input smoke did not satisfy the 1.1× end-to-end speed gate; the canonical path remains CPU NumPy. No package installation or GPU rewrite was performed.</p></div>
+  <p><strong>Review boundary:</strong> this report intentionally leaves Task 5 plan controls unchecked until fresh independent result review C/I 0. Task 6 controls remain unchecked and forbidden regardless of later approval.</p>
 </main></body></html>

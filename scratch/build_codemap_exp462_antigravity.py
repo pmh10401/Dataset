@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp462 Task 4 code map."""
+"""Build and validate the bounded Exp462 Task 5 code map."""
 
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ TRACKED_PATHS_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-2-report-antigravity.html",
     ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html",
     ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-4-report-antigravity.html",
+    ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-5-report-antigravity.html",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/config_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/contracts_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/gradual_features_antigravity.py",
@@ -48,6 +49,7 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/replay_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/dashboard_export_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/sources_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/cli_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_gradual_features_antigravity.py",
@@ -60,6 +62,8 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_replay_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_dashboard_export_antigravity.py",
     "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_sources_antigravity.py",
+    "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_cli_antigravity.py",
+    "scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py",
     "scratch/build_codemap_exp462_antigravity.py",
 )
 ALLOWED_EDGE_TYPES_ANTIGRAVITY = {"governs", "tests"}
@@ -163,8 +167,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp462 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp462 Task 4 코드맵</h1><p>Task 4 is complete after independent review C/I/M 0 and maps governance, frozen Task 2 authority/source, Task 3 scoring, qualification/evaluation, seven-leaf publication, source-free replay, dashboard projection, and focused tests. Task 5 remains explicitly unknown and not implemented.</p>'
+        '<title>Exp462 Task 5 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp462 Task 5 코드맵</h1><p>Task 5 maps the closed CLI, fixed-interpreter launcher, private TRAIN evaluate→inspect reproduction, and terminal qualification-failed boundary. Official evaluate/inspect remains 0 and Task 6 is forbidden.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -259,6 +263,11 @@ def build_map_antigravity(
     task5_boundary = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/cli_antigravity.py"
     )
+    task5_cli_test = (
+        "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_cli_antigravity.py"
+    )
+    task5_launcher = "scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py"
+    task5_report = ".superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-5-report-antigravity.html"
     task4_qualification_test = (
         "experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_qualification_antigravity.py"
     )
@@ -286,37 +295,37 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records Task 4 complete / Task 5 next after independent review C/I/M 0, checked Task 1-4 controls, official0/label0, and the unchecked Task 5-6 boundary.",
+            "role": "Caller: Task 1-6 execution. Effect: records Task 5 implementation/private reproduction terminal qualification failure, fresh result review pending with unchecked Task 5 controls, official0/label0, and forbidden Task 6.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 4 complete / Task 5 next")],
+            "evidence": [evidence_antigravity(plan, "Task 5 implementation and exactly two private TRAIN reproductions")],
         },
         {
             "id": "preregistration",
             "path": preregistration,
-            "role": "Caller: governance history. Effect: preserves planned-only governance, target thresholds, official command count 0, label query count 0, and null result hashes.",
+            "role": "Caller: governance history. Effect: preserves the frozen target thresholds, terminal private qualification failure, official command count 0, label query count 0, and null official hashes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(preregistration, "planned-only governance")],
+            "evidence": [evidence_antigravity(preregistration, "승인된 TRAIN-only 과학 계약")],
         },
         {
             "id": "runbook",
             "path": runbook,
-            "role": "Caller: future operators. Effect: blocks official evaluate/inspect, source loading, labels, routing, champion mutation, and pending-candidate mutation during Task 1.",
+            "role": "Caller: future operators. Effect: blocks every official action after the Task 5 qualification failure and records only safe verification commands.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(runbook, "Task 1 governance ready / Task 2 next")],
+            "evidence": [evidence_antigravity(runbook, "Task 5 terminal boundary")],
         },
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 4 handoff. Effect: records frozen authority, Task 3 feature/scoring interfaces, Task 4 qualification/replay/publication interfaces, null official hashes, official0/label0, and independent review C/I/M 0 closeout.",
+            "role": "Caller: Task 5 handoff. Effect: records the closed CLI, exact private TRAIN reproducibility, terminal qualification failure, null official hashes, official0, label0, and forbidden Task 6.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(report, "Task 4 implementation")],
+            "evidence": [evidence_antigravity(report, "Exp462 ECG gradual signature 구현 보고서")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 4 complete / Task 5 next after independent review C/I/M 0, public interfaces, selected CPU backend, official0, label0, and null hashes.",
+            "role": "Caller: always-visible status review. Effect: shows Task 5 implementation/private reproduction complete, terminal qualification failure, official0, label0, null hashes, and forbidden Task 6.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 4 complete / Task 5 next")],
+            "evidence": [evidence_antigravity(dashboard, "Task 5 implementation/private reproduction complete")],
         },
         {
             "id": "research_state",
@@ -344,7 +353,7 @@ def build_map_antigravity(
             "path": governance_test,
             "role": "Caller: Task 1-4 validation. Effect: rejects missing docs, ledger drift, checked Task 5-6 controls, official lifecycle drift, label access, result hashes, and invalid map bytes.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")],
+            "evidence": [evidence_antigravity(governance_test, "test_terminal_task5_governance_antigravity")],
         },
         {
             "id": "map_builder",
@@ -529,26 +538,47 @@ def build_map_antigravity(
             "evidence": [evidence_antigravity(task4_dashboard_test, "test_dashboard_is_aggregate_only_and_exposes_four_type_minima_antigravity")],
         },
         {
-            "id": "task5_cli_unknown",
+            "id": "task5_cli",
             "path": task5_boundary,
-            "role": "Caller: future Task 5 only. Effect: unknown and not implemented in Task 1; expected to implement the closed CLI and private TRAIN reproductions later.",
+            "role": "Caller: fixed-runtime launcher and private Task 5 tests. Effect: exposes exactly evaluate with a reviewed 40-hex commit or bare inspect, keeps phase imports lazy, and confines evaluation to an injected private root.",
+            "tests": [task5_cli_test, governance_test],
+            "evidence": [evidence_antigravity(task5_boundary, "main_antigravity")],
+        },
+        {
+            "id": "task5_cli_tests",
+            "path": task5_cli_test,
+            "role": "Caller: Task 5 implementation review. Effect: covers exact parser closure, source-free inspect, private create-only publication, outside-CWD launcher behavior, and fixed interpreter re-exec.",
+            "tests": [task5_cli_test],
+            "evidence": [evidence_antigravity(task5_cli_test, "test_exact_surface_accepts_only_reviewed_evaluate_or_bare_inspect_antigravity")],
+        },
+        {
+            "id": "task5_launcher",
+            "path": task5_launcher,
+            "role": "Caller: operators outside repository CWD. Effect: pins the approved Python runtime and deterministic thread environment before importing the CLI.",
+            "tests": [task5_cli_test],
+            "evidence": [evidence_antigravity(task5_launcher, "_ensure_fixed_runtime_antigravity")],
+        },
+        {
+            "id": "task5_report",
+            "path": task5_report,
+            "role": "Caller: Task 5 closeout review. Effect: records exact private reproduction equality, frozen qualification failure, official0/label0, and the unchecked review boundary.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(plan, "Task 5 — closed CLI and two private TRAIN reproductions")],
+            "evidence": [evidence_antigravity(task5_report, "현재 상태")],
         },
     ]
 
     edges = [
-        {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "gradual_drift AUC ≥ 0.85")},
+        {"from": "approved_design", "to": "preregistration", "type": "governs", "evidence": evidence_antigravity(preregistration, "승인된 TRAIN-only 과학 계약")},
         {"from": "approved_design", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "0.9216148584075248")},
-        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 4 complete / Task 5 next")},
+        {"from": "implementation_plan", "to": "dashboard", "type": "governs", "evidence": evidence_antigravity(dashboard, "Task 5 implementation/private reproduction complete")},
         {"from": "implementation_plan", "to": "governance_regression", "type": "governs", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
-        {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
+        {"from": "governance_regression", "to": "preregistration", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_terminal_task5_governance_antigravity")},
         {"from": "governance_regression", "to": "runbook", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "implementation_report", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "governance_regression", "to": "dashboard", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
-        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
-        {"from": "governance_regression", "to": "experiment_catalog", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
-        {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")},
+        {"from": "governance_regression", "to": "research_state", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_terminal_task5_governance_antigravity")},
+        {"from": "governance_regression", "to": "experiment_catalog", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_terminal_task5_governance_antigravity")},
+        {"from": "governance_regression", "to": "champion_ledger", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_terminal_task5_governance_antigravity")},
         {"from": "governance_regression", "to": "map_builder", "type": "tests", "evidence": evidence_antigravity(governance_test, "test_task1_dashboard_plan_and_map_antigravity")},
         {"from": "implementation_plan", "to": "task2_config", "type": "governs", "evidence": evidence_antigravity(plan, "Task 2 — frozen Exp461 authority and TRAIN source")},
         {"from": "implementation_plan", "to": "task2_report", "type": "governs", "evidence": evidence_antigravity(task2_report, "Task 2 complete / Task 3 next")},
@@ -583,11 +613,14 @@ def build_map_antigravity(
         {"from": "task4_artifacts_tests", "to": "task4_artifacts", "type": "tests", "evidence": evidence_antigravity(task4_artifacts_test, "test_publish_is_exact_seven_leaf_canonical_create_only_and_self_excluding_antigravity")},
         {"from": "task4_replay_tests", "to": "task4_replay", "type": "tests", "evidence": evidence_antigravity(task4_replay_test, "test_replay_rejects_inventory_noncanonical_and_rehashed_metric_tamper_antigravity")},
         {"from": "task4_dashboard_tests", "to": "task4_dashboard", "type": "tests", "evidence": evidence_antigravity(task4_dashboard_test, "test_dashboard_is_aggregate_only_and_exposes_four_type_minima_antigravity")},
-        {"from": "implementation_plan", "to": "task5_cli_unknown", "type": "governs", "evidence": evidence_antigravity(plan, "Task 5 — closed CLI and two private TRAIN reproductions")},
+        {"from": "implementation_plan", "to": "task5_cli", "type": "governs", "evidence": evidence_antigravity(plan, "Task 5 implementation and exactly two private TRAIN reproductions")},
+        {"from": "task5_cli_tests", "to": "task5_cli", "type": "tests", "evidence": evidence_antigravity(task5_cli_test, "test_exact_surface_accepts_only_reviewed_evaluate_or_bare_inspect_antigravity")},
+        {"from": "task5_launcher", "to": "task5_cli", "type": "governs", "evidence": evidence_antigravity(task5_launcher, "_ensure_fixed_runtime_antigravity")},
+        {"from": "task5_report", "to": "implementation_report", "type": "governs", "evidence": evidence_antigravity(task5_report, "현재 상태")},
     ]
 
     graph = {
-        "schema": "exp462_task4_boundary_codemap_v1",
+        "schema": "exp462_task5_boundary_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -595,7 +628,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp462_task4_boundary_codemap_lock_v1",
+        "schema": "exp462_task5_boundary_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),
