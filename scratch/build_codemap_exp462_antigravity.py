@@ -342,7 +342,7 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: Task 1 validation. Effect: rejects missing docs, ledger drift, checked pending controls, official lifecycle drift, label access, result hashes, and invalid map bytes.",
+            "role": "Caller: Task 1-4 validation. Effect: rejects missing docs, ledger drift, checked Task 5-6 controls, official lifecycle drift, label access, result hashes, and invalid map bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_task1_planned_governance_antigravity")],
         },
