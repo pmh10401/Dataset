@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp461 구현 계획</title>
+  <style>
+    body{margin:0;background:#eef2f8;color:#172033;font:15.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1080px;margin:28px auto;padding:34px;background:#fff;border-radius:18px}h1,h2,h3{line-height:1.25}h2{margin-top:2.2rem;border-bottom:1px solid #d9dfeb;padding-bottom:.45rem}h3{margin-top:1.5rem}code{background:#eef3fb;padding:.08rem .3rem;border-radius:4px}pre{overflow:auto;background:#172033;color:#edf3ff;padding:14px;border-radius:10px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d9dfeb;padding:.6rem;text-align:left;vertical-align:top}th{background:#f5f7fb}.status{padding:1rem;border-left:5px solid #1f5fbf;background:#f5f8ff}.task{border:1px solid #d9dfeb;border-radius:14px;padding:1rem 1.2rem;margin:1.2rem 0}input{margin-right:.45rem}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp461 ECG 주기 특징 성능 검증 구현 계획</h1>
+  <blockquote><strong>작업자 필수 절차:</strong> <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용해 Task를 하나씩 실행한다. 완료된 Task와 Step의 HTML 체크박스는 검증과 검토가 끝난 뒤에만 체크한다.</blockquote>
+  <p><strong>목표:</strong> 기존 Hydra, 주기 특징 단독, 두 점수의 순위 결합을 같은 TRAIN blocked-fold 조건에서 비교하고, 결합 방식이 period-change 실패 2건을 포함해 10/10 합격하는지 판정한다.</p>
+  <p><strong>구조:</strong> Exp460 공식 결과를 입력 권한으로 고정하고, Exp459의 TRAIN·fold·perturbation·Hydra 기준선을 그대로 재사용한다. 새 코드는 120차원 주기 특징과 세 방법 비교에만 집중하며, TEST label과 라우팅 적용은 포함하지 않는다.</p>
+  <p><strong>기술:</strong> Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, unittest, canonical JSON/JSONL, HTML dashboard.</p>
+  <p><strong>설계서:</strong> <a href="../specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html">Exp461 설계서</a> — SHA-256 <code>3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2</code>.</p>
+  <div class="status"><label><input type="checkbox" checked disabled>대화 설계 승인 및 HTML 설계서 커밋 완료</label><br>현재 단계는 구현 전 계획 승인 대기다. 공식 Exp461 결과 폴더와 결과 hash는 아직 없다.</div>
+
+  <h2>전역 고정 조건</h2>
+  <ul>
+    <li>실험 ID <code>Exp461</code>, kind <code>ecg_period_signature_qualification</code>, run identity <code>exp461-ecg-period-signature-qualification-antigravity-20260820</code>.</li>
+    <li>공식 root <code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code>는 Task 6 별도 승인 전까지 없어야 한다.</li>
+    <li>선행 truth commit은 <code>67d39f5c0a75e061e2d107fc9a9f58f52e76c2f1</code>, Exp460 artifact-map SHA는 <code>8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916</code>.</li>
+    <li>데이터는 <code>ECG5000_normal_2</code> TRAIN 1,413×140 float32만 사용한다. TEST label query count는 항상 0이다.</li>
+    <li>seed <code>(20260721, 20261721)</code>, blocked fold 5개, alpha 0.005, kNN 3, Hydra kernels 8/groups 64를 바꾸지 않는다.</li>
+    <li>방법 순서는 <code>hydra_local_gap</code>, <code>period_signature_local_gap</code>, <code>hydra_period_rank_max</code>다. 세 번째 방법만 주 후보다.</li>
+    <li>합격선은 각 유형 AUC 0.85, pooled AUC 0.90, 정상 Wilson 상한 0.05다. 주 후보는 10/10 모두 합격해야 한다.</li>
+    <li>새 파일명은 모두 <code>antigravity</code>를 포함한다. 새 <code>__init__.py</code>는 만들지 않는다.</li>
+    <li>고정 interpreter는 <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>이다.</li>
+    <li>각 코드 Task 시작 전 Exp461 code map에서 caller/effect/tests를 확인하고, 경계가 바뀌면 HTML/JSON/lock을 같은 커밋에 갱신한다.</li>
+    <li>새 점수 소스는 CPU–MLX 동일 입력 smoke를 한다. 후보 순서 exact, 수치 허용 범위, 1.1배 속도 조건 중 하나라도 실패하면 CPU를 사용한다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <tr><th>영역</th><th>파일과 책임</th></tr>
+    <tr><td>고정 입력</td><td><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code></td></tr>
+    <tr><td>새 점수</td><td><code>period_features_antigravity.py</code>는 120차원 특징, <code>scoring_antigravity.py</code>는 세 방법의 fold 점수만 담당</td></tr>
+    <tr><td>판정</td><td><code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code></td></tr>
+    <tr><td>결과</td><td><code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td></tr>
+    <tr><td>실행</td><td><code>cli_antigravity.py</code>, <code>scratch/run_exp461_ecg_period_signature_qualification_antigravity.py</code></td></tr>
+    <tr><td>문서</td><td>4개 Exp461 HTML 문서, 3개 ledger, Exp461 code map triplet</td></tr>
+  </table>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 1 — 문서, 진행 대시보드, 코드맵</label></h2>
+    <h3>소유 파일</h3>
+    <p>Create: <code>docs/EXP461_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP461_RUNBOOK_antigravity.html</code>, <code>docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP461_DASHBOARD_antigravity.html</code>, <code>scratch/build_codemap_exp461_antigravity.py</code>, <code>docs/codemap/codemap_exp461_antigravity.{html,json,lock}</code>, <code>experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_governance_antigravity.py</code>. Modify: <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>, 이 계획서.</p>
+    <h3>인터페이스</h3>
+    <p>Produces: Exp461 planned/non-promoted truth, label count 0, 공식 명령 0회, Task 2가 읽을 설계·문서 SHA, 최대 25-node code map.</p>
+    <ol>
+      <li><label><input type="checkbox" disabled>Step 1 — governance RED 테스트에 HTML 4개, Exp461 ledger 레코드, 대시보드 상태 <code>Task 1/6</code>, 결과 hash null, Task 1 체크박스를 명시한다.</label>
+        <pre><code>def test_task1_governance_antigravity(self):
+    self.assertEqual(state["status"], "planned_implementation_not_started")
+    self.assertEqual(state["label_query_count"], 0)
+    self.assertIsNone(state["artifact_map_sha256"])
+    self.assertIn("Task 1/6", dashboard_html)</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 2 — 고정 Python으로 테스트를 실행해 누락 문서·레코드 실패를 확인한다.</label>
+        <pre><code>"$PY" -m unittest experiments.exp461_ecg_period_signature_qualification_antigravity.tests.test_governance_antigravity</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 3 — 쉬운 한국어 HTML 4개, planned ledger, code map builder/triplet을 작성한다. Dashboard에는 목표, 현재 Task, 기존 실패 2건, 공식 실행 0회를 표시한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 4 — governance를 두 번 실행하고 strict JSON, HTML parse, map validate, <code>git diff --check</code>를 통과시킨다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 5 — fresh read-only review에서 Critical/Important 0을 확인하고 Task 1 heading/steps를 체크한 뒤 governance+map commit을 만든다.</label></li>
+    </ol>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 2 — 고정 입력, 자료형, TRAIN source</label></h2>
+    <h3>소유 파일</h3>
+    <p>Create: <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code>와 대응 test 4개. Modify: map triplet/builder, dashboard/report, 계획 체크박스.</p>
+    <h3>인터페이스</h3>
+    <p>Produces: <code>capture_exp460_period_authority_antigravity() -&gt; Exp460PeriodAuthorityAntigravity</code>, <code>load_normal2_train_antigravity() -&gt; numpy.ndarray</code>, <code>FROZEN_CONFIG_ANTIGRAVITY</code>. Consumes: Exp460 six-leaf official root와 기존 Exp459 TRAIN loader 계약.</p>
+    <ol>
+      <li><label><input type="checkbox" disabled>Step 1 — config 정확값, Exp460 hash/result, 1,413×140 read-only float32, seed/fold/threshold, TEST label 0을 요구하는 RED 테스트를 작성한다.</label>
+        <pre><code>self.assertEqual(authority.strict_route, "baseline")
+self.assertEqual(authority.worst_period_change_auc, 0.8004124541019063)
+self.assertEqual(train.shape, (1413, 140))
+self.assertFalse(train.flags.writeable)</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 2 — focused test를 실행해 4개 모듈 부재 RED를 확인한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 3 — immutable dataclass와 exact-type 검증, Exp460 replay capture, TRAIN-only loader를 최소 구현한다. TEST table/label SQL은 두지 않는다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 4 — synthetic focused suite 두 번, Exp460 32-test regression 한 번, 설계 SHA와 root 부재를 검증한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 5 — map·dashboard·체크박스를 갱신하고 fresh review 후 Task 2 commit을 만든다.</label></li>
+    </ol>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 3 — 120차원 주기 특징과 세 점수</label></h2>
+    <h3>소유 파일</h3>
+    <p>Create: <code>period_features_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>tests/test_period_features_antigravity.py</code>, <code>tests/test_scoring_antigravity.py</code>. Modify: map/dashboard/report/plan.</p>
+    <h3>인터페이스</h3>
+    <p>Produces: <code>period_signature_antigravity(values: ndarray) -&gt; ndarray[float64]</code> shape 120; <code>anomaly_rank_antigravity(reference_scores, scores) -&gt; ndarray</code>; <code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index) -&gt; FoldMethodScoresAntigravity</code>.</p>
+    <ol>
+      <li><label><input type="checkbox" disabled>Step 1 — shape 120, exact three-view order, phase/period sensitivity, amplitude normalization, MAD-zero rejection, input immutability, rank formula, method order를 검증하는 RED 테스트를 작성한다.</label>
+        <pre><code>signature = period_signature_antigravity(row)
+self.assertEqual(signature.shape, (120,))
+self.assertTrue(numpy.isfinite(signature).all())
+self.assertEqual(tuple(scores.methods), FROZEN_CONFIG_ANTIGRAVITY.methods)
+self.assertEqual(fused, numpy.maximum(hydra_rank, period_rank))</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 2 — focused test가 모듈 부재로 실패하는지 확인한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 3 — median/MAD, Hann+rFFT power 16 bands, lag 1..24 자기상관을 전체/앞/뒤 순서로 구현한다. 각 branch score는 기존 LocalGap 계약을 재사용한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 4 — CPU–MLX smoke를 같은 row/seed로 실행한다. exact 후보 순서와 1.1배 속도 조건을 기록하고 미달이면 CPU를 고정한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 5 — focused suite 두 번, Task 2 regression, finite/determinism 검증을 통과시킨다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 6 — map·dashboard·체크박스를 갱신하고 fresh review 후 Task 3 commit을 만든다.</label></li>
+    </ol>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 4 — blocked 성능 판정, 7개 결과 파일, replay</label></h2>
+    <h3>소유 파일</h3>
+    <p>Create: <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code>와 대응 test 5개. Modify: map/dashboard/report/plan.</p>
+    <h3>인터페이스</h3>
+    <p>Produces: <code>qualify_methods_antigravity() -&gt; MethodQualificationAntigravity</code>, <code>evaluate_qualification_antigravity(...) -&gt; QualificationDecisionAntigravity</code>, <code>publish_result_antigravity(root, authority, qualification, decision)</code>, <code>inspect_replay_at_antigravity(root)</code>, <code>export_dashboard_antigravity(...)</code>.</p>
+    <ol>
+      <li><label><input type="checkbox" disabled>Step 1 — 3 methods × 10 fold × 4 AUC, exact method/fold/type order, primary 10/10 gate, 두 과거 실패값 대비 개선, 7-leaf inventory를 요구하는 RED 테스트를 쓴다.</label>
+        <pre><code>self.assertEqual(tuple(summary), ("hydra_local_gap", "period_signature_local_gap", "hydra_period_rank_max"))
+self.assertEqual(len(rows), 30)
+self.assertEqual(decision.eligible_for_routing_research, all(primary_row.passed for primary_row in primary_rows))</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 2 — RED 후 blocked 10-record qualification과 frozen success criterion을 최소 구현한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 3 — canonical JSON/JSONL 7개 파일과 self-excluding artifact map을 create-only root에 저장한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 4 — source-free replay가 특징 정의, rank 결합, AUC, 합격 판정, dashboard를 재계산하게 한다. 재해시한 method/fold/AUC/decision/dashboard tamper를 거부하는 테스트를 추가한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 5 — focused suite 두 번, Task 2–3 regression, 임시 root publish→inspect exact equality를 통과시킨다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 6 — map·dashboard·체크박스를 갱신하고 fresh review 후 Task 4 commit을 만든다.</label></li>
+    </ol>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 5 — CLI, 비공식 TRAIN 재현, 공식 후보 검토</label></h2>
+    <h3>소유 파일</h3>
+    <p>Create: <code>cli_antigravity.py</code>, <code>tests/test_cli_antigravity.py</code>, <code>scratch/run_exp461_ecg_period_signature_qualification_antigravity.py</code>. Modify: HTML docs, ledgers, map, plan.</p>
+    <h3>인터페이스</h3>
+    <p>CLI는 정확히 <code>evaluate --reviewed-commit LOWER40HEX</code>와 bare <code>inspect</code>만 허용한다. Task 5에서는 dependency-injected 임시 root만 사용한다.</p>
+    <ol>
+      <li><label><input type="checkbox" disabled>Step 1 — 누락 CLI RED, exact parser, lazy import, outside-CWD launcher, TEST-label import 차단 테스트를 작성한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 2 — 최소 CLI/launcher를 구현하고 focused test를 두 번 통과시킨다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 3 — 실제 TRAIN 비공식 evaluate→inspect를 임시 root에서 순차 두 번 실행해 30 fold rows, decision, 7개 hash가 exact-equal인지 확인하고 임시 root를 제거한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 4 — Exp461 full discovery 두 번, Exp460 32-test regression, fixed-runtime/MLX decision/root absence/label0/map/html/diff를 검증한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 5 — 결과가 합격이면 <code>implementation_verified_awaiting_official_evaluation</code>, 실패면 <code>stopped_before_official_evaluation_qualification_failed</code>로 HTML/ledger를 기록한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 6 — fresh final review Critical/Important 0을 받은 뒤 Task 5 commit을 만든다. 실패 결과면 Task 6을 실행하지 않는다.</label></li>
+    </ol>
+  </section>
+
+  <section class="task">
+    <h2><label><input type="checkbox" disabled>Task 6 — 별도 승인 후 공식 결과 보존</label></h2>
+    <h3>실행 전제</h3>
+    <p>Task 5 주 후보가 10/10 합격하고, exact clean reviewed commit에 대해 사용자가 별도로 승인했을 때만 실행한다.</p>
+    <ol>
+      <li><label><input type="checkbox" disabled>Step 1 — 공식 root 부재, reviewed commit, 고정 interpreter, label0, 활성 Exp461 process 0을 확인한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 2 — 아래 evaluate를 정확히 한 번 실행한다.</label>
+        <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+"$PY" scratch/run_exp461_ecg_period_signature_qualification_antigravity.py evaluate --reviewed-commit REVIEWED_COMMIT</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 3 — evaluate exit 0과 exact 7-leaf complete root일 때만 bare inspect를 정확히 한 번 실행한다.</label>
+        <pre><code>"$PY" scratch/run_exp461_ecg_period_signature_qualification_antigravity.py inspect</code></pre></li>
+      <li><label><input type="checkbox" disabled>Step 4 — stdout/inspect/dashboard equality, 30 rows, 10 primary gates, 7 hashes, label0를 독립 검증한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 5 — 공식 truth를 HTML/ledger/map에 커밋하고 fresh read-only result review Critical/Important 0을 확인한다.</label></li>
+      <li><label><input type="checkbox" disabled>Step 6 — 검토가 끝나면 Task 6과 모든 Step 체크박스를 완료 처리한다.</label></li>
+    </ol>
+  </section>
+
+  <h2>완료 판단</h2>
+  <p>Exp461의 성공은 “새 방법이 평균적으로 좋아 보인다”가 아니다. 주 후보가 같은 TRAIN blocked 검증 10건에서 모두 합격하고, 특히 기존의 period-change 실패 2건을 모두 0.85 이상으로 올려야 한다. 실패하면 라우팅이나 TEST 평가로 넘어가지 않는다.</p>
+</main>
+</body>
+</html>
