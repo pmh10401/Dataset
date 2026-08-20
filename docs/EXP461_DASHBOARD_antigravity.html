@@ -1,72 +1,66 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}.ok{border-left:6px solid #16794b}</style></head>
 <body><main>
   <h1>Exp461 ECG 주기 특징 검증 대시보드</h1>
   <table>
-    <tr><th>progress</th><td>Task 4/6</td></tr>
-    <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
-    <tr><th>goal</th><td>Exp460에서 실패한 두 <code>period_change</code> fold를 포함해 주기 특징과 결합 방법의 qualification 실험 경계를 고정한다.</td></tr>
-    <tr><th>current stage</th><td>Task4 complete / Task5 next</td></tr>
-    <tr><th>공식 실행 0회</th><td>official evaluate 0 / official inspect 0</td></tr>
+    <tr><th>progress</th><td>Task 5/6 candidate, Task 5 controls unchecked pending fresh review</td></tr>
+    <tr><th>status</th><td><code>stopped_before_official_evaluation_qualification_failed</code></td></tr>
+    <tr><th>current stage</th><td>Task5 private TRAIN reproducibility complete / Task6 forbidden</td></tr>
+    <tr><th>official execution</th><td>official evaluate 0 / official inspect 0</td></tr>
     <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
-    <tr><th>artifact map SHA-256</th><td><code>null</code></td></tr>
-    <tr><th>result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
-    <tr><th>planned methods</th><td><code>hydra_local_gap</code>, <code>period_signature_local_gap</code>, <code>hydra_period_rank_max</code></td></tr>
+    <tr><th>official artifact map SHA-256</th><td><code>null</code></td></tr>
+    <tr><th>official result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
   </table>
-  <div class="box">
-    <p><strong>왜 Exp461이 필요한가:</strong> Exp460 strict fallback은 TRAIN-only 경계는 지켰지만 period_change 2건이 기준을 넘지 못했다.</p>
-    <p><strong>prior failure 1:</strong> seed <code>20260721</code> fold <code>3</code> period_change AUC <code>0.8208339620743423</code></p>
-    <p><strong>prior failure 2:</strong> seed <code>20261721</code> fold <code>4</code> period_change AUC <code>0.8004124541019063</code></p>
-    <p><strong>current truth:</strong> Task4 is complete: the code can judge the three methods, write a temporary seven-file result, and replay it without trusting stored metrics. 공식 qualification 결과나 공식 결과는 생성하지 않았다. Task5 CLI and real TRAIN reproducibility are next and have not started.</p>
+  <div class="box bad">
+    <p><strong>쉬운 요약:</strong> 두 번의 비공식 TRAIN 재현은 바이트 수준으로 같았다. 하지만 주 후보 <code>hydra_period_rank_max</code>가 10개 fold 중 9개만 통과했다. Exp461 합격 조건은 10/10이므로 공식 평가로 가지 않는다.</p>
+    <p><strong>실패 원인:</strong> 주 후보의 최소 <code>gradual_drift</code> AUC가 <code>0.8402306222021025</code>로 고정 기준 <code>0.85</code>보다 낮다. 두 과거 <code>period_change</code> 실패 fold는 모두 개선됐지만 충분하지 않다.</p>
   </div>
-  <h2>Frozen comparison boundary</h2>
+  <h2>Private TRAIN reproducibility</h2>
   <table>
-    <thead><tr><th>method</th><th>role</th><th>official result</th></tr></thead>
+    <tr><th>reviewed commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code></td></tr>
+    <tr><th>run 1 timing</th><td>evaluate <code>116.7199521670118</code>s, inspect <code>0.19575291709043086</code>s</td></tr>
+    <tr><th>run 2 timing</th><td>evaluate <code>113.66284816595726</code>s, inspect <code>0.1888656672090292</code>s</td></tr>
+    <tr><th>exact equality</th><td>30 metric rows, three summaries, decision, dashboard, failed rows, seven leaf hashes, artifact map hash, and combined leaf bytes all equal</td></tr>
+    <tr><th>temporary roots</th><td>two explicit nonofficial roots were removed after evidence capture</td></tr>
+  </table>
+  <h2>Method result table</h2>
+  <table>
+    <thead><tr><th>method</th><th>passed folds</th><th>min period_change AUC</th><th>min pooled AUC</th><th>max Wilson upper</th><th>finite</th><th>status</th></tr></thead>
     <tbody>
-      <tr><td><code>hydra_local_gap</code></td><td>Exp460 기준선 재비교</td><td>아직 없음</td></tr>
-      <tr><td><code>period_signature_local_gap</code></td><td>주기 특징 단독 진단</td><td>아직 없음</td></tr>
-      <tr><td><code>hydra_period_rank_max</code></td><td>주 후보 결합 방법</td><td>아직 없음</td></tr>
+      <tr><td><code>hydra_local_gap</code></td><td>8/10</td><td><code>0.8004124541019063</code></td><td><code>0.9160442130677531</code></td><td><code>0.013439124039399194</code></td><td>true</td><td>failed</td></tr>
+      <tr><td><code>period_signature_local_gap</code></td><td>0/10</td><td><code>0.857158910711833</code></td><td><code>0.700277191624318</code></td><td><code>0.013439124039399194</code></td><td>true</td><td>failed</td></tr>
+      <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td><code>0.907392736783864</code></td><td><code>0.9212266108344651</code></td><td><code>0.013439124039399194</code></td><td>true</td><td>failed</td></tr>
     </tbody>
   </table>
-  <h2>Task 2 frozen surfaces</h2>
+  <h2>Primary gate extrema</h2>
   <table>
-    <thead><tr><th>surface</th><th>current contract</th></tr></thead>
+    <tr><th>level_shift min AUC</th><td><code>0.9411749911976258</code></td></tr>
+    <tr><th>gradual_drift min AUC</th><td><code>0.8402306222021025</code> fail, below <code>0.85</code></td></tr>
+    <tr><th>amplitude_scaling min AUC</th><td><code>0.9722347970424023</code></td></tr>
+    <tr><th>period_change min AUC</th><td><code>0.907392736783864</code></td></tr>
+    <tr><th>primary pooled min AUC</th><td><code>0.9212266108344651</code></td></tr>
+    <tr><th>primary max normal Wilson upper</th><td><code>0.013439124039399194</code></td></tr>
+  </table>
+  <h2>Historical period_change repairs</h2>
+  <table>
+    <thead><tr><th>seed</th><th>fold</th><th>previous AUC</th><th>candidate AUC</th><th>strictly improved</th></tr></thead>
     <tbody>
-      <tr><td><code>capture_exp460_period_authority_antigravity()</code></td><td>strict baseline fallback, 8/10 pass count, two failed folds, label query count 0, exact Exp460 dashboard/decision/artifact hashes</td></tr>
-      <tr><td><code>load_normal2_train_antigravity()</code></td><td>owned, C-contiguous, read-only <code>float32</code> TRAIN matrix shape <code>1413×140</code>, equal to Exp459 replay</td></tr>
+      <tr><td><code>20260721</code></td><td><code>3</code></td><td><code>0.8208339620743423</code></td><td><code>0.907392736783864</code></td><td>true</td></tr>
+      <tr><td><code>20261721</code></td><td><code>4</code></td><td><code>0.8004124541019063</code></td><td><code>0.9216148584075248</code></td><td>true</td></tr>
     </tbody>
   </table>
-  <h2>Task 3 scoring surfaces</h2>
+  <h2>Private artifact hashes</h2>
   <table>
-    <thead><tr><th>surface</th><th>current contract</th></tr></thead>
-    <tbody>
-      <tr><td><code>period_signature_antigravity(values)</code></td><td>finite floating row length <code>140</code> to owned read-only C-contiguous <code>float64</code> signature shape <code>120</code>; view order full/front/back; each view has 16 Hann-rFFT positive-power bands and autocorrelation lags 1..24</td></tr>
-      <tr><td><code>anomaly_rank_antigravity(reference_scores, scores)</code></td><td><code>(1 + count(r_i &lt;= s)) / (n + 1)</code>, exact tie inclusion, finite immutable <code>float64</code> output</td></tr>
-      <tr><td><code>score_fold_methods_antigravity(...)</code></td><td>method order <code>hydra_local_gap</code>, <code>period_signature_local_gap</code>, <code>hydra_period_rank_max</code>; Hydra delegates to Exp459; period branch uses LocalGap over the 120D signature; hybrid is max of branch anomaly ranks</td></tr>
-    </tbody>
+    <tr><th>context</th><td><code>8d84c32bab344b8c69c7c147fe5d3d835d65523aac25692eb13159a15a7c091e</code></td></tr>
+    <tr><th>method rows</th><td><code>b2611d95eeb90debd1adc001f560898422c85e3cfea32861725aa91526e75e60</code></td></tr>
+    <tr><th>failed rows</th><td><code>4d896b265542e72fe5a0b9b7db8089ba2b2e5946e64f55caaa794bb9929e88b7</code></td></tr>
+    <tr><th>summary</th><td><code>7500d2599060b257a171856fb68bed39a0ec0f4ddb26ca6084e606c911251e25</code></td></tr>
+    <tr><th>decision</th><td><code>27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315</code></td></tr>
+    <tr><th>dashboard snapshot</th><td><code>e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc</code></td></tr>
+    <tr><th>artifact map</th><td><code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code></td></tr>
   </table>
-  <h2>Task 4 qualification surfaces</h2>
-  <table>
-    <thead><tr><th>surface</th><th>current contract</th></tr></thead>
-    <tbody>
-      <tr><td><code>qualify_methods_antigravity()</code></td><td>세 방법 × 두 seed × 다섯 blocked fold = <code>30</code> method-fold rows를 고정 순서로 계산한다. 각 row는 fold score evidence, 네 AUC, pooled AUC, normal Wilson upper, finite flag, pass/fail reasons를 가진다.</td></tr>
-      <tr><td><code>evaluate_qualification_antigravity(...)</code></td><td>주 후보 <code>hydra_period_rank_max</code>가 10/10 pass이고 두 과거 실패 fold의 period-change AUC가 기존 값보다 strictly greater일 때만 Task5 재현 검토 대상으로 판정한다. 라우팅은 적용하지 않는다.</td></tr>
-      <tr><td><code>publish_result_antigravity(...)</code></td><td>임시 root에만 seven-leaf canonical JSON/JSONL artifact를 create-only로 쓴다. <code>artifact_sha256_antigravity.json</code>은 다른 여섯 leaf hash만 담는다.</td></tr>
-      <tr><td><code>inspect_replay_at_antigravity(root)</code></td><td>source-free replay가 stored metric truth를 믿지 않고 score evidence에서 normal alerts/Wilson, four AUCs, pooled AUC, pass/fail reasons, summaries, decision, dashboard, artifact hashes를 재계산하고 tamper를 거부한다.</td></tr>
-      <tr><td><code>export_dashboard_antigravity(...)</code></td><td>aggregate method/fold qualification만 노출하며 raw series, fold indices, TEST labels, local paths, secrets는 노출하지 않는다.</td></tr>
-    </tbody>
-  </table>
-  <h2>MLX smoke</h2>
-  <table>
-    <tbody>
-      <tr><th>selected backend</th><td><code>cpu_numpy</code> / CPU NumPy retained</td></tr>
-      <tr><th>versions</th><td>Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, MLX <code>unavailable</code>, mlx-metal <code>unavailable</code></td></tr>
-      <tr><th>device</th><td><code>unavailable</code></td></tr>
-      <tr><th>smoke input</th><td>synthetic seed <code>20260820</code>, shape <code>16×140</code></td></tr>
-      <tr><th>timing</th><td>CPU <code>0.005286333849653602</code> seconds; MLX not timed because import failed</td></tr>
-      <tr><th>parity/order</th><td>CPU finite <code>true</code>, CPU candidate order <code>[0,1,2,3,4,5,6,7]</code>; MLX parity/order unavailable</td></tr>
-      <tr><th>fallback</th><td><code>mlx_unavailable:ModuleNotFoundError:No module named 'mlx'</code></td></tr>
-    </tbody>
-  </table>
+  <div class="box ok">
+    <p><strong>MLX smoke:</strong> Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, synthetic seed <code>20260820</code>, CPU timing <code>0.005286333849653602</code> seconds. MLX and mlx-metal were unavailable with <code>ModuleNotFoundError:No module named 'mlx'</code>, so the canonical path remains <code>CPU NumPy</code> / <code>cpu_numpy</code>.</p>
+  </div>
 </main></body></html>

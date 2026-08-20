@@ -157,10 +157,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
             with self.subTest(record=record["experiment"]):
                 self.assertEqual(record["experiment"], "Exp461")
                 self.assertEqual(record["kind"], "ecg_period_signature_qualification")
-                self.assertEqual(record["status"], "planned_implementation_not_started")
+                self.assertEqual(
+                    record["status"],
+                    "stopped_before_official_evaluation_qualification_failed",
+                )
                 self.assertEqual(
                     record["implementation_status"],
-                    "task_1_governance_complete_pending_external_review",
+                    "task_5_private_train_reproducibility_complete_qualification_failed",
                 )
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
@@ -239,6 +242,34 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertFalse(record["scientific_winner_selected"])
                 self.assertFalse(record["review_only"])
                 self.assertFalse(record["official_root_present"])
+                private = record["task5_private_train_result"]
+                self.assertEqual(
+                    private["reviewed_commit"],
+                    "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+                )
+                self.assertEqual(private["primary_passed_count"], 9)
+                self.assertEqual(private["primary_required_count"], 10)
+                self.assertEqual(
+                    private["decision"]["status"],
+                    "qualification_failed_blocked_before_routing_research",
+                )
+                self.assertFalse(private["decision"]["eligible_for_routing_research"])
+                self.assertEqual(private["decision"]["label_query_count"], 0)
+                self.assertTrue(private["temporary_roots_removed"])
+                self.assertFalse(private["official_root_exists_after"])
+                self.assertTrue(all(private["exact_equality"].values()))
+                self.assertEqual(
+                    private["artifact_map_sha256"],
+                    "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
+                )
+                self.assertEqual(
+                    private["method_pass_counts"]["hydra_period_rank_max"]["passed_count"],
+                    9,
+                )
+                self.assertEqual(
+                    private["primary_min_per_type_auc"]["gradual_drift"],
+                    0.8402306222021025,
+                )
 
         self.assertEqual(state["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
         self.assertEqual(champion["pending_candidate"], PENDING_CANDIDATE_ANTIGRAVITY)
@@ -280,29 +311,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 4 qualification report",
-            "SHA-256",
-            DESIGN_SHA256_ANTIGRAVITY,
-            PREREGISTRATION_SHA256_ANTIGRAVITY,
-            RUNBOOK_SHA256_ANTIGRAVITY,
-            "Task4 complete / Task5 next",
-            "docs/EXP461_PREREGISTRATION_antigravity.html",
-            "docs/EXP461_RUNBOOK_antigravity.html",
-            "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
-            "Task 2 handoff",
-            "Task 2 scope truth",
-            "Task 3 scope truth",
-            "period_features_antigravity.py",
-            "scoring_antigravity.py",
-            "qualification_antigravity.py",
-            "evaluation_antigravity.py",
-            "artifacts_antigravity.py",
-            "replay_antigravity.py",
-            "dashboard_export_antigravity.py",
-            "MLX smoke",
-            "cpu_selected",
-            "config_antigravity.py",
-            "sources_antigravity.py",
+            "Task 5 CLI and private TRAIN reproducibility report",
+            "stopped_before_official_evaluation_qualification_failed",
+            "task_5_private_train_reproducibility_complete_qualification_failed",
+            "hydra_period_rank_max",
+            "9/10",
+            "0.8402306222021025",
+            "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+            "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
+            "cli_antigravity.py",
+            "tests/test_cli_antigravity.py",
+            "scratch/run_exp461_ecg_period_signature_qualification_antigravity.py",
         ):
             self.assertIn(phrase, report)
         for phrase in (
@@ -317,12 +336,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 4/6",
-            "planned_implementation_not_started",
-            "Task4 complete / Task5 next",
-            "공식 실행 0회",
+            "Task 5/6 candidate",
+            "stopped_before_official_evaluation_qualification_failed",
+            "Task5 private TRAIN reproducibility complete / Task6 forbidden",
+            "official evaluate 0 / official inspect 0",
             "label query count",
-            "artifact map SHA-256",
+            "official artifact map SHA-256",
             "null",
             "period_change",
             "20260721",
@@ -332,16 +351,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "hydra_local_gap",
             "period_signature_local_gap",
             "hydra_period_rank_max",
-            "capture_exp460_period_authority_antigravity",
-            "load_normal2_train_antigravity",
-            "period_signature_antigravity",
-            "anomaly_rank_antigravity",
-            "score_fold_methods_antigravity",
-            "qualify_methods_antigravity",
-            "evaluate_qualification_antigravity",
-            "publish_result_antigravity",
-            "inspect_replay_at_antigravity",
-            "export_dashboard_antigravity",
+            "9/10",
+            "0.8402306222021025",
+            "0.907392736783864",
+            "0.9216148584075248",
+            "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
             "CPU NumPy",
         ):
             self.assertIn(phrase, dashboard)
@@ -416,8 +430,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict) and isinstance(lock, dict)
         self.assertLessEqual(len(graph["nodes"]), 40)
-        self.assertEqual(graph["schema"], "exp461_task4_qualification_codemap_v1")
-        self.assertEqual(lock["schema"], "exp461_task4_qualification_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp461_task5_cli_codemap_v1")
+        self.assertEqual(lock["schema"], "exp461_task5_cli_codemap_lock_v1")
         node_ids = {node["id"] for node in graph["nodes"]}
         for node_id in (
             "approved_design",
@@ -453,6 +467,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task4_artifacts_tests",
             "task4_replay_tests",
             "task4_dashboard_export_tests",
+            "task5_cli",
+            "task5_launcher",
+            "task5_cli_tests",
         ):
             self.assertIn(node_id, node_ids)
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))

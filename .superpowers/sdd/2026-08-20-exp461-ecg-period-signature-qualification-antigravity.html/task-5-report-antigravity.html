@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 Task 5 Report</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.bad{border-left:6px solid #b42318;background:#fff7f5;padding:1rem}.ok{border-left:6px solid #16794b;background:#f5fff9;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp461 Task 5 — CLI, private TRAIN reproducibility, candidate decision</h1>
+  <p><strong>Status:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. Task 5 candidate implementation is ready for fresh result-focused review, but Task 5 plan checkboxes remain unchecked until that review. Task 6 is forbidden by result.</p>
+  <h2>RED/GREEN</h2>
+  <table>
+    <tr><th>RED</th><td><code>python -m unittest experiments.exp461_ecg_period_signature_qualification_antigravity.tests.test_cli_antigravity</code> ran 7 tests and failed with missing <code>cli_antigravity.py</code> and missing launcher errors.</td></tr>
+    <tr><th>GREEN 1</th><td>same focused CLI suite: 7/7 passed in 3.585s.</td></tr>
+    <tr><th>GREEN 2</th><td>same focused CLI suite: 7/7 passed in 2.573s.</td></tr>
+    <tr><th>Affected regression</th><td>Task 4 qualification/artifact/replay/dashboard suite: 8/8 passed in 4.213s after the lazy import adjustment.</td></tr>
+  </table>
+  <h2>Private scientific campaign</h2>
+  <div class="ok">
+    <p>Exactly two sequential real TRAIN-only private evaluate→inspect cycles were run at clean reviewed code commit <code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code>. They used two explicit temporary nonofficial roots and no official root. The two roots were removed after evidence capture.</p>
+  </div>
+  <table>
+    <tr><th>run 1</th><td>evaluate <code>116.7199521670118</code>s; inspect <code>0.19575291709043086</code>s</td></tr>
+    <tr><th>run 2</th><td>evaluate <code>113.66284816595726</code>s; inspect <code>0.1888656672090292</code>s</td></tr>
+    <tr><th>exact equality</th><td>all 30 metric/evidence rows, three summaries, decision, dashboard, failed rows, all seven leaf hashes, artifact-map hash, and combined leaf bytes matched exactly.</td></tr>
+    <tr><th>private artifact map</th><td><code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code></td></tr>
+  </table>
+  <h2>Scientific result</h2>
+  <table>
+    <thead><tr><th>method</th><th>passed</th><th>min period_change</th><th>min pooled</th><th>max Wilson</th><th>finite</th></tr></thead>
+    <tbody>
+      <tr><td><code>hydra_local_gap</code></td><td>8/10</td><td><code>0.8004124541019063</code></td><td><code>0.9160442130677531</code></td><td><code>0.013439124039399194</code></td><td>true</td></tr>
+      <tr><td><code>period_signature_local_gap</code></td><td>0/10</td><td><code>0.857158910711833</code></td><td><code>0.700277191624318</code></td><td><code>0.013439124039399194</code></td><td>true</td></tr>
+      <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td><code>0.907392736783864</code></td><td><code>0.9212266108344651</code></td><td><code>0.013439124039399194</code></td><td>true</td></tr>
+    </tbody>
+  </table>
+  <div class="bad">
+    <p><strong>Primary failure:</strong> <code>hydra_period_rank_max</code> did not satisfy 10/10. Its minimum per-type AUCs were level_shift <code>0.9411749911976258</code>, gradual_drift <code>0.8402306222021025</code>, amplitude_scaling <code>0.9722347970424023</code>, and period_change <code>0.907392736783864</code>. The gradual_drift minimum is below the preregistered <code>0.85</code> gate.</p>
+  </div>
+  <h2>Historical fold improvements</h2>
+  <table>
+    <tr><th>seed/fold</th><th>previous period_change AUC</th><th>candidate period_change AUC</th><th>strictly improved</th></tr>
+    <tr><td><code>20260721</code> / <code>3</code></td><td><code>0.8208339620743423</code></td><td><code>0.907392736783864</code></td><td>true</td></tr>
+    <tr><td><code>20261721</code> / <code>4</code></td><td><code>0.8004124541019063</code></td><td><code>0.9216148584075248</code></td><td>true</td></tr>
+  </table>
+  <h2>Root, label, and clean state</h2>
+  <table>
+    <tr><th>official root</th><td>absent before and after Task 5 campaign</td></tr>
+    <tr><th>official commands</th><td>evaluate <code>0</code>, inspect <code>0</code></td></tr>
+    <tr><th>label query count</th><td><code>0</code>; no TEST confusion/FN/FP/F1 was computed</td></tr>
+    <tr><th>private roots</th><td>both removed after evidence capture</td></tr>
+    <tr><th>review status</th><td>fresh result-focused review still pending; Task 5 boxes intentionally unchecked</td></tr>
+  </table>
+  <h2>Concern</h2>
+  <p>Task 5 used a clean code commit before writing this result report. The final Task 5 commit amends in documentation, ledger, governance, and map updates after the private campaign. The scientific code path and private artifact hashes above came from the clean reviewed code commit shown in this report.</p>
+</main></body></html>

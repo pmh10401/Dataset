@@ -2303,8 +2303,8 @@
       "id": "Exp461",
       "experiment": "Exp461",
       "kind": "ecg_period_signature_qualification",
-      "status": "planned_implementation_not_started",
-      "implementation_status": "task_1_governance_complete_pending_external_review",
+      "status": "stopped_before_official_evaluation_qualification_failed",
+      "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
       "documents": {
         "preregistration": "docs/EXP461_PREREGISTRATION_antigravity.html",
         "runbook": "docs/EXP461_RUNBOOK_antigravity.html",
@@ -2374,7 +2374,122 @@
       "scientific_winner_selected": false,
       "review_only": false,
       "official_root_present": false,
-      "notes": "Task 1 added governance docs, a visible dashboard, planned ledger truth, and a bounded code map for Exp461. Official evaluate and inspect counts remain 0, the official root is absent, label query count is 0, and champion, pending candidate, routing, and promotion remain unchanged."
+      "notes": "Task 5 private TRAIN campaign ran exactly two sequential evaluate-to-inspect cycles in temporary non-official roots at clean reviewed commit 3a306ff3e276dae13b28b9733db30e9934da7eb2. The two runs were exact-equal for all 30 metric rows, three summaries, decision, dashboard, failed rows, and seven leaf hashes. The primary hydra_period_rank_max candidate passed 9/10, not the frozen 10/10 requirement, because one primary row failed a preregistered gate; minimum gradual_drift AUC was 0.8402306222021025 below 0.85. Both historical period_change failures strictly improved, but qualification still failed. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, and Task 6 is forbidden unless a new experiment is designed. Champion, pending candidate, routing, and promotion are unchanged.",
+      "task5_private_train_result": {
+        "reviewed_commit": "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+        "runs": [
+          {
+            "run": 1,
+            "evaluate_elapsed_seconds": 116.7199521670118,
+            "inspect_elapsed_seconds": 0.19575291709043086
+          },
+          {
+            "run": 2,
+            "evaluate_elapsed_seconds": 113.66284816595726,
+            "inspect_elapsed_seconds": 0.1888656672090292
+          }
+        ],
+        "temporary_roots_removed": true,
+        "exact_equality": {
+          "rows_exact_equal": true,
+          "summaries_exact_equal": true,
+          "decision_exact_equal": true,
+          "dashboard_exact_equal": true,
+          "failed_rows_exact_equal": true,
+          "leaf_hashes_exact_equal": true,
+          "artifact_map_hash_equal": true,
+          "all_leaf_bytes_hash_equal": true
+        },
+        "leaf_sha256": {
+          "context_antigravity.json": "8d84c32bab344b8c69c7c147fe5d3d835d65523aac25692eb13159a15a7c091e",
+          "method_fold_metrics_antigravity.jsonl": "b2611d95eeb90debd1adc001f560898422c85e3cfea32861725aa91526e75e60",
+          "failed_folds_antigravity.jsonl": "4d896b265542e72fe5a0b9b7db8089ba2b2e5946e64f55caaa794bb9929e88b7",
+          "method_summary_antigravity.json": "7500d2599060b257a171856fb68bed39a0ec0f4ddb26ca6084e606c911251e25",
+          "decision_antigravity.json": "27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315",
+          "dashboard_snapshot_antigravity.json": "e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc",
+          "artifact_sha256_antigravity.json": "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be"
+        },
+        "artifact_map_sha256": "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
+        "method_pass_counts": {
+          "hydra_local_gap": {
+            "passed_count": 8,
+            "fold_count": 10,
+            "failed_count": 2,
+            "passed": false
+          },
+          "period_signature_local_gap": {
+            "passed_count": 0,
+            "fold_count": 10,
+            "failed_count": 10,
+            "passed": false
+          },
+          "hydra_period_rank_max": {
+            "passed_count": 9,
+            "fold_count": 10,
+            "failed_count": 1,
+            "passed": false
+          }
+        },
+        "method_gate_extrema": {
+          "hydra_local_gap": {
+            "min_period_change_auc": 0.8004124541019063,
+            "min_pooled_auc": 0.9160442130677531,
+            "max_normal_wilson_upper": 0.013439124039399194,
+            "all_scores_finite": true
+          },
+          "period_signature_local_gap": {
+            "min_period_change_auc": 0.857158910711833,
+            "min_pooled_auc": 0.700277191624318,
+            "max_normal_wilson_upper": 0.013439124039399194,
+            "all_scores_finite": true
+          },
+          "hydra_period_rank_max": {
+            "min_period_change_auc": 0.907392736783864,
+            "min_pooled_auc": 0.9212266108344651,
+            "max_normal_wilson_upper": 0.013439124039399194,
+            "all_scores_finite": true
+          }
+        },
+        "primary_candidate": "hydra_period_rank_max",
+        "primary_passed_count": 9,
+        "primary_required_count": 10,
+        "primary_min_per_type_auc": {
+          "level_shift": 0.9411749911976258,
+          "gradual_drift": 0.8402306222021025,
+          "amplitude_scaling": 0.9722347970424023,
+          "period_change": 0.907392736783864
+        },
+        "primary_min_pooled_auc": 0.9212266108344651,
+        "primary_max_normal_wilson_upper": 0.013439124039399194,
+        "decision": {
+          "status": "qualification_failed_blocked_before_routing_research",
+          "eligible_for_routing_research": false,
+          "failure_reasons": [
+            "primary_candidate_not_10_of_10"
+          ],
+          "routing_applied": false,
+          "test_labels_opened": false,
+          "label_query_count": 0
+        },
+        "historical_improvements": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "previous_period_change_auc": 0.8208339620743423,
+            "candidate_period_change_auc": 0.907392736783864,
+            "strictly_improved": true
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "previous_period_change_auc": 0.8004124541019063,
+            "candidate_period_change_auc": 0.9216148584075248,
+            "strictly_improved": true
+          }
+        ],
+        "label_query_count": 0,
+        "official_root_exists_after": false
+      }
     }
   ]
 }

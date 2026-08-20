@@ -1,31 +1,43 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}</style></head>
 <body><main>
   <h1>Exp461 구현 보고서</h1>
-  <p><strong>Task 4 qualification report:</strong> 이번 변경은 blocked qualification, decision, seven-leaf temporary publication, source-free replay, restricted dashboard payload, focused RED/GREEN tests, 그리고 Task 4 code map 갱신만 추가했다. Task 5 CLI, real TRAIN run, official 명령은 아직 없다. Task 3 scoring report truth remains preserved.</p>
+  <p><strong>Task 5 CLI and private TRAIN reproducibility report:</strong> Task 5 added the closed CLI and outside-CWD fixed-runtime launcher, ran exactly two sequential private TRAIN evaluate→inspect cycles in temporary nonofficial roots, and recorded a qualification failure before any official evaluation. Task 6 remains forbidden.</p>
   <table>
-    <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
-    <tr><th>implementation status</th><td><code>Task4 complete / Task5 next</code></td></tr>
-    <tr><th>official command count</th><td>0</td></tr>
+    <tr><th>status</th><td><code>stopped_before_official_evaluation_qualification_failed</code></td></tr>
+    <tr><th>implementation status</th><td><code>task_5_private_train_reproducibility_complete_qualification_failed</code></td></tr>
+    <tr><th>official command count</th><td>evaluate 0 / inspect 0</td></tr>
     <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
-    <tr><th>result hashes</th><td>prediction/evaluation/decision/artifact map/dashboard 모두 <code>null</code></td></tr>
+    <tr><th>official result hashes</th><td>prediction/evaluation/decision/artifact map/dashboard all <code>null</code></td></tr>
   </table>
-  <h2>문서 SHA-256</h2>
-  <table>
-    <tr><th>artifact</th><th>SHA-256</th></tr>
-    <tr><td><code>docs/superpowers/specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html</code></td><td><code>3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2</code></td></tr>
-    <tr><td><code>docs/EXP461_PREREGISTRATION_antigravity.html</code></td><td><code>9595d1f898b309ac899c821867a2f38e6f0eb24f147e6888970e1095534490cb</code></td></tr>
-    <tr><td><code>docs/EXP461_RUNBOOK_antigravity.html</code></td><td><code>3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807</code></td></tr>
-  </table>
-  <div class="box">
-    <p><strong>Task 2 handoff:</strong> 다음 단계는 이미 고정된 Exp460 authority와 TRAIN replay를 사용해 period feature and scoring 경계를 여는 것이다. 설계서, 사전등록, 실행 가이드의 SHA-256 authority는 유지되고 living progress 파일은 직접 읽는다.</p>
-    <p><strong>Note:</strong> <code>docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html</code>의 자기 해시는 self-reference를 피하기 위해 표에 넣지 않았다.</p>
-    <p><strong>Task 2 scope truth:</strong> <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code>, 대응 Task 2 test 4개, Exp461 dashboard/report/plan, governance assertions, map builder/triplet만 변경됐다.</p>
-    <p><strong>Task 3 scope truth:</strong> <code>period_features_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>test_period_features_antigravity.py</code>, <code>test_scoring_antigravity.py</code>, Exp461 dashboard/report, governance assertions, map builder/triplet만 변경됐다. Task 3 plan controls are checked after external review approval.</p>
-    <p><strong>Task 4 scope truth:</strong> <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code> and five corresponding tests are complete after fix re-review. The implementation supports deterministic synthetic qualification/publication/replay only; no Task5 CLI, no real TRAIN qualification, no official root, no TEST label query, and no routing or promotion change occurred.</p>
-    <p><strong>Task 4 focused evidence:</strong> missing-module RED produced 8 expected errors. GREEN produced 8/8 focused Task 4 tests passing. Temporary publish→inspect exact equality is covered by <code>test_replay_antigravity.py</code>; dashboard restriction is covered by <code>test_dashboard_export_antigravity.py</code>.</p>
-    <p><strong>Task 4 fix round:</strong> replay now rejects coherently rehashed metric tamper by storing fold score evidence inside existing <code>method_fold_metrics_antigravity.jsonl</code> rows and recomputing normal alerts/Wilson, four AUCs, pooled AUC, pass/fail reasons, summaries, decision, and dashboard from that evidence. No eighth leaf was added.</p>
-    <p><strong>MLX smoke:</strong> Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, synthetic seed <code>20260820</code>, input <code>16×140</code>, CPU timing <code>0.005286333849653602</code> seconds, CPU candidate order <code>[0,1,2,3,4,5,6,7]</code>, CPU finite <code>true</code>. MLX and mlx-metal were <code>unavailable</code>, device <code>unavailable</code>, parity/order <code>unavailable</code>; fallback condition <code>mlx_unavailable:ModuleNotFoundError:No module named 'mlx'</code>. Selected backend <code>cpu_numpy</code>; decision marker <code>cpu_selected</code>.</p>
+  <div class="box bad">
+    <p><strong>Scientific closeout:</strong> the primary candidate <code>hydra_period_rank_max</code> passed <code>9/10</code>, not <code>10/10</code>. Minimum primary <code>gradual_drift</code> AUC was <code>0.8402306222021025</code>, below the frozen <code>0.85</code> per-type gate. Both historical period-change failures strictly improved, but the full frozen gate failed.</p>
+    <p><strong>Reproducibility:</strong> the two private roots produced exact-equal metric rows, summaries, failed rows, decision, dashboard, seven leaf hashes, artifact-map hash, and combined leaf bytes. The temporary roots were removed after evidence capture.</p>
   </div>
+  <h2>Task 5 files</h2>
+  <ul>
+    <li><code>cli_antigravity.py</code>: exact two-command parser, clean reviewed commit check, private nonofficial root seam, lazy selected-phase dispatch, and JSON dashboard emission.</li>
+    <li><code>tests/test_cli_antigravity.py</code>: RED/GREEN coverage for parser closure, lazy imports, private root alias rejection, dependency path publication/replay, source/SQLite/Aeon inspect firewall, outside-CWD launcher, and fixed runtime re-exec.</li>
+    <li><code>scratch/run_exp461_ecg_period_signature_qualification_antigravity.py</code>: fixed interpreter launcher for future official use, not invoked against the official root in Task 5.</li>
+  </ul>
+  <h2>Private result</h2>
+  <table>
+    <tr><th>reviewed clean code commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code></td></tr>
+    <tr><th>run 1</th><td>evaluate <code>116.7199521670118</code>s, inspect <code>0.19575291709043086</code>s</td></tr>
+    <tr><th>run 2</th><td>evaluate <code>113.66284816595726</code>s, inspect <code>0.1888656672090292</code>s</td></tr>
+    <tr><th>primary decision</th><td><code>qualification_failed_blocked_before_routing_research</code>, <code>primary_candidate_not_10_of_10</code></td></tr>
+    <tr><th>private artifact map</th><td><code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code></td></tr>
+  </table>
+  <h2>Method summary</h2>
+  <table>
+    <thead><tr><th>method</th><th>pass count</th><th>min period_change</th><th>min pooled</th><th>max Wilson</th></tr></thead>
+    <tbody>
+      <tr><td><code>hydra_local_gap</code></td><td>8/10</td><td><code>0.8004124541019063</code></td><td><code>0.9160442130677531</code></td><td><code>0.013439124039399194</code></td></tr>
+      <tr><td><code>period_signature_local_gap</code></td><td>0/10</td><td><code>0.857158910711833</code></td><td><code>0.700277191624318</code></td><td><code>0.013439124039399194</code></td></tr>
+      <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td><code>0.907392736783864</code></td><td><code>0.9212266108344651</code></td><td><code>0.013439124039399194</code></td></tr>
+    </tbody>
+  </table>
+  <h2>Concern</h2>
+  <p>The period signature did repair the two inherited <code>period_change</code> folds, but it introduced or exposed one failing primary <code>gradual_drift</code> gate. This candidate is not eligible for official evaluation, routing research, pending-candidate change, or promotion under the frozen Exp461 rules.</p>
 </main></body></html>

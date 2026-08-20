@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from math import isfinite
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -26,8 +27,10 @@ from .contracts_antigravity import (
     validate_exp460_period_authority_antigravity,
 )
 from .predecessor_antigravity import capture_exp460_period_authority_antigravity
-from .scoring_antigravity import FoldMethodScoresAntigravity, score_fold_methods_antigravity
-from .sources_antigravity import load_normal2_train_antigravity
+
+
+if TYPE_CHECKING:
+    from .scoring_antigravity import FoldMethodScoresAntigravity
 
 
 _METHODS_ANTIGRAVITY = FROZEN_CONFIG_ANTIGRAVITY.method_order
@@ -430,6 +433,8 @@ def _qualify_methods_with_dependencies_antigravity(
     loader: Callable[[], np.ndarray],
     fold_scorer: Callable[..., FoldMethodScoresAntigravity],
 ) -> MethodQualificationAntigravity:
+    from .scoring_antigravity import FoldMethodScoresAntigravity
+
     trusted_authority = validate_exp460_period_authority_antigravity(authority)
     train = _train_antigravity(loader())
     folds = blocked_plan_antigravity(len(train))
@@ -473,6 +478,9 @@ def _qualify_methods_with_dependencies_antigravity(
 
 
 def qualify_methods_antigravity() -> MethodQualificationAntigravity:
+    from .scoring_antigravity import score_fold_methods_antigravity
+    from .sources_antigravity import load_normal2_train_antigravity
+
     return _qualify_methods_with_dependencies_antigravity(
         authority=capture_exp460_period_authority_antigravity(),
         loader=load_normal2_train_antigravity,
