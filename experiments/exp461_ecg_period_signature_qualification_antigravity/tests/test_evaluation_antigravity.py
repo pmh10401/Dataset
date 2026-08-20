@@ -44,11 +44,12 @@ class EvaluationAntigravityTest(unittest.TestCase):
         rows = list(qualification.fold_metrics)
         for index, row in enumerate(rows):
             if row.method == "hydra_period_rank_max" and row.seed == 20261721 and row.fold_index == 4:
-                per_type_auc = {**row.per_type_auc, "period_change": 0.8004124541019063}
+                per_type_auc = {**row.per_type_auc, "period_change": 0.5}
                 rows[index] = replace(
                     row,
                     per_type_auc=per_type_auc,
                     pooled_auc=sum(per_type_auc.values()) / len(per_type_auc),
+                    primary_scores={**row.primary_scores, "period_change": row.normal_scores},
                     passed=False,
                     failure_reasons=("period_change_auc_below_min",),
                 )

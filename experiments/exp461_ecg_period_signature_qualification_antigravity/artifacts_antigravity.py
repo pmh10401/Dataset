@@ -22,6 +22,7 @@ from .evaluation_antigravity import (
 from .qualification_antigravity import (
     MethodFoldMetricAntigravity,
     MethodQualificationAntigravity,
+    normalize_qualification_antigravity,
     summarize_methods_antigravity,
 )
 
@@ -74,6 +75,11 @@ def _row_payload_antigravity(row: MethodFoldMetricAntigravity) -> dict[str, obje
         "per_type_auc": dict(row.per_type_auc),
         "pooled_auc": row.pooled_auc,
         "scores_finite": row.scores_finite,
+        "normal_scores": list(row.normal_scores),
+        "primary_scores": {
+            change_type: list(row.primary_scores[change_type])
+            for change_type in FROZEN_CONFIG_ANTIGRAVITY.primary_types
+        },
         "passed": row.passed,
         "failure_reasons": list(row.failure_reasons),
     }
@@ -155,22 +161,23 @@ def _payloads_antigravity(
     decision: QualificationDecisionAntigravity,
 ) -> dict[str, bytes]:
     trusted_authority = validate_exp460_period_authority_antigravity(authority)
-    recomputed_decision = evaluate_qualification_antigravity(trusted_authority, qualification)
+    normalized = normalize_qualification_antigravity(trusted_authority, qualification)
+    recomputed_decision = evaluate_qualification_antigravity(trusted_authority, normalized)
     if decision != recomputed_decision:
         raise ValueError("publication decision differs from recomputed qualification")
-    failed_rows = tuple(row for row in qualification.fold_metrics if not row.passed)
+    failed_rows = tuple(row for row in normalized.fold_metrics if not row.passed)
     payloads = {
         "context_antigravity.json": _json_bytes_antigravity(_context_payload_antigravity(trusted_authority)),
         "method_fold_metrics_antigravity.jsonl": _jsonl_bytes_antigravity(
-            tuple(_row_payload_antigravity(row) for row in qualification.fold_metrics)
+            tuple(_row_payload_antigravity(row) for row in normalized.fold_metrics)
         ),
         "failed_folds_antigravity.jsonl": _jsonl_bytes_antigravity(
             tuple(_row_payload_antigravity(row) for row in failed_rows)
         ),
-        "method_summary_antigravity.json": _json_bytes_antigravity(_summary_payload_antigravity(qualification)),
+        "method_summary_antigravity.json": _json_bytes_antigravity(_summary_payload_antigravity(normalized)),
         "decision_antigravity.json": _json_bytes_antigravity(_decision_payload_antigravity(decision)),
         "dashboard_snapshot_antigravity.json": _json_bytes_antigravity(
-            export_dashboard_antigravity(trusted_authority, qualification, decision)
+            export_dashboard_antigravity(trusted_authority, normalized, decision)
         ),
     }
     if tuple(payloads) != _LEAVES_ANTIGRAVITY[:-1]:

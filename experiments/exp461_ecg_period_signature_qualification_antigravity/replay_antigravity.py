@@ -21,6 +21,7 @@ from .predecessor_antigravity import capture_exp460_period_authority_antigravity
 from .qualification_antigravity import (
     MethodFoldMetricAntigravity,
     MethodQualificationAntigravity,
+    normalize_qualification_antigravity,
     summarize_methods_antigravity,
 )
 
@@ -130,10 +131,18 @@ def _metric_row_antigravity(value: object) -> MethodFoldMetricAntigravity:
         "per_type_auc",
         "pooled_auc",
         "scores_finite",
+        "normal_scores",
+        "primary_scores",
         "passed",
         "failure_reasons",
     }
-    if type(value) is not dict or set(value) != keys or type(value["failure_reasons"]) is not list:
+    if (
+        type(value) is not dict
+        or set(value) != keys
+        or type(value["failure_reasons"]) is not list
+        or type(value["normal_scores"]) is not list
+        or type(value["primary_scores"]) is not dict
+    ):
         raise ValueError("method metric row is invalid")
     return MethodFoldMetricAntigravity(
         method=value["method"],
@@ -145,6 +154,11 @@ def _metric_row_antigravity(value: object) -> MethodFoldMetricAntigravity:
         per_type_auc=value["per_type_auc"],
         pooled_auc=value["pooled_auc"],
         scores_finite=value["scores_finite"],
+        normal_scores=tuple(value["normal_scores"]),
+        primary_scores={
+            name: tuple(value["primary_scores"][name])
+            for name in FROZEN_CONFIG_ANTIGRAVITY.primary_types
+        },
         passed=value["passed"],
         failure_reasons=tuple(value["failure_reasons"]),
     )
@@ -190,17 +204,20 @@ def inspect_replay_at_antigravity(root: Path) -> QualificationReplayAntigravity:
         label_query_count=FROZEN_CONFIG_ANTIGRAVITY.label_query_count_must_remain,
     )
     authority = capture_exp460_period_authority_antigravity()
-    decision = evaluate_qualification_antigravity(authority, qualification)
+    normalized = normalize_qualification_antigravity(authority, qualification)
+    if normalized != qualification:
+        raise ValueError("stored metric rows differ from score-evidence replay")
+    decision = evaluate_qualification_antigravity(authority, normalized)
     stored_decision = _decision_antigravity(_strict_json_antigravity(leaves["decision_antigravity.json"]))
     if stored_decision != decision:
         raise ValueError("decision artifact differs from replay")
-    expected_payloads = _payloads_antigravity(authority, qualification, decision)
+    expected_payloads = _payloads_antigravity(authority, normalized, decision)
     for name in _LEAVES_ANTIGRAVITY[:-1]:
         if leaves[name] != expected_payloads[name]:
             raise ValueError("artifact payload differs from replay")
     dashboard = _strict_json_antigravity(leaves["dashboard_snapshot_antigravity.json"])
     return QualificationReplayAntigravity(
-        qualification=qualification,
+        qualification=normalized,
         decision=decision,
         dashboard=dashboard if isinstance(dashboard, dict) else {},
         leaf_sha256=tuple((name, sha256(leaves[name]).hexdigest()) for name in _LEAVES_ANTIGRAVITY),

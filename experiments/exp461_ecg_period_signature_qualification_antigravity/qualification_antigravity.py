@@ -78,6 +78,30 @@ def _per_type_auc_antigravity(value: Mapping[str, object]) -> Mapping[str, float
     )
 
 
+def _score_tuple_antigravity(value: object, name: str) -> tuple[float, ...]:
+    if isinstance(value, np.ndarray):
+        array = np.asarray(value, dtype=np.float64)
+    elif type(value) is tuple or type(value) is list:
+        array = np.asarray(value, dtype=np.float64)
+    else:
+        raise ValueError(f"{name} must be a score vector")
+    if array.ndim != 1 or array.size < 1 or not np.isfinite(array).all():
+        raise ValueError(f"{name} must be a finite non-empty score vector")
+    return tuple(float(item) for item in array)
+
+
+def _primary_scores_antigravity(value: Mapping[str, object], expected_len: int) -> Mapping[str, tuple[float, ...]]:
+    if not isinstance(value, Mapping) or set(value) != set(_PRIMARY_TYPES_ANTIGRAVITY):
+        raise ValueError("primary_scores must contain the exact primary types")
+    frozen: dict[str, tuple[float, ...]] = {}
+    for change_type in _PRIMARY_TYPES_ANTIGRAVITY:
+        scores = _score_tuple_antigravity(value[change_type], f"primary_scores[{change_type}]")
+        if len(scores) != expected_len:
+            raise ValueError("primary score lengths must match normal scores")
+        frozen[change_type] = scores
+    return MappingProxyType(frozen)
+
+
 def _method_antigravity(value: object) -> str:
     if type(value) is not str or value not in _METHODS_ANTIGRAVITY:
         raise ValueError("method must be one of the frozen methods")
@@ -101,6 +125,8 @@ class MethodFoldMetricAntigravity:
     per_type_auc: Mapping[str, float]
     pooled_auc: float
     scores_finite: bool
+    normal_scores: tuple[float, ...]
+    primary_scores: Mapping[str, tuple[float, ...]]
     passed: bool
     failure_reasons: tuple[str, ...]
 
@@ -121,9 +147,13 @@ class MethodFoldMetricAntigravity:
         if pooled_auc != expected_pooled:
             raise ValueError("pooled_auc must equal the mean per-type AUC")
         _bool_antigravity(self.scores_finite, "scores_finite")
+        normal_scores = _score_tuple_antigravity(self.normal_scores, "normal_scores")
+        primary_scores = _primary_scores_antigravity(self.primary_scores, len(normal_scores))
         _bool_antigravity(self.passed, "passed")
         _failure_reasons_antigravity(self.failure_reasons)
         object.__setattr__(self, "per_type_auc", per_type_auc)
+        object.__setattr__(self, "normal_scores", normal_scores)
+        object.__setattr__(self, "primary_scores", primary_scores)
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,6 +249,82 @@ def recompute_row_pass_antigravity(
     return not reasons, tuple(reasons)
 
 
+def recompute_metric_from_scores_antigravity(
+    row: MethodFoldMetricAntigravity,
+    authority: Exp460PeriodAuthorityAntigravity,
+) -> MethodFoldMetricAntigravity:
+    original = np.asarray(row.normal_scores, dtype=np.float64)
+    primary = {
+        change_type: np.asarray(row.primary_scores[change_type], dtype=np.float64)
+        for change_type in _PRIMARY_TYPES_ANTIGRAVITY
+    }
+    normal_alerts = int(
+        np.count_nonzero(
+            empirical_pvalues_antigravity(original, original)
+            <= FROZEN_CONFIG_ANTIGRAVITY.alpha
+        )
+    )
+    per_type_auc = {
+        change_type: float(mann_whitney_auc_antigravity(original, primary[change_type]))
+        for change_type in _PRIMARY_TYPES_ANTIGRAVITY
+    }
+    candidate = MethodFoldMetricAntigravity(
+        method=row.method,
+        seed=row.seed,
+        fold_index=row.fold_index,
+        normal_trials=len(original),
+        normal_alerts=normal_alerts,
+        normal_wilson_upper=wilson_upper_antigravity(normal_alerts, len(original)),
+        per_type_auc=per_type_auc,
+        pooled_auc=float(sum(per_type_auc.values()) / len(_PRIMARY_TYPES_ANTIGRAVITY)),
+        scores_finite=bool(
+            np.isfinite(original).all()
+            and all(np.isfinite(primary[change_type]).all() for change_type in _PRIMARY_TYPES_ANTIGRAVITY)
+        ),
+        normal_scores=row.normal_scores,
+        primary_scores=row.primary_scores,
+        passed=True,
+        failure_reasons=(),
+    )
+    passed, reasons = recompute_row_pass_antigravity(candidate, authority)
+    return MethodFoldMetricAntigravity(
+        method=candidate.method,
+        seed=candidate.seed,
+        fold_index=candidate.fold_index,
+        normal_trials=candidate.normal_trials,
+        normal_alerts=candidate.normal_alerts,
+        normal_wilson_upper=candidate.normal_wilson_upper,
+        per_type_auc=candidate.per_type_auc,
+        pooled_auc=candidate.pooled_auc,
+        scores_finite=candidate.scores_finite,
+        normal_scores=candidate.normal_scores,
+        primary_scores=candidate.primary_scores,
+        passed=passed,
+        failure_reasons=reasons,
+    )
+
+
+def normalize_qualification_antigravity(
+    authority: Exp460PeriodAuthorityAntigravity,
+    qualification: MethodQualificationAntigravity,
+) -> MethodQualificationAntigravity:
+    if type(qualification) is not MethodQualificationAntigravity:
+        raise ValueError("qualification type is invalid")
+    trusted_authority = validate_exp460_period_authority_antigravity(authority)
+    rows = tuple(
+        recompute_metric_from_scores_antigravity(row, trusted_authority)
+        for row in qualification.fold_metrics
+    )
+    return MethodQualificationAntigravity(
+        dataset=qualification.dataset,
+        method_order=qualification.method_order,
+        primary_candidate=qualification.primary_candidate,
+        fold_metrics=rows,
+        summaries=summarize_methods_antigravity(rows),
+        label_query_count=qualification.label_query_count,
+    )
+
+
 def summarize_methods_antigravity(
     rows: tuple[MethodFoldMetricAntigravity, ...],
 ) -> tuple[MethodSummaryAntigravity, ...]:
@@ -292,6 +398,11 @@ def _metric_row_antigravity(
         per_type_auc=per_type_auc,
         pooled_auc=float(sum(per_type_auc.values()) / len(_PRIMARY_TYPES_ANTIGRAVITY)),
         scores_finite=scores_finite,
+        normal_scores=tuple(float(item) for item in original),
+        primary_scores={
+            change_type: tuple(float(item) for item in primary[change_type])
+            for change_type in _PRIMARY_TYPES_ANTIGRAVITY
+        },
         passed=True,
         failure_reasons=(),
     )
@@ -306,6 +417,8 @@ def _metric_row_antigravity(
         per_type_auc=candidate.per_type_auc,
         pooled_auc=candidate.pooled_auc,
         scores_finite=candidate.scores_finite,
+        normal_scores=candidate.normal_scores,
+        primary_scores=candidate.primary_scores,
         passed=passed,
         failure_reasons=reasons,
     )
@@ -371,5 +484,6 @@ __all__ = (
     "MethodFoldMetricAntigravity",
     "MethodQualificationAntigravity",
     "MethodSummaryAntigravity",
+    "normalize_qualification_antigravity",
     "qualify_methods_antigravity",
 )

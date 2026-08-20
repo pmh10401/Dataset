@@ -102,12 +102,21 @@ def qualification_with_primary_auc_antigravity(seed: int, fold_index: int, auc: 
     rows = list(qualification.fold_metrics)
     for index, row in enumerate(rows):
         if row.method == "hydra_period_rank_max" and row.seed == seed and row.fold_index == fold_index:
+            normal_scores = tuple(row.normal_scores)
+            primary_scores = dict(row.primary_scores)
+            if auc <= 0.5:
+                primary_scores["period_change"] = normal_scores
+            else:
+                primary_scores["period_change"] = tuple(
+                    score + len(normal_scores) for score in normal_scores
+                )
             per_type_auc = dict(row.per_type_auc)
             per_type_auc["period_change"] = auc
             rows[index] = replace(
                 row,
                 per_type_auc=per_type_auc,
                 pooled_auc=sum(per_type_auc.values()) / len(per_type_auc),
+                primary_scores=primary_scores,
             )
             break
     return replace(qualification, fold_metrics=tuple(rows))
@@ -163,7 +172,7 @@ class QualificationAntigravityTest(unittest.TestCase):
         not_improved = qualification_with_primary_auc_antigravity(
             20260721,
             3,
-            0.8208339620743423,
+            0.5,
         )
         failed = evaluate_qualification_antigravity(authority, not_improved)
         self.assertFalse(failed.eligible_for_routing_research)

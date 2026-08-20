@@ -50,10 +50,10 @@
   <table>
     <thead><tr><th>surface</th><th>current contract</th></tr></thead>
     <tbody>
-      <tr><td><code>qualify_methods_antigravity()</code></td><td>세 방법 × 두 seed × 다섯 blocked fold = <code>30</code> method-fold rows를 고정 순서로 계산한다. 각 row는 네 AUC, pooled AUC, normal Wilson upper, finite flag, pass/fail reasons를 가진다.</td></tr>
+      <tr><td><code>qualify_methods_antigravity()</code></td><td>세 방법 × 두 seed × 다섯 blocked fold = <code>30</code> method-fold rows를 고정 순서로 계산한다. 각 row는 fold score evidence, 네 AUC, pooled AUC, normal Wilson upper, finite flag, pass/fail reasons를 가진다.</td></tr>
       <tr><td><code>evaluate_qualification_antigravity(...)</code></td><td>주 후보 <code>hydra_period_rank_max</code>가 10/10 pass이고 두 과거 실패 fold의 period-change AUC가 기존 값보다 strictly greater일 때만 Task5 재현 검토 대상으로 판정한다. 라우팅은 적용하지 않는다.</td></tr>
       <tr><td><code>publish_result_antigravity(...)</code></td><td>임시 root에만 seven-leaf canonical JSON/JSONL artifact를 create-only로 쓴다. <code>artifact_sha256_antigravity.json</code>은 다른 여섯 leaf hash만 담는다.</td></tr>
-      <tr><td><code>inspect_replay_at_antigravity(root)</code></td><td>source-free replay가 context, 30 row order, summaries, decision, dashboard, artifact hashes를 재계산하고 tamper를 거부한다.</td></tr>
+      <tr><td><code>inspect_replay_at_antigravity(root)</code></td><td>source-free replay가 stored metric truth를 믿지 않고 score evidence에서 normal alerts/Wilson, four AUCs, pooled AUC, pass/fail reasons, summaries, decision, dashboard, artifact hashes를 재계산하고 tamper를 거부한다.</td></tr>
       <tr><td><code>export_dashboard_antigravity(...)</code></td><td>aggregate method/fold qualification만 노출하며 raw series, fold indices, TEST labels, local paths, secrets는 노출하지 않는다.</td></tr>
     </tbody>
   </table>

@@ -41,6 +41,14 @@
     <li>Dashboard test rejects raw series, fit/query indices, TEST labels, local paths, and secret-like fields.</li>
   </ul>
 
+  <h2>Fix Round Evidence</h2>
+  <ul>
+    <li>Fresh review verified that the first implementation trusted stored metric rows during replay.</li>
+    <li>RED regressions now reproduce two attacks: coherently rehashed primary period-change AUC tamper, and below-threshold AUC with forged <code>passed=true</code> plus empty reasons.</li>
+    <li>The seven-leaf schema remains unchanged; independent fold score evidence is stored inside <code>method_fold_metrics_antigravity.jsonl</code> rows.</li>
+    <li>Replay and publication normalize from score evidence, recomputing normal alerts/Wilson, four AUCs, pooled AUC, pass/fail reasons, summaries, decision, and dashboard instead of trusting stored metrics.</li>
+  </ul>
+
   <h2>Validation State</h2>
   <table>
     <tr><th>Root</th><td>Official root <code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> must remain absent; official root validation is recorded in final handoff.</td></tr>

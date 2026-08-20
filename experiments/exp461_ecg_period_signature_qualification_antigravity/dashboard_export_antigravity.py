@@ -13,8 +13,7 @@ from .evaluation_antigravity import (
 )
 from .qualification_antigravity import (
     MethodQualificationAntigravity,
-    recompute_row_pass_antigravity,
-    summarize_methods_antigravity,
+    normalize_qualification_antigravity,
 )
 
 
@@ -22,24 +21,7 @@ def _summary_payloads_antigravity(
     authority: Exp460PeriodAuthorityAntigravity,
     qualification: MethodQualificationAntigravity,
 ) -> list[dict[str, object]]:
-    rows = []
-    for row in qualification.fold_metrics:
-        passed, reasons = recompute_row_pass_antigravity(row, authority)
-        rows.append(
-            type(row)(
-                method=row.method,
-                seed=row.seed,
-                fold_index=row.fold_index,
-                normal_trials=row.normal_trials,
-                normal_alerts=row.normal_alerts,
-                normal_wilson_upper=row.normal_wilson_upper,
-                per_type_auc=row.per_type_auc,
-                pooled_auc=row.pooled_auc,
-                scores_finite=row.scores_finite,
-                passed=passed,
-                failure_reasons=reasons,
-            )
-        )
+    normalized = normalize_qualification_antigravity(authority, qualification)
     return [
         {
             "method": summary.method,
@@ -52,7 +34,7 @@ def _summary_payloads_antigravity(
             "all_scores_finite": summary.all_scores_finite,
             "passed": summary.passed,
         }
-        for summary in summarize_methods_antigravity(tuple(rows))
+        for summary in normalized.summaries
     ]
 
 
@@ -62,10 +44,11 @@ def export_dashboard_antigravity(
     decision: QualificationDecisionAntigravity,
 ) -> dict[str, object]:
     trusted_authority = validate_exp460_period_authority_antigravity(authority)
-    recomputed_decision = evaluate_qualification_antigravity(trusted_authority, qualification)
+    normalized = normalize_qualification_antigravity(trusted_authority, qualification)
+    recomputed_decision = evaluate_qualification_antigravity(trusted_authority, normalized)
     if decision != recomputed_decision:
         raise ValueError("dashboard decision differs from recomputed qualification")
-    method_summaries = _summary_payloads_antigravity(trusted_authority, qualification)
+    method_summaries = _summary_payloads_antigravity(trusted_authority, normalized)
     return {
         "experiment": FROZEN_CONFIG_ANTIGRAVITY.experiment,
         "dataset": FROZEN_CONFIG_ANTIGRAVITY.dataset,
@@ -82,7 +65,7 @@ def export_dashboard_antigravity(
                 "previous_period_change_auc": failed.period_change_auc,
                 "candidate_period_change_auc": next(
                     row.per_type_auc["period_change"]
-                    for row in qualification.fold_metrics
+                    for row in normalized.fold_metrics
                     if row.method == FROZEN_CONFIG_ANTIGRAVITY.primary_candidate
                     and row.seed == failed.seed
                     and row.fold_index == failed.fold_index

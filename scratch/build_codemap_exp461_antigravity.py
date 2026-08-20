@@ -161,7 +161,7 @@ def html_antigravity(graph: dict[str, object]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp461 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 4 qualification 코드맵</h1><p>Task 4 implemented pending external review 상태는 Task 2 frozen input truth와 Task 3 scoring boundary를 유지한 채 qualification, decision, seven-leaf publication, source-free replay, restricted dashboard, and focused tests를 보존한다. Task 5 CLI, real TRAIN run, official execution은 아직 없다.</p>'
+        '<h1>Exp461 Task 4 qualification 코드맵</h1><p>Task 4 implemented pending external review 상태는 Task 2 frozen input truth와 Task 3 scoring boundary를 유지한 채 qualification, decision, seven-leaf publication with in-row score evidence, source-free replay recomputation, restricted dashboard, and focused tests를 보존한다. Task 5 CLI, real TRAIN run, official execution은 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -481,7 +481,7 @@ def build_map_antigravity(
         {
             "id": "task4_qualification",
             "path": task4_qualification,
-            "role": "Caller: Task 4 evaluation/publication. Effect: converts Task 3 fold scores into exact 30 method-seed-fold metric rows with AUCs, Wilson upper bounds, finite flags, pass/fail reasons, and method summaries without opening labels or result roots.",
+            "role": "Caller: Task 4 evaluation/publication. Effect: converts Task 3 fold scores into exact 30 method-seed-fold rows with retained score evidence, recomputed AUCs, Wilson upper bounds, finite flags, pass/fail reasons, and method summaries without opening labels or result roots.",
             "tests": [task4_qualification_test],
             "evidence": [evidence_antigravity(task4_qualification, "qualify_methods_antigravity")],
         },
@@ -495,14 +495,14 @@ def build_map_antigravity(
         {
             "id": "task4_artifacts",
             "path": task4_artifacts,
-            "role": "Caller: Task 4 temporary publication and replay tests. Effect: writes the exact seven canonical leaves under a create-only temporary root with a self-excluding artifact hash map.",
+            "role": "Caller: Task 4 temporary publication and replay tests. Effect: normalizes metric rows from score evidence, then writes the exact seven canonical leaves under a create-only temporary root with a self-excluding artifact hash map.",
             "tests": [task4_artifacts_test, task4_replay_test],
             "evidence": [evidence_antigravity(task4_artifacts, "publish_result_antigravity")],
         },
         {
             "id": "task4_replay",
             "path": task4_replay,
-            "role": "Caller: Task 4 inspect/replay boundary. Effect: validates inventory, canonical bytes, frozen context, 30-row order, summaries, decision, dashboard, and hashes without source data or labels.",
+            "role": "Caller: Task 4 inspect/replay boundary. Effect: validates inventory, canonical bytes, frozen context, 30-row order, in-row score evidence, recomputed metrics, summaries, decision, dashboard, and hashes without source data or labels.",
             "tests": [task4_replay_test],
             "evidence": [evidence_antigravity(task4_replay, "inspect_replay_at_antigravity")],
         },
@@ -552,7 +552,7 @@ def build_map_antigravity(
         {
             "id": "task4_replay_tests",
             "path": task4_replay_test,
-            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects replay that trusts stored summaries, decisions, dashboards, hash maps, or rehashed tamper.",
+            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects replay that trusts stored metric rows, summaries, decisions, dashboards, hash maps, or rehashed tamper.",
             "tests": [task4_replay_test],
             "evidence": [
                 evidence_antigravity(
@@ -751,7 +751,7 @@ def build_map_antigravity(
             "from": "task4_qualification",
             "to": "task4_evaluation",
             "type": "governs",
-            "evidence": evidence_antigravity(task4_evaluation, "_recomputed_summaries_antigravity"),
+            "evidence": evidence_antigravity(task4_evaluation, "evaluate_qualification_antigravity"),
         },
         {
             "from": "task4_evaluation",

@@ -11,9 +11,8 @@ from .contracts_antigravity import (
 )
 from .qualification_antigravity import (
     MethodQualificationAntigravity,
-    MethodSummaryAntigravity,
+    normalize_qualification_antigravity,
     recompute_row_pass_antigravity,
-    summarize_methods_antigravity,
 )
 
 
@@ -54,31 +53,6 @@ class QualificationDecisionAntigravity:
             raise ValueError("Task 4 label query count must remain zero")
 
 
-def _recomputed_summaries_antigravity(
-    authority: Exp460PeriodAuthorityAntigravity,
-    qualification: MethodQualificationAntigravity,
-) -> tuple[MethodSummaryAntigravity, ...]:
-    rows = []
-    for row in qualification.fold_metrics:
-        passed, reasons = recompute_row_pass_antigravity(row, authority)
-        if row.passed != passed or row.failure_reasons != reasons:
-            row = type(row)(
-                method=row.method,
-                seed=row.seed,
-                fold_index=row.fold_index,
-                normal_trials=row.normal_trials,
-                normal_alerts=row.normal_alerts,
-                normal_wilson_upper=row.normal_wilson_upper,
-                per_type_auc=row.per_type_auc,
-                pooled_auc=row.pooled_auc,
-                scores_finite=row.scores_finite,
-                passed=passed,
-                failure_reasons=reasons,
-            )
-        rows.append(row)
-    return summarize_methods_antigravity(tuple(rows))
-
-
 def evaluate_qualification_antigravity(
     authority: Exp460PeriodAuthorityAntigravity,
     qualification: MethodQualificationAntigravity,
@@ -86,7 +60,8 @@ def evaluate_qualification_antigravity(
     trusted_authority = validate_exp460_period_authority_antigravity(authority)
     if type(qualification) is not MethodQualificationAntigravity:
         raise ValueError("qualification type is invalid")
-    summaries = _recomputed_summaries_antigravity(trusted_authority, qualification)
+    normalized = normalize_qualification_antigravity(trusted_authority, qualification)
+    summaries = normalized.summaries
     primary_summary = next(
         summary
         for summary in summaries
@@ -94,7 +69,7 @@ def evaluate_qualification_antigravity(
     )
     primary_rows = tuple(
         row
-        for row in qualification.fold_metrics
+        for row in normalized.fold_metrics
         if row.method == FROZEN_CONFIG_ANTIGRAVITY.primary_candidate
     )
     reasons: list[str] = []
