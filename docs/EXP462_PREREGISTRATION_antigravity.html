@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 preregistration antigravity</title>
+<style>body{max-width:1040px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}</style></head><body><main>
+<h1>Exp462 사전등록</h1>
+<p><strong>planned-only governance</strong>: 이 문서는 Task 1/6의 계획 상태를 고정한다. 현재 status는 <code>planned_implementation_not_started</code>이고 result and artifact hashes 값은 모두 <code>null</code>이다.</p>
+<table>
+<tr><th>experiment</th><td><code>Exp462</code> / <code>ecg_gradual_signature_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp462-ecg-gradual-signature-qualification-antigravity-20260820</code></td></tr>
+<tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> must stay absent before separate Task 6 approval</td></tr>
+<tr><th>official command count 0</th><td>evaluate 0, inspect 0</td></tr>
+<tr><th>label query count 0</th><td>TEST labels and label SQL are not used in Task 1</td></tr>
+<tr><th>dataset contract</th><td><code>ECG5000_normal_2</code> TRAIN only, shape <code>1413x140</code>, seeds <code>20260721</code> and <code>20261721</code>, five blocked folds</td></tr>
+</table>
+<h2>Frozen targets</h2>
+<ul>
+<li>Exp461 failed one gradual gate: <code>gradual_drift</code> AUC <code>0.8402306222021025</code>.</li>
+<li>Exp462 primary target: gradual_drift AUC ≥ 0.85 for all records.</li>
+<li>period_change AUC ≥ 0.907392736783864 globally.</li>
+<li>historical period fold seed 20260721 fold 3 must stay ≥ <code>0.907392736783864</code>.</li>
+<li>historical period fold seed 20261721 fold 4 must stay ≥ <code>0.9216148584075248</code>.</li>
+</ul>
+<div class="box">Task 1 only creates governance, dashboard, ledgers, and a bounded code map. It creates no TRAIN calculation, no product source, no scientific score, no CLI, and no official result.</div>
+</main></body></html>

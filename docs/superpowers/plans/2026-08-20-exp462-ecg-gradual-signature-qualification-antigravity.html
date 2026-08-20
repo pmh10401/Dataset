@@ -9,7 +9,7 @@
   <tr><th>Architecture</th><td>Exp461 reviewed 점수를 기준선으로 재사용하고, 24차원 gradual signature와 LocalGap 순위를 추가한다. 주 후보는 두 순위의 원소별 max이며 10개 blocked 기록과 period 보존 조건으로만 판정한다.</td></tr>
   <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, existing aeon/LocalGap/Hydra CPU stack, unittest, canonical JSON/JSONL, HTML dashboard.</td></tr>
   <tr><th>Spec</th><td><a href="../specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html">승인된 Exp462 설계서</a> — SHA-256 <code>34a950e619b7ddd1accc7cc41281a476611010f27ef02b1a73fa46523d064829</code></td></tr>
-  <tr><th>Current status</th><td><code>design_approved_plan_written_awaiting_execution_choice</code>, Task <code>0/6</code>, official command <code>0</code>, label query <code>0</code>.</td></tr>
+  <tr><th>Current status</th><td><code>planned_implementation_not_started</code>, <code>task_1_governance_pending_review</code>, Task <code>1/6</code> implemented pending external review, official command <code>0</code>, label query <code>0</code>. Task1 implemented pending external review / Task2 next.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -28,7 +28,7 @@
 <section>
 <h2><label><input type="checkbox" disabled>Task 1 — governance, dashboard, code map</label></h2>
 <p><strong>Files:</strong> Create <code>docs/EXP462_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP462_RUNBOOK_antigravity.html</code>, <code>docs/EXP462_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp462_antigravity.py</code>, <code>docs/codemap/codemap_exp462_antigravity.{html,json,lock}</code>. Modify dashboard, three ledgers, this plan.</p>
-<p><strong>Produces:</strong> immutable design/prereg/runbook hashes, planned Exp462 ledger record, dashboard status, and map that names future Task 2–5 boundaries as unknown rather than implemented.</p>
+<p><strong>Produces:</strong> immutable design/prereg/runbook hashes, planned Exp462 ledger record, dashboard status, and map that names future Task 2–5 boundaries as unknown rather than implemented.</p><p><strong>Current state:</strong> Task1 implemented pending external review / Task2 next. Controls remain unchecked pending independent review.</p>
 <ol>
   <li><label><input type="checkbox" disabled>Step 1 — RED governance test: assert the three HTML governance documents, dashboard, three matching ledger records, planned status, null result hashes, official0/label0/root absent, unchanged champion/pending state.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
 self.assertEqual(record["label_query_count"], 0)
