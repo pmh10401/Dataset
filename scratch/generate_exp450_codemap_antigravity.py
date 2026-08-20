@@ -42,11 +42,11 @@ def _module_name_antigravity(path: Path) -> str:
 
 
 def _repository_tracked_paths_antigravity(root: Path) -> frozenset[Path]:
-    """Resolve the repository's tracked paths without admitting worktree files."""
+    """Resolve index-tracked paths without admitting untracked worktree files."""
     resolved_root = root.resolve()
     try:
         result = subprocess.run(
-            ("git", "-C", str(resolved_root), "ls-tree", "-r", "-z", "--name-only", "HEAD"),
+            ("git", "-C", str(resolved_root), "ls-files", "--cached", "-z"),
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -107,7 +107,7 @@ def _imported_modules_antigravity(path: Path) -> tuple[str, ...]:
 
 
 def ast_callers_antigravity(paths: Sequence[Path]) -> dict[str, tuple[str, ...]]:
-    """Derive callers from imports across all HEAD-tracked Python files."""
+    """Derive callers from imports across all index-tracked Python files."""
     selected = {_module_name_antigravity(path): _relative_antigravity(path) for path in paths}
     callers: dict[str, set[str]] = defaultdict(set)
     sources = sorted(

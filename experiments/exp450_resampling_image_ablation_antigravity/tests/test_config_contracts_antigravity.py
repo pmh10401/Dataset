@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 
@@ -16,6 +17,7 @@ from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigrav
 )
 from scratch.generate_exp450_codemap_antigravity import (
     REPOSITORY_ROOT,
+    _repository_tracked_paths_antigravity,
     ast_callers_antigravity,
     build_codemap_payload_antigravity,
     tracked_existing_paths_antigravity,
@@ -106,6 +108,34 @@ class Exp450ConfigTests(unittest.TestCase):
             untracked_relative,
             {edge["caller"] for edge in payload["edges"]},
         )
+
+    def test_codemap_discovers_index_tracked_new_source_but_excludes_untracked_peer(self) -> None:
+        """New staged sources belong in the map; untracked peers never do."""
+        with TemporaryDirectory(prefix="codemap_index_antigravity_") as temporary:
+            repository = Path(temporary)
+
+            def git(*arguments: str) -> None:
+                subprocess.run(
+                    ("git", *arguments),
+                    cwd=repository,
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+
+            git("init")
+            baseline = repository / "baseline_antigravity.py"
+            baseline.write_text('"""Baseline."""\n', encoding="utf-8")
+            git("add", baseline.name)
+            git("-c", "user.name=Exp450", "-c", "user.email=exp450@example.invalid", "commit", "-m", "baseline")
+            index_tracked = repository / "index_tracked_antigravity.py"
+            index_tracked.write_text('"""Index-tracked fixture."""\n', encoding="utf-8")
+            git("add", index_tracked.name)
+            untracked = repository / "untracked_peer_antigravity.py"
+            untracked.write_text('"""Untracked fixture."""\n', encoding="utf-8")
+            paths = _repository_tracked_paths_antigravity(repository)
+        self.assertIn(index_tracked.resolve(), paths)
+        self.assertNotIn(untracked.resolve(), paths)
 
 
 if __name__ == "__main__":
