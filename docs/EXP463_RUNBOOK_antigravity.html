@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp463 실행 가이드</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #2457a6}.stop{padding:1rem;background:#fff4f2;border-left:6px solid #b42318}</style></head>
+<body><main>
+<h1>Exp463 Task 1 operator boundary</h1>
+<p>현재 단계는 <code>planned_implementation_not_started</code>다. 이 문서는 구현자와 검토자가 공식 실행을 실수로 시작하지 않도록 허용 범위를 고정한다.</p>
+<table>
+<tr><th>run identity</th><td><code>exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821</code></td></tr>
+<tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821</code> — must stay absent and non-symlink</td></tr>
+<tr><th>predecessor</th><td>Exp462 terminal commit <code>040422f62406e3ca19038b9609903c4ba76e1694</code></td></tr>
+<tr><th>fixed primary</th><td>M2 <code>hydra_period_ramp_gated_max</code>; onset <code>56</code>, alpha <code>0.005</code>, gate <code>0.995</code></td></tr>
+<tr><th>official commands</th><td>evaluate 0 / inspect 0; official command count 0</td></tr>
+<tr><th>label query count</th><td>0 (label query count 0)</td></tr>
+</table>
+
+<div class="stop"><strong>Do not run official evaluate.</strong><br>
+<strong>Do not run official inspect.</strong><br>
+Do not create or alias the official root, query TEST labels, compute TEST FN/FP/F1, apply routing, change champion/pending state, tune the frozen gates, or exclude a failed fold. Private TRAIN work is not authorized until Tasks 2–5 implement and verify their own boundaries.</div>
+
+<h2>Allowed checks in Task 1</h2>
+<ul>
+<li>Run only the governance regression test, strict JSON parsing, HTML parsing, map validation, and diff/root/label checks.</li>
+<li>Confirm the approved design SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code>.</li>
+<li>Keep official result, prediction, evaluation, decision, artifact-map, and dashboard hashes <code>null</code>.</li>
+<li>Keep M0–M6 IDs and descriptions fixed. M2 is the sole primary; implementation may choose internal names only in later tasks.</li>
+</ul>
+
+<h2>Later lifecycle (not authorized by this document)</h2>
+<ol>
+<li>Tasks 2–4 must implement and test the frozen TRAIN-only authority, scoring, 70 rows, seven summaries, and semantic replay.</li>
+<li>Task 5 may run exactly two sequential private TRAIN evaluate→inspect reproductions only after a clean reviewed implementation commit.</li>
+<li>If any private M2 gate fails, stop permanently before official execution and record the failed qualification.</li>
+<li>Only a separate user approval after a passing private gate can authorize one official evaluate and one inspect.</li>
+</ol>
+<pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+# No official command is authorized in Task 1.
+"$PY" -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_governance_antigravity</code></pre>
+<p>Task 1 does not select a winner. Champion, pending candidate, routing, and promotion remain unchanged.</p>
+</main></body></html>

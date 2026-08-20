@@ -9,7 +9,7 @@
 <tr><th>Architecture</th><td>Exp462 구조를 통제된 복사로 사용하되 24D LocalGap 주 후보를 prefix-scaled 1D ramp와 <code>0.995</code> gated max로 교체한다. M0–M6을 같은 blocked folds에서 계산하고, M2만 사전 등록된 합격선으로 판정한다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, 기존 aeon/Hydra CPU 경로, unittest, canonical JSON/JSONL, HTML.</td></tr>
 <tr><th>Spec</th><td><a href="../specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html">승인된 Exp463 설계서</a> — SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
-<tr><th>Current status</th><td><code>design_approved_plan_written_awaiting_execution_choice</code>. 구현·private TRAIN·공식 실행·TEST label query는 모두 0회다.</td></tr>
+<tr><th>Current status</th><td><code>task_1_governance_implemented_pending_independent_review</code>. Task 1 surfaces are implemented; 구현·private TRAIN·공식 실행·TEST label query는 모두 0회다.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -29,6 +29,7 @@
 <h2><label><input type="checkbox" disabled>Task 1 — governance, dashboard, code map</label></h2>
 <p><strong>Files:</strong> Create <code>docs/EXP463_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP463_RUNBOOK_antigravity.html</code>, <code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp463_antigravity.py</code>, <code>docs/codemap/codemap_exp463_antigravity.{html,json,lock}</code>. Modify <code>docs/EXP463_DASHBOARD_antigravity.html</code>, three ledgers, and this plan.</p>
 <p><strong>Produces:</strong> 승인된 설계 SHA, planned ledger record, 쉬운 한국어 dashboard, 이후 Task 경계를 unknown으로 표시한 map.</p>
+<p><strong>Implementation handoff:</strong> Task 1 surfaces are written and the governance regression is RED→GREEN pending an independent review. The plan remains unchecked until that review; Tasks 2–6 remain unchecked.</p>
 <ol>
 <li><label><input type="checkbox" disabled>Step 1 — RED: 문서·ledger·map 부재와 공식0/label0/null result를 검사한다.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
 self.assertEqual(record["label_query_count"], 0)

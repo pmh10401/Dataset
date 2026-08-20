@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp463 Task 1 구현 보고서</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#eefbf3;border-left:6px solid #16794b;padding:1rem}.warn{background:#fff8e6;border-left:6px solid #b54708;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<body><main>
+<h1>Exp463 Task 1 governance report</h1>
+<p><strong>status:</strong> <code>DONE_WITH_CONCERNS</code></p>
+<p>Task 1의 계획·사전등록·런북·보고서·대시보드·ledger·코드맵 표면을 구현했다. 공식 evaluate 0 / inspect 0 (official evaluate 0 / inspect 0), TEST label query 0 (label query count 0), 공식 root 생성 0, champion/pending 변경은 발생하지 않았다. 이 보고서는 독립 검토 전 구현 handoff이며, 작성자가 최종 review를 수행하지 않았다.</p>
+
+<h2>Files</h2>
+<ul>
+<li><code>docs/EXP463_PREREGISTRATION_antigravity.html</code></li>
+<li><code>docs/EXP463_RUNBOOK_antigravity.html</code></li>
+<li><code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+<li><code>docs/EXP463_DASHBOARD_antigravity.html</code></li>
+<li><code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code></li>
+<li><code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code></li>
+<li><code>scratch/build_codemap_exp463_antigravity.py</code></li>
+<li><code>docs/codemap/codemap_exp463_antigravity.html</code>, <code>.json</code>, <code>.lock</code></li>
+<li><code>docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html</code></li>
+</ul>
+
+<h2>TDD evidence</h2>
+<table>
+<tr><th>RED</th><td><code>$PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_governance_antigravity</code> was run before the governance surfaces existed. Expected missing-surface failure was observed: 2 tests ran, 1 failure (six missing Task 1 files) and 1 error (missing preregistration read).</td></tr>
+<tr><th>GREEN 1</th><td><code>$PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_governance_antigravity</code> passed: <code>Ran 2 tests in 0.012s — OK</code>.</td></tr>
+<tr><th>GREEN 2</th><td>The same governance command was repeated and passed: <code>Ran 2 tests in 0.009s — OK</code>. This confirms deterministic repeatability at the Task 1 boundary.</td></tr>
+</table>
+
+<h2>Frozen governance decisions</h2>
+<ul>
+<li>Design SHA-256: <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code>; predecessor Exp462 terminal commit: <code>040422f62406e3ca19038b9609903c4ba76e1694</code>.</li>
+<li>M0–M6 are frozen IDs with design descriptions. Only the approved M2 implementation string, <code>hydra_period_ramp_gated_max</code>, is frozen here; no internal names are invented for M0/M1/M3/M4/M5/M6.</li>
+<li>M2 is the sole primary. Onset is <code>56</code>, alpha is <code>0.005</code>, and gate is <code>0.995</code>. Any private gate failure permanently stops before official execution.</li>
+<li>All three ledger records are <code>planned_implementation_not_started</code>; official evaluate/inspect are 0, label query count is 0, result hashes are null, official root is absent, and champion/pending are unchanged.</li>
+</ul>
+
+<h2>Validation evidence</h2>
+<ul>
+<li>Strict duplicate-key JSON parsing and HTML parser checks are in the governance test. A standalone validation also reported: <code>strict JSON: 5 files OK; HTML parse: 5 files OK; map validation: OK; official root: absent; label query count: 0</code>.</li>
+<li>The map builder validates graph node/edge evidence, future Task 2–5 unknown nodes, exact HTML-embedded JSON equality, and a clean source-parent lock at base commit <code>135c97313d9e107626e6b051e0416e4984e74a08</code>.</li>
+<li>Run-root absence, label0, official0, null hashes, and champion/pending invariance are asserted.</li>
+<li>MLX was not applicable to governance-only documents; no score-source execution or package installation occurred.</li>
+</ul>
+
+<h2>Commits</h2>
+<p>Bounded Task 1 commit: <code>PENDING_COMMIT</code>. Independent review commit/checklist: <code>NOT_PERFORMED_BY_THIS_AGENT</code>.</p>
+
+<div class="warn"><strong>Concerns:</strong> independent review remains pending. The Exp463 plan intentionally leaves Task 1–6 checkboxes unchecked until that review. Later Tasks 2–5 must preserve the M0–M6 IDs/descriptions and may choose internal method names only within their owned implementation contracts.</div>
+<div class="stop"><strong>Safety boundary:</strong> no official command, TEST label access, routing, promotion, or official root creation is authorized by this Task 1 handoff.</div>
+</main></body></html>
