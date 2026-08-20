@@ -186,6 +186,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "scratch/generate_exp450_codemap_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
       "kind": "ast_import"
@@ -477,7 +482,10 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
       ]
     },
     {
@@ -504,7 +512,11 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
         "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
-        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py"
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
       ]
     },
     {
@@ -516,7 +528,9 @@
       "effects": "Exact NumPy Exp55/56 imaging transforms, PCA, and KNN scoring closure.\n\nProvenance: run_model_hard_research_experiments.py SHA256\nf9f06973009259590b4afd165dc275cff9b834a628ccb17e248d015d55680194 (resample_rows, rp_images,\nspectrogram_images, glcm_image_features, pca_pair, fixed_width_features,\nimaging_features, score_pair_for_config) plus\nrun_experiment_60_62_rocket_imaging_selector_variants.py SHA256\n4ab38ef8a0ad152ccfc18c1297c40aca31ba79ac29348b9f5da029682507b2ed\n(IMAGING_CONFIGS).",
       "module": "paper.equipment_anomaly_detection.sources_paper.imaging_paper",
       "path": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
-      "tests": []
+      "tests": [
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py"
+      ]
     },
     {
       "callers": [
@@ -531,7 +545,8 @@
       "path": "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
       "tests": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
-        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py"
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py"
       ]
     },
     {
@@ -551,7 +566,9 @@
       "tests": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_readiness_antigravity.py",
-        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py"
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py"
       ]
     },
     {
@@ -575,15 +592,21 @@
       "path": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
       "tests": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
-        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py"
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py"
       ]
     },
     {
-      "callers": [],
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
       "effects": "Generate and verify the self-contained, factual Exp450 code-map triplet.",
       "module": "scratch.generate_exp450_codemap_antigravity",
       "path": "scratch/generate_exp450_codemap_antigravity.py",
-      "tests": []
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+      ]
     }
   ],
   "schema": "exp450-codemap.v1",

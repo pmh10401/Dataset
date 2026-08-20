@@ -6,7 +6,7 @@ import ast
 from collections import defaultdict
 from hashlib import sha256
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import sys
 from typing import Sequence
 
@@ -99,6 +99,14 @@ def _module_docstring_antigravity(path: Path) -> str:
     return ast.get_docstring(tree) or "No module docstring is present."
 
 
+def _is_test_path_antigravity(relative_path: str) -> bool:
+    """Recognize conventional test directories, including retained ``tests_paper``."""
+    return any(
+        part == "tests" or part.startswith("tests_")
+        for part in PurePosixPath(relative_path).parts
+    )
+
+
 def build_codemap_payload_antigravity(
     paths: Sequence[Path], callers: dict[str, tuple[str, ...]]
 ) -> dict[str, object]:
@@ -107,7 +115,7 @@ def build_codemap_payload_antigravity(
     for path in paths:
         relative = _relative_antigravity(path)
         direct_callers = callers.get(relative, ())
-        tests = tuple(caller for caller in direct_callers if "/tests/" in caller or caller.startswith("tests/"))
+        tests = tuple(caller for caller in direct_callers if _is_test_path_antigravity(caller))
         nodes.append(
             {
                 "path": relative,

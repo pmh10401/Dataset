@@ -7,14 +7,14 @@
     "experiments/exp449_reproducible_rebaseline_antigravity/verifier_antigravity.py": "dfa7e739cc3f757b3c933c889840bc3a8111a5ead8e573673c3485057ccfad01",
     "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py": "c1996133feecdff9bde14ce046948b09a8cb0bced74660f32b8ec792f7c1bf60",
     "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py": "3b15ae7cff4030b137791df55152fcf6caca218c38aa66a741ea54d923ff40d2",
-    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "e3e00b71ac10eb451573585f2c845e6e740dcb8cfa6d5fd3f059b463976d761c",
+    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "9c257639fd8c24ce7f447cc9ea32d83153059c26aa312f95784f1edc64667678",
     "paper/equipment_anomaly_detection/hard_route_paper.py": "748a6f93cd0728e1eb78a3c3e552ad4ee2fa41a8f9afe7e9b08882fd1b869ef7",
     "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py": "c246522224955434c9a0f30a07f7f9bc6ed6c394be2279de3c7ccca04a727afa",
     "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py": "1c18b6c6e3f70c922f9bba9689d26b99d2eb6320864e9c6425727af6e95d61e2",
     "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py": "88fd51b78985932da721e5b193d3dcd1f23df746687f60baf2bdcf66414ac561",
     "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py": "00ebfd395a7220d6c3a6b863af6c9b3601081894795652fcad1b406b0580d0db",
     "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py": "99bd057400759e242d9f153190da9a9341e5b8a789e25cd21d088a9a8fe4a3f0",
-    "scratch/generate_exp450_codemap_antigravity.py": "24f70dffee9b9d4c91a177a01c72baae1d331b9c8ac675331e684f496ef28ff1"
+    "scratch/generate_exp450_codemap_antigravity.py": "3e4078d8cb0b86a7528f3f8baa8ac8fe0b050d252c99f280e4e44956d1ff0a25"
   },
   "scanned_scope": [
     "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",

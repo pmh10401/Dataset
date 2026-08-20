@@ -12,6 +12,12 @@ from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigrav
     Exp450BackendDecision,
     Exp450Condition,
 )
+from scratch.generate_exp450_codemap_antigravity import (
+    REPOSITORY_ROOT,
+    ast_callers_antigravity,
+    build_codemap_payload_antigravity,
+    tracked_existing_paths_antigravity,
+)
 
 
 class Exp450ConfigTests(unittest.TestCase):
@@ -57,6 +63,19 @@ class Exp450ConfigTests(unittest.TestCase):
         )
         with self.assertRaises(FrozenInstanceError):
             decision.cpu_workers = 1  # type: ignore[misc]
+
+    def test_codemap_recognizes_retained_tests_paper_coverage(self) -> None:
+        """A retained module's tests_paper caller must appear in its coverage list."""
+        paths = tracked_existing_paths_antigravity(REPOSITORY_ROOT)
+        payload = build_codemap_payload_antigravity(paths, ast_callers_antigravity(paths))
+        imaging = next(
+            node for node in payload["nodes"]
+            if node["path"] == "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py"
+        )
+        self.assertIn(
+            "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+            imaging["tests"],
+        )
 
 
 if __name__ == "__main__":
