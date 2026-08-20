@@ -13,7 +13,10 @@ from paper.equipment_anomaly_detection.sources_paper.preprocessing_paper import 
     resample_series_paper,
 )
 
-from experiments.exp450_resampling_image_ablation_antigravity import backend_antigravity
+from experiments.exp450_resampling_image_ablation_antigravity import (
+    backend_antigravity,
+    transforms_antigravity,
+)
 from experiments.exp450_resampling_image_ablation_antigravity.backend_antigravity import (
     assess_exp450_backend_antigravity,
 )
@@ -111,6 +114,61 @@ class Exp450TransformsBackendTests(unittest.TestCase):
         self.assertEqual(result.shape, (1, 3))
         self.assertTrue(np.isfinite(result).all())
         self.assertTrue(math.isfinite(float(result.sum())))
+
+    def test_mps_pooling_falls_back_for_both_native_nondivisible_error_wordings(self) -> None:
+        """Rejecting either observed MPS wording must not bypass on-device windows."""
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("PyTorch is unavailable")
+        if not torch.backends.mps.is_available():
+            self.skipTest("MPS is unavailable")
+        messages = (
+            "Adaptive pool MPS: input sizes must be divisible by output sizes.",
+            "Adaptive pool MPS: output sizes must be divisible by input sizes.",
+        )
+        values = np.arange(16, dtype=np.float32).reshape(1, 4, 4)
+        expected = np.asarray(
+            [[[2.5, 3.5, 4.5], [6.5, 7.5, 8.5], [10.5, 11.5, 12.5]]],
+            dtype=np.float32,
+        )
+        for message in messages:
+            with self.subTest(message=message), patch.object(
+                transforms_antigravity.torch_functional,
+                "adaptive_avg_pool2d",
+                side_effect=RuntimeError(message),
+            ), patch.object(
+                transforms_antigravity,
+                "_adaptive_pool_windows_antigravity",
+                wraps=transforms_antigravity._adaptive_pool_windows_antigravity,
+            ) as fallback:
+                result = adaptive_average_2d_antigravity(values, 3, device="mps")
+                np.testing.assert_array_equal(result, expected)
+                self.assertEqual(fallback.call_count, 1)
+                self.assertEqual(fallback.call_args.args[0].device.type, "mps")
+
+    def test_mps_pooling_reraises_unrelated_native_runtime_error(self) -> None:
+        """Broadly swallowing an unrelated MPS failure must fail this guard."""
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("PyTorch is unavailable")
+        if not torch.backends.mps.is_available():
+            self.skipTest("MPS is unavailable")
+        with patch.object(
+            transforms_antigravity.torch_functional,
+            "adaptive_avg_pool2d",
+            side_effect=RuntimeError("Adaptive pool MPS: unrelated native failure"),
+        ), patch.object(
+            transforms_antigravity,
+            "_adaptive_pool_windows_antigravity",
+            wraps=transforms_antigravity._adaptive_pool_windows_antigravity,
+        ) as fallback:
+            with self.assertRaisesRegex(RuntimeError, "unrelated native failure"):
+                adaptive_average_2d_antigravity(
+                    np.arange(16, dtype=np.float32).reshape(1, 4, 4), 3, device="mps"
+                )
+        fallback.assert_not_called()
 
 
 if __name__ == "__main__":

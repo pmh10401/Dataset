@@ -143,6 +143,15 @@ def _adaptive_pool_windows_antigravity(
     return torch.stack(rows, dim=-2)
 
 
+def _is_mps_nondivisible_pool_error_antigravity(error: RuntimeError) -> bool:
+    """Recognize only the two observed native MPS non-divisible-kernel errors."""
+    message = str(error)
+    return (
+        "input sizes must be divisible by output sizes" in message
+        or "output sizes must be divisible by input sizes" in message
+    )
+
+
 def _adaptive_pool_1d_antigravity(
     tensor: torch.Tensor, output_size: int, device: str
 ) -> torch.Tensor:
@@ -152,7 +161,7 @@ def _adaptive_pool_1d_antigravity(
         if (
             device != "mps"
             or tensor.shape[-1] % output_size == 0
-            or "input sizes must be divisible by output sizes" not in str(error)
+            or not _is_mps_nondivisible_pool_error_antigravity(error)
         ):
             raise
         return _adaptive_pool_windows_antigravity(tensor, (output_size,))
@@ -167,7 +176,7 @@ def _adaptive_pool_2d_antigravity(
         if device != "mps" or (
             tensor.shape[-2] % output_size[0] == 0
             and tensor.shape[-1] % output_size[1] == 0
-        ) or "input sizes must be divisible by output sizes" not in str(error):
+        ) or not _is_mps_nondivisible_pool_error_antigravity(error):
             raise
         return _adaptive_pool_windows_antigravity(tensor, output_size)
 
