@@ -31,7 +31,7 @@
 
 | field | value |
 |---|---|
-| smoke_result | `v1_failed_preserved; v2_verified_92_of_92` |
+| smoke_result | `v1_failed_preserved; v2_preserved; v3_verified_92_of_92` |
 | full_run_result | `not_run` |
 | evaluation_result | `not_run` |
 | report_result | `not_run` |
@@ -63,4 +63,12 @@ Exp450은 ablation일 뿐이며 자동 promotion 주장을 하지 않는다.
 - 과학적 불변성: SQL, TRAIN/TEST row 선택, raw blob/float32 값, A--D 요인, 점수와 threshold는 변경하지 않았다. 임시 SQLite fixture에서 bound reader와 기존 reader의 TRAIN/TEST raw bytes가 동일함을 검사했다. TEST label은 열지 않았다.
 - 새 code closure에는 `paper/equipment_anomaly_detection/data_paper.py`가 포함된다. 그래서 v2 checkpoint를 섞지 않는 새 root `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v3_antigravity_20260820`를 만든 권한으로 고정했다. full run은 아직 시작하지 않았고 official score root·TEST label에는 접근하지 않았다.
 - TDD: binding API 부재 RED를 확인한 뒤, 다중 load 한 번 해시, 교체·content/stat 변조 거부, forged digest 거부, 새 invocation 재해시, 기존 loader와 byte 동등성 회귀를 추가했다.
-- 다음 단계: v3 23-dataset × A--D smoke를 실행·독립 검증한 다음에만 1,117-dataset × A--D full score run을 재개한다.
+- 다음 단계: 아래 v3 smoke의 독립 검증이 완료됐으므로, 1,117-dataset × A--D full score run만 라벨 없이 실행할 수 있다.
+
+## Smoke v3 검증 완료
+
+- 실행: DB digest-once closure에서 23 datasets × A--D = 92/92 dataset-condition checkpoint가 첫 wave에서 성공했고 실패와 2차 재시도는 없었다. 첫 checkpoint까지 10.164초, 로컬 단계 elapsed time은 1,080.141초였다.
+- 고정 backend: PyTorch 2.13.0, MPS available/selected, MLX unavailable/unused, logical CPU 12, CPU workers 11, inner numerical threads 1. MPS-heavy 작업은 한 번에 하나만 실행했다.
+- scorer-free 신선 프로세스 검증: A--D 각각 23 shards와 6,500 TEST-row identities를 검증했다. manifest SHA-256은 각각 `fa38d4e2…9d712`, `4d6a5448…d9bde`, `e4603aee…7201e`, `28f14d44…751cd`이다.
+- 승격 게이트: 모든 score가 finite이고 고정 image shape/TEST identity가 정확하며, backend 변경 및 MPS OOM이 없었다. TEST label, AP/AUROC, alert, 우열 정보는 열거나 검사하지 않았다.
+- durable progress log: `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v3_progress_antigravity_20260820.log` (92 events; SHA-256 `c32ed65b…6deaa`). v1과 v2 root는 변경하지 않고 보존한다.
