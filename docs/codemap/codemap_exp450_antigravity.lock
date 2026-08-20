@@ -15,7 +15,7 @@
     "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py": "184b4b00527582655707f5adc0035faedc8433f9498c2622ccb3d17d4dc9940e",
     "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py": "d0bee36153348f79a49cee7a34384ce503b4ff7248cb64cde576b9cff1f1cd70",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py": "9cfacd57812abde989d56bcfaf35147f0eabdde96be7fa018d295891a9a20ee3",
-    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "c5f2637b12c0d4d41b7cd59c83e08582f402b6280a86bf6663ebee1f0968b56d",
+    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "4d99030c119890721280fd3a7c17b4fb661e595194ef13280c5687fd323d06d3",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_evaluation_antigravity.py": "7ff057c92c489c6ee8b4e47aca9b182de46a1545bb8a33019a05171fcae74a0e",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py": "b02533ddc9666c7a9acfad53dd065cdefb5cdc29d4d25433aedec16918d17204",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "83607a35faa4e7f4b43fdc8c0f7179df0643de783302efeeadf1460ed2cbfc8d",

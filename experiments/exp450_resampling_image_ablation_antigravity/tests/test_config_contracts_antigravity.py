@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
+import json
 from pathlib import Path
 import subprocess
 from tempfile import TemporaryDirectory
@@ -55,6 +56,30 @@ class Exp450ConfigTests(unittest.TestCase):
                 "exp450_resampling_image_ablation_smoke_v3_antigravity_20260820"
             ),
         )
+
+    def test_active_v3_state_does_not_claim_verified_v2_completion(self) -> None:
+        """Current v3 authority must keep all v2 completion facts in named history only."""
+        state = json.loads((REPOSITORY_ROOT / "RESEARCH_STATE.json").read_text(encoding="utf-8"))
+        active = state["exp450_resampling_image_ablation_antigravity"]
+        self.assertEqual(active["smoke_root"], str(SMOKE_ROOT))
+        self.assertFalse(active["smoke_started"])
+        self.assertFalse(active["score_roots_created"])
+        self.assertFalse(active["score_manifests_frozen"])
+        self.assertEqual(active["smoke_completed_coordinates"], 0)
+        self.assertEqual(active["smoke_total_coordinates"], 0)
+        self.assertEqual(active["smoke_verified_manifests"], {})
+        self.assertFalse(active["smoke_promotion_gate"]["all_four_manifests_verified"])
+        self.assertEqual(active["smoke_result"], "not_run")
+        self.assertEqual(active["verified_smoke_v2_completed_coordinates"], 92)
+        self.assertTrue(active["verified_smoke_v2_promotion_gate"]["all_four_manifests_verified"])
+
+        catalog = json.loads((REPOSITORY_ROOT / "EXPERIMENT_CATALOG.json").read_text(encoding="utf-8"))
+        entry = next(value for value in catalog["experiments"] if value["id"] == "Exp450")
+        self.assertEqual(entry["smoke_root"], str(SMOKE_ROOT))
+        self.assertFalse(entry["smoke_started"])
+        self.assertFalse(entry["score_roots_created"])
+        self.assertFalse(entry["score_manifests_frozen"])
+        self.assertEqual(entry["verified_smoke_v2_result"], "verified")
 
     def test_condition_rejects_a_nonapproved_factor_pair(self) -> None:
         """Condition D with a linear image must never represent the ablation."""
