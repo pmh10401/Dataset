@@ -176,6 +176,77 @@ class Exp450ArtifactRecoveryTests(unittest.TestCase):
         )
         self.assertNotIn((self.raw.dataset, "A"), inventory.wave_two)
 
+    def test_failure_ledger_accepts_exactly_one_wave_one_then_wave_two(self) -> None:
+        """The only retryable history for one coordinate is the ordered 1→2 pair."""
+        append_dataset_condition_failure_antigravity(
+            self.root, self.context, self.catalog, self.raw, CONDITION_A, 1, RuntimeError("first"),
+        )
+        append_dataset_condition_failure_antigravity(
+            self.root, self.context, self.catalog, self.raw, CONDITION_A, 2, RuntimeError("second"),
+        )
+        inventory = verify_dataset_condition_inventory_antigravity(
+            self.root, self.context, self.catalog, {self.raw.dataset: self.raw},
+        )
+        self.assertEqual(
+            tuple((failure.condition_id, failure.wave, failure.attempt) for failure in inventory.failures),
+            (("A", 1, 1), ("A", 2, 2)),
+        )
+
+    def test_failure_ledger_rejects_a_duplicate_wave_two_append(self) -> None:
+        """A third recorded attempt for one coordinate must fail before it reaches disk."""
+        append_dataset_condition_failure_antigravity(
+            self.root, self.context, self.catalog, self.raw, CONDITION_A, 1, RuntimeError("first"),
+        )
+        append_dataset_condition_failure_antigravity(
+            self.root, self.context, self.catalog, self.raw, CONDITION_A, 2, RuntimeError("second"),
+        )
+        with self.assertRaisesRegex(ValueError, "failure ledger"):
+            append_dataset_condition_failure_antigravity(
+                self.root, self.context, self.catalog, self.raw, CONDITION_A, 2, RuntimeError("third"),
+            )
+
+    def test_failure_ledger_rejects_a_duplicate_wave_one_append(self) -> None:
+        """Repeating wave one would give one coordinate two first attempts."""
+        append_dataset_condition_failure_antigravity(
+            self.root, self.context, self.catalog, self.raw, CONDITION_A, 1, RuntimeError("first"),
+        )
+        with self.assertRaisesRegex(ValueError, "failure ledger"):
+            append_dataset_condition_failure_antigravity(
+                self.root, self.context, self.catalog, self.raw, CONDITION_A, 1, RuntimeError("duplicate"),
+            )
+
+    def test_inventory_rejects_a_canonical_out_of_order_failure_ledger(self) -> None:
+        """A valid checksum cannot authorize a wave-one record after wave two began."""
+        second = _raw("second_antigravity")
+        catalog = _catalog((self.raw, second))
+        context = _context(self.root, catalog)
+        append_dataset_condition_failure_antigravity(
+            self.root, context, catalog, self.raw, CONDITION_A, 1, RuntimeError("first"),
+        )
+        append_dataset_condition_failure_antigravity(
+            self.root, context, catalog, self.raw, CONDITION_A, 2, RuntimeError("second"),
+        )
+        entry = catalog["datasets"][1]
+        bare = {
+            "schema": "exp450-dataset-condition-failure-antigravity.v1",
+            "context_sha256": context.sha256,
+            "catalog_sha256": context.catalog_sha256,
+            "dataset": second.dataset,
+            "condition_id": "A",
+            "raw_identity": entry,
+            "backend": context.backend.artifact_record(),
+            "wave": 1,
+            "attempt": 3,
+            "exception_type": "RuntimeError",
+            "exception_message": "late first wave",
+        }
+        path = self.root / "checkpoints_antigravity" / "failures_antigravity" / "attempt_000003_antigravity.json"
+        path.write_bytes(canonical_json_bytes({**bare, "record_sha256": sha256(canonical_json_bytes(bare)).hexdigest()}))
+        with self.assertRaisesRegex(ValueError, "failure ledger"):
+            verify_dataset_condition_inventory_antigravity(
+                self.root, context, catalog, {self.raw.dataset: self.raw, second.dataset: second},
+            )
+
     def test_interrupted_and_resumed_successes_match_after_root_context_normalization(self) -> None:
         """Resumption must reproduce the same typed success envelopes after root binding alone differs."""
         first, second = _raw("first_antigravity"), _raw("second_antigravity")

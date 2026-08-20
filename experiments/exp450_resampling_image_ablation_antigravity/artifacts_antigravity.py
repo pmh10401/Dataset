@@ -411,6 +411,67 @@ def _failure_paths(root: Path) -> list[Path]:
     return paths
 
 
+def _failure_record_from_value(
+    value: object,
+    attempt: int,
+    context: Exp450RunContext,
+    catalog: dict[str, object],
+    raw_by_dataset: dict[str, RawDataset] | None = None,
+) -> DatasetConditionFailureAntigravity:
+    required = {"schema", "context_sha256", "catalog_sha256", "dataset", "condition_id", "raw_identity", "backend", "wave", "attempt", "exception_type", "exception_message", "record_sha256"}
+    if not isinstance(value, dict) or set(value) != required or value.get("schema") != FAILURE_SCHEMA or value.get("attempt") != attempt:
+        raise ValueError("checkpoint failure record differs")
+    bare = {key: child for key, child in value.items() if key != "record_sha256"}
+    if value["record_sha256"] != _sha(bare) or value["context_sha256"] != context.sha256 or value["catalog_sha256"] != context.catalog_sha256 or value["backend"] != context.backend.artifact_record():
+        raise ValueError("checkpoint failure context differs")
+    dataset, condition_id = value["dataset"], value["condition_id"]
+    if condition_id not in CONDITION_IDS or value["wave"] not in {1, 2} or type(value["exception_type"]) is not str or not value["exception_type"] or type(value["exception_message"]) is not str:
+        raise ValueError("checkpoint failure record differs")
+    entry = _catalog_entry(catalog, dataset)
+    if value["raw_identity"] != entry:
+        raise ValueError("checkpoint failure raw identity differs")
+    if raw_by_dataset is not None:
+        if dataset not in raw_by_dataset:
+            raise ValueError("checkpoint failure record differs")
+        _raw_identity(raw_by_dataset[dataset], entry)
+    return DatasetConditionFailureAntigravity(
+        dataset, condition_id, value["wave"], attempt,
+        value["exception_type"], value["exception_message"],
+    )
+
+
+def _validate_failure_ledger(records: tuple[DatasetConditionFailureAntigravity, ...]) -> None:
+    """Accept only first-wave records followed by one optional retry per coordinate."""
+    seen: set[tuple[str, str, int]] = set()
+    first_wave: set[tuple[str, str]] = set()
+    second_wave_started = False
+    for record in records:
+        coordinate = (record.dataset, record.condition_id)
+        identity = (*coordinate, record.wave)
+        if identity in seen:
+            raise ValueError("checkpoint failure ledger has duplicate coordinate wave")
+        if record.wave == 1:
+            if second_wave_started:
+                raise ValueError("checkpoint failure ledger has wave one after wave two")
+            first_wave.add(coordinate)
+        else:
+            second_wave_started = True
+            if coordinate not in first_wave:
+                raise ValueError("checkpoint failure ledger has wave two without wave one")
+        seen.add(identity)
+
+
+def _append_failure_history(
+    root: Path, context: Exp450RunContext, catalog: dict[str, object]
+) -> tuple[DatasetConditionFailureAntigravity, ...]:
+    records = tuple(
+        _failure_record_from_value(_canonical_read(path), attempt, context, catalog)
+        for attempt, path in enumerate(_failure_paths(root), 1)
+    )
+    _validate_failure_ledger(records)
+    return records
+
+
 def append_dataset_condition_failure_antigravity(root: Path, context: Exp450RunContext, catalog: dict[str, object], raw: RawDataset, condition: Exp450Condition, wave: int, error: Exception) -> Path:
     """Append the next global failure ledger record; it never counts as success."""
     _check_context(context, catalog)
@@ -419,7 +480,14 @@ def append_dataset_condition_failure_antigravity(root: Path, context: Exp450RunC
         raise ValueError("checkpoint failure identity differs")
     entry = _catalog_entry(catalog, raw.dataset)
     _raw_identity(raw, entry)
-    attempt = len(_failure_paths(root)) + 1
+    history = _append_failure_history(root, context, catalog)
+    attempt = len(history) + 1
+    _validate_failure_ledger(
+        (*history, DatasetConditionFailureAntigravity(
+            raw.dataset, condition.condition_id, wave, attempt,
+            type(error).__name__, str(error),
+        ))
+    )
     bare = {"schema": FAILURE_SCHEMA, "context_sha256": context.sha256, "catalog_sha256": context.catalog_sha256, "dataset": raw.dataset, "condition_id": condition.condition_id, "raw_identity": entry, "backend": context.backend.artifact_record(), "wave": wave, "attempt": attempt, "exception_type": type(error).__name__, "exception_message": str(error)}
     path = _failure_path(root, attempt)
     _write_create_only(path, canonical_json_bytes({**bare, "record_sha256": _sha(bare)}))
@@ -427,24 +495,14 @@ def append_dataset_condition_failure_antigravity(root: Path, context: Exp450RunC
 
 
 def _failure_records(root: Path, context: Exp450RunContext, catalog: dict[str, object], raw_by_dataset: dict[str, RawDataset]) -> tuple[DatasetConditionFailureAntigravity, ...]:
-    required = {"schema", "context_sha256", "catalog_sha256", "dataset", "condition_id", "raw_identity", "backend", "wave", "attempt", "exception_type", "exception_message", "record_sha256"}
-    records = []
-    for attempt, path in enumerate(_failure_paths(root), 1):
-        value = _canonical_read(path)
-        if not isinstance(value, dict) or set(value) != required or value.get("schema") != FAILURE_SCHEMA or value.get("attempt") != attempt:
-            raise ValueError("checkpoint failure record differs")
-        bare = {key: child for key, child in value.items() if key != "record_sha256"}
-        if value["record_sha256"] != _sha(bare) or value["context_sha256"] != context.sha256 or value["catalog_sha256"] != context.catalog_sha256 or value["backend"] != context.backend.artifact_record():
-            raise ValueError("checkpoint failure context differs")
-        dataset, condition_id = value["dataset"], value["condition_id"]
-        if dataset not in raw_by_dataset or condition_id not in CONDITION_IDS or value["wave"] not in {1, 2} or type(value["exception_type"]) is not str or not value["exception_type"] or type(value["exception_message"]) is not str:
-            raise ValueError("checkpoint failure record differs")
-        entry = _catalog_entry(catalog, dataset)
-        _raw_identity(raw_by_dataset[dataset], entry)
-        if value["raw_identity"] != entry:
-            raise ValueError("checkpoint failure raw identity differs")
-        records.append(DatasetConditionFailureAntigravity(dataset, condition_id, value["wave"], attempt, value["exception_type"], value["exception_message"]))
-    return tuple(records)
+    records = tuple(
+        _failure_record_from_value(
+            _canonical_read(path), attempt, context, catalog, raw_by_dataset
+        )
+        for attempt, path in enumerate(_failure_paths(root), 1)
+    )
+    _validate_failure_ledger(records)
+    return records
 
 
 def verify_dataset_condition_inventory_antigravity(root: Path, context: Exp450RunContext, catalog: dict[str, object], raw_by_dataset: dict[str, RawDataset]) -> DatasetConditionInventoryAntigravity:
