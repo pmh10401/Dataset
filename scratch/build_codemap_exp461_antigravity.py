@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp461 Task 3 scoring code map."""
+"""Build and validate the bounded Exp461 Task 4 qualification code map."""
 
 from __future__ import annotations
 
@@ -36,15 +36,25 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/config_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/contracts_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/artifacts_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/dashboard_export_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/evaluation_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/period_features_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/predecessor_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/qualification_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/replay_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/scoring_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/sources_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_artifacts_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_contracts_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_dashboard_export_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_evaluation_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_period_features_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_replay_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_scoring_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp461_antigravity.py",
@@ -150,8 +160,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp461 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 3 scoring 코드맵</h1><p>Task 3 complete 상태는 Task 2 frozen input truth를 유지한 채 120D period signature, branch anomaly rank, three-method fold scoring, focused tests, checked Task 3 plan controls, and the updated bounded map을 보존한다. Qualification runs, 공식 실행은 아직 없다.</p>'
+        '<title>Exp461 Task 4 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp461 Task 4 qualification 코드맵</h1><p>Task 4 implemented pending external review 상태는 Task 2 frozen input truth와 Task 3 scoring boundary를 유지한 채 qualification, decision, seven-leaf publication, source-free replay, restricted dashboard, and focused tests를 보존한다. Task 5 CLI, real TRAIN run, official execution은 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -200,6 +210,21 @@ def build_map_antigravity(
     task3_scoring = (
         "experiments/exp461_ecg_period_signature_qualification_antigravity/scoring_antigravity.py"
     )
+    task4_qualification = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/qualification_antigravity.py"
+    )
+    task4_evaluation = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/evaluation_antigravity.py"
+    )
+    task4_artifacts = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/artifacts_antigravity.py"
+    )
+    task4_replay = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/replay_antigravity.py"
+    )
+    task4_dashboard = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/dashboard_export_antigravity.py"
+    )
     task2_config_test = (
         "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
         "test_config_antigravity.py"
@@ -223,6 +248,26 @@ def build_map_antigravity(
     task3_scoring_test = (
         "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
         "test_scoring_antigravity.py"
+    )
+    task4_qualification_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_qualification_antigravity.py"
+    )
+    task4_evaluation_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_evaluation_antigravity.py"
+    )
+    task4_artifacts_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_artifacts_antigravity.py"
+    )
+    task4_replay_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_replay_antigravity.py"
+    )
+    task4_dashboard_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_dashboard_export_antigravity.py"
     )
     builder = "scratch/build_codemap_exp461_antigravity.py"
 
@@ -258,16 +303,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 4 handoff. Effect: records the immutable document authority, Task 2 input boundary, and Task 3 complete scoring boundary after external review.",
+            "role": "Caller: Task 5 handoff. Effect: records the immutable document authority, Task 2 input boundary, Task 3 scoring boundary, and Task 4 qualification/publication/replay boundary pending external review.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(report, "Task 3 scoring report")],
+            "evidence": [evidence_antigravity(report, "Task 4 qualification report")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 3/6, planned status, official execution 0, null artifact hashes, the two inherited period-change failures, and the frozen Task 3 scoring entrypoints.",
+            "role": "Caller: always-visible status review. Effect: shows Task 4/6, planned official status, official execution 0, null official artifact hashes, the inherited period-change failures, Task 3 scoring entrypoints, and Task 4 qualification/replay entrypoints.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 3/6")],
+            "evidence": [evidence_antigravity(dashboard, "Task 4/6")],
         },
         {
             "id": "research_state",
@@ -433,6 +478,101 @@ def build_map_antigravity(
                 )
             ],
         },
+        {
+            "id": "task4_qualification",
+            "path": task4_qualification,
+            "role": "Caller: Task 4 evaluation/publication. Effect: converts Task 3 fold scores into exact 30 method-seed-fold metric rows with AUCs, Wilson upper bounds, finite flags, pass/fail reasons, and method summaries without opening labels or result roots.",
+            "tests": [task4_qualification_test],
+            "evidence": [evidence_antigravity(task4_qualification, "qualify_methods_antigravity")],
+        },
+        {
+            "id": "task4_evaluation",
+            "path": task4_evaluation,
+            "role": "Caller: Task 4 publication/dashboard/replay. Effect: recomputes the frozen primary candidate gate, the two historical strict-improvement checks, and the non-routing decision.",
+            "tests": [task4_evaluation_test],
+            "evidence": [evidence_antigravity(task4_evaluation, "evaluate_qualification_antigravity")],
+        },
+        {
+            "id": "task4_artifacts",
+            "path": task4_artifacts,
+            "role": "Caller: Task 4 temporary publication and replay tests. Effect: writes the exact seven canonical leaves under a create-only temporary root with a self-excluding artifact hash map.",
+            "tests": [task4_artifacts_test, task4_replay_test],
+            "evidence": [evidence_antigravity(task4_artifacts, "publish_result_antigravity")],
+        },
+        {
+            "id": "task4_replay",
+            "path": task4_replay,
+            "role": "Caller: Task 4 inspect/replay boundary. Effect: validates inventory, canonical bytes, frozen context, 30-row order, summaries, decision, dashboard, and hashes without source data or labels.",
+            "tests": [task4_replay_test],
+            "evidence": [evidence_antigravity(task4_replay, "inspect_replay_at_antigravity")],
+        },
+        {
+            "id": "task4_dashboard_export",
+            "path": task4_dashboard,
+            "role": "Caller: Task 4 publication and visible dashboard projection. Effect: exposes aggregate method/fold qualification only, with no raw series, fold indices, TEST labels, paths, or secrets.",
+            "tests": [task4_dashboard_test],
+            "evidence": [evidence_antigravity(task4_dashboard, "export_dashboard_antigravity")],
+        },
+        {
+            "id": "task4_qualification_tests",
+            "path": task4_qualification_test,
+            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects row-order drift, missing method/fold rows, primary gate drift, or non-strict historical improvement acceptance.",
+            "tests": [task4_qualification_test],
+            "evidence": [
+                evidence_antigravity(
+                    task4_qualification_test,
+                    "test_qualification_preserves_exact_method_seed_fold_and_type_order_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task4_evaluation_tests",
+            "path": task4_evaluation_test,
+            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects summary forgery, primary fold failures, routing application, or TEST-label access at the decision boundary.",
+            "tests": [task4_evaluation_test],
+            "evidence": [
+                evidence_antigravity(
+                    task4_evaluation_test,
+                    "test_decision_recomputes_primary_summary_without_routing_or_labels_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task4_artifacts_tests",
+            "path": task4_artifacts_test,
+            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects publication leaf-count, hash-map, canonical inventory, or create-only overwrite drift.",
+            "tests": [task4_artifacts_test],
+            "evidence": [
+                evidence_antigravity(
+                    task4_artifacts_test,
+                    "test_publish_writes_exact_seven_leaf_create_only_canonical_inventory_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task4_replay_tests",
+            "path": task4_replay_test,
+            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects replay that trusts stored summaries, decisions, dashboards, hash maps, or rehashed tamper.",
+            "tests": [task4_replay_test],
+            "evidence": [
+                evidence_antigravity(
+                    task4_replay_test,
+                    "test_inspect_recomputes_qualification_decision_dashboard_and_hashes_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task4_dashboard_export_tests",
+            "path": task4_dashboard_test,
+            "role": "Caller: Task 4 RED/GREEN verification. Effect: rejects dashboard payloads that expose raw series, fold indices, local paths, TEST labels, or secrets.",
+            "tests": [task4_dashboard_test],
+            "evidence": [
+                evidence_antigravity(
+                    task4_dashboard_test,
+                    "test_dashboard_payload_is_aggregate_only_and_label_free_antigravity",
+                )
+            ],
+        },
     ]
 
     edges = [
@@ -548,6 +688,36 @@ def build_map_antigravity(
             "evidence": evidence_antigravity(plan, "score_fold_methods_antigravity"),
         },
         {
+            "from": "implementation_plan",
+            "to": "task4_qualification",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "qualify_methods_antigravity"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task4_evaluation",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "evaluate_qualification_antigravity"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task4_artifacts",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "publish_result_antigravity"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task4_replay",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "inspect_replay_at_antigravity"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task4_dashboard_export",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "export_dashboard_antigravity"),
+        },
+        {
             "from": "task2_config",
             "to": "task3_scoring",
             "type": "governs",
@@ -564,6 +734,42 @@ def build_map_antigravity(
             "to": "task3_period_features",
             "type": "governs",
             "evidence": evidence_antigravity(task3_scoring, "_period_feature_matrix_antigravity"),
+        },
+        {
+            "from": "task3_scoring",
+            "to": "task4_qualification",
+            "type": "governs",
+            "evidence": evidence_antigravity(task4_qualification, "_qualify_methods_with_dependencies_antigravity"),
+        },
+        {
+            "from": "task2_predecessor_capture",
+            "to": "task4_qualification",
+            "type": "governs",
+            "evidence": evidence_antigravity(task4_qualification, "_metric_row_antigravity"),
+        },
+        {
+            "from": "task4_qualification",
+            "to": "task4_evaluation",
+            "type": "governs",
+            "evidence": evidence_antigravity(task4_evaluation, "_recomputed_summaries_antigravity"),
+        },
+        {
+            "from": "task4_evaluation",
+            "to": "task4_artifacts",
+            "type": "governs",
+            "evidence": evidence_antigravity(task4_artifacts, "_payloads_antigravity"),
+        },
+        {
+            "from": "task4_evaluation",
+            "to": "task4_dashboard_export",
+            "type": "governs",
+            "evidence": evidence_antigravity(task4_dashboard, "_summary_payloads_antigravity"),
+        },
+        {
+            "from": "task4_artifacts",
+            "to": "task4_replay",
+            "type": "governs",
+            "evidence": evidence_antigravity(task4_replay, "inspect_replay_at_antigravity"),
         },
         {
             "from": "task2_config_tests",
@@ -619,10 +825,55 @@ def build_map_antigravity(
                 "test_fold_scoring_method_order_rank_fusion_and_dependency_flow_antigravity",
             ),
         },
+        {
+            "from": "task4_qualification_tests",
+            "to": "task4_qualification",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task4_qualification_test,
+                "test_qualification_preserves_exact_method_seed_fold_and_type_order_antigravity",
+            ),
+        },
+        {
+            "from": "task4_evaluation_tests",
+            "to": "task4_evaluation",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task4_evaluation_test,
+                "test_decision_recomputes_primary_summary_without_routing_or_labels_antigravity",
+            ),
+        },
+        {
+            "from": "task4_artifacts_tests",
+            "to": "task4_artifacts",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task4_artifacts_test,
+                "test_publish_writes_exact_seven_leaf_create_only_canonical_inventory_antigravity",
+            ),
+        },
+        {
+            "from": "task4_replay_tests",
+            "to": "task4_replay",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task4_replay_test,
+                "test_inspect_recomputes_qualification_decision_dashboard_and_hashes_antigravity",
+            ),
+        },
+        {
+            "from": "task4_dashboard_export_tests",
+            "to": "task4_dashboard_export",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task4_dashboard_test,
+                "test_dashboard_payload_is_aggregate_only_and_label_free_antigravity",
+            ),
+        },
     ]
 
     graph = {
-        "schema": "exp461_task3_scoring_codemap_v1",
+        "schema": "exp461_task4_qualification_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -630,7 +881,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp461_task3_scoring_codemap_lock_v1",
+        "schema": "exp461_task4_qualification_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),

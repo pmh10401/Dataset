@@ -3,10 +3,10 @@
 <body><main>
   <h1>Exp461 ECG 주기 특징 검증 대시보드</h1>
   <table>
-    <tr><th>progress</th><td>Task 3/6</td></tr>
+    <tr><th>progress</th><td>Task 4/6</td></tr>
     <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
     <tr><th>goal</th><td>Exp460에서 실패한 두 <code>period_change</code> fold를 포함해 주기 특징과 결합 방법의 qualification 실험 경계를 고정한다.</td></tr>
-    <tr><th>current stage</th><td>Task3 complete / Task4 next</td></tr>
+    <tr><th>current stage</th><td>Task4 implemented pending external review / Task5 next</td></tr>
     <tr><th>공식 실행 0회</th><td>official evaluate 0 / official inspect 0</td></tr>
     <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
@@ -18,7 +18,7 @@
     <p><strong>왜 Exp461이 필요한가:</strong> Exp460 strict fallback은 TRAIN-only 경계는 지켰지만 period_change 2건이 기준을 넘지 못했다.</p>
     <p><strong>prior failure 1:</strong> seed <code>20260721</code> fold <code>3</code> period_change AUC <code>0.8208339620743423</code></p>
     <p><strong>prior failure 2:</strong> seed <code>20261721</code> fold <code>4</code> period_change AUC <code>0.8004124541019063</code></p>
-    <p><strong>current truth:</strong> 아직 qualification 결과나 공식 결과는 생성하지 않았다. planned_implementation_not_started 상태를 유지한 채 <code>capture_exp460_period_authority_antigravity</code>, <code>load_normal2_train_antigravity</code>, <code>period_signature_antigravity</code>, <code>anomaly_rank_antigravity</code>, <code>score_fold_methods_antigravity</code> 경계가 Task3 complete 상태로 고정됐다.</p>
+    <p><strong>current truth:</strong> 공식 qualification 결과나 공식 결과는 생성하지 않았다. planned_implementation_not_started 상태를 유지한 채 <code>capture_exp460_period_authority_antigravity</code>, <code>load_normal2_train_antigravity</code>, <code>period_signature_antigravity</code>, <code>anomaly_rank_antigravity</code>, <code>score_fold_methods_antigravity</code>, <code>qualify_methods_antigravity</code>, <code>evaluate_qualification_antigravity</code>, <code>publish_result_antigravity</code>, <code>inspect_replay_at_antigravity</code>, <code>export_dashboard_antigravity</code> 경계가 Task4 implemented pending external review 상태로 고정됐다.</p>
   </div>
   <h2>Frozen comparison boundary</h2>
   <table>
@@ -44,6 +44,17 @@
       <tr><td><code>period_signature_antigravity(values)</code></td><td>finite floating row length <code>140</code> to owned read-only C-contiguous <code>float64</code> signature shape <code>120</code>; view order full/front/back; each view has 16 Hann-rFFT positive-power bands and autocorrelation lags 1..24</td></tr>
       <tr><td><code>anomaly_rank_antigravity(reference_scores, scores)</code></td><td><code>(1 + count(r_i &lt;= s)) / (n + 1)</code>, exact tie inclusion, finite immutable <code>float64</code> output</td></tr>
       <tr><td><code>score_fold_methods_antigravity(...)</code></td><td>method order <code>hydra_local_gap</code>, <code>period_signature_local_gap</code>, <code>hydra_period_rank_max</code>; Hydra delegates to Exp459; period branch uses LocalGap over the 120D signature; hybrid is max of branch anomaly ranks</td></tr>
+    </tbody>
+  </table>
+  <h2>Task 4 qualification surfaces</h2>
+  <table>
+    <thead><tr><th>surface</th><th>current contract</th></tr></thead>
+    <tbody>
+      <tr><td><code>qualify_methods_antigravity()</code></td><td>세 방법 × 두 seed × 다섯 blocked fold = <code>30</code> method-fold rows를 고정 순서로 계산한다. 각 row는 네 AUC, pooled AUC, normal Wilson upper, finite flag, pass/fail reasons를 가진다.</td></tr>
+      <tr><td><code>evaluate_qualification_antigravity(...)</code></td><td>주 후보 <code>hydra_period_rank_max</code>가 10/10 pass이고 두 과거 실패 fold의 period-change AUC가 기존 값보다 strictly greater일 때만 Task5 재현 검토 대상으로 판정한다. 라우팅은 적용하지 않는다.</td></tr>
+      <tr><td><code>publish_result_antigravity(...)</code></td><td>임시 root에만 seven-leaf canonical JSON/JSONL artifact를 create-only로 쓴다. <code>artifact_sha256_antigravity.json</code>은 다른 여섯 leaf hash만 담는다.</td></tr>
+      <tr><td><code>inspect_replay_at_antigravity(root)</code></td><td>source-free replay가 context, 30 row order, summaries, decision, dashboard, artifact hashes를 재계산하고 tamper를 거부한다.</td></tr>
+      <tr><td><code>export_dashboard_antigravity(...)</code></td><td>aggregate method/fold qualification만 노출하며 raw series, fold indices, TEST labels, local paths, secrets는 노출하지 않는다.</td></tr>
     </tbody>
   </table>
   <h2>MLX smoke</h2>

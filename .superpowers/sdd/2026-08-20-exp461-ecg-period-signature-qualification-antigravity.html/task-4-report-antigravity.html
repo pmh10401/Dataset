@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp461 Task 4 Report</title>
+  <style>
+    body{max-width:1060px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    .box{background:#f5f7fa;padding:1rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp461 Task 4 — blocked qualification, seven result leaves, replay</h1>
+  <p><strong>Status:</strong> Task4 implemented pending external review / Task5 next. Task 4 plan checkboxes remain unchecked until external review completes. No Task5 CLI, real TRAIN qualification, official lifecycle command, official root creation, TEST-label query, routing application, champion change, or pending-candidate change occurred.</p>
+
+  <h2>Scope Implemented</h2>
+  <ul>
+    <li><code>qualification_antigravity.py</code>: converts Task 3 fold scores into exact 30 method-seed-fold metric rows and method summaries.</li>
+    <li><code>evaluation_antigravity.py</code>: recomputes the primary 10/10 gate and strict historical period-change improvement rule.</li>
+    <li><code>artifacts_antigravity.py</code>: writes the seven canonical leaves to a create-only temporary root.</li>
+    <li><code>replay_antigravity.py</code>: source-free replay validates inventory, canonical bytes, context, rows, summaries, decision, dashboard, and hashes.</li>
+    <li><code>dashboard_export_antigravity.py</code>: exposes aggregate method/fold qualification only.</li>
+  </ul>
+
+  <h2>TDD Evidence</h2>
+  <table>
+    <tr><th>Phase</th><th>Command</th><th>Result</th></tr>
+    <tr><td>RED</td><td><code>.../python -m unittest test_qualification ... test_dashboard_export</code></td><td>8 expected missing-module errors for the five Task 4 surfaces.</td></tr>
+    <tr><td>GREEN</td><td><code>.../python -m unittest test_qualification ... test_dashboard_export</code></td><td>8/8 focused Task 4 tests passing.</td></tr>
+  </table>
+
+  <h2>Scientific and Replay Evidence</h2>
+  <ul>
+    <li>Scientific row order is fixed as three methods × seeds <code>20260721</code>, <code>20261721</code> × folds <code>0..4</code> = 30 rows.</li>
+    <li>Primary candidate is exactly <code>hydra_period_rank_max</code>; eligibility requires 10/10 pass plus strict improvement over prior period-change AUCs <code>0.8208339620743423</code> and <code>0.8004124541019063</code>.</li>
+    <li>Temporary publish→inspect exact equality is covered by replay tests.</li>
+    <li>Tamper coverage rejects inventory, canonical JSON, method/fold order, AUC, decision, dashboard, and hash-map drift.</li>
+    <li>Dashboard test rejects raw series, fit/query indices, TEST labels, local paths, and secret-like fields.</li>
+  </ul>
+
+  <h2>Validation State</h2>
+  <table>
+    <tr><th>Root</th><td>Official root <code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> must remain absent; official root validation is recorded in final handoff.</td></tr>
+    <tr><th>Labels</th><td>Task 4 code has no TEST-label source and decision/dashboard payloads record label query count <code>0</code>.</td></tr>
+    <tr><th>Commit</th><td>The exact bounded implementation commit is reported in final handoff; embedding the containing commit hash in this file would be self-referential.</td></tr>
+    <tr><th>Concerns</th><td>No unresolved Task 4 implementation concern. Remaining work is external review, then Task 5 CLI and real TRAIN reproducibility only if approved by the plan.</td></tr>
+  </table>
+</main></body>
+</html>
