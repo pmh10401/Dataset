@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
+from dataclasses import dataclass
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -114,6 +115,13 @@ def _regular_identity(path: Path) -> tuple[int, int, int, int]:
     return details.st_dev, details.st_ino, details.st_size, details.st_mtime_ns
 
 
+def _descriptor_identity(descriptor: int) -> tuple[int, int, int, int]:
+    details = os.fstat(descriptor)
+    if not stat.S_ISREG(details.st_mode):
+        raise ValueError("database descriptor must be a regular file")
+    return details.st_dev, details.st_ino, details.st_size, details.st_mtime_ns
+
+
 def _descriptor_sha256(descriptor: int) -> str:
     digest = sha256()
     os.lseek(descriptor, 0, os.SEEK_SET)
@@ -123,13 +131,7 @@ def _descriptor_sha256(descriptor: int) -> str:
     return digest.hexdigest()
 
 
-@contextmanager
-def _open_verified_read_only(
-    db_path: Path,
-    *,
-    config: FrozenPaperConfig,
-) -> Iterator[sqlite3.Connection]:
-    """Yield a URI opened through the verified database descriptor only."""
+def _frozen_database_path_paper(db_path: Path, config: FrozenPaperConfig) -> Path:
     requested = Path(db_path)
     if requested.is_symlink():
         raise ValueError("database path must not be a symlink")
@@ -137,28 +139,143 @@ def _open_verified_read_only(
     expected = Path(config.database_path).resolve(strict=True)
     if supplied != expected:
         raise ValueError("database path differs from frozen authority")
+    return supplied
+
+
+@dataclass(frozen=True, slots=True)
+class PreverifiedDatabaseReadOnlyBindingPaper:
+    """One full-digest authority bound to an immutable values-only run invocation."""
+
+    database_path: Path
+    database_identity: tuple[int, int, int, int]
+    database_sha256: str
+
+    def __post_init__(self) -> None:
+        path = Path(self.database_path)
+        identity = tuple(self.database_identity)
+        if (
+            not path.is_absolute()
+            or len(identity) != 4
+            or any(type(value) is not int or value < 0 for value in identity)
+            or type(self.database_sha256) is not str
+            or len(self.database_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in self.database_sha256)
+        ):
+            raise ValueError("preverified database binding is invalid")
+        object.__setattr__(self, "database_path", path)
+        object.__setattr__(self, "database_identity", identity)
+
+
+def bind_preverified_database_read_only_paper(
+    db_path: Path,
+    *,
+    config: FrozenPaperConfig | None = None,
+    verified_catalog_database: Mapping[str, object] | None = None,
+) -> PreverifiedDatabaseReadOnlyBindingPaper:
+    """Bind a catalog digest or one fresh digest to one immutable values invocation."""
+    authority = FROZEN_CONFIG if config is None else config
+    supplied = _frozen_database_path_paper(db_path, authority)
+    named_before = _regular_identity(supplied)
+    if verified_catalog_database is not None:
+        _validated_catalog_database_paper(
+            verified_catalog_database,
+            supplied=supplied,
+            named_identity=named_before,
+            config=authority,
+        )
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    descriptor = os.open(supplied, flags)
+    try:
+        opened_identity = _descriptor_identity(descriptor)
+        if opened_identity != named_before:
+            raise ValueError("database identity changed before descriptor pin")
+        if (
+            verified_catalog_database is None
+            and _descriptor_sha256(descriptor) != authority.database_sha256
+        ):
+            raise ValueError("database SHA256 differs from frozen authority")
+        if _regular_identity(supplied) != opened_identity or _descriptor_identity(descriptor) != opened_identity:
+            raise ValueError("database identity changed while hashing")
+        return PreverifiedDatabaseReadOnlyBindingPaper(
+            supplied, opened_identity, authority.database_sha256
+        )
+    finally:
+        os.close(descriptor)
+
+
+def _validated_preverified_binding_paper(
+    binding: PreverifiedDatabaseReadOnlyBindingPaper,
+    *,
+    supplied: Path,
+    config: FrozenPaperConfig,
+) -> None:
+    if not isinstance(binding, PreverifiedDatabaseReadOnlyBindingPaper):
+        raise ValueError("preverified database binding is invalid")
+    if binding.database_sha256 != config.database_sha256:
+        raise ValueError("preverified database digest differs from frozen authority")
+    if binding.database_path != supplied:
+        raise ValueError("preverified database path differs from frozen authority")
+
+
+def _validated_catalog_database_paper(
+    database: Mapping[str, object],
+    *,
+    supplied: Path,
+    named_identity: tuple[int, int, int, int],
+    config: FrozenPaperConfig,
+) -> None:
+    expected_keys = {"unresolved_path", "resolved_path", "size", "mtime_ns", "sha256"}
+    if (
+        not isinstance(database, Mapping)
+        or set(database) != expected_keys
+        or database["resolved_path"] != str(supplied)
+        or type(database["size"]) is not int
+        or type(database["mtime_ns"]) is not int
+        or database["size"] != named_identity[2]
+        or database["mtime_ns"] != named_identity[3]
+        or database["sha256"] != config.database_sha256
+    ):
+        raise ValueError("verified catalog database authority differs")
+
+
+@contextmanager
+def _open_verified_read_only(
+    db_path: Path,
+    *,
+    config: FrozenPaperConfig,
+    preverified_database: PreverifiedDatabaseReadOnlyBindingPaper | None = None,
+) -> Iterator[sqlite3.Connection]:
+    """Yield a URI opened through the verified database descriptor only."""
+    supplied = _frozen_database_path_paper(db_path, config)
+    if preverified_database is not None:
+        _validated_preverified_binding_paper(
+            preverified_database, supplied=supplied, config=config
+        )
     named_before = _regular_identity(supplied)
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
     descriptor = os.open(supplied, flags)
     connection: sqlite3.Connection | None = None
     try:
-        opened = os.fstat(descriptor)
-        opened_identity = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+        opened_identity = _descriptor_identity(descriptor)
         if opened_identity != named_before:
             raise ValueError("database identity changed before descriptor pin")
-        if _descriptor_sha256(descriptor) != config.database_sha256:
+        if (
+            preverified_database is not None
+            and opened_identity != preverified_database.database_identity
+        ):
+            raise ValueError("database identity differs from preverified authority")
+        if preverified_database is None and _descriptor_sha256(descriptor) != config.database_sha256:
             raise ValueError("database SHA256 differs from frozen authority")
-        if _regular_identity(supplied) != opened_identity or os.fstat(descriptor).st_size != opened.st_size:
+        if _regular_identity(supplied) != opened_identity or _descriptor_identity(descriptor) != opened_identity:
             raise ValueError("database identity changed while hashing")
         uri = f"file:/dev/fd/{descriptor}?mode=ro&immutable=1"
         connection = sqlite3.connect(uri, uri=True, isolation_level=None)
         connection.execute("PRAGMA query_only=ON")
         yield connection
-        if (
-            _regular_identity(supplied) != opened_identity
-            or _descriptor_sha256(descriptor) != config.database_sha256
-        ):
+        if _regular_identity(supplied) != opened_identity or _descriptor_identity(descriptor) != opened_identity:
             raise ValueError("database identity changed during read-only access")
+        if preverified_database is None and _descriptor_sha256(descriptor) != config.database_sha256:
+            raise ValueError("database SHA256 differs from frozen authority")
     finally:
         if connection is not None:
             connection.close()
@@ -218,11 +335,14 @@ def load_dataset_values(
     dataset: str,
     *,
     sql_observer: SqlObserver | None = None,
+    preverified_database: PreverifiedDatabaseReadOnlyBindingPaper | None = None,
 ) -> RawDataset:
     """Load normal TRAIN and label-free TEST value rows for one frozen dataset."""
     if type(dataset) is not str or not dataset:
         raise ValueError("dataset name is invalid")
-    with _open_verified_read_only(db_path, config=FROZEN_CONFIG) as connection:
+    with _open_verified_read_only(
+        db_path, config=FROZEN_CONFIG, preverified_database=preverified_database
+    ) as connection:
         metadata_row = connection.execute(METADATA_LENGTH_SQL, (dataset,)).fetchone()
         if metadata_row is None or type(metadata_row[0]) is not int or metadata_row[0] <= 0:
             raise ValueError("dataset metadata_length must be a positive integer")
@@ -247,6 +367,7 @@ def load_dataset_values(
 
 
 __all__ = [
-    "RawDataset", "TEST_VALUES_SQL", "ProgressCallback", "emit_progress_paper", "emit_strict_progress_paper",
+    "PreverifiedDatabaseReadOnlyBindingPaper", "RawDataset", "TEST_VALUES_SQL", "ProgressCallback",
+    "bind_preverified_database_read_only_paper", "emit_progress_paper", "emit_strict_progress_paper",
     "load_dataset_values", "load_population",
 ]

@@ -18,6 +18,7 @@ JSON_PATH = CODEMAP_DIRECTORY / "codemap_exp450_antigravity.json"
 HTML_PATH = CODEMAP_DIRECTORY / "codemap_exp450_antigravity.html"
 LOCK_PATH = CODEMAP_DIRECTORY / "codemap_exp450_antigravity.lock"
 _RETAINED_PATHS = (
+    "paper/equipment_anomaly_detection/data_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
@@ -110,6 +111,11 @@ def _imported_modules_antigravity(path: Path) -> tuple[str, ...]:
                 prefix.extend(node.module.split("."))
             if prefix:
                 imported.add(".".join(prefix))
+                imported.update(
+                    ".".join((*prefix, alias.name))
+                    for alias in node.names
+                    if alias.name != "*"
+                )
     return tuple(sorted(imported))
 
 

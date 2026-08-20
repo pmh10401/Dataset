@@ -51,6 +51,26 @@ def _evaluation() -> Exp450EvaluationAntigravity:
 
 
 class Exp450ReportingCliTests(unittest.TestCase):
+    def test_science_input_reuses_one_bound_database_authority_for_all_datasets(self) -> None:
+        """The Exp450 invocation must pass one preverified authority to every values load."""
+        import scratch.run_exp450_resampling_image_ablation_antigravity as cli
+        from paper.equipment_anomaly_detection import data_paper
+
+        raw = task6_raw("binding_fixture_antigravity")
+        catalog = task6_catalog((raw,))
+        context = task6_context(Path("/tmp/exp450_binding_fixture_antigravity"), catalog)
+        binding = object()
+        with patch.object(cli, "_verification_inputs", return_value=(context.run_root, context, catalog)), \
+             patch.object(data_paper, "bind_preverified_database_read_only_paper", return_value=binding) as bind, \
+             patch.object(data_paper, "load_dataset_values", return_value=raw) as load:
+            _root, _context, returned_catalog, values, _backend = cli._science_inputs("smoke")
+
+        self.assertEqual(bind.call_count, 1)
+        self.assertEqual(returned_catalog, catalog)
+        self.assertEqual(values, {raw.dataset: raw})
+        self.assertEqual(bind.call_args.kwargs["verified_catalog_database"], catalog["database"])
+        self.assertEqual(load.call_args.kwargs["preverified_database"], binding)
+
     def test_resume_eta_uses_only_current_invocation_attempts(self) -> None:
         """Historical checkpoint counts must not dilute a resumed run's throughput ETA."""
         import scratch.run_exp450_resampling_image_ablation_antigravity as cli

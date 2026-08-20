@@ -6,8 +6,8 @@
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
   "last_verified_commit": "cb46a6bcc233d0cfefe226e1c3054dfaca5081a8",
   "active_experiment": "Exp450",
-  "active_phase": "smoke_verified_ready_for_full_1117",
-  "status": "smoke_verified_ready_for_full_1117",
+  "active_phase": "smoke_v3_authorized_before_full_1117",
+  "status": "smoke_v3_authorized_before_full_1117",
   "paper_r4_smoke_remediation_antigravity": {
     "status": "verified_v2_smoke_immutable_evidence_v3_absent",
     "failed_smoke_root": "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813",
@@ -1321,7 +1321,7 @@
   },
   "exp450_resampling_image_ablation_antigravity": {
     "experiment": "Exp450",
-    "status": "smoke_verified_ready_for_full_1117",
+    "status": "smoke_v3_authorized_before_full_1117",
     "design": "docs/superpowers/specs/2026-08-20-exp450-resampling-image-ablation-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-20-exp450-resampling-image-ablation-antigravity.md",
     "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -1331,7 +1331,8 @@
     "smoke_dataset_count": 23,
     "condition_order": ["A", "B", "C", "D"],
     "proposal_policy": "hard_plus_stable",
-    "smoke_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_antigravity_20260820",
+    "smoke_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v3_antigravity_20260820",
+    "verified_smoke_v2_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_antigravity_20260820",
     "failed_smoke_v1_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_antigravity_20260820",
     "failed_smoke_v1_log": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_progress_antigravity_20260820.log",
     "failed_smoke_v1_completed": 70,
@@ -1345,6 +1346,8 @@
     "mps_canonical_when_available": true,
     "mlx_assessed_but_unused": true,
     "smoke_started": true,
+    "smoke_v3_started": false,
+    "smoke_v3_root_exists": false,
     "official_run_started": false,
     "score_roots_created": true,
     "score_manifests_frozen": true,
@@ -1392,11 +1395,11 @@
       "mps_oom": false,
       "test_label_access": false
     },
-    "implementation_result": "mps_pool_limit_repaired_smoke_v2_verified",
-    "smoke_result": "v1_failed_preserved_v2_verified",
+    "implementation_result": "mps_pool_limit_repaired_smoke_v2_verified_db_binding_v3_authorized",
+    "smoke_result": "v1_failed_preserved_v2_verified_v3_authorized",
     "full_run_result": "not_run",
     "evaluation_result": "not_run",
     "report_result": "not_run",
-    "next_action": "run_full_1117_then_fresh_verify_without_test_labels"
+    "next_action": "run_smoke_v3_then_fresh_verify_before_full_1117_without_test_labels"
   }
 }

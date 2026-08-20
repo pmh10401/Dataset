@@ -46,13 +46,13 @@ class Exp450ConfigTests(unittest.TestCase):
         self.assertEqual(len(FROZEN_EXP450_CONFIG.smoke_datasets), 23)
         self.assertTrue(all("antigravity" in root.name for root in FROZEN_EXP450_CONFIG.roots))
 
-    def test_smoke_v2_root_is_distinct_from_the_preserved_failed_smoke(self) -> None:
-        """Pointing a repaired smoke at v1 would mix incompatible code closures."""
+    def test_smoke_v3_root_is_distinct_from_the_preserved_prior_smokes(self) -> None:
+        """A changed source closure must receive a fresh create-only smoke authority."""
         self.assertEqual(
             SMOKE_ROOT,
             Path(
                 "/Users/mac/Documents/Dataset/"
-                "exp450_resampling_image_ablation_smoke_v2_antigravity_20260820"
+                "exp450_resampling_image_ablation_smoke_v3_antigravity_20260820"
             ),
         )
 
@@ -90,6 +90,33 @@ class Exp450ConfigTests(unittest.TestCase):
         self.assertIn(
             "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
             imaging["tests"],
+        )
+
+    def test_codemap_tracks_the_exp450_values_reader_boundary(self) -> None:
+        """A run-scoped database authority must expose its callers, effects, and coverage."""
+        paths = tracked_existing_paths_antigravity(REPOSITORY_ROOT)
+        payload = build_codemap_payload_antigravity(paths, ast_callers_antigravity(paths))
+        data = next(
+            node for node in payload["nodes"]
+            if node["path"] == "paper/equipment_anomaly_detection/data_paper.py"
+        )
+        self.assertIn(
+            "scratch/run_exp450_resampling_image_ablation_antigravity.py",
+            data["callers"],
+        )
+        self.assertIn(
+            "paper/equipment_anomaly_detection/tests_paper/test_data_boundary_paper.py",
+            data["tests"],
+        )
+        self.assertIn("Descriptor-pinned", data["effects"])
+
+    def test_run_context_closure_binds_the_preverified_values_reader(self) -> None:
+        """Changing the run-scoped database authority must invalidate old checkpoint roots."""
+        from scratch.run_exp450_resampling_image_ablation_antigravity import _code_closure
+
+        self.assertIn(
+            "paper/equipment_anomaly_detection/data_paper.py",
+            _code_closure(),
         )
 
     def test_codemap_excludes_untracked_sources_but_retains_tracked_exp450_paths(self) -> None:

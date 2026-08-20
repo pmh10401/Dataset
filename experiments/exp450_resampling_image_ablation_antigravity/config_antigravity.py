@@ -15,7 +15,7 @@ from .contracts_antigravity import Exp450Condition
 
 SMOKE_ROOT = Path(
     "/Users/mac/Documents/Dataset/"
-    "exp450_resampling_image_ablation_smoke_v2_antigravity_20260820"
+    "exp450_resampling_image_ablation_smoke_v3_antigravity_20260820"
 )
 OFFICIAL_ROOT = Path(
     "/Users/mac/Documents/Dataset/"

@@ -49,7 +49,8 @@ def _status() -> dict[str, object]:
 
 def _code_closure() -> dict[str, str]:
     directory = REPOSITORY / "experiments" / "exp450_resampling_image_ablation_antigravity"
-    return {str(path.relative_to(REPOSITORY)): sha256(path.read_bytes()).hexdigest() for path in sorted(directory.glob("*_antigravity.py"))}
+    paths = (*sorted(directory.glob("*_antigravity.py")), REPOSITORY / "paper" / "equipment_anomaly_detection" / "data_paper.py")
+    return {str(path.relative_to(REPOSITORY)): sha256(path.read_bytes()).hexdigest() for path in paths}
 
 
 def _verification_inputs(mode: str):
@@ -79,11 +80,25 @@ def _verify(mode: str, *, verification_inputs=_verification_inputs) -> dict[str,
 def _science_inputs(mode: str):
     """Load values-only frozen inputs only after a science command was selected."""
     from experiments.exp450_resampling_image_ablation_antigravity.config_antigravity import FROZEN_EXP450_CONFIG
-    from paper.equipment_anomaly_detection.data_paper import load_dataset_values
+    from paper.equipment_anomaly_detection.data_paper import (
+        bind_preverified_database_read_only_paper,
+        load_dataset_values,
+    )
 
     root, context, catalog = _verification_inputs(mode)
     backend = context.backend
-    raw = {entry["dataset"]: load_dataset_values(FROZEN_EXP450_CONFIG.database_path, entry["dataset"]) for entry in catalog["datasets"]}
+    binding = bind_preverified_database_read_only_paper(
+        FROZEN_EXP450_CONFIG.database_path,
+        verified_catalog_database=catalog["database"],
+    )
+    raw = {
+        entry["dataset"]: load_dataset_values(
+            FROZEN_EXP450_CONFIG.database_path,
+            entry["dataset"],
+            preverified_database=binding,
+        )
+        for entry in catalog["datasets"]
+    }
     return root, context, catalog, raw, backend
 
 

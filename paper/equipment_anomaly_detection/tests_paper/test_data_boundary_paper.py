@@ -150,6 +150,91 @@ class DataBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA256"):
                 data_paper.load_dataset_values(self.db_path, "toy")
 
+    def test_exp450_preverified_binding_hashes_once_for_multiple_value_loads(self) -> None:
+        """A run-scoped verified binding must avoid rehashing immutable bytes per dataset."""
+        from paper.equipment_anomaly_detection import data_paper
+
+        with patch.object(data_paper, "FROZEN_CONFIG", self._fixture_config()), \
+             patch.object(data_paper, "_descriptor_sha256", wraps=data_paper._descriptor_sha256) as digest:
+            binding = data_paper.bind_preverified_database_read_only_paper(self.db_path)
+            first = data_paper.load_dataset_values(self.db_path, "toy", preverified_database=binding)
+            second = data_paper.load_dataset_values(self.db_path, "toy", preverified_database=binding)
+
+        self.assertEqual(digest.call_count, 1)
+        self.assertEqual(first.train_blobs, second.train_blobs)
+        self.assertEqual(first.test_blobs, second.test_blobs)
+
+    def test_exp450_preverified_binding_reuses_the_verified_catalog_digest(self) -> None:
+        """The full invocation's catalog digest must be reused instead of hashing a second time."""
+        from paper.equipment_anomaly_detection import data_paper
+
+        identity = data_paper._regular_identity(self.db_path)
+        catalog_database = {
+            "unresolved_path": str(self.db_path),
+            "resolved_path": str(self.db_path.resolve()),
+            "size": identity[2],
+            "mtime_ns": identity[3],
+            "sha256": self._fixture_config().database_sha256,
+        }
+        with patch.object(data_paper, "FROZEN_CONFIG", self._fixture_config()), \
+             patch.object(data_paper, "_descriptor_sha256", wraps=data_paper._descriptor_sha256) as digest:
+            binding = data_paper.bind_preverified_database_read_only_paper(
+                self.db_path, verified_catalog_database=catalog_database
+            )
+            data_paper.load_dataset_values(self.db_path, "toy", preverified_database=binding)
+
+        self.assertEqual(digest.call_count, 0)
+
+    def test_exp450_preverified_binding_rejects_replaced_or_changed_database_identity(self) -> None:
+        """A bound descriptor identity must fail closed when its pathname changes afterwards."""
+        from paper.equipment_anomaly_detection import data_paper
+
+        replacement = self.db_path.with_name("replacement.sqlite")
+        _build_database(replacement)
+        with patch.object(data_paper, "FROZEN_CONFIG", self._fixture_config()):
+            binding = data_paper.bind_preverified_database_read_only_paper(self.db_path)
+            replacement.replace(self.db_path)
+            with self.assertRaisesRegex(ValueError, "identity"):
+                data_paper.load_dataset_values(self.db_path, "toy", preverified_database=binding)
+
+    def test_exp450_preverified_binding_rejects_content_mutation_with_new_stat_identity(self) -> None:
+        """A direct values-file mutation must not reuse the prior run-scoped authority."""
+        from paper.equipment_anomaly_detection import data_paper
+
+        with patch.object(data_paper, "FROZEN_CONFIG", self._fixture_config()):
+            binding = data_paper.bind_preverified_database_read_only_paper(self.db_path)
+            connection = sqlite3.connect(self.db_path)
+            try:
+                connection.execute("UPDATE instances SET values_blob=? WHERE id=1", (_blob((3.0, 4.0)),))
+                connection.commit()
+            finally:
+                connection.close()
+            with self.assertRaisesRegex(ValueError, "identity"):
+                data_paper.load_dataset_values(self.db_path, "toy", preverified_database=binding)
+
+    def test_exp450_preverified_binding_rejects_invalid_digest_and_fresh_binding_rehashes(self) -> None:
+        """A forged digest cannot bypass authority, while each invocation verifies fresh bytes once."""
+        from paper.equipment_anomaly_detection import data_paper
+
+        config = self._fixture_config()
+        with patch.object(data_paper, "FROZEN_CONFIG", config), \
+             patch.object(data_paper, "_descriptor_sha256", wraps=data_paper._descriptor_sha256) as digest:
+            binding = data_paper.bind_preverified_database_read_only_paper(self.db_path)
+            forged = replace(binding, database_sha256="0" * 64)
+            with self.assertRaisesRegex(ValueError, "digest"):
+                data_paper.load_dataset_values(self.db_path, "toy", preverified_database=forged)
+            fresh = data_paper.bind_preverified_database_read_only_paper(self.db_path)
+            actual = data_paper.load_dataset_values(self.db_path, "toy", preverified_database=fresh)
+            legacy = data_paper.load_dataset_values(self.db_path, "toy")
+
+        self.assertEqual(digest.call_count, 4)
+        self.assertEqual(actual.train_blobs, legacy.train_blobs)
+        self.assertEqual(actual.test_blobs, legacy.test_blobs)
+        self.assertEqual(
+            tuple(row.tobytes() for row in actual.test_rows),
+            tuple(row.tobytes() for row in legacy.test_rows),
+        )
+
     def test_data_module_does_not_eagerly_import_label_capability(self) -> None:
         """An eager label module import would make label capability available during scoring."""
         sys.modules.pop("paper.equipment_anomaly_detection.label_access_paper", None)
