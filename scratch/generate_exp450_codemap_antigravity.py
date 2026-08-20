@@ -7,6 +7,7 @@ from collections import defaultdict
 from hashlib import sha256
 import json
 from pathlib import Path, PurePosixPath
+import subprocess
 import sys
 from typing import Sequence
 
@@ -16,7 +17,6 @@ CODEMAP_DIRECTORY = REPOSITORY_ROOT / "docs" / "codemap"
 JSON_PATH = CODEMAP_DIRECTORY / "codemap_exp450_antigravity.json"
 HTML_PATH = CODEMAP_DIRECTORY / "codemap_exp450_antigravity.html"
 LOCK_PATH = CODEMAP_DIRECTORY / "codemap_exp450_antigravity.lock"
-EXP450_DIRECTORY = REPOSITORY_ROOT / "experiments" / "exp450_resampling_image_ablation_antigravity"
 _RETAINED_PATHS = (
     "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
@@ -41,13 +41,44 @@ def _module_name_antigravity(path: Path) -> str:
     return ".".join(parts)
 
 
+def _repository_tracked_paths_antigravity(root: Path) -> frozenset[Path]:
+    """Resolve the repository's tracked paths without admitting worktree files."""
+    resolved_root = root.resolve()
+    try:
+        result = subprocess.run(
+            ("git", "-C", str(resolved_root), "ls-tree", "-r", "-z", "--name-only", "HEAD"),
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("Exp450 code map cannot list repository-tracked paths") from exc
+    paths: set[Path] = set()
+    for encoded_path in result.stdout.split(b"\0"):
+        if not encoded_path:
+            continue
+        candidate = (resolved_root / encoded_path.decode("utf-8")).resolve()
+        if not candidate.is_relative_to(resolved_root):
+            raise ValueError("repository-tracked path escapes the Exp450 worktree")
+        if candidate.is_file():
+            paths.add(candidate)
+    return frozenset(paths)
+
+
 def tracked_existing_paths_antigravity(root: Path) -> tuple[Path, ...]:
-    """Return only factual source paths in the new namespace and retained closure."""
-    exp450_paths = tuple(sorted(path for path in EXP450_DIRECTORY.rglob("*.py") if path.is_file()))
-    retained_paths = tuple(root / relative for relative in _RETAINED_PATHS)
-    generator_path = root / "scratch" / "generate_exp450_codemap_antigravity.py"
-    path_set = {*exp450_paths, *(path for path in retained_paths if path.is_file())}
-    if generator_path.is_file():
+    """Return only tracked source paths in the new namespace and retained closure."""
+    resolved_root = root.resolve()
+    tracked_paths = _repository_tracked_paths_antigravity(resolved_root)
+    exp450_directory = resolved_root / "experiments" / "exp450_resampling_image_ablation_antigravity"
+    exp450_paths = {
+        path
+        for path in tracked_paths
+        if path.suffix == ".py" and path.is_relative_to(exp450_directory)
+    }
+    retained_paths = {resolved_root / relative for relative in _RETAINED_PATHS}
+    generator_path = resolved_root / "scratch" / "generate_exp450_codemap_antigravity.py"
+    path_set = exp450_paths | (retained_paths & tracked_paths)
+    if generator_path in tracked_paths:
         path_set.add(generator_path)
     paths = tuple(sorted(path_set))
     if not paths:
@@ -76,12 +107,13 @@ def _imported_modules_antigravity(path: Path) -> tuple[str, ...]:
 
 
 def ast_callers_antigravity(paths: Sequence[Path]) -> dict[str, tuple[str, ...]]:
-    """Derive callers from imports across all existing Python files in the repository."""
+    """Derive callers from imports across all HEAD-tracked Python files."""
     selected = {_module_name_antigravity(path): _relative_antigravity(path) for path in paths}
     callers: dict[str, set[str]] = defaultdict(set)
-    for source in REPOSITORY_ROOT.rglob("*.py"):
-        if any(part in {".git", "__pycache__"} for part in source.parts):
-            continue
+    sources = sorted(
+        path for path in _repository_tracked_paths_antigravity(REPOSITORY_ROOT) if path.suffix == ".py"
+    )
+    for source in sources:
         try:
             imports = _imported_modules_antigravity(source)
         except (OSError, SyntaxError, UnicodeDecodeError):

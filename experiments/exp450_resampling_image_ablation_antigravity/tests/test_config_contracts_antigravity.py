@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 from experiments.exp450_resampling_image_ablation_antigravity.config_antigravity import (
@@ -75,6 +77,34 @@ class Exp450ConfigTests(unittest.TestCase):
         self.assertIn(
             "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
             imaging["tests"],
+        )
+
+    def test_codemap_excludes_untracked_sources_but_retains_tracked_exp450_paths(self) -> None:
+        """A filesystem scan must not put an untracked source into the triplet."""
+        expected = (
+            REPOSITORY_ROOT
+            / "experiments"
+            / "exp450_resampling_image_ablation_antigravity"
+            / "config_antigravity.py"
+        )
+        namespace = expected.parent
+        with TemporaryDirectory(prefix="codemap_untracked_antigravity_", dir=namespace) as temporary:
+            untracked = Path(temporary) / "untracked_source_antigravity.py"
+            untracked.write_text(
+                "from experiments.exp450_resampling_image_ablation_antigravity.transforms_antigravity "
+                "import adaptive_average_1d_antigravity\n",
+                encoding="utf-8",
+            )
+            paths = tracked_existing_paths_antigravity(REPOSITORY_ROOT)
+            payload = build_codemap_payload_antigravity(
+                paths, ast_callers_antigravity(paths)
+            )
+        self.assertIn(expected, paths)
+        self.assertNotIn(untracked, paths)
+        untracked_relative = untracked.relative_to(REPOSITORY_ROOT).as_posix()
+        self.assertNotIn(
+            untracked_relative,
+            {edge["caller"] for edge in payload["edges"]},
         )
 
 

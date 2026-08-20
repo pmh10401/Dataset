@@ -8,9 +8,7 @@
     "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py": "d5de7f9601ec0cc5aeb6fcce63503b8bef7031b7c7f244a2d8d1302155eabbf1",
     "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py": "c1996133feecdff9bde14ce046948b09a8cb0bced74660f32b8ec792f7c1bf60",
     "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py": "3b15ae7cff4030b137791df55152fcf6caca218c38aa66a741ea54d923ff40d2",
-    "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py": "07504fd0787fb73bda308766847f77dfce0818486d766b17e2e7fa69b1356af6",
-    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "9c257639fd8c24ce7f447cc9ea32d83153059c26aa312f95784f1edc64667678",
-    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py": "8e096f68c93ead1a119ffd469c0cb5b76dcdb58184b2f14209001805a2a10ee2",
+    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py": "6f2d53d6d534cc58a1be265a0def41874b3227848395243244f4e8a61727f07e",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py": "4fa2d54b5d82669a23bb638911614268b60b3b89191e6e452684cec0af56fa46",
     "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py": "1cdfc5e4a97410ccdb9c2f43621e63a05c435235b0f8258728276c1b5967b8e7",
     "paper/equipment_anomaly_detection/hard_route_paper.py": "748a6f93cd0728e1eb78a3c3e552ad4ee2fa41a8f9afe7e9b08882fd1b869ef7",
@@ -19,7 +17,7 @@
     "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py": "88fd51b78985932da721e5b193d3dcd1f23df746687f60baf2bdcf66414ac561",
     "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py": "00ebfd395a7220d6c3a6b863af6c9b3601081894795652fcad1b406b0580d0db",
     "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py": "99bd057400759e242d9f153190da9a9341e5b8a789e25cd21d088a9a8fe4a3f0",
-    "scratch/generate_exp450_codemap_antigravity.py": "3e4078d8cb0b86a7528f3f8baa8ac8fe0b050d252c99f280e4e44956d1ff0a25"
+    "scratch/generate_exp450_codemap_antigravity.py": "ced2e0171fd0f3f3c235a62a4e90d4858177412c05c6d26ae651a6b9289fd218"
   },
   "scanned_scope": [
     "experiments/exp449_reproducible_rebaseline_antigravity/artifacts_antigravity.py",
@@ -29,9 +27,7 @@
     "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
-    "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
-    "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
     "paper/equipment_anomaly_detection/hard_route_paper.py",
