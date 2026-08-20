@@ -37,6 +37,9 @@ PACKAGE_ANTIGRAVITY = "experiments/exp461_ecg_period_signature_qualification_ant
 DESIGN_SHA256_ANTIGRAVITY = (
     "3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2"
 )
+RUNBOOK_SHA256_ANTIGRAVITY = (
+    "3c9ce4c884ae0f5d7c9551b508a8e3092899f481fc3bc1a14adbd92f81f87807"
+)
 PENDING_CANDIDATE_ANTIGRAVITY = {
     "evaluation": None,
     "experiment": None,
@@ -277,6 +280,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "Task 1 governance report",
             "SHA-256",
             DESIGN_SHA256_ANTIGRAVITY,
+            RUNBOOK_SHA256_ANTIGRAVITY,
             "docs/EXP461_PREREGISTRATION_antigravity.html",
             "docs/EXP461_RUNBOOK_antigravity.html",
             "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
@@ -314,9 +318,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         assert task1 is not None
         tags = re.findall(r"<input\b[^>]*>", task1.group(0), flags=re.IGNORECASE)
         self.assertEqual(len(tags), 6)
-        self.assertNotRegex(tags[0], r"\bchecked(?:\s|=|>)")
-        for tag in tags[1:]:
-            self.assertRegex(tag, r"\bchecked(?:\s|=|>)")
+        for tag in tags:
+            self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)")
 
         builder = map_builder_antigravity()
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
