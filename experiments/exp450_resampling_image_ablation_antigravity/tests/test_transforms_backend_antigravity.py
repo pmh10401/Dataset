@@ -126,6 +126,7 @@ class Exp450TransformsBackendTests(unittest.TestCase):
         messages = (
             "Adaptive pool MPS: input sizes must be divisible by output sizes.",
             "Adaptive pool MPS: output sizes must be divisible by input sizes.",
+            "Adaptive pool MPS: Input height and width must both be greater than, or equal to, or lesser than output height and width.",
         )
         values = np.arange(16, dtype=np.float32).reshape(1, 4, 4)
         expected = np.asarray(
@@ -146,6 +147,26 @@ class Exp450TransformsBackendTests(unittest.TestCase):
                 np.testing.assert_array_equal(result, expected)
                 self.assertEqual(fallback.call_count, 1)
                 self.assertEqual(fallback.call_args.args[0].device.type, "mps")
+
+    def test_mps_pooling_handles_mixed_axis_pool_limit_on_device(self) -> None:
+        """A mixed down/up MPS pool must use local windows instead of CPU."""
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("PyTorch is unavailable")
+        if not torch.backends.mps.is_available():
+            self.skipTest("MPS is unavailable")
+        values = np.arange(8, dtype=np.float32).reshape(1, 2, 4)
+        with patch.object(
+            transforms_antigravity,
+            "_adaptive_pool_windows_antigravity",
+            wraps=transforms_antigravity._adaptive_pool_windows_antigravity,
+        ) as fallback:
+            result = adaptive_average_2d_antigravity(values, 3, device="mps")
+        self.assertEqual(result.shape, (1, 3, 3))
+        self.assertTrue(np.isfinite(result).all())
+        self.assertEqual(fallback.call_count, 1)
+        self.assertEqual(fallback.call_args.args[0].device.type, "mps")
 
     def test_mps_pooling_reraises_unrelated_native_runtime_error(self) -> None:
         """Broadly swallowing an unrelated MPS failure must fail this guard."""

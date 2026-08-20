@@ -1134,7 +1134,7 @@
     {
       "id": "Exp450",
       "kind": "resampling_image_ablation",
-      "status": "design_approved_implementation_planned",
+      "status": "smoke_v2_authorized_after_mps_pool_limit_repair",
       "documents": [
         "docs/superpowers/specs/2026-08-20-exp450-resampling-image-ablation-antigravity-design.md",
         "docs/superpowers/plans/2026-08-20-exp450-resampling-image-ablation-antigravity.md"
@@ -1147,12 +1147,16 @@
       "condition_order": ["A", "B", "C", "D"],
       "proposal_policy": "hard_plus_stable",
       "artifact_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_official_antigravity_20260820",
-      "smoke_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_antigravity_20260820",
+      "smoke_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_antigravity_20260820",
+      "failed_smoke_v1_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_antigravity_20260820",
+      "failed_smoke_v1_completed": 70,
+      "failed_smoke_v1_total": 92,
+      "failed_smoke_v1_pending": 22,
       "evaluation_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_evaluation_antigravity_20260820",
       "report_root": "/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_report_antigravity_20260820",
       "mps_canonical_when_available": true,
       "mlx_assessed_but_unused": true,
-      "smoke_started": false,
+      "smoke_started": true,
       "official_run_started": false,
       "score_roots_created": false,
       "score_manifests_frozen": false,
@@ -1170,7 +1174,7 @@
       "prediction_sha256": null,
       "evaluation_sha256": null,
       "report_sha256": null,
-      "notes": "Exp450 is an isolated four-condition label-free ablation. No score root, run, evaluation, report, or TEST-label access has started."
+      "notes": "Exp450 is an isolated four-condition label-free ablation. Smoke v1 is immutable after 70/92 successes and 22 C/D mixed-axis MPS adaptive-pool failures; Smoke v2 has a distinct root after a one-line MPS-only fallback recognizer repair. No score root, full run, evaluation, report, or TEST-label access has started."
     }
   ]
 }

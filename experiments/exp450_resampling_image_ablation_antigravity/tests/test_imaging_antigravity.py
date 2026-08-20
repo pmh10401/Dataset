@@ -110,6 +110,27 @@ class Exp450ImagingTests(unittest.TestCase):
         self.assertTrue(np.isfinite(spectrogram).all())
         np.testing.assert_array_equal(recurrence, recurrence.transpose(0, 2, 1))
 
+    def test_mps_area_public_c_d_image_paths_handle_mixed_axis_short_inputs(self) -> None:
+        """C/D's frozen Exp55/56 area paths must finish on MPS for 64-sample rows."""
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("PyTorch is unavailable")
+        if not torch.backends.mps.is_available():
+            self.skipTest("MPS is unavailable")
+        grid = np.linspace(0.0, 2.0 * np.pi, 64, dtype=np.float32)
+        train = np.stack([np.sin(grid + offset) for offset in range(4)]).astype(np.float32)
+        test = np.cos(grid, dtype=np.float32).reshape(1, -1)
+        for config in (EXP55_CONFIG_PAPER, EXP56_CONFIG_PAPER):
+            with self.subTest(config=config["name"]):
+                train_score, test_score = imaging_score_pair_exp450_antigravity(
+                    train, test, config, image_mode="area", device="mps"
+                )
+                self.assertEqual(train_score.shape, (len(train),))
+                self.assertEqual(test_score.shape, (len(test),))
+                self.assertTrue(np.isfinite(train_score).all())
+                self.assertTrue(np.isfinite(test_score).all())
+
 
 if __name__ == "__main__":
     unittest.main()

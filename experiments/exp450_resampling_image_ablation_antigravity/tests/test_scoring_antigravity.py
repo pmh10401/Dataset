@@ -270,6 +270,40 @@ class Exp450DatasetScoringTests(unittest.TestCase):
                 self.assertLessEqual(len(indices), n_test)
                 self.assertTrue(all(0 <= index < n_test for index in indices))
 
+    def test_mps_public_c_d_route_handles_mixed_axis_short_inputs(self) -> None:
+        """C/D's actual Exp55/56 route must finish on MPS for 64-sample series."""
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("PyTorch is unavailable")
+        if not torch.backends.mps.is_available():
+            self.skipTest("MPS is unavailable")
+        grid = np.linspace(0.0, 2.0 * np.pi, 64, dtype=np.float32)
+        train = tuple(np.sin(grid + offset / 7.0).astype(np.float32) for offset in range(4))
+        test = (np.cos(grid).astype(np.float32),)
+        values = RawDataset(
+            "mixed_axis_short_antigravity",
+            64,
+            tuple(range(len(train))),
+            tuple(row.astype("<f4").tobytes() for row in train),
+            train,
+            (0,),
+            tuple(row.astype("<f4").tobytes() for row in test),
+            test,
+        )
+        backend = Exp450BackendDecision("mps", "2.13.0", True, False, 12, 11)
+        for condition in (CONDITION_C, CONDITION_D):
+            with self.subTest(condition=condition.condition_id):
+                route = scoring_antigravity.build_legacy_route_evidence_exp450_antigravity(
+                    values, condition, backend
+                )
+                for source in ("exp55_best", "exp56_best"):
+                    view = route.primary[source]
+                    self.assertEqual(view.train_score.shape, (len(train),))
+                    self.assertEqual(view.test_score.shape, (len(test),))
+                    self.assertTrue(np.isfinite(view.train_score).all())
+                    self.assertTrue(np.isfinite(view.test_score).all())
+
 
 if __name__ == "__main__":
     unittest.main()

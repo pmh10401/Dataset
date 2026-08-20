@@ -31,7 +31,7 @@
 
 | field | value |
 |---|---|
-| smoke_result | `not_run` |
+| smoke_result | `v1_failed_preserved; v2_not_run` |
 | full_run_result | `not_run` |
 | evaluation_result | `not_run` |
 | report_result | `not_run` |
@@ -39,3 +39,10 @@
 | automatic_promotion | `not_run` |
 
 Exp450은 ablation일 뿐이며 자동 promotion 주장을 하지 않는다.
+
+## Smoke v1 보존과 Smoke v2 권한
+
+- v1 root: `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_antigravity_20260820` 및 log: `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_progress_antigravity_20260820.log`는 변경하지 않고 보존한다.
+- v1은 92개 좌표 중 70개 성공, C/D 22개 좌표는 두 wave에서 총 44회 실패로 종료했다. 실패는 2차원 MPS adaptive pooling에서 한 축은 output보다 작고 다른 축은 큰 mixed-axis 입력의 native shape 제한이었다. TEST label은 열지 않았다.
+- 수정은 해당 native 오류 문구를 기존 MPS-window fallback으로 인식하는 한 줄뿐이다. fallback의 mean/window 수식, 요인 A–D, threshold, score 정의와 CPU 경로는 바꾸지 않는다.
+- Smoke v2 root는 `/Users/mac/Documents/Dataset/exp450_resampling_image_ablation_smoke_v2_antigravity_20260820`이며 아직 실행하지 않았다. v2는 v1 checkpoint와 code closure를 혼합하지 않는다.

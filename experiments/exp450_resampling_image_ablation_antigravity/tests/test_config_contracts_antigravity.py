@@ -10,6 +10,7 @@ import unittest
 
 from experiments.exp450_resampling_image_ablation_antigravity.config_antigravity import (
     FROZEN_EXP450_CONFIG,
+    SMOKE_ROOT,
 )
 from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity import (
     Exp450BackendDecision,
@@ -44,6 +45,16 @@ class Exp450ConfigTests(unittest.TestCase):
         self.assertEqual(FROZEN_EXP450_CONFIG.test_row_count, 195900)
         self.assertEqual(len(FROZEN_EXP450_CONFIG.smoke_datasets), 23)
         self.assertTrue(all("antigravity" in root.name for root in FROZEN_EXP450_CONFIG.roots))
+
+    def test_smoke_v2_root_is_distinct_from_the_preserved_failed_smoke(self) -> None:
+        """Pointing a repaired smoke at v1 would mix incompatible code closures."""
+        self.assertEqual(
+            SMOKE_ROOT,
+            Path(
+                "/Users/mac/Documents/Dataset/"
+                "exp450_resampling_image_ablation_smoke_v2_antigravity_20260820"
+            ),
+        )
 
     def test_condition_rejects_a_nonapproved_factor_pair(self) -> None:
         """Condition D with a linear image must never represent the ablation."""

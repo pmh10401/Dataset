@@ -144,11 +144,15 @@ def _adaptive_pool_windows_antigravity(
 
 
 def _is_mps_nondivisible_pool_error_antigravity(error: RuntimeError) -> bool:
-    """Recognize only the two observed native MPS non-divisible-kernel errors."""
+    """Recognize only observed native MPS adaptive-pooling shape-limit errors."""
     message = str(error)
     return (
         "input sizes must be divisible by output sizes" in message
         or "output sizes must be divisible by input sizes" in message
+        or (
+            "Input height and width must both be greater than, or equal to, or lesser than "
+            "output height and width" in message
+        )
     )
 
 
