@@ -395,18 +395,22 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 f'<label><input type="checkbox" checked disabled>{step_label}',
                 task5,
             )
-        self.assertIn('<h2>Task 6', plan)
-        self.assertNotIn(
+        self.assertIn(
             '<h2><label><input type="checkbox" checked disabled>Task 6',
             plan,
         )
-        task6 = plan.split("<h2>Task 6", 1)[1].split("완료 판단", 1)[0]
+        task6 = plan.split("Task 6 —", 1)[1].split("완료 판단", 1)[0]
         self.assertEqual(
             task6.count('<label><input type="checkbox" checked disabled>Step '),
-            6,
+            7,
         )
-        self.assertIn('<label><input type="checkbox" disabled>Step 7', task6)
+        self.assertIn(
+            '<label><input type="checkbox" checked disabled>Step 7',
+            task6,
+        )
         self.assertIn("HTTP 402 usage balance exhausted", task6)
+        self.assertIn("SHIP", task6)
+        self.assertIn("Critical/Important/Minor 모두 0", task6)
 
         spec = importlib.util.spec_from_file_location(
             "exp460_map_builder_antigravity",

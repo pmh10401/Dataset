@@ -156,7 +156,7 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
-            "role": "Caller: Task 1-6 execution. Effect: records the approved Task 6 official lifecycle, exact result verification, truth closeout, and pending controller review after local Grok HTTP 402.",
+            "role": "Caller: Task 1-6 execution. Effect: records the approved Task 6 official lifecycle, exact result verification, truth closeout, and fresh SHIP review with zero Critical, Important, or Minor findings after local Grok HTTP 402.",
             "tests": ["experiments/exp460_ecg_strict_fallback_antigravity/tests/test_governance_antigravity.py"],
             "evidence": [evidence_antigravity("docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html", "Task 6 — 별도 승인 후 공식 결과 보존")],
         },
