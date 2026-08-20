@@ -162,6 +162,11 @@
     },
     {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
       "kind": "ast_import"
     },
@@ -188,6 +193,26 @@
     {
       "callee": "scratch/generate_exp450_codemap_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -429,6 +454,17 @@
     },
     {
       "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
+      ],
+      "effects": "MPS-first Exp450 tensor-backend readiness assessment.\n\nThe returned decision is the provenance record for the frozen selection: when\nMPS is available, adaptive pooling and recurrence distances use MPS; SciPy\npolyphase/PCHIP and sklearn/aeon stages remain CPU-only.  MLX availability is\nobserved for provenance only and never becomes an execution option.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.backend_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "effects": "Frozen Exp450 identity, population, policy, and create-only root authority.",
@@ -440,6 +476,7 @@
     },
     {
       "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ],
@@ -456,6 +493,24 @@
       "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_config_contracts_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
       "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "RED/GREEN tests for Exp450 pure transforms and backend selection.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_transforms_backend_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
+      ],
+      "effects": "Pure Exp450 length conversion and adaptive local-mean pooling primitives.\n\nThe ``linear`` mode delegates directly to the frozen paper control.  The only\nnew length rule is SciPy polyphase downsampling plus normalized-coordinate\nPCHIP upsampling.  These functions do not repair nonfinite source values.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.transforms_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
+      ]
     },
     {
       "callers": [
@@ -576,6 +631,8 @@
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/paper_r4_readiness_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
         "paper/equipment_anomaly_detection/proposal_score_paper.py",
         "paper/equipment_anomaly_detection/sources_paper/canonical_paper.py",
         "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
@@ -593,6 +650,7 @@
       "tests": [
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
         "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py"
       ]
