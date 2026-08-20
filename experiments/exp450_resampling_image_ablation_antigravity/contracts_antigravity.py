@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from hashlib import sha256
+import json
+from pathlib import Path
+from types import MappingProxyType
 
 from paper.equipment_anomaly_detection.contracts_paper import LowFrequencyResult, RawDataset
 from paper.equipment_anomaly_detection.hard_route_paper import HardRouteResult
@@ -18,6 +22,24 @@ _APPROVED_CONDITIONS = {
     "C": ("linear", "area"),
     "D": ("polyphase_pchip", "area"),
 }
+
+
+def _sha256_digest(value: object) -> bool:
+    return (
+        type(value) is str
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def canonical_json_bytes(value: object) -> bytes:
+    """Encode finite Exp450 artifact data in one stable JSON representation."""
+    try:
+        return json.dumps(
+            value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8") + b"\n"
+    except (TypeError, ValueError) as error:
+        raise ValueError("Exp450 artifact data must be canonical finite JSON") from error
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +93,54 @@ class Exp450BackendDecision:
 
 
 @dataclass(frozen=True, slots=True)
+class Exp450RunContext:
+    """The complete root-bound identity required to reuse an Exp450 result."""
+
+    mode: str
+    run_root: Path
+    database_sha256: str
+    catalog_sha256: str
+    code_closure: Mapping[str, str]
+    backend: Exp450BackendDecision
+    config_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.mode not in {"smoke", "full"}:
+            raise ValueError("Exp450 run mode is invalid")
+        root = Path(self.run_root)
+        if not root.is_absolute():
+            raise ValueError("Exp450 run root must be absolute")
+        for digest in (self.database_sha256, self.catalog_sha256, self.config_sha256):
+            if not _sha256_digest(digest):
+                raise ValueError("Exp450 run context digest is invalid")
+        closure = dict(self.code_closure)
+        if not closure or any(
+            type(path) is not str or not path or not _sha256_digest(digest)
+            for path, digest in closure.items()
+        ):
+            raise ValueError("Exp450 code closure is invalid")
+        if not isinstance(self.backend, Exp450BackendDecision):
+            raise ValueError("Exp450 run backend is invalid")
+        object.__setattr__(self, "run_root", root)
+        object.__setattr__(self, "code_closure", MappingProxyType(closure))
+
+    def artifact_record(self) -> dict[str, object]:
+        return {
+            "mode": self.mode,
+            "run_root": str(self.run_root),
+            "database_sha256": self.database_sha256,
+            "catalog_sha256": self.catalog_sha256,
+            "code_closure": dict(sorted(self.code_closure.items())),
+            "backend": self.backend.artifact_record(),
+            "config_sha256": self.config_sha256,
+        }
+
+    @property
+    def sha256(self) -> str:
+        return sha256(canonical_json_bytes(self.artifact_record())).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
 class Exp450DatasetConditionResult:
     dataset: str
     condition_id: str
@@ -96,4 +166,6 @@ __all__ = [
     "Exp450Condition",
     "Exp450ConditionScore",
     "Exp450DatasetConditionResult",
+    "Exp450RunContext",
+    "canonical_json_bytes",
 ]
