@@ -320,7 +320,8 @@ def freeze_condition_score_antigravity(
         parts = (_SCORE_ROOT_DIRECTORY, f"{score.condition.condition_id}_antigravity", f"{token}_antigravity", _SHARD_NAME)
         path = write_score_root_file_antigravity(root, parts, canonical_json_bytes(shard))
         descriptors.append({"dataset": dataset, "file": str(path.relative_to(root)), "sha256": sha256(path.read_bytes()).hexdigest()})
-    bare = {"schema": "exp450-condition-score-manifest-antigravity.v1", "context_sha256": context.sha256, "catalog_sha256": context.catalog_sha256, "condition": condition, "backend": context.backend.artifact_record(), "datasets": entries, "checkpoint_hashes": [{"dataset": dataset, "sha256": digest} for dataset, digest in checkpoint_hashes], "shards": descriptors}
+    test_identities = [entry["test"] for entry in entries]
+    bare = {"schema": "exp450-condition-score-manifest-antigravity.v2", "database_sha256": context.database_sha256, "context_sha256": context.sha256, "catalog_sha256": context.catalog_sha256, "condition": condition, "backend": context.backend.artifact_record(), "datasets": entries, "test_identities": test_identities, "checkpoint_hashes": [{"dataset": dataset, "sha256": digest} for dataset, digest in checkpoint_hashes], "shards": descriptors}
     manifest = {**bare, "manifest_sha256": sha256(canonical_json_bytes(bare)).hexdigest()}
     write_score_root_file_antigravity(root, (_SCORE_ROOT_DIRECTORY, f"{score.condition.condition_id}_antigravity", _MANIFEST_NAME), canonical_json_bytes(manifest))
     return verify_exp450_score_root_antigravity(root, context=context, catalog=catalog, condition_id=score.condition.condition_id)

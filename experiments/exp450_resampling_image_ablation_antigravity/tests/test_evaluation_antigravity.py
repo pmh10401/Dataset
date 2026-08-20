@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 import hashlib
+import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 import numpy as np
@@ -14,6 +16,24 @@ from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigra
     curve_tables_exp450_antigravity,
     evaluate_exp450_antigravity,
     metric_tables_exp450_antigravity,
+)
+from experiments.paper_public_baselines.runner import FrozenScoreManifest
+from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
+    write_dataset_condition_success_antigravity,
+)
+from experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity import (
+    freeze_all_conditions_antigravity,
+)
+from experiments.exp450_resampling_image_ablation_antigravity.verifier_antigravity import (
+    verify_exp450_score_root_antigravity,
+)
+from experiments.exp450_resampling_image_ablation_antigravity.tests.test_runner_verifier_antigravity import (
+    CONDITIONS as TASK6_CONDITIONS,
+    _catalog as task6_catalog,
+    _context as task6_context,
+    _raw as task6_raw,
+    _result as task6_result,
+    _score as task6_score,
 )
 
 
@@ -55,14 +75,14 @@ def _condition_record(condition: str) -> dict[str, str]:
     return {"condition_id": condition, "length_mode": length_mode, "image_mode": image_mode}
 
 
-EXPECTED_CONTEXTS = {
+MANIFEST_FIELDS = {
     condition: {
         "database_sha256": DB_SHA256,
-        "context_sha256": f"{index + 1:x}" * 64,
+        "context_sha256": "c" * 64,
         "catalog_sha256": CATALOG_SHA256,
         "condition": _condition_record(condition),
     }
-    for index, condition in enumerate(("A", "B", "C", "D"))
+    for condition in ("A", "B", "C", "D")
 }
 
 
@@ -70,12 +90,13 @@ def _manifest(condition: str, values: dict[str, tuple[float, ...]]) -> dict[str,
     return {
         "condition": _condition_record(condition),
         "database_sha256": DB_SHA256,
-        "context_sha256": EXPECTED_CONTEXTS[condition]["context_sha256"],
+        "context_sha256": MANIFEST_FIELDS[condition]["context_sha256"],
         "catalog_sha256": CATALOG_SHA256,
         "datasets": [
             {"dataset": dataset, "test": _identity(dataset, len(values[dataset]))}
             for dataset in DATASETS
         ],
+        "test_identities": [_identity(dataset, len(values[dataset])) for dataset in DATASETS],
         "score_rows": values,
     }
 
@@ -96,6 +117,7 @@ def _baseline_manifest(methods: tuple[str, ...]) -> dict[str, object]:
             {"dataset": dataset, "test": _identity(dataset, len(LABELS[dataset]))}
             for dataset in DATASETS
         ],
+        "test_identities": [_identity(dataset, len(LABELS[dataset])) for dataset in DATASETS],
         "methods": {
             method: {
                 dataset: {
@@ -139,6 +161,101 @@ def _rebind_test_identity(identity: dict[str, object]) -> None:
 
 
 class Exp450EvaluationTests(unittest.TestCase):
+    def test_evaluator_consumes_actual_task6_verifier_output_without_context_adapter(self) -> None:
+        """Task7 must load the pure Task6 v2 verifier result directly, not a forged wrapper."""
+        with TemporaryDirectory(prefix="exp450_task6_output_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            raw = task6_raw("task6_output_antigravity")
+            catalog = task6_catalog((raw,))
+            context = task6_context(root, catalog)
+            for condition in TASK6_CONDITIONS:
+                write_dataset_condition_success_antigravity(root, context, catalog, raw, task6_result(raw, condition))
+            freeze_all_conditions_antigravity(
+                {condition.condition_id: task6_score(raw, condition) for condition in TASK6_CONDITIONS},
+                root, context, catalog,
+            )
+            dataset = raw.dataset
+            identity = catalog["datasets"][0]["test"]
+            methods_by_root = {
+                "classical": ("knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest"),
+                "deep_svdd": ("deep_svdd_1d",), "drocc": ("drocc_1d",),
+            }
+            baselines = {
+                name: {
+                    "database_sha256": context.database_sha256,
+                    "datasets": [{"dataset": dataset, "test": identity}], "test_identities": [identity],
+                    "methods": {
+                        method: {dataset: {"status": "complete", "test_indices": [0, 1], "train_oof_scores": [0.1, 0.2, 0.3, 0.4], "test_scores": [0.1, 0.9]}}
+                        for method in methods
+                    },
+                }
+                for name, methods in methods_by_root.items()
+            }
+            roots = {name: Path(f"/fixture/{name}_antigravity") for name in baselines}
+
+            result = evaluate_exp450_antigravity(
+                root, baseline_roots=roots,
+                verifier=lambda condition: verify_exp450_score_root_antigravity(root, context=context, catalog=catalog, condition_id=condition),
+                label_loader=lambda datasets: {dataset: (0, 1)},
+                baseline_verifier=_baseline_verifier(manifests=baselines),
+            )
+            self.assertEqual(result.metric_tables.method_order, METHOD_ORDER)
+
+    def test_frozen_score_manifest_baseline_infers_raw_identity_only_from_matching_db(self) -> None:
+        """Legacy public manifests need exact DB plus TEST coordinates, never a weak identity flag."""
+        with TemporaryDirectory(prefix="exp450_legacy_baseline_antigravity_") as directory:
+            base = Path(directory)
+
+            def legacy(name: str, methods: tuple[str, ...], database_sha256: str) -> FrozenScoreManifest:
+                root = base / f"{name}_antigravity"
+                root.mkdir()
+                (root / "run_config.json").write_text(json.dumps({"datasets": list(DATASETS)}), encoding="utf-8")
+                entries = []
+                for method in methods:
+                    for dataset in DATASETS:
+                        relative = Path("shards") / method / f"{dataset}.json"
+                        path = root / relative
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        path.write_text(json.dumps({"method": method, "dataset": dataset, "n_test": len(LABELS[dataset]), "test_indices": list(range(len(LABELS[dataset]))), "status": "complete", "train_oof_scores": [0.1, 0.2, 0.3, 0.4], "test_scores": list(EXP_SCORES["A"][dataset])}), encoding="utf-8")
+                        entries.append({"method": method, "dataset": dataset, "path": relative.as_posix()})
+                return FrozenScoreManifest(root, "d" * 64, database_sha256, len(entries), tuple(entries))
+
+            legacy_manifests = {
+                "classical": legacy("classical", ("knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest"), DB_SHA256),
+                "deep_svdd": legacy("deep_svdd", ("deep_svdd_1d",), DB_SHA256),
+                "drocc": legacy("drocc", ("drocc_1d",), DB_SHA256),
+            }
+            events: list[str] = []
+
+            def verifier(root: Path):
+                name = root.name.removesuffix("_antigravity")
+                events.append(name)
+                return legacy_manifests[name]
+
+            result = evaluate_exp450_antigravity(
+                Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+                verifier=lambda condition: MANIFESTS[condition], label_loader=lambda _: LABELS,
+                baseline_verifier=verifier,
+            )
+            self.assertEqual(result.metric_tables.method_order, METHOD_ORDER)
+            self.assertEqual(events, ["classical", "deep_svdd", "drocc"])
+
+            labels_called = False
+            legacy_manifests["drocc"] = legacy("wrong_db", ("drocc_1d",), "e" * 64)
+
+            def labels(_: tuple[str, ...]):
+                nonlocal labels_called
+                labels_called = True
+                return LABELS
+
+            with self.assertRaisesRegex(ValueError, "baseline database identity"):
+                evaluate_exp450_antigravity(
+                    Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+                    verifier=lambda condition: MANIFESTS[condition], label_loader=labels,
+                    baseline_verifier=verifier,
+                )
+            self.assertFalse(labels_called)
+
     def test_labels_are_loaded_only_after_all_four_verifiers_return(self) -> None:
         """Loading labels before D verifies could leak unverified results into evaluation."""
         events: list[str] = []
@@ -155,9 +272,17 @@ class Exp450EvaluationTests(unittest.TestCase):
         evaluate_exp450_antigravity(
             Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
             verifier=verify, label_loader=labels, baseline_verifier=_baseline_verifier(events),
-            expected_contexts=EXPECTED_CONTEXTS,
         )
         self.assertEqual(events, ["verify-A", "verify-B", "verify-C", "verify-D", "classical", "deep_svdd", "drocc", "labels"])
+
+    def test_verifier_authority_needs_no_independent_expected_context(self) -> None:
+        """Co-forging a verifier output and an external expected context must be impossible."""
+        result = evaluate_exp450_antigravity(
+            Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
+            verifier=lambda condition: MANIFESTS[condition], label_loader=lambda _: LABELS,
+            baseline_verifier=_baseline_verifier(),
+        )
+        self.assertEqual(result.metric_tables.method_order, METHOD_ORDER)
 
     def test_missing_baseline_blocks_the_label_loader(self) -> None:
         """A missing frozen public root must fail before TEST labels become accessible."""
@@ -174,7 +299,7 @@ class Exp450EvaluationTests(unittest.TestCase):
             evaluate_exp450_antigravity(
                 Path("/fixture/root_antigravity"), baseline_roots=incomplete,
                 verifier=lambda condition: MANIFESTS[condition], label_loader=labels,
-                baseline_verifier=_baseline_verifier(), expected_contexts=EXPECTED_CONTEXTS,
+                baseline_verifier=_baseline_verifier(),
             )
         self.assertFalse(labels_called)
 
@@ -193,7 +318,7 @@ class Exp450EvaluationTests(unittest.TestCase):
             evaluate_exp450_antigravity(
                 Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
                 verifier=lambda condition: mismatched[condition], label_loader=labels,
-                baseline_verifier=_baseline_verifier(), expected_contexts=EXPECTED_CONTEXTS,
+                baseline_verifier=_baseline_verifier(),
             )
         self.assertFalse(labels_called)
 
@@ -220,7 +345,7 @@ class Exp450EvaluationTests(unittest.TestCase):
                     evaluate_exp450_antigravity(
                         Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
                         verifier=lambda condition: altered[condition], label_loader=labels,
-                        baseline_verifier=_baseline_verifier(), expected_contexts=EXPECTED_CONTEXTS,
+                        baseline_verifier=_baseline_verifier(),
                     )
                 self.assertFalse(labels_called)
 
@@ -231,6 +356,7 @@ class Exp450EvaluationTests(unittest.TestCase):
         altered = deepcopy(BASELINE_MANIFESTS)
         altered["drocc"]["datasets"][0]["test"]["values_blob_sha256"][0] = "9" * 64
         _rebind_test_identity(altered["drocc"]["datasets"][0]["test"])
+        altered["drocc"]["test_identities"][0] = deepcopy(altered["drocc"]["datasets"][0]["test"])
 
         def labels(_: tuple[str, ...]) -> dict[str, tuple[int, ...]]:
             nonlocal labels_called
@@ -242,7 +368,6 @@ class Exp450EvaluationTests(unittest.TestCase):
                 Path("/fixture/root_antigravity"), baseline_roots=BASELINE_ROOTS,
                 verifier=lambda condition: (events.append(condition) or MANIFESTS[condition]),
                 label_loader=labels, baseline_verifier=_baseline_verifier(events, altered),
-                expected_contexts=EXPECTED_CONTEXTS,
             )
         self.assertEqual(events, ["A", "B", "C", "D", "classical", "deep_svdd", "drocc"])
         self.assertFalse(labels_called)
@@ -259,9 +384,10 @@ class Exp450EvaluationTests(unittest.TestCase):
         manifests = {
             condition: {
                 "condition": _condition_record(condition), "database_sha256": DB_SHA256,
-                "context_sha256": EXPECTED_CONTEXTS[condition]["context_sha256"],
+                "context_sha256": MANIFEST_FIELDS[condition]["context_sha256"],
                 "catalog_sha256": CATALOG_SHA256,
                 "datasets": [{"dataset": dataset, "test": test_identity[dataset]} for dataset in datasets],
+                "test_identities": [test_identity[dataset] for dataset in datasets],
                 "score_rows": raw_scores,
             }
             for condition in ("A", "B", "C", "D")
@@ -278,6 +404,7 @@ class Exp450EvaluationTests(unittest.TestCase):
             root: {
                 "database_sha256": DB_SHA256,
                 "datasets": [{"dataset": dataset, "test": test_identity[dataset]} for dataset in datasets],
+                "test_identities": [test_identity[dataset] for dataset in datasets],
                 "methods": {
                     method: {
                         dataset: {"status": "complete", "test_indices": [0, 1],
@@ -293,7 +420,7 @@ class Exp450EvaluationTests(unittest.TestCase):
         result = evaluate_exp450_antigravity(
             Path("/fixture/root_antigravity"), baseline_roots=roots,
             verifier=lambda condition: manifests[condition], label_loader=lambda _: labels,
-            baseline_verifier=_baseline_verifier(manifests=baselines), expected_contexts=EXPECTED_CONTEXTS,
+            baseline_verifier=_baseline_verifier(manifests=baselines),
         ).metric_tables
         per_dataset = next(row for row in result.per_dataset if row["method"] == "knn_distance" and row["dataset"] == "two_antigravity")
         self.assertEqual((per_dataset["average_precision"], per_dataset["auroc"]), (0.5, 0.0))

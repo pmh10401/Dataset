@@ -329,6 +329,21 @@ class Exp450RunnerVerifierTests(unittest.TestCase):
                 manifest,
             )
 
+    def test_verified_manifest_contains_self_bound_evaluation_identity(self) -> None:
+        """Task7 must consume Task6 authority without a separately forgeable context."""
+        for condition in CONDITIONS:
+            write_dataset_condition_success_antigravity(self.root, self.context, self.catalog, self.raw, _result(self.raw, condition))
+        manifests = freeze_all_conditions_antigravity(
+            {condition.condition_id: _score(self.raw, condition) for condition in CONDITIONS},
+            self.root, self.context, self.catalog,
+        )
+        manifest = manifests["A"]
+        self.assertEqual(manifest["schema"], "exp450-condition-score-manifest-antigravity.v2")
+        self.assertEqual(manifest["database_sha256"], self.context.database_sha256)
+        self.assertEqual(manifest["context_sha256"], self.context.sha256)
+        self.assertEqual(manifest["catalog_sha256"], self.catalog["catalog_sha256"])
+        self.assertEqual(manifest["test_identities"], [self.catalog["datasets"][0]["test"]])
+
     def test_verifier_rejects_score_alert_disagreement(self) -> None:
         """Changing an alert independently of its thresholded score must fail verification."""
         for condition in CONDITIONS:
