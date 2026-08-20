@@ -181,6 +181,16 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
       "kind": "ast_import"
@@ -193,6 +203,21 @@
     {
       "callee": "scratch/generate_exp450_codemap_antigravity.py",
       "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -488,10 +513,28 @@
       ]
     },
     {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py"
+      ],
+      "effects": "Variant-aware Exp55/56 imaging with frozen downstream scoring semantics.\n\n``linear`` delegates directly to the retained paper scorer.  ``area`` replaces\nonly its fixed-size resize: spectrograms use two-dimensional adaptive local\nmeans and recurrence plots pool the one-dimensional series before recomputing\ntheir symmetric distance matrices.  The copied scoring closure below records\nits immutable source module and SHA-256 for Exp450 provenance.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.imaging_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py"
+      ]
+    },
+    {
       "callers": [],
       "effects": "Frozen identity and public-contract tests for Exp450.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_config_contracts_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "RED/GREEN tests for Exp450's area-pooled image variants.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.tests.test_imaging_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
       "tests": []
     },
     {
@@ -503,12 +546,15 @@
     },
     {
       "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
       ],
       "effects": "Pure Exp450 length conversion and adaptive local-mean pooling primitives.\n\nThe ``linear`` mode delegates directly to the frozen paper control.  The only\nnew length rule is SciPy polyphase downsampling plus normalized-coordinate\nPCHIP upsampling.  These functions do not repair nonfinite source values.",
       "module": "experiments.exp450_resampling_image_ablation_antigravity.transforms_antigravity",
       "path": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
       "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py"
       ]
     },
@@ -576,6 +622,8 @@
     },
     {
       "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
         "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
         "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py"
@@ -584,6 +632,7 @@
       "module": "paper.equipment_anomaly_detection.sources_paper.imaging_paper",
       "path": "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
       "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py"
       ]
     },
