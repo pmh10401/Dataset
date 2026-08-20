@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp461 Task 2 frozen-input code map."""
+"""Build and validate the bounded Exp461 Task 3 scoring code map."""
 
 from __future__ import annotations
 
@@ -36,12 +36,16 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/config_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/contracts_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/period_features_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/predecessor_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/scoring_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/sources_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_governance_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_period_features_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_scoring_antigravity.py",
     "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp461_antigravity.py",
 )
@@ -146,8 +150,8 @@ def html_antigravity(graph: dict[str, object]) -> str:
     )
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp461 Task 2 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
-        '<h1>Exp461 Task 2 frozen-input 코드맵</h1><p>Task 2는 governance truth를 유지한 채 Exp460 predecessor authority, TRAIN replay source, immutable contracts, focused tests, and the updated bounded map만 보존한다. Task 3 scoring, qualification runs, 공식 실행은 아직 없다.</p>'
+        '<title>Exp461 Task 3 코드맵</title><style>body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}</style></head><body><main>'
+        '<h1>Exp461 Task 3 scoring 코드맵</h1><p>Task 3는 Task 2 frozen input truth를 유지한 채 120D period signature, branch anomaly rank, three-method fold scoring, focused tests, and the updated bounded map을 보존한다. Qualification runs, 공식 실행은 아직 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         '</main></body></html>'
     )
@@ -190,6 +194,12 @@ def build_map_antigravity(
     task2_sources = (
         "experiments/exp461_ecg_period_signature_qualification_antigravity/sources_antigravity.py"
     )
+    task3_period_features = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/period_features_antigravity.py"
+    )
+    task3_scoring = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/scoring_antigravity.py"
+    )
     task2_config_test = (
         "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
         "test_config_antigravity.py"
@@ -205,6 +215,14 @@ def build_map_antigravity(
     task2_sources_test = (
         "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
         "test_sources_antigravity.py"
+    )
+    task3_period_features_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_period_features_antigravity.py"
+    )
+    task3_scoring_test = (
+        "experiments/exp461_ecg_period_signature_qualification_antigravity/tests/"
+        "test_scoring_antigravity.py"
     )
     builder = "scratch/build_codemap_exp461_antigravity.py"
 
@@ -240,16 +258,16 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 3 handoff. Effect: records the immutable document authority plus the Task 2 config/contracts/predecessor/source boundary after approved closeout.",
+            "role": "Caller: Task 4 handoff. Effect: records the immutable document authority, Task 2 input boundary, and Task 3 scoring boundary pending external review.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(report, "Task 2 frozen-input report")],
+            "evidence": [evidence_antigravity(report, "Task 3 scoring report")],
         },
         {
             "id": "dashboard",
             "path": dashboard,
-            "role": "Caller: always-visible status review. Effect: shows Task 2/6, planned status, official execution 0, null artifact hashes, the two inherited period-change failures, and the frozen Task 2 entrypoints.",
+            "role": "Caller: always-visible status review. Effect: shows Task 3/6, planned status, official execution 0, null artifact hashes, the two inherited period-change failures, and the frozen Task 3 scoring entrypoints.",
             "tests": [governance_test],
-            "evidence": [evidence_antigravity(dashboard, "Task 2/6")],
+            "evidence": [evidence_antigravity(dashboard, "Task 3/6")],
         },
         {
             "id": "research_state",
@@ -275,14 +293,14 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: Task 2 governance verification. Effect: rejects missing frozen-input docs, wrong planned ledger truth, wrong Task 2 closeout checkboxes, or invalid stored map bytes.",
+            "role": "Caller: Task 3 governance verification. Effect: rejects missing scoring docs, wrong planned ledger truth, checked Task 3 boxes before review, or invalid stored map bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_task1_governance_antigravity")],
         },
         {
             "id": "map_builder",
             "path": builder,
-            "role": "Caller: Task 2 validation. Effect: rebuilds and validates the bounded Exp461 frozen-input graph plus the stored HTML/JSON/lock triplet bytes.",
+            "role": "Caller: Task 3 validation. Effect: rebuilds and validates the bounded Exp461 scoring graph plus the stored HTML/JSON/lock triplet bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(builder, "validate_map_antigravity")],
         },
@@ -369,6 +387,49 @@ def build_map_antigravity(
                 evidence_antigravity(
                     task2_sources_test,
                     "test_loader_replays_the_exact_exp459_train_matrix_without_aliasing_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task3_period_features",
+            "path": task3_period_features,
+            "role": "Caller: Task 3 scoring and future Task 4 qualification. Effect: converts each finite 140-wide ECG row into an owned immutable float64 120D period signature using full/front/back views, 16 Hann-rFFT bands, and 24 autocorrelation lags.",
+            "tests": [task3_period_features_test],
+            "evidence": [
+                evidence_antigravity(
+                    task3_period_features,
+                    "period_signature_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task3_scoring",
+            "path": task3_scoring,
+            "role": "Caller: future Task 4 qualification. Effect: exposes exact method-order fold scores for Exp459 Hydra LocalGap, period-signature LocalGap, and max branch-rank hybrid without creating result roots.",
+            "tests": [task3_scoring_test],
+            "evidence": [evidence_antigravity(task3_scoring, "score_fold_methods_antigravity")],
+        },
+        {
+            "id": "task3_period_features_tests",
+            "path": task3_period_features_test,
+            "role": "Caller: Task 3 RED/GREEN verification. Effect: rejects period feature shape/order, NumPy reference, invariance, sensitivity, invalid row, or mutability drift.",
+            "tests": [task3_period_features_test],
+            "evidence": [
+                evidence_antigravity(
+                    task3_period_features_test,
+                    "test_signature_matches_independent_three_view_numpy_reference_antigravity",
+                )
+            ],
+        },
+        {
+            "id": "task3_scoring_tests",
+            "path": task3_scoring_test,
+            "role": "Caller: Task 3 RED/GREEN verification. Effect: rejects rank formula drift, method-order drift, dependency-flow drift, source access creep, or forged fold-score containers.",
+            "tests": [task3_scoring_test],
+            "evidence": [
+                evidence_antigravity(
+                    task3_scoring_test,
+                    "test_fold_scoring_method_order_rank_fusion_and_dependency_flow_antigravity",
                 )
             ],
         },
@@ -475,6 +536,36 @@ def build_map_antigravity(
             "evidence": evidence_antigravity(plan, "load_normal2_train_antigravity()"),
         },
         {
+            "from": "implementation_plan",
+            "to": "task3_period_features",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "120차원 주기 특징과 세 점수"),
+        },
+        {
+            "from": "implementation_plan",
+            "to": "task3_scoring",
+            "type": "governs",
+            "evidence": evidence_antigravity(plan, "score_fold_methods_antigravity"),
+        },
+        {
+            "from": "task2_config",
+            "to": "task3_scoring",
+            "type": "governs",
+            "evidence": evidence_antigravity(task2_config, "method_order"),
+        },
+        {
+            "from": "task2_sources",
+            "to": "task3_scoring",
+            "type": "governs",
+            "evidence": evidence_antigravity(task2_sources, "load_normal2_train_antigravity"),
+        },
+        {
+            "from": "task3_scoring",
+            "to": "task3_period_features",
+            "type": "governs",
+            "evidence": evidence_antigravity(task3_scoring, "_period_feature_matrix_antigravity"),
+        },
+        {
             "from": "task2_config_tests",
             "to": "task2_config",
             "type": "tests",
@@ -510,10 +601,28 @@ def build_map_antigravity(
                 "test_loader_replays_the_exact_exp459_train_matrix_without_aliasing_antigravity",
             ),
         },
+        {
+            "from": "task3_period_features_tests",
+            "to": "task3_period_features",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task3_period_features_test,
+                "test_signature_matches_independent_three_view_numpy_reference_antigravity",
+            ),
+        },
+        {
+            "from": "task3_scoring_tests",
+            "to": "task3_scoring",
+            "type": "tests",
+            "evidence": evidence_antigravity(
+                task3_scoring_test,
+                "test_fold_scoring_method_order_rank_fusion_and_dependency_flow_antigravity",
+            ),
+        },
     ]
 
     graph = {
-        "schema": "exp461_task2_inputs_codemap_v1",
+        "schema": "exp461_task3_scoring_codemap_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "nodes": nodes,
@@ -521,7 +630,7 @@ def build_map_antigravity(
         "unknown_relationships": [],
     }
     lock = {
-        "schema": "exp461_task2_inputs_codemap_lock_v1",
+        "schema": "exp461_task3_scoring_codemap_lock_v1",
         "generated_at": generated_at,
         "source_parent_commit": source_commit,
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),

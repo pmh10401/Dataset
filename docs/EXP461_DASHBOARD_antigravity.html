@@ -3,10 +3,10 @@
 <body><main>
   <h1>Exp461 ECG 주기 특징 검증 대시보드</h1>
   <table>
-    <tr><th>progress</th><td>Task 2/6</td></tr>
+    <tr><th>progress</th><td>Task 3/6</td></tr>
     <tr><th>status</th><td><code>planned_implementation_not_started</code></td></tr>
     <tr><th>goal</th><td>Exp460에서 실패한 두 <code>period_change</code> fold를 포함해 주기 특징과 결합 방법의 qualification 실험 경계를 고정한다.</td></tr>
-    <tr><th>current stage</th><td>Task2 complete / Task3 next</td></tr>
+    <tr><th>current stage</th><td>Task3 implemented pending external review / Task4 next</td></tr>
     <tr><th>공식 실행 0회</th><td>official evaluate 0 / official inspect 0</td></tr>
     <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
     <tr><th>label query count</th><td>0</td></tr>
@@ -18,7 +18,7 @@
     <p><strong>왜 Exp461이 필요한가:</strong> Exp460 strict fallback은 TRAIN-only 경계는 지켰지만 period_change 2건이 기준을 넘지 못했다.</p>
     <p><strong>prior failure 1:</strong> seed <code>20260721</code> fold <code>3</code> period_change AUC <code>0.8208339620743423</code></p>
     <p><strong>prior failure 2:</strong> seed <code>20261721</code> fold <code>4</code> period_change AUC <code>0.8004124541019063</code></p>
-    <p><strong>current truth:</strong> 아직 어떤 과학 결과도 생성하지 않았다. planned_implementation_not_started 상태를 유지한 채 <code>capture_exp460_period_authority_antigravity</code>와 <code>load_normal2_train_antigravity</code> 경계만 고정됐다.</p>
+    <p><strong>current truth:</strong> 아직 qualification 결과나 공식 결과는 생성하지 않았다. planned_implementation_not_started 상태를 유지한 채 <code>capture_exp460_period_authority_antigravity</code>, <code>load_normal2_train_antigravity</code>, <code>period_signature_antigravity</code>, <code>anomaly_rank_antigravity</code>, <code>score_fold_methods_antigravity</code> 경계만 고정됐다.</p>
   </div>
   <h2>Frozen comparison boundary</h2>
   <table>
@@ -35,6 +35,27 @@
     <tbody>
       <tr><td><code>capture_exp460_period_authority_antigravity()</code></td><td>strict baseline fallback, 8/10 pass count, two failed folds, label query count 0, exact Exp460 dashboard/decision/artifact hashes</td></tr>
       <tr><td><code>load_normal2_train_antigravity()</code></td><td>owned, C-contiguous, read-only <code>float32</code> TRAIN matrix shape <code>1413×140</code>, equal to Exp459 replay</td></tr>
+    </tbody>
+  </table>
+  <h2>Task 3 scoring surfaces</h2>
+  <table>
+    <thead><tr><th>surface</th><th>current contract</th></tr></thead>
+    <tbody>
+      <tr><td><code>period_signature_antigravity(values)</code></td><td>finite floating row length <code>140</code> to owned read-only C-contiguous <code>float64</code> signature shape <code>120</code>; view order full/front/back; each view has 16 Hann-rFFT positive-power bands and autocorrelation lags 1..24</td></tr>
+      <tr><td><code>anomaly_rank_antigravity(reference_scores, scores)</code></td><td><code>(1 + count(r_i &lt;= s)) / (n + 1)</code>, exact tie inclusion, finite immutable <code>float64</code> output</td></tr>
+      <tr><td><code>score_fold_methods_antigravity(...)</code></td><td>method order <code>hydra_local_gap</code>, <code>period_signature_local_gap</code>, <code>hydra_period_rank_max</code>; Hydra delegates to Exp459; period branch uses LocalGap over the 120D signature; hybrid is max of branch anomaly ranks</td></tr>
+    </tbody>
+  </table>
+  <h2>MLX smoke</h2>
+  <table>
+    <tbody>
+      <tr><th>selected backend</th><td><code>cpu_numpy</code> / CPU NumPy retained</td></tr>
+      <tr><th>versions</th><td>Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, MLX <code>unavailable</code>, mlx-metal <code>unavailable</code></td></tr>
+      <tr><th>device</th><td><code>unavailable</code></td></tr>
+      <tr><th>smoke input</th><td>synthetic seed <code>20260820</code>, shape <code>16×140</code></td></tr>
+      <tr><th>timing</th><td>CPU <code>0.005286333849653602</code> seconds; MLX not timed because import failed</td></tr>
+      <tr><th>parity/order</th><td>CPU finite <code>true</code>, CPU candidate order <code>[0,1,2,3,4,5,6,7]</code>; MLX parity/order unavailable</td></tr>
+      <tr><th>fallback</th><td><code>mlx_unavailable:ModuleNotFoundError:No module named 'mlx'</code></td></tr>
     </tbody>
   </table>
 </main></body></html>

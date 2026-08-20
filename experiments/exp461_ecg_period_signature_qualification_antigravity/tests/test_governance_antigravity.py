@@ -280,17 +280,22 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 2 frozen-input report",
+            "Task 3 scoring report",
             "SHA-256",
             DESIGN_SHA256_ANTIGRAVITY,
             PREREGISTRATION_SHA256_ANTIGRAVITY,
             RUNBOOK_SHA256_ANTIGRAVITY,
-            "Task2 complete / Task3 next",
+            "Task3 implemented pending external review / Task4 next",
             "docs/EXP461_PREREGISTRATION_antigravity.html",
             "docs/EXP461_RUNBOOK_antigravity.html",
             "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
             "Task 2 handoff",
             "Task 2 scope truth",
+            "Task 3 scope truth",
+            "period_features_antigravity.py",
+            "scoring_antigravity.py",
+            "MLX smoke",
+            "cpu_selected",
             "config_antigravity.py",
             "sources_antigravity.py",
         ):
@@ -307,9 +312,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 2/6",
+            "Task 3/6",
             "planned_implementation_not_started",
-            "Task2 complete / Task3 next",
+            "Task3 implemented pending external review / Task4 next",
             "공식 실행 0회",
             "label query count",
             "artifact map SHA-256",
@@ -324,6 +329,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "hydra_period_rank_max",
             "capture_exp460_period_authority_antigravity",
             "load_normal2_train_antigravity",
+            "period_signature_antigravity",
+            "anomaly_rank_antigravity",
+            "score_fold_methods_antigravity",
+            "CPU NumPy",
         ):
             self.assertIn(phrase, dashboard)
 
@@ -371,8 +380,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         assert isinstance(graph, dict) and isinstance(lock, dict)
         self.assertLessEqual(len(graph["nodes"]), 25)
-        self.assertEqual(graph["schema"], "exp461_task2_inputs_codemap_v1")
-        self.assertEqual(lock["schema"], "exp461_task2_inputs_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp461_task3_scoring_codemap_v1")
+        self.assertEqual(lock["schema"], "exp461_task3_scoring_codemap_lock_v1")
         node_ids = {node["id"] for node in graph["nodes"]}
         for node_id in (
             "approved_design",
@@ -394,6 +403,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task2_contracts_tests",
             "task2_predecessor_tests",
             "task2_sources_tests",
+            "task3_period_features",
+            "task3_scoring",
+            "task3_period_features_tests",
+            "task3_scoring_tests",
         ):
             self.assertIn(node_id, node_ids)
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))
