@@ -16,7 +16,7 @@
   <p><strong>구조:</strong> Exp460 공식 결과를 입력 권한으로 고정하고, Exp459의 TRAIN·fold·perturbation·Hydra 기준선을 그대로 재사용한다. 새 코드는 120차원 주기 특징과 세 방법 비교에만 집중하며, TEST label과 라우팅 적용은 포함하지 않는다.</p>
   <p><strong>기술:</strong> Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, unittest, canonical JSON/JSONL, HTML dashboard.</p>
   <p><strong>설계서:</strong> <a href="../specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html">Exp461 설계서</a> — SHA-256 <code>3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2</code>.</p>
-  <div class="status"><label><input type="checkbox" checked disabled>대화 설계 승인 및 HTML 설계서 커밋 완료</label><br>현재 단계는 Task 2 구현 완료 후 외부 검토 대기다. Task 2 heading과 step 체크박스는 검토 전까지 비워 둔다. 공식 Exp461 결과 폴더와 결과 hash는 아직 없다.</div>
+  <div class="status"><label><input type="checkbox" checked disabled>대화 설계 승인 및 HTML 설계서 커밋 완료</label><br>현재 단계는 Task 2 closeout 완료 후 Task 3 준비 상태다. Task 2 heading과 step 체크박스는 승인 후 완료 처리됐고 공식 Exp461 결과 폴더와 결과 hash는 아직 없다.</div>
 
   <h2>전역 고정 조건</h2>
   <ul>
@@ -66,22 +66,22 @@
   </section>
 
   <section class="task">
-    <h2><label><input type="checkbox" disabled>Task 2 — 고정 입력, 자료형, TRAIN source</label></h2>
+    <h2><label><input type="checkbox" checked disabled>Task 2 — 고정 입력, 자료형, TRAIN source</label></h2>
     <h3>소유 파일</h3>
     <p>Create: <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code>와 대응 test 4개. Modify: map triplet/builder, dashboard/report, 계획 체크박스.</p>
     <h3>인터페이스</h3>
     <p>Produces: <code>capture_exp460_period_authority_antigravity() -&gt; Exp460PeriodAuthorityAntigravity</code>, <code>load_normal2_train_antigravity() -&gt; numpy.ndarray</code>, <code>FROZEN_CONFIG_ANTIGRAVITY</code>. Consumes: Exp460 six-leaf official root와 기존 Exp459 TRAIN loader 계약.</p>
-    <p><strong>Current implementation note:</strong> Task 2 code와 focused tests는 구현되었지만 외부 review 전이므로 heading과 step checkbox는 아직 체크하지 않는다. 다음 구현 단계는 Task 3 scoring이다.</p>
+    <p><strong>Current implementation note:</strong> Task 2 code와 focused tests는 review 승인 후 closeout까지 완료됐다. 다음 구현 단계는 Task 3 scoring이다.</p>
     <ol>
-      <li><label><input type="checkbox" disabled>Step 1 — config 정확값, Exp460 hash/result, 1,413×140 read-only float32, seed/fold/threshold, TEST label 0을 요구하는 RED 테스트를 작성한다.</label>
+      <li><label><input type="checkbox" checked disabled>Step 1 — config 정확값, Exp460 hash/result, 1,413×140 read-only float32, seed/fold/threshold, TEST label 0을 요구하는 RED 테스트를 작성한다.</label>
         <pre><code>self.assertEqual(authority.strict_route, "baseline")
 self.assertEqual(authority.worst_period_change_auc, 0.8004124541019063)
 self.assertEqual(train.shape, (1413, 140))
 self.assertFalse(train.flags.writeable)</code></pre></li>
-      <li><label><input type="checkbox" disabled>Step 2 — focused test를 실행해 4개 모듈 부재 RED를 확인한다.</label></li>
-      <li><label><input type="checkbox" disabled>Step 3 — immutable dataclass와 exact-type 검증, Exp460 replay capture, TRAIN-only loader를 최소 구현한다. TEST table/label SQL은 두지 않는다.</label></li>
-      <li><label><input type="checkbox" disabled>Step 4 — synthetic focused suite 두 번, Exp460 32-test regression 한 번, 설계 SHA와 root 부재를 검증한다.</label></li>
-      <li><label><input type="checkbox" disabled>Step 5 — map·dashboard·체크박스를 갱신하고 fresh review 후 Task 2 commit을 만든다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 2 — focused test를 실행해 4개 모듈 부재 RED를 확인한다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 3 — immutable dataclass와 exact-type 검증, Exp460 replay capture, TRAIN-only loader를 최소 구현한다. TEST table/label SQL은 두지 않는다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 4 — synthetic focused suite 두 번, Exp460 32-test regression 한 번, 설계 SHA와 root 부재를 검증한다.</label></li>
+      <li><label><input type="checkbox" checked disabled>Step 5 — map·dashboard·체크박스를 갱신하고 fresh review 후 Task 2 commit을 만든다.</label></li>
     </ol>
   </section>
 

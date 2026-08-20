@@ -219,7 +219,7 @@ def build_map_antigravity(
         {
             "id": "implementation_plan",
             "path": plan,
-            "role": "Caller: Task 1-6 execution. Effect: records the owned files, Task 2 pending-external-review note, unchanged Task 2 checkboxes, and later task boundaries.",
+            "role": "Caller: Task 1-6 execution. Effect: records the owned files, Task 2 closeout approval, checked Task 2 checkboxes, and later task boundaries.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(plan, "Task 1 — 문서, 진행 대시보드, 코드맵")],
         },
@@ -240,7 +240,7 @@ def build_map_antigravity(
         {
             "id": "implementation_report",
             "path": report,
-            "role": "Caller: Task 3 handoff. Effect: records the immutable document authority plus the Task 2 config/contracts/predecessor/source boundary that is ready for external review.",
+            "role": "Caller: Task 3 handoff. Effect: records the immutable document authority plus the Task 2 config/contracts/predecessor/source boundary after approved closeout.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(report, "Task 2 frozen-input report")],
         },
@@ -275,7 +275,7 @@ def build_map_antigravity(
         {
             "id": "governance_regression",
             "path": governance_test,
-            "role": "Caller: Task 2 governance verification. Effect: rejects missing frozen-input docs, wrong planned ledger truth, checked Task 2 boxes before review, or invalid stored map bytes.",
+            "role": "Caller: Task 2 governance verification. Effect: rejects missing frozen-input docs, wrong planned ledger truth, wrong Task 2 closeout checkboxes, or invalid stored map bytes.",
             "tests": [governance_test],
             "evidence": [evidence_antigravity(governance_test, "test_task1_governance_antigravity")],
         },
