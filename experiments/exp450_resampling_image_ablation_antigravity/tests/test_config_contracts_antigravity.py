@@ -57,29 +57,33 @@ class Exp450ConfigTests(unittest.TestCase):
             ),
         )
 
-    def test_active_v3_state_does_not_claim_verified_v2_completion(self) -> None:
-        """Current v3 authority must keep all v2 completion facts in named history only."""
+    def test_active_v3_state_and_catalog_record_verified_v3_completion(self) -> None:
+        """The v3 active authority and catalog must agree without claiming full results."""
         state = json.loads((REPOSITORY_ROOT / "RESEARCH_STATE.json").read_text(encoding="utf-8"))
         active = state["exp450_resampling_image_ablation_antigravity"]
         self.assertEqual(active["smoke_root"], str(SMOKE_ROOT))
-        self.assertFalse(active["smoke_started"])
-        self.assertFalse(active["score_roots_created"])
-        self.assertFalse(active["score_manifests_frozen"])
-        self.assertEqual(active["smoke_completed_coordinates"], 0)
-        self.assertEqual(active["smoke_total_coordinates"], 0)
-        self.assertEqual(active["smoke_verified_manifests"], {})
-        self.assertFalse(active["smoke_promotion_gate"]["all_four_manifests_verified"])
-        self.assertEqual(active["smoke_result"], "not_run")
+        self.assertTrue(active["smoke_started"])
+        self.assertTrue(active["smoke_v3_started"])
+        self.assertTrue(active["score_roots_created"])
+        self.assertTrue(active["score_manifests_frozen"])
+        self.assertEqual(active["smoke_completed_coordinates"], 92)
+        self.assertEqual(active["smoke_total_coordinates"], 92)
+        self.assertEqual(set(active["smoke_verified_manifests"]), {"A", "B", "C", "D"})
+        self.assertTrue(active["smoke_promotion_gate"]["all_four_manifests_verified"])
+        self.assertEqual(active["smoke_result"], "v3_verified_92_of_92")
         self.assertEqual(active["verified_smoke_v2_completed_coordinates"], 92)
         self.assertTrue(active["verified_smoke_v2_promotion_gate"]["all_four_manifests_verified"])
 
         catalog = json.loads((REPOSITORY_ROOT / "EXPERIMENT_CATALOG.json").read_text(encoding="utf-8"))
         entry = next(value for value in catalog["experiments"] if value["id"] == "Exp450")
         self.assertEqual(entry["smoke_root"], str(SMOKE_ROOT))
-        self.assertFalse(entry["smoke_started"])
+        self.assertEqual(entry["status"], "smoke_v3_verified_ready_for_full_1117")
+        self.assertTrue(entry["smoke_started"])
+        self.assertTrue(entry["smoke_v3_started"])
         self.assertFalse(entry["score_roots_created"])
         self.assertFalse(entry["score_manifests_frozen"])
         self.assertEqual(entry["verified_smoke_v2_result"], "verified")
+        self.assertEqual(entry["verified_smoke_v3_result"], "verified")
 
     def test_condition_rejects_a_nonapproved_factor_pair(self) -> None:
         """Condition D with a linear image must never represent the ablation."""
