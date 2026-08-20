@@ -390,6 +390,41 @@ def canonical_result_bytes_antigravity(result: Exp450DatasetConditionResult) -> 
     return canonical_json_bytes({"dataset": result.dataset, "condition_id": result.condition_id, "payload": {"sources": _source_payload(result.sources, n_train, result.route.n_test), "route": _route_payload(result.route, result.route.n_test)}})
 
 
+def verified_checkpoint_hashes_antigravity(
+    root: Path,
+    context: Exp450RunContext,
+    catalog: dict[str, object],
+    raw_by_dataset: dict[str, RawDataset],
+    condition: Exp450Condition,
+) -> tuple[tuple[str, str], ...]:
+    """Return ordered hashes only after every bound local checkpoint rereads."""
+    _check_context(context, catalog)
+    root = _check_root(root, context)
+    entries = catalog.get("datasets")
+    if not isinstance(entries, list) or tuple(raw_by_dataset) != tuple(entry.get("dataset") for entry in entries):
+        raise ValueError("checkpoint hash raw inventory differs")
+    hashes = []
+    for entry in entries:
+        dataset = entry["dataset"]
+        if not isinstance(dataset, str) or dataset not in raw_by_dataset:
+            raise ValueError("checkpoint hash raw inventory differs")
+        read_dataset_condition_success_antigravity(
+            root, context, catalog, raw_by_dataset[dataset], condition
+        )
+        path = _success_path(root, dataset, condition.condition_id)
+        hashes.append((dataset, sha256(path.read_bytes()).hexdigest()))
+    return tuple(hashes)
+
+
+def write_score_root_file_antigravity(root: Path, parts: tuple[str, ...], data: bytes) -> Path:
+    """Create one canonical immutable score-root leaf under an absolute root."""
+    if not isinstance(data, bytes) or not parts:
+        raise ValueError("score root artifact is invalid")
+    path = _path(Path(root), *parts)
+    _write_create_only(path, data)
+    return path
+
+
 def _failure_directory(root: Path) -> Path:
     return _path(root, "checkpoints_antigravity", "failures_antigravity")
 
@@ -554,5 +589,7 @@ __all__ = [
     "canonical_result_bytes_antigravity",
     "read_dataset_condition_success_antigravity",
     "verify_dataset_condition_inventory_antigravity",
+    "verified_checkpoint_hashes_antigravity",
     "write_dataset_condition_success_antigravity",
+    "write_score_root_file_antigravity",
 ]

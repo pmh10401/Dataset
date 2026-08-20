@@ -1,0 +1,197 @@
+"""Independent scorer-free verification for immutable Exp450 score roots."""
+
+from __future__ import annotations
+
+from hashlib import sha256
+import json
+from pathlib import Path
+import stat
+
+import numpy as np
+
+
+_CONDITION_IDS = ("A", "B", "C", "D")
+_POLICY_ORDER = ("hard_only", "hard_plus_source", "hard_plus_stable", "hard_plus_unstable")
+_SHARD_NAME = "condition_score_shard_antigravity.json"
+_MANIFEST_NAME = "condition_score_manifest_antigravity.json"
+_SHARD_SCHEMA = "exp450-condition-score-shard-antigravity.v1"
+_MANIFEST_SCHEMA = "exp450-condition-score-manifest-antigravity.v1"
+
+
+def _canonical_bytes(value: object) -> bytes:
+    try:
+        return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8") + b"\n"
+    except (TypeError, ValueError) as error:
+        raise ValueError("score root data is noncanonical") from error
+
+
+def _read(path: Path) -> tuple[object, bytes]:
+    details = path.lstat() if path.exists() else None
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+        raise ValueError("score root artifact is missing")
+    data = path.read_bytes()
+    try:
+        value = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("score root artifact is invalid") from error
+    if data != _canonical_bytes(value):
+        raise ValueError("score root artifact is noncanonical")
+    return value, data
+
+
+def _directory_children(path: Path) -> set[str]:
+    details = path.lstat() if path.exists() else None
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("score root inventory differs")
+    return {child.name for child in path.iterdir()}
+
+
+def _root(context: object, root: Path) -> Path:
+    bound = getattr(context, "run_root", None)
+    if not isinstance(bound, Path) or Path(root) != bound or not bound.is_absolute():
+        raise ValueError("score root context differs")
+    details = bound.lstat() if bound.exists() else None
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("score root is invalid")
+    return bound
+
+
+def _context_sha256(context: object) -> str:
+    value = getattr(context, "sha256", None)
+    if not isinstance(value, str) or len(value) != 64:
+        raise ValueError("score root context differs")
+    return value
+
+
+def _backend(context: object) -> dict[str, object]:
+    backend = getattr(context, "backend", None)
+    artifact_record = getattr(backend, "artifact_record", None)
+    if not callable(artifact_record):
+        raise ValueError("score root backend differs")
+    value = artifact_record()
+    if not isinstance(value, dict):
+        raise ValueError("score root backend differs")
+    return value
+
+
+def _catalog(catalog: object, context: object) -> list[dict[str, object]]:
+    if not isinstance(catalog, dict) or catalog.get("catalog_sha256") != getattr(context, "catalog_sha256", None):
+        raise ValueError("score root catalog differs")
+    entries = catalog.get("datasets")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("score root catalog differs")
+    datasets = [entry.get("dataset") if isinstance(entry, dict) else None for entry in entries]
+    if any(type(dataset) is not str or not dataset for dataset in datasets) or len(set(datasets)) != len(datasets):
+        raise ValueError("score root catalog differs")
+    return entries
+
+
+def _digest(value: object) -> str:
+    return sha256(_canonical_bytes(value)).hexdigest()
+
+
+def _check_shard(
+    root: Path,
+    condition: dict[str, object],
+    context_sha256: str,
+    catalog_sha256: str,
+    backend: dict[str, object],
+    entry: dict[str, object],
+    descriptor: dict[str, object],
+) -> None:
+    dataset = entry["dataset"]
+    token = sha256(dataset.encode("utf-8")).hexdigest()
+    expected_file = f"score_roots_antigravity/{condition['condition_id']}_antigravity/{token}_antigravity/{_SHARD_NAME}"
+    if descriptor.get("dataset") != dataset or descriptor.get("file") != expected_file:
+        raise ValueError("score root shard inventory differs")
+    path = root.joinpath(*expected_file.split("/"))
+    if _directory_children(path.parent) != {_SHARD_NAME}:
+        raise ValueError("score root shard inventory differs")
+    value, data = _read(path)
+    if descriptor.get("sha256") != sha256(data).hexdigest():
+        raise ValueError("score root shard hash differs")
+    required = {"schema", "context_sha256", "catalog_sha256", "condition", "backend", "dataset", "test_identity", "policy_order", "policies", "shard_sha256"}
+    if not isinstance(value, dict) or set(value) != required or value["schema"] != _SHARD_SCHEMA:
+        raise ValueError("score root shard schema differs")
+    bare = {key: item for key, item in value.items() if key != "shard_sha256"}
+    if value["shard_sha256"] != _digest(bare):
+        raise ValueError("score root shard payload hash differs")
+    if value["context_sha256"] != context_sha256 or value["catalog_sha256"] != catalog_sha256 or value["condition"] != condition or value["backend"] != backend or value["dataset"] != dataset or value["test_identity"] != entry.get("test"):
+        raise ValueError("score root shard binding differs")
+    if value["policy_order"] != list(_POLICY_ORDER) or not isinstance(value["policies"], list):
+        raise ValueError("score root policy order differs")
+    policies = value["policies"]
+    if [item.get("policy_id") if isinstance(item, dict) else None for item in policies] != list(_POLICY_ORDER):
+        raise ValueError("score root policy order differs")
+    size = entry.get("test", {}).get("count") if isinstance(entry.get("test"), dict) else None
+    if type(size) is not int or size < 0:
+        raise ValueError("score root TEST identity differs")
+    for policy in policies:
+        if not isinstance(policy, dict) or set(policy) != {"policy_id", "alerts", "score_dtype", "scores", "score_mask"} or policy["score_dtype"] != "float64":
+            raise ValueError("score root policy schema differs")
+        scores = np.asarray(policy["scores"], dtype=np.float64)
+        mask = np.asarray(policy["score_mask"])
+        alerts = policy["alerts"]
+        if scores.ndim != 1 or scores.size != size or not np.all(np.isfinite(scores)):
+            raise ValueError("score root continuous score differs")
+        if mask.dtype != np.dtype(bool) or mask.ndim != 1 or mask.size != size:
+            raise ValueError("score root score mask differs")
+        if not isinstance(alerts, list) or alerts != sorted(set(alerts)) or any(type(index) is not int or index < 0 or index >= size for index in alerts):
+            raise ValueError("score root alerts differ")
+        threshold_alerts = np.flatnonzero(scores >= 0.5).tolist()
+        if alerts != threshold_alerts or not np.array_equal(mask, scores >= 0.5):
+            raise ValueError("score root alert threshold differs")
+
+
+def verify_exp450_score_root_antigravity(
+    root: Path, *, context: object, catalog: dict[str, object], condition_id: str
+) -> dict[str, object]:
+    """Verify one frozen condition root without importing score or label science."""
+    if condition_id not in _CONDITION_IDS:
+        raise ValueError("score root condition differs")
+    root = _root(context, Path(root))
+    context_sha256 = _context_sha256(context)
+    backend = _backend(context)
+    entries = _catalog(catalog, context)
+    manifest_path = root / "score_roots_antigravity" / f"{condition_id}_antigravity" / _MANIFEST_NAME
+    condition_root = manifest_path.parent
+    expected_children = {_MANIFEST_NAME} | {
+        f"{sha256(entry['dataset'].encode('utf-8')).hexdigest()}_antigravity"
+        for entry in entries
+    }
+    if _directory_children(condition_root) != expected_children:
+        raise ValueError("score root inventory differs")
+    manifest, _data = _read(manifest_path)
+    required = {"schema", "context_sha256", "catalog_sha256", "condition", "backend", "datasets", "checkpoint_hashes", "shards", "manifest_sha256"}
+    if not isinstance(manifest, dict) or set(manifest) != required or manifest["schema"] != _MANIFEST_SCHEMA:
+        raise ValueError("score root manifest schema differs")
+    bare = {key: item for key, item in manifest.items() if key != "manifest_sha256"}
+    if manifest["manifest_sha256"] != _digest(bare):
+        raise ValueError("score root manifest hash differs")
+    condition = manifest["condition"]
+    if not isinstance(condition, dict) or set(condition) != {"condition_id", "length_mode", "image_mode"} or condition["condition_id"] != condition_id:
+        raise ValueError("score root condition differs")
+    if manifest["context_sha256"] != context_sha256 or manifest["catalog_sha256"] != catalog["catalog_sha256"] or manifest["backend"] != backend or manifest["datasets"] != entries:
+        raise ValueError("score root manifest binding differs")
+    expected_datasets = [entry["dataset"] for entry in entries]
+    checkpoint_hashes = manifest["checkpoint_hashes"]
+    if not isinstance(checkpoint_hashes, list) or [item.get("dataset") if isinstance(item, dict) else None for item in checkpoint_hashes] != expected_datasets or any(not isinstance(item.get("sha256"), str) or len(item["sha256"]) != 64 for item in checkpoint_hashes):
+        raise ValueError("score root checkpoint hashes differ")
+    for entry, descriptor in zip(entries, checkpoint_hashes, strict=True):
+        dataset = entry["dataset"]
+        token = sha256(dataset.encode("utf-8")).hexdigest()
+        checkpoint = root / "checkpoints_antigravity" / f"{condition_id}_antigravity" / f"{token}_antigravity" / "dataset_condition_success_antigravity.json"
+        _checkpoint_value, checkpoint_data = _read(checkpoint)
+        if sha256(checkpoint_data).hexdigest() != descriptor["sha256"]:
+            raise ValueError("score root checkpoint hash differs")
+    shards = manifest["shards"]
+    if not isinstance(shards, list) or len(shards) != len(entries):
+        raise ValueError("score root shard inventory differs")
+    if [item.get("dataset") if isinstance(item, dict) else None for item in shards] != expected_datasets:
+        raise ValueError("score root shard inventory differs")
+    for entry, descriptor in zip(entries, shards, strict=True):
+        _check_shard(root, condition, context_sha256, catalog["catalog_sha256"], backend, entry, descriptor)
+    return manifest
+
+
+__all__ = ["verify_exp450_score_root_antigravity"]
