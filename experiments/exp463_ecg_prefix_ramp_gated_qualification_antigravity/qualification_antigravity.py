@@ -166,16 +166,28 @@ def recompute_row_pass_antigravity(
     for change_type in _CHANGE_TYPES_ANTIGRAVITY:
         if row.per_type_auc[change_type] < FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min:
             reasons.append(f"{change_type}_auc_below_min")
-    if row.method == "M2":
+    if row.method in {"M2", "M6"}:
         if row.per_type_auc["gradual_drift"] <= FROZEN_CONFIG_ANTIGRAVITY.gradual_drift_auc_strictly_above_exp462:
-            reasons.append("gradual_drift_not_strictly_improved_over_exp462")
+            reasons.append(
+                "gradual_drift_not_strictly_improved_over_exp462"
+                if row.method == "M2"
+                else "m6_gradual_drift_not_strictly_improved_over_exp462"
+            )
         if row.per_type_auc["period_change"] < FROZEN_CONFIG_ANTIGRAVITY.period_change_auc_global_min:
-            reasons.append("period_change_auc_below_global_min")
+            reasons.append(
+                "period_change_auc_below_global_min"
+                if row.method == "M2"
+                else "m6_period_change_auc_below_global_min"
+            )
         for historical in authority.historical_period_folds:
             if row.seed == historical.seed and row.fold_index == historical.fold_index:
                 if row.per_type_auc["period_change"] < historical.period_change_auc:
                     reasons.append(
-                        f"historical_period_change_below_min:{row.seed}:{row.fold_index}"
+                        (
+                            f"historical_period_change_below_min:{row.seed}:{row.fold_index}"
+                            if row.method == "M2"
+                            else f"m6_historical_period_change_below_min:{row.seed}:{row.fold_index}"
+                        )
                     )
                 break
     return not reasons, tuple(reasons)
