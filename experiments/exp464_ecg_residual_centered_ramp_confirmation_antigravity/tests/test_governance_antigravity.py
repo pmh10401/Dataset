@@ -27,11 +27,6 @@ TASK4_REPORT_ANTIGRAVITY = (
     "2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/"
     "task-4-report-antigravity.md"
 )
-TASK3_REPORT_ANTIGRAVITY = (
-    ".superpowers/sdd/"
-    "2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/"
-    "task-3-report-antigravity.md"
-)
 DOCUMENTS_ANTIGRAVITY = (
     "docs/EXP464_DASHBOARD_antigravity.html",
     "docs/EXP464_PREREGISTRATION_antigravity.html",
@@ -87,6 +82,15 @@ EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY = 42
 EXPECTED_CHECKED_COUNT_ANTIGRAVITY = 28
 EXPECTED_NEXT_ACTION_ANTIGRAVITY = (
     "task_5_closed_cli_then_exactly_two_sequential_private_train_reproductions"
+)
+EXPECTED_EXACT_NEXT_COMMAND_ANTIGRAVITY = (
+    "implement_and_review_exp464_task5_closed_cli_before_private_train_reproductions"
+)
+EXPECTED_INTERRUPTED_COMMAND_ANTIGRAVITY = (
+    "none_exp464_task5_not_started_no_interrupted_run"
+)
+EXPECTED_OFFICIAL_COMMAND_ANTIGRAVITY = (
+    "none_exp464_task6_official_lifecycle_not_authorized"
 )
 TASK4_REVIEWED_COMMIT_ANTIGRAVITY = (
     "ff0e871dda5c4353e467bc9d3070293022f0ad0e"
@@ -333,6 +337,21 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(research_state["active_experiment"], "Exp464")
         self.assertEqual(research_state["active_phase"], STATUS_ANTIGRAVITY)
         self.assertEqual(research_state["status"], STATUS_ANTIGRAVITY)
+        self.assertEqual(research_state["next_action"], EXPECTED_NEXT_ACTION_ANTIGRAVITY)
+        self.assertEqual(
+            research_state["exact_next_command"],
+            EXPECTED_EXACT_NEXT_COMMAND_ANTIGRAVITY,
+        )
+        self.assertEqual(
+            research_state["exact_next_command_if_interrupted"],
+            EXPECTED_INTERRUPTED_COMMAND_ANTIGRAVITY,
+        )
+        self.assertEqual(
+            research_state["official_readiness_command_after_fresh_sol_ship"],
+            EXPECTED_OFFICIAL_COMMAND_ANTIGRAVITY,
+        )
+        self.assertIn("Exp464 Task 4 review is SHIP", research_state["pause_reason"])
+        self.assertIn("no official authorization", research_state["pause_reason"])
         self.assertEqual(
             research_state["last_verified_commit"],
             TASK4_REVIEWED_COMMIT_ANTIGRAVITY,
@@ -370,17 +389,22 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(task6_section.count('type="checkbox" checked disabled'), 0)
         self.assertEqual(task6_section.count('type="checkbox" disabled'), 7)
 
-        task3_report_text = (ROOT_ANTIGRAVITY / TASK3_REPORT_ANTIGRAVITY).read_text(
+        implementation_report_text = (
+            ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]
+        ).read_text(
             encoding="utf-8",
         )
-        self.assertIn("selected backend: `numpy_cpu`", task3_report_text)
         self.assertIn(
-            "the frozen project interpreter cannot import `mlx`",
-            task3_report_text,
+            "selected backend: <code>numpy_cpu</code>",
+            implementation_report_text,
         )
         self.assertIn(
-            "parity/timing fields for MLX vs NumPy remain not-run",
-            task3_report_text,
+            "the frozen project interpreter cannot import <code>mlx</code>",
+            implementation_report_text,
+        )
+        self.assertIn(
+            "MLX-versus-NumPy parity and timing remain not-run",
+            implementation_report_text,
         )
 
         parser = HtmlParserAntigravity()

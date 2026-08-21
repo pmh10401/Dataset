@@ -206,14 +206,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 4 review. Effect: records SHIP/spec PASS/quality APPROVED/C/I0, focused suite evidence, and the unchanged no-results boundary.",
+            "Caller: Task 4 review. Effect: records SHIP/spec PASS/quality APPROVED/C/I0, focused suite evidence, tracked numpy_cpu frozen-interpreter fallback authority, and the unchanged no-results boundary.",
             symbol="Exp464 Task 4 구현 보고서",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores task_4_complete_pending_task_5 with official/private/label counts at zero and all official result hashes null.",
+            "Caller: active research ledger. Effect: stores task_4_complete_pending_task_5, globally authorizes only closed Task 5 CLI then exactly two sequential private TRAIN reproductions, and keeps official/private/label counts at zero with all official result hashes null.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),

@@ -2039,10 +2039,10 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "design_new_routing_experiment_from_two_qualified_candidates",
-  "exact_next_command": "none_exp454_permanently_stopped",
-  "exact_next_command_if_interrupted": "none_exp454_permanently_stopped",
-  "official_readiness_command_after_fresh_sol_ship": "none_exp454_permanently_stopped",
+  "next_action": "task_5_closed_cli_then_exactly_two_sequential_private_train_reproductions",
+  "exact_next_command": "implement_and_review_exp464_task5_closed_cli_before_private_train_reproductions",
+  "exact_next_command_if_interrupted": "none_exp464_task5_not_started_no_interrupted_run",
+  "official_readiness_command_after_fresh_sol_ship": "none_exp464_task6_official_lifecycle_not_authorized",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
@@ -2050,7 +2050,7 @@
   "test_labels_opened": true,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "Exp454_official_evaluation_completed_once",
-  "pause_reason": "Exp454 produced a valid immutable 12-leaf result and one successful inspect, then a review-time second inspect failed and permanently stopped the lifecycle. Preserve the two qualified pairs for a new routing experiment; do not rerun Exp454 or change champion, pending candidate, or promotion.",
+  "pause_reason": "Exp464 Task 4 review is SHIP. The next bounded work is to implement and review the closed Task 5 CLI, then run exactly two sequential private TRAIN reproductions. There is no official authorization; do not open Task 6, official evaluate/inspect, TEST labels, routing, champion/pending mutation, or promotion.",
   "exp440_implementation": {
     "implementation_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
     "status": "official_completed_evaluated_not_promoted",

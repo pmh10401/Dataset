@@ -306,3 +306,17 @@ The broader semantic tamper matrix is also covered by the focused replay suite a
 - Implement and review the Task 5 closed CLI first.
 - Then run exactly two sequential private TRAIN reproductions.
 - Do not open official evaluate/inspect, TEST labels, routing, champion/pending mutation, or promotion.
+
+## Review fix-first correction
+
+- I1 corrected the global authoritative `RESEARCH_STATE.json` next-action and
+  command fields that still described the historical Exp454 stop. They now
+  point only to the Exp464 Task 5 closed CLI, followed by exactly two sequential
+  private TRAIN reproductions; Task 6 and every official command remain
+  unauthorized.
+- I2 removed governance's dependency on the ambient ignored Task 3 report.
+  The tracked Exp464 implementation report now preserves the authoritative
+  `numpy_cpu` decision and its exact reason: the frozen project interpreter
+  cannot import `mlx`, so MLX-versus-NumPy parity and timing remain not-run.
+- This correction does not change the 28/42 checkbox truth, any scientific
+  contract or result field, or the zero private/official/label boundary.
