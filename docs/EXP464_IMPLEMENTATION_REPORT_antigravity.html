@@ -1,26 +1,26 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 Task 2 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{border-left:6px solid #2457a6;background:#f5f7fa;padding:1rem}.stop{border-left:6px solid #b42318;background:#fff4f2;padding:1rem}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 Task 3 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{border-left:6px solid #2457a6;background:#f5f7fa;padding:1rem}.stop{border-left:6px solid #b42318;background:#fff4f2;padding:1rem}</style></head>
 <body><main>
-<h1>Exp464 Task 2 구현 보고서</h1>
-<p><strong>현재 상태:</strong> Task 2 closeout 완료, 상태는 <code>task_2_complete_pending_task_3</code>다. scoped re-review는 clean했고 spec compliant, quality approved, C1/I1/I2 addressed로 닫혔다. 다음 단계는 Task 3 scorer 구현이며, 그 이후 science module은 아직 시작하지 않았다.</p>
+<h1>Exp464 Task 3 구현 보고서</h1>
+<p><strong>현재 상태:</strong> Task 3 구현 완료, 상태는 <code>task_3_implemented_awaiting_fresh_review</code>다. centered residual ramp feature와 C0–C8 scorer는 구현됐지만, Task 3 heading과 여섯 step은 fresh review 전이라 아직 unchecked다. 다음 단계는 fresh review이고, Task 4는 그 뒤에만 진행한다.</p>
 <table>
 <tr><th>approved design</th><td>SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code></td></tr>
 <tr><th>predecessor</th><td>Exp463 terminal closeout <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
-<tr><th>task scope</th><td>frozen config, immutable contracts, Exp463 predecessor authority capture, TRAIN source boundary, Task 2 truth update, code map handoff</td></tr>
-<tr><th>out of scope</th><td>Task 3+ 모듈, scoring, qualification, private run, official evaluate/inspect, TEST label query, package install</td></tr>
+<tr><th>task scope</th><td>centered residual ramp feature, exact C0–C8 fold scores, MLX assessment, Task 3 truth update, code map handoff</td></tr>
+<tr><th>out of scope</th><td>Task 4+ qualification/evaluation/replay/CLI, private run, official evaluate/inspect, TEST label query, package install</td></tr>
 <tr><th>official / private / label counts</th><td><code>0 / 0 / 0</code></td></tr>
-<tr><th>next action</th><td>Task 3 scorer implementation next</td></tr>
+<tr><th>next action</th><td>fresh Task 3 review before Task 4</td></tr>
 </table>
 
-<h2>Task 2 deliverables</h2>
+<h2>Task 3 deliverables</h2>
 <ul>
-<li>네 개의 foundation 모듈: <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code></li>
-<li>Task 2 focused test 네 개와 Exp464 governance truth 업데이트</li>
-<li>세 ledger, 네 HTML 문서, 계획서, code map builder/triplet의 Task 2 handoff 반영</li>
+<li>두 개의 science 모듈: <code>centered_ramp_antigravity.py</code>, <code>scoring_antigravity.py</code></li>
+<li>Task 3 focused test 두 개와 Exp464 governance truth 업데이트</li>
+<li>세 ledger, 네 HTML 문서, 계획서, code map builder/triplet의 Task 3 review-pending 반영</li>
 </ul>
 
-<div class="note"><p>Exp463 Task 5 report SHA-256을 먼저 확인한 뒤, 세 ledger와 구현 보고서를 서로 대조해서 terminal commit, reviewed CLI commit, 두 번의 private run equality, 70/30/7/7 inventory, artifact-map SHA-256, C0/C1/C2/C7 summary minima를 읽었다. 이 값은 다음 Task 3 scorer가 의존하는 authority 경계다.</p></div>
-<div class="note"><p>이번 closeout에서 plan truth도 함께 갱신했다. 전체 checkbox 42개 중 checked는 정확히 14개이며, Task 1 heading+6 steps와 Task 2 heading+6 steps만 checked다. Tasks 3–6은 모두 unchecked 상태로 유지한다.</p></div>
-<div class="note"><p>Scoped re-review 결과는 clean이다. 새 Critical/Important는 없었고, predecessor authority hardening fix hashes <code>f40dab02abecfad7d267460d4bcd84f46a764cfa</code>와 <code>f4f7e804948ab51d9ecbf455126ce4002b131b8e</code>가 Task 2 report에 함께 기록돼 있다.</p></div>
-<div class="stop"><p>이번 구현에서도 Task 3+ 모듈, MLX, private run, official command, TEST label query는 수행하지 않았다. read-only TRAIN smoke 외의 실행은 없었고, champion, pending candidate, routing, promotion도 바꾸지 않았다.</p></div>
+<div class="note"><p>Exp463 Task 5 report SHA-256과 frozen authority를 먼저 검증한 뒤, 그 authority를 scorer 입력 경계로 사용했다. C0/C1/C2/C7는 Exp463 M0/M2/M4/M6 exact replay control로만 읽고, C3–C8은 centered residual ramp 규칙을 독립 계산으로 고정했다.</p></div>
+<div class="note"><p>이번 구현에서도 plan truth는 함께 갱신한다. 전체 checkbox 42개 중 checked는 여전히 정확히 14개이며, Task 3 heading+6 steps는 review 전이라 unchecked로 유지한다.</p></div>
+<div class="note"><p>MLX assessment는 project interpreter에서 <code>ModuleNotFoundError: No module named 'mlx'</code>로 끝났기 때문에 선택 백엔드는 <code>numpy_cpu</code>다. 별도 system python에는 <code>mlx 0.32.0</code> / <code>mlx-metal 0.32.0</code>가 보였지만, frozen interpreter parity gate를 통과하지 못하므로 실험 백엔드로 채택하지 않는다.</p></div>
+<div class="stop"><p>이번 구현에서도 Task 4+ 모듈, private run, official command, TEST label query는 수행하지 않았다. champion, pending candidate, routing, promotion도 바꾸지 않았다.</p></div>
 </main></body></html>

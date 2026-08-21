@@ -2932,8 +2932,8 @@
   "exp464": {
     "experiment": "Exp464",
     "kind": "ecg_residual_centered_ramp_confirmation_qualification",
-    "status": "task_2_complete_pending_task_3",
-    "implementation_status": "task_2_complete_pending_task_3",
+    "status": "task_3_implemented_awaiting_fresh_review",
+    "implementation_status": "task_3_implemented_awaiting_fresh_review",
     "run_identity": "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
     "run_root": "/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821",
     "package": "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity",
@@ -3017,7 +3017,7 @@
     "scientific_winner_selected": false,
     "official_root_present": false,
     "review_only": false,
-    "next_action": "task_3_implementation_next_after_task_2_closeout",
-    "notes": "Task 2 scoped re-review is clean: spec compliant, quality approved, C1/I1/I2 all addressed, and no new Critical or Important review item was opened. Exp464 now closes Task 2 with frozen config/contracts/predecessor/source modules, official/private/label counts still 0, the official root absent, and all official result hashes still null. Champion, pending candidate, routing, and promotion remain unchanged. Task 3 scorer implementation is next. No Task 3+ module execution, MLX, private run, official command, TEST label query, or package install occurred during this closeout."
+    "next_action": "fresh_task_3_review_before_task_4",
+    "notes": "Task 3 implementation is complete and awaiting fresh review. Exp464 now includes centered_ramp_antigravity.py and scoring_antigravity.py on top of the frozen Task 2 authority/source boundary, while official/private/label counts remain 0, the official root remains absent, and all official result hashes remain null. The plan checkbox truth stays at 14/42 because Task 3 is review-pending. MLX was not selected: the frozen project interpreter raised ModuleNotFoundError for mlx, so the recorded backend remains numpy_cpu. Champion, pending candidate, routing, and promotion remain unchanged. Task 4 is blocked until fresh Task 3 review closes clean."
   }
 }

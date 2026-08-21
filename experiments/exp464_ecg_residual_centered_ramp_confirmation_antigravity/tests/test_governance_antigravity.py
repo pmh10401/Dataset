@@ -31,12 +31,16 @@ DOCUMENTS_ANTIGRAVITY = (
 )
 FOUNDATION_FILES_ANTIGRAVITY = (
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/config_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/centered_ramp_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/contracts_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/predecessor_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/scoring_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/sources_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_centered_ramp_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_config_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_scoring_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_sources_antigravity.py",
 )
 TRIPLET_ANTIGRAVITY = (
@@ -54,8 +58,8 @@ DESIGN_SHA256_ANTIGRAVITY = (
 PRIMARY_CANDIDATE_ANTIGRAVITY = (
     "template_residual_centered_ramp_confirmed_max"
 )
-STATUS_ANTIGRAVITY = "task_2_complete_pending_task_3"
-OLD_STATUS_ANTIGRAVITY = "task_2_implemented_awaiting_fresh_review"
+STATUS_ANTIGRAVITY = "task_3_implemented_awaiting_fresh_review"
+OLD_STATUS_ANTIGRAVITY = "task_2_complete_pending_task_3"
 METHOD_ORDER_ANTIGRAVITY = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8")
 EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY = 42
 EXPECTED_PENDING_ANTIGRAVITY = {
@@ -148,7 +152,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         return state["exp464"], catalog_matches[0], champion_matches[0]
 
     def test_exp464_is_planned_without_results_antigravity(self) -> None:
-        """Break caught: Exp464 governance truth drifts before science code exists."""
+        """Break caught: Exp464 governance truth drifts after Task 3 scoring lands."""
         dashboard = ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[0]
         self.assertTrue(dashboard.exists())
 
@@ -157,7 +161,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             for relative in DOCUMENTS_ANTIGRAVITY[1:] + FOUNDATION_FILES_ANTIGRAVITY + TRIPLET_ANTIGRAVITY
             if not (ROOT_ANTIGRAVITY / relative).is_file()
         ]
-        self.assertEqual(missing, [], f"missing Task 1 artifacts: {missing}")
+        self.assertEqual(missing, [], f"missing Task 3 artifacts: {missing}")
         for relative in DOCUMENTS_ANTIGRAVITY + FOUNDATION_FILES_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
             path = ROOT_ANTIGRAVITY / relative
             self.assertTrue(path.is_file(), relative)
@@ -282,7 +286,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("M2 7/10", dashboard_text)
         self.assertIn("M4 9/10", dashboard_text)
         self.assertIn("진단용", dashboard_text)
-        self.assertIn("config_antigravity.py", dashboard_text)
+        self.assertIn("centered_ramp_antigravity.py", dashboard_text)
+        self.assertIn("scoring_antigravity.py", dashboard_text)
+        self.assertIn("numpy_cpu", dashboard_text)
 
         for relative in DOCUMENTS_ANTIGRAVITY:
             text = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8")
@@ -294,6 +300,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         self.assertIn("Task 3", preregistration_text)
         self.assertIn("14/42", preregistration_text)
+        self.assertIn("numpy_cpu", preregistration_text)
 
         for relative in DOCUMENTS_ANTIGRAVITY:
             parser = HtmlParserAntigravity()
@@ -330,14 +337,21 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(map_lock["fingerprint_count"], len(map_lock["tracked_fingerprints"]))
         self.assertGreater(map_json["node_count"], 0)
         self.assertGreater(map_json["edge_count"], 0)
-        self.assertEqual(map_json["graph_schema"], "exp464_task2_foundation_codemap_v1")
-        self.assertEqual(map_lock["lock_schema"], "exp464_task2_foundation_codemap_lock_v1")
+        self.assertEqual(map_json["graph_schema"], "exp464_task3_scoring_codemap_v1")
+        self.assertEqual(map_lock["lock_schema"], "exp464_task3_scoring_codemap_lock_v1")
         node_ids = {node["id"] for node in map_json["nodes"]}
         self.assertIn("task2_config", node_ids)
         self.assertIn("task2_contracts", node_ids)
         self.assertIn("task2_predecessor", node_ids)
         self.assertIn("task2_sources", node_ids)
-        self.assertIn("future_task3_scoring", node_ids)
+        self.assertIn("task3_centered_ramp_feature", node_ids)
+        self.assertIn("task3_scoring", node_ids)
+        self.assertIn("task3_feature_test", node_ids)
+        self.assertIn("task3_scoring_test", node_ids)
+        self.assertIn("exp463_feature_regression", node_ids)
+        self.assertIn("exp463_scoring_regression", node_ids)
+        self.assertIn("future_task4_qualification", node_ids)
+        self.assertIn("future_task5_private_qualification", node_ids)
 
         html_text = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         match = re.search(

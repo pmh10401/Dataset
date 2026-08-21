@@ -2736,8 +2736,8 @@
       "id": "Exp464",
       "experiment": "Exp464",
       "kind": "ecg_residual_centered_ramp_confirmation_qualification",
-      "status": "task_2_complete_pending_task_3",
-      "implementation_status": "task_2_complete_pending_task_3",
+      "status": "task_3_implemented_awaiting_fresh_review",
+      "implementation_status": "task_3_implemented_awaiting_fresh_review",
       "documents": {
         "dashboard": "docs/EXP464_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP464_PREREGISTRATION_antigravity.html",
