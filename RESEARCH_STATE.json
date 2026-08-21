@@ -2818,7 +2818,7 @@
     "experiment": "Exp463",
     "kind": "ecg_prefix_ramp_gated_qualification",
     "status": "stopped_before_official_evaluation_qualification_failed",
-    "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
+    "implementation_status": "task_5_review_ship_qualification_failed_task_6_forbidden",
     "run_identity": "exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821",
     "run_root": "/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821",
     "package": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity",
@@ -2897,13 +2897,14 @@
     "scientific_winner_selected": false,
     "official_root_present": false,
     "review_only": false,
-    "notes": "Task 5 private TRAIN campaign completed exactly two immutable evaluate-to-inspect reproductions at clean reviewed CLI commit 923cc4ad6dd6737f84f4ea2c4f621eb652ac54b4. Both roots matched exactly for 70 metric rows, 30 failed rows, seven summaries, decision, dashboard, and all seven leaf bytes/hashes. M0 and M6 controls reproduced; primary M2 hydra_period_ramp_gated_max passed 7/10 with minimum gradual_drift AUC 0.83450279161008 and period_change AUC 0.8984897640963734, so frozen qualification failed. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, official result hashes remain null, and champion, pending candidate, routing, and promotion remain unchanged. A disclosed overlapping wrapper retry hit the create-only root-exists guard and produced no result; no further private run occurred. MLX evidence records CPU fallback because exact float64 numeric parity was not established. Task 6 is permanently forbidden.",
+    "notes": "Task 5 private TRAIN campaign completed exactly two immutable evaluate-to-inspect reproductions at clean reviewed CLI commit 923cc4ad6dd6737f84f4ea2c4f621eb652ac54b4. Both roots matched exactly for 70 metric rows, 30 failed rows, seven summaries, decision, dashboard, and all seven leaf bytes/hashes. M0 and M6 controls reproduced; primary M2 hydra_period_ramp_gated_max passed 7/10 with minimum gradual_drift AUC 0.83450279161008 and period_change AUC 0.8984897640963734, so frozen qualification failed. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0), completing Task 5 (7/7 checked). The exact private roots /private/tmp/exp463_task5_private_run1_antigravity and /private/tmp/exp463_task5_private_run2_antigravity were removed after review; aggregate logs/report and hashes remain retained. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, official result hashes remain null, and champion, pending candidate, routing, and promotion remain unchanged. A disclosed overlapping wrapper retry hit the create-only root-exists guard and produced no result; no further private run occurred. MLX evidence records CPU fallback because exact float64 numeric parity was not established. Task 6 is permanently forbidden and there is no next official action.",
     "task5_private_train_result": {
       "reviewed_commit": "923cc4ad6dd6737f84f4ea2c4f621eb652ac54b4",
       "runs": [
         {"run": 1, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 246.13, "inspect_seconds": 0.73},
         {"run": 2, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 238.66, "inspect_seconds": 1.79}
       ],
+      "temporary_roots_removed": true,
       "row_count": 70,
       "failed_row_count": 30,
       "summary_count": 7,

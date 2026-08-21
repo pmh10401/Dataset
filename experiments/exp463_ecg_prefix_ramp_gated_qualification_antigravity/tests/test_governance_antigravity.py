@@ -227,7 +227,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 )
                 self.assertEqual(
                     record["implementation_status"],
-                    "task_5_private_train_reproducibility_complete_qualification_failed",
+                    "task_5_review_ship_qualification_failed_task_6_forbidden",
                 )
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
@@ -269,7 +269,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertFalse(record["official_root_present"])
                 ledger_text = str(record.get("notes", record.get("reason", "")))
                 self.assertIn("Task 5 private TRAIN campaign completed", ledger_text)
+                self.assertIn("Final review is SHIP", ledger_text)
+                self.assertIn("C/I/M0", ledger_text)
+                self.assertIn("no next official action", ledger_text)
                 self.assertIn("Task 6 is permanently forbidden", ledger_text)
+                self.assertTrue(record["task5_private_train_result"]["temporary_roots_removed"])
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
@@ -339,7 +343,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "Task 3",
             "Task 4",
             "7/7",
-            "Task 5 is next",
+            "C/I/M0",
+            "no next official action",
+            "private roots",
         ):
             self.assertIn(phrase, report)
 
@@ -361,7 +367,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "Task 4",
             "Task 5",
             "7/7",
-            "Task 5 is next",
+            "no next official action",
+            "removed",
         ):
             self.assertIn(phrase, dashboard)
 
@@ -379,9 +386,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             checked_count = sum(
                 bool(re.search(r"\bchecked(?:\s|=|>)", tag)) for tag in tags
             )
-            self.assertEqual(checked_count, 7 if task_number <= 4 else 0)
+            self.assertEqual(checked_count, 7 if task_number <= 5 else 0)
             for tag in tags:
-                if task_number in (1, 2, 3, 4):
+                if task_number in (1, 2, 3, 4, 5):
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)", tag)
                 else:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)", tag)

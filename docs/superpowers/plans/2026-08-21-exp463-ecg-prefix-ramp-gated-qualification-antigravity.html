@@ -9,7 +9,7 @@
 <tr><th>Architecture</th><td>Exp462 구조를 통제된 복사로 사용하되 24D LocalGap 주 후보를 prefix-scaled 1D ramp와 <code>0.995</code> gated max로 교체한다. M0–M6을 같은 blocked folds에서 계산하고, M2만 사전 등록된 합격선으로 판정한다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, 기존 aeon/Hydra CPU 경로, unittest, canonical JSON/JSONL, HTML.</td></tr>
 <tr><th>Spec</th><td><a href="../specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html">승인된 Exp463 설계서</a> — SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
-<tr><th>Current status</th><td><code>task_5_private_train_complete_pending_independent_review</code>. Task 1–4 reviews are SHIP (spec PASS, quality APPROVED, C/I0); Task 4 heading plus six controls are closed 7/7. Task 5 private TRAIN reproductions are complete and qualification failed; Task 5/6 controls remain unchecked pending review. Official execution and label query remain 0.</td></tr>
+<tr><th>Current status</th><td><code>task_5_review_ship_qualification_failed_task_6_forbidden</code>. Task 1–4 reviews are SHIP (spec PASS, quality APPROVED, C/I0); Task 5 final review is SHIP (spec PASS, quality APPROVED, C/I/M0) with all seven controls checked. The two explicit private roots were removed after review; aggregate logs/report remain retained. Qualification failed, so Task 6 remains 0/7 unchecked and forbidden. Official execution and label query remain 0; there is no next official action.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -29,7 +29,7 @@
 <h2><label><input type="checkbox" disabled checked>Task 1 — governance, dashboard, code map</label></h2>
 <p><strong>Files:</strong> Create <code>docs/EXP463_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP463_RUNBOOK_antigravity.html</code>, <code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp463_antigravity.py</code>, <code>docs/codemap/codemap_exp463_antigravity.{html,json,lock}</code>. Modify <code>docs/EXP463_DASHBOARD_antigravity.html</code>, three ledgers, and this plan.</p>
 <p><strong>Produces:</strong> 승인된 설계 SHA, planned ledger record, 쉬운 한국어 dashboard, 이후 Task 경계를 unknown으로 표시한 map.</p>
-<p><strong>Implementation handoff:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0). Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0) and Task 2 is closed 7/7; Task 3 and Task 4 are also closed 7/7 after their SHIP reviews. Task 5 is next and Task 6 remains separately approved; only Tasks 5–6 remain unchecked.</p>
+<p><strong>Implementation handoff:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0). Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0) and Task 2 is closed 7/7; Task 3 and Task 4 are also closed 7/7 after their SHIP reviews. Task 5 review is SHIP (spec PASS, quality APPROVED, C/I/M0), its seven controls are checked, and the frozen qualification failure permanently forbids Task 6; there is no next official action.</p>
 <ol>
 <li><label><input type="checkbox" disabled checked>Step 1 — RED: 문서·ledger·map 부재와 공식0/label0/null result를 검사한다.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
 self.assertEqual(record["label_query_count"], 0)
@@ -89,22 +89,22 @@ expected = numpy.maximum(r461, rramp) if rramp &gt;= 0.995 else r461</code></pre
 </section>
 
 <section>
-<h2><label><input type="checkbox" disabled>Task 5 — closed CLI and two private TRAIN reproductions</label></h2>
+<h2><label><input type="checkbox" disabled checked>Task 5 — closed CLI and two private TRAIN reproductions</label></h2>
 <p><strong>Files:</strong> Create <code>cli_antigravity.py</code>, <code>tests/test_cli_antigravity.py</code>, <code>scratch/run_exp463_ecg_prefix_ramp_gated_qualification_antigravity.py</code>. Modify HTML docs, ledgers, plan and map.</p>
 <p><strong>CLI:</strong> exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled>Step 1 — RED parser/lazy import/outside-CWD launcher/TEST-label firewall; 최소 CLI 구현 후 focused 두 번 GREEN.</label></li>
-<li><label><input type="checkbox" disabled>Step 2 — clean commit, fixed interpreter, 공식 root 부재를 확인하고 private temp root 1에서 TRAIN evaluate→inspect 한 번.</label></li>
-<li><label><input type="checkbox" disabled>Step 3 — run1 종료 후 temp root 2에서 한 번. 70 rows, seven summaries, decision/dashboard, 모든 leaf bytes/hashes exact 비교.</label></li>
-<li><label><input type="checkbox" disabled>Step 4 — Exp463 discovery 두 번, Exp462 scientific regression 한 번, map/html/diff/root/label 검증.</label></li>
-<li><label><input type="checkbox" disabled>Step 5 — M0/M6 재현과 M2 모든 합격선이 통과하면 <code>implementation_verified_awaiting_official_evaluation</code>; 하나라도 실패하면 <code>stopped_before_official_evaluation_qualification_failed</code>로 기록하고 Task6 금지.</label></li>
-<li><label><input type="checkbox" disabled>Step 6 — Grok read-only 결과 검토와 Codex 최종 판단 후 truth/dashboard/map 커밋. 통과한 경우에도 Task6는 시작하지 않는다.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 1 — RED parser/lazy import/outside-CWD launcher/TEST-label firewall; 최소 CLI 구현 후 focused 두 번 GREEN.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 2 — clean commit, fixed interpreter, 공식 root 부재를 확인하고 private temp root 1에서 TRAIN evaluate→inspect 한 번.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 3 — run1 종료 후 temp root 2에서 한 번. 70 rows, seven summaries, decision/dashboard, 모든 leaf bytes/hashes exact 비교.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 4 — Exp463 discovery 두 번, Exp462 scientific regression 한 번, map/html/diff/root/label 검증.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 5 — M0/M6 재현과 M2 모든 합격선을 확인하고, 실패에 따라 <code>stopped_before_official_evaluation_qualification_failed</code>로 기록하여 Task6을 금지.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 6 — independent review SHIP (spec PASS, quality APPROVED, C/I/M0) 후 truth/dashboard/map 커밋; Task5를 7/7로 닫고 Task6은 시작하지 않는다.</label></li>
 </ol>
 </section>
 
 <section>
 <h2><label><input type="checkbox" disabled>Task 6 — separately approved official result preservation</label></h2>
-<p>Task5가 모든 과학 기준을 통과하고 사용자가 별도로 승인한 경우에만 실행한다.</p>
+<p><strong>영구 금지:</strong> Task5의 frozen qualification gate 실패로 Task6은 실행하지 않는다. Task6 heading과 여섯 단계는 0/7 unchecked로 유지하며, 공식 evaluate/inspect와 다음 공식 action은 없다.</p>
 <ol>
 <li><label><input type="checkbox" disabled>Step 1 — exact clean reviewed commit, 공식 root 부재, label0, 중복 실행 없음 확인.</label></li>
 <li><label><input type="checkbox" disabled>Step 2 — official evaluate를 정확히 한 번 실행.</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
