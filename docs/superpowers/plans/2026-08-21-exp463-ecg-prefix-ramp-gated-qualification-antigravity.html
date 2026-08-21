@@ -9,7 +9,7 @@
 <tr><th>Architecture</th><td>Exp462 구조를 통제된 복사로 사용하되 24D LocalGap 주 후보를 prefix-scaled 1D ramp와 <code>0.995</code> gated max로 교체한다. M0–M6을 같은 blocked folds에서 계산하고, M2만 사전 등록된 합격선으로 판정한다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, 기존 aeon/Hydra CPU 경로, unittest, canonical JSON/JSONL, HTML.</td></tr>
 <tr><th>Spec</th><td><a href="../specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html">승인된 Exp463 설계서</a> — SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
-<tr><th>Current status</th><td><code>task_3_implemented_pending_review</code>. Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 3 feature/scoring implementation, focused GREEN suites, and bounded backend smoke are recorded, while Task 3 heading and six controls remain unchecked until fresh review. Qualification/evaluation/private TRAIN result/official execution/TEST label query remain 0.</td></tr>
+<tr><th>Current status</th><td><code>task_3_complete_pending_task_4</code>. Task 2 and Task 3 reviews are SHIP (spec PASS, quality APPROVED, C/I0); Task 3 heading plus six controls are closed 7/7, and Task 4 is next. Qualification/evaluation/private TRAIN result/official execution/TEST label query remain 0.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -29,7 +29,7 @@
 <h2><label><input type="checkbox" disabled checked>Task 1 — governance, dashboard, code map</label></h2>
 <p><strong>Files:</strong> Create <code>docs/EXP463_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP463_RUNBOOK_antigravity.html</code>, <code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp463_antigravity.py</code>, <code>docs/codemap/codemap_exp463_antigravity.{html,json,lock}</code>. Modify <code>docs/EXP463_DASHBOARD_antigravity.html</code>, three ledgers, and this plan.</p>
 <p><strong>Produces:</strong> 승인된 설계 SHA, planned ledger record, 쉬운 한국어 dashboard, 이후 Task 경계를 unknown으로 표시한 map.</p>
-<p><strong>Implementation handoff:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0). Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0) and Task 2 is closed 7/7; Task 3 is next. Tasks 3–6 remain unchecked until their own evidence and review.</p>
+<p><strong>Implementation handoff:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0). Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0) and Task 2 is closed 7/7; Task 3 is complete pending Task 4. Tasks 4–6 remain unchecked until their own evidence and review.</p>
 <ol>
 <li><label><input type="checkbox" disabled checked>Step 1 — RED: 문서·ledger·map 부재와 공식0/label0/null result를 검사한다.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
 self.assertEqual(record["label_query_count"], 0)
@@ -52,23 +52,24 @@ self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
 <li><label><input type="checkbox" disabled checked>Step 3 — Exp462 대응 모듈을 통제된 복사하고 Exp463 정체성, M0–M6, 0.995 gate만 바꾼다.</label></li>
 <li><label><input type="checkbox" disabled checked>Step 4 — 전임 30 rows/3 summaries/7 leaves의 고정 aggregate와 TRAIN loader를 연결한다. TEST 테이블이나 label SQL은 import하지 않는다.</label></li>
 <li><label><input type="checkbox" disabled checked>Step 5 — focused 두 번, Task1 regression, read-only TRAIN source smoke 한 번, compile/map/diff/root/label 검증.</label></li>
-<li><label><input type="checkbox" disabled checked>Step 6 — dashboard/report/map을 갱신하고 커밋했다. Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 3 is next and remains unchecked.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 6 — dashboard/report/map을 갱신하고 커밋했다. Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 3 is complete pending Task 4.</label></li>
 </ol>
 </section>
 
 <section>
-<h2><label><input type="checkbox" disabled>Task 3 — prefix-scaled ramp and seven method scores</label></h2>
+<h2><label><input type="checkbox" disabled checked>Task 3 — prefix-scaled ramp and seven method scores</label></h2>
 <p><strong>Files:</strong> Create <code>ramp_features_antigravity.py</code>, <code>scoring_antigravity.py</code> and matching tests. Modify dashboard/report/plan/map.</p>
 <p><strong>Produces:</strong> <code>prefix_ramp_score_antigravity(values: numpy.ndarray) -&gt; float</code> and <code>score_fold_methods_antigravity(...) -&gt; FoldMethodScoresAntigravity</code> with ordered M0–M6 scores.</p>
-<p><strong>Current state:</strong> Task 3 implemented pending review. Independent RED/GREEN evidence and a same-input CPU/MLX smoke are recorded in <code>.superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html</code>. The Task 3 heading and six steps intentionally remain unchecked; Task 4 qualification and all result/publication work are not started.</p>
+<p><strong>Current state:</strong> Task 3 is complete pending Task 4 after fresh review SHIP (spec PASS, quality APPROVED, C/I0). The heading plus six steps are checked 7/7; independent RED/GREEN evidence, exact replay-control tests, and a same-input CPU/MLX smoke are recorded in <code>.superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html</code>. Task 4 qualification and all result/publication work are not started.</p>
+<p><strong>Deferred review note:</strong> MLX numeric-parity evidence remains a minor for Task 5; the frozen CPU implementation remains selected.</p>
 <ol>
-<li><label><input type="checkbox" disabled>Step 1 — RED independent NumPy reference for prefix median/MAD, onset 56, normalized ramp vector, signed dot product, exact rank formula and 0.995 boundary.</label><pre><code>expected_rank = (1 + numpy.count_nonzero(reference &lt;= score)) / (len(reference) + 1)
+<li><label><input type="checkbox" disabled checked>Step 1 — RED independent NumPy reference for prefix median/MAD, onset 56, normalized ramp vector, signed dot product, exact rank formula and 0.995 boundary.</label><pre><code>expected_rank = (1 + numpy.count_nonzero(reference &lt;= score)) / (len(reference) + 1)
 expected = numpy.maximum(r461, rramp) if rramp &gt;= 0.995 else r461</code></pre></li>
-<li><label><input type="checkbox" disabled>Step 2 — RED M0–M6 exact order and semantics: M2 gated max, M3 always max, M4 template residual, M5 whole-series normalization, M6 Exp462 replay control.</label></li>
-<li><label><input type="checkbox" disabled>Step 3 — 최소 deterministic feature/scoring 구현. LocalGap은 M6 대조군에만 남기고 M1/M2/M3/M4/M5에는 사용하지 않는다.</label></li>
-<li><label><input type="checkbox" disabled>Step 4 — focused 두 번과 Task2 regression; 입력 불변, finite, 동일 seed 동일 결과를 확인한다.</label></li>
-<li><label><input type="checkbox" disabled>Step 5 — bounded CPU-vs-MLX smoke를 한 번 실행해 parity·속도와 CPU fallback 이유를 기록한다.</label></li>
-<li><label><input type="checkbox" disabled>Step 6 — dashboard/report/map 갱신, 커밋, fresh result-focused review C/I0 후 Task 3 체크.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 2 — RED M0–M6 exact order and semantics: M2 gated max, M3 always max, M4 template residual, M5 whole-series normalization, M6 Exp462 replay control.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 3 — 최소 deterministic feature/scoring 구현. LocalGap은 M6 대조군에만 남기고 M1/M2/M3/M4/M5에는 사용하지 않는다.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 4 — focused 두 번과 Task2 regression; 입력 불변, finite, 동일 seed 동일 결과를 확인한다.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 5 — bounded CPU-vs-MLX smoke를 한 번 실행해 parity·속도와 CPU fallback 이유를 기록한다.</label></li>
+<li><label><input type="checkbox" disabled checked>Step 6 — dashboard/report/map 갱신, 커밋, fresh result-focused review C/I0 후 Task 3을 닫는다. Task 4가 다음 단계다.</label></li>
 </ol>
 </section>
 
