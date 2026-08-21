@@ -30,6 +30,14 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp463_antigravity.json",
     "docs/codemap/codemap_exp463_antigravity.lock",
 )
+SDD_REPORT_DIR_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html"
+)
+SDD_REPORTS_ANTIGRAVITY = (
+    f"{SDD_REPORT_DIR_ANTIGRAVITY}/task-2-report-antigravity.html",
+    f"{SDD_REPORT_DIR_ANTIGRAVITY}/task-3-report-antigravity.html",
+    f"{SDD_REPORT_DIR_ANTIGRAVITY}/task-5-report-antigravity.html",
+)
 RUN_ROOT_ANTIGRAVITY = (
     "/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821"
 )
@@ -150,6 +158,18 @@ class GovernanceAntigravityTest(unittest.TestCase):
         ]
         self.assertEqual(missing, [], f"missing Task 1 artifacts: {missing}")
         for relative in DOCUMENTS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY:
+            path = ROOT_ANTIGRAVITY / relative
+            self.assertTrue(path.is_file(), relative)
+            self.assertIn("antigravity", path.name)
+        tracked_sdd_reports = tuple(
+            subprocess.check_output(
+                ["git", "ls-files", "--", SDD_REPORT_DIR_ANTIGRAVITY],
+                cwd=ROOT_ANTIGRAVITY,
+                text=True,
+            ).splitlines()
+        )
+        self.assertEqual(tracked_sdd_reports, SDD_REPORTS_ANTIGRAVITY)
+        for relative in tracked_sdd_reports:
             path = ROOT_ANTIGRAVITY / relative
             self.assertTrue(path.is_file(), relative)
             self.assertIn("antigravity", path.name)
@@ -439,6 +459,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "governance_regression",
             "map_builder",
             "task2_foundation",
+            "task2_report",
             "task3_report",
             "task3_ramp_feature",
             "task3_scoring",

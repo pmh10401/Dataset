@@ -29,8 +29,9 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/EXP463_RUNBOOK_antigravity.html",
     "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
     "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
-    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html",
-    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-5-report.html",
+    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-2-report-antigravity.html",
+    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report-antigravity.html",
+    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-5-report-antigravity.html",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/qualification_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/evaluation_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/artifacts_antigravity.py",
@@ -230,8 +231,15 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             ),
         ),
         _node_antigravity(
+            "task2_report",
+            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-2-report-antigravity.html",
+            "Caller: Task 2 review. Effect: records frozen Exp462 authority, immutable TRAIN-source contracts, synchronized M0–M6 definitions, and the closed next-stage boundary.",
+            symbol="Exp463 Task 2 — frozen Exp462 authority and TRAIN source",
+            tests=(governance_test,),
+        ),
+        _node_antigravity(
             "task3_report",
-            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html",
+            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report-antigravity.html",
             "Caller: Task 3 review. Effect: records complete-pending-Task4 state, RED/GREEN evidence, exact reference parity, MLX decision, public boundaries, and official0/label0 guards.",
             symbol="Exp463 Task 3 — prefix-scaled ramp and seven method scores",
             tests=(governance_test,),
@@ -367,7 +375,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         ),
         _node_antigravity(
             "task5_report",
-            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-5-report.html",
+            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-5-report-antigravity.html",
             "Caller: Task 5 closeout review. Effect: records exact two-run private TRAIN evidence, scientific gate failure, MLX manifest/fallback, no-official/label-zero boundary, and the disclosed create-only race concern.",
             symbol="Exp463 Task 5 report",
             tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",),
@@ -430,6 +438,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             }
             for target, symbol in (
                 ("task2_foundation", "Task 2 — frozen Exp462 authority and TRAIN source"),
+                ("task2_report", "Task 2 — frozen Exp462 authority and TRAIN source"),
                 ("task3_report", "Task 3 — prefix-scaled ramp and seven method scores"),
                 ("task3_ramp_feature", "Task 3 — prefix-scaled ramp and seven method scores"),
                 ("task3_scoring", "Task 3 — prefix-scaled ramp and seven method scores"),
@@ -615,15 +624,18 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
                 "symbol": "inspect_replay_at_antigravity",
             },
         },
-        {
-            "from": "governance_regression",
-            "to": "task5_report",
-            "type": "tests",
-            "evidence": {
-                "path": governance_test,
-                "symbol": "test_task1_dashboard_plan_and_map_antigravity",
-            },
-        },
+        *[
+            {
+                "from": "governance_regression",
+                "to": target,
+                "type": "tests",
+                "evidence": {
+                    "path": governance_test,
+                    "symbol": "test_task1_dashboard_plan_and_map_antigravity",
+                },
+            }
+            for target in ("task2_report", "task3_report", "task5_report")
+        ],
     ]
     return {
         "edges": edges,
@@ -793,6 +805,7 @@ def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
         "governance_regression",
         "map_builder",
         "task2_foundation",
+        "task2_report",
         "task3_report",
         "task3_ramp_feature",
         "task3_scoring",
