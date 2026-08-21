@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp463 Task 2 code-map triplet."""
+"""Build and validate the bounded Exp463 Task 3 code-map triplet."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp463_antigravity.lock",
 )
 GENERATED_AT_ANTIGRAVITY = "2026-08-21T00:00:00Z"
-GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task2_foundations_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp463_task2_foundations_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task3_boundary_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp463_task3_boundary_codemap_lock_v1"
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
     "EXPERIMENT_CATALOG.json",
@@ -29,15 +29,20 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/EXP463_RUNBOOK_antigravity.html",
     "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
     "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
+    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/contracts_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/predecessor_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/sources_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/ramp_features_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/scoring_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_predecessor_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_sources_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
     "scratch/build_codemap_exp463_antigravity.py",
 )
 STABLE_FINGERPRINT_EXCLUDED_PREFIXES_ANTIGRAVITY = (
@@ -131,7 +136,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_plan",
             plan,
-            "Caller: Task 1–6 execution. Effect: records bounded files, frozen M0–M6 IDs, private gate stop, and unchecked future task controls.",
+            "Caller: Task 1–6 execution. Effect: records bounded files, frozen M0–M6 IDs, Task 3 implemented-pending-review state, private gate stop, and unchecked future task controls.",
             symbol="Task 1 — governance, dashboard, code map",
             tests=(governance_test,),
         ),
@@ -152,35 +157,35 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_report",
             "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 2 closeout and Task 3 handoff. Effect: records RED/GREEN evidence, frozen Exp462 authority, TRAIN smoke, validation, SHIP review, and the Task 3-next boundary.",
-            symbol="TDD evidence",
+            "Caller: Task 2 closeout and Task 3 handoff. Effect: records frozen Exp462 authority, Task 3 implementation boundary, RED/GREEN evidence, backend decision, and pending-review safety state.",
+            symbol="Task 3 implementation boundary",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP463_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: shows Task 2 SHIP closeout with Task 3 next, M2 primary, easy Korean explanation, frozen authority inventory, aggregate gates, official0, label0, and null artifact map.",
-            symbol="Exp463 진행 대시보드",
+            "Caller: status review. Effect: shows Task 3 implemented pending review, M2 primary, easy Korean explanation, frozen authority inventory, aggregate gates, official0, label0, and null artifact map.",
+            symbol="task_3_implemented_pending_review",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: governance ledger. Effect: records Task 2-complete/Task 3-next Exp463 with null result hashes, official0, label0, absent root, and unchanged pending state.",
+            "Caller: governance ledger. Effect: records Task 3 implemented-pending-review Exp463 with null result hashes, official0, label0, absent root, and unchanged pending state.",
             symbol="\"exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the same Task 2-complete/Task 3-next Exp463 record without result materialization or promotion.",
+            "Caller: experiment catalog. Effect: registers the same Task 3 implemented-pending-review Exp463 record without result materialization or promotion.",
             symbol="\"Exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion review. Effect: records Task 2-complete/Task 3-next history while preserving champion, pending candidate, routing, and promotion.",
+            "Caller: champion review. Effect: records Task 3 implemented-pending-review history while preserving champion, pending candidate, routing, and promotion.",
             symbol="\"experiment\": \"Exp463\"",
             tests=(governance_test,),
         ),
@@ -194,14 +199,14 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "map_builder",
             "scratch/build_codemap_exp463_antigravity.py",
-            "Caller: governance validation. Effect: builds and validates the Task 2 bounded graph, resolving evidence, exact HTML-embedded JSON, and clean source-parent lock.",
+            "Caller: governance validation. Effect: builds and validates the Task 3 bounded graph, resolving evidence, exact HTML-embedded JSON, and clean source-parent lock.",
             symbol="main_antigravity_validate_only_for_tests",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "task2_foundation",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
-            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; Task 2 review is SHIP and Task 3 is next.",
+            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; Task 2 review is SHIP and Task 3 is implemented pending review.",
             symbol="FROZEN_CONFIG_ANTIGRAVITY",
             tests=(
                 "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",
@@ -211,11 +216,49 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             ),
         ),
         _node_antigravity(
-            "task3_unknown",
+            "task3_report",
+            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html",
+            "Caller: Task 3 review. Effect: records implemented-pending-review state, RED/GREEN evidence, exact reference parity, MLX decision, public boundaries, and official0/label0 guards.",
+            symbol="Exp463 Task 3 — prefix-scaled ramp and seven method scores",
+            tests=(governance_test,),
+        ),
+        _node_antigravity(
+            "task3_ramp_feature",
+            "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/ramp_features_antigravity.py",
+            "Caller: Task 3 scoring and future qualification. Effect: validates one finite 140-length row and returns the exact prefix-normalized signed ramp score plus bounded diagnostic variants.",
+            symbol="prefix_ramp_score_antigravity",
+            tests=(
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
+                governance_test,
+            ),
+        ),
+        _node_antigravity(
+            "task3_scoring",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/scoring_antigravity.py",
-            "unknown future Task 3 boundary; not implemented; callers/effects/tests are unknown until Task 3 review.",
-            symbol="Task 3 — prefix-scaled ramp and seven method scores",
-            evidence_path=plan,
+            "Caller: future Task 4 qualification. Effect: delegates M0 and M6 reviewed controls, computes deterministic M1/M2/M3/M4/M5 ramp branches, applies the exact rank and 0.995 gate, and returns immutable ordered M0-M6 score evidence.",
+            symbol="score_fold_methods_antigravity",
+            tests=(
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
+                governance_test,
+            ),
+        ),
+        _node_antigravity(
+            "task3_ramp_feature_tests",
+            "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
+            "Caller: Task 3 focused regression. Effect: covers independent NumPy reference parity, onset/scale rejection, finite deterministic output, and input preservation.",
+            symbol="test_prefix_ramp_matches_independent_reference_and_contract_antigravity",
+            tests=(
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
+            ),
+        ),
+        _node_antigravity(
+            "task3_scoring_tests",
+            "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
+            "Caller: Task 3 focused regression. Effect: covers exact rank/tie formula, seed-fold dependency flow, M0-M6 order, gate/max semantics, immutability, and public boundary restrictions.",
+            symbol="test_fold_scoring_preserves_order_gate_semantics_and_dependency_flow_antigravity",
+            tests=(
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
+            ),
         ),
         _node_antigravity(
             "task4_unknown",
@@ -289,11 +332,49 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             }
             for target, symbol in (
                 ("task2_foundation", "Task 2 — frozen Exp462 authority and TRAIN source"),
-                ("task3_unknown", "Task 3 — prefix-scaled ramp and seven method scores"),
+                ("task3_report", "Task 3 — prefix-scaled ramp and seven method scores"),
+                ("task3_ramp_feature", "Task 3 — prefix-scaled ramp and seven method scores"),
+                ("task3_scoring", "Task 3 — prefix-scaled ramp and seven method scores"),
                 ("task4_unknown", "Task 4 — blocked qualification, publication, semantic replay"),
                 ("task5_unknown", "Task 5 — closed CLI and two private TRAIN reproductions"),
             )
         ],
+        {
+            "from": "task3_ramp_feature_tests",
+            "to": "task3_ramp_feature",
+            "type": "tests",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
+                "symbol": "test_prefix_ramp_matches_independent_reference_and_contract_antigravity",
+            },
+        },
+        {
+            "from": "task3_scoring_tests",
+            "to": "task3_scoring",
+            "type": "tests",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
+                "symbol": "test_fold_scoring_preserves_order_gate_semantics_and_dependency_flow_antigravity",
+            },
+        },
+        {
+            "from": "task2_foundation",
+            "to": "task3_scoring",
+            "type": "governs",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
+                "symbol": "FROZEN_CONFIG_ANTIGRAVITY",
+            },
+        },
+        {
+            "from": "task3_ramp_feature",
+            "to": "task3_scoring",
+            "type": "governs",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/scoring_antigravity.py",
+                "symbol": "prefix_ramp_score_antigravity",
+            },
+        },
     ]
     return {
         "edges": edges,
@@ -406,11 +487,11 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
     return (
         "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-        "<title>Exp463 Task 2 코드맵</title>"
+        "<title>Exp463 Task 3 코드맵</title>"
         "<style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:15px/1.6 system-ui;color:#172033}"
         "code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}li{margin:.35rem 0}</style></head><body><main>"
-        "<h1>Exp463 Task 2 코드맵</h1>"
-        "<p>실제 Exp463 Task 1 governance와 Task 2 foundation 노드, resolving evidence를 기록한다. Task 3–5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
+        "<h1>Exp463 Task 3 코드맵</h1>"
+        "<p>실제 Exp463 Task 1 governance, Task 2 foundation, Task 3 prefix-ramp/scoring 경계와 pending-review evidence를 기록한다. Task 4–5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
         f"<h2>노드</h2><ul>{node_items}</ul>"
         "<h2>Machine-readable graph</h2>"
         f"<pre id=\"codemap-json-antigravity\" type=\"application/json\">{payload}</pre>"
@@ -463,7 +544,11 @@ def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
         "governance_regression",
         "map_builder",
         "task2_foundation",
-        "task3_unknown",
+        "task3_report",
+        "task3_ramp_feature",
+        "task3_scoring",
+        "task3_ramp_feature_tests",
+        "task3_scoring_tests",
         "task4_unknown",
         "task5_unknown",
     }

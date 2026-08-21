@@ -9,7 +9,7 @@
 <tr><th>Architecture</th><td>Exp462 구조를 통제된 복사로 사용하되 24D LocalGap 주 후보를 prefix-scaled 1D ramp와 <code>0.995</code> gated max로 교체한다. M0–M6을 같은 blocked folds에서 계산하고, M2만 사전 등록된 합격선으로 판정한다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, 기존 aeon/Hydra CPU 경로, unittest, canonical JSON/JSONL, HTML.</td></tr>
 <tr><th>Spec</th><td><a href="../specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html">승인된 Exp463 설계서</a> — SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
-<tr><th>Current status</th><td><code>task_2_complete_pending_task_3</code>. Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0); its heading and six steps are closed 7/7. Task 3 is next and remains unchecked. Score/evaluation/private TRAIN qualification/official execution/TEST label query remain 0.</td></tr>
+<tr><th>Current status</th><td><code>task_3_implemented_pending_review</code>. Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 3 feature/scoring implementation, focused GREEN suites, and bounded backend smoke are recorded, while Task 3 heading and six controls remain unchecked until fresh review. Qualification/evaluation/private TRAIN result/official execution/TEST label query remain 0.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -60,6 +60,7 @@ self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
 <h2><label><input type="checkbox" disabled>Task 3 — prefix-scaled ramp and seven method scores</label></h2>
 <p><strong>Files:</strong> Create <code>ramp_features_antigravity.py</code>, <code>scoring_antigravity.py</code> and matching tests. Modify dashboard/report/plan/map.</p>
 <p><strong>Produces:</strong> <code>prefix_ramp_score_antigravity(values: numpy.ndarray) -&gt; float</code> and <code>score_fold_methods_antigravity(...) -&gt; FoldMethodScoresAntigravity</code> with ordered M0–M6 scores.</p>
+<p><strong>Current state:</strong> Task 3 implemented pending review. Independent RED/GREEN evidence and a same-input CPU/MLX smoke are recorded in <code>.superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html</code>. The Task 3 heading and six steps intentionally remain unchecked; Task 4 qualification and all result/publication work are not started.</p>
 <ol>
 <li><label><input type="checkbox" disabled>Step 1 — RED independent NumPy reference for prefix median/MAD, onset 56, normalized ramp vector, signed dot product, exact rank formula and 0.995 boundary.</label><pre><code>expected_rank = (1 + numpy.count_nonzero(reference &lt;= score)) / (len(reference) + 1)
 expected = numpy.maximum(r461, rramp) if rramp &gt;= 0.995 else r461</code></pre></li>

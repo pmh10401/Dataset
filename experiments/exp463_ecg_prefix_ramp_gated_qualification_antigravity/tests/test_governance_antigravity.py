@@ -224,7 +224,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["status"], "planned_implementation_not_started")
                 self.assertEqual(
                     record["implementation_status"],
-                    "task_2_complete_pending_task_3",
+                    "task_3_implemented_pending_review",
                 )
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
@@ -321,9 +321,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             encoding="utf-8"
         )
         for phrase in (
-            "Exp463 Task 2",
+            "Exp463 Task 3",
             "SHIP",
-            "task_2_complete_pending_task_3",
+            "task_3_implemented_pending_review",
             "RED",
             "GREEN",
             "official evaluate 0 / inspect 0",
@@ -339,7 +339,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         for phrase in (
             "Task 1",
-            "task_2_complete_pending_task_3",
+            "task_3_implemented_pending_review",
             "hydra_period_ramp_gated_max",
             "0.995",
             "56",
@@ -389,8 +389,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsNotNone(embedded)
         assert embedded is not None
         self.assertEqual(json.loads(html.unescape(embedded.group(1))), graph)
-        self.assertEqual(graph["schema"], "exp463_task2_foundations_codemap_v1")
-        self.assertEqual(lock["schema"], "exp463_task2_foundations_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp463_task3_boundary_codemap_v1")
+        self.assertEqual(lock["schema"], "exp463_task3_boundary_codemap_lock_v1")
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))
         head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True
@@ -417,7 +417,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "governance_regression",
             "map_builder",
             "task2_foundation",
-            "task3_unknown",
+            "task3_report",
+            "task3_ramp_feature",
+            "task3_scoring",
+            "task3_ramp_feature_tests",
+            "task3_scoring_tests",
             "task4_unknown",
             "task5_unknown",
         ):

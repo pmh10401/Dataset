@@ -1,17 +1,24 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Exp463 Task 2 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#eefbf3;border-left:6px solid #16794b;padding:1rem}.warn{background:#fff8e6;border-left:6px solid #b54708;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<title>Exp463 Task 3 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#eefbf3;border-left:6px solid #16794b;padding:1rem}.warn{background:#fff8e6;border-left:6px solid #b54708;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
-<h1>Exp463 Task 2 — frozen Exp462 authority and TRAIN source</h1>
-<p><strong>status:</strong> <code>SHIP</code> — Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0), and its plan heading plus six steps are closed 7/7. Task 3 is next; Tasks 3–6 remain unchecked.</p>
-<p><strong>lifecycle:</strong> <code>task_2_complete_pending_task_3</code>. official evaluate 0 / inspect 0 (Official evaluate 0 / inspect 0); no score-source execution, private qualification, result publication, TEST-label access, routing, champion/pending mutation, promotion, or official-root creation occurred. Task 3 remains bounded to its own later review.</p>
+<h1>Exp463 Task 3 — prefix-scaled ramp and seven method scores</h1>
+<p><strong>status:</strong> <code>IMPLEMENTED_PENDING_REVIEW</code> — Task 2 review remains SHIP (spec PASS, quality APPROVED, C/I0). Task 3 feature/scoring implementation, focused GREEN suites, and bounded backend smoke are recorded; Task 3 heading plus six steps remain unchecked until fresh review.</p>
+<p><strong>lifecycle:</strong> <code>task_3_implemented_pending_review</code>. official evaluate 0 / inspect 0 (Official evaluate 0 / inspect 0); no qualification, private TRAIN result, result publication, TEST-label access, routing, champion/pending mutation, promotion, or official-root creation occurred.</p>
 <p><strong>approved design SHA-256:</strong> <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></p>
 
-<h2>Implemented boundary</h2>
+<h2>Frozen Task 2 boundary</h2>
 <ul>
 <li><code>config_antigravity.py</code> freezes Exp463 identity, TRAIN shape, seeds/folds, onset <code>56</code>, alpha <code>0.005</code>, gate <code>0.995</code>, M0–M6 descriptions, M2 sole primary, qualification gates, and Exp462 result provenance.</li>
 <li><code>contracts_antigravity.py</code> provides immutable Exp462 snapshot contracts (30 row identities, 3 summaries, 7 leaf hashes) and future Exp463 containers for exactly 70 rows and 7 summaries without scoring/evaluation logic.</li>
 <li><code>predecessor_antigravity.py</code> exposes <code>capture_exp462_authority_antigravity()</code>; capture is source-free and binds the terminal commit, failed primary, aggregate values, and leaf bytes by digest.</li>
 <li><code>sources_antigravity.py</code> exposes only <code>load_normal2_train_antigravity()</code>, delegating to the reviewed Exp462 TRAIN boundary and returning a defensive owned, finite, C-contiguous, read-only float32 copy.</li>
+</ul>
+
+<h2>Task 3 implementation boundary</h2>
+<ul>
+<li><code>ramp_features_antigravity.py</code> implements <code>prefix_ramp_score_antigravity(values)</code> with prefix <code>[0:56]</code> median/MAD normalization, fixed zero-then-linear basis, L2 normalization, signed dot product, strict finite/scale checks, and unchanged input.</li>
+<li><code>scoring_antigravity.py</code> returns immutable ordered <code>M0</code>–<code>M6</code> score evidence. M2 uses the exact <code>rramp &gt;= 0.995</code> gate, M3/M6 always use max, M4 uses a TRAIN-fit timewise median residual, and M5 uses whole-series median/MAD normalization.</li>
+<li>Only M6 delegates the Exp462 24D replay control; M1–M5 use deterministic ramp features and do not instantiate a learned distance head.</li>
 </ul>
 
 <h2>Frozen Exp462 authority</h2>
@@ -26,24 +33,25 @@
 
 <h2>TDD evidence</h2>
 <table>
-<tr><th>RED</th><td>Before implementation, the focused four-module suite ran <code>9</code> tests and produced the expected missing-module/import errors for config, contracts, predecessor, and source boundaries.</td></tr>
-<tr><th>GREEN 1</th><td>The focused Task 2 suite passed <code>10/10</code> twice after implementation and fix rounds.</td></tr>
-<tr><th>GREEN 2</th><td>The final full Task 2 suite passed <code>11/11</code>; governance passed <code>4/4</code>.</td></tr>
+<tr><th>RED</th><td>Before implementation, the new Task 3 suite ran <code>7</code> tests and produced the expected missing-module/import errors for the ramp feature and scoring boundaries.</td></tr>
+<tr><th>GREEN 1</th><td>Focused Task 3 suite: <code>Ran 7 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>GREEN 2</th><td>Focused Task 3 suite repeated after documentation/map synchronization: <code>Ran 7 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>Task 2 regression</th><td>Focused Task 2 public interface suite: <code>Ran 11 tests</code>, <code>OK</code>.</td></tr>
 </table>
 
 <h2>Validation</h2>
 <table>
 <tr><th>source smoke</th><td><code>(1413, 140)</code>, <code>float32</code>, finite <code>True</code>, owned <code>True</code>, C-contiguous <code>True</code>, writeable <code>False</code>, two calls do not share memory; source query count remains <code>0</code>.</td></tr>
-<tr><th>map</th><td>Exp463 map builder validate-only passes after the Task 2 closeout, Task 3-next state, callers/effects/tests, fingerprints, HTML embedding, and lock triplet are regenerated.</td></tr>
+<tr><th>map</th><td>Exp463 map builder validate-only passes after replacing the Task 3 unknown node with the feature, scoring, focused-test, and pending-review report boundaries; callers/effects/tests, fingerprints, HTML embedding, and lock triplet are regenerated.</td></tr>
 <tr><th>bytes/root/labels</th><td>Exp462 product/result bytes are untouched; Exp463 official root remains absent and non-symlink; official command count 0 and label query count 0.</td></tr>
-<tr><th>compile/diff</th><td>Task 2 modules and tests compile; diff scope is limited to the four modules/tests, dashboard/report/plan, three Exp463 ledger records, governance expectations, map builder/triplet, and this report.</td></tr>
+<tr><th>compile/diff</th><td>Task 2 and Task 3 modules/tests compile; diff scope is limited to the two Task 3 modules/tests, dashboard/report/plan, three Exp463 ledger records, governance expectations, map builder/triplet, and this report.</td></tr>
 </table>
 
-<div class="ok"><strong>Ruling:</strong> Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0); Exp463 may proceed to Task 3's own review. This closeout does not authorize Task 3 scoring, Task 4 qualification, private reproduction, or any official command.</div>
-<div class="warn"><strong>Concerns:</strong> The 30 Exp462 row identities and aggregate relationships are frozen from terminal ledger/report evidence; source result files are intentionally absent. Later tasks must preserve these hashes and relationships, keep all future metrics TRAIN-only, and retain the M0–M6 IDs/descriptions.</div>
+<div class="ok"><strong>Ruling:</strong> Task 3 implementation is pending fresh review. Focused score evidence is ready for review; this handoff does not authorize Task 4 qualification, private reproduction, publication, or any official command.</div>
+<div class="warn"><strong>Concerns:</strong> The 30 Exp462 row identities and aggregate relationships remain frozen from terminal ledger/report evidence; source result files are intentionally absent. Task 4 must preserve these hashes and relationships, keep all metrics TRAIN-only, and retain the M0–M6 IDs/descriptions.</div>
 <div class="stop"><strong>Safety boundary:</strong> no TEST labels, TEST metrics, routing, promotion, champion/pending change, official root, or official evaluate/inspect action is authorized by this handoff.</div>
 
 <h2>Historical commits and closeout</h2>
 <p>Functional lineage includes foundation <code>ef65ca67</code>, compatibility fix <code>0aff6412</code>, authority fix <code>4dba38a9</code>, type/combination fix <code>876fa262</code>, and their map children <code>1ce308d7</code>, <code>0e763cb3</code>, and <code>62378382</code>. The latest historical map child <code>62378382</code> binds to functional parent <code>876fa262</code>. This report records stable historical bindings and does not claim a mutable current HEAD or its own future containing commit.</p>
-<p>Task 2 closeout: review SHIP (spec PASS, quality APPROVED, C/I0), plan heading plus six steps checked 7/7, Task 3 next, Tasks 3–6 unchecked. Official/private/label counts remain 0; result hashes remain <code>null</code>; champion, pending candidate, routing, and promotion remain unchanged.</p>
+<p>Task 2 closeout remains SHIP (spec PASS, quality APPROVED, C/I0), with its plan heading plus six steps checked 7/7. Task 3 is implemented pending review, its seven controls remain unchecked, and Tasks 4–6 remain unchecked. Official/private/label counts remain 0; result hashes remain <code>null</code>; champion, pending candidate, routing, and promotion remain unchanged.</p>
 </main></body></html>
