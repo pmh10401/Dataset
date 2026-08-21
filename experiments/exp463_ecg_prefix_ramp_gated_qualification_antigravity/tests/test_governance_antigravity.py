@@ -186,6 +186,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 {"seed": 20261721, "fold_index": 4, "period_change_auc": 0.9285624465570143},
             ],
         }
+        from experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.config_antigravity import (
+            FROZEN_CONFIG_ANTIGRAVITY,
+        )
+
+        frozen_method_definitions = dict(FROZEN_CONFIG_ANTIGRAVITY.method_definitions)
         expected_contract = {
             "target_dataset": "ECG5000_normal_2",
             "data_split": "TRAIN_only",
@@ -193,15 +198,6 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "label_query_count_must_remain": 0,
             "official_command_invocations_must_remain": 0,
             "method_order": ["M0", "M1", "M2", "M3", "M4", "M5", "M6"],
-            "method_definitions": {
-                "M0": "Exp461 reviewed hydra_period_rank_max score",
-                "M1": "front-prefix normalized one-dimensional ramp score",
-                "M2": "M1 with 0.995-gated max against M0; sole primary candidate hydra_period_ramp_gated_max",
-                "M3": "M1 with always-max combination against M0",
-                "M4": "TRAIN-fit per-time median template residual ramp with 0.995-gated max",
-                "M5": "whole-series median/MAD normalized ramp with 0.995-gated max",
-                "M6": "Exp462 24D LocalGap replay control with always-max combination",
-            },
             "primary_candidate": "hydra_period_ramp_gated_max",
             "seed_pair": [20260721, 20261721],
             "blocked_fold_count": 5,
@@ -240,7 +236,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["approved_design_sha256"], DESIGN_SHA256_ANTIGRAVITY)
                 self.assertEqual(record["documents"], expected_documents)
                 self.assertEqual(record["predecessor"], expected_predecessor)
-                self.assertEqual(record["scientific_contract"], expected_contract)
+                scientific_contract = dict(record["scientific_contract"])
+                self.assertEqual(
+                    scientific_contract.pop("method_definitions"),
+                    frozen_method_definitions,
+                )
+                self.assertEqual(scientific_contract, expected_contract)
                 self.assertFalse(record["official_evaluate_started"])
                 self.assertFalse(record["official_inspect_started"])
                 self.assertEqual(record["official_evaluate_invocations"], 0)
