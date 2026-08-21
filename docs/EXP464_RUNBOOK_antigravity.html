@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 실행 가이드</title><style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #2457a6}.stop{padding:1rem;background:#fff4f2;border-left:6px solid #b42318}</style></head>
 <body><main>
 <h1>Exp464 Task 4 operator boundary</h1>
-<p>지금 단계는 Task 4 result pipeline 구현이 끝났지만 fresh review가 아직 없는 상태의 실행 경계를 고정하는 문서다. 현재 상태는 <code>task_4_implemented_awaiting_fresh_review</code>이며, 다음 action은 fresh Task 4 review다.</p>
+<p>지금 단계는 Task 4 result pipeline 구현과 검토가 끝난 뒤의 실행 경계를 고정하는 문서다. 현재 상태는 <code>task_4_complete_pending_task_5</code>이며, reviewed implementation commit <code>ff0e871dda5c4353e467bc9d3070293022f0ad0e</code>의 최종 검토는 spec PASS, quality APPROVED, C/I0이다. 다음 action은 Task 5 closed CLI 구현 뒤 정확히 두 번의 순차 private TRAIN reproduction이다.</p>
 <table>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
 <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code> — must stay absent and non-symlink</td></tr>
@@ -12,7 +12,7 @@
 <tr><th>private runs</th><td>0</td></tr>
 <tr><th>label query count</th><td>0</td></tr>
 </table>
-<div class="stop"><strong>Do not run Task 5 CLI.</strong><br><strong>Do not run private evaluate.</strong><br><strong>Do not run official evaluate or inspect.</strong><br>fresh review 전에는 TEST label/FN/FP/F1 접근, root 생성, routing, champion/pending 변경, promotion, package install도 모두 금지다.</div>
+<div class="stop"><strong>Task 5 closed CLI를 먼저 구현·검토한다.</strong><br><strong>그 뒤 private TRAIN reproduction을 정확히 두 번, 순차 실행한다.</strong><br><strong>아직 private evaluate나 official evaluate/inspect를 실행하지 않는다.</strong><br>TEST label/FN/FP/F1 접근, official root 생성, routing, champion/pending 변경, promotion, package install도 모두 금지다.</div>
 
 <h2>Task 4에서 준비한 것</h2>
 <ul>
@@ -22,5 +22,5 @@
 </ul>
 
 <h2>Task 4에서 아직 하지 않은 것</h2>
-<div class="box"><p>Task 5 CLI, 두 번의 private TRAIN reproduce, official evaluate/inspect, 결과 hash 확정, champion/pending/routing/promotion 변경은 아직 없다. fresh review 전에는 다음 단계로 넘어가지 않는다.</p></div>
+<div class="box"><p>Task 5 CLI, 두 번의 private TRAIN reproduce, official evaluate/inspect, 결과 hash 확정, champion/pending/routing/promotion 변경은 아직 없다. Task 5에서는 closed CLI를 먼저 닫은 뒤 두 private reproduction을 겹치지 않게 정확히 두 번만 실행한다.</p></div>
 </main></body></html>

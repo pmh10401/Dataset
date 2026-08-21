@@ -27,6 +27,11 @@ TASK4_REPORT_ANTIGRAVITY = (
     "2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/"
     "task-4-report-antigravity.md"
 )
+TASK3_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/"
+    "task-3-report-antigravity.md"
+)
 DOCUMENTS_ANTIGRAVITY = (
     "docs/EXP464_DASHBOARD_antigravity.html",
     "docs/EXP464_PREREGISTRATION_antigravity.html",
@@ -76,11 +81,16 @@ DESIGN_SHA256_ANTIGRAVITY = (
     "d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f"
 )
 PRIMARY_CANDIDATE_ANTIGRAVITY = "template_residual_centered_ramp_confirmed_max"
-STATUS_ANTIGRAVITY = "task_4_implemented_awaiting_fresh_review"
+STATUS_ANTIGRAVITY = "task_4_complete_pending_task_5"
 METHOD_ORDER_ANTIGRAVITY = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8")
 EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY = 42
-EXPECTED_CHECKED_COUNT_ANTIGRAVITY = 21
-EXPECTED_NEXT_ACTION_ANTIGRAVITY = "fresh_task_4_review_before_task_5"
+EXPECTED_CHECKED_COUNT_ANTIGRAVITY = 28
+EXPECTED_NEXT_ACTION_ANTIGRAVITY = (
+    "task_5_closed_cli_then_exactly_two_sequential_private_train_reproductions"
+)
+TASK4_REVIEWED_COMMIT_ANTIGRAVITY = (
+    "ff0e871dda5c4353e467bc9d3070293022f0ad0e"
+)
 EXPECTED_PENDING_ANTIGRAVITY = {
     "evaluation": None,
     "experiment": None,
@@ -230,8 +240,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(len(champion_matches), 1)
         return state["exp464"], catalog_matches[0], champion_matches[0]
 
-    def test_exp464_task4_truth_is_review_pending_without_results_antigravity(self) -> None:
-        """Break caught: Task 4 code lands but repo truth, map, or boundaries drift."""
+    def test_exp464_task4_complete_pending_task5_without_results_antigravity(self) -> None:
+        """Break caught: reviewed Task 4 closeout or no-result boundaries drift."""
         required_files = (
             (PLAN_ANTIGRAVITY, DESIGN_ANTIGRAVITY, TASK4_REPORT_ANTIGRAVITY)
             + DOCUMENTS_ANTIGRAVITY
@@ -304,20 +314,34 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertFalse(record["review_only"])
 
         self.assertEqual(state_record["next_action"], EXPECTED_NEXT_ACTION_ANTIGRAVITY)
-        self.assertEqual(catalog_record["notes"].count("21/42"), 1)
+        self.assertEqual(catalog_record["notes"].count("28/42"), 1)
         self.assertIn("Task 4 result pipeline", state_record["notes"])
-        self.assertIn("fresh Task 4 review", state_record["notes"])
+        for text in (
+            state_record["notes"],
+            catalog_record["notes"],
+            champion_record["reason"],
+        ):
+            self.assertIn(TASK4_REVIEWED_COMMIT_ANTIGRAVITY, text)
+            self.assertIn("spec PASS", text)
+            self.assertIn("quality APPROVED", text)
+            self.assertIn("C/I0", text)
+            self.assertIn("closed CLI", text)
+            self.assertIn("exactly two sequential private TRAIN reproductions", text)
         self.assertIn("result pipeline", champion_record["reason"])
 
         research_state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         self.assertEqual(research_state["active_experiment"], "Exp464")
         self.assertEqual(research_state["active_phase"], STATUS_ANTIGRAVITY)
         self.assertEqual(research_state["status"], STATUS_ANTIGRAVITY)
+        self.assertEqual(
+            research_state["last_verified_commit"],
+            TASK4_REVIEWED_COMMIT_ANTIGRAVITY,
+        )
         self.assertEqual(research_state["pending_candidate"], EXPECTED_PENDING_ANTIGRAVITY)
 
         plan_text = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
         self.assertIn(STATUS_ANTIGRAVITY, plan_text)
-        self.assertIn("21/42", plan_text)
+        self.assertIn("28/42", plan_text)
         self.assertIn("focused suite 16 tests", plan_text)
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
@@ -330,8 +354,33 @@ class GovernanceAntigravityTest(unittest.TestCase):
             EXPECTED_CHECKED_COUNT_ANTIGRAVITY,
         )
         self.assertIn(
-            '<h2><label><input type="checkbox" disabled> Task 4 — qualification, evaluation, artifacts, replay, dashboard export</label></h2>',
+            '<h2><label><input type="checkbox" checked disabled> Task 4 — qualification, evaluation, artifacts, replay, dashboard export</label></h2>',
             plan_text,
+        )
+        task4_marker = '<h2><label><input type="checkbox" checked disabled> Task 4 —'
+        task5_marker = '<h2><label><input type="checkbox" disabled> Task 5 —'
+        task6_marker = '<h2><label><input type="checkbox" disabled> Task 6 —'
+        task4_section = plan_text[plan_text.index(task4_marker):plan_text.index(task5_marker)]
+        task5_section = plan_text[plan_text.index(task5_marker):plan_text.index(task6_marker)]
+        task6_section = plan_text[plan_text.index(task6_marker):]
+        self.assertEqual(task4_section.count('type="checkbox" checked disabled'), 7)
+        self.assertEqual(task4_section.count('type="checkbox" disabled'), 0)
+        self.assertEqual(task5_section.count('type="checkbox" checked disabled'), 0)
+        self.assertEqual(task5_section.count('type="checkbox" disabled'), 7)
+        self.assertEqual(task6_section.count('type="checkbox" checked disabled'), 0)
+        self.assertEqual(task6_section.count('type="checkbox" disabled'), 7)
+
+        task3_report_text = (ROOT_ANTIGRAVITY / TASK3_REPORT_ANTIGRAVITY).read_text(
+            encoding="utf-8",
+        )
+        self.assertIn("selected backend: `numpy_cpu`", task3_report_text)
+        self.assertIn(
+            "the frozen project interpreter cannot import `mlx`",
+            task3_report_text,
+        )
+        self.assertIn(
+            "parity/timing fields for MLX vs NumPy remain not-run",
+            task3_report_text,
         )
 
         parser = HtmlParserAntigravity()
@@ -382,7 +431,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         }
         self.assertTrue(EXPECTED_EDGE_TRIPLES_ANTIGRAVITY.issubset(edge_triples))
         self.assertTrue(EXPECTED_FLOWS_ANTIGRAVITY.issubset(set(graph["flows"])))
-        self.assertIn("task_4_implemented_awaiting_fresh_review", html_text)
+        self.assertIn(STATUS_ANTIGRAVITY, html_text)
         self.assertIn("Task 5 private qualification", html_text)
 
         process_output = subprocess.check_output(

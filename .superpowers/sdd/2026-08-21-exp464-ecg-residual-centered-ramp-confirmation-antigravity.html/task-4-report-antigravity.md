@@ -16,7 +16,7 @@
   - Task 2 frozen authority/source modules
   - Task 3 centered-ramp and scoring modules
   - Task 4 qualification/evaluation/artifacts/replay/dashboard tests
-  - future Task 5 private qualification handoff only after fresh review
+  - future Task 5 closed-CLI handoff before exactly two sequential private TRAIN reproductions
 - Effects confirmed before edits:
   - exact per-fold control binding from frozen Exp463 evidence
   - one fixed C6 decision only
@@ -47,7 +47,7 @@
   - `test_replay_antigravity.py`
   - `test_dashboard_export_antigravity.py`
   - `test_governance_antigravity.py`
-- Updated review-pending truth/docs:
+- Updated Task 4 implementation truth/docs before final review:
   - `docs/EXP464_DASHBOARD_antigravity.html`
   - `docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html`
   - `docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html`
@@ -288,13 +288,21 @@ The broader semantic tamper matrix is also covered by the focused replay suite a
   - `test_predecessor_antigravity.py` no longer uses `mkdtemp`
   - removed 27 stale `exp464_control_evidence_mutation_antigravity_*` roots after verifying each contained only `exp463_control_row_evidence_antigravity.jsonl`
 
-## Status truth preserved
+## Final review closeout
 
-- status remains `task_4_implemented_awaiting_fresh_review`
-- checkbox truth remains exactly `21/42`
-- Task 4 heading and Task 4 steps remain unchecked
+- reviewed implementation commit: `ff0e871dda5c4353e467bc9d3070293022f0ad0e`
+- verdict: SHIP
+- spec: PASS
+- quality: APPROVED
+- findings: C/I0
+- status is now `task_4_complete_pending_task_5`
+- checkbox truth is exactly `28/42`
+- Task 4 heading and all six Task 4 steps are checked
+- Task 5 and Task 6 each remain 0/7 unchecked
 - no Exp464 private / official / TEST-label lifecycle was opened
 
-## Remaining gate outside this report
+## Next bounded task
 
-- The only remaining product gate before any Task 5 work is fresh Task 4 review.
+- Implement and review the Task 5 closed CLI first.
+- Then run exactly two sequential private TRAIN reproductions.
+- Do not open official evaluate/inspect, TEST labels, routing, champion/pending mutation, or promotion.

@@ -178,56 +178,56 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
-            "Caller: Task 4 closeout. Effect: records task_4_implemented_awaiting_fresh_review while preserving exactly twenty-one checked boxes total for Tasks 1–3 only.",
-            symbol="task_4_implemented_awaiting_fresh_review",
+            "Caller: Task 4 closeout. Effect: records task_4_complete_pending_task_5 with exactly twenty-eight checked boxes for Tasks 1–4 and Task 5/6 each 0/7 unchecked.",
+            symbol="task_4_complete_pending_task_5",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: summarizes Task 4 implementation, focused verification, and the review gate before any Task 5 work.",
-            symbol="Exp464 대시보드 — Task 4 구현 / fresh review 대기",
+            "Caller: status review. Effect: summarizes the Task 4 SHIP closeout and the closed-CLI-before-two-sequential-private-runs Task 5 boundary.",
+            symbol="Exp464 대시보드 — Task 4 완료 / Task 5 대기",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "preregistration",
             "docs/EXP464_PREREGISTRATION_antigravity.html",
-            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the 21/42 checkbox truth in the Task 4 review-pending state.",
+            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the 28/42 Task 4 complete checkbox truth before Task 5.",
             symbol="Frozen qualification gates for C6",
             tests=(governance_test, task4_qualification_test, task4_evaluation_test),
         ),
         _node_antigravity(
             "runbook",
             "docs/EXP464_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: keeps Task 5 CLI, private evaluate, official evaluate/inspect, TEST labels, and promotion blocked until fresh Task 4 review closes.",
+            "Caller: future operators. Effect: requires a reviewed closed Task 5 CLI before exactly two sequential private TRAIN reproductions and keeps official evaluate/inspect, TEST labels, and promotion blocked.",
             symbol="Exp464 Task 4 operator boundary",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 4 review. Effect: records the result-pipeline surface, focused suite evidence, and the unchanged no-results boundary.",
+            "Caller: Task 4 review. Effect: records SHIP/spec PASS/quality APPROVED/C/I0, focused suite evidence, and the unchanged no-results boundary.",
             symbol="Exp464 Task 4 구현 보고서",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores the task_4_implemented_awaiting_fresh_review Exp464 row with official/private/label counts at zero and all official result hashes null.",
+            "Caller: active research ledger. Effect: stores task_4_complete_pending_task_5 with official/private/label counts at zero and all official result hashes null.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the Task 4 review-pending Exp464 record without any private or official result.",
+            "Caller: experiment catalog. Effect: registers the reviewed Task 4 SHIP closeout without any private or official result.",
             symbol="\"id\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion history. Effect: preserves champion and pending state while recording that Task 4 code landed but review is still pending.",
+            "Caller: champion history. Effect: preserves champion and pending state while recording the Task 4 SHIP closeout and Task 5 handoff.",
             symbol="\"experiment\": \"Exp464\"",
             tests=(governance_test,),
         ),
@@ -235,7 +235,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "governance_test",
             governance_test,
             "Caller: Task 4 closeout verification. Effect: rejects missing Task 4 modules/tests, stale ledgers, wrong checkbox truth, stale map truth, official/private drift, or active Exp464 work.",
-            symbol="test_exp464_task4_truth_is_review_pending_without_results_antigravity",
+            symbol="test_exp464_task4_complete_pending_task5_without_results_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
@@ -311,14 +311,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task4_qualification",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/qualification_antigravity.py",
-            "Caller: Task 4 evaluation, artifacts, replay, dashboard export, and future Task 5 CLI. Effect: recomputes AUC/Wilson/finite gates from score arrays and normalizes C6 against C0 plus historical period floors.",
+            "Caller: Task 4 evaluation, artifacts, replay, dashboard export, and future Task 5 CLI. Effect: recomputes AUC/Wilson/finite gates from score arrays and normalizes C6 against C0 plus historical period floors; reviewed Task 4 is SHIP.",
             symbol="qualify_methods_antigravity",
             tests=(task4_qualification_test, task4_evaluation_test, task4_artifacts_test, task4_replay_test, governance_test),
         ),
         _node_antigravity(
             "task4_evaluation",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/evaluation_antigravity.py",
-            "Caller: Task 4 artifacts and dashboard export. Effect: turns the normalized qualification contract into one fixed C6-only decision and blocks routing before review.",
+            "Caller: Task 4 artifacts and dashboard export. Effect: turns the normalized qualification contract into one fixed C6-only decision while routing remains blocked until later lifecycle authorization.",
             symbol="evaluate_qualification_antigravity",
             tests=(task4_evaluation_test, task4_artifacts_test, task4_dashboard_test, governance_test),
         ),
@@ -381,7 +381,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "future_task5_private_qualification",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/cli_antigravity.py",
-            "Caller: future Task 5 only. Effect: private qualification/inspect lifecycle will depend on Task 4 serialized score evidence after fresh review.",
+            "Caller: future Task 5 only. Effect: a reviewed closed CLI must consume Task 4 serialized score evidence before exactly two sequential private TRAIN reproductions.",
             symbol="Task 5 private qualification",
             tests=(governance_test,),
         ),
@@ -472,7 +472,7 @@ def _build_html_antigravity(graph: dict[str, Any]) -> str:
         "<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}</style></head>\n"
         "<body><main>\n"
         "<h1>Exp464 Task 4 result-pipeline code map</h1>\n"
-        "<p>이 map은 <code>task_4_implemented_awaiting_fresh_review</code> 경계를 설명한다. Task 4 result pipeline은 구현되었지만 fresh review 전이라 Task 5 private qualification은 아직 열리지 않는다.</p>\n"
+        "<p>이 map은 <code>task_4_complete_pending_task_5</code> 경계를 설명한다. Task 4 최종 검토는 SHIP이며, Task 5는 closed CLI를 먼저 구현·검토한 뒤 정확히 두 번의 순차 private TRAIN reproduction으로 진행한다. 아직 private/official lifecycle은 열리지 않았다.</p>\n"
         f'<script id="graph-data" type="application/json">{payload}</script>\n'
         "</main></body></html>\n"
     )

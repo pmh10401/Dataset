@@ -2,14 +2,14 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 Task 4 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{border-left:6px solid #2457a6;background:#f5f7fa;padding:1rem}.stop{border-left:6px solid #b42318;background:#fff4f2;padding:1rem}</style></head>
 <body><main>
 <h1>Exp464 Task 4 구현 보고서</h1>
-<p><strong>현재 상태:</strong> <code>task_4_implemented_awaiting_fresh_review</code>. Task 4 result pipeline은 구현되었고 이번 검증 턴에서 focused suite 16 tests, full Exp464 42 tests, Exp463 authority/science regression 10 tests를 모두 GREEN으로 확인했다. 다만 fresh review 전이라 Task 4 heading과 step은 아직 unchecked다.</p>
+<p><strong>현재 상태:</strong> <code>task_4_complete_pending_task_5</code>. Task 4 result pipeline 구현과 검증을 마쳤고, reviewed implementation commit <code>ff0e871dda5c4353e467bc9d3070293022f0ad0e</code>의 최종 검토 결과는 spec PASS, quality APPROVED, C/I0이다. focused suite 16 tests와 full Exp464 42 tests를 GREEN으로 확인했으며 Task 4 heading과 step을 닫았다.</p>
 <table>
 <tr><th>approved design</th><td>SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code></td></tr>
 <tr><th>predecessor</th><td>Exp463 terminal closeout <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
 <tr><th>task scope</th><td>qualification, fixed C6 decision, 7-leaf publication, semantic replay, aggregate-only dashboard export, Task 4 truth update, code map handoff</td></tr>
 <tr><th>out of scope</th><td>Task 5 CLI, private run, official evaluate/inspect, TEST label query, package install</td></tr>
 <tr><th>official / private / label counts</th><td><code>0 / 0 / 0</code></td></tr>
-<tr><th>next action</th><td>fresh Task 4 review before Task 5</td></tr>
+<tr><th>next action</th><td>Task 5 closed CLI, then exactly two sequential private TRAIN reproductions</td></tr>
 </table>
 
 <h2>Task 4 deliverables</h2>
@@ -21,6 +21,6 @@
 
 <div class="note"><p>Task 4는 caller summary나 booleans를 신뢰하지 않는다. 각 row에서 normal score와 네 변화 score만으로 AUC, mean AUC, Wilson upper, finite 상태를 다시 계산하고, C6만 C0 비열화와 historical period floor를 추가 검증한다.</p></div>
 <div class="note"><p>publish는 정확히 7개 leaf만 만들고 artifact map은 self-excluding canonical JSON으로 기록한다. replay는 row payload, summary, decision, dashboard를 다시 계산해 canonical rehash tamper를 거부한다.</p></div>
-<div class="note"><p>checkbox truth는 여전히 <code>21/42</code>다. Task 1–3 heading+step만 checked이며, Task 4는 구현이 끝났어도 review 전이므로 unchecked를 유지한다.</p></div>
+<div class="note"><p>checkbox truth는 정확히 <code>28/42</code>다. Task 1–4 heading+step은 checked이고 Task 5와 Task 6은 각각 0/7 unchecked다.</p></div>
 <div class="stop"><p>이번 구현에서도 Task 5 CLI, private TRAIN reproduce, official command, TEST label query, champion/pending mutation, routing, promotion은 수행하지 않았다.</p></div>
 </main></body></html>
