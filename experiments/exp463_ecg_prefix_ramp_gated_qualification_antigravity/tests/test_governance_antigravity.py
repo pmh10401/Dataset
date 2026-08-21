@@ -228,7 +228,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["status"], "planned_implementation_not_started")
                 self.assertEqual(
                     record["implementation_status"],
-                    "task_1_governance_complete_pending_external_review",
+                    "task_1_complete_pending_task_2",
                 )
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
@@ -322,6 +322,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Exp463 Task 1 governance report",
             "DONE_WITH_CONCERNS",
+            "task_1_complete_pending_task_2",
             "RED",
             "GREEN",
             "official evaluate 0 / inspect 0",
@@ -337,7 +338,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         for phrase in (
             "Task 1",
-            "planned_implementation_not_started",
+            "task_1_complete_pending_task_2",
             "hydra_period_ramp_gated_max",
             "0.995",
             "56",
@@ -364,7 +365,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             tags = re.findall(r"<input\b[^>]*>", task.group(0), flags=re.IGNORECASE)
             self.assertEqual(len(tags), 7)
             for tag in tags:
-                self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)", tag)
+                if task_number == 1:
+                    self.assertRegex(tag, r"\bchecked(?:\s|=|>)", tag)
+                else:
+                    self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)", tag)
 
         builder = map_builder_antigravity()
         builder.main_antigravity_validate_only_for_tests()

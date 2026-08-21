@@ -5,7 +5,7 @@
 <body><main>
 <h1>Exp463 Task 1 governance report</h1>
 <p><strong>status:</strong> <code>DONE_WITH_CONCERNS</code></p>
-<p>Task 1의 계획·사전등록·런북·보고서·대시보드·ledger·코드맵 표면을 구현했다. 공식 evaluate 0 / inspect 0 (official evaluate 0 / inspect 0), TEST label query 0 (label query count 0), 공식 root 생성 0, champion/pending 변경은 발생하지 않았다. 이 보고서는 독립 검토 전 구현 handoff이며, 작성자가 최종 review를 수행하지 않았다.</p>
+<p><strong>lifecycle:</strong> <code>task_1_complete_pending_task_2</code> — Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 2 is next. Task 1의 계획·사전등록·런북·보고서·대시보드·ledger·코드맵 표면을 구현했다. 공식 evaluate 0 / inspect 0 (official evaluate 0 / inspect 0), private TRAIN 0, TEST label query 0 (label query count 0), 공식 root 생성 0, champion/pending 변경은 발생하지 않았다.</p>
 
 <h2>Files</h2>
 <ul>
@@ -39,7 +39,7 @@
 <li>Design SHA-256: <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code>; predecessor Exp462 terminal commit: <code>040422f62406e3ca19038b9609903c4ba76e1694</code>.</li>
 <li>M0–M6 are frozen IDs with design descriptions. Only the approved M2 implementation string, <code>hydra_period_ramp_gated_max</code>, is frozen here; no internal names are invented for M0/M1/M3/M4/M5/M6.</li>
 <li>M2 is the sole primary. Onset is <code>56</code>, alpha is <code>0.005</code>, and gate is <code>0.995</code>. Any private gate failure permanently stops before official execution.</li>
-<li>All three ledger records are <code>planned_implementation_not_started</code>; official evaluate/inspect are 0, label query count is 0, result hashes are null, official root is absent, and champion/pending are unchanged.</li>
+<li>All three ledger records retain lifecycle <code>planned_implementation_not_started</code> with implementation status <code>task_1_complete_pending_task_2</code>; official/private evaluate/inspect are 0, label query count is 0, result hashes are null, official root is absent, and champion/pending are unchanged.</li>
 </ul>
 
 <h2>Validation evidence</h2>
@@ -53,6 +53,6 @@
 <h2>Commits</h2>
 <p>Bounded Task 1 implementation commit: <code>0c8c43c3</code> (<code>docs(exp463): add task1 governance boundary</code>). Fix round commits: <code>60ac4cf97bdfa40d0a0a5fbbc06159620cc43c8b</code> (ledger bindings, evidence resolution, and fingerprint validation) and <code>2fec19bb908752096772818a0ce34905f26a6080</code> (clean source-parent map regeneration). Independent review commit/checklist: <code>NOT_PERFORMED_BY_THIS_AGENT</code>.</p>
 
-<div class="warn"><strong>Concerns:</strong> independent review remains pending. The Exp463 plan intentionally leaves Task 1–6 checkboxes unchecked until that review. Later Tasks 2–5 must preserve the M0–M6 IDs/descriptions and may choose internal method names only within their owned implementation contracts.</div>
+<div class="warn"><strong>Concerns:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0), and Task 2 is next. The Exp463 plan checks Task 1 only; Tasks 2–6 remain unchecked. Later Tasks 2–5 must preserve the M0–M6 IDs/descriptions and may choose internal method names only within their owned implementation contracts.</div>
 <div class="stop"><strong>Safety boundary:</strong> no official command, TEST label access, routing, promotion, or official root creation is authorized by this Task 1 handoff.</div>
 </main></body></html>

@@ -1,8 +1,8 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp463 대시보드</title><style>body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem}.box{background:#f5f7fa;padding:1rem;border-left:6px solid #2457a6}.stop{background:#fff4f2;padding:1rem;border-left:6px solid #b42318}</style></head><body><main>
 <h1>Exp463 진행 대시보드</h1>
 <table>
-<tr><th>상태</th><td><code>planned_implementation_not_started</code></td></tr>
-<tr><th>현재 단계</th><td>Task 1 governance 작성 완료, 독립 검토 대기</td></tr>
+<tr><th>상태</th><td><code>task_1_complete_pending_task_2</code></td></tr>
+<tr><th>현재 단계</th><td>Task 1 review SHIP (spec PASS, quality APPROVED, C/I0); Task 2 next</td></tr>
 <tr><th>주 후보</th><td>M2 <code>hydra_period_ramp_gated_max</code> 하나</td></tr>
 <tr><th>고정 규칙</th><td>onset <code>56</code>, alpha <code>0.005</code>, ramp 순위가 <code>0.995</code> 이상일 때만 Exp461 순위와 max 결합</td></tr>
 <tr><th>private TRAIN 실행</th><td>0</td></tr>
@@ -18,5 +18,5 @@
 </tbody></table>
 <ul><li>M2 primary 10/10</li><li>네 유형 AUC 각각 ≥0.85, 네 유형 평균 ≥0.90</li><li>normal Wilson upper ≤0.05, 모든 score finite</li><li>gradual 최소 ≥0.85이며 Exp462의 0.8402306222021025보다 엄격히 큼</li><li>period 최소 ≥0.907392736783864, 두 historical fold 보존</li></ul>
 <div class="stop"><strong>중단:</strong> private M2 gate 하나라도 실패하면 공식 실행은 영구 금지다. M4/M5가 좋아도 주 후보로 바꾸지 않는다.</div>
-<h2>작업 경계</h2><p>Task 2, Task 3, Task 4, Task 5는 아직 시작하지 않았다. Task 6은 별도 승인 전에는 실행하지 않는다. champion과 pending candidate는 변경되지 않았다.</p>
+<h2>작업 경계</h2><p>Task 1 is complete and Task 2 is next. Task 2, Task 3, Task 4, Task 5는 아직 시작하지 않았다. Task 6은 별도 승인 전에는 실행하지 않는다. champion과 pending candidate는 변경되지 않았다.</p>
 </main></body></html>
