@@ -136,7 +136,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_plan",
             plan,
-            "Caller: Task 1–6 execution. Effect: records bounded files, frozen M0–M6 IDs, Task 3 implemented-pending-review state, private gate stop, and unchecked future task controls.",
+            "Caller: Task 1–6 execution. Effect: records bounded files, frozen M0–M6 IDs, Task 3 complete-pending-Task4 state, private gate stop, and unchecked future task controls.",
             symbol="Task 1 — governance, dashboard, code map",
             tests=(governance_test,),
         ),
@@ -157,35 +157,35 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_report",
             "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 2 closeout and Task 3 handoff. Effect: records frozen Exp462 authority, Task 3 implementation boundary, RED/GREEN evidence, backend decision, and pending-review safety state.",
+            "Caller: Task 2/3 closeout and Task 4 handoff. Effect: records frozen Exp462 authority, Task 3 implementation boundary, RED/GREEN evidence, backend decision, and complete-pending-Task4 safety state.",
             symbol="Task 3 implementation boundary",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP463_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: shows Task 3 implemented pending review, M2 primary, easy Korean explanation, frozen authority inventory, aggregate gates, official0, label0, and null artifact map.",
-            symbol="task_3_implemented_pending_review",
+            "Caller: status review. Effect: shows Task 3 complete pending Task 4, M2 primary, easy Korean explanation, frozen authority inventory, aggregate gates, official0, label0, and null artifact map.",
+            symbol="task_3_complete_pending_task_4",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: governance ledger. Effect: records Task 3 implemented-pending-review Exp463 with null result hashes, official0, label0, absent root, and unchanged pending state.",
+            "Caller: governance ledger. Effect: records Task 3 complete-pending-Task4 Exp463 with null result hashes, official0, label0, absent root, and unchanged pending state.",
             symbol="\"exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the same Task 3 implemented-pending-review Exp463 record without result materialization or promotion.",
+            "Caller: experiment catalog. Effect: registers the same Task 3 complete-pending-Task4 Exp463 record without result materialization or promotion.",
             symbol="\"Exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion review. Effect: records Task 3 implemented-pending-review history while preserving champion, pending candidate, routing, and promotion.",
+            "Caller: champion review. Effect: records Task 3 complete-pending-Task4 history while preserving champion, pending candidate, routing, and promotion.",
             symbol="\"experiment\": \"Exp463\"",
             tests=(governance_test,),
         ),
@@ -206,7 +206,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "task2_foundation",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
-            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; Task 2 review is SHIP and Task 3 is implemented pending review.",
+            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; Task 2/3 reviews are SHIP and Task 4 is next.",
             symbol="FROZEN_CONFIG_ANTIGRAVITY",
             tests=(
                 "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",
@@ -218,7 +218,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "task3_report",
             ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html",
-            "Caller: Task 3 review. Effect: records implemented-pending-review state, RED/GREEN evidence, exact reference parity, MLX decision, public boundaries, and official0/label0 guards.",
+            "Caller: Task 3 review. Effect: records complete-pending-Task4 state, RED/GREEN evidence, exact reference parity, MLX decision, public boundaries, and official0/label0 guards.",
             symbol="Exp463 Task 3 — prefix-scaled ramp and seven method scores",
             tests=(governance_test,),
         ),
@@ -491,7 +491,7 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
         "<style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:15px/1.6 system-ui;color:#172033}"
         "code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}li{margin:.35rem 0}</style></head><body><main>"
         "<h1>Exp463 Task 3 코드맵</h1>"
-        "<p>실제 Exp463 Task 1 governance, Task 2 foundation, Task 3 prefix-ramp/scoring 경계와 pending-review evidence를 기록한다. Task 4–5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
+        "<p>실제 Exp463 Task 1 governance, Task 2 foundation, Task 3 prefix-ramp/scoring 경계와 complete-pending-Task4 evidence를 기록한다. Task 4–5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
         f"<h2>노드</h2><ul>{node_items}</ul>"
         "<h2>Machine-readable graph</h2>"
         f"<pre id=\"codemap-json-antigravity\" type=\"application/json\">{payload}</pre>"
