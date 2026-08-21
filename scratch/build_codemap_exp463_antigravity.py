@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp463 Task 4 code-map triplet."""
+"""Build and validate the bounded Exp463 Task 5 code-map triplet."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp463_antigravity.lock",
 )
 GENERATED_AT_ANTIGRAVITY = "2026-08-21T00:00:00Z"
-GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task4_boundary_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp463_task4_boundary_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task5_boundary_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp463_task5_boundary_codemap_lock_v1"
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
     "EXPERIMENT_CATALOG.json",
@@ -30,6 +30,7 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
     "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
     ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-3-report.html",
+    ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-5-report.html",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/qualification_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/evaluation_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/artifacts_antigravity.py",
@@ -42,18 +43,21 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/sources_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/ramp_features_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/scoring_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/cli_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_predecessor_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_sources_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_qualification_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_evaluation_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_artifacts_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_replay_antigravity.py",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_dashboard_export_antigravity.py",
     "scratch/build_codemap_exp463_antigravity.py",
+    "scratch/run_exp463_ecg_prefix_ramp_gated_qualification_antigravity.py",
 )
 STABLE_FINGERPRINT_EXCLUDED_PREFIXES_ANTIGRAVITY = (
     ".superpowers",
@@ -168,7 +172,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             "implementation_report",
             "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
             "Caller: Task 2/3/4 closeout. Effect: records frozen Exp462 authority, Task 3 scoring boundary, Task 4 SHIP evaluation/publication/replay evidence, and complete-pending-Task5 safety state.",
-            symbol="Task 4 handoff",
+            symbol="Exp463 Task 4",
             tests=(governance_test,),
         ),
         _node_antigravity(
@@ -341,11 +345,32 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_dashboard_export_antigravity.py",),
         ),
         _node_antigravity(
-            "task5_unknown",
+            "task5_cli",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/cli_antigravity.py",
-            "unknown future Task 5 boundary; not implemented; callers/effects/tests are unknown until Task 5 review.",
-            symbol="Task 5 — closed CLI and two private TRAIN reproductions",
-            evidence_path=plan,
+            "Caller: fixed-runtime launcher and private controller. Effect: accepts exactly evaluate --reviewed-commit LOWER40HEX or bare inspect, lazily dispatches the selected phase, rejects official-root aliases, and keeps TEST labels closed.",
+            symbol="main_antigravity",
+            tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",),
+        ),
+        _node_antigravity(
+            "task5_cli_tests",
+            "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",
+            "Caller: Task 5 CLI regression. Effect: covers exact parser closure, lazy/source-free inspect, private create-only seven-leaf flow, label firewall, outside-CWD launcher, and fixed-interpreter re-exec.",
+            symbol="test_exact_surface_accepts_only_reviewed_evaluate_or_bare_inspect_antigravity",
+            tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",),
+        ),
+        _node_antigravity(
+            "task5_launcher",
+            "scratch/run_exp463_ecg_prefix_ramp_gated_qualification_antigravity.py",
+            "Caller: future approved CLI operator. Effect: binds the fixed Python 3.14.6 interpreter and inserts the repository path so the closed CLI works outside repository CWD.",
+            symbol="_ensure_fixed_runtime_antigravity",
+            tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",),
+        ),
+        _node_antigravity(
+            "task5_report",
+            ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/task-5-report.html",
+            "Caller: Task 5 closeout review. Effect: records exact two-run private TRAIN evidence, scientific gate failure, MLX manifest/fallback, no-official/label-zero boundary, and the disclosed create-only race concern.",
+            symbol="Exp463 Task 5 report",
+            tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",),
         ),
     ]
     edges = [
@@ -413,7 +438,10 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
                 ("task4_artifacts", "Task 4 — blocked qualification, publication, semantic replay"),
                 ("task4_replay", "Task 4 — blocked qualification, publication, semantic replay"),
                 ("task4_dashboard", "Task 4 — blocked qualification, publication, semantic replay"),
-                ("task5_unknown", "Task 5 — closed CLI and two private TRAIN reproductions"),
+                ("task5_cli", "Task 5 — closed CLI and two private TRAIN reproductions"),
+                ("task5_cli_tests", "Task 5 — closed CLI and two private TRAIN reproductions"),
+                ("task5_launcher", "Task 5 — closed CLI and two private TRAIN reproductions"),
+                ("task5_report", "Task 5 — closed CLI and two private TRAIN reproductions"),
             )
         ],
         {
@@ -542,6 +570,60 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
                 "symbol": "test_dashboard_is_aggregate_only_and_exposes_ordered_four_type_minima_antigravity",
             },
         },
+        {
+            "from": "task5_cli_tests",
+            "to": "task5_cli",
+            "type": "tests",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",
+                "symbol": "test_exact_surface_accepts_only_reviewed_evaluate_or_bare_inspect_antigravity",
+            },
+        },
+        {
+            "from": "task5_cli_tests",
+            "to": "task5_launcher",
+            "type": "tests",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_cli_antigravity.py",
+                "symbol": "test_launcher_imports_package_from_outside_repository_cwd_antigravity",
+            },
+        },
+        {
+            "from": "task5_cli",
+            "to": "task4_qualification",
+            "type": "governs",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/cli_antigravity.py",
+                "symbol": "qualify_methods_antigravity",
+            },
+        },
+        {
+            "from": "task5_cli",
+            "to": "task4_artifacts",
+            "type": "governs",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/cli_antigravity.py",
+                "symbol": "publish_result_antigravity",
+            },
+        },
+        {
+            "from": "task5_cli",
+            "to": "task4_replay",
+            "type": "governs",
+            "evidence": {
+                "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/cli_antigravity.py",
+                "symbol": "inspect_replay_at_antigravity",
+            },
+        },
+        {
+            "from": "governance_regression",
+            "to": "task5_report",
+            "type": "tests",
+            "evidence": {
+                "path": governance_test,
+                "symbol": "test_task1_dashboard_plan_and_map_antigravity",
+            },
+        },
     ]
     return {
         "edges": edges,
@@ -654,11 +736,11 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
     return (
         "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-        "<title>Exp463 Task 4 코드맵</title>"
+        "<title>Exp463 Task 5 코드맵</title>"
         "<style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:15px/1.6 system-ui;color:#172033}"
         "code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}li{margin:.35rem 0}</style></head><body><main>"
-        "<h1>Exp463 Task 4 코드맵</h1>"
-        "<p>실제 Exp463 Task 1 governance, Task 2 foundation, Task 3 scoring, Task 4 qualification/publication/replay 경계와 complete-pending-Task5 evidence를 기록한다. Task 5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
+        "<h1>Exp463 Task 5 코드맵</h1>"
+        "<p>실제 Exp463 Task 1 governance, Task 2 foundation, Task 3 scoring, Task 4 qualification/publication/replay, Task 5 closed CLI/private TRAIN 경계를 기록한다. Task 6은 별도 승인 전까지 실행하지 않는다.</p>"
         f"<h2>노드</h2><ul>{node_items}</ul>"
         "<h2>Machine-readable graph</h2>"
         f"<pre id=\"codemap-json-antigravity\" type=\"application/json\">{payload}</pre>"
@@ -726,7 +808,10 @@ def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
         "task4_artifacts_tests",
         "task4_replay_tests",
         "task4_dashboard_tests",
-        "task5_unknown",
+        "task5_cli",
+        "task5_cli_tests",
+        "task5_launcher",
+        "task5_report",
     }
     if not required.issubset(node_set):
         raise AssertionError(f"missing graph nodes: {sorted(required - node_set)}")

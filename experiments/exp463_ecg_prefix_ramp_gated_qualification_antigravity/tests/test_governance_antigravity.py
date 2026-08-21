@@ -221,10 +221,13 @@ class GovernanceAntigravityTest(unittest.TestCase):
             with self.subTest(record=record["experiment"]):
                 self.assertEqual(record["experiment"], "Exp463")
                 self.assertEqual(record["kind"], "ecg_prefix_ramp_gated_qualification")
-                self.assertEqual(record["status"], "planned_implementation_not_started")
+                self.assertEqual(
+                    record["status"],
+                    "stopped_before_official_evaluation_qualification_failed",
+                )
                 self.assertEqual(
                     record["implementation_status"],
-                    "task_4_complete_pending_task_5",
+                    "task_5_private_train_reproducibility_complete_qualification_failed",
                 )
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
@@ -265,8 +268,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertFalse(record["review_only"])
                 self.assertFalse(record["official_root_present"])
                 ledger_text = str(record.get("notes", record.get("reason", "")))
-                self.assertIn("Task 4 review is SHIP", ledger_text)
-                self.assertIn("Task 5 is next", ledger_text)
+                self.assertIn("Task 5 private TRAIN campaign completed", ledger_text)
+                self.assertIn("Task 6 is permanently forbidden", ledger_text)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
@@ -401,8 +404,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsNotNone(embedded)
         assert embedded is not None
         self.assertEqual(json.loads(html.unescape(embedded.group(1))), graph)
-        self.assertEqual(graph["schema"], "exp463_task4_boundary_codemap_v1")
-        self.assertEqual(lock["schema"], "exp463_task4_boundary_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp463_task5_boundary_codemap_v1")
+        self.assertEqual(lock["schema"], "exp463_task5_boundary_codemap_lock_v1")
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))
         head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True
@@ -444,7 +447,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task4_artifacts_tests",
             "task4_replay_tests",
             "task4_dashboard_tests",
-            "task5_unknown",
+            "task5_cli",
+            "task5_cli_tests",
+            "task5_launcher",
+            "task5_report",
         ):
             self.assertIn(node_id, node_ids)
         for node in graph["nodes"]:
