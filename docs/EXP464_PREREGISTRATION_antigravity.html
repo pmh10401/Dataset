@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp464 사전등록</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem;border-left:6px solid #2457a6}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<body><main>
+<h1>Exp464 사전등록</h1>
+<p>이 문서는 Exp464의 구현 전 과학 계약과 Task 1 governance 경계를 고정한다. 현재 상태는 <code>planned_implementation_not_started</code>이고, 구현 handoff는 <code>task_1_implemented_awaiting_fresh_review</code>다.</p>
+<table>
+<tr><th>experiment / kind</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
+<tr><th>approved design</th><td><code>docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html</code><br>SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code></td></tr>
+<tr><th>predecessor</th><td>Exp463 terminal closeout commit <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
+<tr><th>data</th><td><code>ECG5000_normal_2</code> TRAIN only, exactly <code>1413×140</code>; seeds <code>20260721</code>, <code>20261721</code>; five time-ordered blocked folds</td></tr>
+<tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code> must remain absent before separately approved Task 6</td></tr>
+<tr><th>boundaries</th><td>TEST labels, TEST FN/FP/F1, routing, champion/pending mutation, promotion, private run, official evaluate/inspect는 모두 아직 0이다. result hash와 artifact hash는 모두 <code>null</code>이다.</td></tr>
+</table>
+
+<h2>Frozen C0–C8 comparison</h2>
+<table><thead><tr><th>ID</th><th>fixed description</th><th>role</th></tr></thead><tbody>
+<tr><td><code>C0</code></td><td>Exp463 M0 exact replay control</td><td>기준선 재현</td></tr>
+<tr><td><code>C1</code></td><td>Exp463 M2 exact replay control</td><td>0.995 gate 실패 재현</td></tr>
+<tr><td><code>C2</code></td><td>Exp463 M4 exact replay control</td><td>template 제거만 했을 때의 한계 확인</td></tr>
+<tr><td><code>C3</code></td><td>template residual centered ramp rank only</td><td>새 특징 자체의 구분력</td></tr>
+<tr><td><code>C4</code></td><td>C3 rank with unconditional max against C0</td><td>shape confirmation 없이 max를 쓰면 어떤지 확인</td></tr>
+<tr><td><code>C5</code></td><td>centered ramp confirmation without template subtraction</td><td>template 제거의 기여 분리</td></tr>
+<tr><td><code>C6</code></td><td>template residual centered ramp rank with <code>cosine ≥ 0.95</code> confirmed max</td><td><strong>유일한 주 후보</strong></td></tr>
+<tr><td><code>C7</code></td><td>Exp463 M6 exact replay control</td><td>이전 실패 대조 재현</td></tr>
+<tr><td><code>C8</code></td><td>template residual ramp confirmation without centering</td><td>중심화의 기여 분리</td></tr>
+</tbody></table>
+
+<h2>Frozen qualification gates for C6</h2>
+<ul>
+<li>10개 seed-fold 기록 모두 통과.</li>
+<li>각 변화 유형 AUC ≥ <code>0.85</code>, 각 기록의 네 유형 평균 AUC ≥ <code>0.90</code>.</li>
+<li>정상 Wilson upper ≤ <code>0.05</code>; 모든 점수 finite.</li>
+<li>전체 gradual 최소 ≥ <code>0.85</code>이고 Exp463의 <code>0.8402306222021025</code>보다 엄격히 커야 한다.</li>
+<li>전체 period 최소 ≥ <code>0.907392736783864</code>.</li>
+<li>각 seed-fold에서 C6 gradual과 period가 같은 기록의 C0보다 낮아지면 실패다.</li>
+<li>역사적 period floor: seed <code>20260721</code> fold <code>3</code> ≥ <code>0.907392736783864</code>; seed <code>20261721</code> fold <code>4</code> ≥ <code>0.9216148584075248</code>.</li>
+</ul>
+<div class="stop"><strong>중단 규칙:</strong> 하나라도 실패하면 공식 실행은 없다. cosine, onset, seed, fold, 방법 순서, 주 후보를 결과를 본 뒤 바꾸지 않는다. M4는 진단 근거이지 승격 후보가 아니다.</div>
+
+<h2>Task 1 handoff truth</h2>
+<div class="box"><p>Task 1은 governance, HTML 문서, ledger truth, code map만 만들었다. Task 2–6 과학 모듈은 아직 구현하지 않았고, TRAIN source load도 하지 않았다. fresh Task 1 review가 끝날 때까지 Task heading과 step checkbox는 모두 unchecked 상태를 유지한다.</p></div>
+</main></body></html>
