@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import html
 import json
@@ -906,7 +907,19 @@ def main_antigravity_validate_only_for_tests() -> None:
     validate_map_antigravity()
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        description="Build or validate the Exp463 code-map triplet."
+    )
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="validate the stored triplet without writing any map file",
+    )
+    args = parser.parse_args(argv)
+    if args.validate_only:
+        validate_map_antigravity()
+        return
     build_map_antigravity()
 
 

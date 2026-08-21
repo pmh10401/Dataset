@@ -8,6 +8,7 @@ import json
 import re
 import copy
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -563,6 +564,31 @@ class GovernanceAntigravityTest(unittest.TestCase):
             tracked_source.write_bytes(original_source)
             if review_artifact.exists():
                 review_artifact.unlink()
+
+    def test_map_validate_only_subprocess_preserves_triplet_bytes_antigravity(self) -> None:
+        """Break caught: validate-only accidentally rebuilds or rewrites the map triplet."""
+        builder_path = ROOT_ANTIGRAVITY / "scratch/build_codemap_exp463_antigravity.py"
+        triplet = tuple(ROOT_ANTIGRAVITY / relative for relative in TRIPLET_ANTIGRAVITY)
+        before = tuple(path.read_bytes() for path in triplet)
+        completed = subprocess.run(
+            [sys.executable, str(builder_path), "--validate-only"],
+            cwd=ROOT_ANTIGRAVITY,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(tuple(path.read_bytes() for path in triplet), before)
+
+        unknown = subprocess.run(
+            [sys.executable, str(builder_path), "--unknown-flag"],
+            cwd=ROOT_ANTIGRAVITY,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(unknown.returncode, 0)
+        self.assertEqual(tuple(path.read_bytes() for path in triplet), before)
 
 
 if __name__ == "__main__":
