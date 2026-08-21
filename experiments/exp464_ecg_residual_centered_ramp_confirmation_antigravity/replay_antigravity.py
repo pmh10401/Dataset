@@ -11,6 +11,7 @@ from .artifacts_antigravity import (
     _LEAVES_ANTIGRAVITY,
     _context_payload_antigravity,
     _decision_payload_antigravity,
+    _official_lifecycle_authority_antigravity,
     _payloads_antigravity,
     _row_payload_antigravity,
     _summary_payload_antigravity,
@@ -37,6 +38,7 @@ _CHANGE_TYPES_ANTIGRAVITY = (
 _CONFIRMATION_TYPES_ANTIGRAVITY = ("normal",) + _CHANGE_TYPES_ANTIGRAVITY
 _PAIR_TYPES_ANTIGRAVITY = ("gradual_drift", "period_change")
 _PAIR_STAT_KEYS_ANTIGRAVITY = ("total_pairs", "fixed_pairs", "broken_pairs")
+OFFICIAL_ROOT_ANTIGRAVITY = Path(FROZEN_CONFIG_ANTIGRAVITY.official_result_root)
 
 
 def _evidence_mapping_antigravity(value: dict[str, object]) -> dict[str, tuple[object, ...]]:
@@ -90,10 +92,17 @@ def _strict_jsonl_antigravity(payload: bytes) -> tuple[object, ...]:
     return tuple(_strict_json_antigravity(line + b"\n") for line in payload.splitlines())
 
 
-def _load_antigravity(root: Path) -> dict[str, bytes]:
+def _load_antigravity(
+    root: Path,
+    official_lifecycle_authority: object | None = None,
+) -> dict[str, bytes]:
+    if isinstance(root, Path) and root.resolve(strict=False) == OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False):
+        if official_lifecycle_authority is not _official_lifecycle_authority_antigravity():
+            raise ValueError("official result root requires internal official lifecycle authority")
+    elif official_lifecycle_authority is _official_lifecycle_authority_antigravity():
+        raise ValueError("internal official lifecycle authority requires the exact official result root")
     if (
         not isinstance(root, Path)
-        or root == Path(FROZEN_CONFIG_ANTIGRAVITY.official_result_root)
         or not root.is_dir()
         or root.is_symlink()
     ):
@@ -260,10 +269,13 @@ def _decision_antigravity(value: object) -> QualificationDecisionAntigravity:
     )
 
 
-def inspect_replay_at_antigravity(root: Path) -> QualificationReplayAntigravity:
+def inspect_replay_at_antigravity(
+    root: Path,
+    official_lifecycle_authority: object | None = None,
+) -> QualificationReplayAntigravity:
     from .predecessor_antigravity import capture_exp463_authority_antigravity
 
-    leaves = _load_antigravity(root)
+    leaves = _load_antigravity(root, official_lifecycle_authority)
     authority = capture_exp463_authority_antigravity()
     context_value = _strict_json_antigravity(leaves["context_antigravity.json"])
     if type(context_value) is not dict:
@@ -329,4 +341,8 @@ def inspect_replay_at_antigravity(root: Path) -> QualificationReplayAntigravity:
     )
 
 
-__all__ = ("QualificationReplayAntigravity", "inspect_replay_at_antigravity")
+__all__ = (
+    "OFFICIAL_ROOT_ANTIGRAVITY",
+    "QualificationReplayAntigravity",
+    "inspect_replay_at_antigravity",
+)

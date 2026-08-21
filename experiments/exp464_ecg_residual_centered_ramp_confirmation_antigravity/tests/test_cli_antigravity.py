@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import ExitStack, redirect_stderr, redirect_stdout
 import io
 import json
 from pathlib import Path
@@ -35,6 +35,10 @@ _OFFICIAL_ROOT_ANTIGRAVITY = Path(
 
 
 class CliAntigravityTest(unittest.TestCase):
+    def _source_free_lower_layer_inputs_antigravity(self):
+        authority, qualification, _decision = publication_inputs_antigravity()
+        return authority, qualification
+
     def test_exact_surface_accepts_only_reviewed_evaluate_or_bare_inspect_antigravity(self) -> None:
         """Break caught: aliases, overrides, or extra tokens reach execution."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.cli_antigravity import (
@@ -154,50 +158,138 @@ class CliAntigravityTest(unittest.TestCase):
             validate.assert_called_once_with(_COMMIT_ANTIGRAVITY)
             evaluate.assert_called_once_with()
 
-    def test_private_evaluate_then_inspect_returns_same_payload_and_seven_leaves_antigravity(self) -> None:
-        """Break caught: CLI skips qualification, publication, replay, or create-only semantics."""
+    def test_private_seam_rejects_dependency_and_validation_injection_antigravity(self) -> None:
+        """Break caught: private seam replaces frozen CLI dependencies instead of root only."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.artifacts_antigravity import (
-            publish_result_antigravity,
-        )
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.evaluation_antigravity import (
-            evaluate_qualification_antigravity,
-        )
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.replay_antigravity import (
-            inspect_replay_at_antigravity,
-        )
 
-        authority, qualification, _decision = publication_inputs_antigravity()
+        with tempfile.TemporaryDirectory(prefix="exp464_cli_forbidden_seam_antigravity_") as temporary:
+            private = types.ModuleType("_exp464_cli_private_test_antigravity")
+            private.CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+            private.root_antigravity = Path(temporary) / "result_antigravity"
+            private.evaluate_dependencies_antigravity = lambda: None
+            private.inspect_antigravity = lambda root: None
+            private.validate_clean_current_commit_antigravity = lambda commit: None
+            private.validate_no_duplicate_process_antigravity = lambda: None
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                self.assertRaisesRegex(ValueError, "private test seam may inject only root_antigravity"),
+            ):
+                cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                self.assertRaisesRegex(ValueError, "private test seam may inject only root_antigravity"),
+            ):
+                cli._inspect_antigravity()
+
+    def test_private_root_evaluate_then_inspect_uses_real_lower_layer_path_antigravity(self) -> None:
+        """Break caught: CLI uses seam-level dependency replacement instead of frozen lower layers."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        authority, qualification = self._source_free_lower_layer_inputs_antigravity()
         with tempfile.TemporaryDirectory(prefix="exp464_cli_private_antigravity_") as temporary:
             root = Path(temporary) / "result_antigravity"
-            evaluated = cli._evaluate_with_dependencies_antigravity(
-                root,
-                lambda: authority,
-                lambda: qualification,
-                evaluate_qualification_antigravity,
-                publish_result_antigravity,
-                inspect_replay_at_antigravity,
-            )
-            inspected = cli._inspect_with_dependencies_antigravity(root, inspect_replay_at_antigravity)
+            private = types.ModuleType("_exp464_cli_private_test_antigravity")
+            private.CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+            private.root_antigravity = root
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
+                    return_value=authority,
+                ),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                    return_value=qualification,
+                ),
+            ):
+                evaluated = cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
+                inspected = cli._inspect_antigravity()
             self.assertEqual(evaluated, inspected)
             self.assertEqual(evaluated["experiment"], "Exp464")
             self.assertEqual(evaluated["decision"]["label_query_count"], 0)
-            self.assertEqual(
-                tuple(sorted(entry.name for entry in root.iterdir())),
-                tuple(sorted(LEAVES_ANTIGRAVITY)),
-            )
+            self.assertEqual(tuple(sorted(entry.name for entry in root.iterdir())), tuple(sorted(LEAVES_ANTIGRAVITY)))
             self.assertEqual(tuple(evaluated["leaf_sha256"]), LEAVES_ANTIGRAVITY)
             before = {entry.name: entry.read_bytes() for entry in root.iterdir()}
-            with self.assertRaises(ValueError):
-                cli._evaluate_with_dependencies_antigravity(
-                    root,
-                    lambda: authority,
-                    lambda: qualification,
-                    evaluate_qualification_antigravity,
-                    publish_result_antigravity,
-                    inspect_replay_at_antigravity,
-                )
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
+                    return_value=authority,
+                ),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                    return_value=qualification,
+                ),
+                self.assertRaises(ValueError),
+            ):
+                cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
             self.assertEqual({entry.name: entry.read_bytes() for entry in root.iterdir()}, before)
+            self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
+
+    def test_task5_public_path_cannot_create_official_root_without_internal_authority_antigravity(self) -> None:
+        """Break caught: Task 5 path can create the official root without Task 6 authority."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import artifacts_antigravity as artifacts
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import replay_antigravity as replay
+
+        authority, qualification = self._source_free_lower_layer_inputs_antigravity()
+        with tempfile.TemporaryDirectory(prefix="exp464_cli_official_guard_antigravity_") as temporary:
+            official_root = Path(temporary) / "official_root_antigravity"
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(cli, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
+                stack.enter_context(patch.object(artifacts, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
+                stack.enter_context(patch.object(replay, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
+                stack.enter_context(
+                    patch(
+                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
+                        return_value=authority,
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                        return_value=qualification,
+                    )
+                )
+                with self.assertRaisesRegex(ValueError, "official result root requires internal official lifecycle authority"):
+                    cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
+                self.assertFalse(official_root.exists())
+                with self.assertRaisesRegex(ValueError, "official result root requires internal official lifecycle authority"):
+                    cli._inspect_antigravity()
+                self.assertFalse(official_root.exists())
+
+    def test_authorized_official_lifecycle_uses_public_official_root_with_internal_authority_antigravity(self) -> None:
+        """Break caught: Task 6 official evaluate/inspect still needs later product changes."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import artifacts_antigravity as artifacts
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import replay_antigravity as replay
+
+        authority, qualification = self._source_free_lower_layer_inputs_antigravity()
+        with tempfile.TemporaryDirectory(prefix="exp464_cli_official_lifecycle_antigravity_") as temporary:
+            official_root = Path(temporary) / "official_root_antigravity"
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(cli, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
+                stack.enter_context(patch.object(artifacts, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
+                stack.enter_context(patch.object(replay, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
+                stack.enter_context(
+                    patch(
+                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
+                        return_value=authority,
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                        return_value=qualification,
+                    )
+                )
+                evaluated = cli._evaluate_official_antigravity(_COMMIT_ANTIGRAVITY)
+                inspected = cli._inspect_official_antigravity()
+                self.assertEqual(official_root, cli.OFFICIAL_ROOT_ANTIGRAVITY)
+            self.assertEqual(evaluated, inspected)
+            self.assertTrue(official_root.is_dir())
+            self.assertEqual(tuple(evaluated["leaf_sha256"]), LEAVES_ANTIGRAVITY)
+            self.assertEqual(evaluated["decision"]["label_query_count"], 0)
 
     def test_private_root_guard_rejects_resolved_official_alias_antigravity(self) -> None:
         """Break caught: a lexical alias selects the official root."""
@@ -235,11 +327,12 @@ class CliAntigravityTest(unittest.TestCase):
                     "from pathlib import Path\n"
                     "import contextlib, io, json, sys, tempfile, types\n"
                     "from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli\n"
+                    "from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import replay_antigravity as replay\n"
                     "private = types.ModuleType('_exp464_cli_private_test_antigravity')\n"
                     "private.CAPABILITY_ANTIGRAVITY = 'exp464_cli_private_test_antigravity_v1'\n"
                     "with tempfile.TemporaryDirectory(prefix='exp464_inspect_stub_antigravity_') as temporary:\n"
                     "    private.root_antigravity = Path(temporary) / 'result_antigravity'\n"
-                    "    private.inspect_antigravity = lambda root: {'experiment': 'Exp464', 'decision': {'label_query_count': 0}, 'root': root.name}\n"
+                    "    replay.inspect_replay_at_antigravity = lambda root, official_lifecycle_authority=None: {'experiment': 'Exp464', 'decision': {'label_query_count': 0}, 'root': root.name}\n"
                     "    sys.modules[private.__name__] = private\n"
                     "    output = io.StringIO()\n"
                     "    with contextlib.redirect_stdout(output):\n"

@@ -42,6 +42,8 @@ _CHANGE_TYPES_ANTIGRAVITY = (
     "amplitude_scaling",
     "period_change",
 )
+OFFICIAL_ROOT_ANTIGRAVITY = Path(FROZEN_CONFIG_ANTIGRAVITY.official_result_root)
+_OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY = object()
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +51,26 @@ class PublishedQualificationAntigravity:
     root: Path
     leaf_sha256: tuple[tuple[str, str], ...]
     artifact_map_sha256: str
+
+
+def _official_lifecycle_authority_antigravity() -> object:
+    return _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY
+
+
+def _validate_publication_root_antigravity(
+    root: Path,
+    official_lifecycle_authority: object | None,
+) -> None:
+    if not isinstance(root, Path) or root.exists() or root.is_symlink():
+        raise ValueError("publication destination must be a new create-only path")
+    resolved_root = root.resolve(strict=False)
+    resolved_official = OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False)
+    if resolved_root == resolved_official:
+        if official_lifecycle_authority is not _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY:
+            raise ValueError("official result root requires internal official lifecycle authority")
+        return
+    if official_lifecycle_authority is _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY:
+        raise ValueError("internal official lifecycle authority requires the exact official result root")
 
 
 def canonical_json_bytes_antigravity(value: Any) -> bytes:
@@ -229,10 +251,9 @@ def publish_result_antigravity(
     qualification: Exp464QualificationContractAntigravity,
     decision: QualificationDecisionAntigravity,
     authority: Exp463AuthorityAntigravity,
+    official_lifecycle_authority: object | None = None,
 ) -> PublishedQualificationAntigravity:
-    official_root = Path(FROZEN_CONFIG_ANTIGRAVITY.official_result_root)
-    if not isinstance(root, Path) or root == official_root or root.exists() or root.is_symlink():
-        raise ValueError("publication destination must be a new private path")
+    _validate_publication_root_antigravity(root, official_lifecycle_authority)
     payloads = _payloads_antigravity(qualification, decision, authority)
     artifact_map = {
         name: sha256(payloads[name]).hexdigest()
@@ -266,9 +287,11 @@ __all__ = (
     "_LEAVES_ANTIGRAVITY",
     "_context_payload_antigravity",
     "_decision_payload_antigravity",
+    "_official_lifecycle_authority_antigravity",
     "_payloads_antigravity",
     "_row_payload_antigravity",
     "_summary_payload_antigravity",
     "canonical_json_bytes_antigravity",
+    "OFFICIAL_ROOT_ANTIGRAVITY",
     "publish_result_antigravity",
 )

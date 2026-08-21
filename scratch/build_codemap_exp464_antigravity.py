@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp464 Task 4 result-pipeline code-map triplet."""
+"""Build and validate the bounded Exp464 Task 5 closed-CLI code-map triplet."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp464_antigravity.json",
     "docs/codemap/codemap_exp464_antigravity.lock",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp464_task4_results_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp464_task4_results_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp464_task5_closed_cli_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp464_task5_closed_cli_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-21T00:00:00Z"
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -179,7 +179,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "approved_design",
             "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
-            "Caller: Task 3 scorer, Task 4 qualification, and future Task 5 CLI. Effect: freezes Exp464 identity, dataset, onset 56, C0–C8 order, C6-only promotion contract, and official-root absence.",
+            "Caller: Task 3 scorer, Task 4 qualification, and Task 5 closed CLI. Effect: freezes Exp464 identity, dataset, onset 56, C0–C8 order, C6-only promotion contract, and public official-root absence.",
             symbol="Exp464 — 공통 ECG 파형 제거 뒤 중심화 ramp 확인",
             tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
@@ -249,14 +249,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "map_builder",
             "scratch/build_codemap_exp464_antigravity.py",
-            "Caller: Task 4 closeout validation. Effect: writes and validates the Exp464 Task 4 results graph, embedded JSON, lock fingerprints, and source-parent binding.",
+            "Caller: Task 5 boundary validation. Effect: writes and validates the Exp464 closed-CLI graph, embedded JSON, lock fingerprints, and source-parent binding.",
             symbol="build_triplet_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "task2_config",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/config_antigravity.py",
-            "Caller: Task 3 scorer, Task 4 qualification, and future Task 5 CLI. Effect: freezes the method order, seed pair, gates, and C0/C1/C2/C7 Exp463 control summaries.",
+            "Caller: Task 3 scorer, Task 4 qualification, and Task 5 closed CLI. Effect: freezes the method order, seed pair, gates, and C0/C1/C2/C7 Exp463 control summaries.",
             symbol="FROZEN_CONFIG_ANTIGRAVITY",
             tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
@@ -319,7 +319,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task4_qualification",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/qualification_antigravity.py",
-            "Caller: Task 4 evaluation, artifacts, replay, dashboard export, and future Task 5 CLI. Effect: recomputes AUC/Wilson/finite gates from score arrays and normalizes C6 against C0 plus historical period floors; reviewed Task 4 is SHIP.",
+            "Caller: Task 4 evaluation, artifacts, replay, dashboard export, and Task 5 closed CLI. Effect: recomputes AUC/Wilson/finite gates from score arrays and normalizes C6 against C0 plus historical period floors; reviewed Task 4 is SHIP.",
             symbol="qualify_methods_antigravity",
             tests=(task4_qualification_test, task4_evaluation_test, task4_artifacts_test, task4_replay_test, governance_test),
         ),
@@ -333,14 +333,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task4_artifacts",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/artifacts_antigravity.py",
-            "Caller: Task 4 replay and future Task 5 inspect. Effect: publishes exactly seven canonical leaves with a self-excluding artifact map.",
+            "Caller: Task 4 replay, Task 5 inspect, and internal Task 6 official lifecycle. Effect: publishes exactly seven canonical leaves with a self-excluding artifact map and reserves the exact official root for internal lifecycle authority only.",
             symbol="publish_result_antigravity",
             tests=(task4_artifacts_test, task4_replay_test, governance_test),
         ),
         _node_antigravity(
             "task4_replay",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/replay_antigravity.py",
-            "Caller: Task 4 verification and future Task 5 inspect. Effect: reopens only a supplied root and semantically rejects rehashed tampering.",
+            "Caller: Task 4 verification, Task 5 inspect, and internal Task 6 official lifecycle. Effect: reopens only a supplied root, semantically rejects rehashed tampering, and allows the exact official root only through internal lifecycle authority.",
             symbol="inspect_replay_at_antigravity",
             tests=(task4_replay_test, governance_test),
         ),
@@ -387,9 +387,9 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             tests=(task4_dashboard_test,),
         ),
         _node_antigravity(
-            "future_task5_private_qualification",
+            "task5_closed_cli",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/cli_antigravity.py",
-            "Caller: Task 5 launcher and private evaluate/inspect tests. Effect: a reviewed closed CLI must consume Task 4 serialized score evidence and emit one canonical replay-backed result JSON before exactly two sequential private TRAIN reproductions.",
+            "Caller: Task 5 launcher, public evaluate/inspect, and internal official-lifecycle helpers. Effect: the closed CLI binds frozen validation and scientific dependencies, permits only non-official private root injection, and reserves the exact official root for internal authority-backed Task 6 evaluate→inspect.",
             symbol="main_antigravity",
             tests=(governance_test, task5_cli_test),
         ),
@@ -403,7 +403,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task5_cli_test",
             task5_cli_test,
-            "Caller: Task 5 Phase A RED→GREEN boundary verification. Effect: covers exact parser rejection, lazy imports, outside-CWD launcher, private evaluate→inspect equality, official-root absence, and label-query count zero.",
+            "Caller: Task 5 Phase A RED→GREEN boundary verification. Effect: covers exact parser rejection, lazy imports, outside-CWD launcher, non-official root-only injection, internal official lifecycle gating, and label-query count zero.",
             symbol="CliAntigravityTest",
             tests=(task5_cli_test,),
         ),
@@ -417,7 +417,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_artifacts"},
         {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_replay"},
         {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_dashboard_export"},
-        {"from": "implementation_plan", "relation": "bounds_future_work", "to": "future_task5_private_qualification"},
+        {"from": "implementation_plan", "relation": "bounds_future_work", "to": "task5_closed_cli"},
         {"from": "research_state", "relation": "reports_status", "to": "dashboard"},
         {"from": "experiment_catalog", "relation": "reports_identity", "to": "dashboard"},
         {"from": "champion_ledger", "relation": "preserves_champion_state", "to": "dashboard"},
@@ -453,12 +453,12 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         {"from": "task4_evaluation", "relation": "feeds", "to": "task4_artifacts"},
         {"from": "task4_evaluation", "relation": "feeds", "to": "task4_dashboard_export"},
         {"from": "task4_artifacts", "relation": "feeds", "to": "task4_replay"},
-        {"from": "task4_artifacts", "relation": "feeds", "to": "future_task5_private_qualification"},
-        {"from": "task4_replay", "relation": "guards", "to": "future_task5_private_qualification"},
-        {"from": "task5_launcher", "relation": "invokes", "to": "future_task5_private_qualification"},
-        {"from": "task5_cli_test", "relation": "covers", "to": "future_task5_private_qualification"},
+        {"from": "task4_artifacts", "relation": "feeds", "to": "task5_closed_cli"},
+        {"from": "task4_replay", "relation": "guards", "to": "task5_closed_cli"},
+        {"from": "task5_launcher", "relation": "invokes", "to": "task5_closed_cli"},
+        {"from": "task5_cli_test", "relation": "covers", "to": "task5_closed_cli"},
         {"from": "task5_cli_test", "relation": "covers", "to": "task5_launcher"},
-        {"from": "map_builder", "relation": "documents_boundary", "to": "future_task5_private_qualification"},
+        {"from": "map_builder", "relation": "documents_boundary", "to": "task5_closed_cli"},
     ]
     graph = {
         "generated_at": GENERATED_AT_ANTIGRAVITY,
@@ -473,7 +473,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "flows": [
             "governance_test -> docs/ledgers/map",
             "Task 2 foundation -> Task 3 scoring -> Task 4 qualification/evaluation/artifacts/replay/dashboard",
-            "Task 4 artifacts/replay -> future Task 5 private qualification",
+            "Task 4 artifacts/replay -> Task 5 closed CLI",
         ],
         "flow_count": 3,
     }
@@ -482,8 +482,10 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "tracked Exp463 control evidence file -> control evidence loader -> contracts/predecessor",
         "raw evidence codecs -> Task 3 scoring -> Task 4 qualification/replay",
         "Task 2 foundation -> Task 3 scoring -> Task 4 qualification/evaluation/artifacts/replay/dashboard",
-        "Task 5 launcher/test -> closed CLI -> Task 4 qualification/evaluation/artifacts/replay -> private result truth",
-        "Task 4 artifacts/replay -> future Task 5 private qualification",
+        "Task 5 launcher/test -> closed CLI -> Task 4 qualification/evaluation/artifacts/replay -> private non-official result truth",
+        "Task 4 artifacts/replay -> Task 5 closed CLI",
+        "internal official lifecycle authority -> Task 4 artifacts/replay -> exact official root",
+        "Task 5 closed CLI -> future exactly-two sequential private TRAIN reproductions gate",
     ]
     graph["flow_count"] = len(graph["flows"])
     return graph
@@ -494,11 +496,11 @@ def _build_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         "<!doctype html>\n"
         '<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n'
-        "<title>Exp464 Task 5 CLI Boundary Code Map</title>\n"
+        "<title>Exp464 Task 5 Closed CLI Code Map</title>\n"
         "<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}</style></head>\n"
         "<body><main>\n"
         "<h1>Exp464 Task 5 closed-CLI boundary code map</h1>\n"
-        "<p>이 map은 <code>task_4_complete_pending_task_5</code> 상태를 유지한 채, Task 5 Phase A에서 추가된 closed CLI·launcher·CLI test boundary를 설명한다. 아직 private/official lifecycle은 열리지 않았고, 다음 단계는 reviewed CLI 이후 정확히 두 번의 순차 private TRAIN reproduction이다.</p>\n"
+        "<p>이 map은 <code>task_4_complete_pending_task_5</code> 상태를 유지한 채, 구현된 Task 5 closed CLI·launcher·CLI test boundary를 설명한다. 공개 표면은 non-official private root만 허용하고, exact official root는 내부 official lifecycle authority 경로에만 예약되어 있다. 다음 단계는 reviewed CLI 이후 정확히 두 번의 순차 private TRAIN reproduction이다.</p>\n"
         f'<script id="graph-data" type="application/json">{payload}</script>\n'
         "</main></body></html>\n"
     )

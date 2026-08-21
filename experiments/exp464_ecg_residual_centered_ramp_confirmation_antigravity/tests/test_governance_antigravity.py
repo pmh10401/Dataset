@@ -132,7 +132,9 @@ EXPECTED_NODE_IDS_ANTIGRAVITY = {
     "task4_artifacts_test",
     "task4_replay_test",
     "task4_dashboard_test",
-    "future_task5_private_qualification",
+    "task5_closed_cli",
+    "task5_launcher",
+    "task5_cli_test",
 }
 EXPECTED_TRACKED_FINGERPRINTS_ANTIGRAVITY = {
     f"{PACKAGE_ANTIGRAVITY}/control_row_evidence_antigravity.py",
@@ -433,8 +435,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         html_text = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(
             encoding="utf-8",
         )
-        self.assertEqual(graph["graph_schema"], "exp464_task4_results_codemap_v1")
-        self.assertEqual(lock["lock_schema"], "exp464_task4_results_codemap_lock_v1")
+        self.assertEqual(graph["graph_schema"], "exp464_task5_closed_cli_codemap_v1")
+        self.assertEqual(lock["lock_schema"], "exp464_task5_closed_cli_codemap_lock_v1")
         self.assertEqual(tuple(graph["triplet_paths"]), TRIPLET_ANTIGRAVITY)
         self.assertEqual(lock["generated_files"], list(TRIPLET_ANTIGRAVITY))
         self.assertEqual(graph["source_parent"], lock["source_parent"])
@@ -456,7 +458,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertTrue(EXPECTED_EDGE_TRIPLES_ANTIGRAVITY.issubset(edge_triples))
         self.assertTrue(EXPECTED_FLOWS_ANTIGRAVITY.issubset(set(graph["flows"])))
         self.assertIn(STATUS_ANTIGRAVITY, html_text)
-        self.assertIn("Task 5 private qualification", html_text)
+        self.assertIn("Task 5 closed-CLI boundary code map", html_text)
+        self.assertIn("internal official lifecycle authority", html_text)
 
         process_output = subprocess.check_output(
             ["ps", "-Ao", "pid=,command="],
