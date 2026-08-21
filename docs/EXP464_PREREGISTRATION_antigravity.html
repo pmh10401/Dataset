@@ -4,7 +4,7 @@
 <style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem;border-left:6px solid #2457a6}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
 <h1>Exp464 사전등록</h1>
-<p>이 문서는 Exp464의 과학 계약을 계속 고정한다. 현재 실행 상태는 <code>stopped_before_official_evaluation_qualification_failed</code>이며, clean reviewed commit <code>b8646d0fa9bd57dcb1f6ab5e251064d34911a41c</code>에서 두 번의 exact-equal private TRAIN reproduction을 마친 뒤 C6 qualification failure로 멈췄다. 과학 계약 자체는 바뀌지 않았고 official lifecycle은 여전히 열지 않는다.</p>
+<p>이 문서는 Exp464의 과학 계약을 계속 고정한다. 현재 실행 상태는 <code>stopped_before_official_evaluation_qualification_failed</code>이며, clean reviewed commit <code>b8646d0fa9bd57dcb1f6ab5e251064d34911a41c</code>에서 두 번의 exact-equal private TRAIN reproduction을 마친 뒤 C6 qualification failure로 종료되었다. 최종 review는 SHIP (spec PASS, quality APPROVED, C/I/M0)이며 Task 5는 닫혔지만 과학 계약 자체는 바뀌지 않았고 official lifecycle은 열지 않는다.</p>
 <table>
 <tr><th>experiment / kind</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
@@ -41,5 +41,5 @@
 <div class="stop"><strong>중단 규칙:</strong> 하나라도 실패하면 공식 실행은 없다. cosine, onset, seed, fold, 방법 순서, 주 후보를 결과를 본 뒤 바꾸지 않는다. M4는 진단 근거이지 승격 후보가 아니다.</div>
 
 <h2>현재 handoff truth</h2>
-<div class="box"><p>scientific contract stays frozen. 계획 checkbox는 여전히 정확히 <code>28/42</code>이며 Task 1–4만 checked다. Task 5의 두 private reproduction은 완료되었지만 fresh review가 끝나지 않아 Task 5와 Task 6은 각각 0/7 unchecked 상태로 유지된다. private roots are retained for fresh review, official command·official root·TEST label query는 계속 0이다.</p></div>
+<div class="box"><p>scientific contract stays frozen. 계획 checkbox는 이제 정확히 <code>35/42</code>이며 Task 1–5가 checked다. Task 5 final review는 SHIP이며 C6의 sole failure는 seed <code>20261721</code> fold <code>3</code> gradual_drift AUC <code>0.8402557718424627</code> &lt; <code>0.85</code>였다. C8은 <code>10/10</code>이지만 non-promotable clue다. explicit private roots는 review 후 recoverable move 되었고 official command·official root·TEST label query는 계속 0이다. There is no next official action.</p></div>
 </main></body></html>

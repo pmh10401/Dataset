@@ -186,42 +186,42 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
-            "Caller: Task 5 result review. Effect: records stopped_before_official_evaluation_qualification_failed with exactly twenty-eight checked boxes for Tasks 1–4 while Task 5/6 remain 0/7 unchecked pending fresh review.",
+            "Caller: Task 5 reviewed closeout. Effect: records stopped_before_official_evaluation_qualification_failed with exactly thirty-five checked boxes for Tasks 1–5 while Task 6 remains 0/7 unchecked and permanently forbidden.",
             symbol="stopped_before_official_evaluation_qualification_failed",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: summarizes the two exact-equal private Task 5 reproductions, the frozen C6 qualification failure, and the retained-root fresh-review boundary.",
-            symbol="Exp464 대시보드 — Task 5 private 재현 완료, fresh review 대기",
+            "Caller: status review. Effect: summarizes the two exact-equal private Task 5 reproductions, the frozen C6 qualification failure, the SHIP review, and the removed-after-review recoverable private-root boundary.",
+            symbol="Exp464 대시보드 — Task 5 최종 closeout, Task 6 금지",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "preregistration",
             "docs/EXP464_PREREGISTRATION_antigravity.html",
-            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the unchanged 28/42 checkbox truth after Task 5 qualification failure.",
+            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the final 35/42 checkbox truth after Task 5 review SHIP closeout.",
             symbol="Frozen qualification gates for C6",
             tests=(governance_test, task4_qualification_test, task4_evaluation_test),
         ),
         _node_antigravity(
             "runbook",
             "docs/EXP464_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: records that exactly two sequential private TRAIN reproductions already finished, keeps both private roots retained for review, and continues blocking official evaluate/inspect, TEST labels, and promotion.",
+            "Caller: future operators. Effect: records that exactly two sequential private TRAIN reproductions already finished, that both explicit private roots were recoverably moved after review, and that official evaluate/inspect, TEST labels, promotion, and Task 6 remain forbidden.",
             symbol="Exp464 Task 5 post-run operator boundary",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 5 result review. Effect: records exact private-run hashes, timings, retained pre-science failures, tracked numpy_cpu frozen-interpreter fallback authority, and the qualification-failed stop boundary.",
-            symbol="Exp464 구현 보고서 — Task 5 private reproducibility complete",
+            "Caller: Task 5 reviewed closeout. Effect: records exact private-run hashes, timings, retained pre-science failures, the sole C6 failure row, the C8 non-promotable clue, tracked numpy_cpu frozen-interpreter fallback authority, and the qualification-failed terminal boundary.",
+            symbol="Exp464 구현 보고서 — Task 5 reviewed closeout complete",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores stopped_before_official_evaluation_qualification_failed, the two exact-equal private non-official reproductions, retained review roots, and still-zero official/label counts with all official result hashes null.",
+            "Caller: active research ledger. Effect: stores stopped_before_official_evaluation_qualification_failed, the two exact-equal private non-official reproductions, removed-after-review recoverable root locations, still-zero official/label counts, and all-official-result hashes null.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
@@ -485,7 +485,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "Task 5 launcher/test -> closed CLI -> Task 4 qualification/evaluation/artifacts/replay -> private non-official result truth",
         "Task 4 artifacts/replay -> Task 5 closed CLI",
         "internal official lifecycle authority -> Task 4 artifacts/replay -> exact official root",
-        "Task 5 closed CLI -> two completed exact-equal private TRAIN reproductions -> fresh review gate",
+        "Task 5 closed CLI -> two completed exact-equal private TRAIN reproductions -> final review SHIP -> Task 6 forbidden",
     ]
     graph["flow_count"] = len(graph["flows"])
     return graph
@@ -500,7 +500,7 @@ def _build_html_antigravity(graph: dict[str, Any]) -> str:
         "<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}</style></head>\n"
         "<body><main>\n"
         "<h1>Exp464 Task 5 closed-CLI boundary code map</h1>\n"
-        "<p>이 map은 <code>stopped_before_official_evaluation_qualification_failed</code> 상태에서, 구현된 Task 5 closed CLI·launcher·CLI test boundary와 이미 끝난 두 번의 exact-equal private TRAIN reproduction truth를 설명한다. private seam은 non-official root만 허용하며 invalid private root는 validation이나 heavy compute 전에 거부된다. public dispatch는 exact official root를 내부 official lifecycle identity 경로로만 운반한다. 현재 단계는 retained private roots에 대한 fresh review이며 Task 6은 blocked다.</p>\n"
+        "<p>이 map은 <code>stopped_before_official_evaluation_qualification_failed</code> 상태에서, 구현된 Task 5 closed CLI·launcher·CLI test boundary와 이미 끝난 두 번의 exact-equal private TRAIN reproduction truth를 설명한다. private seam은 non-official root만 허용하며 invalid private root는 validation이나 heavy compute 전에 거부된다. public dispatch는 exact official root를 내부 official lifecycle identity 경로로만 운반한다. final review는 SHIP이며 explicit private roots는 review 후 recoverable move 되었고 Task 6은 permanently forbidden이다.</p>\n"
         f'<script id="graph-data" type="application/json">{payload}</script>\n'
         "</main></body></html>\n"
     )

@@ -1786,8 +1786,8 @@
       "experiment": "Exp464",
       "kind": "ecg_residual_centered_ramp_confirmation_qualification",
     "status": "stopped_before_official_evaluation_qualification_failed",
-    "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
-    "reason": "Task 5 private TRAIN campaign completed exactly two sequential evaluate-to-inspect reproductions at clean reviewed commit b8646d0fa9bd57dcb1f6ab5e251064d34911a41c. The two roots /private/tmp/exp464_task5_private_run1_antigravity and /private/tmp/exp464_task5_private_run2_antigravity are exact-equal for all 90 metric rows, 30 failed rows, nine summaries, decision, dashboard, seven leaf bytes/hashes, and canonical stdout payload. Primary C6 template_residual_centered_ramp_confirmed_max passed 9/10 because one gradual_drift row remained at 0.8402557718424627 below 0.85, so frozen qualification failed and status is stopped_before_official_evaluation_qualification_failed. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, and champion, pending candidate, routing, and promotion remain unchanged. Two earlier pre-science wrapper failures were retained and disclosed: reviewed-commit mismatch and duplicate-process false positive; neither created a result root or counts as a reproduction. Both private scientific roots are retained for fresh review. Task 5 checkboxes remain unchecked and Task 6 is blocked.",
+    "implementation_status": "task_5_review_ship_qualification_failed_task_6_forbidden",
+    "reason": "Task 5 private TRAIN campaign completed exactly two sequential evaluate-to-inspect reproductions at clean reviewed commit b8646d0fa9bd57dcb1f6ab5e251064d34911a41c. The two roots matched exactly for all 90 metric rows, 30 failed rows, nine summaries, decision, dashboard, seven leaf bytes/hashes, and canonical stdout payload. Primary C6 template_residual_centered_ramp_confirmed_max passed 9/10 because the sole failed record was seed 20261721 fold 3 gradual_drift AUC 0.8402557718424627 below 0.85, so frozen qualification failed and status remains stopped_before_official_evaluation_qualification_failed. C8 passed 10/10 but remains a non-promotable clue only. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0), completing Task 5 (7/7 checked). The explicit private roots were removed after review into the recoverable directory /private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821; aggregate logs, report, and hashes remain retained. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, official result hashes remain null, and champion, pending candidate, routing, and promotion remain unchanged. Two earlier pre-science wrapper failures remain disclosed and non-scientific. Task 6 is permanently forbidden and there is no next official action.",
       "run_identity": "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
       "run_root": "/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821",
       "package": "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity",
@@ -1877,11 +1877,20 @@
           {"run": 1, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 269.67, "inspect_seconds": 6.62},
           {"run": 2, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 261.50, "inspect_seconds": 6.64}
         ],
-        "temporary_roots_removed": false,
-        "private_roots": [
-          "/private/tmp/exp464_task5_private_run1_antigravity",
-          "/private/tmp/exp464_task5_private_run2_antigravity"
+        "temporary_roots_removed": true,
+        "private_roots": null,
+        "removed_private_roots_recoverable_parent": "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821",
+        "removed_private_roots_entries": [
+          "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run1_antigravity",
+          "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run2_antigravity"
         ],
+        "final_review_ship": {
+          "spec": "PASS",
+          "quality": "APPROVED",
+          "critical": 0,
+          "important": 0,
+          "minor": 0
+        },
         "row_count": 90,
         "failed_row_count": 30,
         "summary_count": 9,
@@ -1915,6 +1924,19 @@
           "gradual_drift": 0.8402557718424627,
           "level_shift": 0.9411749911976258,
           "period_change": 0.907392736783864
+        },
+        "sole_failed_record": {
+          "seed": 20261721,
+          "fold_index": 3,
+          "type": "gradual_drift",
+          "auc": 0.8402557718424627,
+          "threshold": 0.85
+        },
+        "non_promotable_clue": {
+          "method": "C8",
+          "passed_count": 10,
+          "required_count": 10,
+          "promotable": false
         },
         "method_pass_counts": {
           "C0": {"passed_count": 9, "failed_count": 1},

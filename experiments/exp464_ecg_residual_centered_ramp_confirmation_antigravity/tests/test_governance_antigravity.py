@@ -83,6 +83,15 @@ PRIVATE_ROOTS_ANTIGRAVITY = (
     "/private/tmp/exp464_task5_private_run1_antigravity",
     "/private/tmp/exp464_task5_private_run2_antigravity",
 )
+REMOVED_PRIVATE_ROOTS_PARENT_ANTIGRAVITY = (
+    "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821"
+)
+REMOVED_PRIVATE_ROOTS_ENTRIES_ANTIGRAVITY = (
+    "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/"
+    "exp464_task5_private_run1_antigravity",
+    "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/"
+    "exp464_task5_private_run2_antigravity",
+)
 DESIGN_SHA256_ANTIGRAVITY = (
     "d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f"
 )
@@ -94,23 +103,24 @@ PREDECESSOR_ARTIFACT_MAP_SHA256_ANTIGRAVITY = (
 PRIMARY_CANDIDATE_ANTIGRAVITY = "template_residual_centered_ramp_confirmed_max"
 STATUS_ANTIGRAVITY = "stopped_before_official_evaluation_qualification_failed"
 IMPLEMENTATION_STATUS_ANTIGRAVITY = (
-    "task_5_private_train_reproducibility_complete_qualification_failed"
+    "task_5_review_ship_qualification_failed_task_6_forbidden"
 )
+ACTIVE_PHASE_ANTIGRAVITY = "task_5_review_ship_qualification_failed_task_6_forbidden"
 DECISION_STATUS_ANTIGRAVITY = "qualification_failed_blocked_before_routing_research"
 METHOD_ORDER_ANTIGRAVITY = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8")
 EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY = 42
-EXPECTED_CHECKED_COUNT_ANTIGRAVITY = 28
+EXPECTED_CHECKED_COUNT_ANTIGRAVITY = 35
 EXPECTED_NEXT_ACTION_ANTIGRAVITY = (
-    "fresh_review_exp464_task5_private_qualification_failed_stop_no_task6"
+    "none_exp464_task5_review_ship_terminal_qualification_failed"
 )
 EXPECTED_EXACT_NEXT_COMMAND_ANTIGRAVITY = (
-    "fresh_sol_high_read_only_review_current_clean_head"
+    "none_exp464_task5_review_ship_terminal_qualification_failed"
 )
 EXPECTED_INTERRUPTED_COMMAND_ANTIGRAVITY = (
-    "none_exp464_task5_private_runs_complete_wait_for_fresh_review"
+    "none_exp464_task5_review_complete_no_interrupted_run"
 )
 EXPECTED_OFFICIAL_COMMAND_ANTIGRAVITY = (
-    "none_exp464_task6_forbidden_after_task5_qualification_failed"
+    "none_exp464_task6_permanently_forbidden_after_task5_review_ship"
 )
 EXPECTED_PENDING_ANTIGRAVITY = {
     "evaluation": None,
@@ -175,7 +185,7 @@ EXPECTED_FLOWS_ANTIGRAVITY = {
     "tracked Exp463 control evidence file -> control evidence loader -> contracts/predecessor",
     "raw evidence codecs -> Task 3 scoring -> Task 4 qualification/replay",
     "Task 5 launcher/test -> closed CLI -> Task 4 qualification/evaluation/artifacts/replay -> private non-official result truth",
-    "Task 5 closed CLI -> two completed exact-equal private TRAIN reproductions -> fresh review gate",
+    "Task 5 closed CLI -> two completed exact-equal private TRAIN reproductions -> final review SHIP -> Task 6 forbidden",
 }
 EXPECTED_LEAVES_ANTIGRAVITY = (
     "artifact_sha256_antigravity.json",
@@ -347,7 +357,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
     def _assert_task5_result_antigravity(self, result: dict[str, Any]) -> None:
         self.assertEqual(result["reviewed_commit"], REVIEWED_COMMIT_ANTIGRAVITY)
         self.assertEqual(result["status"], DECISION_STATUS_ANTIGRAVITY)
-        self.assertFalse(result["temporary_roots_removed"])
+        self.assertTrue(result["temporary_roots_removed"])
         self.assertEqual(result["row_count"], 90)
         self.assertEqual(result["failed_row_count"], 30)
         self.assertEqual(result["summary_count"], 9)
@@ -362,15 +372,39 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(result["primary_required_count"], 10)
         self.assertEqual(result["label_query_count"], 0)
         self.assertFalse(result["official_root_exists_after"])
-        self.assertEqual(result["private_roots"], list(PRIVATE_ROOTS_ANTIGRAVITY))
+        self.assertIsNone(result["private_roots"])
+        self.assertEqual(
+            result["removed_private_roots_recoverable_parent"],
+            REMOVED_PRIVATE_ROOTS_PARENT_ANTIGRAVITY,
+        )
+        self.assertEqual(
+            result["removed_private_roots_entries"],
+            list(REMOVED_PRIVATE_ROOTS_ENTRIES_ANTIGRAVITY),
+        )
+        self.assertEqual(
+            result["final_review_ship"],
+            {
+                "spec": "PASS",
+                "quality": "APPROVED",
+                "critical": 0,
+                "important": 0,
+                "minor": 0,
+            },
+        )
         self.assertEqual(result["leaf_sha256"], EXPECTED_LEAF_SHA256_ANTIGRAVITY)
         self.assertEqual(result["leaf_bytes"], EXPECTED_LEAF_BYTES_ANTIGRAVITY)
         self.assertEqual(
             result["method_pass_counts"],
             EXPECTED_METHOD_PASS_COUNTS_ANTIGRAVITY,
         )
-        self.assertEqual(result["pre_science_failures_retained"], list(EXPECTED_FAILURES_ANTIGRAVITY))
-        self.assertEqual(result["overlap_nonresult"], {"pre_science_failures_retained": 2, "writes": False})
+        self.assertEqual(
+            result["pre_science_failures_retained"],
+            list(EXPECTED_FAILURES_ANTIGRAVITY),
+        )
+        self.assertEqual(
+            result["overlap_nonresult"],
+            {"pre_science_failures_retained": 2, "writes": False},
+        )
         self.assertEqual(
             result["exact_equality"],
             {
@@ -404,6 +438,25 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 },
             ],
         )
+        self.assertEqual(
+            result["sole_failed_record"],
+            {
+                "seed": 20261721,
+                "fold_index": 3,
+                "type": "gradual_drift",
+                "auc": 0.8402557718424627,
+                "threshold": 0.85,
+            },
+        )
+        self.assertEqual(
+            result["non_promotable_clue"],
+            {
+                "method": "C8",
+                "passed_count": 10,
+                "required_count": 10,
+                "promotable": False,
+            },
+        )
         decision = result["decision"]
         self.assertEqual(decision["status"], DECISION_STATUS_ANTIGRAVITY)
         self.assertEqual(decision["primary_candidate"], PRIMARY_CANDIDATE_ANTIGRAVITY)
@@ -425,7 +478,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
     def test_exp464_task5_private_runs_complete_and_task6_blocked_antigravity(
         self,
     ) -> None:
-        """Break caught: private-run result truth, retained roots, or blocked Task 6 drift."""
+        """Break caught: reviewed-closeout truth, cleanup evidence, or forbidden-Task-6 drift."""
 
         required_files = (
             (PLAN_ANTIGRAVITY, DESIGN_ANTIGRAVITY, TASK4_REPORT_ANTIGRAVITY, TASK5_REPORT_ANTIGRAVITY)
@@ -453,12 +506,22 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertFalse(official_root.is_symlink(), OFFICIAL_ROOT_ANTIGRAVITY)
         for private_root_text in PRIVATE_ROOTS_ANTIGRAVITY:
             private_root = Path(private_root_text)
-            self.assertTrue(private_root.is_dir(), private_root_text)
             self.assertFalse(private_root.is_symlink(), private_root_text)
-            leaves = sorted(path.name for path in private_root.iterdir() if path.is_file())
+            self.assertFalse(private_root.exists(), private_root_text)
+        removed_parent = Path(REMOVED_PRIVATE_ROOTS_PARENT_ANTIGRAVITY)
+        self.assertTrue(removed_parent.is_dir(), REMOVED_PRIVATE_ROOTS_PARENT_ANTIGRAVITY)
+        self.assertFalse(
+            removed_parent.is_symlink(),
+            REMOVED_PRIVATE_ROOTS_PARENT_ANTIGRAVITY,
+        )
+        for removed_root_text in REMOVED_PRIVATE_ROOTS_ENTRIES_ANTIGRAVITY:
+            removed_root = Path(removed_root_text)
+            self.assertTrue(removed_root.is_dir(), removed_root_text)
+            self.assertFalse(removed_root.is_symlink(), removed_root_text)
+            leaves = sorted(path.name for path in removed_root.iterdir() if path.is_file())
             self.assertEqual(leaves, sorted(EXPECTED_LEAVES_ANTIGRAVITY))
             for leaf_name in EXPECTED_LEAVES_ANTIGRAVITY:
-                leaf_path = private_root / leaf_name
+                leaf_path = removed_root / leaf_name
                 self.assertEqual(leaf_path.stat().st_size, EXPECTED_LEAF_BYTES_ANTIGRAVITY[leaf_name])
                 self.assertEqual(
                     hashlib.sha256(leaf_path.read_bytes()).hexdigest(),
@@ -509,7 +572,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self._assert_task5_result_antigravity(record["task5_private_train_result"])
 
         self.assertEqual(research_state["active_experiment"], "Exp464")
-        self.assertEqual(research_state["active_phase"], STATUS_ANTIGRAVITY)
+        self.assertEqual(research_state["active_phase"], ACTIVE_PHASE_ANTIGRAVITY)
         self.assertEqual(research_state["status"], STATUS_ANTIGRAVITY)
         self.assertEqual(research_state["next_action"], EXPECTED_NEXT_ACTION_ANTIGRAVITY)
         self.assertEqual(
@@ -529,8 +592,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             REVIEWED_COMMIT_ANTIGRAVITY,
         )
         self.assertEqual(research_state["pending_candidate"], EXPECTED_PENDING_ANTIGRAVITY)
-        self.assertIn("retained for fresh review", research_state["pause_reason"])
-        self.assertIn("Do not run Task 6", research_state["pause_reason"])
+        self.assertIn("final review is SHIP", research_state["pause_reason"])
+        self.assertIn("removed after review", research_state["pause_reason"])
+        self.assertIn("Task 6 is permanently forbidden", research_state["pause_reason"])
+        self.assertIn("no next official action", research_state["pause_reason"])
 
         for text in (
             state_record["notes"],
@@ -543,32 +608,38 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 text,
             )
             self.assertIn("0.8402557718424627 below 0.85", text)
+            self.assertIn("C8 passed 10/10 but remains a non-promotable clue only", text)
             self.assertIn("Official evaluate/inspect counts remain 0", text)
-            self.assertIn("Task 5 checkboxes remain unchecked and Task 6 is blocked", text)
-            self.assertIn("reviewed-commit mismatch", text)
-            self.assertIn("duplicate-process false positive", text)
+            self.assertIn("Final review is SHIP (spec PASS, quality APPROVED, C/I/M0)", text)
+            self.assertIn("Task 5 (7/7 checked)", text)
+            self.assertIn("removed after review", text)
+            self.assertIn("Task 6 is permanently forbidden", text)
+            self.assertIn("there is no next official action", text)
+            self.assertIn(
+                "Two earlier pre-science wrapper failures remain disclosed and non-scientific",
+                text,
+            )
 
         plan_text = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
         self.assertIn(STATUS_ANTIGRAVITY, plan_text)
         self.assertIn(REVIEWED_COMMIT_ANTIGRAVITY, plan_text)
-        self.assertIn("28/42", plan_text)
+        self.assertIn("35/42", plan_text)
         self.assertIn("9/10", plan_text)
-        self.assertIn("retained for fresh review", plan_text)
-        self.assertIn("Task 5 checkboxes remain unchecked", plan_text)
-        self.assertIn("Task 6 is blocked", plan_text)
+        self.assertIn("recoverable move", plan_text)
+        self.assertIn("Task 6 is permanently forbidden", plan_text)
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY)
         self.assertEqual(checkbox_parser.checked_count, EXPECTED_CHECKED_COUNT_ANTIGRAVITY)
         task4_marker = '<h2><label><input type="checkbox" checked disabled> Task 4 —'
-        task5_marker = '<h2><label><input type="checkbox" disabled> Task 5 —'
+        task5_marker = '<h2><label><input type="checkbox" checked disabled> Task 5 —'
         task6_marker = '<h2><label><input type="checkbox" disabled> Task 6 —'
         task4_section = plan_text[plan_text.index(task4_marker):plan_text.index(task5_marker)]
         task5_section = plan_text[plan_text.index(task5_marker):plan_text.index(task6_marker)]
         task6_section = plan_text[plan_text.index(task6_marker):]
         self.assertEqual(task4_section.count('type="checkbox" checked disabled'), 7)
-        self.assertEqual(task5_section.count('type="checkbox" checked disabled'), 0)
-        self.assertEqual(task5_section.count('type="checkbox" disabled'), 7)
+        self.assertEqual(task5_section.count('type="checkbox" checked disabled'), 7)
+        self.assertEqual(task5_section.count('type="checkbox" disabled'), 0)
         self.assertEqual(task6_section.count('type="checkbox" checked disabled'), 0)
         self.assertEqual(task6_section.count('type="checkbox" disabled'), 7)
 
@@ -583,13 +654,15 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn(STATUS_ANTIGRAVITY, dashboard_text)
         self.assertIn("정확히 두 번의 순차 evaluate→inspect reproduction", dashboard_text)
         self.assertIn(OFFICIAL_ROOT_ANTIGRAVITY, dashboard_text)
-        self.assertIn("Task 6은 blocked", dashboard_text)
+        self.assertIn("Task 6은 permanently forbidden", dashboard_text)
+        self.assertIn("recoverable move", dashboard_text)
 
         preregistration_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[1]).read_text(
             encoding="utf-8",
         )
         self.assertIn("scientific contract stays frozen", preregistration_text)
-        self.assertIn("private roots are retained for fresh review", preregistration_text)
+        self.assertIn("Task 5 final review는 SHIP", preregistration_text)
+        self.assertIn("recoverable move", preregistration_text)
         self.assertIn("private scientific run은 정확히 2회 완료", preregistration_text)
 
         runbook_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[2]).read_text(
@@ -598,6 +671,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("exactly two private TRAIN reproductions already finished", runbook_text)
         self.assertIn("Do not run Task 6", runbook_text)
         self.assertIn("official root must stay absent", runbook_text)
+        self.assertIn("removed after review", runbook_text)
 
         implementation_report_text = (
             ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]
@@ -606,6 +680,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("exactly two private evaluate→inspect reproductions", implementation_report_text)
         self.assertIn("private-run result hashes", implementation_report_text)
         self.assertIn("selected backend: <code>numpy_cpu</code>", implementation_report_text)
+        self.assertIn("Final review is SHIP", implementation_report_text)
+        self.assertIn("Task 6 permanently forbidden", implementation_report_text)
 
         task4_report_text = (ROOT_ANTIGRAVITY / TASK4_REPORT_ANTIGRAVITY).read_text(
             encoding="utf-8",
@@ -618,7 +694,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn(REVIEWED_COMMIT_ANTIGRAVITY, task5_report_text)
         self.assertIn("0.8402557718424627", task5_report_text)
         self.assertIn("exactly two sequential private non-official evaluate→inspect reproductions", task5_report_text)
-        self.assertIn("fresh review", task5_report_text)
+        self.assertIn("Final review is SHIP (spec PASS, quality APPROVED, C/I/M0)", task5_report_text)
+        self.assertIn(REMOVED_PRIVATE_ROOTS_PARENT_ANTIGRAVITY, task5_report_text)
+        self.assertIn("Original explicit private roots are absent after the move", task5_report_text)
+        self.assertIn("Task 6 is permanently forbidden", task5_report_text)
 
         builder = load_builder_module_antigravity()
         triplet_summary = builder.build_triplet_antigravity(validate_only=True)
@@ -660,6 +739,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("Task 5 closed-CLI boundary code map", html_text)
         self.assertIn("두 번의 exact-equal private TRAIN reproduction truth", html_text)
         self.assertIn("internal official lifecycle authority", html_text)
+        self.assertIn("final review는 SHIP", html_text)
+        self.assertIn("Task 6은 permanently forbidden", html_text)
 
         process_output = subprocess.check_output(
             ["ps", "-Ao", "pid=,command="],

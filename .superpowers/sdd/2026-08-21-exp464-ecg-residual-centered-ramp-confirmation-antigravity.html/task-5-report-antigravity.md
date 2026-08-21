@@ -110,7 +110,9 @@ Additional verification:
 - strict JSON parse for the three ledgers and the Exp464 map JSON/lock: `OK`
 - `git diff --check`: `OK`
 - official root direct check: absent and non-symlink
-- both retained private roots direct check: present and non-symlink
+- both explicit private roots direct check before cleanup: present and non-symlink
+- both original explicit private roots direct check after cleanup: absent and non-symlink
+- both recoverably moved private-root entries direct check after cleanup: present and non-symlink
 - official evaluate / inspect counts: `0 / 0`
 - label query count: `0`
 - active Exp464 launcher/process count after verification: `0`
@@ -151,7 +153,12 @@ Exact equality:
 - run2 evaluate == run2 inspect: `true`
 - run1 == run2: `true`
 
-Retained private roots:
+Recoverably moved private roots after review:
+
+- `/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run1_antigravity`
+- `/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run2_antigravity`
+
+Original explicit private roots are absent after the move:
 
 - `/private/tmp/exp464_task5_private_run1_antigravity`
 - `/private/tmp/exp464_task5_private_run2_antigravity`
@@ -216,7 +223,7 @@ Non-degradation summary:
 - gradual rows not below C0: `10`
 - period rows not below C0: `10`
 
-The frozen decision is qualification failure. Task 6 remains blocked and unchecked. Champion, pending candidate, routing, promotion, and scientific winner state remain unchanged.
+The frozen decision is qualification failure. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0). Task 5 is now 7/7 checked, Task 6 is permanently forbidden and remains unchecked, and there is no next official action. Champion, pending candidate, routing, promotion, and scientific winner state remain unchanged.
 
 ## Implemented and touched files
 
@@ -245,7 +252,7 @@ The frozen decision is qualification failure. Task 6 remains blocked and uncheck
 - Official root remained absent throughout Task 5.
 - Official evaluate / inspect counts stayed `0 / 0`.
 - TEST label-query count stayed `0`.
-- Both scientific private roots are retained for fresh reviewer inspection and were not removed in this closeout.
+- Both scientific private roots were reverified after review, then recoverably moved into `/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821`. Aggregate logs, report, and hashes remain retained.
 
 ## Commit boundary
 
