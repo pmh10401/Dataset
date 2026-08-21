@@ -60,7 +60,7 @@ self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
 <h2><label><input type="checkbox" disabled checked>Task 3 — prefix-scaled ramp and seven method scores</label></h2>
 <p><strong>Files:</strong> Create <code>ramp_features_antigravity.py</code>, <code>scoring_antigravity.py</code> and matching tests. Modify dashboard/report/plan/map.</p>
 <p><strong>Produces:</strong> <code>prefix_ramp_score_antigravity(values: numpy.ndarray) -&gt; float</code> and <code>score_fold_methods_antigravity(...) -&gt; FoldMethodScoresAntigravity</code> with ordered M0–M6 scores.</p>
-<p><strong>Current state:</strong> Task 3 is complete after fresh review SHIP (spec PASS, quality APPROVED, C/I0), and Task 4 is now closed 7/7 after its SHIP review. Task 5 is next; no private full TRAIN result, official execution, or label query occurred.</p>
+<p><strong>Historical state:</strong> Task 3 was complete after fresh review SHIP (spec PASS, quality APPROVED, C/I0), and Task 4 was then closed 7/7 after its SHIP review. Task 5 is now also complete after private TRAIN review SHIP; official execution and label query remain 0.</p>
 <p><strong>Deferred review note:</strong> MLX numeric-parity evidence remains a minor for Task 5; the frozen CPU implementation remains selected.</p>
 <ol>
 <li><label><input type="checkbox" disabled checked>Step 1 — RED independent NumPy reference for prefix median/MAD, onset 56, normalized ramp vector, signed dot product, exact rank formula and 0.995 boundary.</label><pre><code>expected_rank = (1 + numpy.count_nonzero(reference &lt;= score)) / (len(reference) + 1)
@@ -77,7 +77,7 @@ expected = numpy.maximum(r461, rramp) if rramp &gt;= 0.995 else r461</code></pre
 <h2><label><input type="checkbox" disabled checked>Task 4 — blocked qualification, publication, semantic replay</label></h2>
 <p><strong>Files:</strong> Create <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code> and five tests. Modify dashboard/report/plan/map.</p>
 <p><strong>Produces:</strong> 70 ordered metric rows (7 methods × 2 seeds × 5 folds), seven summaries, decision, aggregate dashboard, exact canonical publication and source-free replay.</p>
-<p><strong>Current state:</strong> Task 4 review is SHIP (spec PASS, quality APPROVED, C/I0). The focused tests cover score-derived four-type metrics, every frozen M2 gate including exact Exp463 historical boundaries, M0/M6 contract separation, the exact seven canonical leaves, and the full canonical-rehashed tamper matrix. Task 4 heading plus six steps are closed 7/7; Task 5 is next.</p>
+<p><strong>Historical state:</strong> Task 4 review is SHIP (spec PASS, quality APPROVED, C/I0). The focused tests cover score-derived four-type metrics, every frozen M2 gate including exact Exp463 historical boundaries, M0/M6 contract separation, the exact seven canonical leaves, and the full canonical-rehashed tamper matrix. Task 4 heading plus six steps are closed 7/7; Task 5 subsequently completed its private review SHIP, and no next official action is allowed.</p>
 <ol>
 <li><label><input type="checkbox" disabled checked>Step 1 — RED blocked qualification: four ordered AUCs, pooled mean, Wilson, finite, M0/M6 predecessor reproduction, M2 primary 10/10 and all frozen gates.</label></li>
 <li><label><input type="checkbox" disabled checked>Step 2 — 평가기가 stored score evidence에서 metrics/summaries/decision을 다시 계산하도록 구현한다. 호출자가 넘긴 pass boolean은 신뢰하지 않는다.</label></li>
