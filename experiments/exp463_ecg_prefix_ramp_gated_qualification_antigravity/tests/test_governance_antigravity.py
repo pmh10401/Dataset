@@ -264,6 +264,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertFalse(record["scientific_winner_selected"])
                 self.assertFalse(record["review_only"])
                 self.assertFalse(record["official_root_present"])
+                ledger_text = str(record.get("notes", record.get("reason", "")))
+                self.assertIn("Task 4 review is SHIP", ledger_text)
+                self.assertIn("Task 5 is next", ledger_text)
 
         state = strict_json_antigravity(ROOT_ANTIGRAVITY / "RESEARCH_STATE.json")
         champion = strict_json_antigravity(ROOT_ANTIGRAVITY / "CHAMPION_LEDGER.json")
@@ -321,7 +324,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             encoding="utf-8"
         )
         for phrase in (
-            "Exp463 Task 3",
+            "Exp463 Task 4",
             "SHIP",
             "task_4_complete_pending_task_5",
             "RED",
@@ -331,6 +334,9 @@ class GovernanceAntigravityTest(unittest.TestCase):
             DESIGN_SHA256_ANTIGRAVITY,
             "040422f62406e3ca19038b9609903c4ba76e1694",
             "Task 3",
+            "Task 4",
+            "7/7",
+            "Task 5 is next",
         ):
             self.assertIn(phrase, report)
 
@@ -351,6 +357,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "Task 3",
             "Task 4",
             "Task 5",
+            "7/7",
+            "Task 5 is next",
         ):
             self.assertIn(phrase, dashboard)
 
@@ -365,8 +373,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
             assert task is not None
             tags = re.findall(r"<input\b[^>]*>", task.group(0), flags=re.IGNORECASE)
             self.assertEqual(len(tags), 7)
+            checked_count = sum(
+                bool(re.search(r"\bchecked(?:\s|=|>)", tag)) for tag in tags
+            )
+            self.assertEqual(checked_count, 7 if task_number <= 4 else 0)
             for tag in tags:
-                if task_number in (1, 2, 3):
+                if task_number in (1, 2, 3, 4):
                     self.assertRegex(tag, r"\bchecked(?:\s|=|>)", tag)
                 else:
                     self.assertNotRegex(tag, r"\bchecked(?:\s|=|>)", tag)

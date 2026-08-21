@@ -2897,6 +2897,6 @@
     "scientific_winner_selected": false,
     "official_root_present": false,
     "review_only": false,
-    "notes": "Task 3 is complete pending Task 4 after fresh review SHIP (spec PASS, quality APPROVED, C/I0). The prefix-ramp feature, ordered M0–M6 scoring boundary, independent focused tests, and bounded CPU/MLX smoke are recorded; Task 3 heading plus six steps are closed 7/7 and Task 4 is next. Qualification/evaluation/private TRAIN result remain 0, official evaluate/inspect counts remain 0, the official root is absent, label query count is 0, all result hashes are null, and champion, pending candidate, routing, and promotion remain unchanged. M0–M6 IDs/descriptions and the sole approved M2 implementation string remain frozen. MLX numeric-parity evidence is deferred as a Task 5 minor; the CPU path remains selected."
+    "notes": "Task 4 review is SHIP (spec PASS, quality APPROVED, C/I0); the plan Task 4 heading plus six steps are closed 7/7 and Task 5 is next. Qualification/evaluation/private TRAIN result remain 0, official evaluate/inspect counts remain 0, the official root is absent, label query count is 0, all result hashes are null, and champion, pending candidate, routing, and promotion remain unchanged. M0–M6 IDs/descriptions and the sole approved M2 implementation string remain frozen. MLX numeric-parity evidence is deferred as a Task 5 minor; the CPU path remains selected."
   }
 }

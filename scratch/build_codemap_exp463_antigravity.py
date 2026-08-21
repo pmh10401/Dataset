@@ -146,7 +146,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_plan",
             plan,
-            "Caller: Task 1–6 execution. Effect: records bounded files, frozen M0–M6 IDs, Task 4 complete-pending-Task5 state, private gate stop, and unchecked future task controls.",
+            "Caller: Task 1–6 execution. Effect: records bounded files, frozen M0–M6 IDs, Task 4 SHIP/complete-pending-Task5 state, private gate stop, and unchecked future Task5/6 controls.",
             symbol="Task 1 — governance, dashboard, code map",
             tests=(governance_test,),
         ),
@@ -167,7 +167,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_report",
             "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 2/3/4 closeout. Effect: records frozen Exp462 authority, Task 3 scoring boundary, Task 4 evaluation/publication/replay evidence, and complete-pending-Task5 safety state.",
+            "Caller: Task 2/3/4 closeout. Effect: records frozen Exp462 authority, Task 3 scoring boundary, Task 4 SHIP evaluation/publication/replay evidence, and complete-pending-Task5 safety state.",
             symbol="Task 4 handoff",
             tests=(governance_test,),
         ),
@@ -216,7 +216,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "task2_foundation",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
-            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; Task 2/3 reviews are SHIP and Task 4 is next.",
+            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; Task 2/3/4 reviews are SHIP and Task 5 is next.",
             symbol="FROZEN_CONFIG_ANTIGRAVITY",
             tests=(
                 "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",

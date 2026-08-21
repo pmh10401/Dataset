@@ -2,7 +2,7 @@
 <h1>Exp463 진행 대시보드</h1>
 <table>
 <tr><th>상태</th><td><code>task_4_complete_pending_task_5</code></td></tr>
-<tr><th>현재 단계</th><td>Task 1·2·3 review SHIP (spec PASS, quality APPROVED, C/I0); Task 4 qualification/publication/replay implementation is present with focused RED/GREEN evidence. Task 4 remains unchecked pending fresh review.</td></tr>
+<tr><th>현재 단계</th><td>Task 1·2·3·4 review SHIP (spec PASS, quality APPROVED, C/I0); Task 4 heading plus six steps are closed 7/7. Task 5 is next; Task 6 remains separately approved and untouched.</td></tr>
 <tr><th>주 후보</th><td>M2 <code>hydra_period_ramp_gated_max</code> 하나</td></tr>
 <tr><th>고정 규칙</th><td>onset <code>56</code>, alpha <code>0.005</code>, ramp 순위가 <code>0.995</code> 이상일 때만 Exp461 순위와 max 결합</td></tr>
 <tr><th>private TRAIN 실행</th><td>0 — 소스 smoke만 수행, private full qualification/evaluation은 아직 없음</td></tr>
@@ -11,7 +11,7 @@
 <tr><th>공식 root</th><td>없음 — <code>/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821</code></td></tr>
 <tr><th>artifact map SHA-256</th><td><code>null</code> — Task 5 private run 전이라 결과 artifact가 없음</td></tr>
 </table>
-<div class="box"><p><strong>쉬운 설명:</strong> Exp462에서는 점진 변화 점수를 모든 행에 합쳐 period 성능도 흔들렸다. Exp463에서는 뒤쪽 상승이 매우 확실할 때만 새 점수를 쓰고, 확신이 낮으면 기존 Exp461 순위를 그대로 둔다. Task 2는 Exp462의 30개 행·3개 요약·7개 leaf와 TRAIN 행렬 경계를 고정했고 review SHIP으로 닫혔다. Task 3은 이 규칙을 구현하고 독립 테스트·bounded backend smoke·fresh review SHIP까지 마쳤다. Task 4는 score evidence에서 70개 행과 7개 요약을 재계산하고 M0/M6 재현·M2 모든 문턱·7개 canonical leaf·source-free replay를 구현했다. 아직 private full TRAIN 결과를 만들지 않았고 Task 4는 fresh review 전까지 unchecked다.</p></div>
+<div class="box"><p><strong>쉬운 설명:</strong> Exp462에서는 점진 변화 점수를 모든 행에 합쳐 period 성능도 흔들렸다. Exp463에서는 뒤쪽 상승이 매우 확실할 때만 새 점수를 쓰고, 확신이 낮으면 기존 Exp461 순위를 그대로 둔다. Task 2는 Exp462의 30개 행·3개 요약·7개 leaf와 TRAIN 행렬 경계를 고정했고 review SHIP으로 닫혔다. Task 3은 이 규칙을 구현하고 독립 테스트·bounded backend smoke·fresh review SHIP까지 마쳤다. Task 4는 score evidence에서 70개 행과 7개 요약을 재계산하고 M0/M6 재현·M2 모든 문턱·7개 canonical leaf·source-free replay와 canonical-rehashed tamper rejection을 구현해 review SHIP으로 닫혔다. 아직 private full TRAIN 결과를 만들지 않았고 다음 단계는 Task 5다.</p></div>
 <h2>Task 2 동결 근거</h2>
 <table><tbody>
 <tr><th>Exp462 terminal</th><td><code>040422f62406e3ca19038b9609903c4ba76e1694</code></td></tr>
@@ -24,5 +24,5 @@
 </tbody></table>
 <ul><li>M2 primary 10/10</li><li>네 유형 AUC 각각 ≥0.85, 네 유형 평균 ≥0.90</li><li>normal Wilson upper ≤0.05, 모든 score finite</li><li>gradual 최소 ≥0.85이며 Exp462의 0.8402306222021025보다 엄격히 큼</li><li>period 최소 ≥0.907392736783864, 두 historical fold 보존</li></ul>
 <div class="stop"><strong>중단:</strong> private M2 gate 하나라도 실패하면 공식 실행은 영구 금지다. M4/M5가 좋아도 주 후보로 바꾸지 않는다.</div>
-<h2>작업 경계</h2><p>Task 1, Task 2, and Task 3 are complete (Task 3 review SHIP, heading plus six steps 7/7). Task 4 implementation is complete pending fresh review; its heading plus six steps remain unchecked. Task 5 and Task 6 remain untouched. Private full qualification/evaluation, official execution, TEST label access, routing, promotion, champion/pending mutation remain forbidden. MLX numeric-parity evidence remains a minor deferred to Task 5, and the frozen CPU path remains selected. Task 6은 별도 승인 전에는 실행하지 않는다. champion과 pending candidate는 변경되지 않았다.</p>
+<h2>작업 경계</h2><p>Task 1, Task 2, Task 3, and Task 4 are complete (Task 4 review SHIP, heading plus six steps 7/7). Task 5 is next and Task 6 remains separately approved; both remain untouched with 0/7 steps. Private full qualification/evaluation, official execution, TEST label access, routing, promotion, champion/pending mutation remain forbidden. MLX numeric-parity evidence remains a minor deferred to Task 5, and the frozen CPU path remains selected. Task 6은 별도 승인 전에는 실행하지 않는다. champion과 pending candidate는 변경되지 않았다.</p>
 </main></body></html>
