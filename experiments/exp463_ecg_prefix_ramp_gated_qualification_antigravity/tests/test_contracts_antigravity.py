@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError, fields
+from dataclasses import FrozenInstanceError, fields, replace
 from types import MappingProxyType
 import unittest
 
@@ -75,6 +75,31 @@ class ContractsAntigravityTest(unittest.TestCase):
             snapshot.leaf_sha256["context_antigravity.json"] = "0" * 64  # type: ignore[index]
         with self.assertRaises(FrozenInstanceError):
             snapshot.primary_candidate = "hydra_period_rank_max"  # type: ignore[misc]
+
+    def test_exp462_rejects_coherent_forged_primary_summary_antigravity(self) -> None:
+        """Break caught: a forged 9/10 primary summary cannot replace frozen 3/10 authority."""
+        from experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.contracts_antigravity import (
+            Exp462MethodSummaryAntigravity,
+        )
+        from experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.predecessor_antigravity import (
+            capture_exp462_authority_antigravity,
+        )
+
+        snapshot = capture_exp462_authority_antigravity().result_snapshot
+        forged_primary = Exp462MethodSummaryAntigravity(
+            method="hydra_period_gradual_rank_max",
+            fold_count=10,
+            passed_count=9,
+            failed_count=1,
+            min_gradual_drift_auc=0.99,
+            min_period_change_auc=0.99,
+            min_pooled_auc=0.99,
+            max_normal_wilson_upper=0.01,
+            all_scores_finite=True,
+            passed=True,
+        )
+        with self.assertRaises(ValueError):
+            replace(snapshot, summaries=snapshot.summaries[:-1] + (forged_primary,))
 
 
 if __name__ == "__main__":

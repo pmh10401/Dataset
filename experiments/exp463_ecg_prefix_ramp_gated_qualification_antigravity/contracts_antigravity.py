@@ -99,6 +99,32 @@ def _reason_tuple_antigravity(value: object) -> tuple[str, ...]:
     return value
 
 
+def _scalar_signature_antigravity(value: object) -> tuple[type, object]:
+    """Keep frozen summary comparisons strict about bool/int and float types."""
+
+    return (type(value), value)
+
+
+def _summary_signature_antigravity(
+    summary: Exp462MethodSummaryAntigravity,
+) -> tuple[tuple[type, object], ...]:
+    return tuple(
+        _scalar_signature_antigravity(value)
+        for value in (
+            summary.method,
+            summary.fold_count,
+            summary.passed_count,
+            summary.failed_count,
+            summary.min_gradual_drift_auc,
+            summary.min_period_change_auc,
+            summary.min_pooled_auc,
+            summary.max_normal_wilson_upper,
+            summary.all_scores_finite,
+            summary.passed,
+        )
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Exp463HistoricalPeriodFoldAntigravity:
     seed: int
@@ -188,10 +214,38 @@ class Exp462ResultSnapshotAntigravity:
             raise ValueError("summaries must preserve Exp462 method order")
         if len(self.summaries) != self.summary_count:
             raise ValueError("summary count mismatch")
+        expected_summary_signatures = tuple(
+            tuple(_scalar_signature_antigravity(value) for value in expected)
+            for expected in FROZEN_CONFIG_ANTIGRAVITY.predecessor_result_method_summaries
+        )
+        actual_summary_signatures = tuple(
+            _summary_signature_antigravity(summary) for summary in self.summaries
+        )
+        if actual_summary_signatures != expected_summary_signatures:
+            raise ValueError("Exp462 summaries differ from the exact frozen versioned snapshot")
         if self.primary_candidate != "hydra_period_gradual_rank_max":
             raise ValueError("primary candidate differs from Exp462 result")
         if self.primary_passed_count != 3 or self.primary_required_count != 10:
             raise ValueError("primary count differs from Exp462 result")
+        primary = self.summaries[-1]
+        if primary.method != self.primary_candidate:
+            raise ValueError("primary summary method differs from authority candidate")
+        if primary.fold_count != self.primary_required_count:
+            raise ValueError("primary summary fold count differs from authority requirement")
+        if primary.passed_count != self.primary_passed_count:
+            raise ValueError("primary summary passed count differs from authority result")
+        if primary.failed_count != primary.fold_count - primary.passed_count:
+            raise ValueError("primary summary failed count differs from authority result")
+        if primary.min_gradual_drift_auc != FROZEN_CONFIG_ANTIGRAVITY.predecessor_failed_gradual_drift_auc:
+            raise ValueError("primary summary gradual minimum differs from authority result")
+        if primary.min_period_change_auc != FROZEN_CONFIG_ANTIGRAVITY.predecessor_period_min_auc:
+            raise ValueError("primary summary period minimum differs from authority result")
+        if primary.min_pooled_auc != FROZEN_CONFIG_ANTIGRAVITY.predecessor_primary_min_pooled_auc:
+            raise ValueError("primary summary pooled minimum differs from authority result")
+        if primary.max_normal_wilson_upper != FROZEN_CONFIG_ANTIGRAVITY.predecessor_primary_max_normal_wilson_upper:
+            raise ValueError("primary summary Wilson maximum differs from authority result")
+        if primary.passed != (self.primary_passed_count == self.primary_required_count):
+            raise ValueError("primary summary pass flag differs from authority counts")
         per_type = _per_type_auc_antigravity(self.primary_min_per_type_auc, "primary_min_per_type_auc")
         if per_type != MappingProxyType(dict(FROZEN_CONFIG_ANTIGRAVITY.predecessor_primary_min_per_type_auc)):
             raise ValueError("primary per-type minima differ from Exp462 result")

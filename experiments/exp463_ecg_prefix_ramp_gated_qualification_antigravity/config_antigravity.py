@@ -53,12 +53,12 @@ class HistoricalPeriodThresholdAntigravity:
 _METHOD_DEFINITIONS_ANTIGRAVITY = MappingProxyType(
     {
         "M0": "Exp461 reviewed hydra_period_rank_max score",
-        "M1": "front-prefix normalized one-dimensional ramp score",
-        "M2": "M1 with 0.995-gated max against M0; sole primary candidate hydra_period_ramp_gated_max",
-        "M3": "M1 with always-max combination against M0",
-        "M4": "TRAIN-fit per-time median template residual ramp with 0.995-gated max",
-        "M5": "whole-series median/MAD normalized ramp with 0.995-gated max",
-        "M6": "Exp462 24D LocalGap replay control with always-max combination",
+        "M1": "prefix median/MAD normalized one-dimensional ramp from onset 56",
+        "M2": "same M1 ramp; if rramp >= 0.995, max(r461, rramp); otherwise exactly r461 (M0/Exp461 semantics)",
+        "M3": "same M1 ramp",
+        "M4": "TRAIN-fit per-time median template residual ramp",
+        "M5": "whole-series median/MAD normalized ramp",
+        "M6": "Exp462 24D signature + LocalGap replay control",
     }
 )
 
