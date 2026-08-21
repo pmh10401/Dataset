@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp464 residual centered ramp confirmation 구현 계획</title>
+<style>
+body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa}.stop{border-left:6px solid #b42318}.good{border-left:6px solid #16794b}h1,h2,h3{line-height:1.3}label{cursor:default}li{margin:.45rem 0}</style>
+</head>
+<body><main>
+<h1>Exp464 공통 파형 제거·중심화 ramp 확인 구현 계획</h1>
+<blockquote><strong>Agent 실행 규칙:</strong> 구현자는 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용해 Task별로 진행한다. 완료된 Task와 Step만 fresh review 뒤 체크한다.</blockquote>
+
+<table>
+<tr><th>Goal</th><td>ECG의 공통 모양과 단순 높이 이동을 제거한 뒤 실제 선형 상승 모양이 확인될 때만 M0를 보완하고, 모든 TRAIN fold에서 gradual 개선과 period 비열화를 함께 검증한다.</td></tr>
+<tr><th>Architecture</th><td>Exp463의 TRAIN-only 평가 흐름을 controlled fork한다. 새 특징 모듈은 template residual, 평균 0인 ramp 기저, amplitude rank, Pearson cosine을 계산하고, scorer는 C0–C8 고정 비교를 만든다. qualification·publication·replay는 점수에서 결과를 다시 계산하며 private gate 통과 전에는 공식 실행을 열지 않는다.</td></tr>
+<tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, stdlib unittest/json/hashlib/pathlib, 기존 aeon/Hydra CPU 경로. 고정 interpreter: <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>.</td></tr>
+<tr><th>Spec</th><td><code>docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html</code>, SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code>. Task 1은 구현 직전 같은 값을 다시 계산해 config와 ledgers에 고정한다.</td></tr>
+<tr><th>Current status</th><td><code>implementation_plan_written_awaiting_user_review</code>; Task 1–6 모두 시작 전.</td></tr>
+</table>
+
+<h2>Global constraints</h2>
+<ul>
+<li>데이터는 <code>ECG5000_normal_2</code> TRAIN <code>1413×140</code>만 사용한다. TEST label query는 항상 0이다.</li>
+<li>seeds는 <code>20260721</code>, <code>20261721</code>, blocked fold는 각각 5개, onset은 <code>56</code>이다.</li>
+<li>유일한 주 후보는 C6 <code>template_residual_centered_ramp_confirmed_max</code>다. 다른 비교군을 결과를 본 뒤 승격하지 않는다.</li>
+<li>shape confirmation은 <code>cosine≥0.95</code>로 고정한다. <code>0.99/0.995/0.999</code> 비교와 실패 fold 기반 조정을 금지한다.</li>
+<li>C6은 각 seed-fold의 gradual AUC와 period AUC가 같은 기록의 C0보다 낮아지면 실패한다. 기존 절대·historical gate도 그대로 유지한다.</li>
+<li>Task 5 private 결과가 모든 조건을 통과하고 fresh review를 받은 뒤에만 Task 6을 별도 승인할 수 있다.</li>
+<li>공식 root는 <code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code>이며 Task 6 전까지 없어야 한다.</li>
+<li>새 파일 이름에는 모두 <code>antigravity</code>를 포함한다. 모든 사용자 문서는 HTML로 작성한다.</li>
+<li>MLX는 동일 입력·seed에서 finite, 후보 순서, 최대 절대 수치 차이 <code>0.0</code>의 exact parity, 1.1배 속도를 모두 통과할 때만 사용한다. 아니면 NumPy CPU를 유지한다.</li>
+</ul>
+<p>모든 <code>$PY</code> 명령 전에 다음 값을 같은 shell에 고정한다.</p>
+<pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></pre>
+
+<h2>파일 구조</h2>
+<table><thead><tr><th>영역</th><th>파일</th><th>책임</th></tr></thead><tbody>
+<tr><td>governance</td><td><code>docs/EXP464_DASHBOARD_antigravity.html</code>, <code>EXP464_PREREGISTRATION_antigravity.html</code>, <code>EXP464_RUNBOOK_antigravity.html</code>, <code>EXP464_IMPLEMENTATION_REPORT_antigravity.html</code>, 세 ledger</td><td>진행 상태, 고정 계약, 쉬운 결과 설명</td></tr>
+<tr><td>authority</td><td><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code></td><td>Exp463 결과와 TRAIN 입력의 고정 경계</td></tr>
+<tr><td>science</td><td><code>centered_ramp_antigravity.py</code>, <code>scoring_antigravity.py</code></td><td>residual·중심화·cosine과 C0–C8 점수</td></tr>
+<tr><td>qualification</td><td><code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td><td>fold 지표, 합격 판정, 7-leaf 결과, 독립 재생</td></tr>
+<tr><td>entry</td><td><code>cli_antigravity.py</code>, <code>scratch/run_exp464_ecg_residual_centered_ramp_confirmation_antigravity.py</code></td><td>닫힌 evaluate/inspect 표면과 고정 runtime 실행</td></tr>
+<tr><td>map</td><td><code>scratch/build_codemap_exp464_antigravity.py</code>, <code>docs/codemap/codemap_exp464_antigravity.{html,json,lock}</code></td><td>호출자, 영향, 테스트, 현재 Task 경계</td></tr>
+</tbody></table>
+
+<h2><label><input type="checkbox" disabled> Task 1 — governance, HTML dashboard, code map</label></h2>
+<p><strong>Files:</strong> Create four Exp464 HTML docs, <code>experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_governance_antigravity.py</code>, map builder and triplet. Modify <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>, and this plan.</p>
+<p><strong>Interfaces:</strong> Consumes the final design bytes and Exp463 terminal facts. Produces the computed exact design SHA-256, experiment identity, paths, method order C0–C8, status fields and map nodes used by every later Task.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED governance test.</strong></label><pre><code>def test_exp464_is_planned_without_results_antigravity(self):
+    dashboard = Path("docs/EXP464_DASHBOARD_antigravity.html")
+    self.assertTrue(dashboard.exists())
+    state = next(x for x in json.load(open("RESEARCH_STATE.json"))["experiments"] if x["id"] == "Exp464")
+    self.assertEqual(state["official_evaluate_count"], 0)
+    self.assertEqual(state["label_query_count"], 0)
+    self.assertIsNone(state["artifact_map_sha256"])</code></pre>
+Run: <code>python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity</code><br>Expected: FAIL because Exp464 docs and ledger rows do not exist.</li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — Add exact HTML and ledger identity.</strong></label><p>Set status <code>planned_implementation_not_started</code>, Task 1 next, private/official/label counts 0, result hashes null, champion/pending/routing/promotion unchanged. Dashboard must explain the Exp463 M0/M1/M2/M4 evidence in easy Korean.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — Build the Exp464 code map.</strong></label><p>The map must answer: governance calls no scientific module yet; it affects later config/report truth; governance tests cover it. Bare builder writes the triplet; exact <code>--validate-only</code> performs no writes; unknown flags fail.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — GREEN twice.</strong></label><pre><code>python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity
+python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity
+python3 scratch/build_codemap_exp464_antigravity.py --validate-only</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — Validate documents.</strong></label><p>Strict JSON parse three ledgers and map JSON/lock; parse all Exp464 HTML; assert Task 1–6 controls remain unchecked before review; assert official root absent and label query 0.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — Commit and fresh review.</strong></label><p>Create one functional docs/governance commit and one clean map-only child. After spec PASS, quality APPROVED, Critical/Important 0, check Task 1 heading and steps only.</p></li>
+</ol>
+
+<h2><label><input type="checkbox" disabled> Task 2 — frozen Exp463 authority and TRAIN source</label></h2>
+<p><strong>Files:</strong> Create package <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code> and four matching tests. Modify Task 1 docs, plan, ledgers and map.</p>
+<p><strong>Interfaces:</strong> Produces <code>FROZEN_CONFIG_ANTIGRAVITY: Exp464ConfigAntigravity</code>, <code>capture_exp463_authority_antigravity() -&gt; Exp463AuthorityAntigravity</code>, <code>validate_exp463_authority_antigravity(authority)</code>, and <code>load_normal2_train_antigravity() -&gt; np.ndarray</code> of exact shape <code>(1413,140)</code>, float32, finite, owned, C-contiguous, read-only.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED frozen config and contracts.</strong></label><pre><code>self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY.method_order,
+                 ("C0","C1","C2","C3","C4","C5","C6","C7","C8"))
+self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY.onset, 56)
+self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY.cosine_min, 0.95)
+self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY.primary_candidate,
+                 "template_residual_centered_ramp_confirmed_max")</code></pre>
+Expected: import error before modules exist.</li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — Implement immutable config.</strong></label><p>Freeze experiment identity, design SHA, dataset/shape, seeds/folds, method definitions, C0/C1/C2/C7 exact Exp463 summaries, all absolute and historical gates, fixed runtime and official path. Constructor must reject bool/int aliases, reordered mappings and mutable containers.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — Implement predecessor authority.</strong></label><p>Bind Exp463 final commit <code>147225831e9c13e9df5043fa88757bb03e01b79a</code>, final Task5 report SHA <code>e43abf66e43921941dece398514858be91e39d121c1173b26b352b67ba78e8e5</code>, two-run equality, 70 metric rows, seven summaries and exact C0–C7 summary facts. Reject any field-level difference.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — Implement TRAIN loader.</strong></label><pre><code>train = load_normal2_train_antigravity()
+assert train.shape == (1413, 140)
+assert train.dtype == np.float32
+assert train.flags.owndata and train.flags.c_contiguous
+assert not train.flags.writeable
+assert np.isfinite(train).all()</code></pre><p>The loader may read TRAIN source only and increments no TEST-label counter.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — GREEN and predecessor regression.</strong></label><pre><code>$PY -m unittest discover -s experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests -p 'test_config_antigravity.py'
+$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_contracts_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_predecessor_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_sources_antigravity</code></pre><p>Run the focused suite twice and the corresponding Exp463 authority/source tests once.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — Commit and review.</strong></label><p>Update dashboard/report/map, commit functional files, regenerate a clean map-only child, and close Task 2 only after fresh review.</p></li>
+</ol>
+
+<h2><label><input type="checkbox" disabled> Task 3 — centered residual ramp and C0–C8 scores</label></h2>
+<p><strong>Files:</strong> Create <code>centered_ramp_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>tests/test_centered_ramp_antigravity.py</code>, <code>tests/test_scoring_antigravity.py</code>. Modify docs, plan, ledgers and map.</p>
+<p><strong>Interfaces:</strong> Produces <code>CenteredRampEvidenceAntigravity(amplitude: float, cosine: float)</code>, <code>centered_suffix_basis_antigravity() -&gt; np.ndarray</code>, <code>centered_ramp_evidence_antigravity(values, template) -&gt; CenteredRampEvidenceAntigravity</code>, and <code>score_fold_methods_antigravity(train, fit_indices, query_indices, seed, fold_index, authority) -&gt; FoldMethodScoresAntigravity</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED mathematical reference.</strong></label><pre><code>t = np.linspace(0.0, 1.0, 84, dtype=np.float64)
+q = t - np.mean(t); q /= np.linalg.norm(q)
+v = residual[56:] - np.mean(residual[56:])
+expected_a = float(v @ q)
+expected_c = 0.0 if np.linalg.norm(v) == 0 else expected_a / np.linalg.norm(v)
+self.assertEqual(actual.amplitude, expected_a)
+self.assertEqual(actual.cosine, expected_c)
+self.assertEqual(float(np.sum(centered_suffix_basis_antigravity())), 0.0)</code></pre><p>Add exact cases: constant height shift gives amplitude/cosine 0; perfect positive ramp gives cosine 1; descending ramp gives cosine -1; zero vector gives cosine 0; inputs remain unchanged.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — Implement the minimal feature.</strong></label><pre><code>@dataclass(frozen=True, slots=True)
+class CenteredRampEvidenceAntigravity:
+    amplitude: float
+    cosine: float
+
+def centered_ramp_evidence_antigravity(values: np.ndarray, template: np.ndarray) -&gt; CenteredRampEvidenceAntigravity:
+    residual = np.asarray(values, dtype=np.float64) - np.asarray(template, dtype=np.float64)
+    suffix = residual[56:]
+    centered = suffix - np.mean(suffix)
+    amplitude = float(centered @ centered_suffix_basis_antigravity())
+    norm = float(np.linalg.norm(centered))
+    return CenteredRampEvidenceAntigravity(amplitude, 0.0 if norm == 0.0 else amplitude / norm)</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — RED C0–C8 scoring semantics.</strong></label><p>Assert exact method order; C0/C1/C2/C7 reproduce Exp463; C3 uses centered rank alone; C4 always max; C5 omits template only; C6 uses per-row cosine <code>≥0.95</code>; C8 omits centering only. Test <code>0.95</code> inclusive boundary and <code>nextafter(0.95,0)</code> fallback.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — Implement fold scoring and diagnostics.</strong></label><p>Fit <code>template=np.median(train[fit_indices],axis=0)</code> once per fold. Build <code>a_fit</code> from non-injected fit rows. Apply each method independently to normal and four synthetic query variants. Return immutable score arrays plus per-type confirmation counts and exact provenance.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — MLX assessment.</strong></label><p>Use the same 32×140 input and seed <code>4643001</code>. Compare NumPy and MLX amplitude/cosine, candidate order at cosine 0.95 and elapsed time including transfer/sync. Select MLX only if finite, order identical, maximum absolute numeric difference exactly <code>0.0</code>, and speedup ≥1.1×; otherwise record <code>numpy_cpu</code>.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN and review.</strong></label><pre><code>$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_centered_ramp_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity
+$PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_ramp_features_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_scoring_antigravity</code></pre><p>Run Exp464 focused twice, Exp463 scientific regression once, compile, map validation and diff check. Commit functional files and a clean map-only child; close only after review.</p></li>
+</ol>
+
+<h2><label><input type="checkbox" disabled> Task 4 — qualification, evaluation, artifacts, replay, dashboard export</label></h2>
+<p><strong>Files:</strong> Create five qualification modules and matching tests. Modify docs, plan, ledgers and map.</p>
+<p><strong>Interfaces:</strong> Produces <code>Exp464QualificationContractAntigravity</code>, <code>QualificationDecisionAntigravity</code>, <code>qualify_methods_antigravity()</code>, <code>evaluate_qualification_antigravity(contract, authority)</code>, <code>publish_result_antigravity(root, contract, decision, authority)</code>, <code>inspect_replay_at_antigravity(root)</code>, and <code>export_dashboard_antigravity(contract, decision)</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED metric and gate recomputation.</strong></label><p>Independently recompute four AUCs, pooled AUC, Wilson upper, finite, per-fold C0 gradual/period non-degradation, two historical period floors and 10/10. Reject caller-supplied booleans that disagree with scores.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — RED diagnostic pair accounting.</strong></label><pre><code>correct = gradual_score[j] &gt; normal_score[i]
+n_fixed  = count((not correct_c0) and correct_c6)
+n_broken = count(correct_c0 and (not correct_c6))
+# equal scores count in neither bucket</code></pre><p>Use every ordered normal/gradual pair and normal/period pair per seed-fold. Store these counts as diagnostics only, not as a tunable gate.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — Implement decision.</strong></label><pre><code>passed = (
+    passed_records == 10
+    and min_gradual_auc &gt;= 0.85
+    and all(c6.gradual_auc &gt;= c0.gradual_auc for each_fold)
+    and min_period_auc &gt;= 0.907392736783864
+    and all(c6.period_auc &gt;= c0.period_auc for each_fold)
+    and historical_period_floors_pass
+)</code></pre><p>Any false condition yields <code>qualification_failed_blocked_before_routing_research</code>.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — RED→GREEN canonical publication.</strong></label><p>Publish exactly seven leaves: <code>context_antigravity.json</code>, <code>method_fold_metrics_antigravity.jsonl</code>, <code>failed_folds_antigravity.jsonl</code>, <code>method_summary_antigravity.jsonl</code>, <code>decision_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code>. Fold rows include confirmation and pair diagnostics.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — RED→GREEN semantic replay.</strong></label><p>Replay must reconstruct every score-derived metric, summary, C0 comparison, decision, dashboard and self-excluding artifact map. Test canonical rehash attacks on amplitude, cosine, confirmation count, C0/C6 fold AUC, pair counts, summary, decision, dashboard, missing/extra/reordered leaf.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — Full GREEN and review.</strong></label><pre><code>$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_qualification_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_evaluation_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_artifacts_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_replay_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_dashboard_export_antigravity</code></pre><p>Run focused twice, Tasks 2–3 regressions once, temporary publish→inspect equality, compile/map/diff/root/label checks. Commit functional files and clean map child; close after result-focused review.</p></li>
+</ol>
+
+<h2><label><input type="checkbox" disabled> Task 5 — closed CLI and exactly two private TRAIN reproductions</label></h2>
+<p><strong>Files:</strong> Create CLI, launcher and CLI tests. Modify all Exp464 HTML truth, three ledgers, plan and map.</p>
+<p><strong>Interfaces:</strong> Public CLI accepts exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>. Private test seam may inject a new non-official root; public surface cannot select root, seed, fold, gate, retry or resume.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED closed CLI.</strong></label><p>Test exact parser surface, lazy phase imports, outside-CWD launcher, private evaluate→inspect, official-root absence and TEST-label count 0. Expected missing-module failure before implementation.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — Minimal CLI GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_cli_antigravity
+$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_cli_antigravity</code></pre><p>Commit a clean reviewed CLI before any heavy private run.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — Private run 1.</strong></label><p>Confirm one heavy process, clean reviewed commit, official root absent. Run evaluate→inspect once at explicit new private root <code>/private/tmp/exp464_task5_private_run1_antigravity</code>. Do not retry a running or failed wrapper.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — Private run 2.</strong></label><p>After run 1 process exits, repeat once at <code>/private/tmp/exp464_task5_private_run2_antigravity</code>. Compare every leaf byte/hash, rows, summaries, decision, dashboard and inspect output exactly.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — Apply frozen decision.</strong></label><p>If C6 fails any gate, set status <code>stopped_before_official_evaluation_qualification_failed</code>, keep official counts/hashes null and forbid Task 6. If it passes, set <code>private_qualification_passed_awaiting_fresh_review</code>; do not run officially.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — Verify, review and close.</strong></label><p>Run full Exp464 discovery twice, Exp463 scientific regression once, replay, HTML/JSON/map/diff/root/label/process checks. Fresh reviewer confirms scientific result. Remove only the two explicit private roots after review while preserving HTML report and aggregate logs. Commit truth then clean map child.</p></li>
+</ol>
+
+<h2><label><input type="checkbox" disabled> Task 6 — separately approved official result preservation</label></h2>
+<div class="box stop"><p>Task 6는 Task 5의 C6 자격 검증이 완전히 통과하고 fresh review가 승인한 경우에만 사용자에게 별도 승인을 요청한다. 실패 상태에서는 이 Task를 실행하거나 체크하지 않는다.</p></div>
+<p><strong>Files:</strong> No product code. Modify result/truth HTML, three ledgers, plan and map only after official commands finish.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — Preflight.</strong></label><p>Exact clean reviewed commit, valid Exp464 map, official root absent, active Exp464 process 0, private qualification pass, label0를 확인한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — Official evaluate exactly once.</strong></label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT="$(git rev-parse HEAD)"
+test "$(git status --porcelain)" = ""
+test "${#REVIEWED_COMMIT}" -eq 40
+"$PY" scratch/run_exp464_ecg_residual_centered_ramp_confirmation_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre><p>실패하면 즉시 중단하며 재시도하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — Bare inspect exactly once.</strong></label><pre><code>"$PY" scratch/run_exp464_ecg_residual_centered_ramp_confirmation_antigravity.py inspect</code></pre><p>Evaluate 성공 뒤에만 실행한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — Verify result.</strong></label><p>Seven leaves, artifact map, all fold rows/summaries/diagnostics, evaluate/inspect equality, immutable official root, label query 0을 검증한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — Record terminal truth.</strong></label><p>대시보드·보고서·세 ledger·map을 실제 결과로 갱신한다. 라우팅, champion, pending, promotion은 결과 논의 전 변경하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — Final review and stop.</strong></label><p>Fresh read-only review가 Critical/Important 0을 확인한 뒤 Task 6을 닫고, 사용자에게 쉬운 결과 설명을 제공한 후 다음 실험 결정에서 멈춘다.</p></li>
+</ol>
+
+<h2>계획 자체의 검증 명령</h2>
+<pre><code>python3 -m unittest discover -s experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests -p 'test_*_antigravity.py'
+python3 scratch/build_codemap_exp464_antigravity.py --validate-only
+python3 -m compileall -q experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity scratch/run_exp464_ecg_residual_centered_ramp_confirmation_antigravity.py
+git diff --check</code></pre>
+
+<h2>Execution choice</h2>
+<p><strong>Option 1 — Task별 서브에이전트:</strong> 사용자가 명시적으로 선택하면 Task마다 fresh implementer를 배정하고, 각 Task 뒤 독립 review를 거친다.</p>
+<p><strong>Option 2 — 현재 세션에서 순차 실행:</strong> <code>superpowers:executing-plans</code>로 한 Task씩 구현하고 검토 지점마다 멈춘다.</p>
+</main></body>
+</html>
