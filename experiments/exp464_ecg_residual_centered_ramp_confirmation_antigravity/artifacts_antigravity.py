@@ -52,11 +52,6 @@ class PublishedQualificationAntigravity:
     leaf_sha256: tuple[tuple[str, str], ...]
     artifact_map_sha256: str
 
-
-def _official_lifecycle_authority_antigravity() -> object:
-    return _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY
-
-
 def _validate_publication_root_antigravity(
     root: Path,
     official_lifecycle_authority: object | None,
@@ -287,7 +282,6 @@ __all__ = (
     "_LEAVES_ANTIGRAVITY",
     "_context_payload_antigravity",
     "_decision_payload_antigravity",
-    "_official_lifecycle_authority_antigravity",
     "_payloads_antigravity",
     "_row_payload_antigravity",
     "_summary_payload_antigravity",

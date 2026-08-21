@@ -33,6 +33,7 @@ _LEAVES_ANTIGRAVITY = (
     "dashboard_snapshot_antigravity.json",
     "artifact_sha256_antigravity.json",
 )
+_INTERNAL_OFFICIAL_ROOT_ANTIGRAVITY = object()
 
 
 class _ExactSurfaceParserAntigravity(argparse.ArgumentParser):
@@ -82,7 +83,7 @@ def _private_test_seam_antigravity() -> object | None:
     return None
 
 
-def _private_test_root_antigravity() -> Path | None:
+def _private_test_root_candidate_antigravity() -> Path | None:
     private = _private_test_seam_antigravity()
     if private is None:
         return None
@@ -100,14 +101,43 @@ def _private_test_root_antigravity() -> Path | None:
         or root.resolve(strict=False) == OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False)
     ):
         raise ValueError("private test root must be a non-official Path")
+    if root.is_symlink():
+        raise ValueError("private test root must be a non-symlink Path")
     return root
 
 
-def _selected_root_antigravity(default: Path) -> Path:
-    private_root = _private_test_root_antigravity()
+def _validate_create_only_root_antigravity(
+    root: Path,
+    *,
+    official_lifecycle_authority: object | None,
+) -> None:
+    if not isinstance(root, Path) or root.is_symlink():
+        raise ValueError("result root must be a non-symlink Path")
+    if (
+        official_lifecycle_authority is None
+        and root.resolve(strict=False) == OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False)
+    ):
+        raise ValueError("private test root must be a non-official Path")
+    if root.exists():
+        raise ValueError("publication destination must be a new create-only path")
+
+
+def _evaluate_target_antigravity() -> tuple[Path, object | None]:
+    private_root = _private_test_root_candidate_antigravity()
     if private_root is not None:
-        return private_root
-    return default
+        _validate_create_only_root_antigravity(
+            private_root,
+            official_lifecycle_authority=None,
+        )
+        return private_root, None
+    return OFFICIAL_ROOT_ANTIGRAVITY, _INTERNAL_OFFICIAL_ROOT_ANTIGRAVITY
+
+
+def _inspect_target_antigravity() -> tuple[Path, object | None]:
+    private_root = _private_test_root_candidate_antigravity()
+    if private_root is not None:
+        return private_root, None
+    return OFFICIAL_ROOT_ANTIGRAVITY, _INTERNAL_OFFICIAL_ROOT_ANTIGRAVITY
 
 
 def _validate_no_duplicate_process_antigravity() -> None:
@@ -212,7 +242,7 @@ def _evaluate_at_root_antigravity(
 
     from .artifacts_antigravity import (
         PublishedQualificationAntigravity,
-        _official_lifecycle_authority_antigravity,
+        _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY,
         publish_result_antigravity,
     )
     from .contracts_antigravity import (
@@ -228,13 +258,14 @@ def _evaluate_at_root_antigravity(
     from .qualification_antigravity import qualify_methods_antigravity
     from .replay_antigravity import inspect_replay_at_antigravity
 
-    if not isinstance(root, Path) or root.is_symlink():
-        raise ValueError("result root must be a non-symlink Path")
-    if (
-        official_lifecycle_authority is not None
-        and official_lifecycle_authority is not _official_lifecycle_authority_antigravity()
-    ):
+    if official_lifecycle_authority is _INTERNAL_OFFICIAL_ROOT_ANTIGRAVITY:
+        official_lifecycle_authority = _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY
+    elif official_lifecycle_authority is not None:
         raise ValueError("official lifecycle authority is invalid")
+    _validate_create_only_root_antigravity(
+        root,
+        official_lifecycle_authority=official_lifecycle_authority,
+    )
     authority = capture_exp463_authority_antigravity()
     validate_exp463_authority_antigravity(authority)
     if type(authority) is not Exp463AuthorityAntigravity:
@@ -284,13 +315,12 @@ def _inspect_at_root_antigravity(
     root: Path,
     official_lifecycle_authority: object | None = None,
 ) -> dict[str, object]:
-    from .artifacts_antigravity import _official_lifecycle_authority_antigravity
+    from .artifacts_antigravity import _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY
     from .replay_antigravity import inspect_replay_at_antigravity
 
-    if (
-        official_lifecycle_authority is not None
-        and official_lifecycle_authority is not _official_lifecycle_authority_antigravity()
-    ):
+    if official_lifecycle_authority is _INTERNAL_OFFICIAL_ROOT_ANTIGRAVITY:
+        official_lifecycle_authority = _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY
+    elif official_lifecycle_authority is not None:
         raise ValueError("official lifecycle authority is invalid")
     return _inspect_result_payload_antigravity(
         root,
@@ -302,32 +332,18 @@ def _inspect_at_root_antigravity(
 
 
 def _evaluate_antigravity(_reviewed_commit: str) -> dict[str, object]:
+    root, official_lifecycle_authority = _evaluate_target_antigravity()
     return _evaluate_at_root_antigravity(
-        _selected_root_antigravity(OFFICIAL_ROOT_ANTIGRAVITY),
+        root,
+        official_lifecycle_authority=official_lifecycle_authority,
     )
 
 
 def _inspect_antigravity() -> dict[str, object]:
+    root, official_lifecycle_authority = _inspect_target_antigravity()
     return _inspect_at_root_antigravity(
-        _selected_root_antigravity(OFFICIAL_ROOT_ANTIGRAVITY),
-    )
-
-
-def _evaluate_official_antigravity(_reviewed_commit: str) -> dict[str, object]:
-    from .artifacts_antigravity import _official_lifecycle_authority_antigravity
-
-    return _evaluate_at_root_antigravity(
-        OFFICIAL_ROOT_ANTIGRAVITY,
-        official_lifecycle_authority=_official_lifecycle_authority_antigravity(),
-    )
-
-
-def _inspect_official_antigravity() -> dict[str, object]:
-    from .artifacts_antigravity import _official_lifecycle_authority_antigravity
-
-    return _inspect_at_root_antigravity(
-        OFFICIAL_ROOT_ANTIGRAVITY,
-        official_lifecycle_authority=_official_lifecycle_authority_antigravity(),
+        root,
+        official_lifecycle_authority=official_lifecycle_authority,
     )
 
 
@@ -346,9 +362,11 @@ def _emit_payload_antigravity(payload: dict[str, object]) -> None:
 def main_antigravity(argv: Sequence[str] | None = None) -> int:
     args = parser_antigravity().parse_args(None if argv is None else list(argv))
     if args.command == "evaluate":
+        _evaluate_target_antigravity()
         _validate_clean_current_commit_antigravity(args.reviewed_commit)
         payload = _load_evaluate_antigravity()(args.reviewed_commit)
     else:
+        _inspect_target_antigravity()
         payload = _load_inspect_antigravity()()
     _emit_payload_antigravity(payload)
     return 0

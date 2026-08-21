@@ -389,7 +389,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task5_closed_cli",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/cli_antigravity.py",
-            "Caller: Task 5 launcher, public evaluate/inspect, and internal official-lifecycle helpers. Effect: the closed CLI binds frozen validation and scientific dependencies, permits only non-official private root injection, and reserves the exact official root for internal authority-backed Task 6 evaluate→inspect.",
+            "Caller: Task 5 launcher and the public evaluate/inspect dispatch. Effect: the closed CLI binds frozen validation and scientific dependencies, rejects invalid private roots before validation or heavy compute, permits only non-official private root injection, and carries the exact official root only through an internal identity-backed Task 6 evaluate→inspect path.",
             symbol="main_antigravity",
             tests=(governance_test, task5_cli_test),
         ),
@@ -403,7 +403,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task5_cli_test",
             task5_cli_test,
-            "Caller: Task 5 Phase A RED→GREEN boundary verification. Effect: covers exact parser rejection, lazy imports, outside-CWD launcher, non-official root-only injection, internal official lifecycle gating, and label-query count zero.",
+            "Caller: Task 5 Phase A RED→GREEN boundary verification. Effect: covers exact parser rejection, lazy imports, outside-CWD launcher, pre-validation private-root rejection, public-dispatch official evaluate→inspect wiring, and label-query count zero.",
             symbol="CliAntigravityTest",
             tests=(task5_cli_test,),
         ),
@@ -500,7 +500,7 @@ def _build_html_antigravity(graph: dict[str, Any]) -> str:
         "<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}</style></head>\n"
         "<body><main>\n"
         "<h1>Exp464 Task 5 closed-CLI boundary code map</h1>\n"
-        "<p>이 map은 <code>task_4_complete_pending_task_5</code> 상태를 유지한 채, 구현된 Task 5 closed CLI·launcher·CLI test boundary를 설명한다. 공개 표면은 non-official private root만 허용하고, exact official root는 내부 official lifecycle authority 경로에만 예약되어 있다. 다음 단계는 reviewed CLI 이후 정확히 두 번의 순차 private TRAIN reproduction이다.</p>\n"
+        "<p>이 map은 <code>task_4_complete_pending_task_5</code> 상태를 유지한 채, 구현된 Task 5 closed CLI·launcher·CLI test boundary를 설명한다. private seam은 non-official root만 허용하며 invalid private root는 validation이나 heavy compute 전에 거부된다. public dispatch는 exact official root를 내부 official lifecycle identity 경로로만 운반한다. 다음 단계는 reviewed CLI 이후 정확히 두 번의 순차 private TRAIN reproduction이다.</p>\n"
         f'<script id="graph-data" type="application/json">{payload}</script>\n'
         "</main></body></html>\n"
     )

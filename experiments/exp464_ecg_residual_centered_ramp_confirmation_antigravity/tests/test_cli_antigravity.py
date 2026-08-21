@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from contextlib import ExitStack, redirect_stderr, redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import io
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,6 +39,137 @@ class CliAntigravityTest(unittest.TestCase):
     def _source_free_lower_layer_inputs_antigravity(self):
         authority, qualification, _decision = publication_inputs_antigravity()
         return authority, qualification
+
+    def _run_main_payload_antigravity(
+        self,
+        cli,
+        argv: list[str],
+    ) -> dict[str, object]:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = cli.main_antigravity(argv)
+        self.assertEqual(code, 0)
+        return json.loads(output.getvalue())
+
+    def _run_clean_snapshot_public_dispatch_antigravity(self) -> dict[str, object]:
+        package_relative = Path(
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity"
+        )
+        package_source = _REPOSITORY_ANTIGRAVITY / package_relative
+        with tempfile.TemporaryDirectory(prefix="exp464_public_dispatch_snapshot_antigravity_") as temporary:
+            snapshot_root = Path(temporary) / "repo"
+            official_root = Path(temporary) / "official_root_antigravity"
+            subprocess.run(
+                ["git", "worktree", "add", "--detach", str(snapshot_root), "HEAD"],
+                cwd=_REPOSITORY_ANTIGRAVITY,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            try:
+                shutil.copytree(
+                    package_source,
+                    snapshot_root / package_relative,
+                    dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                )
+                subprocess.run(
+                    ["git", "add", str(package_relative)],
+                    cwd=snapshot_root,
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                )
+                dirty = subprocess.check_output(
+                    ["git", "status", "--porcelain"],
+                    cwd=snapshot_root,
+                    text=True,
+                ).strip()
+                if dirty:
+                    subprocess.run(
+                        [
+                            "git",
+                            "-c",
+                            "user.name=Codex",
+                            "-c",
+                            "user.email=codex@example.com",
+                            "commit",
+                            "-m",
+                            "snapshot exp464 task5 public dispatch antigravity",
+                        ],
+                        cwd=snapshot_root,
+                        text=True,
+                        capture_output=True,
+                        check=True,
+                    )
+                script = r"""
+from __future__ import annotations
+import contextlib
+import io
+import json
+from pathlib import Path
+import subprocess
+import sys
+from unittest.mock import patch
+
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import artifacts_antigravity as artifacts
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import replay_antigravity as replay
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_artifacts_antigravity import publication_inputs_antigravity
+
+authority, qualification, _decision = publication_inputs_antigravity()
+official_root = Path(sys.argv[1])
+reviewed_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+evaluate_output = io.StringIO()
+inspect_output = io.StringIO()
+with (
+    patch.object(cli, "OFFICIAL_ROOT_ANTIGRAVITY", official_root),
+    patch.object(artifacts, "OFFICIAL_ROOT_ANTIGRAVITY", official_root),
+    patch.object(replay, "OFFICIAL_ROOT_ANTIGRAVITY", official_root),
+    patch(
+        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
+        return_value=authority,
+    ),
+    patch(
+        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+        return_value=qualification,
+    ),
+):
+    with contextlib.redirect_stdout(evaluate_output):
+        evaluate_code = cli.main_antigravity(["evaluate", "--reviewed-commit", reviewed_commit])
+    with contextlib.redirect_stdout(inspect_output):
+        inspect_code = cli.main_antigravity(["inspect"])
+print(
+    json.dumps(
+        {
+            "evaluate_code": evaluate_code,
+            "inspect_code": inspect_code,
+            "evaluate_payload": json.loads(evaluate_output.getvalue()),
+            "inspect_payload": json.loads(inspect_output.getvalue()),
+            "official_root_exists": official_root.is_dir(),
+            "official_root_entries": sorted(entry.name for entry in official_root.iterdir()),
+        },
+        sort_keys=True,
+    )
+)
+"""
+                completed = subprocess.run(
+                    [sys.executable, "-c", script, str(official_root)],
+                    cwd=snapshot_root,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                return json.loads(completed.stdout)
+            finally:
+                subprocess.run(
+                    ["git", "worktree", "remove", "--force", str(snapshot_root)],
+                    cwd=_REPOSITORY_ANTIGRAVITY,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
 
     def test_exact_surface_accepts_only_reviewed_evaluate_or_bare_inspect_antigravity(self) -> None:
         """Break caught: aliases, overrides, or extra tokens reach execution."""
@@ -172,17 +304,18 @@ class CliAntigravityTest(unittest.TestCase):
             private.validate_no_duplicate_process_antigravity = lambda: None
             with (
                 patch.dict(sys.modules, {private.__name__: private}),
+                patch.object(cli, "_validate_clean_current_commit_antigravity", return_value=None),
                 self.assertRaisesRegex(ValueError, "private test seam may inject only root_antigravity"),
             ):
-                cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
+                cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
             with (
                 patch.dict(sys.modules, {private.__name__: private}),
                 self.assertRaisesRegex(ValueError, "private test seam may inject only root_antigravity"),
             ):
-                cli._inspect_antigravity()
+                cli.main_antigravity(["inspect"])
 
-    def test_private_root_evaluate_then_inspect_uses_real_lower_layer_path_antigravity(self) -> None:
-        """Break caught: CLI uses seam-level dependency replacement instead of frozen lower layers."""
+    def test_private_root_public_dispatch_evaluate_then_inspect_uses_real_lower_layer_path_antigravity(self) -> None:
+        """Break caught: public dispatch skips the frozen lower layers or replay-backed equality."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
 
         authority, qualification = self._source_free_lower_layer_inputs_antigravity()
@@ -193,6 +326,7 @@ class CliAntigravityTest(unittest.TestCase):
             private.root_antigravity = root
             with (
                 patch.dict(sys.modules, {private.__name__: private}),
+                patch.object(cli, "_validate_clean_current_commit_antigravity", return_value=None),
                 patch(
                     "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
                     return_value=authority,
@@ -202,94 +336,144 @@ class CliAntigravityTest(unittest.TestCase):
                     return_value=qualification,
                 ),
             ):
-                evaluated = cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
-                inspected = cli._inspect_antigravity()
+                evaluated = self._run_main_payload_antigravity(
+                    cli,
+                    ["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY],
+                )
+                inspected = self._run_main_payload_antigravity(cli, ["inspect"])
             self.assertEqual(evaluated, inspected)
             self.assertEqual(evaluated["experiment"], "Exp464")
             self.assertEqual(evaluated["decision"]["label_query_count"], 0)
             self.assertEqual(tuple(sorted(entry.name for entry in root.iterdir())), tuple(sorted(LEAVES_ANTIGRAVITY)))
-            self.assertEqual(tuple(evaluated["leaf_sha256"]), LEAVES_ANTIGRAVITY)
+            self.assertEqual(tuple(sorted(evaluated["leaf_sha256"])), tuple(sorted(LEAVES_ANTIGRAVITY)))
             before = {entry.name: entry.read_bytes() for entry in root.iterdir()}
             with (
                 patch.dict(sys.modules, {private.__name__: private}),
+                patch.object(cli, "_validate_clean_current_commit_antigravity", return_value=None),
                 patch(
                     "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
                     return_value=authority,
                 ),
                 patch(
                     "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
-                    return_value=qualification,
+                    side_effect=AssertionError("qualification should not rerun"),
                 ),
-                self.assertRaises(ValueError),
+                self.assertRaisesRegex(ValueError, "create-only"),
             ):
-                cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
+                cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
             self.assertEqual({entry.name: entry.read_bytes() for entry in root.iterdir()}, before)
             self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
 
-    def test_task5_public_path_cannot_create_official_root_without_internal_authority_antigravity(self) -> None:
-        """Break caught: Task 5 path can create the official root without Task 6 authority."""
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+    def test_public_dispatch_official_evaluate_then_inspect_uses_internal_lifecycle_authority_antigravity(self) -> None:
+        """Break caught: public dispatch still needs helper-only official lifecycle wiring."""
+        summary = self._run_clean_snapshot_public_dispatch_antigravity()
+        self.assertEqual(summary["evaluate_code"], 0)
+        self.assertEqual(summary["inspect_code"], 0)
+        self.assertTrue(summary["official_root_exists"])
+        self.assertEqual(
+            tuple(summary["official_root_entries"]),
+            tuple(sorted(LEAVES_ANTIGRAVITY)),
+        )
+        self.assertEqual(summary["evaluate_payload"], summary["inspect_payload"])
+        self.assertEqual(
+            tuple(sorted(summary["evaluate_payload"]["leaf_sha256"])),
+            tuple(sorted(LEAVES_ANTIGRAVITY)),
+        )
+        self.assertEqual(summary["evaluate_payload"]["decision"]["label_query_count"], 0)
+
+    def test_public_interfaces_do_not_expose_official_lifecycle_minting_antigravity(self) -> None:
+        """Break caught: Task 5 callers can still mint official authority through public helpers."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import artifacts_antigravity as artifacts
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import replay_antigravity as replay
-
-        authority, qualification = self._source_free_lower_layer_inputs_antigravity()
-        with tempfile.TemporaryDirectory(prefix="exp464_cli_official_guard_antigravity_") as temporary:
-            official_root = Path(temporary) / "official_root_antigravity"
-            with ExitStack() as stack:
-                stack.enter_context(patch.object(cli, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
-                stack.enter_context(patch.object(artifacts, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
-                stack.enter_context(patch.object(replay, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
-                stack.enter_context(
-                    patch(
-                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
-                        return_value=authority,
-                    )
-                )
-                stack.enter_context(
-                    patch(
-                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
-                        return_value=qualification,
-                    )
-                )
-                with self.assertRaisesRegex(ValueError, "official result root requires internal official lifecycle authority"):
-                    cli._evaluate_antigravity(_COMMIT_ANTIGRAVITY)
-                self.assertFalse(official_root.exists())
-                with self.assertRaisesRegex(ValueError, "official result root requires internal official lifecycle authority"):
-                    cli._inspect_antigravity()
-                self.assertFalse(official_root.exists())
-
-    def test_authorized_official_lifecycle_uses_public_official_root_with_internal_authority_antigravity(self) -> None:
-        """Break caught: Task 6 official evaluate/inspect still needs later product changes."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import artifacts_antigravity as artifacts
-        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import replay_antigravity as replay
 
-        authority, qualification = self._source_free_lower_layer_inputs_antigravity()
-        with tempfile.TemporaryDirectory(prefix="exp464_cli_official_lifecycle_antigravity_") as temporary:
-            official_root = Path(temporary) / "official_root_antigravity"
-            with ExitStack() as stack:
-                stack.enter_context(patch.object(cli, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
-                stack.enter_context(patch.object(artifacts, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
-                stack.enter_context(patch.object(replay, "OFFICIAL_ROOT_ANTIGRAVITY", official_root))
-                stack.enter_context(
-                    patch(
-                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
-                        return_value=authority,
-                    )
-                )
-                stack.enter_context(
-                    patch(
-                        "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
-                        return_value=qualification,
-                    )
-                )
-                evaluated = cli._evaluate_official_antigravity(_COMMIT_ANTIGRAVITY)
-                inspected = cli._inspect_official_antigravity()
-                self.assertEqual(official_root, cli.OFFICIAL_ROOT_ANTIGRAVITY)
-            self.assertEqual(evaluated, inspected)
-            self.assertTrue(official_root.is_dir())
-            self.assertEqual(tuple(evaluated["leaf_sha256"]), LEAVES_ANTIGRAVITY)
-            self.assertEqual(evaluated["decision"]["label_query_count"], 0)
+        self.assertFalse(hasattr(cli, "_evaluate_official_antigravity"))
+        self.assertFalse(hasattr(cli, "_inspect_official_antigravity"))
+        self.assertNotIn("_official_lifecycle_authority_antigravity", getattr(artifacts, "__all__", ()))
+
+    def test_private_root_existing_path_fails_before_validation_or_qualification_antigravity(self) -> None:
+        """Break caught: existing private root reaches validation or heavy compute."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        with tempfile.TemporaryDirectory(prefix="exp464_cli_existing_root_antigravity_") as temporary:
+            root = Path(temporary) / "result_antigravity"
+            root.mkdir()
+            private = types.ModuleType("_exp464_cli_private_test_antigravity")
+            private.CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+            private.root_antigravity = root
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                patch.object(
+                    cli,
+                    "_validate_clean_current_commit_antigravity",
+                    side_effect=AssertionError("clean validation should not run"),
+                ),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                    side_effect=AssertionError("qualification should not run"),
+                ),
+                self.assertRaisesRegex(ValueError, "create-only"),
+            ):
+                cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
+
+    def test_private_root_symlink_fails_before_validation_or_qualification_antigravity(self) -> None:
+        """Break caught: symlink private root reaches validation or heavy compute."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        with tempfile.TemporaryDirectory(prefix="exp464_cli_symlink_root_antigravity_") as temporary:
+            link_root = Path(temporary) / "result_antigravity"
+            target_root = Path(temporary) / "target_antigravity"
+            target_root.mkdir()
+            link_root.symlink_to(target_root, target_is_directory=True)
+            private = types.ModuleType("_exp464_cli_private_test_antigravity")
+            private.CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+            private.root_antigravity = link_root
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                patch.object(
+                    cli,
+                    "_validate_clean_current_commit_antigravity",
+                    side_effect=AssertionError("clean validation should not run"),
+                ),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                    side_effect=AssertionError("qualification should not run"),
+                ),
+                self.assertRaisesRegex(ValueError, "non-symlink"),
+            ):
+                cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
+
+    def test_private_root_rebound_fails_before_qualification_antigravity(self) -> None:
+        """Break caught: root created after preflight still reaches heavy compute."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        authority, _qualification = self._source_free_lower_layer_inputs_antigravity()
+        with tempfile.TemporaryDirectory(prefix="exp464_cli_rebound_root_antigravity_") as temporary:
+            root = Path(temporary) / "result_antigravity"
+            private = types.ModuleType("_exp464_cli_private_test_antigravity")
+            private.CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+            private.root_antigravity = root
+
+            def rebound_validate_antigravity(_commit: str) -> None:
+                root.mkdir()
+
+            with (
+                patch.dict(sys.modules, {private.__name__: private}),
+                patch.object(
+                    cli,
+                    "_validate_clean_current_commit_antigravity",
+                    side_effect=rebound_validate_antigravity,
+                ),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity.capture_exp463_authority_antigravity",
+                    return_value=authority,
+                ),
+                patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity.qualify_methods_antigravity",
+                    side_effect=AssertionError("qualification should not run"),
+                ),
+                self.assertRaisesRegex(ValueError, "create-only"),
+            ):
+                cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
 
     def test_private_root_guard_rejects_resolved_official_alias_antigravity(self) -> None:
         """Break caught: a lexical alias selects the official root."""
@@ -306,7 +490,11 @@ class CliAntigravityTest(unittest.TestCase):
         private.root_antigravity = alias
         with (
             patch.dict(sys.modules, {private.__name__: private}),
-            patch.object(cli, "_validate_clean_current_commit_antigravity", return_value=None),
+            patch.object(
+                cli,
+                "_validate_clean_current_commit_antigravity",
+                side_effect=AssertionError("clean validation should not run"),
+            ),
             self.assertRaisesRegex(ValueError, "private test root must be a non-official Path"),
         ):
             cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
@@ -316,6 +504,24 @@ class CliAntigravityTest(unittest.TestCase):
         ):
             cli.main_antigravity(["inspect"])
         self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
+
+    def test_private_root_guard_rejects_non_path_before_validation_antigravity(self) -> None:
+        """Break caught: non-Path private root reaches validation."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        private = types.ModuleType("_exp464_cli_private_test_antigravity")
+        private.CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+        private.root_antigravity = "not-a-path"
+        with (
+            patch.dict(sys.modules, {private.__name__: private}),
+            patch.object(
+                cli,
+                "_validate_clean_current_commit_antigravity",
+                side_effect=AssertionError("clean validation should not run"),
+            ),
+            self.assertRaisesRegex(ValueError, "private test root must be a non-official Path"),
+        ):
+            cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
 
     def test_inspect_dependency_path_avoids_source_sqlite_and_aeon_imports_antigravity(self) -> None:
         """Break caught: inspect imports TRAIN source, SQLite, or aeon."""

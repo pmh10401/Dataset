@@ -9,9 +9,9 @@ from pathlib import Path
 
 from .artifacts_antigravity import (
     _LEAVES_ANTIGRAVITY,
+    _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY,
     _context_payload_antigravity,
     _decision_payload_antigravity,
-    _official_lifecycle_authority_antigravity,
     _payloads_antigravity,
     _row_payload_antigravity,
     _summary_payload_antigravity,
@@ -97,9 +97,9 @@ def _load_antigravity(
     official_lifecycle_authority: object | None = None,
 ) -> dict[str, bytes]:
     if isinstance(root, Path) and root.resolve(strict=False) == OFFICIAL_ROOT_ANTIGRAVITY.resolve(strict=False):
-        if official_lifecycle_authority is not _official_lifecycle_authority_antigravity():
+        if official_lifecycle_authority is not _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY:
             raise ValueError("official result root requires internal official lifecycle authority")
-    elif official_lifecycle_authority is _official_lifecycle_authority_antigravity():
+    elif official_lifecycle_authority is _OFFICIAL_LIFECYCLE_AUTHORITY_ANTIGRAVITY:
         raise ValueError("internal official lifecycle authority requires the exact official result root")
     if (
         not isinstance(root, Path)
