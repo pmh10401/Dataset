@@ -3,7 +3,7 @@
 <body><main>
 <h1>Exp463 Task 3 — prefix-scaled ramp and seven method scores</h1>
 <p><strong>status:</strong> <code>COMPLETE_PENDING_TASK_4</code> — Task 2 and Task 3 reviews are SHIP (spec PASS, quality APPROVED, C/I0). Task 3 heading plus six steps are closed 7/7; Task 4 is next.</p>
-<p><strong>lifecycle:</strong> <code>task_3_complete_pending_task_4</code>. official evaluate 0 / inspect 0 (Official evaluate 0 / inspect 0); no qualification, private TRAIN result, result publication, TEST-label access, routing, champion/pending mutation, promotion, or official-root creation occurred.</p>
+<p><strong>lifecycle:</strong> <code>task_4_complete_pending_task_5</code>. official evaluate 0 / inspect 0 (Official evaluate 0 / inspect 0); no private full TRAIN result, result publication, TEST-label access, routing, champion/pending mutation, promotion, or official-root creation occurred.</p>
 <p><strong>approved design SHA-256:</strong> <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></p>
 
 <h2>Frozen Task 2 boundary</h2>
@@ -54,4 +54,14 @@
 <h2>Historical commits and closeout</h2>
 <p>Functional lineage includes foundation <code>ef65ca67</code>, compatibility fix <code>0aff6412</code>, authority fix <code>4dba38a9</code>, type/combination fix <code>876fa262</code>, and their map children <code>1ce308d7</code>, <code>0e763cb3</code>, and <code>62378382</code>. The latest historical map child <code>62378382</code> binds to functional parent <code>876fa262</code>. This report records stable historical bindings and does not claim a mutable current HEAD or its own future containing commit.</p>
 <p>Task 2 closeout remains SHIP (spec PASS, quality APPROVED, C/I0), with its plan heading plus six steps checked 7/7. Task 3 closeout is SHIP (spec PASS, quality APPROVED, C/I0), with its heading plus six steps checked 7/7; Task 4 is next, while Tasks 5–6 remain unchecked. Official/private/label counts remain 0; result hashes remain <code>null</code>; champion, pending candidate, routing, and promotion remain unchanged.</p>
+<h2>Task 4 handoff — blocked qualification, publication, semantic replay</h2>
+<p><strong>status:</strong> <code>COMPLETE_PENDING_TASK_5</code> — Task 4 implementation is present pending fresh independent review. Its plan heading and six controls intentionally remain unchecked.</p>
+<ul>
+<li><code>qualification_antigravity.py</code> normalizes immutable score evidence into exactly 70 ordered M0–M6 × seed × blocked-fold rows and seven ordered summaries. It recomputes four ordered AUCs, pooled mean, Wilson bound, finite status, pass reasons, and requires M0/M6 aggregate reproduction against the frozen Exp462 controls.</li>
+<li><code>evaluation_antigravity.py</code> evaluates only M2 <code>hydra_period_ramp_gated_max</code>. It applies 10/10, per-type, pooled, Wilson, finite, gradual, global-period, and both historical-period gates from normalized evidence. M4/M5 remain diagnostics; no routing or label access is represented.</li>
+<li><code>artifacts_antigravity.py</code> publishes exactly seven canonical leaves: context, method-fold metrics, failed folds, method summaries JSONL, decision, aggregate dashboard, and self-excluding SHA-256 inventory. Publication is create-only.</li>
+<li><code>replay_antigravity.py</code> is source-free. It rejects extra/missing/reordered/noncanonical/bool-tampered leaves and recomputes rows, summaries, M0/M6 controls, M2 decision, dashboard, and payload bytes before accepting a root.</li>
+</ul>
+<p><strong>TDD:</strong> the Task 4 RED run recorded 9 expected missing-module errors. Focused Task 4 GREEN ran <code>9/9</code> twice. Temporary publication→inspect equality and rehashed metric/inventory tamper tests pass. No private full TRAIN run or official command was performed.</p>
+<div class="warn"><strong>Concern:</strong> full private result values remain unmaterialized by design. Task 5 must invoke this boundary with the reviewed scorer, preserve CPU fallback, and record its independent M0/M6 and all-M2-gate evidence before any separate official approval.</div>
 </main></body></html>

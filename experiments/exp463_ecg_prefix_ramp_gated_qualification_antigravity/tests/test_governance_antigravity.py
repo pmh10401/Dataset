@@ -224,7 +224,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["status"], "planned_implementation_not_started")
                 self.assertEqual(
                     record["implementation_status"],
-                    "task_3_complete_pending_task_4",
+                    "task_4_complete_pending_task_5",
                 )
                 self.assertEqual(record["run_identity"], RUN_IDENTITY_ANTIGRAVITY)
                 self.assertEqual(record["run_root"], RUN_ROOT_ANTIGRAVITY)
@@ -323,7 +323,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         for phrase in (
             "Exp463 Task 3",
             "SHIP",
-            "task_3_complete_pending_task_4",
+            "task_4_complete_pending_task_5",
             "RED",
             "GREEN",
             "official evaluate 0 / inspect 0",
@@ -339,7 +339,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         )
         for phrase in (
             "Task 1",
-            "task_3_complete_pending_task_4",
+            "task_4_complete_pending_task_5",
             "hydra_period_ramp_gated_max",
             "0.995",
             "56",
@@ -389,8 +389,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIsNotNone(embedded)
         assert embedded is not None
         self.assertEqual(json.loads(html.unescape(embedded.group(1))), graph)
-        self.assertEqual(graph["schema"], "exp463_task3_boundary_codemap_v1")
-        self.assertEqual(lock["schema"], "exp463_task3_boundary_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp463_task4_boundary_codemap_v1")
+        self.assertEqual(lock["schema"], "exp463_task4_boundary_codemap_lock_v1")
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))
         head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True
@@ -422,7 +422,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task3_scoring",
             "task3_ramp_feature_tests",
             "task3_scoring_tests",
-            "task4_unknown",
+            "task4_qualification",
+            "task4_evaluation",
+            "task4_artifacts",
+            "task4_replay",
+            "task4_dashboard",
+            "task4_qualification_tests",
+            "task4_evaluation_tests",
+            "task4_artifacts_tests",
+            "task4_replay_tests",
+            "task4_dashboard_tests",
             "task5_unknown",
         ):
             self.assertIn(node_id, node_ids)
