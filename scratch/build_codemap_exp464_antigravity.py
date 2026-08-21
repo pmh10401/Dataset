@@ -31,8 +31,11 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
     ".superpowers/sdd/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/task-4-report-antigravity.md",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/config_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/control_row_evidence_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/contracts_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/exp463_control_row_evidence_antigravity.jsonl",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/predecessor_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/raw_evidence_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/sources_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/centered_ramp_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/scoring_antigravity.py",
@@ -131,6 +134,10 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     task3_scoring_test = (
         "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
         "test_scoring_antigravity.py"
+    )
+    task2_predecessor_test = (
+        "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
+        "test_predecessor_antigravity.py"
     )
     task4_qualification_test = (
         "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
@@ -246,18 +253,32 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
+            "task2_control_row_evidence_file",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/exp463_control_row_evidence_antigravity.jsonl",
+            "Caller: tracked control-evidence loader. Effect: freezes the reviewed forty Exp463 C0/C1/C2/C7 control rows plus canonical provenance and digests for source-free authority replay.",
+            symbol="exp463_control_row_evidence_antigravity.jsonl",
+            tests=(governance_test, task2_predecessor_test, task4_qualification_test),
+        ),
+        _node_antigravity(
+            "task2_control_row_evidence_module",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/control_row_evidence_antigravity.py",
+            "Caller: Task 2 contracts and predecessor capture. Effect: parses the tracked control-row evidence file, validates metadata/order, and re-derives exact per-fold control digests.",
+            symbol="load_control_row_evidence_antigravity",
+            tests=(governance_test, task2_predecessor_test, task4_qualification_test),
+        ),
+        _node_antigravity(
             "task2_contracts",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/contracts_antigravity.py",
             "Caller: Task 3 scorer and Task 4 qualification. Effect: freezes exact-type Exp463 summaries and rejects forged authority fields.",
             symbol="Exp463AuthorityAntigravity",
-            tests=(governance_test, task3_scoring_test, task4_qualification_test),
+            tests=(governance_test, task2_predecessor_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task2_predecessor",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/predecessor_antigravity.py",
             "Caller: Task 3 scorer and Task 4 qualification. Effect: captures frozen Exp463 terminal authority from the approved tracked truth only.",
             symbol="capture_exp463_authority_antigravity",
-            tests=(governance_test, task3_scoring_test, task4_qualification_test),
+            tests=(governance_test, task2_predecessor_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task2_sources",
@@ -272,6 +293,13 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "Caller: task3_scoring. Effect: computes centered residual amplitude/cosine evidence that Task 4 consumes only through frozen fold scores.",
             symbol="CenteredRampEvidenceAntigravity",
             tests=(task3_feature_test, task3_scoring_test, exp463_feature_regression),
+        ),
+        _node_antigravity(
+            "task3_raw_evidence",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/raw_evidence_antigravity.py",
+            "Caller: Task 3 scoring and Task 4 qualification. Effect: encodes and decodes raw vector evidence so replay can recompute amplitudes, cosines, counts, and score arrays source-free.",
+            symbol="encode_vector_matrix_antigravity",
+            tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task3_scoring",
@@ -385,12 +413,17 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         {"from": "governance_test", "relation": "covers", "to": "task4_replay"},
         {"from": "governance_test", "relation": "covers", "to": "task4_dashboard_export"},
         {"from": "task2_config", "relation": "freezes_inputs_for", "to": "task2_contracts"},
+        {"from": "task2_control_row_evidence_file", "relation": "freezes_inputs_for", "to": "task2_control_row_evidence_module"},
+        {"from": "task2_control_row_evidence_module", "relation": "feeds", "to": "task2_contracts"},
+        {"from": "task2_control_row_evidence_module", "relation": "feeds", "to": "task2_predecessor"},
         {"from": "task2_config", "relation": "freezes_inputs_for", "to": "task2_predecessor"},
         {"from": "task2_config", "relation": "freezes_inputs_for", "to": "task3_scoring"},
         {"from": "task2_contracts", "relation": "guards", "to": "task4_qualification"},
         {"from": "task2_predecessor", "relation": "feeds", "to": "task4_qualification"},
         {"from": "task2_sources", "relation": "feeds", "to": "task4_qualification"},
         {"from": "task3_centered_ramp_feature", "relation": "feeds", "to": "task3_scoring"},
+        {"from": "task3_raw_evidence", "relation": "feeds", "to": "task3_scoring"},
+        {"from": "task3_raw_evidence", "relation": "feeds", "to": "task4_qualification"},
         {"from": "task3_scoring", "relation": "feeds", "to": "task4_qualification"},
         {"from": "task4_qualification", "relation": "feeds", "to": "task4_evaluation"},
         {"from": "task4_qualification", "relation": "feeds", "to": "task4_artifacts"},
@@ -419,6 +452,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         ],
         "flow_count": 3,
     }
+    graph["flows"] = [
+        "governance_test -> docs/ledgers/map",
+        "tracked Exp463 control evidence file -> control evidence loader -> contracts/predecessor",
+        "raw evidence codecs -> Task 3 scoring -> Task 4 qualification/replay",
+        "Task 2 foundation -> Task 3 scoring -> Task 4 qualification/evaluation/artifacts/replay/dashboard",
+        "Task 4 artifacts/replay -> future Task 5 private qualification",
+    ]
+    graph["flow_count"] = len(graph["flows"])
     return graph
 
 

@@ -147,12 +147,6 @@ class PredecessorAntigravityTest(unittest.TestCase):
         )
         original = evidence_path.read_text(encoding="utf-8").splitlines()
 
-        def write_variant_antigravity(lines: list[str]) -> Path:
-            tempdir = Path(tempfile.mkdtemp(prefix="exp464_control_evidence_mutation_antigravity_"))
-            path = tempdir / "exp463_control_row_evidence_antigravity.jsonl"
-            path.write_text("".join(line + "\n" for line in lines), encoding="utf-8")
-            return path
-
         metadata = deepcopy(__import__("json").loads(original[0]))
         metadata["source_leaf_sha256"] = "0" * 64
         bad_meta = original.copy()
@@ -171,13 +165,26 @@ class PredecessorAntigravityTest(unittest.TestCase):
             ("row", bad_row),
             ("order", swapped),
         ):
-            path = write_variant_antigravity(lines)
             with (
                 self.subTest(mutation=name),
-                patch.object(control_row_evidence_antigravity, "_EVIDENCE_PATH_ANTIGRAVITY", path),
-                self.assertRaises(ValueError),
+                tempfile.TemporaryDirectory(
+                    prefix="exp464_control_evidence_mutation_antigravity_"
+                ) as temporary,
             ):
-                predecessor_antigravity.capture_exp463_authority_antigravity()
+                path = Path(temporary) / "exp463_control_row_evidence_antigravity.jsonl"
+                path.write_text(
+                    "".join(line + "\n" for line in lines),
+                    encoding="utf-8",
+                )
+                with (
+                    patch.object(
+                        control_row_evidence_antigravity,
+                        "_EVIDENCE_PATH_ANTIGRAVITY",
+                        path,
+                    ),
+                    self.assertRaises(ValueError),
+                ):
+                    predecessor_antigravity.capture_exp463_authority_antigravity()
 
     def test_capture_rejects_consistent_forged_terminal_row_fields_antigravity(self) -> None:
         """Break caught: mutually consistent forged terminal ledger evidence must be rejected field-by-field."""

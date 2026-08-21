@@ -36,15 +36,18 @@ DOCUMENTS_ANTIGRAVITY = (
 FOUNDATION_FILES_ANTIGRAVITY = (
     f"{PACKAGE_ANTIGRAVITY}/config_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/centered_ramp_antigravity.py",
+    f"{PACKAGE_ANTIGRAVITY}/control_row_evidence_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/contracts_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/predecessor_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/qualification_antigravity.py",
+    f"{PACKAGE_ANTIGRAVITY}/raw_evidence_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/evaluation_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/artifacts_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/replay_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/dashboard_export_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/scoring_antigravity.py",
     f"{PACKAGE_ANTIGRAVITY}/sources_antigravity.py",
+    f"{PACKAGE_ANTIGRAVITY}/exp463_control_row_evidence_antigravity.jsonl",
 )
 TEST_FILES_ANTIGRAVITY = (
     f"{PACKAGE_ANTIGRAVITY}/tests/test_config_antigravity.py",
@@ -97,9 +100,12 @@ EXPECTED_NODE_IDS_ANTIGRAVITY = {
     "governance_test",
     "map_builder",
     "task2_config",
+    "task2_control_row_evidence_file",
+    "task2_control_row_evidence_module",
     "task2_contracts",
     "task2_predecessor",
     "task2_sources",
+    "task3_raw_evidence",
     "task3_centered_ramp_feature",
     "task3_scoring",
     "task4_qualification",
@@ -113,6 +119,22 @@ EXPECTED_NODE_IDS_ANTIGRAVITY = {
     "task4_replay_test",
     "task4_dashboard_test",
     "future_task5_private_qualification",
+}
+EXPECTED_TRACKED_FINGERPRINTS_ANTIGRAVITY = {
+    f"{PACKAGE_ANTIGRAVITY}/control_row_evidence_antigravity.py",
+    f"{PACKAGE_ANTIGRAVITY}/raw_evidence_antigravity.py",
+    f"{PACKAGE_ANTIGRAVITY}/exp463_control_row_evidence_antigravity.jsonl",
+}
+EXPECTED_EDGE_TRIPLES_ANTIGRAVITY = {
+    ("task2_control_row_evidence_file", "freezes_inputs_for", "task2_control_row_evidence_module"),
+    ("task2_control_row_evidence_module", "feeds", "task2_contracts"),
+    ("task2_control_row_evidence_module", "feeds", "task2_predecessor"),
+    ("task3_raw_evidence", "feeds", "task3_scoring"),
+    ("task3_raw_evidence", "feeds", "task4_qualification"),
+}
+EXPECTED_FLOWS_ANTIGRAVITY = {
+    "tracked Exp463 control evidence file -> control evidence loader -> contracts/predecessor",
+    "raw evidence codecs -> Task 3 scoring -> Task 4 qualification/replay",
 }
 EXPECTED_LEAVES_ANTIGRAVITY = (
     "context_antigravity.json",
@@ -296,7 +318,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         plan_text = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
         self.assertIn(STATUS_ANTIGRAVITY, plan_text)
         self.assertIn("21/42", plan_text)
-        self.assertIn("focused suite 15 tests", plan_text)
+        self.assertIn("focused suite 16 tests", plan_text)
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(
@@ -349,6 +371,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(graph["node_count"], len(graph["nodes"]))
         self.assertEqual(graph["edge_count"], len(graph["edges"]))
         self.assertEqual(lock["fingerprint_count"], len(lock["tracked_fingerprints"]))
+        fingerprint_paths = {
+            fingerprint["path"] for fingerprint in lock["tracked_fingerprints"]
+        }
+        self.assertTrue(
+            EXPECTED_TRACKED_FINGERPRINTS_ANTIGRAVITY.issubset(fingerprint_paths)
+        )
+        edge_triples = {
+            (edge["from"], edge["relation"], edge["to"]) for edge in graph["edges"]
+        }
+        self.assertTrue(EXPECTED_EDGE_TRIPLES_ANTIGRAVITY.issubset(edge_triples))
+        self.assertTrue(EXPECTED_FLOWS_ANTIGRAVITY.issubset(set(graph["flows"])))
         self.assertIn("task_4_implemented_awaiting_fresh_review", html_text)
         self.assertIn("Task 5 private qualification", html_text)
 

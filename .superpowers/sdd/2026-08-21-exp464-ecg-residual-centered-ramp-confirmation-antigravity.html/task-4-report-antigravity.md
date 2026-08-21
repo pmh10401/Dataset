@@ -112,7 +112,7 @@ Command:
 
 Observed current GREEN:
 
-- `Ran 15 tests`
+- `Ran 16 tests`
 - `OK`
 
 The focused suite now covers:
@@ -169,7 +169,7 @@ Command:
 
 Observed current GREEN:
 
-- `Ran 41 tests`
+- `Ran 42 tests`
 - `OK`
 
 ## Direct publication / replay evidence
@@ -227,6 +227,9 @@ The broader semantic tamper matrix is also covered by the focused replay suite a
   - official Exp464 root present: `false`
   - recovery temp root present: `false`
   - active Exp464 non-test process list: `[]`
+- temporary-directory leak re-check:
+  - `test_predecessor_antigravity.py` no longer uses `mkdtemp`
+  - removed 27 stale `exp464_control_evidence_mutation_antigravity_*` roots after verifying each contained only `exp463_control_row_evidence_antigravity.jsonl`
 
 ## Status truth preserved
 
