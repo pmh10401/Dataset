@@ -219,6 +219,23 @@ class Exp463ConfigAntigravity:
     def predecessor_private_sha256(self) -> Mapping[str, str]:
         return self.predecessor_leaf_sha256
 
+    @property
+    def predecessor_primary_passed_count(self) -> int:
+        return self.predecessor_passed_record_count
+
+    @property
+    def predecessor_primary_required_count(self) -> int:
+        return self.predecessor_required_record_count
+
+    @property
+    def predecessor_primary_result_candidate(self) -> str:
+        return self.predecessor_primary_candidate
+
+    @property
+    def predecessor_artifact_sha256(self) -> str:
+        return self.predecessor_artifact_map_sha256
+
+
 
 _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
     {

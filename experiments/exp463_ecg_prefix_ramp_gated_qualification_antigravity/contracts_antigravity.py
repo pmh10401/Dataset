@@ -479,9 +479,14 @@ Exp462HistoricalPeriodFoldAntigravity = Exp463HistoricalPeriodFoldAntigravity
 HistoricalPeriodFoldAntigravity = Exp463HistoricalPeriodFoldAntigravity
 Exp462QualificationAuthorityAntigravity = Exp462AuthorityAntigravity
 Exp462ResultSummaryAntigravity = Exp462MethodSummaryAntigravity
+Exp462ResultRowAntigravity = Exp462ResultRowIdentityAntigravity
+Exp462SummaryAntigravity = Exp462MethodSummaryAntigravity
+Exp462PrivateResultAntigravity = Exp462ResultSnapshotAntigravity
 Exp463FoldMetricAntigravity = Exp463MethodFoldMetricAntigravity
 Exp463SummaryAntigravity = Exp463MethodSummaryAntigravity
 Exp463QualificationAntigravity = Exp463QualificationContractAntigravity
+Exp463MetricRowAntigravity = Exp463MethodFoldMetricAntigravity
+Exp463SummaryContractAntigravity = Exp463MethodSummaryAntigravity
 
 
 __all__ = (
@@ -489,15 +494,20 @@ __all__ = (
     "Exp462HistoricalPeriodFoldAntigravity",
     "HistoricalPeriodFoldAntigravity",
     "Exp462ResultRowIdentityAntigravity",
+    "Exp462ResultRowAntigravity",
     "Exp462MethodSummaryAntigravity",
+    "Exp462SummaryAntigravity",
     "Exp462ResultSnapshotAntigravity",
+    "Exp462PrivateResultAntigravity",
     "Exp462AuthorityAntigravity",
     "Exp462QualificationAuthorityAntigravity",
     "Exp462ResultSummaryAntigravity",
     "Exp463MethodFoldMetricAntigravity",
     "Exp463FoldMetricAntigravity",
+    "Exp463MetricRowAntigravity",
     "Exp463MethodSummaryAntigravity",
     "Exp463SummaryAntigravity",
+    "Exp463SummaryContractAntigravity",
     "Exp463QualificationContractAntigravity",
     "Exp463QualificationAntigravity",
     "MethodFoldMetricAntigravity",
