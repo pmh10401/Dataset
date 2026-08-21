@@ -16,7 +16,7 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><th>Architecture</th><td>Exp463의 TRAIN-only 평가 흐름을 controlled fork한다. 새 특징 모듈은 template residual, 평균 0인 ramp 기저, amplitude rank, Pearson cosine을 계산하고, scorer는 C0–C8 고정 비교를 만든다. qualification·publication·replay는 점수에서 결과를 다시 계산하며 private gate 통과 전에는 공식 실행을 열지 않는다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, stdlib unittest/json/hashlib/pathlib, 기존 aeon/Hydra CPU 경로. 고정 interpreter: <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>.</td></tr>
 <tr><th>Spec</th><td><code>docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html</code>, SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code>. Task 1은 구현 직전 같은 값을 다시 계산해 config와 ledgers에 고정한다.</td></tr>
-<tr><th>Current status</th><td><code>task_1_complete_pending_task_2</code>; Task 1은 fresh review에서 spec PASS / quality APPROVED / Critical·Important·Minor 0으로 닫혔다. Task 1 heading과 여섯 step은 checked이고, Task 2가 다음 단계다. Tasks 2–6 checkbox는 모두 unchecked다.</td></tr>
+<tr><th>Current status</th><td><code>task_2_implemented_awaiting_fresh_review</code>; Task 1은 fresh review에서 닫혔고, Task 2 foundation 구현은 끝났다. 다음 단계는 fresh Task 2 review다. review 전이므로 Task 1 heading과 여섯 step만 checked이고, Tasks 2–6 checkbox는 모두 unchecked다.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -69,6 +69,7 @@ python3 scratch/build_codemap_exp464_antigravity.py --validate-only</code></pre>
 <h2><label><input type="checkbox" disabled> Task 2 — frozen Exp463 authority and TRAIN source</label></h2>
 <p><strong>Files:</strong> Create package <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code> and four matching tests. Modify Task 1 docs, plan, ledgers and map.</p>
 <p><strong>Interfaces:</strong> Produces <code>FROZEN_CONFIG_ANTIGRAVITY: Exp464ConfigAntigravity</code>, <code>capture_exp463_authority_antigravity() -&gt; Exp463AuthorityAntigravity</code>, <code>validate_exp463_authority_antigravity(authority)</code>, and <code>load_normal2_train_antigravity() -&gt; np.ndarray</code> of exact shape <code>(1413,140)</code>, float32, finite, owned, C-contiguous, read-only.</p>
+<p><strong>Current state:</strong> Implementation is complete and fresh review is next. Task 2 checkbox remains unchecked until that review closes.</p>
 <ol>
 <li><label><input type="checkbox" disabled> <strong>Step 1 — RED frozen config and contracts.</strong></label><pre><code>self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY.method_order,
                  ("C0","C1","C2","C3","C4","C5","C6","C7","C8"))

@@ -1,26 +1,25 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{border-left:6px solid #2457a6;background:#f5f7fa;padding:1rem}.stop{border-left:6px solid #b42318;background:#fff4f2;padding:1rem}</style></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 Task 2 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{border-left:6px solid #2457a6;background:#f5f7fa;padding:1rem}.stop{border-left:6px solid #b42318;background:#fff4f2;padding:1rem}</style></head>
 <body><main>
-<h1>Exp464 Task 1 구현 보고서</h1>
-<p><strong>현재 상태:</strong> Task 1 closeout 완료. closeout truth는 <code>task_1_complete_pending_task_2</code>이며, fresh review verdict는 spec PASS / quality APPROVED / Critical·Important·Minor 0이다. Task 2가 다음 단계이고, science module은 아직 시작하지 않았다.</p>
+<h1>Exp464 Task 2 구현 보고서</h1>
+<p><strong>현재 상태:</strong> Task 2 foundation 구현 완료, 상태는 <code>task_2_implemented_awaiting_fresh_review</code>다. 다음 단계는 fresh Task 2 review이며, scorer와 그 이후 science module은 아직 시작하지 않았다.</p>
 <table>
 <tr><th>approved design</th><td>SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code></td></tr>
 <tr><th>predecessor</th><td>Exp463 terminal closeout <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
-<tr><th>task scope</th><td>governance, HTML 문서, ledger truth, code map boundary만 포함</td></tr>
-<tr><th>out of scope</th><td>Task 2+ 모듈, TRAIN source load, private run, official evaluate/inspect, TEST label query, package install</td></tr>
+<tr><th>task scope</th><td>frozen config, immutable contracts, Exp463 predecessor authority capture, TRAIN source boundary, Task 2 truth update, code map handoff</td></tr>
+<tr><th>out of scope</th><td>Task 3+ 모듈, scoring, qualification, private run, official evaluate/inspect, TEST label query, package install</td></tr>
 <tr><th>official / private / label counts</th><td><code>0 / 0 / 0</code></td></tr>
-<tr><th>next action</th><td>Task 2 next</td></tr>
+<tr><th>next action</th><td>fresh Task 2 review next</td></tr>
 </table>
 
-<h2>Task 1 deliverables</h2>
+<h2>Task 2 deliverables</h2>
 <ul>
-<li>네 개의 Exp464 HTML 문서</li>
-<li>세 ledger의 Exp464 planned row</li>
-<li>Exp464 governance test와 code map builder</li>
-<li>Exp464 code map HTML/JSON/lock triplet</li>
+<li>네 개의 foundation 모듈: <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code></li>
+<li>Task 2 focused test 네 개와 Exp464 governance truth 업데이트</li>
+<li>세 ledger, 네 HTML 문서, 계획서, code map builder/triplet의 Task 2 handoff 반영</li>
 </ul>
 
-<div class="note"><p>대시보드는 Exp463의 M0 <code>9/10</code>, M1 <code>0/10</code>, M2 <code>7/10</code>, M4 <code>9/10</code>를 쉬운 한국어로 설명한다. 핵심 메시지는 “M4가 공통 파형 제거의 필요성을 보여줬지만, 진단용 근거일 뿐 승격 후보는 아니다”이다.</p></div>
-<div class="note"><p>Closeout after review: Task 1 heading과 여섯 step만 checked다. 전체 checkbox 42개 중 checked는 정확히 7개이며, Tasks 2–6은 모두 unchecked 상태로 남겨 둔다.</p></div>
-<div class="stop"><p>이 closeout에서도 Task 2+ 모듈, TRAIN source load, private run, official command, TEST label query는 수행하지 않았다. champion, pending candidate, routing, promotion도 바꾸지 않았다.</p></div>
+<div class="note"><p>Exp463 Task 5 report SHA-256을 먼저 확인한 뒤, 세 ledger와 구현 보고서를 서로 대조해서 terminal commit, reviewed CLI commit, 두 번의 private run equality, 70/30/7/7 inventory, artifact-map SHA-256, C0/C1/C2/C7 summary minima를 읽었다. 이 값은 다음 Task 3 scorer가 의존하는 authority 경계다.</p></div>
+<div class="note"><p>Review 전 상태이므로 계획 checkbox는 여전히 Task 1 heading과 여섯 step만 checked다. 전체 checkbox 42개 중 checked는 정확히 7개이며, Task 2–6은 모두 unchecked 상태로 남겨 둔다.</p></div>
+<div class="stop"><p>이번 구현에서도 Task 3+ 모듈, MLX, private run, official command, TEST label query는 수행하지 않았다. read-only TRAIN smoke 외의 실행은 없었고, champion, pending candidate, routing, promotion도 바꾸지 않았다.</p></div>
 </main></body></html>
