@@ -2818,7 +2818,7 @@
     "experiment": "Exp463",
     "kind": "ecg_prefix_ramp_gated_qualification",
     "status": "planned_implementation_not_started",
-    "implementation_status": "task_2_complete_pending_review",
+    "implementation_status": "task_2_complete_pending_task_3",
     "run_identity": "exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821",
     "run_root": "/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821",
     "package": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity",
@@ -2897,6 +2897,6 @@
     "scientific_winner_selected": false,
     "official_root_present": false,
     "review_only": false,
-    "notes": "Task 2 implementation is complete pending fresh review. Frozen Exp462 authority binds 30 rows, 3 summaries, 7 leaves, and the failed primary result; the owned TRAIN loader is finite, read-only, and label-free. Official evaluate/inspect counts remain 0, private TRAIN is 0, the official root is absent, label query count is 0, all result hashes are null, and champion, pending candidate, routing, and promotion remain unchanged. M0–M6 IDs/descriptions and the sole approved M2 implementation string remain frozen."
+    "notes": "Task 2 review is SHIP (spec PASS, quality APPROVED, C/I0): plan heading plus six steps are closed 7/7 and Task 3 is next. Frozen Exp462 authority binds 30 rows, 3 summaries, 7 leaves, and the failed primary result; the owned TRAIN loader is finite, read-only, and label-free. Official evaluate/inspect counts remain 0, private TRAIN is 0, the official root is absent, label query count is 0, all result hashes are null, and champion, pending candidate, routing, and promotion remain unchanged. M0–M6 IDs/descriptions and the sole approved M2 implementation string remain frozen."
   }
 }
