@@ -93,6 +93,92 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, payload)
 
+    def test_dashboard_uses_only_registered_keys_and_scalar_rows_antigravity(self) -> None:
+        """Break caught: dashboard invents free-form fields or exposes non-scalar payload values."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.dashboard_export_antigravity import (
+            export_dashboard_antigravity,
+        )
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.evaluation_antigravity import (
+            evaluate_qualification_antigravity,
+        )
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
+            capture_exp463_authority_antigravity,
+        )
+
+        authority = capture_exp463_authority_antigravity()
+        qualification = qualification_antigravity()
+        decision = evaluate_qualification_antigravity(qualification, authority)
+        dashboard = export_dashboard_antigravity(qualification, decision)
+        self.assertEqual(
+            set(dashboard),
+            {
+                "primary_candidate",
+                "primary_passed_count",
+                "primary_required_count",
+                "eligible_for_routing_research",
+                "method_summaries",
+                "failed_fold_count",
+                "historical_period_floors",
+                "non_degradation_counts",
+                "label_query_count",
+            },
+        )
+        for key in (
+            "primary_passed_count",
+            "primary_required_count",
+            "failed_fold_count",
+            "label_query_count",
+        ):
+            self.assertIsInstance(dashboard[key], int)
+        self.assertIsInstance(dashboard["primary_candidate"], str)
+        self.assertIsInstance(dashboard["eligible_for_routing_research"], bool)
+        for summary in dashboard["method_summaries"]:
+            self.assertEqual(
+                set(summary),
+                {
+                    "method",
+                    "fold_count",
+                    "passed_count",
+                    "failed_count",
+                    "min_level_shift_auc",
+                    "min_gradual_drift_auc",
+                    "min_amplitude_scaling_auc",
+                    "min_period_change_auc",
+                    "min_mean_auc",
+                    "max_normal_wilson_upper",
+                    "all_scores_finite",
+                    "passed",
+                },
+            )
+            self.assertEqual(
+                {type(summary[key]) for key in summary},
+                {str, int, float, bool},
+            )
+        for floor in dashboard["historical_period_floors"]:
+            self.assertEqual(
+                set(floor),
+                {
+                    "seed",
+                    "fold_index",
+                    "required_period_change_auc_min",
+                    "candidate_period_change_auc",
+                },
+            )
+            self.assertEqual(type(floor["seed"]), int)
+            self.assertEqual(type(floor["fold_index"]), int)
+            self.assertEqual(type(floor["required_period_change_auc_min"]), float)
+            self.assertEqual(type(floor["candidate_period_change_auc"]), float)
+        self.assertEqual(
+            set(dashboard["non_degradation_counts"]),
+            {"gradual_rows_not_below_c0", "period_rows_not_below_c0"},
+        )
+        self.assertTrue(
+            all(
+                type(value) is int
+                for value in dashboard["non_degradation_counts"].values()
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

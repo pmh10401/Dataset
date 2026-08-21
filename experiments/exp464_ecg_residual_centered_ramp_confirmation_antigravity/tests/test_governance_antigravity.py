@@ -296,7 +296,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         plan_text = (ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8")
         self.assertIn(STATUS_ANTIGRAVITY, plan_text)
         self.assertIn("21/42", plan_text)
-        self.assertIn("focused suite 10 tests", plan_text)
+        self.assertIn("focused suite 15 tests", plan_text)
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(

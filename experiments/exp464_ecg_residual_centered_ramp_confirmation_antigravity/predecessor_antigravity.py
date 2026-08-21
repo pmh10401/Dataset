@@ -14,6 +14,9 @@ from .contracts_antigravity import (
     Exp463MethodSummaryAntigravity,
     validate_exp463_authority_antigravity,
 )
+from .control_row_evidence_antigravity import (
+    load_control_row_evidence_antigravity,
+)
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 
 
@@ -413,8 +416,8 @@ def _validate_report_evidence_antigravity(
 
 
 def _control_row_digests_antigravity() -> dict[str, str]:
-    result = dict(FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_row_digests)
-    expected = tuple(FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_row_digests)
+    result = dict(load_control_row_evidence_antigravity().control_row_digests)
+    expected = tuple(load_control_row_evidence_antigravity().control_row_digests)
     if tuple(result) != expected:
         raise ValueError("Exp463 control row digests drifted from frozen order")
     return result

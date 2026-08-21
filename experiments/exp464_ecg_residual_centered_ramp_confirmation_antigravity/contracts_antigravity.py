@@ -12,6 +12,9 @@ from .config_antigravity import (
     FROZEN_CONFIG_ANTIGRAVITY,
     Exp463MethodSummarySnapshotAntigravity,
 )
+from .control_row_evidence_antigravity import (
+    load_control_row_evidence_antigravity,
+)
 
 
 def _int_antigravity(value: object, name: str, *, minimum: int = 0) -> int:
@@ -95,7 +98,7 @@ _CONTROL_ORDER_ANTIGRAVITY = tuple(_EXPECTED_CONTROL_SUMMARIES_ANTIGRAVITY)
 _EXPECTED_CONTROL_ROW_DIGESTS_ANTIGRAVITY = MappingProxyType(
     {
         key: value
-        for key, value in FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_row_digests.items()
+        for key, value in load_control_row_evidence_antigravity().control_row_digests.items()
     }
 )
 

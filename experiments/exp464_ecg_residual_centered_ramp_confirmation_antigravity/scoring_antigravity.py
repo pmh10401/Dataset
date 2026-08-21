@@ -8,11 +8,20 @@ from types import MappingProxyType
 
 import numpy as np
 
-from .centered_ramp_antigravity import centered_ramp_evidence_antigravity
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import (
     Exp463AuthorityAntigravity,
     validate_exp463_authority_antigravity,
+)
+from .raw_evidence_antigravity import (
+    RAW_CENTERED_ANTIGRAVITY,
+    TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+    TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+    amplitudes_cosines_from_vectors_antigravity,
+    encode_vector_matrix_antigravity,
+    raw_centered_vector_antigravity,
+    template_residual_centered_vector_antigravity,
+    template_residual_uncentered_vector_antigravity,
 )
 
 
@@ -25,6 +34,7 @@ _CHANGE_TYPES_ANTIGRAVITY = (
 )
 _CONFIRMATION_TYPES_ANTIGRAVITY = ("normal",) + _CHANGE_TYPES_ANTIGRAVITY
 _MAD_TO_NORMAL_SCALE_ANTIGRAVITY = 1.4826
+_RAW_CARRIER_METHODS_ANTIGRAVITY = ("C5", "C6", "C8")
 
 
 def _readonly_vector_antigravity(values: object, name: str) -> np.ndarray:
@@ -143,6 +153,25 @@ def _copy_query_evidence_antigravity(
     return MappingProxyType(frozen)
 
 
+def _copy_query_blob_mapping_antigravity(
+    values: Mapping[str, object],
+    name: str,
+) -> Mapping[str, str]:
+    if not isinstance(values, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    if tuple(values) == ():
+        return MappingProxyType({})
+    if tuple(values) != _CONFIRMATION_TYPES_ANTIGRAVITY:
+        raise ValueError(f"{name} must preserve evidence scope order")
+    frozen: dict[str, str] = {}
+    for scope in _CONFIRMATION_TYPES_ANTIGRAVITY:
+        blob = values[scope]
+        if type(blob) is not str or not blob:
+            raise ValueError(f"{name}[{scope}] must be a non-empty blob")
+        frozen[scope] = blob
+    return MappingProxyType(frozen)
+
+
 def anomaly_rank_antigravity(
     reference_scores: np.ndarray,
     scores: np.ndarray,
@@ -169,6 +198,10 @@ class FoldMethodScoresAntigravity:
     fit_amplitudes: Mapping[str, np.ndarray]
     query_amplitudes: Mapping[str, Mapping[str, np.ndarray]]
     query_cosines: Mapping[str, Mapping[str, np.ndarray]]
+    raw_evidence_kind: Mapping[str, str]
+    raw_evidence_source_method: Mapping[str, str]
+    raw_fit_vector_blobs: Mapping[str, str]
+    raw_query_vector_blobs: Mapping[str, Mapping[str, str]]
     feature_dimensions: Mapping[str, int]
     provenance: Mapping[str, str]
 
@@ -187,6 +220,14 @@ class FoldMethodScoresAntigravity:
             raise ValueError("query_amplitudes must preserve method order")
         if not isinstance(self.query_cosines, Mapping) or tuple(self.query_cosines) != self.methods:
             raise ValueError("query_cosines must preserve method order")
+        if not isinstance(self.raw_evidence_kind, Mapping) or tuple(self.raw_evidence_kind) != self.methods:
+            raise ValueError("raw_evidence_kind must preserve method order")
+        if not isinstance(self.raw_evidence_source_method, Mapping) or tuple(self.raw_evidence_source_method) != self.methods:
+            raise ValueError("raw_evidence_source_method must preserve method order")
+        if not isinstance(self.raw_fit_vector_blobs, Mapping) or tuple(self.raw_fit_vector_blobs) != self.methods:
+            raise ValueError("raw_fit_vector_blobs must preserve method order")
+        if not isinstance(self.raw_query_vector_blobs, Mapping) or tuple(self.raw_query_vector_blobs) != self.methods:
+            raise ValueError("raw_query_vector_blobs must preserve method order")
         if not isinstance(self.feature_dimensions, Mapping) or tuple(self.feature_dimensions) != self.methods:
             raise ValueError("feature_dimensions must preserve method order")
         if not isinstance(self.provenance, Mapping) or tuple(self.provenance) != self.methods:
@@ -198,6 +239,10 @@ class FoldMethodScoresAntigravity:
         frozen_fit_amplitudes: dict[str, np.ndarray] = {}
         frozen_query_amplitudes: dict[str, Mapping[str, np.ndarray]] = {}
         frozen_query_cosines: dict[str, Mapping[str, np.ndarray]] = {}
+        frozen_raw_kinds: dict[str, str] = {}
+        frozen_raw_sources: dict[str, str] = {}
+        frozen_raw_fit_blobs: dict[str, str] = {}
+        frozen_raw_query_blobs: dict[str, Mapping[str, str]] = {}
         expected_len: int | None = None
         for method in self.methods:
             original = _readonly_vector_antigravity(self.original[method], f"original[{method}]")
@@ -239,6 +284,34 @@ class FoldMethodScoresAntigravity:
             frozen_fit_amplitudes[method] = fit_amplitudes
             frozen_query_amplitudes[method] = query_amplitudes
             frozen_query_cosines[method] = query_cosines
+            raw_kind = self.raw_evidence_kind[method]
+            raw_source = self.raw_evidence_source_method[method]
+            raw_fit_blob = self.raw_fit_vector_blobs[method]
+            raw_query_blobs = _copy_query_blob_mapping_antigravity(
+                self.raw_query_vector_blobs[method],
+                f"raw_query_vector_blobs[{method}]",
+            )
+            if method in _RAW_CARRIER_METHODS_ANTIGRAVITY:
+                if type(raw_kind) is not str or raw_kind not in (
+                    RAW_CENTERED_ANTIGRAVITY,
+                    TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+                    TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+                ):
+                    raise ValueError("carrier methods must declare a valid raw evidence kind")
+                if raw_source != method:
+                    raise ValueError("carrier methods must source their own raw evidence")
+                if type(raw_fit_blob) is not str or not raw_fit_blob or tuple(raw_query_blobs) != _CONFIRMATION_TYPES_ANTIGRAVITY:
+                    raise ValueError("carrier methods must keep fit/query raw evidence blobs")
+            elif method in ("C3", "C4"):
+                if raw_kind or raw_fit_blob or tuple(raw_query_blobs) or raw_source != "C6":
+                    raise ValueError("C3/C4 must reference C6 raw evidence without storing blobs")
+            else:
+                if raw_kind or raw_source or raw_fit_blob or tuple(raw_query_blobs):
+                    raise ValueError("control methods must not keep raw evidence blobs")
+            frozen_raw_kinds[method] = raw_kind
+            frozen_raw_sources[method] = raw_source
+            frozen_raw_fit_blobs[method] = raw_fit_blob
+            frozen_raw_query_blobs[method] = raw_query_blobs
 
         frozen_dimensions: dict[str, int] = {}
         frozen_provenance: dict[str, str] = {}
@@ -258,6 +331,10 @@ class FoldMethodScoresAntigravity:
         object.__setattr__(self, "fit_amplitudes", MappingProxyType(frozen_fit_amplitudes))
         object.__setattr__(self, "query_amplitudes", MappingProxyType(frozen_query_amplitudes))
         object.__setattr__(self, "query_cosines", MappingProxyType(frozen_query_cosines))
+        object.__setattr__(self, "raw_evidence_kind", MappingProxyType(frozen_raw_kinds))
+        object.__setattr__(self, "raw_evidence_source_method", MappingProxyType(frozen_raw_sources))
+        object.__setattr__(self, "raw_fit_vector_blobs", MappingProxyType(frozen_raw_fit_blobs))
+        object.__setattr__(self, "raw_query_vector_blobs", MappingProxyType(frozen_raw_query_blobs))
         object.__setattr__(self, "feature_dimensions", MappingProxyType(frozen_dimensions))
         object.__setattr__(self, "provenance", MappingProxyType(frozen_provenance))
 
@@ -299,33 +376,6 @@ def _coerce_exp463_method_antigravity(
     return original_vector, primary_vectors, dimension, source
 
 
-def _centered_raw_evidence_antigravity(values: np.ndarray) -> tuple[float, float]:
-    row = np.asarray(values, dtype=np.float64)
-    suffix = row[FROZEN_CONFIG_ANTIGRAVITY.onset :]
-    centered = suffix - float(np.mean(suffix))
-    t = np.linspace(0.0, 1.0, len(suffix), dtype=np.float64)
-    basis = t - float(np.mean(t))
-    basis /= float(np.linalg.norm(basis))
-    amplitude = float(np.dot(centered, basis))
-    norm = float(np.linalg.norm(centered))
-    cosine = 0.0 if norm == 0.0 else amplitude / norm
-    return amplitude, cosine
-
-
-def _uncentered_residual_evidence_antigravity(
-    values: np.ndarray,
-    template: np.ndarray,
-) -> tuple[float, float]:
-    residual = np.asarray(values, dtype=np.float64) - np.asarray(template, dtype=np.float64)
-    suffix = residual[FROZEN_CONFIG_ANTIGRAVITY.onset :]
-    t = np.linspace(0.0, 1.0, len(suffix), dtype=np.float64)
-    basis = t / float(np.linalg.norm(t))
-    amplitude = float(np.dot(suffix, basis))
-    norm = float(np.linalg.norm(suffix))
-    cosine = 0.0 if norm == 0.0 else amplitude / norm
-    return amplitude, cosine
-
-
 def _primary_rows_antigravity(values: np.ndarray) -> Mapping[str, np.ndarray]:
     row = np.asarray(values, dtype=np.float64)
     center = float(np.median(row))
@@ -359,26 +409,17 @@ def _primary_rows_antigravity(values: np.ndarray) -> Mapping[str, np.ndarray]:
     )
 
 
-def _evidence_vectors_antigravity(
+def _evidence_matrix_antigravity(
     rows: np.ndarray,
-    evidence_function: Callable[[np.ndarray], object],
-) -> tuple[np.ndarray, np.ndarray]:
-    amplitudes: list[float] = []
-    cosines: list[float] = []
+    vector_function: Callable[[np.ndarray], np.ndarray],
+) -> np.ndarray:
+    vectors: list[np.ndarray] = []
     for row in rows:
-        evidence = evidence_function(row)
-        if hasattr(evidence, "amplitude") and hasattr(evidence, "cosine"):
-            amplitude = getattr(evidence, "amplitude")
-            cosine = getattr(evidence, "cosine")
-        else:
-            amplitude, cosine = evidence  # type: ignore[misc]
-        amplitudes.append(float(amplitude))
-        cosines.append(float(cosine))
-    amp_array = np.asarray(amplitudes, dtype=np.float64)
-    cos_array = np.asarray(cosines, dtype=np.float64)
-    if not np.isfinite(amp_array).all() or not np.isfinite(cos_array).all():
-        raise ValueError("evidence vectors must be finite")
-    return amp_array, cos_array
+        vectors.append(np.asarray(vector_function(row), dtype=np.float64))
+    matrix = np.stack(vectors, axis=0)
+    if not np.isfinite(matrix).all():
+        raise ValueError("evidence matrix must be finite")
+    return np.asarray(matrix, dtype=np.float64, order="C")
 
 
 def _confirmed_scores_antigravity(
@@ -484,13 +525,21 @@ def _score_fold_methods_with_dependency_antigravity(
     query_rows = np.asarray(train_matrix[query], dtype=np.float64)
     query_primary_rows = tuple(_primary_rows_antigravity(row) for row in query_rows)
 
-    fit_c6_amp, _ = _evidence_vectors_antigravity(
+    fit_c6_matrix = _evidence_matrix_antigravity(
         fit_rows,
-        lambda row: centered_ramp_evidence_antigravity(row, template),
+        lambda row: template_residual_centered_vector_antigravity(row, template),
     )
-    query_c6_amp, query_c6_cos = _evidence_vectors_antigravity(
+    fit_c6_amp, _ = amplitudes_cosines_from_vectors_antigravity(
+        TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+        fit_c6_matrix,
+    )
+    query_c6_matrix = _evidence_matrix_antigravity(
         query_rows,
-        lambda row: centered_ramp_evidence_antigravity(row, template),
+        lambda row: template_residual_centered_vector_antigravity(row, template),
+    )
+    query_c6_amp, query_c6_cos = amplitudes_cosines_from_vectors_antigravity(
+        TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+        query_c6_matrix,
     )
     c3_original = _rank_only_scores_antigravity(fit_c6_amp, query_c6_amp)
     c4_original = _always_max_scores_antigravity(c0_original, fit_c6_amp, query_c6_amp)
@@ -501,13 +550,21 @@ def _score_fold_methods_with_dependency_antigravity(
         query_c6_cos,
     )
 
-    fit_c5_amp, _ = _evidence_vectors_antigravity(
+    fit_c5_matrix = _evidence_matrix_antigravity(
         fit_rows,
-        _centered_raw_evidence_antigravity,
+        raw_centered_vector_antigravity,
     )
-    query_c5_amp, query_c5_cos = _evidence_vectors_antigravity(
+    fit_c5_amp, _ = amplitudes_cosines_from_vectors_antigravity(
+        RAW_CENTERED_ANTIGRAVITY,
+        fit_c5_matrix,
+    )
+    query_c5_matrix = _evidence_matrix_antigravity(
         query_rows,
-        _centered_raw_evidence_antigravity,
+        raw_centered_vector_antigravity,
+    )
+    query_c5_amp, query_c5_cos = amplitudes_cosines_from_vectors_antigravity(
+        RAW_CENTERED_ANTIGRAVITY,
+        query_c5_matrix,
     )
     c5_original, c5_normal_confirmed = _confirmed_scores_antigravity(
         c0_original,
@@ -516,13 +573,21 @@ def _score_fold_methods_with_dependency_antigravity(
         query_c5_cos,
     )
 
-    fit_c8_amp, _ = _evidence_vectors_antigravity(
+    fit_c8_matrix = _evidence_matrix_antigravity(
         fit_rows,
-        lambda row: _uncentered_residual_evidence_antigravity(row, template),
+        lambda row: template_residual_uncentered_vector_antigravity(row, template),
     )
-    query_c8_amp, query_c8_cos = _evidence_vectors_antigravity(
+    fit_c8_amp, _ = amplitudes_cosines_from_vectors_antigravity(
+        TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+        fit_c8_matrix,
+    )
+    query_c8_matrix = _evidence_matrix_antigravity(
         query_rows,
-        lambda row: _uncentered_residual_evidence_antigravity(row, template),
+        lambda row: template_residual_uncentered_vector_antigravity(row, template),
+    )
+    query_c8_amp, query_c8_cos = amplitudes_cosines_from_vectors_antigravity(
+        TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+        query_c8_matrix,
     )
     c8_original, c8_normal_confirmed = _confirmed_scores_antigravity(
         c0_original,
@@ -549,9 +614,13 @@ def _score_fold_methods_with_dependency_antigravity(
     for change_type in _CHANGE_TYPES_ANTIGRAVITY:
         rows = np.stack([row[change_type] for row in query_primary_rows])
 
-        c6_amp, c6_cos = _evidence_vectors_antigravity(
+        c6_matrix = _evidence_matrix_antigravity(
             rows,
-            lambda row: centered_ramp_evidence_antigravity(row, template),
+            lambda row: template_residual_centered_vector_antigravity(row, template),
+        )
+        c6_amp, c6_cos = amplitudes_cosines_from_vectors_antigravity(
+            TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+            c6_matrix,
         )
         c6_query_amplitudes[change_type] = c6_amp
         c6_query_cosines[change_type] = c6_cos
@@ -568,7 +637,11 @@ def _score_fold_methods_with_dependency_antigravity(
             c6_cos,
         )
 
-        c5_amp, c5_cos = _evidence_vectors_antigravity(rows, _centered_raw_evidence_antigravity)
+        c5_matrix = _evidence_matrix_antigravity(rows, raw_centered_vector_antigravity)
+        c5_amp, c5_cos = amplitudes_cosines_from_vectors_antigravity(
+            RAW_CENTERED_ANTIGRAVITY,
+            c5_matrix,
+        )
         c5_query_amplitudes[change_type] = c5_amp
         c5_query_cosines[change_type] = c5_cos
         c5_primary[change_type], c5_counts[change_type] = _confirmed_scores_antigravity(
@@ -578,9 +651,13 @@ def _score_fold_methods_with_dependency_antigravity(
             c5_cos,
         )
 
-        c8_amp, c8_cos = _evidence_vectors_antigravity(
+        c8_matrix = _evidence_matrix_antigravity(
             rows,
-            lambda row: _uncentered_residual_evidence_antigravity(row, template),
+            lambda row: template_residual_uncentered_vector_antigravity(row, template),
+        )
+        c8_amp, c8_cos = amplitudes_cosines_from_vectors_antigravity(
+            TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+            c8_matrix,
         )
         c8_query_amplitudes[change_type] = c8_amp
         c8_query_cosines[change_type] = c8_cos
@@ -658,6 +735,89 @@ def _score_fold_methods_with_dependency_antigravity(
             "C6": MappingProxyType(dict(c6_query_cosines)),
             "C7": _empty_query_evidence_antigravity(),
             "C8": MappingProxyType(dict(c8_query_cosines)),
+        },
+        raw_evidence_kind={
+            "C0": "",
+            "C1": "",
+            "C2": "",
+            "C3": "",
+            "C4": "",
+            "C5": RAW_CENTERED_ANTIGRAVITY,
+            "C6": TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+            "C7": "",
+            "C8": TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+        },
+        raw_evidence_source_method={
+            "C0": "",
+            "C1": "",
+            "C2": "",
+            "C3": "C6",
+            "C4": "C6",
+            "C5": "C5",
+            "C6": "C6",
+            "C7": "",
+            "C8": "C8",
+        },
+        raw_fit_vector_blobs={
+            "C0": "",
+            "C1": "",
+            "C2": "",
+            "C3": "",
+            "C4": "",
+            "C5": encode_vector_matrix_antigravity(fit_c5_matrix),
+            "C6": encode_vector_matrix_antigravity(fit_c6_matrix),
+            "C7": "",
+            "C8": encode_vector_matrix_antigravity(fit_c8_matrix),
+        },
+        raw_query_vector_blobs={
+            "C0": MappingProxyType({}),
+            "C1": MappingProxyType({}),
+            "C2": MappingProxyType({}),
+            "C3": MappingProxyType({}),
+            "C4": MappingProxyType({}),
+            "C5": MappingProxyType(
+                {
+                    "normal": encode_vector_matrix_antigravity(query_c5_matrix),
+                    **{
+                        change_type: encode_vector_matrix_antigravity(
+                            _evidence_matrix_antigravity(
+                                np.stack([row[change_type] for row in query_primary_rows]),
+                                raw_centered_vector_antigravity,
+                            )
+                        )
+                        for change_type in _CHANGE_TYPES_ANTIGRAVITY
+                    },
+                }
+            ),
+            "C6": MappingProxyType(
+                {
+                    "normal": encode_vector_matrix_antigravity(query_c6_matrix),
+                    **{
+                        change_type: encode_vector_matrix_antigravity(
+                            _evidence_matrix_antigravity(
+                                np.stack([row[change_type] for row in query_primary_rows]),
+                                lambda row: template_residual_centered_vector_antigravity(row, template),
+                            )
+                        )
+                        for change_type in _CHANGE_TYPES_ANTIGRAVITY
+                    },
+                }
+            ),
+            "C7": MappingProxyType({}),
+            "C8": MappingProxyType(
+                {
+                    "normal": encode_vector_matrix_antigravity(query_c8_matrix),
+                    **{
+                        change_type: encode_vector_matrix_antigravity(
+                            _evidence_matrix_antigravity(
+                                np.stack([row[change_type] for row in query_primary_rows]),
+                                lambda row: template_residual_uncentered_vector_antigravity(row, template),
+                            )
+                        )
+                        for change_type in _CHANGE_TYPES_ANTIGRAVITY
+                    },
+                }
+            ),
         },
         feature_dimensions={
             "C0": c0_dimension,

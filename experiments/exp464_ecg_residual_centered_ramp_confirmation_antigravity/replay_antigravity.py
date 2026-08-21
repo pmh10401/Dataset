@@ -139,6 +139,10 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
         "fit_amplitudes",
         "query_amplitudes",
         "query_cosines",
+        "raw_evidence_kind",
+        "raw_evidence_source_method",
+        "raw_fit_vector_blob",
+        "raw_query_vector_blobs",
     }
     if (
         type(value) is not dict
@@ -153,6 +157,7 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
         or type(value["fit_amplitudes"]) is not list
         or type(value["query_amplitudes"]) is not dict
         or type(value["query_cosines"]) is not dict
+        or type(value["raw_query_vector_blobs"]) is not dict
     ):
         raise ValueError("method metric row is invalid")
     primary = value["primary_scores"]
@@ -162,6 +167,7 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
     pair_diagnostics = value["pair_diagnostics"]
     query_amplitudes = value["query_amplitudes"]
     query_cosines = value["query_cosines"]
+    raw_query_vector_blobs = value["raw_query_vector_blobs"]
     assert isinstance(primary, dict)
     assert isinstance(per_type, dict)
     assert isinstance(confirmation_counts, dict)
@@ -169,8 +175,19 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
     assert isinstance(pair_diagnostics, dict)
     assert isinstance(query_amplitudes, dict)
     assert isinstance(query_cosines, dict)
+    assert isinstance(raw_query_vector_blobs, dict)
+    method = value["method"]
+    if method in ("C5", "C6", "C8"):
+        raw_query_blob_mapping = {
+            name: raw_query_vector_blobs[name]
+            for name in _CONFIRMATION_TYPES_ANTIGRAVITY
+        }
+    elif method in ("C3", "C4"):
+        raw_query_blob_mapping = {}
+    else:
+        raw_query_blob_mapping = {}
     return Exp464MethodFoldMetricAntigravity(
-        method=value["method"],
+        method=method,
         seed=value["seed"],
         fold_index=value["fold_index"],
         normal_trials=value["normal_trials"],
@@ -209,6 +226,10 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
         fit_amplitudes=tuple(value["fit_amplitudes"]),
         query_amplitudes=_evidence_mapping_antigravity(query_amplitudes),
         query_cosines=_evidence_mapping_antigravity(query_cosines),
+        raw_evidence_kind=value["raw_evidence_kind"],
+        raw_evidence_source_method=value["raw_evidence_source_method"],
+        raw_fit_vector_blob=value["raw_fit_vector_blob"],
+        raw_query_vector_blobs=raw_query_blob_mapping,
     )
 
 

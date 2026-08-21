@@ -66,25 +66,45 @@ class ReplayAntigravityTest(unittest.TestCase):
                 b"".join(canonical_antigravity(row) for row in rows)
             )
 
-        def tamper_amplitude_evidence_antigravity(root: Path) -> None:
+        def candidate_row_antigravity(rows: list[dict[str, object]]) -> dict[str, object]:
+            return next(
+                row
+                for row in rows
+                if row["method"] == "C6"
+                and row["seed"] == 20260721
+                and row["fold_index"] == 0
+            )
+
+        def tamper_rank_preserving_amplitude_evidence_antigravity(root: Path) -> None:
             rows = rows_antigravity(root)
-            amplitudes = dict(rows[60]["query_amplitudes"])  # type: ignore[arg-type]
-            amplitudes["amplitude_scaling"] = [value + 0.5 for value in amplitudes["amplitude_scaling"]]  # type: ignore[index]
-            rows[60]["query_amplitudes"] = amplitudes
+            row = candidate_row_antigravity(rows)
+            amplitudes = dict(row["query_amplitudes"])  # type: ignore[arg-type]
+            amplitude_scaling = list(amplitudes["amplitude_scaling"])  # type: ignore[index]
+            amplitude_scaling[0] += 0.001
+            amplitudes["amplitude_scaling"] = amplitude_scaling
+            row["query_amplitudes"] = amplitudes
             write_rows_antigravity(root, rows)
             rehash_antigravity(root)
 
-        def tamper_cosine_evidence_and_matching_counts_rates_antigravity(root: Path) -> None:
+        def tamper_same_side_cosine_and_matching_counts_rates_antigravity(root: Path) -> None:
             rows = rows_antigravity(root)
-            cosines = dict(rows[60]["query_cosines"])  # type: ignore[arg-type]
-            cosines["normal"] = [0.96 for _ in cosines["normal"]]  # type: ignore[index]
-            rows[60]["query_cosines"] = cosines
-            counts = dict(rows[60]["confirmation_counts"])  # type: ignore[arg-type]
-            counts["normal"] = len(cosines["normal"])  # type: ignore[arg-type]
-            rows[60]["confirmation_counts"] = counts
-            rates = dict(rows[60]["confirmation_rates"])  # type: ignore[arg-type]
-            rates["normal"] = 1.0
-            rows[60]["confirmation_rates"] = rates
+            row = candidate_row_antigravity(rows)
+            cosines = dict(row["query_cosines"])  # type: ignore[arg-type]
+            normal_cosines = list(cosines["normal"])  # type: ignore[index]
+            first_confirmed = next(
+                index
+                for index, value in enumerate(normal_cosines)
+                if value >= 0.999999999999
+            )
+            normal_cosines[first_confirmed] = 0.97
+            cosines["normal"] = normal_cosines
+            row["query_cosines"] = cosines
+            counts = dict(row["confirmation_counts"])  # type: ignore[arg-type]
+            counts["normal"] = counts["normal"]
+            row["confirmation_counts"] = counts
+            rates = dict(row["confirmation_rates"])  # type: ignore[arg-type]
+            rates["normal"] = rates["normal"]
+            row["confirmation_rates"] = rates
             write_rows_antigravity(root, rows)
             rehash_antigravity(root)
 
@@ -134,8 +154,8 @@ class ReplayAntigravityTest(unittest.TestCase):
             rehash_antigravity(root)
 
         mutations = (
-            ("amplitude_evidence", tamper_amplitude_evidence_antigravity),
-            ("cosine_evidence_counts_rates", tamper_cosine_evidence_and_matching_counts_rates_antigravity),
+            ("rank_preserving_amplitude_evidence", tamper_rank_preserving_amplitude_evidence_antigravity),
+            ("same_side_cosine_counts_rates", tamper_same_side_cosine_and_matching_counts_rates_antigravity),
             ("pair_counts", tamper_pair_counts_antigravity),
             ("summary", tamper_summary_antigravity),
             ("decision", tamper_decision_antigravity),

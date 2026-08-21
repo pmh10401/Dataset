@@ -105,6 +105,10 @@ class ConfigAntigravityTest(unittest.TestCase):
             config.predecessor_method_fold_metrics_sha256,
             "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
         )
+        self.assertEqual(
+            config.predecessor_control_row_evidence_sha256,
+            "036d2bccd40d9beac4a20c2e5bc60ba60bd72d5a076d433aceb5e700b414f3c9",
+        )
         self.assertEqual(config.label_query_count_must_remain, 0)
         self.assertEqual(config.official_evaluate_count_must_remain, 0)
         self.assertEqual(config.official_inspect_count_must_remain, 0)
@@ -167,6 +171,7 @@ class ConfigAntigravityTest(unittest.TestCase):
             ("predecessor_terminal_closeout_commit", "147225831e9c13e9df5043fa88757bb03e01b70"),
             ("predecessor_result_row_count", 69),
             ("label_query_count_must_remain", 1),
+            ("predecessor_control_row_evidence_sha256", "a" * 64),
             (
                 "predecessor_control_row_digests",
                 {

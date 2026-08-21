@@ -126,7 +126,7 @@ $PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravi
 <h2><label><input type="checkbox" disabled> Task 4 — qualification, evaluation, artifacts, replay, dashboard export</label></h2>
 <p><strong>Files:</strong> Create five qualification modules and matching tests. Modify docs, plan, ledgers and map.</p>
 <p><strong>Interfaces:</strong> Produces <code>Exp464QualificationContractAntigravity</code>, <code>QualificationDecisionAntigravity</code>, <code>qualify_methods_antigravity()</code>, <code>evaluate_qualification_antigravity(contract, authority)</code>, <code>publish_result_antigravity(root, contract, decision, authority)</code>, <code>inspect_replay_at_antigravity(root)</code>, and <code>export_dashboard_antigravity(contract, decision)</code>.</p>
-<p><strong>Current Task 4 truth:</strong> result pipeline 구현은 끝났고 focused suite 13 tests를 두 번 GREEN으로 확인했으며 reviewer-fix 뒤 같은 focused suite를 다시 GREEN으로 재검증했다. 다만 fresh review가 아직 없으므로 이 heading과 아래 step들은 그대로 unchecked를 유지한다.</p>
+<p><strong>Current Task 4 truth:</strong> result pipeline 구현은 끝났고 focused suite 15 tests를 두 번 GREEN으로 확인했으며 reviewer-fix 뒤 같은 focused suite를 다시 GREEN으로 재검증했다. 다만 fresh review가 아직 없으므로 이 heading과 아래 step들은 그대로 unchecked를 유지한다.</p>
 <ol>
 <li><label><input type="checkbox" disabled> <strong>Step 1 — RED metric and gate recomputation.</strong></label><p>Independently recompute four AUCs, pooled AUC, Wilson upper, finite, per-fold C0 gradual/period non-degradation, two historical period floors and 10/10. Reject caller-supplied booleans that disagree with scores.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 2 — RED diagnostic pair accounting.</strong></label><pre><code>correct = gradual_score[j] &gt; normal_score[i]

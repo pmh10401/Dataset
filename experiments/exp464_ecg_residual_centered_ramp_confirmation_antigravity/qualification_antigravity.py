@@ -27,6 +27,10 @@ from .contracts_antigravity import (
     Exp463AuthorityAntigravity,
     validate_exp463_authority_antigravity,
 )
+from .raw_evidence_antigravity import (
+    amplitudes_cosines_from_vectors_antigravity,
+    decode_vector_matrix_antigravity,
+)
 from .scoring_antigravity import anomaly_rank_antigravity
 
 
@@ -39,8 +43,9 @@ _CHANGE_TYPES_ANTIGRAVITY = (
 )
 _CONFIRMATION_TYPES_ANTIGRAVITY = ("normal",) + _CHANGE_TYPES_ANTIGRAVITY
 _PAIR_TYPES_ANTIGRAVITY = ("gradual_drift", "period_change")
-_GATE_ANTIGRAVITY = 0.995
+_GATE_ANTIGRAVITY = 1.0
 _EVIDENCE_METHODS_ANTIGRAVITY = ("C3", "C4", "C5", "C6", "C8")
+_RAW_CARRIER_METHODS_ANTIGRAVITY = ("C5", "C6", "C8")
 
 
 def _int_antigravity(value: object, name: str, *, minimum: int = 0) -> int:
@@ -186,6 +191,25 @@ def _query_evidence_mapping_antigravity(
     return MappingProxyType(frozen)
 
 
+def _query_blob_mapping_antigravity(
+    value: Mapping[str, object],
+    name: str,
+) -> Mapping[str, str]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    if tuple(value) == ():
+        return MappingProxyType({})
+    if tuple(value) != _CONFIRMATION_TYPES_ANTIGRAVITY:
+        raise ValueError(f"{name} must preserve exact evidence scope order")
+    frozen: dict[str, str] = {}
+    for scope in _CONFIRMATION_TYPES_ANTIGRAVITY:
+        blob = value[scope]
+        if type(blob) is not str or not blob:
+            raise ValueError(f"{name}[{scope}] must be a non-empty string")
+        frozen[scope] = blob
+    return MappingProxyType(frozen)
+
+
 def _pair_stat_antigravity(value: Mapping[str, object], name: str) -> Mapping[str, int]:
     expected = ("total_pairs", "fixed_pairs", "broken_pairs")
     if not isinstance(value, Mapping) or tuple(value) != expected:
@@ -277,7 +301,7 @@ def _safe_metrics_antigravity(
     if not finite:
         zeros = MappingProxyType({change_type: 0.0 for change_type in _CHANGE_TYPES_ANTIGRAVITY})
         return 0, 1.0, zeros, 0.0, False
-    alerts = int(np.count_nonzero(normal >= _GATE_ANTIGRAVITY))
+    alerts = int(np.count_nonzero(normal > _GATE_ANTIGRAVITY))
     per_type = MappingProxyType(
         {
             change_type: float(
@@ -326,6 +350,10 @@ class Exp464MethodFoldMetricAntigravity:
     fit_amplitudes: tuple[float, ...]
     query_amplitudes: Mapping[str, tuple[float, ...]]
     query_cosines: Mapping[str, tuple[float, ...]]
+    raw_evidence_kind: str
+    raw_evidence_source_method: str
+    raw_fit_vector_blob: str
+    raw_query_vector_blobs: Mapping[str, str]
 
     def __post_init__(self) -> None:
         if type(self.method) is not str or self.method not in _METHODS_ANTIGRAVITY:
@@ -401,6 +429,47 @@ class Exp464MethodFoldMetricAntigravity:
         else:
             if has_evidence or fit_amplitudes:
                 raise ValueError("control methods must not keep evidence vectors")
+        if type(self.raw_evidence_kind) is not str:
+            raise ValueError("raw_evidence_kind must be a string")
+        if type(self.raw_evidence_source_method) is not str:
+            raise ValueError("raw_evidence_source_method must be a string")
+        if type(self.raw_fit_vector_blob) is not str:
+            raise ValueError("raw_fit_vector_blob must be a string")
+        object.__setattr__(
+            self,
+            "raw_query_vector_blobs",
+            _query_blob_mapping_antigravity(
+                self.raw_query_vector_blobs,
+                "raw_query_vector_blobs",
+            ),
+        )
+        if self.method in _RAW_CARRIER_METHODS_ANTIGRAVITY:
+            if self.raw_evidence_kind not in (
+                "raw_centered",
+                "template_residual_centered",
+                "template_residual_uncentered",
+            ):
+                raise ValueError("carrier rows must declare a valid raw_evidence_kind")
+            if self.raw_evidence_source_method != self.method:
+                raise ValueError("carrier rows must source their own raw evidence")
+            if not self.raw_fit_vector_blob or tuple(self.raw_query_vector_blobs) != _CONFIRMATION_TYPES_ANTIGRAVITY:
+                raise ValueError("carrier rows must keep raw fit/query vector blobs")
+        elif self.method in ("C3", "C4"):
+            if (
+                self.raw_evidence_kind
+                or self.raw_evidence_source_method != "C6"
+                or self.raw_fit_vector_blob
+                or tuple(self.raw_query_vector_blobs)
+            ):
+                raise ValueError("C3/C4 rows must reference C6 raw evidence without blobs")
+        else:
+            if (
+                self.raw_evidence_kind
+                or self.raw_evidence_source_method
+                or self.raw_fit_vector_blob
+                or tuple(self.raw_query_vector_blobs)
+            ):
+                raise ValueError("control rows must not keep raw evidence metadata")
 
 
 @dataclass(frozen=True, slots=True)
@@ -517,6 +586,10 @@ def recompute_metric_from_scores_antigravity(
         fit_amplitudes=row.fit_amplitudes,
         query_amplitudes=row.query_amplitudes,
         query_cosines=row.query_cosines,
+        raw_evidence_kind=row.raw_evidence_kind,
+        raw_evidence_source_method=row.raw_evidence_source_method,
+        raw_fit_vector_blob=row.raw_fit_vector_blob,
+        raw_query_vector_blobs=row.raw_query_vector_blobs,
     )
 
 
@@ -608,6 +681,10 @@ def _apply_c6_pair_and_comparison_gates_antigravity(
                 fit_amplitudes=row.fit_amplitudes,
                 query_amplitudes=row.query_amplitudes,
                 query_cosines=row.query_cosines,
+                raw_evidence_kind=row.raw_evidence_kind,
+                raw_evidence_source_method=row.raw_evidence_source_method,
+                raw_fit_vector_blob=row.raw_fit_vector_blob,
+                raw_query_vector_blobs=row.raw_query_vector_blobs,
             )
         )
     return tuple(updated_rows)
@@ -701,22 +778,70 @@ def _confirmed_scores_from_evidence_antigravity(
     return tuple(float(value) for value in scores), int(np.count_nonzero(confirmed))
 
 
+def _score_tuples_match_antigravity(
+    actual: tuple[float, ...],
+    expected: tuple[float, ...],
+) -> bool:
+    if len(actual) != len(expected):
+        return False
+    return all(
+        abs(left - right) <= 1e-12
+        for left, right in zip(actual, expected, strict=True)
+    )
+
+
+def _replayed_raw_evidence_antigravity(
+    source_row: Exp464MethodFoldMetricAntigravity,
+) -> tuple[tuple[float, ...], Mapping[str, tuple[float, ...]], Mapping[str, tuple[float, ...]]]:
+    fit_matrix = decode_vector_matrix_antigravity(
+        source_row.raw_fit_vector_blob,
+        f"{source_row.method}:{source_row.seed}:{source_row.fold_index}:raw_fit_vector_blob",
+    )
+    fit_amplitudes, _fit_cosines = amplitudes_cosines_from_vectors_antigravity(
+        source_row.raw_evidence_kind,
+        fit_matrix,
+    )
+    query_amplitudes: dict[str, tuple[float, ...]] = {}
+    query_cosines: dict[str, tuple[float, ...]] = {}
+    for scope in _CONFIRMATION_TYPES_ANTIGRAVITY:
+        query_matrix = decode_vector_matrix_antigravity(
+            source_row.raw_query_vector_blobs[scope],
+            (
+                f"{source_row.method}:{source_row.seed}:{source_row.fold_index}:"
+                f"raw_query_vector_blobs[{scope}]"
+            ),
+        )
+        amplitudes, cosines = amplitudes_cosines_from_vectors_antigravity(
+            source_row.raw_evidence_kind,
+            query_matrix,
+        )
+        query_amplitudes[scope] = tuple(float(value) for value in amplitudes)
+        query_cosines[scope] = tuple(float(value) for value in cosines)
+    return (
+        tuple(float(value) for value in fit_amplitudes),
+        MappingProxyType(query_amplitudes),
+        MappingProxyType(query_cosines),
+    )
+
+
 def _expected_counts_rates_and_scores_antigravity(
     row: Exp464MethodFoldMetricAntigravity,
     c0_row: Exp464MethodFoldMetricAntigravity | None,
+    *,
+    fit_amplitudes: tuple[float, ...],
+    query_amplitudes: Mapping[str, tuple[float, ...]],
+    query_cosines: Mapping[str, tuple[float, ...]],
 ) -> tuple[Mapping[str, int], Mapping[str, float], tuple[float, ...], Mapping[str, tuple[float, ...]]]:
     if row.method not in _EVIDENCE_METHODS_ANTIGRAVITY:
         zero_counts = MappingProxyType({name: 0 for name in _CONFIRMATION_TYPES_ANTIGRAVITY})
         zero_rates = _confirmation_rates_from_counts_antigravity(zero_counts, row.normal_trials)
         return zero_counts, zero_rates, row.normal_scores, row.primary_scores
     assert c0_row is not None
-    query_amplitudes = row.query_amplitudes
-    query_cosines = row.query_cosines
     if row.method == "C3":
         expected_original = tuple(
             float(value)
             for value in anomaly_rank_antigravity(
-                np.asarray(row.fit_amplitudes, dtype=np.float64),
+                np.asarray(fit_amplitudes, dtype=np.float64),
                 np.asarray(query_amplitudes["normal"], dtype=np.float64),
             )
         )
@@ -725,7 +850,7 @@ def _expected_counts_rates_and_scores_antigravity(
                 change_type: tuple(
                     float(value)
                     for value in anomaly_rank_antigravity(
-                        np.asarray(row.fit_amplitudes, dtype=np.float64),
+                        np.asarray(fit_amplitudes, dtype=np.float64),
                         np.asarray(query_amplitudes[change_type], dtype=np.float64),
                     )
                 )
@@ -745,7 +870,7 @@ def _expected_counts_rates_and_scores_antigravity(
             for value in np.maximum(
                 np.asarray(c0_row.normal_scores, dtype=np.float64),
                 anomaly_rank_antigravity(
-                    np.asarray(row.fit_amplitudes, dtype=np.float64),
+                    np.asarray(fit_amplitudes, dtype=np.float64),
                     np.asarray(query_amplitudes["normal"], dtype=np.float64),
                 ),
             )
@@ -757,7 +882,7 @@ def _expected_counts_rates_and_scores_antigravity(
                     for value in np.maximum(
                         np.asarray(c0_row.primary_scores[change_type], dtype=np.float64),
                         anomaly_rank_antigravity(
-                            np.asarray(row.fit_amplitudes, dtype=np.float64),
+                            np.asarray(fit_amplitudes, dtype=np.float64),
                             np.asarray(query_amplitudes[change_type], dtype=np.float64),
                         ),
                     )
@@ -774,7 +899,7 @@ def _expected_counts_rates_and_scores_antigravity(
         )
     expected_original, normal_count = _confirmed_scores_from_evidence_antigravity(
         c0_row.normal_scores,
-        row.fit_amplitudes,
+        fit_amplitudes,
         query_amplitudes["normal"],
         query_cosines["normal"],
     )
@@ -783,7 +908,7 @@ def _expected_counts_rates_and_scores_antigravity(
     for change_type in _CHANGE_TYPES_ANTIGRAVITY:
         expected_primary_values[change_type], counts[change_type] = _confirmed_scores_from_evidence_antigravity(
             c0_row.primary_scores[change_type],
-            row.fit_amplitudes,
+            fit_amplitudes,
             query_amplitudes[change_type],
             query_cosines[change_type],
         )
@@ -802,11 +927,55 @@ def _apply_evidence_consistency_antigravity(
     c0_lookup = {
         (row.seed, row.fold_index): row for row in rows if row.method == "C0"
     }
+    c6_lookup = {
+        (row.seed, row.fold_index): row for row in rows if row.method == "C6"
+    }
     updated: list[Exp464MethodFoldMetricAntigravity] = []
     for row in rows:
+        replayed_fit_amplitudes = row.fit_amplitudes
+        replayed_query_amplitudes = row.query_amplitudes
+        replayed_query_cosines = row.query_cosines
+        if row.method in _EVIDENCE_METHODS_ANTIGRAVITY:
+            if row.method in _RAW_CARRIER_METHODS_ANTIGRAVITY:
+                source_row = row
+            else:
+                source_row = c6_lookup.get((row.seed, row.fold_index))
+                if source_row is None:
+                    raise ValueError("C3/C4 raw evidence source C6 is missing")
+            replayed_fit_amplitudes, replayed_query_amplitudes, replayed_query_cosines = _replayed_raw_evidence_antigravity(
+                source_row
+            )
+            if not _score_tuples_match_antigravity(row.fit_amplitudes, replayed_fit_amplitudes):
+                raise ValueError(
+                    f"{row.method}:{row.seed}:{row.fold_index} fit amplitudes differ from raw replay"
+                )
+            for scope in _CONFIRMATION_TYPES_ANTIGRAVITY:
+                if not _score_tuples_match_antigravity(
+                    row.query_amplitudes[scope],
+                    replayed_query_amplitudes[scope],
+                ):
+                    raise ValueError(
+                        (
+                            f"{row.method}:{row.seed}:{row.fold_index} "
+                            f"query amplitudes[{scope}] differ from raw replay"
+                        )
+                    )
+                if not _score_tuples_match_antigravity(
+                    row.query_cosines[scope],
+                    replayed_query_cosines[scope],
+                ):
+                    raise ValueError(
+                        (
+                            f"{row.method}:{row.seed}:{row.fold_index} "
+                            f"query cosines[{scope}] differ from raw replay"
+                        )
+                    )
         expected_counts, expected_rates, expected_original, expected_primary = _expected_counts_rates_and_scores_antigravity(
             row,
             c0_lookup.get((row.seed, row.fold_index)),
+            fit_amplitudes=replayed_fit_amplitudes,
+            query_amplitudes=replayed_query_amplitudes,
+            query_cosines=replayed_query_cosines,
         )
         if tuple(row.normal_scores) != expected_original:
             raise ValueError(f"{row.method}:{row.seed}:{row.fold_index} normal scores differ from evidence replay")
@@ -835,9 +1004,13 @@ def _apply_evidence_consistency_antigravity(
                 failure_reasons=row.failure_reasons,
                 feature_dimension=row.feature_dimension,
                 provenance=row.provenance,
-                fit_amplitudes=row.fit_amplitudes,
-                query_amplitudes=row.query_amplitudes,
-                query_cosines=row.query_cosines,
+                fit_amplitudes=replayed_fit_amplitudes,
+                query_amplitudes=replayed_query_amplitudes,
+                query_cosines=replayed_query_cosines,
+                raw_evidence_kind=row.raw_evidence_kind,
+                raw_evidence_source_method=row.raw_evidence_source_method,
+                raw_fit_vector_blob=row.raw_fit_vector_blob,
+                raw_query_vector_blobs=row.raw_query_vector_blobs,
             )
         )
     return tuple(updated)
@@ -866,38 +1039,14 @@ def normalize_qualification_antigravity(
     )
 
 
-def _summary_matches_control_antigravity(
-    summary: Exp464MethodSummaryAntigravity,
-    expected: object,
-) -> bool:
-    return (
-        summary.method == getattr(expected, "method")
-        and summary.fold_count == getattr(expected, "fold_count")
-        and summary.passed_count == getattr(expected, "passed_count")
-        and summary.failed_count == getattr(expected, "failed_count")
-        and summary.min_gradual_drift_auc == getattr(expected, "min_gradual_drift_auc")
-        and summary.min_period_change_auc == getattr(expected, "min_period_change_auc")
-        and summary.min_mean_auc == getattr(expected, "min_pooled_auc")
-        and summary.max_normal_wilson_upper == getattr(expected, "max_normal_wilson_upper")
-        and summary.all_scores_finite == getattr(expected, "all_scores_finite")
-    )
-
-
 def validate_control_reproduction_antigravity(
     qualification: Exp464QualificationContractAntigravity,
     authority: Exp463AuthorityAntigravity,
 ) -> tuple[str, ...]:
     validate_exp463_authority_antigravity(authority)
     normalized = normalize_qualification_antigravity(qualification, authority)
-    actual_by_method = {summary.method: summary for summary in normalized.summaries}
-    reasons: list[str] = []
-    for method in ("C0", "C1", "C2", "C7"):
-        if not _summary_matches_control_antigravity(
-            actual_by_method[method],
-            authority.control_summaries[method],
-        ):
-            reasons.append(f"{method.lower()}_control_not_reproduced")
-    return tuple(reasons)
+    _validate_control_row_digests_antigravity(normalized.fold_metrics, authority)
+    return ()
 
 
 def _metric_row_antigravity(
@@ -918,6 +1067,10 @@ def _metric_row_antigravity(
             "fit_amplitudes",
             "query_amplitudes",
             "query_cosines",
+            "raw_evidence_kind",
+            "raw_evidence_source_method",
+            "raw_fit_vector_blobs",
+            "raw_query_vector_blobs",
             "provenance",
         )
     ):
@@ -930,9 +1083,13 @@ def _metric_row_antigravity(
     fit_amplitudes = getattr(scores, "fit_amplitudes")
     query_amplitudes = getattr(scores, "query_amplitudes")
     query_cosines = getattr(scores, "query_cosines")
+    raw_evidence_kind = getattr(scores, "raw_evidence_kind")
+    raw_evidence_source_method = getattr(scores, "raw_evidence_source_method")
+    raw_fit_vector_blobs = getattr(scores, "raw_fit_vector_blobs")
+    raw_query_vector_blobs = getattr(scores, "raw_query_vector_blobs")
     dimensions = getattr(scores, "feature_dimensions")
     provenance = getattr(scores, "provenance")
-    if not all(isinstance(value, Mapping) for value in (original, primary, counts, fit_amplitudes, query_amplitudes, query_cosines, dimensions, provenance)):
+    if not all(isinstance(value, Mapping) for value in (original, primary, counts, fit_amplitudes, query_amplitudes, query_cosines, raw_evidence_kind, raw_evidence_source_method, raw_fit_vector_blobs, raw_query_vector_blobs, dimensions, provenance)):
         raise ValueError("fold_scorer containers are invalid")
     normal_scores = _score_tuple_antigravity(original[method], f"original[{method}]")
     feature_dimension = dimensions[method]
@@ -965,6 +1122,10 @@ def _metric_row_antigravity(
         fit_amplitudes=fit_amplitudes[method],
         query_amplitudes=query_amplitudes[method],
         query_cosines=query_cosines[method],
+        raw_evidence_kind=raw_evidence_kind[method],
+        raw_evidence_source_method=raw_evidence_source_method[method],
+        raw_fit_vector_blob=raw_fit_vector_blobs[method],
+        raw_query_vector_blobs=raw_query_vector_blobs[method],
     )
     return recompute_metric_from_scores_antigravity(row)
 

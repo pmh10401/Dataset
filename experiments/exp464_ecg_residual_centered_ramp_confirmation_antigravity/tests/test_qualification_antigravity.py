@@ -4,6 +4,7 @@ from dataclasses import replace
 from functools import lru_cache
 from math import sqrt
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -121,6 +122,32 @@ def _primary_scores_antigravity(
     }
 
 
+def _uniform_scores_antigravity(
+    length: int,
+    pair: tuple[float, float],
+) -> tuple[float, ...]:
+    midpoint = length // 2
+    return tuple(pair[0] for _ in range(midpoint)) + tuple(
+        pair[1] for _ in range(length - midpoint)
+    )
+
+
+def _length_matched_primary_scores_antigravity(
+    length: int,
+    *,
+    level: tuple[float, float] = (1.10, 1.11),
+    gradual: tuple[float, float] = (1.12, 1.13),
+    amplitude: tuple[float, float] = (1.14, 1.15),
+    period: tuple[float, float] = (1.16, 1.17),
+) -> dict[str, tuple[float, ...]]:
+    return {
+        "level_shift": _uniform_scores_antigravity(length, level),
+        "gradual_drift": _uniform_scores_antigravity(length, gradual),
+        "amplitude_scaling": _uniform_scores_antigravity(length, amplitude),
+        "period_change": _uniform_scores_antigravity(length, period),
+    }
+
+
 def _confidence_counts_antigravity(
     *,
     gradual: int = 2,
@@ -182,13 +209,34 @@ def _fold_container_antigravity(method_payloads: dict[str, dict[str, object]]):
             }
             for method in METHODS_ANTIGRAVITY
         },
+        raw_evidence_kind={
+            method: str(method_payloads[method].get("raw_evidence_kind", ""))
+            for method in METHODS_ANTIGRAVITY
+        },
+        raw_evidence_source_method={
+            method: str(method_payloads[method].get("raw_evidence_source_method", ""))
+            for method in METHODS_ANTIGRAVITY
+        },
+        raw_fit_vector_blobs={
+            method: str(method_payloads[method].get("raw_fit_vector_blob", ""))
+            for method in METHODS_ANTIGRAVITY
+        },
+        raw_query_vector_blobs={
+            method: {
+                scope: str(blob)
+                for scope, blob in method_payloads[method].get(
+                    "raw_query_vector_blobs", {}
+                ).items()
+            }
+            for method in METHODS_ANTIGRAVITY
+        },
         feature_dimensions={method: int(method_payloads[method].get("feature_dimension", 1)) for method in METHODS_ANTIGRAVITY},
         provenance={method: str(method_payloads[method].get("provenance", f"fixture_{method.lower()}")) for method in METHODS_ANTIGRAVITY},
     )
 
 
 def _rank_query_amplitudes_antigravity(values: tuple[float, ...]) -> tuple[float, ...]:
-    return tuple((value * 100.0) - 1.5 for value in values)
+    return tuple((value * 100.0) + 1.5 for value in values)
 
 
 def _evidence_payload_antigravity(
@@ -197,142 +245,396 @@ def _evidence_payload_antigravity(
     primary: dict[str, tuple[float, ...]],
     normal_confirmed: int,
     primary_confirmed: int,
+    raw_evidence_kind: str,
 ) -> dict[str, object]:
-    fit_amplitudes = tuple(float(index) for index in range(99))
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.raw_evidence_antigravity import (
+        RAW_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+        encode_vector_matrix_antigravity,
+    )
+
+    if raw_evidence_kind not in (
+        RAW_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+    ):
+        raise ValueError("raw_evidence_kind is invalid")
+
+    fit_amplitudes = tuple(float(index) for index in range(1, 100))
     normal_cosines = tuple(
-        1.0 if index < normal_confirmed else 0.0 for index in range(len(normal))
+        1.0 if index < normal_confirmed else 0.94 for index in range(len(normal))
     )
     primary_cosines = tuple(
-        1.0 if index < primary_confirmed else 0.0 for index in range(len(normal))
+        1.0 if index < primary_confirmed else 0.94 for index in range(len(normal))
     )
-    return {
-        "fit_amplitudes": fit_amplitudes,
-        "query_amplitudes": {
-            "normal": _rank_query_amplitudes_antigravity(normal),
-            **{
-                change_type: _rank_query_amplitudes_antigravity(primary[change_type])
-                for change_type in TYPES_ANTIGRAVITY
-            },
-        },
-        "query_cosines": {
-            "normal": normal_cosines,
-            **{
-                change_type: primary_cosines for change_type in TYPES_ANTIGRAVITY
-            },
+    query_amplitudes = {
+        "normal": _rank_query_amplitudes_antigravity(normal),
+        **{
+            change_type: _rank_query_amplitudes_antigravity(primary[change_type])
+            for change_type in TYPES_ANTIGRAVITY
         },
     }
+    query_cosines = {
+        "normal": normal_cosines,
+        **{change_type: primary_cosines for change_type in TYPES_ANTIGRAVITY},
+    }
+    return {
+        "fit_amplitudes": fit_amplitudes,
+        "query_amplitudes": query_amplitudes,
+        "query_cosines": query_cosines,
+        "raw_evidence_kind": raw_evidence_kind,
+        "raw_fit_vector_blob": encode_vector_matrix_antigravity(
+            _raw_matrix_antigravity(
+                amplitudes=fit_amplitudes,
+                cosines=tuple(1.0 for _ in fit_amplitudes),
+                raw_evidence_kind=raw_evidence_kind,
+            )
+        ),
+        "raw_query_vector_blobs": {
+            scope: encode_vector_matrix_antigravity(
+                _raw_matrix_antigravity(
+                    amplitudes=query_amplitudes[scope],
+                    cosines=query_cosines[scope],
+                    raw_evidence_kind=raw_evidence_kind,
+                )
+            )
+            for scope in CONFIRMATION_TYPES_ANTIGRAVITY
+        },
+    }
+
+
+def _raw_basis_antigravity(raw_evidence_kind: str) -> np.ndarray:
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.centered_ramp_antigravity import (
+        centered_suffix_basis_antigravity,
+    )
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.config_antigravity import (
+        FROZEN_CONFIG_ANTIGRAVITY,
+    )
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.raw_evidence_antigravity import (
+        RAW_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY,
+    )
+
+    if raw_evidence_kind in (
+        RAW_CENTERED_ANTIGRAVITY,
+        TEMPLATE_RESIDUAL_CENTERED_ANTIGRAVITY,
+    ):
+        return np.asarray(centered_suffix_basis_antigravity(), dtype=np.float64)
+    if raw_evidence_kind == TEMPLATE_RESIDUAL_UNCENTERED_ANTIGRAVITY:
+        values = np.linspace(
+            0.0,
+            1.0,
+            FROZEN_CONFIG_ANTIGRAVITY.normal2_width - FROZEN_CONFIG_ANTIGRAVITY.onset,
+            dtype=np.float64,
+        )
+        return values / float(np.linalg.norm(values))
+    raise ValueError("raw_evidence_kind is invalid")
+
+
+@lru_cache(maxsize=None)
+def _orthogonal_unit_antigravity(raw_evidence_kind: str) -> tuple[float, ...]:
+    basis = _raw_basis_antigravity(raw_evidence_kind)
+    probe = np.zeros_like(basis)
+    probe[0] = 1.0
+    orthogonal = probe - (float(np.dot(probe, basis)) * basis)
+    norm = float(np.linalg.norm(orthogonal))
+    if norm <= 0.0:
+        probe = np.arange(1.0, float(len(basis)) + 1.0, dtype=np.float64)
+        orthogonal = probe - (float(np.dot(probe, basis)) * basis)
+        norm = float(np.linalg.norm(orthogonal))
+    if norm <= 0.0:
+        raise ValueError("could not construct orthogonal basis")
+    return tuple(float(value) for value in (orthogonal / norm))
+
+
+def _raw_matrix_antigravity(
+    *,
+    amplitudes: tuple[float, ...],
+    cosines: tuple[float, ...],
+    raw_evidence_kind: str,
+) -> np.ndarray:
+    if len(amplitudes) != len(cosines):
+        raise ValueError("amplitude/cosine lengths must match")
+    basis = _raw_basis_antigravity(raw_evidence_kind)
+    orthogonal = np.asarray(
+        _orthogonal_unit_antigravity(raw_evidence_kind),
+        dtype=np.float64,
+    )
+    rows: list[np.ndarray] = []
+    for amplitude, cosine in zip(amplitudes, cosines, strict=True):
+        if not -1.0 <= cosine <= 1.0:
+            raise ValueError("cosine is out of range")
+        if amplitude == 0.0:
+            if abs(cosine) > 1e-12:
+                raise ValueError("zero amplitude cannot carry a non-zero cosine")
+            rows.append(np.zeros_like(basis))
+            continue
+        if abs(cosine) < 1e-12:
+            raise ValueError("non-zero amplitude cannot carry a zero cosine")
+        norm = abs(amplitude / cosine)
+        orthogonal_scale = sqrt(max((norm * norm) - (amplitude * amplitude), 0.0))
+        rows.append((amplitude * basis) + (orthogonal_scale * orthogonal))
+    return np.asarray(rows, dtype=np.float64)
+
+
+def _scores_from_evidence_antigravity(
+    *,
+    baseline: tuple[float, ...],
+    fit_amplitudes: tuple[float, ...],
+    query_amplitudes: tuple[float, ...],
+    query_cosines: tuple[float, ...] | None,
+    rank_only: bool,
+    always_max: bool,
+) -> tuple[float, ...]:
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.scoring_antigravity import (
+        anomaly_rank_antigravity,
+    )
+
+    ranks = anomaly_rank_antigravity(
+        np.asarray(fit_amplitudes, dtype=np.float64),
+        np.asarray(query_amplitudes, dtype=np.float64),
+    )
+    if rank_only:
+        return tuple(float(value) for value in ranks)
+    baseline_array = np.asarray(baseline, dtype=np.float64)
+    if always_max:
+        return tuple(float(value) for value in np.maximum(baseline_array, ranks))
+    assert query_cosines is not None
+    confirmed = np.asarray(query_cosines, dtype=np.float64) >= 0.95
+    return tuple(
+        float(value)
+        for value in np.where(
+            confirmed,
+            np.maximum(baseline_array, ranks),
+            baseline_array,
+        )
+    )
+
+
+def _strip_raw_blobs_antigravity(evidence: dict[str, object]) -> dict[str, object]:
+    return {
+        "fit_amplitudes": evidence["fit_amplitudes"],
+        "query_amplitudes": evidence["query_amplitudes"],
+        "query_cosines": evidence["query_cosines"],
+    }
+
+
+@lru_cache(maxsize=1)
+def _exact_control_rows_antigravity() -> dict[tuple[str, int, int], dict[str, object]]:
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.control_row_evidence_antigravity import (
+        load_control_row_evidence_antigravity,
+    )
+
+    rows: dict[tuple[str, int, int], dict[str, object]] = {}
+    for row in load_control_row_evidence_antigravity().rows:
+        method = row["method"]
+        seed = row["seed"]
+        fold_index = row["fold_index"]
+        assert isinstance(method, str)
+        assert isinstance(seed, int)
+        assert isinstance(fold_index, int)
+        rows[(method, seed, fold_index)] = {
+            "normal": tuple(row["normal_scores"]),
+            "primary": {
+                change_type: tuple(row["primary_scores"][change_type])
+                for change_type in TYPES_ANTIGRAVITY
+            },
+            "confirmation_counts": _confidence_counts_antigravity(
+                normal=0, gradual=0, period=0, level=0, amplitude=0
+            ),
+            "provenance": f"tracked_{row['source_method'].lower()}_control",
+        }
+    return rows
 
 
 def synthetic_fold_payload_antigravity(
     seed: int,
     fold_index: int,
 ) -> dict[str, dict[str, object]]:
-    del seed
-    c0_normal = (0.10, 0.20)
-    c0_primary = _primary_scores_antigravity()
-    c6_gradual = (0.94, 0.98)
-    c6_period = (0.95, 0.99)
+    exact_rows = _exact_control_rows_antigravity()
+    controls = {
+        method: exact_rows[(method, seed, fold_index)]
+        for method in ("C0", "C1", "C2", "C7")
+    }
+    c0_normal = controls["C0"]["normal"]
+    c0_primary = controls["C0"]["primary"]
+    c6_gradual = (1.20, 1.21)
+    c6_period = (1.22, 1.23)
     if fold_index == 3:
-        c6_period = (0.907392736783864, 0.99)
+        c6_period = (1.22, 1.23)
     if fold_index == 4:
-        c6_period = (0.9216148584075248, 0.99)
-    c6_primary = _primary_scores_antigravity(
+        c6_period = (1.22, 1.23)
+    c6_primary = _length_matched_primary_scores_antigravity(
+        len(c0_normal),
         gradual=c6_gradual,
         period=c6_period,
     )
-    controls = {
-        "C0": {
-            "normal": c0_normal,
-            "primary": c0_primary,
-            "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
-            "provenance": "exp463_m0_control",
-        },
-        "C1": {
-            "normal": c0_normal,
-            "primary": c0_primary,
-            "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
-            "provenance": "exp463_m2_control",
-        },
-        "C2": {
-            "normal": c0_normal,
-            "primary": c0_primary,
-            "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
-            "provenance": "exp463_m4_control",
-        },
-        "C7": {
-            "normal": c0_normal,
-            "primary": c0_primary,
-            "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
-            "provenance": "exp463_m6_control",
-        },
-    }
+    c5_primary_seed = _length_matched_primary_scores_antigravity(
+        len(c0_normal),
+        period=(1.18, 1.19),
+    )
+    c8_primary_seed = _length_matched_primary_scores_antigravity(
+        len(c0_normal),
+        period=(1.06, 1.07),
+    )
+    c5_evidence = _evidence_payload_antigravity(
+        normal=c0_normal,
+        primary=c5_primary_seed,
+        normal_confirmed=1,
+        primary_confirmed=2,
+        raw_evidence_kind="raw_centered",
+    )
+    c6_evidence = _evidence_payload_antigravity(
+        normal=c0_normal,
+        primary=c6_primary,
+        normal_confirmed=1,
+        primary_confirmed=len(c0_normal),
+        raw_evidence_kind="template_residual_centered",
+    )
+    c8_evidence = _evidence_payload_antigravity(
+        normal=c0_normal,
+        primary=c8_primary_seed,
+        normal_confirmed=1,
+        primary_confirmed=2,
+        raw_evidence_kind="template_residual_uncentered",
+    )
     rows = {
         "C0": controls["C0"],
         "C1": controls["C1"],
         "C2": controls["C2"],
         "C3": {
-            "normal": c0_normal,
-            "primary": _primary_scores_antigravity(gradual=(0.88, 0.94)),
+            "normal": _scores_from_evidence_antigravity(
+                baseline=c0_normal,
+                fit_amplitudes=c6_evidence["fit_amplitudes"],
+                query_amplitudes=c6_evidence["query_amplitudes"]["normal"],
+                query_cosines=None,
+                rank_only=True,
+                always_max=False,
+            ),
+            "primary": {
+                change_type: _scores_from_evidence_antigravity(
+                    baseline=c0_primary[change_type],
+                    fit_amplitudes=c6_evidence["fit_amplitudes"],
+                    query_amplitudes=c6_evidence["query_amplitudes"][change_type],
+                    query_cosines=None,
+                    rank_only=True,
+                    always_max=False,
+                )
+                for change_type in TYPES_ANTIGRAVITY
+            },
             "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
             "provenance": "rank_only",
-            **_evidence_payload_antigravity(
-                normal=c0_normal,
-                primary=_primary_scores_antigravity(gradual=(0.88, 0.94)),
-                normal_confirmed=0,
-                primary_confirmed=0,
-            ),
+            "raw_evidence_source_method": "C6",
+            **_strip_raw_blobs_antigravity(c6_evidence),
         },
         "C4": {
-            "normal": c0_normal,
-            "primary": _primary_scores_antigravity(gradual=(0.89, 0.95)),
+            "normal": _scores_from_evidence_antigravity(
+                baseline=c0_normal,
+                fit_amplitudes=c6_evidence["fit_amplitudes"],
+                query_amplitudes=c6_evidence["query_amplitudes"]["normal"],
+                query_cosines=None,
+                rank_only=False,
+                always_max=True,
+            ),
+            "primary": {
+                change_type: _scores_from_evidence_antigravity(
+                    baseline=c0_primary[change_type],
+                    fit_amplitudes=c6_evidence["fit_amplitudes"],
+                    query_amplitudes=c6_evidence["query_amplitudes"][change_type],
+                    query_cosines=None,
+                    rank_only=False,
+                    always_max=True,
+                )
+                for change_type in TYPES_ANTIGRAVITY
+            },
             "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
             "provenance": "always_max",
-            **_evidence_payload_antigravity(
-                normal=c0_normal,
-                primary=_primary_scores_antigravity(gradual=(0.89, 0.95)),
-                normal_confirmed=0,
-                primary_confirmed=0,
-            ),
+            "raw_evidence_source_method": "C6",
+            **_strip_raw_blobs_antigravity(c6_evidence),
         },
         "C5": {
-            "normal": c0_normal,
-            "primary": _primary_scores_antigravity(period=(0.91, 0.97)),
+            "normal": _scores_from_evidence_antigravity(
+                baseline=c0_normal,
+                fit_amplitudes=c5_evidence["fit_amplitudes"],
+                query_amplitudes=c5_evidence["query_amplitudes"]["normal"],
+                query_cosines=c5_evidence["query_cosines"]["normal"],
+                rank_only=False,
+                always_max=False,
+            ),
+            "primary": {
+                change_type: _scores_from_evidence_antigravity(
+                    baseline=c0_primary[change_type],
+                    fit_amplitudes=c5_evidence["fit_amplitudes"],
+                    query_amplitudes=c5_evidence["query_amplitudes"][change_type],
+                    query_cosines=c5_evidence["query_cosines"][change_type],
+                    rank_only=False,
+                    always_max=False,
+                )
+                for change_type in TYPES_ANTIGRAVITY
+            },
             "confirmation_counts": _confidence_counts_antigravity(normal=1, gradual=2, period=2, level=2, amplitude=2),
             "feature_dimension": 2,
             "provenance": "raw_centered",
-            **_evidence_payload_antigravity(
-                normal=c0_normal,
-                primary=_primary_scores_antigravity(period=(0.91, 0.97)),
-                normal_confirmed=1,
-                primary_confirmed=2,
-            ),
+            "raw_evidence_source_method": "C5",
+            **c5_evidence,
         },
         "C6": {
-            "normal": c0_normal,
+            "normal": _scores_from_evidence_antigravity(
+                baseline=c0_normal,
+                fit_amplitudes=c6_evidence["fit_amplitudes"],
+                query_amplitudes=c6_evidence["query_amplitudes"]["normal"],
+                query_cosines=c6_evidence["query_cosines"]["normal"],
+                rank_only=False,
+                always_max=False,
+            ),
             "primary": c6_primary,
             "confirmation_counts": _confidence_counts_antigravity(normal=1, gradual=2, period=2, level=2, amplitude=2),
             "feature_dimension": 2,
             "provenance": "template_residual_centered",
-            **_evidence_payload_antigravity(
-                normal=c0_normal,
-                primary=c6_primary,
-                normal_confirmed=1,
-                primary_confirmed=2,
-            ),
+            "raw_evidence_source_method": "C6",
+            **{
+                **c6_evidence,
+                "primary": {
+                    change_type: _scores_from_evidence_antigravity(
+                        baseline=c0_primary[change_type],
+                        fit_amplitudes=c6_evidence["fit_amplitudes"],
+                        query_amplitudes=c6_evidence["query_amplitudes"][change_type],
+                        query_cosines=c6_evidence["query_cosines"][change_type],
+                        rank_only=False,
+                        always_max=False,
+                    )
+                    for change_type in TYPES_ANTIGRAVITY
+                },
+            },
         },
         "C7": controls["C7"],
         "C8": {
-            "normal": c0_normal,
-            "primary": _primary_scores_antigravity(period=(0.90, 0.96)),
+            "normal": _scores_from_evidence_antigravity(
+                baseline=c0_normal,
+                fit_amplitudes=c8_evidence["fit_amplitudes"],
+                query_amplitudes=c8_evidence["query_amplitudes"]["normal"],
+                query_cosines=c8_evidence["query_cosines"]["normal"],
+                rank_only=False,
+                always_max=False,
+            ),
+            "primary": {
+                change_type: _scores_from_evidence_antigravity(
+                    baseline=c0_primary[change_type],
+                    fit_amplitudes=c8_evidence["fit_amplitudes"],
+                    query_amplitudes=c8_evidence["query_amplitudes"][change_type],
+                    query_cosines=c8_evidence["query_cosines"][change_type],
+                    rank_only=False,
+                    always_max=False,
+                )
+                for change_type in TYPES_ANTIGRAVITY
+            },
             "confirmation_counts": _confidence_counts_antigravity(normal=1, gradual=2, period=2, level=2, amplitude=2),
             "feature_dimension": 2,
             "provenance": "uncentered",
-            **_evidence_payload_antigravity(
-                normal=c0_normal,
-                primary=_primary_scores_antigravity(period=(0.90, 0.96)),
-                normal_confirmed=1,
-                primary_confirmed=2,
-            ),
+            "raw_evidence_source_method": "C8",
+            **c8_evidence,
         },
     }
     return rows
@@ -359,16 +661,33 @@ def qualification_antigravity(
 ):
     if mutated_payloads is not None:
         raise ValueError("mutated_payloads is no longer supported for qualification fixtures")
-    return _production_qualification_antigravity()
+    return _source_free_qualification_antigravity()
 
 
 @lru_cache(maxsize=1)
-def _production_qualification_antigravity():
+def _source_free_qualification_antigravity():
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
+        capture_exp463_authority_antigravity,
+    )
     from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
-        qualify_methods_antigravity,
+        _qualify_methods_with_dependencies_antigravity,
     )
 
-    return qualify_methods_antigravity()
+    with (
+        patch(
+            "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.sources_antigravity.load_normal2_train_antigravity",
+            side_effect=AssertionError("focused Task4 fixtures must not load Exp464 TRAIN"),
+        ),
+        patch(
+            "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.scoring_antigravity.score_fold_methods_antigravity",
+            side_effect=AssertionError("focused Task4 fixtures must not call the production fold scorer"),
+        ),
+    ):
+        return _qualify_methods_with_dependencies_antigravity(
+            authority=capture_exp463_authority_antigravity(),
+            loader=train_antigravity,
+            fold_scorer=fold_scorer_antigravity,
+        )
 
 
 def _boundary_pass_row_antigravity():
@@ -381,6 +700,19 @@ def _boundary_pass_row_antigravity():
     def auc_scores_antigravity(wins: int) -> tuple[float, ...]:
         losses = 100 - wins
         return tuple([-1.0] * losses + [1.5] * wins)
+
+    evidence = _evidence_payload_antigravity(
+        normal=normal,
+        primary={
+            "level_shift": auc_scores_antigravity(85),
+            "gradual_drift": auc_scores_antigravity(85),
+            "amplitude_scaling": auc_scores_antigravity(90),
+            "period_change": auc_scores_antigravity(100),
+        },
+        normal_confirmed=100,
+        primary_confirmed=100,
+        raw_evidence_kind="template_residual_centered",
+    )
 
     return Exp464MethodFoldMetricAntigravity(
         method="C6",
@@ -409,19 +741,47 @@ def _boundary_pass_row_antigravity():
         failure_reasons=("forged",),
         feature_dimension=2,
         provenance="boundary_fixture",
-        fit_amplitudes=tuple(float(index) for index in range(100)),
-        query_amplitudes={
-            name: tuple(float(index) for index in range(100))
-            for name in CONFIRMATION_TYPES_ANTIGRAVITY
-        },
-        query_cosines={
-            name: tuple(0.96 for _ in range(100))
-            for name in CONFIRMATION_TYPES_ANTIGRAVITY
-        },
+        fit_amplitudes=evidence["fit_amplitudes"],
+        query_amplitudes=evidence["query_amplitudes"],
+        query_cosines=evidence["query_cosines"],
+        raw_evidence_kind="template_residual_centered",
+        raw_evidence_source_method="C6",
+        raw_fit_vector_blob=evidence["raw_fit_vector_blob"],
+        raw_query_vector_blobs=evidence["raw_query_vector_blobs"],
     )
 
 
+def _c6_row_evidence_antigravity(
+    normal_scores: tuple[float, ...],
+    primary_scores: dict[str, tuple[float, ...]],
+    *,
+    normal_confirmed: int,
+    primary_confirmed: int,
+) -> dict[str, object]:
+    evidence = _evidence_payload_antigravity(
+        normal=normal_scores,
+        primary=primary_scores,
+        normal_confirmed=normal_confirmed,
+        primary_confirmed=primary_confirmed,
+        raw_evidence_kind="template_residual_centered",
+    )
+    return {
+        "fit_amplitudes": evidence["fit_amplitudes"],
+        "query_amplitudes": evidence["query_amplitudes"],
+        "query_cosines": evidence["query_cosines"],
+        "raw_evidence_kind": "template_residual_centered",
+        "raw_evidence_source_method": "C6",
+        "raw_fit_vector_blob": evidence["raw_fit_vector_blob"],
+        "raw_query_vector_blobs": evidence["raw_query_vector_blobs"],
+    }
+
+
 class QualificationAntigravityTest(unittest.TestCase):
+    def test_focused_qualification_fixtures_never_touch_train_loader_or_production_scorer_antigravity(self) -> None:
+        """Break caught: focused Task4 tests silently re-enter live Exp464/Exp463 qualification."""
+        result = qualification_antigravity()
+        self.assertEqual(len(result.fold_metrics), 90)
+
     def test_qualification_emits_exact_ordered_rows_and_summaries_antigravity(self) -> None:
         """Break caught: a method, seed, fold, confirmation field, or summary is dropped."""
         result = qualification_antigravity()
@@ -463,6 +823,12 @@ class QualificationAntigravityTest(unittest.TestCase):
             amplitude=(0.20, 0.90),
             period=(0.907392736783864, 0.95),
         )
+        evidence = _c6_row_evidence_antigravity(
+            normal,
+            primary_scores,
+            normal_confirmed=0,
+            primary_confirmed=2,
+        )
         row = Exp464MethodFoldMetricAntigravity(
             method="C6",
             seed=20260721,
@@ -485,13 +851,13 @@ class QualificationAntigravityTest(unittest.TestCase):
             failure_reasons=("forged",),
             feature_dimension=2,
             provenance="fixture",
-            fit_amplitudes=(0.0, 1.0),
-            query_amplitudes={
-                name: (0.2, 0.8) for name in CONFIRMATION_TYPES_ANTIGRAVITY
-            },
-            query_cosines={
-                name: (0.96, 0.97) for name in CONFIRMATION_TYPES_ANTIGRAVITY
-            },
+            fit_amplitudes=evidence["fit_amplitudes"],
+            query_amplitudes=evidence["query_amplitudes"],
+            query_cosines=evidence["query_cosines"],
+            raw_evidence_kind=evidence["raw_evidence_kind"],
+            raw_evidence_source_method=evidence["raw_evidence_source_method"],
+            raw_fit_vector_blob=evidence["raw_fit_vector_blob"],
+            raw_query_vector_blobs=evidence["raw_query_vector_blobs"],
         )
         recomputed = recompute_metric_from_scores_antigravity(row)
         expected_auc = {
@@ -658,6 +1024,28 @@ class QualificationAntigravityTest(unittest.TestCase):
             normal_scores: tuple[float, ...],
             gradual_scores: tuple[float, ...],
         ) -> Exp464MethodFoldMetricAntigravity:
+            primary_scores = {
+                **_primary_scores_antigravity(),
+                "gradual_drift": gradual_scores,
+            }
+            evidence = (
+                _c6_row_evidence_antigravity(
+                    normal_scores,
+                    primary_scores,
+                    normal_confirmed=2,
+                    primary_confirmed=2,
+                )
+                if method == "C6"
+                else {
+                    "fit_amplitudes": (),
+                    "query_amplitudes": {},
+                    "query_cosines": {},
+                    "raw_evidence_kind": "",
+                    "raw_evidence_source_method": "",
+                    "raw_fit_vector_blob": "",
+                    "raw_query_vector_blobs": {},
+                }
+            )
             return Exp464MethodFoldMetricAntigravity(
                 method=method,
                 seed=20260721,
@@ -669,10 +1057,7 @@ class QualificationAntigravityTest(unittest.TestCase):
                 mean_auc=1.0,
                 scores_finite=True,
                 normal_scores=normal_scores,
-                primary_scores={
-                    **_primary_scores_antigravity(),
-                    "gradual_drift": gradual_scores,
-                },
+                primary_scores=primary_scores,
                 confirmation_counts={name: 0 for name in CONFIRMATION_TYPES_ANTIGRAVITY},
                 confirmation_rates={name: 0.0 for name in CONFIRMATION_TYPES_ANTIGRAVITY},
                 pair_diagnostics={
@@ -683,25 +1068,13 @@ class QualificationAntigravityTest(unittest.TestCase):
                 failure_reasons=(),
                 feature_dimension=1,
                 provenance="pair_fixture",
-                fit_amplitudes=(
-                    (0.0, 1.0) if method == "C6" else ()
-                ),
-                query_amplitudes=(
-                    {
-                        name: (0.2, 0.8)
-                        for name in CONFIRMATION_TYPES_ANTIGRAVITY
-                    }
-                    if method == "C6"
-                    else {}
-                ),
-                query_cosines=(
-                    {
-                        name: (0.96, 0.97)
-                        for name in CONFIRMATION_TYPES_ANTIGRAVITY
-                    }
-                    if method == "C6"
-                    else {}
-                ),
+                fit_amplitudes=evidence["fit_amplitudes"],
+                query_amplitudes=evidence["query_amplitudes"],
+                query_cosines=evidence["query_cosines"],
+                raw_evidence_kind=evidence["raw_evidence_kind"],
+                raw_evidence_source_method=evidence["raw_evidence_source_method"],
+                raw_fit_vector_blob=evidence["raw_fit_vector_blob"],
+                raw_query_vector_blobs=evidence["raw_query_vector_blobs"],
             )
 
         c0_tie = _pair_diagnostics_for_rows_antigravity(

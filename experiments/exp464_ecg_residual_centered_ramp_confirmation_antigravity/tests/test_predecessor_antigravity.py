@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 import inspect
 from pathlib import Path
+import tempfile
 from unittest.mock import patch
 import unittest
 
@@ -112,6 +113,71 @@ class PredecessorAntigravityTest(unittest.TestCase):
         self.assertTrue(
             all(len(digest) == 64 for digest in authority.control_row_digests.values())
         )
+
+    def test_capture_derives_control_row_digests_from_tracked_evidence_file_antigravity(self) -> None:
+        """Break caught: predecessor falls back to config-only control digests."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.control_row_evidence_antigravity import (
+            load_control_row_evidence_antigravity,
+        )
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
+            capture_exp463_authority_antigravity,
+        )
+
+        evidence = load_control_row_evidence_antigravity()
+        authority = capture_exp463_authority_antigravity()
+        self.assertEqual(
+            authority.control_row_digests,
+            evidence.control_row_digests,
+        )
+        self.assertEqual(
+            evidence.metadata["source_leaf_sha256"],
+            "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
+        )
+
+    def test_capture_rejects_forged_control_row_evidence_metadata_and_rows_antigravity(self) -> None:
+        """Break caught: predecessor accepts forged tracked control-row evidence or recomputed digests."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import (
+            control_row_evidence_antigravity,
+            predecessor_antigravity,
+        )
+
+        evidence_path = (
+            Path(control_row_evidence_antigravity.__file__).resolve().parent
+            / "exp463_control_row_evidence_antigravity.jsonl"
+        )
+        original = evidence_path.read_text(encoding="utf-8").splitlines()
+
+        def write_variant_antigravity(lines: list[str]) -> Path:
+            tempdir = Path(tempfile.mkdtemp(prefix="exp464_control_evidence_mutation_antigravity_"))
+            path = tempdir / "exp463_control_row_evidence_antigravity.jsonl"
+            path.write_text("".join(line + "\n" for line in lines), encoding="utf-8")
+            return path
+
+        metadata = deepcopy(__import__("json").loads(original[0]))
+        metadata["source_leaf_sha256"] = "0" * 64
+        bad_meta = original.copy()
+        bad_meta[0] = __import__("json").dumps(metadata, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+        row = deepcopy(__import__("json").loads(original[1]))
+        row["normal_scores"][0] += 0.001
+        bad_row = original.copy()
+        bad_row[1] = __import__("json").dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+        swapped = original.copy()
+        swapped[1], swapped[2] = swapped[2], swapped[1]
+
+        for name, lines in (
+            ("metadata", bad_meta),
+            ("row", bad_row),
+            ("order", swapped),
+        ):
+            path = write_variant_antigravity(lines)
+            with (
+                self.subTest(mutation=name),
+                patch.object(control_row_evidence_antigravity, "_EVIDENCE_PATH_ANTIGRAVITY", path),
+                self.assertRaises(ValueError),
+            ):
+                predecessor_antigravity.capture_exp463_authority_antigravity()
 
     def test_capture_rejects_consistent_forged_terminal_row_fields_antigravity(self) -> None:
         """Break caught: mutually consistent forged terminal ledger evidence must be rejected field-by-field."""
@@ -295,6 +361,7 @@ class PredecessorAntigravityTest(unittest.TestCase):
             "CHAMPION_LEDGER.json",
             "task-5-report-antigravity.html",
             "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
+            "control_row_evidence_antigravity",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, source)

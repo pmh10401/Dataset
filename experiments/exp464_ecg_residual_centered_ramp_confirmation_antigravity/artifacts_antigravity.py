@@ -99,6 +99,10 @@ def _row_payload_antigravity(row: Exp464MethodFoldMetricAntigravity) -> dict[str
             scope: list(row.query_cosines[scope])
             for scope in row.query_cosines
         },
+        "raw_evidence_kind": row.raw_evidence_kind,
+        "raw_evidence_source_method": row.raw_evidence_source_method,
+        "raw_fit_vector_blob": row.raw_fit_vector_blob,
+        "raw_query_vector_blobs": dict(row.raw_query_vector_blobs),
     }
 
 

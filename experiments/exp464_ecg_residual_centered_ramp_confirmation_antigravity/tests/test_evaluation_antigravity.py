@@ -23,15 +23,15 @@ class EvaluationAntigravityTest(unittest.TestCase):
         decision = evaluate_qualification_antigravity(qualification, authority)
         self.assertEqual(decision.primary_candidate, "template_residual_centered_ramp_confirmed_max")
         self.assertEqual(decision.primary_required_count, 10)
+        self.assertEqual(decision.primary_passed_count, 10)
+        self.assertEqual(decision.failure_reasons, ())
+        self.assertTrue(decision.eligible_for_routing_research)
         self.assertFalse(decision.routing_applied)
         self.assertFalse(decision.test_labels_opened)
         self.assertEqual(decision.label_query_count, 0)
-        self.assertIn(
+        self.assertEqual(
             decision.status,
-            (
-                "qualification_failed_blocked_before_routing_research",
-                "qualification_passed_ready_for_task5_reproducibility",
-            ),
+            "qualification_passed_ready_for_task5_reproducibility",
         )
 
     def test_decision_recomputes_c6_gates_from_score_evidence_antigravity(self) -> None:

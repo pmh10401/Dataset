@@ -241,6 +241,7 @@ class Exp464ConfigAntigravity:
     predecessor_result_leaf_count: int
     predecessor_method_fold_metrics_sha256: str
     predecessor_artifact_map_sha256: str
+    predecessor_control_row_evidence_sha256: str
     predecessor_control_summaries: Mapping[str, Exp463MethodSummarySnapshotAntigravity]
     predecessor_control_row_digests: Mapping[str, str]
     label_query_count_must_remain: int
@@ -312,6 +313,7 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "predecessor_result_leaf_count": 7,
         "predecessor_method_fold_metrics_sha256": "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
         "predecessor_artifact_map_sha256": "25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
+        "predecessor_control_row_evidence_sha256": "036d2bccd40d9beac4a20c2e5bc60ba60bd72d5a076d433aceb5e700b414f3c9",
         "predecessor_control_summaries": _CONTROL_SUMMARIES_ANTIGRAVITY,
         "predecessor_control_row_digests": _CONTROL_ROW_DIGESTS_ANTIGRAVITY,
         "label_query_count_must_remain": 0,
