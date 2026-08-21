@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp463 Task 1 code-map triplet."""
+"""Build and validate the bounded Exp463 Task 2 code-map triplet."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp463_antigravity.lock",
 )
 GENERATED_AT_ANTIGRAVITY = "2026-08-21T00:00:00Z"
-GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task1_governance_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp463_task1_governance_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task2_foundations_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp463_task2_foundations_codemap_lock_v1"
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
     "EXPERIMENT_CATALOG.json",
@@ -30,6 +30,14 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
     "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/contracts_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/predecessor_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/sources_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_contracts_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_predecessor_antigravity.py",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_sources_antigravity.py",
     "scratch/build_codemap_exp463_antigravity.py",
 )
 STABLE_FINGERPRINT_EXCLUDED_PREFIXES_ANTIGRAVITY = (
@@ -144,58 +152,63 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "implementation_report",
             "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 1 handoff. Effect: records RED/GREEN evidence, validation, commit handoff, and review-pending concern.",
+            "Caller: Task 2 handoff. Effect: records RED/GREEN evidence, frozen Exp462 authority, TRAIN smoke, validation, commit handoff, and review-pending concern.",
             symbol="TDD evidence",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP463_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: shows planned state, M2 primary, easy Korean explanation, aggregate gates, official0, label0, and null artifact map.",
+            "Caller: status review. Effect: shows Task 2 pending-review state, M2 primary, easy Korean explanation, frozen authority inventory, aggregate gates, official0, label0, and null artifact map.",
             symbol="Exp463 진행 대시보드",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: governance ledger. Effect: records one planned Exp463 entry with null result hashes, official0, label0, absent root, and unchanged pending state.",
+            "Caller: governance ledger. Effect: records Task 2 pending-review Exp463 with null result hashes, official0, label0, absent root, and unchanged pending state.",
             symbol="\"exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the same planned Exp463 record without result materialization or promotion.",
+            "Caller: experiment catalog. Effect: registers the same Task 2 pending-review Exp463 record without result materialization or promotion.",
             symbol="\"Exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion review. Effect: appends planned Exp463 history while preserving champion, pending candidate, routing, and promotion.",
+            "Caller: champion review. Effect: records Task 2 pending-review history while preserving champion, pending candidate, routing, and promotion.",
             symbol="\"experiment\": \"Exp463\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "governance_regression",
             governance_test,
-            "Caller: Task 1 regression. Effect: rejects missing governance surfaces, ledger drift, nonzero official lifecycle, label access, root presence, map mismatch, and champion/pending mutation.",
+            "Caller: Task 1/2 regression. Effect: rejects missing governance/foundation surfaces, ledger drift, nonzero official lifecycle, label access, root presence, map mismatch, and champion/pending mutation.",
             symbol="test_task1_governance_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "map_builder",
             "scratch/build_codemap_exp463_antigravity.py",
-            "Caller: governance validation. Effect: builds and validates the bounded graph, resolving evidence, exact HTML-embedded JSON, and clean source-parent lock.",
+            "Caller: governance validation. Effect: builds and validates the Task 2 bounded graph, resolving evidence, exact HTML-embedded JSON, and clean source-parent lock.",
             symbol="main_antigravity_validate_only_for_tests",
             tests=(governance_test,),
         ),
         _node_antigravity(
-            "task2_unknown",
+            "task2_foundation",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/config_antigravity.py",
-            "unknown future Task 2 boundary; not implemented; callers/effects/tests are unknown until Task 2 review.",
-            symbol="Task 2 — frozen Exp462 authority and TRAIN source",
-            evidence_path=plan,
+            "Caller: future Exp463 scoring/qualification. Effect: freezes identity, M0–M6, gates, Exp462 authority, and TRAIN shape; implementation is complete pending fresh review.",
+            symbol="FROZEN_CONFIG_ANTIGRAVITY",
+            tests=(
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_config_antigravity.py",
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_contracts_antigravity.py",
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_predecessor_antigravity.py",
+                "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_sources_antigravity.py",
+            ),
         ),
         _node_antigravity(
             "task3_unknown",
@@ -275,7 +288,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
                 "evidence": {"path": plan, "symbol": symbol},
             }
             for target, symbol in (
-                ("task2_unknown", "Task 2 — frozen Exp462 authority and TRAIN source"),
+                ("task2_foundation", "Task 2 — frozen Exp462 authority and TRAIN source"),
                 ("task3_unknown", "Task 3 — prefix-scaled ramp and seven method scores"),
                 ("task4_unknown", "Task 4 — blocked qualification, publication, semantic replay"),
                 ("task5_unknown", "Task 5 — closed CLI and two private TRAIN reproductions"),
@@ -393,11 +406,11 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
     return (
         "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-        "<title>Exp463 Task 1 코드맵</title>"
+        "<title>Exp463 Task 2 코드맵</title>"
         "<style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:15px/1.6 system-ui;color:#172033}"
         "code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}li{margin:.35rem 0}</style></head><body><main>"
-        "<h1>Exp463 Task 1 코드맵</h1>"
-        "<p>실제 Task 1 governance 노드와 resolving evidence를 기록한다. Task 2–5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
+        "<h1>Exp463 Task 2 코드맵</h1>"
+        "<p>실제 Exp463 Task 1 governance와 Task 2 foundation 노드, resolving evidence를 기록한다. Task 3–5는 아직 구현되지 않아 unknown으로 표시한다.</p>"
         f"<h2>노드</h2><ul>{node_items}</ul>"
         "<h2>Machine-readable graph</h2>"
         f"<pre id=\"codemap-json-antigravity\" type=\"application/json\">{payload}</pre>"
@@ -449,7 +462,7 @@ def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
         "champion_ledger",
         "governance_regression",
         "map_builder",
-        "task2_unknown",
+        "task2_foundation",
         "task3_unknown",
         "task4_unknown",
         "task5_unknown",

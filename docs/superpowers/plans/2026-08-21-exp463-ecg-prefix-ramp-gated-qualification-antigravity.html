@@ -9,7 +9,7 @@
 <tr><th>Architecture</th><td>Exp462 구조를 통제된 복사로 사용하되 24D LocalGap 주 후보를 prefix-scaled 1D ramp와 <code>0.995</code> gated max로 교체한다. M0–M6을 같은 blocked folds에서 계산하고, M2만 사전 등록된 합격선으로 판정한다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, 기존 aeon/Hydra CPU 경로, unittest, canonical JSON/JSONL, HTML.</td></tr>
 <tr><th>Spec</th><td><a href="../specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html">승인된 Exp463 설계서</a> — SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
-<tr><th>Current status</th><td><code>task_1_complete_pending_task_2</code>. Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 2 is next. 구현·private TRAIN·공식 실행·TEST label query는 모두 0회다.</td></tr>
+<tr><th>Current status</th><td><code>task_2_complete_pending_review</code>. Task 2 foundation is implemented; fresh review is required before its checkbox is closed. Score/evaluation/private TRAIN qualification/official execution/TEST label query remain 0.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -29,7 +29,7 @@
 <h2><label><input type="checkbox" disabled checked>Task 1 — governance, dashboard, code map</label></h2>
 <p><strong>Files:</strong> Create <code>docs/EXP463_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP463_RUNBOOK_antigravity.html</code>, <code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp463_antigravity.py</code>, <code>docs/codemap/codemap_exp463_antigravity.{html,json,lock}</code>. Modify <code>docs/EXP463_DASHBOARD_antigravity.html</code>, three ledgers, and this plan.</p>
 <p><strong>Produces:</strong> 승인된 설계 SHA, planned ledger record, 쉬운 한국어 dashboard, 이후 Task 경계를 unknown으로 표시한 map.</p>
-<p><strong>Implementation handoff:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0). Task 1 is complete; Task 2 is next. Tasks 2–6 remain unchecked.</p>
+<p><strong>Implementation handoff:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0). Task 2 implementation is complete pending fresh review; Task 2–6 remain unchecked until their own evidence and review.</p>
 <ol>
 <li><label><input type="checkbox" disabled checked>Step 1 — RED: 문서·ledger·map 부재와 공식0/label0/null result를 검사한다.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
 self.assertEqual(record["label_query_count"], 0)
@@ -50,9 +50,9 @@ self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
 <li><label><input type="checkbox" disabled>Step 1 — RED exact identity/data/seeds/folds/M0–M6/gates, immutable contracts, Exp462 30 rows/3 summaries/7 leaves, source shape·dtype·finite·read-only, label0.</label></li>
 <li><label><input type="checkbox" disabled>Step 2 — focused tests를 실행해 missing-module 실패를 확인한다.</label><pre><code>"$PY" -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_config_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_contracts_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_sources_antigravity</code></pre></li>
 <li><label><input type="checkbox" disabled>Step 3 — Exp462 대응 모듈을 통제된 복사하고 Exp463 정체성, M0–M6, 0.995 gate만 바꾼다.</label></li>
-<li><label><input type="checkbox" disabled>Step 4 — 전임 결과의 고정 aggregate와 TRAIN loader를 연결한다. TEST 테이블이나 label SQL은 import하지 않는다.</label></li>
+<li><label><input type="checkbox" disabled>Step 4 — 전임 30 rows/3 summaries/7 leaves의 고정 aggregate와 TRAIN loader를 연결한다. TEST 테이블이나 label SQL은 import하지 않는다.</label></li>
 <li><label><input type="checkbox" disabled>Step 5 — focused 두 번, Task1 regression, read-only TRAIN source smoke 한 번, compile/map/diff/root/label 검증.</label></li>
-<li><label><input type="checkbox" disabled>Step 6 — dashboard/report/map 갱신, 커밋, fresh review C/I0 후 Task 2 체크.</label></li>
+<li><label><input type="checkbox" disabled>Step 6 — dashboard/report/map 갱신, 커밋하고 fresh review를 요청한다. 리뷰 전 Task 2 체크박스는 닫지 않는다.</label></li>
 </ol>
 </section>
 

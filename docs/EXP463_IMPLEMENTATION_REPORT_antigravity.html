@@ -1,58 +1,48 @@
-<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Exp463 Task 1 구현 보고서</title>
-<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#eefbf3;border-left:6px solid #16794b;padding:1rem}.warn{background:#fff8e6;border-left:6px solid #b54708;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp463 Task 2 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#eefbf3;border-left:6px solid #16794b;padding:1rem}.warn{background:#fff8e6;border-left:6px solid #b54708;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
-<h1>Exp463 Task 1 governance report</h1>
-<p><strong>status:</strong> <code>DONE_WITH_CONCERNS</code></p>
-<p><strong>lifecycle:</strong> <code>task_1_complete_pending_task_2</code> — Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0); Task 2 is next. Task 1의 계획·사전등록·런북·보고서·대시보드·ledger·코드맵 표면을 구현했다. 공식 evaluate 0 / inspect 0 (official evaluate 0 / inspect 0), private TRAIN 0, TEST label query 0 (label query count 0), 공식 root 생성 0, champion/pending 변경은 발생하지 않았다.</p>
+<h1>Exp463 Task 2 — frozen Exp462 authority and TRAIN source</h1>
+<p><strong>status:</strong> <code>DONE_WITH_CONCERNS</code> — Task 2 implementation is complete and awaits fresh independent review. The plan keeps Task 2 unchecked until that review; Tasks 3–6 remain unchecked.</p>
+<p><strong>lifecycle:</strong> <code>task_2_complete_pending_review</code>. official evaluate 0 / inspect 0 (Official evaluate 0 / inspect 0); no score-source execution, private qualification, result publication, TEST-label access, routing, champion/pending mutation, promotion, or official-root creation occurred. Task 2–5 remain bounded to their own later reviews.</p>
+<p><strong>approved design SHA-256:</strong> <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></p>
 
-<h2>Files</h2>
+<h2>Implemented boundary</h2>
 <ul>
-<li><code>docs/EXP463_PREREGISTRATION_antigravity.html</code></li>
-<li><code>docs/EXP463_RUNBOOK_antigravity.html</code></li>
-<li><code>docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html</code></li>
-<li><code>docs/EXP463_DASHBOARD_antigravity.html</code></li>
-<li><code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code></li>
-<li><code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py</code></li>
-<li><code>scratch/build_codemap_exp463_antigravity.py</code></li>
-<li><code>docs/codemap/codemap_exp463_antigravity.html</code>, <code>.json</code>, <code>.lock</code></li>
-<li><code>docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html</code></li>
+<li><code>config_antigravity.py</code> freezes Exp463 identity, TRAIN shape, seeds/folds, onset <code>56</code>, alpha <code>0.005</code>, gate <code>0.995</code>, M0–M6 descriptions, M2 sole primary, qualification gates, and Exp462 result provenance.</li>
+<li><code>contracts_antigravity.py</code> provides immutable Exp462 snapshot contracts (30 row identities, 3 summaries, 7 leaf hashes) and future Exp463 containers for exactly 70 rows and 7 summaries without scoring/evaluation logic.</li>
+<li><code>predecessor_antigravity.py</code> exposes <code>capture_exp462_authority_antigravity()</code>; capture is source-free and binds the terminal commit, failed primary, aggregate values, and leaf bytes by digest.</li>
+<li><code>sources_antigravity.py</code> exposes only <code>load_normal2_train_antigravity()</code>, delegating to the reviewed Exp462 TRAIN boundary and returning a defensive owned, finite, C-contiguous, read-only float32 copy.</li>
 </ul>
+
+<h2>Frozen Exp462 authority</h2>
+<table>
+<tr><th>terminal closeout</th><td><code>040422f62406e3ca19038b9609903c4ba76e1694</code></td></tr>
+<tr><th>reviewed implementation</th><td><code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code></td></tr>
+<tr><th>result inventory</th><td>30 metric row identities / 18 failed rows / 3 method summaries / 7 leaves</td></tr>
+<tr><th>primary binding</th><td><code>hydra_period_gradual_rank_max</code> passed <code>3/10</code>; gradual minimum <code>0.7953196519289775</code>; period minimum <code>0.8960376741612595</code>; pooled minimum <code>0.9010220185101353</code>; Wilson maximum <code>0.013439124039399194</code></td></tr>
+<tr><th>historical folds</th><td>20260721/fold3 = <code>0.8960376741612595</code>; 20261721/fold4 = <code>0.9285624465570143</code></td></tr>
+<tr><th>leaf hashes</th><td>context <code>fd5a5271…bfd1291</code>; rows <code>f3d0eab1…ccf0b</code>; failed <code>e7848e96…3da90ea</code>; summary <code>0f63f0ee…7eb0a9</code>; decision <code>6eec4160…8d0d58b</code>; dashboard <code>d2f1ed5c…36a558b</code>; artifact map <code>5bfdeaeb…e69c50</code></td></tr>
+</table>
 
 <h2>TDD evidence</h2>
 <table>
-<tr><th>RED</th><td><code>$PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_governance_antigravity</code> was run before the governance surfaces existed. Expected missing-surface failure was observed: 2 tests ran, 1 failure (six missing Task 1 files) and 1 error (missing preregistration read).</td></tr>
-<tr><th>GREEN 1</th><td><code>$PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_governance_antigravity</code> passed: <code>Ran 2 tests in 0.012s — OK</code>.</td></tr>
-<tr><th>GREEN 2</th><td>The same governance command was repeated and passed: <code>Ran 2 tests in 0.009s — OK</code>. This confirms deterministic repeatability at the Task 1 boundary.</td></tr>
+<tr><th>RED</th><td>Before implementation, the focused four-module suite ran <code>9</code> tests and produced the expected missing-module/import errors for config, contracts, predecessor, and source boundaries.</td></tr>
+<tr><th>GREEN 1</th><td>After the minimal implementation, the focused Task 2 suite ran <code>9</code> tests and passed.</td></tr>
+<tr><th>GREEN 2</th><td>The same focused suite was run again after documentation and map work; it passed deterministically.</td></tr>
 </table>
 
-<h2>Fix round 1 evidence</h2>
-<ul>
-<li>RED after adding the regressions: the governance suite ran 3 tests and failed on the stale predecessor method binding, the pre-fix source-parent map, and the missing fingerprint rejection.</li>
-<li>GREEN after the bounded fixes and map regeneration: the same suite ran 3 tests and passed twice; map validate-only, strict JSON, and strict HTML checks also passed.</li>
-<li>All three Exp463 predecessor records now bind the 3/10, 0.8960376741612595, and historical-fold values to Exp462 <code>hydra_period_gradual_rank_max</code>. M0/M6 governance ruling is unchanged.</li>
-</ul>
+<h2>Validation</h2>
+<table>
+<tr><th>source smoke</th><td><code>(1413, 140)</code>, <code>float32</code>, finite <code>True</code>, owned <code>True</code>, C-contiguous <code>True</code>, writeable <code>False</code>, two calls do not share memory; source query count remains <code>0</code>.</td></tr>
+<tr><th>map</th><td>Exp463 map builder validate-only passes after Task 2 nodes, callers/effects/tests, fingerprints, HTML embedding, and lock triplet are regenerated.</td></tr>
+<tr><th>bytes/root/labels</th><td>Exp462 product/result bytes are untouched; Exp463 official root remains absent and non-symlink; official command count 0 and label query count 0.</td></tr>
+<tr><th>compile/diff</th><td>Task 2 modules and tests compile; diff scope is limited to the four modules/tests, dashboard/report/plan, three Exp463 ledger records, governance expectations, map builder/triplet, and this report.</td></tr>
+</table>
 
-<h2>Frozen governance decisions</h2>
-<ul>
-<li>Design SHA-256: <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code>; predecessor Exp462 terminal commit: <code>040422f62406e3ca19038b9609903c4ba76e1694</code>.</li>
-<li>M0–M6 are frozen IDs with design descriptions. Only the approved M2 implementation string, <code>hydra_period_ramp_gated_max</code>, is frozen here; no internal names are invented for M0/M1/M3/M4/M5/M6.</li>
-<li>M2 is the sole primary. Onset is <code>56</code>, alpha is <code>0.005</code>, and gate is <code>0.995</code>. Any private gate failure permanently stops before official execution.</li>
-<li>All three ledger records retain lifecycle <code>planned_implementation_not_started</code> with implementation status <code>task_1_complete_pending_task_2</code>; official/private evaluate/inspect are 0, label query count is 0, result hashes are null, official root is absent, and champion/pending are unchanged.</li>
-</ul>
-
-<h2>Validation evidence</h2>
-<ul>
-<li>Strict duplicate-key JSON parsing and HTML parser checks are in the governance test. A standalone validation also reported: <code>strict JSON: 5 files OK; HTML parse: 5 files OK; map validation: OK; official root: absent; label query count: 0</code>.</li>
-<li>The map builder validates every node/edge evidence symbol literally, future Task 2–5 unknown nodes, exact HTML-embedded JSON equality, recomputed tracked/module fingerprints, and a clean functional source-parent lock at <code>HEAD</code> or its immediate parent.</li>
-<li>Run-root absence, label0, official0, null hashes, and champion/pending invariance are asserted.</li>
-<li>MLX was not applicable to governance-only documents; no score-source execution or package installation occurred.</li>
-</ul>
+<div class="ok"><strong>Ruling:</strong> Exp463 may proceed to a fresh Task 2 review. The implementation does not authorize Task 3 scoring, Task 4 qualification, private reproduction, or any official command.</div>
+<div class="warn"><strong>Concerns:</strong> The 30 Exp462 row identities and aggregate relationships are frozen from terminal ledger/report evidence; source result files are intentionally absent. Later tasks must preserve these hashes and relationships, keep all future metrics TRAIN-only, and retain the M0–M6 IDs/descriptions.</div>
+<div class="stop"><strong>Safety boundary:</strong> no TEST labels, TEST metrics, routing, promotion, champion/pending change, official root, or official evaluate/inspect action is authorized by this handoff.</div>
 
 <h2>Commits</h2>
-<p>Bounded Task 1 implementation commit: <code>0c8c43c3</code> (<code>docs(exp463): add task1 governance boundary</code>). Fix round commits: <code>60ac4cf97bdfa40d0a0a5fbbc06159620cc43c8b</code> (ledger bindings, evidence resolution, and fingerprint validation) and <code>2fec19bb908752096772818a0ce34905f26a6080</code> (clean source-parent map regeneration). Independent review commit/checklist: <code>NOT_PERFORMED_BY_THIS_AGENT</code>.</p>
-
-<div class="warn"><strong>Concerns:</strong> Task 1 review is SHIP (spec PASS, quality APPROVED, C/I0), and Task 2 is next. The Exp463 plan checks Task 1 only; Tasks 2–6 remain unchecked. Later Tasks 2–5 must preserve the M0–M6 IDs/descriptions and may choose internal method names only within their owned implementation contracts.</div>
-<div class="stop"><strong>Safety boundary:</strong> no official command, TEST label access, routing, promotion, or official root creation is authorized by this Task 1 handoff.</div>
+<p>Functional Task 2 commit: <code>TO_BE_FILLED_AFTER_COMMIT</code>. Clean map-only child: <code>TO_BE_FILLED_AFTER_MAP_COMMIT</code>. Fresh independent review: <code>PENDING</code>.</p>
 </main></body></html>
