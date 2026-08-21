@@ -1785,9 +1785,9 @@
     {
       "experiment": "Exp464",
       "kind": "ecg_residual_centered_ramp_confirmation_qualification",
-      "status": "planned_implementation_not_started",
-      "implementation_status": "task_1_implemented_awaiting_fresh_review",
-      "reason": "Task 1 added only governance docs, ledger truth, the governance test, and the Exp464 code-map boundary before any science code. Official evaluate/inspect counts remain 0, private run count is 0, label query count is 0, the official root is absent, and all official result hashes remain null. Champion, pending candidate, routing, and promotion stay unchanged. Next action is a fresh Task 1 review; Task 2 is not yet authorized.",
+      "status": "task_1_complete_pending_task_2",
+      "implementation_status": "task_1_complete_pending_task_2",
+      "reason": "Task 1 closeout is complete after fresh review spec PASS, quality APPROVED, and Critical/Important/Minor 0. Task 2 is next. Official evaluate/inspect counts remain 0, private run count is 0, label query count is 0, the official root is absent, and all official result hashes remain null. Champion, pending candidate, routing, and promotion stay unchanged. No Task 2+ module, TRAIN source load, private run, official command, TEST label query, or package install occurred during closeout.",
       "run_identity": "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
       "run_root": "/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821",
       "package": "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity",

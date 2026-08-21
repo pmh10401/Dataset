@@ -16,7 +16,7 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><th>Architecture</th><td>Exp463의 TRAIN-only 평가 흐름을 controlled fork한다. 새 특징 모듈은 template residual, 평균 0인 ramp 기저, amplitude rank, Pearson cosine을 계산하고, scorer는 C0–C8 고정 비교를 만든다. qualification·publication·replay는 점수에서 결과를 다시 계산하며 private gate 통과 전에는 공식 실행을 열지 않는다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, stdlib unittest/json/hashlib/pathlib, 기존 aeon/Hydra CPU 경로. 고정 interpreter: <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>.</td></tr>
 <tr><th>Spec</th><td><code>docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html</code>, SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code>. Task 1은 구현 직전 같은 값을 다시 계산해 config와 ledgers에 고정한다.</td></tr>
-<tr><th>Current status</th><td><code>task_1_implemented_awaiting_fresh_review</code>; Task 1 산출물은 준비됐고 fresh Task 1 review가 다음 단계다. Task 2–6 checkbox는 아직 모두 unchecked다.</td></tr>
+<tr><th>Current status</th><td><code>task_1_complete_pending_task_2</code>; Task 1은 fresh review에서 spec PASS / quality APPROVED / Critical·Important·Minor 0으로 닫혔다. Task 1 heading과 여섯 step은 checked이고, Task 2가 다음 단계다. Tasks 2–6 checkbox는 모두 unchecked다.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -44,11 +44,12 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><td>map</td><td><code>scratch/build_codemap_exp464_antigravity.py</code>, <code>docs/codemap/codemap_exp464_antigravity.{html,json,lock}</code></td><td>호출자, 영향, 테스트, 현재 Task 경계</td></tr>
 </tbody></table>
 
-<h2><label><input type="checkbox" disabled> Task 1 — governance, HTML dashboard, code map</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 1 — governance, HTML dashboard, code map</label></h2>
 <p><strong>Files:</strong> Create four Exp464 HTML docs, <code>experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_governance_antigravity.py</code>, map builder and triplet. Modify <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>, and this plan.</p>
 <p><strong>Interfaces:</strong> Consumes the final design bytes and Exp463 terminal facts. Produces the computed exact design SHA-256, experiment identity, paths, method order C0–C8, status fields and map nodes used by every later Task.</p>
+<p><strong>Current state:</strong> Task 1 complete / Task 2 next after fresh review spec PASS, quality APPROVED, Critical/Important/Minor 0. Task 1 heading과 여섯 step은 checked이며 Tasks 2–6은 unchecked다.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED governance test.</strong></label><pre><code>def test_exp464_is_planned_without_results_antigravity(self):
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED governance test.</strong></label><pre><code>def test_exp464_is_planned_without_results_antigravity(self):
     dashboard = Path("docs/EXP464_DASHBOARD_antigravity.html")
     self.assertTrue(dashboard.exists())
     state = next(x for x in json.load(open("RESEARCH_STATE.json"))["experiments"] if x["id"] == "Exp464")
@@ -56,13 +57,13 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
     self.assertEqual(state["label_query_count"], 0)
     self.assertIsNone(state["artifact_map_sha256"])</code></pre>
 Run: <code>python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity</code><br>Expected: FAIL because Exp464 docs and ledger rows do not exist.</li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — Add exact HTML and ledger identity.</strong></label><p>Set status <code>planned_implementation_not_started</code>, Task 1 next, private/official/label counts 0, result hashes null, champion/pending/routing/promotion unchanged. Dashboard must explain the Exp463 M0/M1/M2/M4 evidence in easy Korean.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — Build the Exp464 code map.</strong></label><p>The map must answer: governance calls no scientific module yet; it affects later config/report truth; governance tests cover it. Bare builder writes the triplet; exact <code>--validate-only</code> performs no writes; unknown flags fail.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — GREEN twice.</strong></label><pre><code>python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Add exact HTML and ledger identity.</strong></label><p>Set status to Task 1 complete / Task 2 next after review closeout, while keeping private/official/label counts 0, result hashes null, champion/pending/routing/promotion unchanged. Dashboard must explain the Exp463 M0/M1/M2/M4 evidence in easy Korean.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — Build the Exp464 code map.</strong></label><p>The map must answer: governance is complete, no scientific module is implemented yet, Task 2 config is the next consumer, and governance tests cover the boundary. Bare builder writes the triplet; exact <code>--validate-only</code> performs no writes; unknown flags fail.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — GREEN twice.</strong></label><pre><code>python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity
 python3 -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_governance_antigravity
 python3 scratch/build_codemap_exp464_antigravity.py --validate-only</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — Validate documents.</strong></label><p>Strict JSON parse three ledgers and map JSON/lock; parse all Exp464 HTML; assert Task 1–6 controls remain unchecked before review; assert official root absent and label query 0.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — Commit and fresh review.</strong></label><p>Create one functional docs/governance commit and one clean map-only child. After spec PASS, quality APPROVED, Critical/Important 0, check Task 1 heading and steps only.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — Validate documents.</strong></label><p>Strict JSON parse three ledgers and map JSON/lock; parse all Exp464 HTML; assert exactly 7 checked boxes total (Task 1 heading + six steps only); assert official root absent and label query 0.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — Commit and fresh review.</strong></label><p>Create one functional docs/governance closeout commit and one clean map-only child. Fresh review is spec PASS, quality APPROVED, Critical/Important/Minor 0, so only Task 1 heading and steps are checked.</p></li>
 </ol>
 
 <h2><label><input type="checkbox" disabled> Task 2 — frozen Exp463 authority and TRAIN source</label></h2>

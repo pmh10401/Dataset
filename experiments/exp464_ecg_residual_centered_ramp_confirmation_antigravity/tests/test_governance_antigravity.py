@@ -222,11 +222,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 record["kind"],
                 "ecg_residual_centered_ramp_confirmation_qualification",
             )
-            self.assertEqual(record["status"], "planned_implementation_not_started")
-            self.assertEqual(
-                record["implementation_status"],
-                "task_1_implemented_awaiting_fresh_review",
-            )
+            self.assertEqual(record["status"], "task_1_complete_pending_task_2")
+            self.assertEqual(record["implementation_status"], "task_1_complete_pending_task_2")
             self.assertEqual(
                 record["run_identity"],
                 "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
@@ -281,11 +278,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         plan_parser = CheckboxParserAntigravity()
         plan_parser.feed((ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8"))
         plan_parser.close()
-        self.assertEqual(
-            plan_parser.checkbox_count,
-            EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY,
-        )
-        self.assertEqual(plan_parser.checked_count, 0)
+        self.assertEqual(plan_parser.checkbox_count, EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY)
+        self.assertEqual(plan_parser.checked_count, 7)
 
         builder_module = load_builder_module_antigravity()
         build_result = builder_module.build_triplet_antigravity(validate_only=True)

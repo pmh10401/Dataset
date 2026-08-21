@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Exp464 대시보드 — Task 1 governance handoff</title>
+<title>Exp464 대시보드 — Task 1 closeout</title>
 <style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
 <h1>Exp464 진행 대시보드</h1>
-<div class="note"><p><strong>현재 상태:</strong> <code>planned_implementation_not_started</code>. Task 1 구현은 끝났고, 지금 handoff 상태는 <code>task_1_implemented_awaiting_fresh_review</code>다. 다음 action은 fresh Task 1 review뿐이며 Task 2는 아직 승인되지 않았다.</p></div>
+<div class="note"><p><strong>현재 상태:</strong> <code>task_1_complete_pending_task_2</code>. Task 1은 fresh review에서 spec PASS, quality APPROVED, Critical/Important/Minor 0으로 닫혔다. 다음 단계는 Task 2이며, 아직 어떤 science module도 시작하지 않았다.</p></div>
 <table>
 <tr><th>experiment</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
@@ -15,6 +15,7 @@
 <tr><th>공식 evaluate / inspect</th><td><code>0 / 0</code></td></tr>
 <tr><th>private run / label query</th><td><code>0 / 0</code></td></tr>
 <tr><th>공식 결과 hash</th><td>prediction / evaluation / decision / artifact / dashboard 모두 <code>null</code></td></tr>
+<tr><th>next action</th><td>Task 2 next</td></tr>
 </table>
 
 <h2>왜 Exp464를 따로 만든가</h2>
@@ -34,5 +35,5 @@
 <li>code map은 “지금은 governance만 있고, 나중에 Task 2 config가 이 경계를 읽는다”는 사실만 기록한다.</li>
 </ul>
 
-<div class="stop"><p>이 대시보드는 결과 대시보드가 아니다. 아직 점수 계산도, private TRAIN 실행도, 공식 실행도 없다. fresh Task 1 review 전에는 어떤 Task checkbox도 닫지 않는다.</p></div>
+<div class="stop"><p>이 대시보드는 결과 대시보드가 아니다. 아직 점수 계산도, private TRAIN 실행도, 공식 실행도 없다. Task 1 review가 clean하게 끝났기 때문에 Task 1만 닫혔고, Tasks 2–6은 그대로 미시작 상태다.</p></div>
 </main></body></html>

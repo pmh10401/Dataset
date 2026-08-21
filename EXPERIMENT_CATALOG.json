@@ -2736,8 +2736,8 @@
       "id": "Exp464",
       "experiment": "Exp464",
       "kind": "ecg_residual_centered_ramp_confirmation_qualification",
-      "status": "planned_implementation_not_started",
-      "implementation_status": "task_1_implemented_awaiting_fresh_review",
+      "status": "task_1_complete_pending_task_2",
+      "implementation_status": "task_1_complete_pending_task_2",
       "documents": {
         "dashboard": "docs/EXP464_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP464_PREREGISTRATION_antigravity.html",
@@ -2821,7 +2821,7 @@
       "scientific_winner_selected": false,
       "official_root_present": false,
       "review_only": false,
-      "notes": "Task 1 added only governance docs, ledger truth, a governance test, and the Exp464 code-map boundary. Task 2+ science modules are intentionally not implemented yet. Official evaluate/inspect counts remain 0, private run count is 0, label query count is 0, the official root is absent, and all official result hashes remain null. Champion, pending candidate, routing, and promotion are unchanged."
+      "notes": "Task 1 closeout is complete after fresh review spec PASS, quality APPROVED, and Critical/Important/Minor 0. Task 2 is next. Official evaluate/inspect counts remain 0, private run count is 0, label query count is 0, the official root is absent, and all official result hashes remain null. Champion, pending candidate, routing, and promotion are unchanged. No Task 2+ module, TRAIN source load, private run, official command, TEST label query, or package install occurred during closeout."
     }
   ]
 }

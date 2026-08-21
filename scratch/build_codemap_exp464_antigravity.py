@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp464 Task 1 code-map triplet."""
+"""Build and validate the bounded Exp464 Task 1 closeout code-map triplet."""
 
 from __future__ import annotations
 
@@ -102,14 +102,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             plan,
-            "Caller: Task 1 review and later Task 2 planning. Effect: keeps every Task 1–6 checkbox unchecked before review and marks Task 2+ modules as future work.",
-            symbol="Task 1 — governance, HTML dashboard, code map",
+            "Caller: Task 1 closeout and later Task 2 planning. Effect: records Task 1 complete / Task 2 next, with exactly seven checked boxes total and Tasks 2–6 left unchecked.",
+            symbol="Task 1 complete / Task 2 next",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: governance review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean and states that M4 is diagnostic, not promoted.",
+            "Caller: Task 1 closeout review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean, states that M4 is diagnostic, not promoted, and records Task 2 next.",
             symbol="Exp464 진행 대시보드",
             tests=(governance_test,),
         ),
@@ -130,49 +130,49 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 1 handoff. Effect: records that only governance/docs/map were implemented and Task 2 is not yet authorized.",
+            "Caller: Task 1 closeout. Effect: records clean review approval, Task 1 complete / Task 2 next, and zero official/private/label activity.",
             symbol="Exp464 Task 1 구현 보고서",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores the planned Exp464 row with official/private/label counts at zero and null result hashes.",
+            "Caller: active research ledger. Effect: stores the Task 1 complete / Task 2 next Exp464 row with official/private/label counts at zero and null result hashes.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the planned Exp464 record without any scientific result or promotion.",
+            "Caller: experiment catalog. Effect: registers the Task 1 complete / Task 2 next Exp464 record without any scientific result or promotion.",
             symbol="\"id\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion history. Effect: appends the planned Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
+            "Caller: champion history. Effect: appends the Task 1 complete / Task 2 next Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
             symbol="\"experiment\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "governance_test",
             governance_test,
-            "Caller: Task 1 verification. Effect: rejects missing docs, ledger drift, checked plan boxes, missing map triplet, root creation, or nonzero official/private/label counts.",
+            "Caller: Task 1 closeout verification. Effect: rejects missing docs, ledger drift, any checkbox count other than Task 1 only, missing map triplet, root creation, or nonzero official/private/label counts.",
             symbol="test_exp464_is_planned_without_results_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "map_builder",
             "scratch/build_codemap_exp464_antigravity.py",
-            "Caller: governance validation. Effect: writes and validates the Exp464 Task 1 bounded graph, exact embedded JSON, lock fingerprints, and source-parent binding.",
+            "Caller: Task 1 closeout validation. Effect: writes and validates the Exp464 Task 1 bounded graph, exact embedded JSON, lock fingerprints, and source-parent binding.",
             symbol="build_triplet_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "future_task2_config",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/config_antigravity.py",
-            "Caller: future Task 2 config only. Effect: planned consumer of this governance boundary; file is intentionally not implemented in Task 1.",
+            "Caller: future Task 2 config only. Effect: next planned consumer of this closed Task 1 boundary; file is intentionally not implemented during Task 1.",
             symbol="config_antigravity.py",
             tests=(governance_test,),
             evidence_path=plan,
@@ -197,7 +197,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     ]
     flows = [
         "governance_test -> docs/ledgers/map",
-        "approved_design -> planned docs and ledgers",
+        "approved_design -> Task 1 closeout docs and ledgers",
         "Task 1 map -> future Task 2 config boundary",
     ]
     return {
@@ -240,11 +240,11 @@ def _fingerprints_antigravity() -> list[dict[str, str]]:
 def _html_bytes_antigravity(graph_json: str) -> bytes:
     html_text = f"""<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Exp464 Task 1 Code Map</title>
+<title>Exp464 Task 1 Closeout Code Map</title>
 <style>body{{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}}</style></head>
 <body><main>
-<h1>Exp464 Task 1 code map</h1>
-<p>이 map은 governance만 다루며, 나중에 Task 2 config가 읽게 될 경계를 설명한다.</p>
+<h1>Exp464 Task 1 closeout code map</h1>
+<p>이 map은 Task 1 closeout 경계만 다루며, Task 2 config가 다음 소비자가 되는 상태를 설명한다.</p>
 <script id="graph-data" type="application/json">{graph_json}</script>
 </main></body></html>
 """
