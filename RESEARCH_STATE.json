@@ -2495,7 +2495,7 @@
         "hydra_local_gap",
         "period_signature_local_gap",
         "hydra_period_rank_max"
-        ],
+      ],
       "primary_candidate": "hydra_period_rank_max",
       "seed_pair": [
         20260721,
