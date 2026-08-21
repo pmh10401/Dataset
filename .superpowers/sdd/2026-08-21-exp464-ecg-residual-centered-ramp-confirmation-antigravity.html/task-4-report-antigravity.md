@@ -95,6 +95,62 @@
   - plan and docs still reported earlier focused-suite counts
   - code-map triplet became stale after truth/report changes
 
+## I4 numeric-boundary correction
+
+- Replaced the invalid decision-boundary test that patched
+  `normalize_qualification_antigravity()` and injected prewritten summary and
+  failure strings.
+- The replacement fixture is source-free and starts from the frozen tracked
+  C0 score rows. It creates deterministic C6 raw suffix vectors, replays their
+  amplitudes and cosines, derives rank/max score arrays, and then calls the real
+  normalization and decision functions.
+- The passing boundary keeps C6 equal to C0 on every period row, so both
+  historical period gates pass at exact equality:
+  - seed `20260721`, fold `3`: `0.907392736783864`
+  - seed `20261721`, fold `4`: `0.9216148584075248`
+- Its global period minimum is exactly `0.907392736783864`; its gradual minimum
+  is `0.8500955686333685`, strictly above both gradual floors.
+- Numeric just-fail rows cover all four `0.85` AUC gates, the `0.90` mean gate,
+  Wilson and finite row gates, 10/10 aggregation, gradual/period per-fold C0
+  non-degradation, the strict historical gradual floor, the global period
+  floor, and both historical period rows. Every case asserts exact row reasons
+  and exact final decision reasons.
+- No production module changed: the valid score-derived tests confirmed the
+  existing normalization and decision implementation.
+
+### Targeted mutation RED proof
+
+Each comparison below was disabled one at a time with all other production
+code unchanged. The named focused test failed, after which the original
+comparison was restored before the next mutation.
+
+| Mutated comparison | RED result |
+|---|---|
+| row finite | exit `1`, `failures=1` |
+| row Wilson upper `> 0.05` | exit `1`, `failures=1` |
+| row mean AUC `< 0.90` | exit `1`, `failures=1` |
+| row per-type AUC `< 0.85` loop | exit `1`, `failures=1` |
+| C6 gradual AUC `<` matching C0 | exit `1`, `failures=2` |
+| C6 period AUC `<` matching C0 | exit `1`, `failures=7` |
+| historical period threshold `<` | exit `1`, `failures=2` |
+| primary 10/10 condition | exit `1`, `failures=11` |
+| summary per-type AUC `< 0.85` loop | exit `1`, `failures=5` |
+| summary mean AUC `< 0.90` | exit `1`, `failures=2` |
+| summary gradual minimum `< 0.85` | exit `1`, `failures=2` |
+| summary gradual minimum `<= 0.8402306222021025` | exit `1`, `failures=1` |
+| summary period minimum `< 0.907392736783864` | exit `1`, `failures=3` |
+
+Fresh focused GREEN after restoring every mutant:
+
+```bash
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest -q \
+  experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_qualification_antigravity.QualificationAntigravityTest.test_boundary_row_hits_exact_auc_mean_and_wilson_edges_antigravity \
+  experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_evaluation_antigravity.EvaluationAntigravityTest.test_source_free_c6_gate_matrix_covers_every_frozen_decision_boundary_antigravity
+```
+
+- `Ran 2 tests`
+- `OK`
+
 ## GREEN evidence
 
 ### Focused Task 4 suite
@@ -118,7 +174,8 @@ Observed current GREEN:
 The focused suite now covers:
 
 - source-free focused qualification that must not load TRAIN or call the production fold scorer
-- exact 10/10 C6 positive decision fixture
+- exact 10/10 C6 positive decision fixture built from raw numeric evidence
+- exact pass/just-fail numeric coverage for every frozen C6 gate, including per-fold C0 gradual/period non-degradation and both historical thresholds
 - tie handling for pair diagnostics
 - exact raw-evidence semantic replay for amplitude and cosine
 - dashboard key/value allowlist behavior

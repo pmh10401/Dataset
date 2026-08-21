@@ -697,17 +697,13 @@ def _boundary_pass_row_antigravity():
 
     normal = tuple(float(index) / 100.0 for index in range(100))
 
-    def auc_scores_antigravity(wins: int) -> tuple[float, ...]:
-        losses = 100 - wins
-        return tuple([-1.0] * losses + [1.5] * wins)
-
     evidence = _evidence_payload_antigravity(
         normal=normal,
         primary={
-            "level_shift": auc_scores_antigravity(85),
-            "gradual_drift": auc_scores_antigravity(85),
-            "amplitude_scaling": auc_scores_antigravity(90),
-            "period_change": auc_scores_antigravity(100),
+            "level_shift": _auc_boundary_scores_antigravity(85),
+            "gradual_drift": _auc_boundary_scores_antigravity(85),
+            "amplitude_scaling": _auc_boundary_scores_antigravity(90),
+            "period_change": _auc_boundary_scores_antigravity(100),
         },
         normal_confirmed=100,
         primary_confirmed=100,
@@ -726,10 +722,10 @@ def _boundary_pass_row_antigravity():
         scores_finite=False,
         normal_scores=normal,
         primary_scores={
-            "level_shift": auc_scores_antigravity(85),
-            "gradual_drift": auc_scores_antigravity(85),
-            "amplitude_scaling": auc_scores_antigravity(90),
-            "period_change": auc_scores_antigravity(100),
+            "level_shift": _auc_boundary_scores_antigravity(85),
+            "gradual_drift": _auc_boundary_scores_antigravity(85),
+            "amplitude_scaling": _auc_boundary_scores_antigravity(90),
+            "period_change": _auc_boundary_scores_antigravity(100),
         },
         confirmation_counts=_confidence_counts_antigravity(),
         confirmation_rates={name: 0.0 for name in CONFIRMATION_TYPES_ANTIGRAVITY},
@@ -738,7 +734,7 @@ def _boundary_pass_row_antigravity():
             for change_type in PAIR_TYPES_ANTIGRAVITY
         },
         passed=False,
-        failure_reasons=("forged",),
+        failure_reasons=(),
         feature_dimension=2,
         provenance="boundary_fixture",
         fit_amplitudes=evidence["fit_amplitudes"],
@@ -749,6 +745,12 @@ def _boundary_pass_row_antigravity():
         raw_fit_vector_blob=evidence["raw_fit_vector_blob"],
         raw_query_vector_blobs=evidence["raw_query_vector_blobs"],
     )
+
+
+def _auc_boundary_scores_antigravity(wins: int) -> tuple[float, ...]:
+    if type(wins) is not int or not 0 <= wins <= 100:
+        raise ValueError("wins must be an integer in [0, 100]")
+    return tuple([-1.0] * (100 - wins) + [1.5] * wins)
 
 
 def _c6_row_evidence_antigravity(
@@ -774,6 +776,135 @@ def _c6_row_evidence_antigravity(
         "raw_fit_vector_blob": evidence["raw_fit_vector_blob"],
         "raw_query_vector_blobs": evidence["raw_query_vector_blobs"],
     }
+
+
+def _replace_c6_row_with_numeric_evidence_antigravity(
+    qualification,
+    *,
+    seed: int,
+    fold_index: int,
+    promoted_indices: dict[str, tuple[int, ...]],
+):
+    """Return a contract whose C6 row is derived from real raw numeric evidence."""
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.raw_evidence_antigravity import (
+        encode_vector_matrix_antigravity,
+    )
+
+    rows = list(qualification.fold_metrics)
+    c0 = next(
+        row
+        for row in rows
+        if row.method == "C0" and row.seed == seed and row.fold_index == fold_index
+    )
+    c6_index = next(
+        index
+        for index, row in enumerate(rows)
+        if row.method == "C6" and row.seed == seed and row.fold_index == fold_index
+    )
+    c6 = rows[c6_index]
+    baselines = {"normal": c0.normal_scores, **dict(c0.primary_scores)}
+    query_amplitudes: dict[str, tuple[float, ...]] = {}
+    query_cosines: dict[str, tuple[float, ...]] = {}
+    raw_query_vector_blobs: dict[str, str] = {}
+    scores: dict[str, tuple[float, ...]] = {}
+    counts: dict[str, int] = {}
+    for scope in CONFIRMATION_TYPES_ANTIGRAVITY:
+        promoted = frozenset(promoted_indices.get(scope, ()))
+        if any(type(index) is not int or not 0 <= index < len(baselines[scope]) for index in promoted):
+            raise ValueError(f"promoted index is out of range for {scope}")
+        amplitudes = tuple(
+            200.0 if index in promoted else 0.5
+            for index in range(len(baselines[scope]))
+        )
+        cosines = tuple(
+            1.0 if index in promoted else 0.94
+            for index in range(len(baselines[scope]))
+        )
+        query_amplitudes[scope] = amplitudes
+        query_cosines[scope] = cosines
+        raw_query_vector_blobs[scope] = encode_vector_matrix_antigravity(
+            _raw_matrix_antigravity(
+                amplitudes=amplitudes,
+                cosines=cosines,
+                raw_evidence_kind="template_residual_centered",
+            )
+        )
+        scores[scope] = _scores_from_evidence_antigravity(
+            baseline=baselines[scope],
+            fit_amplitudes=c6.fit_amplitudes,
+            query_amplitudes=amplitudes,
+            query_cosines=cosines,
+            rank_only=False,
+            always_max=False,
+        )
+        counts[scope] = len(promoted)
+    rows[c6_index] = replace(
+        c6,
+        normal_scores=scores["normal"],
+        primary_scores={scope: scores[scope] for scope in TYPES_ANTIGRAVITY},
+        confirmation_counts=counts,
+        confirmation_rates={scope: 0.0 for scope in CONFIRMATION_TYPES_ANTIGRAVITY},
+        passed=True,
+        failure_reasons=(),
+        query_amplitudes=query_amplitudes,
+        query_cosines=query_cosines,
+        raw_query_vector_blobs=raw_query_vector_blobs,
+    )
+    for method, rank_only, always_max in (
+        ("C3", True, False),
+        ("C4", False, True),
+    ):
+        index = next(
+            index
+            for index, row in enumerate(rows)
+            if row.method == method and row.seed == seed and row.fold_index == fold_index
+        )
+        row = rows[index]
+        rows[index] = replace(
+            row,
+            normal_scores=_scores_from_evidence_antigravity(
+                baseline=c0.normal_scores,
+                fit_amplitudes=c6.fit_amplitudes,
+                query_amplitudes=query_amplitudes["normal"],
+                query_cosines=None,
+                rank_only=rank_only,
+                always_max=always_max,
+            ),
+            primary_scores={
+                scope: _scores_from_evidence_antigravity(
+                    baseline=c0.primary_scores[scope],
+                    fit_amplitudes=c6.fit_amplitudes,
+                    query_amplitudes=query_amplitudes[scope],
+                    query_cosines=None,
+                    rank_only=rank_only,
+                    always_max=always_max,
+                )
+                for scope in TYPES_ANTIGRAVITY
+            },
+            fit_amplitudes=c6.fit_amplitudes,
+            query_amplitudes=query_amplitudes,
+            query_cosines=query_cosines,
+        )
+    return replace(qualification, fold_metrics=tuple(rows))
+
+
+def numeric_boundary_qualification_antigravity():
+    """Build the minimal C0-fallback C6 contract that passes every frozen gate."""
+    qualification = qualification_antigravity()
+    for seed in SEEDS_ANTIGRAVITY:
+        for fold_index in FOLDS_ANTIGRAVITY:
+            qualification = _replace_c6_row_with_numeric_evidence_antigravity(
+                qualification,
+                seed=seed,
+                fold_index=fold_index,
+                promoted_indices={},
+            )
+    return _replace_c6_row_with_numeric_evidence_antigravity(
+        qualification,
+        seed=20261721,
+        fold_index=3,
+        promoted_indices={"gradual_drift": tuple(range(23))},
+    )
 
 
 class QualificationAntigravityTest(unittest.TestCase):
@@ -848,7 +979,7 @@ class QualificationAntigravityTest(unittest.TestCase):
                 for change_type in PAIR_TYPES_ANTIGRAVITY
             },
             passed=False,
-            failure_reasons=("forged",),
+            failure_reasons=(),
             feature_dimension=2,
             provenance="fixture",
             fit_amplitudes=evidence["fit_amplitudes"],
@@ -889,7 +1020,7 @@ class QualificationAntigravityTest(unittest.TestCase):
         )
 
     def test_boundary_row_hits_exact_auc_mean_and_wilson_edges_antigravity(self) -> None:
-        """Break caught: exact C6 per-row thresholds drift around the frozen edges."""
+        """Break caught: score-derived row gates drift or stop emitting exact reasons."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
             recompute_metric_from_scores_antigravity,
         )
@@ -904,16 +1035,71 @@ class QualificationAntigravityTest(unittest.TestCase):
         self.assertTrue(passing.scores_finite)
         self.assertEqual(passing.failure_reasons, ())
 
-        lowered = replace(
-            _boundary_pass_row_antigravity(),
-            primary_scores={
-                **_boundary_pass_row_antigravity().primary_scores,
-                "level_shift": tuple([-1.0] * 16 + [1.5] * 84),
-            },
+        per_type_cases = {
+            change_type: {
+                scope: _auc_boundary_scores_antigravity(
+                    84 if scope == change_type else 100
+                )
+                for scope in TYPES_ANTIGRAVITY
+            }
+            for change_type in TYPES_ANTIGRAVITY
+        }
+        for change_type, scores in per_type_cases.items():
+            with self.subTest(change_type=change_type):
+                failed = recompute_metric_from_scores_antigravity(
+                    replace(_boundary_pass_row_antigravity(), primary_scores=scores)
+                )
+                self.assertEqual(failed.per_type_auc[change_type], 0.84)
+                self.assertEqual(
+                    failed.failure_reasons,
+                    (f"{change_type}_auc_below_min",),
+                )
+
+        mean_failed = recompute_metric_from_scores_antigravity(
+            replace(
+                _boundary_pass_row_antigravity(),
+                primary_scores={
+                    "level_shift": _auc_boundary_scores_antigravity(85),
+                    "gradual_drift": _auc_boundary_scores_antigravity(85),
+                    "amplitude_scaling": _auc_boundary_scores_antigravity(89),
+                    "period_change": _auc_boundary_scores_antigravity(100),
+                },
+            )
         )
-        lowered_recomputed = recompute_metric_from_scores_antigravity(lowered)
-        self.assertIn("level_shift_auc_below_min", lowered_recomputed.failure_reasons)
-        self.assertIn("mean_auc_below_min", lowered_recomputed.failure_reasons)
+        self.assertEqual(mean_failed.mean_auc, 0.8975)
+        self.assertEqual(mean_failed.failure_reasons, ("mean_auc_below_min",))
+
+        wilson_failed = recompute_metric_from_scores_antigravity(
+            replace(
+                _boundary_pass_row_antigravity(),
+                normal_scores=(1.01,) + _boundary_pass_row_antigravity().normal_scores[1:],
+            )
+        )
+        self.assertGreater(wilson_failed.normal_wilson_upper, 0.05)
+        self.assertEqual(
+            wilson_failed.failure_reasons,
+            ("normal_wilson_upper_above_max",),
+        )
+
+        nonfinite = recompute_metric_from_scores_antigravity(
+            replace(
+                _boundary_pass_row_antigravity(),
+                normal_scores=(float("nan"),)
+                + _boundary_pass_row_antigravity().normal_scores[1:],
+            )
+        )
+        self.assertEqual(
+            nonfinite.failure_reasons,
+            (
+                "nonfinite_scores",
+                "normal_wilson_upper_above_max",
+                "mean_auc_below_min",
+                "level_shift_auc_below_min",
+                "gradual_drift_auc_below_min",
+                "amplitude_scaling_auc_below_min",
+                "period_change_auc_below_min",
+            ),
+        )
 
     def test_normalization_rejects_wrong_order_identity_and_forged_c6_scores_antigravity(self) -> None:
         """Break caught: reordered rows or forged evidence-bearing C6 scores survive normalization."""
