@@ -27,6 +27,13 @@
 <tr><th>GREEN 2</th><td>The same governance command was repeated and passed: <code>Ran 2 tests in 0.009s — OK</code>. This confirms deterministic repeatability at the Task 1 boundary.</td></tr>
 </table>
 
+<h2>Fix round 1 evidence</h2>
+<ul>
+<li>RED after adding the regressions: the governance suite ran 3 tests and failed on the stale predecessor method binding, the pre-fix source-parent map, and the missing fingerprint rejection.</li>
+<li>GREEN after the bounded fixes and map regeneration: the same suite ran 3 tests and passed twice; map validate-only, strict JSON, and strict HTML checks also passed.</li>
+<li>All three Exp463 predecessor records now bind the 3/10, 0.8960376741612595, and historical-fold values to Exp462 <code>hydra_period_gradual_rank_max</code>. M0/M6 governance ruling is unchanged.</li>
+</ul>
+
 <h2>Frozen governance decisions</h2>
 <ul>
 <li>Design SHA-256: <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code>; predecessor Exp462 terminal commit: <code>040422f62406e3ca19038b9609903c4ba76e1694</code>.</li>
@@ -44,7 +51,7 @@
 </ul>
 
 <h2>Commits</h2>
-<p>Bounded Task 1 implementation commit: <code>0c8c43c3</code> (<code>docs(exp463): add task1 governance boundary</code>). This report/map synchronization is a follow-up closeout commit. Independent review commit/checklist: <code>NOT_PERFORMED_BY_THIS_AGENT</code>.</p>
+<p>Bounded Task 1 implementation commit: <code>0c8c43c3</code> (<code>docs(exp463): add task1 governance boundary</code>). Fix round commits: <code>60ac4cf97bdfa40d0a0a5fbbc06159620cc43c8b</code> (ledger bindings, evidence resolution, and fingerprint validation) and <code>2fec19bb908752096772818a0ce34905f26a6080</code> (clean source-parent map regeneration). Independent review commit/checklist: <code>NOT_PERFORMED_BY_THIS_AGENT</code>.</p>
 
 <div class="warn"><strong>Concerns:</strong> independent review remains pending. The Exp463 plan intentionally leaves Task 1–6 checkboxes unchecked until that review. Later Tasks 2–5 must preserve the M0–M6 IDs/descriptions and may choose internal method names only within their owned implementation contracts.</div>
 <div class="stop"><strong>Safety boundary:</strong> no official command, TEST label access, routing, promotion, or official root creation is authorized by this Task 1 handoff.</div>
