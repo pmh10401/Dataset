@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp464 Task 3 scoring code-map triplet."""
+"""Build and validate the bounded Exp464 Task 4 result-pipeline code-map triplet."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp464_antigravity.json",
     "docs/codemap/codemap_exp464_antigravity.lock",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp464_task3_scoring_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp464_task3_scoring_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp464_task4_results_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp464_task4_results_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-21T00:00:00Z"
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -29,20 +29,29 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/EXP464_RUNBOOK_antigravity.html",
     "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
     "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
-    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/centered_ramp_antigravity.py",
+    ".superpowers/sdd/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/task-4-report-antigravity.md",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/config_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/contracts_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/predecessor_antigravity.py",
-    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/scoring_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/sources_antigravity.py",
-    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_centered_ramp_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/centered_ramp_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/scoring_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/qualification_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/evaluation_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/artifacts_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/replay_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/dashboard_export_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_config_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_predecessor_antigravity.py",
-    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_scoring_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_sources_antigravity.py",
-    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_ramp_features_antigravity.py",
-    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_scoring_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_centered_ramp_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_scoring_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_artifacts_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_dashboard_export_antigravity.py",
     "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_governance_antigravity.py",
     "scratch/build_codemap_exp464_antigravity.py",
 )
@@ -50,6 +59,10 @@ TRACKED_PATHS_ANTIGRAVITY = (
 
 def _canonical_json_antigravity(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _canonical_json_bytes_antigravity(value: Any) -> bytes:
+    return (_canonical_json_antigravity(value) + "\n").encode("utf-8")
 
 
 def _sha256_bytes_antigravity(data: bytes) -> str:
@@ -61,16 +74,32 @@ def _sha256_file_antigravity(path: Path) -> str:
 
 
 def _git_output_antigravity(*args: str) -> str:
-    return subprocess.check_output(["git", *args], cwd=ROOT_ANTIGRAVITY, text=True).strip()
+    return subprocess.check_output(
+        ["git", *args],
+        cwd=ROOT_ANTIGRAVITY,
+        text=True,
+    ).strip()
 
 
-def _current_head_antigravity() -> str:
-    return _git_output_antigravity("rev-parse", "HEAD")
+def _source_parent_antigravity() -> str:
+    return _git_output_antigravity(
+        "rev-list",
+        "-n",
+        "1",
+        "HEAD",
+        "--",
+        *TRACKED_PATHS_ANTIGRAVITY,
+    )
 
 
-def _allowed_source_commits_antigravity() -> list[str]:
-    commits = _git_output_antigravity("rev-list", "--parents", "-n", "1", "HEAD").split()
-    return commits
+def _allowed_source_commits_antigravity(source_parent: str) -> list[str]:
+    return _git_output_antigravity(
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        source_parent,
+    ).split()
 
 
 def _node_antigravity(
@@ -80,18 +109,12 @@ def _node_antigravity(
     *,
     symbol: str,
     tests: tuple[str, ...] = (),
-    evidence_path: str | None = None,
 ) -> dict[str, Any]:
     return {
         "id": node_id,
         "path": path,
         "role": role,
-        "evidence": [
-            {
-                "path": path if evidence_path is None else evidence_path,
-                "symbol": symbol,
-            }
-        ],
+        "evidence": [{"path": path, "symbol": symbol}],
         "tests": list(tests),
     }
 
@@ -109,6 +132,26 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
         "test_scoring_antigravity.py"
     )
+    task4_qualification_test = (
+        "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
+        "test_qualification_antigravity.py"
+    )
+    task4_evaluation_test = (
+        "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
+        "test_evaluation_antigravity.py"
+    )
+    task4_artifacts_test = (
+        "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
+        "test_artifacts_antigravity.py"
+    )
+    task4_replay_test = (
+        "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
+        "test_replay_antigravity.py"
+    )
+    task4_dashboard_test = (
+        "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/"
+        "test_dashboard_export_antigravity.py"
+    )
     exp463_feature_regression = (
         "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/"
         "test_ramp_features_antigravity.py"
@@ -117,358 +160,361 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/"
         "test_scoring_antigravity.py"
     )
-    plan = (
-        "docs/superpowers/plans/"
-        "2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html"
-    )
     nodes = [
         _node_antigravity(
             "approved_design",
             "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
-            "Caller: Task 3 scorer and later Task 4 qualification. Effect: freezes Exp464 identity, dataset, onset 56, cosine >= 0.95, C0–C8 order, and official-root absence.",
-            symbol="Exp464 — 공통 ECG 파형을 제거한 뒤 실제 상승 모양만 확인",
-            tests=(governance_test, task3_feature_test, task3_scoring_test),
+            "Caller: Task 3 scorer, Task 4 qualification, and future Task 5 CLI. Effect: freezes Exp464 identity, dataset, onset 56, C0–C8 order, C6-only promotion contract, and official-root absence.",
+            symbol="Exp464 — 공통 ECG 파형 제거 뒤 중심화 ramp 확인",
+            tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "implementation_plan",
-            plan,
-            "Caller: Task 3 closeout. Effect: records task_3_complete_pending_task_4 while preserving exactly twenty-one checked boxes total for Task 1–3 only.",
-            symbol="task_3_complete_pending_task_4",
+            "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
+            "Caller: Task 4 closeout. Effect: records task_4_implemented_awaiting_fresh_review while preserving exactly twenty-one checked boxes total for Tasks 1–3 only.",
+            symbol="task_4_implemented_awaiting_fresh_review",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean, records Task 3 closeout clean, and points to Task 4 as the next consumer.",
-            symbol="Exp464 진행 대시보드",
+            "Caller: status review. Effect: summarizes Task 4 implementation, focused verification, and the review gate before any Task 5 work.",
+            symbol="Exp464 대시보드 — Task 4 구현 / fresh review 대기",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "preregistration",
             "docs/EXP464_PREREGISTRATION_antigravity.html",
-            "Caller: governance review. Effect: freezes C0–C8 order, C6 sole primary, checkbox truth 21/42, and MLX fallback to numpy_cpu in the Task 3 closed state.",
-            symbol="Frozen C0–C8 comparison",
-            tests=(governance_test,),
+            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the 21/42 checkbox truth in the Task 4 review-pending state.",
+            symbol="Frozen qualification gates for C6",
+            tests=(governance_test, task4_qualification_test, task4_evaluation_test),
         ),
         _node_antigravity(
             "runbook",
             "docs/EXP464_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: keeps private run, official commands, TEST labels, routing, and promotion blocked at Task 3 closeout while Task 4 remains the next implementation step.",
-            symbol="Exp464 Task 3 operator boundary",
+            "Caller: future operators. Effect: keeps Task 5 CLI, private evaluate, official evaluate/inspect, TEST labels, and promotion blocked until fresh Task 4 review closes.",
+            symbol="Exp464 Task 4 operator boundary",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 3 closeout review. Effect: records centered residual ramp implementation, exact C0–C8 scoring, zero official/private/label activity, and the MLX fallback reason.",
-            symbol="Exp464 Task 3 구현 보고서",
+            "Caller: Task 4 review. Effect: records the result-pipeline surface, focused suite evidence, and the unchanged no-results boundary.",
+            symbol="Exp464 Task 4 구현 보고서",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores the task_3_complete_pending_task_4 Exp464 row with official/private/label counts at zero and null result hashes.",
+            "Caller: active research ledger. Effect: stores the task_4_implemented_awaiting_fresh_review Exp464 row with official/private/label counts at zero and all official result hashes null.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the task_3_complete_pending_task_4 Exp464 record without any scientific result or promotion.",
+            "Caller: experiment catalog. Effect: registers the Task 4 review-pending Exp464 record without any private or official result.",
             symbol="\"id\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion history. Effect: appends the task_3_complete_pending_task_4 Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
+            "Caller: champion history. Effect: preserves champion and pending state while recording that Task 4 code landed but review is still pending.",
             symbol="\"experiment\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "governance_test",
             governance_test,
-            "Caller: Task 3 closeout verification. Effect: rejects missing Task 3 modules, ledger drift, any checkbox count other than Task 1 plus Task 2 plus Task 3 only, stale map truth, root creation, or nonzero official/private/label counts.",
-            symbol="test_exp464_is_planned_without_results_antigravity",
+            "Caller: Task 4 closeout verification. Effect: rejects missing Task 4 modules/tests, stale ledgers, wrong checkbox truth, stale map truth, official/private drift, or active Exp464 work.",
+            symbol="test_exp464_task4_truth_is_review_pending_without_results_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "map_builder",
             "scratch/build_codemap_exp464_antigravity.py",
-            "Caller: Task 3 closeout validation. Effect: writes and validates the Exp464 Task 3 scoring graph, exact embedded JSON, lock fingerprints, and source-parent binding.",
+            "Caller: Task 4 closeout validation. Effect: writes and validates the Exp464 Task 4 results graph, embedded JSON, lock fingerprints, and source-parent binding.",
             symbol="build_triplet_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "task2_config",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/config_antigravity.py",
-            "Caller: Task 3 scorer, Task 3 tests, and future Task 4 qualification. Effect: freezes Exp464 identity, interpreter, TRAIN shape, C0–C8 order, gates, and exact C0/C1/C2/C7 Exp463 summaries.",
+            "Caller: Task 3 scorer, Task 4 qualification, and future Task 5 CLI. Effect: freezes the method order, seed pair, gates, and C0/C1/C2/C7 Exp463 control summaries.",
             symbol="FROZEN_CONFIG_ANTIGRAVITY",
-            tests=(
-                governance_test,
-                "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_config_antigravity.py",
-                task3_scoring_test,
-            ),
+            tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task2_contracts",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/contracts_antigravity.py",
-            "Caller: Task 3 scorer and future Task 4 qualification. Effect: freezes exact-type Exp463 summaries, copies/finalizes control mappings, and rejects forged authority fields.",
+            "Caller: Task 3 scorer and Task 4 qualification. Effect: freezes exact-type Exp463 summaries and rejects forged authority fields.",
             symbol="Exp463AuthorityAntigravity",
-            tests=(
-                governance_test,
-                "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_contracts_antigravity.py",
-                task3_scoring_test,
-            ),
+            tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task2_predecessor",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/predecessor_antigravity.py",
-            "Caller: Task 3 scorer and future Task 4 qualification. Effect: captures frozen Exp463 terminal authority from the tracked Task 5 report, implementation report, and three ledgers only.",
+            "Caller: Task 3 scorer and Task 4 qualification. Effect: captures frozen Exp463 terminal authority from the approved tracked truth only.",
             symbol="capture_exp463_authority_antigravity",
-            tests=(
-                governance_test,
-                "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_predecessor_antigravity.py",
-                task3_scoring_test,
-            ),
+            tests=(governance_test, task3_scoring_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task2_sources",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/sources_antigravity.py",
-            "Caller: Task 3 scorer and future Task 4 qualification. Effect: replays the exact TRAIN-only 1413x140 matrix as an owned read-only copy without label access.",
+            "Caller: Task 3 scorer and Task 4 qualification. Effect: replays the exact TRAIN-only 1413x140 matrix without label access.",
             symbol="load_normal2_train_antigravity",
-            tests=(
-                governance_test,
-                "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests/test_sources_antigravity.py",
-            ),
+            tests=(governance_test, task4_qualification_test),
         ),
         _node_antigravity(
             "task3_centered_ramp_feature",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/centered_ramp_antigravity.py",
-            "Caller: task3_scoring and task3_feature_test. Effect: computes centered residual amplitude/cosine evidence and the exact q=(t-mean)/norm suffix basis used by Task 3 scoring.",
+            "Caller: task3_scoring. Effect: computes centered residual amplitude/cosine evidence that Task 4 consumes only through frozen fold scores.",
             symbol="CenteredRampEvidenceAntigravity",
             tests=(task3_feature_test, task3_scoring_test, exp463_feature_regression),
         ),
         _node_antigravity(
             "task3_scoring",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/scoring_antigravity.py",
-            "Caller: Task 3 tests and future Task 4 qualification. Effect: replays C0/C1/C2/C7 from Exp463, computes independent C3/C4/C5/C6/C8 scores, confirmation counts, and exact provenance.",
+            "Caller: Task 4 qualification. Effect: produces the exact per-fold score arrays, confirmation counts, and provenance for C0–C8.",
             symbol="score_fold_methods_antigravity",
-            tests=(task3_scoring_test, exp463_scoring_regression, governance_test),
+            tests=(governance_test, task3_scoring_test, exp463_scoring_regression, task4_qualification_test),
         ),
         _node_antigravity(
-            "task3_feature_test",
-            task3_feature_test,
-            "Caller: Task 3 RED→GREEN feature verification. Effect: covers the exact NumPy formula, exact public-vs-scoring basis equality, constant-shift invariance, raw signed cosine outputs, zero-vector handling, and input immutability.",
-            symbol="CenteredRampAntigravityTest",
-            tests=(task3_feature_test,),
-        ),
-        _node_antigravity(
-            "task3_scoring_test",
-            task3_scoring_test,
-            "Caller: Task 3 RED→GREEN scoring verification. Effect: covers exact method order, Exp463 replay controls, independent C3/C4/C5/C6/C8 semantics, inclusive 0.95 threshold, nextafter fallback, and immutable results.",
-            symbol="ScoringAntigravityTest",
-            tests=(task3_scoring_test,),
-        ),
-        _node_antigravity(
-            "exp463_feature_regression",
-            exp463_feature_regression,
-            "Caller: Task 3 regression safety net. Effect: confirms the predecessor ramp feature remains unchanged while Exp464 adds centered residual scoring.",
-            symbol="RampFeaturesAntigravityTest",
-            tests=(exp463_feature_regression,),
-        ),
-        _node_antigravity(
-            "exp463_scoring_regression",
-            exp463_scoring_regression,
-            "Caller: Task 3 regression safety net. Effect: confirms Exp463 scoring remains unchanged while Exp464 replays M0/M2/M4/M6 as exact controls.",
-            symbol="ScoringAntigravityTest",
-            tests=(exp463_scoring_regression,),
-        ),
-        _node_antigravity(
-            "future_task4_qualification",
+            "task4_qualification",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/qualification_antigravity.py",
-            "Caller: future Task 4 only. Effect: next consumer of Task 3 scores, confirmation counts, and provenance for qualification/evaluation/artifact rows.",
-            symbol="Task 4 — qualification, evaluation, artifacts, replay, dashboard export",
-            tests=(governance_test,),
-            evidence_path=plan,
+            "Caller: Task 4 evaluation, artifacts, replay, dashboard export, and future Task 5 CLI. Effect: recomputes AUC/Wilson/finite gates from score arrays and normalizes C6 against C0 plus historical period floors.",
+            symbol="qualify_methods_antigravity",
+            tests=(task4_qualification_test, task4_evaluation_test, task4_artifacts_test, task4_replay_test, governance_test),
+        ),
+        _node_antigravity(
+            "task4_evaluation",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/evaluation_antigravity.py",
+            "Caller: Task 4 artifacts and dashboard export. Effect: turns the normalized qualification contract into one fixed C6-only decision and blocks routing before review.",
+            symbol="evaluate_qualification_antigravity",
+            tests=(task4_evaluation_test, task4_artifacts_test, task4_dashboard_test, governance_test),
+        ),
+        _node_antigravity(
+            "task4_artifacts",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/artifacts_antigravity.py",
+            "Caller: Task 4 replay and future Task 5 inspect. Effect: publishes exactly seven canonical leaves with a self-excluding artifact map.",
+            symbol="publish_result_antigravity",
+            tests=(task4_artifacts_test, task4_replay_test, governance_test),
+        ),
+        _node_antigravity(
+            "task4_replay",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/replay_antigravity.py",
+            "Caller: Task 4 verification and future Task 5 inspect. Effect: reopens only a supplied root and semantically rejects rehashed tampering.",
+            symbol="inspect_replay_at_antigravity",
+            tests=(task4_replay_test, governance_test),
+        ),
+        _node_antigravity(
+            "task4_dashboard_export",
+            "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/dashboard_export_antigravity.py",
+            "Caller: Task 4 artifacts and review UI. Effect: exposes aggregate-only dashboard scalars with registered method and metric names only.",
+            symbol="export_dashboard_antigravity",
+            tests=(task4_dashboard_test, task4_artifacts_test, governance_test),
+        ),
+        _node_antigravity(
+            "task4_qualification_test",
+            task4_qualification_test,
+            "Caller: Task 4 RED→GREEN metric verification. Effect: covers row ordering, score-derived recomputation, normalization, and pair-diagnostic accounting.",
+            symbol="QualificationAntigravityTest",
+            tests=(task4_qualification_test,),
+        ),
+        _node_antigravity(
+            "task4_evaluation_test",
+            task4_evaluation_test,
+            "Caller: Task 4 RED→GREEN decision verification. Effect: covers fixed C6-only evaluation and blocked-before-routing status.",
+            symbol="EvaluationAntigravityTest",
+            tests=(task4_evaluation_test,),
+        ),
+        _node_antigravity(
+            "task4_artifacts_test",
+            task4_artifacts_test,
+            "Caller: Task 4 RED→GREEN publication verification. Effect: covers exact seven-leaf inventory, canonical JSON/JSONL, and create-only private roots.",
+            symbol="ArtifactsAntigravityTest",
+            tests=(task4_artifacts_test,),
+        ),
+        _node_antigravity(
+            "task4_replay_test",
+            task4_replay_test,
+            "Caller: Task 4 RED→GREEN replay verification. Effect: covers source-free reconstruction and the canonical rehash tamper matrix.",
+            symbol="ReplayAntigravityTest",
+            tests=(task4_replay_test,),
+        ),
+        _node_antigravity(
+            "task4_dashboard_test",
+            task4_dashboard_test,
+            "Caller: Task 4 RED→GREEN dashboard verification. Effect: covers aggregate-only export with no raw dataset names, labels, or unrestricted caller strings.",
+            symbol="DashboardExportAntigravityTest",
+            tests=(task4_dashboard_test,),
         ),
         _node_antigravity(
             "future_task5_private_qualification",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/cli_antigravity.py",
-            "Caller: future Task 5 only. Effect: private qualification/inspect lifecycle will depend on Task 4’s serialized score evidence after fresh review.",
-            symbol="Task 5 — closed CLI and exactly two private TRAIN reproductions",
+            "Caller: future Task 5 only. Effect: private qualification/inspect lifecycle will depend on Task 4 serialized score evidence after fresh review.",
+            symbol="Task 5 private qualification",
             tests=(governance_test,),
-            evidence_path=plan,
         ),
     ]
     edges = [
-        {"from": "approved_design", "to": "preregistration", "relation": "freezes"},
-        {"from": "approved_design", "to": "task3_centered_ramp_feature", "relation": "freezes"},
-        {"from": "approved_design", "to": "task3_scoring", "relation": "freezes"},
-        {"from": "implementation_plan", "to": "task3_centered_ramp_feature", "relation": "bounds_current_work"},
-        {"from": "implementation_plan", "to": "task3_scoring", "relation": "bounds_current_work"},
-        {"from": "implementation_plan", "to": "future_task4_qualification", "relation": "bounds_future_work"},
-        {"from": "implementation_plan", "to": "future_task5_private_qualification", "relation": "bounds_future_work"},
-        {"from": "research_state", "to": "dashboard", "relation": "reports_status"},
-        {"from": "experiment_catalog", "to": "dashboard", "relation": "reports_identity"},
-        {"from": "champion_ledger", "to": "dashboard", "relation": "preserves_champion_state"},
-        {"from": "governance_test", "to": "dashboard", "relation": "covers"},
-        {"from": "governance_test", "to": "preregistration", "relation": "covers"},
-        {"from": "governance_test", "to": "runbook", "relation": "covers"},
-        {"from": "governance_test", "to": "implementation_report", "relation": "covers"},
-        {"from": "governance_test", "to": "research_state", "relation": "covers"},
-        {"from": "governance_test", "to": "experiment_catalog", "relation": "covers"},
-        {"from": "governance_test", "to": "champion_ledger", "relation": "covers"},
-        {"from": "governance_test", "to": "map_builder", "relation": "covers"},
-        {"from": "governance_test", "to": "task2_config", "relation": "covers"},
-        {"from": "governance_test", "to": "task2_contracts", "relation": "covers"},
-        {"from": "governance_test", "to": "task2_predecessor", "relation": "covers"},
-        {"from": "governance_test", "to": "task2_sources", "relation": "covers"},
-        {"from": "governance_test", "to": "task3_centered_ramp_feature", "relation": "covers"},
-        {"from": "governance_test", "to": "task3_scoring", "relation": "covers"},
-        {"from": "task2_config", "to": "task2_contracts", "relation": "freezes_inputs_for"},
-        {"from": "task2_config", "to": "task2_predecessor", "relation": "freezes_inputs_for"},
-        {"from": "task2_config", "to": "task2_sources", "relation": "freezes_inputs_for"},
-        {"from": "task2_config", "to": "task3_scoring", "relation": "freezes_inputs_for"},
-        {"from": "task2_contracts", "to": "task3_scoring", "relation": "guards"},
-        {"from": "task2_predecessor", "to": "task3_scoring", "relation": "feeds"},
-        {"from": "task2_sources", "to": "task3_scoring", "relation": "feeds"},
-        {"from": "task3_centered_ramp_feature", "to": "task3_scoring", "relation": "feeds"},
-        {"from": "task3_feature_test", "to": "task3_centered_ramp_feature", "relation": "covers"},
-        {"from": "task3_scoring_test", "to": "task3_scoring", "relation": "covers"},
-        {"from": "exp463_feature_regression", "to": "task3_centered_ramp_feature", "relation": "guards_neighbor"},
-        {"from": "exp463_scoring_regression", "to": "task3_scoring", "relation": "guards_control_replay"},
-        {"from": "task3_scoring", "to": "future_task4_qualification", "relation": "feeds"},
-        {"from": "task3_scoring", "to": "future_task5_private_qualification", "relation": "feeds"},
-        {"from": "map_builder", "to": "future_task4_qualification", "relation": "documents_boundary"},
-        {"from": "map_builder", "to": "future_task5_private_qualification", "relation": "documents_boundary"},
+        {"from": "approved_design", "relation": "freezes", "to": "preregistration"},
+        {"from": "approved_design", "relation": "freezes", "to": "task3_scoring"},
+        {"from": "approved_design", "relation": "freezes", "to": "task4_qualification"},
+        {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_qualification"},
+        {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_evaluation"},
+        {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_artifacts"},
+        {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_replay"},
+        {"from": "implementation_plan", "relation": "bounds_current_work", "to": "task4_dashboard_export"},
+        {"from": "implementation_plan", "relation": "bounds_future_work", "to": "future_task5_private_qualification"},
+        {"from": "research_state", "relation": "reports_status", "to": "dashboard"},
+        {"from": "experiment_catalog", "relation": "reports_identity", "to": "dashboard"},
+        {"from": "champion_ledger", "relation": "preserves_champion_state", "to": "dashboard"},
+        {"from": "governance_test", "relation": "covers", "to": "dashboard"},
+        {"from": "governance_test", "relation": "covers", "to": "preregistration"},
+        {"from": "governance_test", "relation": "covers", "to": "runbook"},
+        {"from": "governance_test", "relation": "covers", "to": "implementation_report"},
+        {"from": "governance_test", "relation": "covers", "to": "research_state"},
+        {"from": "governance_test", "relation": "covers", "to": "experiment_catalog"},
+        {"from": "governance_test", "relation": "covers", "to": "champion_ledger"},
+        {"from": "governance_test", "relation": "covers", "to": "map_builder"},
+        {"from": "governance_test", "relation": "covers", "to": "task4_qualification"},
+        {"from": "governance_test", "relation": "covers", "to": "task4_evaluation"},
+        {"from": "governance_test", "relation": "covers", "to": "task4_artifacts"},
+        {"from": "governance_test", "relation": "covers", "to": "task4_replay"},
+        {"from": "governance_test", "relation": "covers", "to": "task4_dashboard_export"},
+        {"from": "task2_config", "relation": "freezes_inputs_for", "to": "task2_contracts"},
+        {"from": "task2_config", "relation": "freezes_inputs_for", "to": "task2_predecessor"},
+        {"from": "task2_config", "relation": "freezes_inputs_for", "to": "task3_scoring"},
+        {"from": "task2_contracts", "relation": "guards", "to": "task4_qualification"},
+        {"from": "task2_predecessor", "relation": "feeds", "to": "task4_qualification"},
+        {"from": "task2_sources", "relation": "feeds", "to": "task4_qualification"},
+        {"from": "task3_centered_ramp_feature", "relation": "feeds", "to": "task3_scoring"},
+        {"from": "task3_scoring", "relation": "feeds", "to": "task4_qualification"},
+        {"from": "task4_qualification", "relation": "feeds", "to": "task4_evaluation"},
+        {"from": "task4_qualification", "relation": "feeds", "to": "task4_artifacts"},
+        {"from": "task4_qualification", "relation": "feeds", "to": "task4_replay"},
+        {"from": "task4_evaluation", "relation": "feeds", "to": "task4_artifacts"},
+        {"from": "task4_evaluation", "relation": "feeds", "to": "task4_dashboard_export"},
+        {"from": "task4_artifacts", "relation": "feeds", "to": "task4_replay"},
+        {"from": "task4_artifacts", "relation": "feeds", "to": "future_task5_private_qualification"},
+        {"from": "task4_replay", "relation": "guards", "to": "future_task5_private_qualification"},
+        {"from": "map_builder", "relation": "documents_boundary", "to": "future_task5_private_qualification"},
     ]
-    flows = [
-        "governance_test -> docs/ledgers/map",
-        "Task 2 foundation -> Task 3 centered residual ramp scorer",
-        "Task 3 scorer -> future Task 4 qualification and Task 5 private qualification",
-    ]
-    return {
-        "graph_schema": GRAPH_SCHEMA_ANTIGRAVITY,
+    graph = {
         "generated_at": GENERATED_AT_ANTIGRAVITY,
+        "graph_schema": GRAPH_SCHEMA_ANTIGRAVITY,
         "source_parent": source_parent,
+        "allowed_source_commits": _allowed_source_commits_antigravity(source_parent),
         "triplet_paths": list(TRIPLET_ANTIGRAVITY),
-        "node_count": len(nodes),
-        "edge_count": len(edges),
-        "flow_count": len(flows),
         "nodes": nodes,
+        "node_count": len(nodes),
         "edges": edges,
-        "flows": flows,
+        "edge_count": len(edges),
+        "flows": [
+            "governance_test -> docs/ledgers/map",
+            "Task 2 foundation -> Task 3 scoring -> Task 4 qualification/evaluation/artifacts/replay/dashboard",
+            "Task 4 artifacts/replay -> future Task 5 private qualification",
+        ],
+        "flow_count": 3,
     }
+    return graph
 
 
-def _verify_evidence_antigravity(graph: dict[str, Any]) -> None:
-    for node in graph["nodes"]:
-        for evidence in node["evidence"]:
-            evidence_path = ROOT_ANTIGRAVITY / evidence["path"]
-            if not evidence_path.is_file():
-                raise FileNotFoundError(f"missing evidence path: {evidence_path}")
-            text = evidence_path.read_text(encoding="utf-8")
-            if evidence["symbol"] not in text:
-                raise ValueError(
-                    f"missing evidence symbol {evidence['symbol']!r} in {evidence_path}"
-                )
+def _build_html_antigravity(graph: dict[str, Any]) -> str:
+    payload = _canonical_json_antigravity(graph)
+    return (
+        "<!doctype html>\n"
+        '<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n'
+        "<title>Exp464 Task 4 Results Code Map</title>\n"
+        "<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}</style></head>\n"
+        "<body><main>\n"
+        "<h1>Exp464 Task 4 result-pipeline code map</h1>\n"
+        "<p>이 map은 <code>task_4_implemented_awaiting_fresh_review</code> 경계를 설명한다. Task 4 result pipeline은 구현되었지만 fresh review 전이라 Task 5 private qualification은 아직 열리지 않는다.</p>\n"
+        f'<script id="graph-data" type="application/json">{payload}</script>\n'
+        "</main></body></html>\n"
+    )
 
 
-def _fingerprints_antigravity() -> list[dict[str, str]]:
+def _tracked_fingerprints_antigravity() -> list[dict[str, str]]:
     fingerprints: list[dict[str, str]] = []
     for relative in TRACKED_PATHS_ANTIGRAVITY:
         path = ROOT_ANTIGRAVITY / relative
-        if not path.is_file():
-            raise FileNotFoundError(f"missing tracked path: {path}")
         fingerprints.append({"path": relative, "sha256": _sha256_file_antigravity(path)})
     return fingerprints
 
 
-def _html_bytes_antigravity(graph_json: str) -> bytes:
-    html_text = f"""<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Exp464 Task 3 Scoring Code Map</title>
-<style>body{{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}}</style></head>
-<body><main>
-<h1>Exp464 Task 3 scoring code map</h1>
-<p>이 map은 Task 3 scorer closeout 경계를 다루며, 다음 소비자가 Task 4 qualification과 Task 5 private qualification인 상태를 설명한다.</p>
-<script id="graph-data" type="application/json">{graph_json}</script>
-</main></body></html>
-"""
-    return html_text.encode("utf-8")
-
-
-def build_triplet_antigravity(validate_only: bool = False) -> dict[str, Any]:
-    triplet_paths = [ROOT_ANTIGRAVITY / relative for relative in TRIPLET_ANTIGRAVITY]
-    existing_lock_path = triplet_paths[2]
-    current_head = _current_head_antigravity()
-    if validate_only and existing_lock_path.is_file():
-        lock_data = json.loads(existing_lock_path.read_text(encoding="utf-8"))
-        source_parent = lock_data["source_parent"]
-        allowed = _allowed_source_commits_antigravity()
-        if source_parent not in allowed:
-            raise ValueError(
-                f"lock source_parent {source_parent} is not reachable from current HEAD {current_head}"
-            )
-        allowed_source_commits = [source_parent] + [commit for commit in allowed if commit != source_parent]
-    else:
-        source_parent = current_head
-        allowed_source_commits = [source_parent]
-
-    graph = _build_graph_antigravity(source_parent)
-    _verify_evidence_antigravity(graph)
-    fingerprints = _fingerprints_antigravity()
-    graph_json = _canonical_json_antigravity(graph)
-    html_bytes = _html_bytes_antigravity(graph_json)
-    json_bytes = graph_json.encode("utf-8")
-    lock = {
+def _build_lock_antigravity(
+    graph_bytes: bytes,
+    html_bytes: bytes,
+    source_parent: str,
+) -> dict[str, Any]:
+    return {
         "lock_schema": LOCK_SCHEMA_ANTIGRAVITY,
         "generated_at": GENERATED_AT_ANTIGRAVITY,
         "source_parent": source_parent,
         "generated_files": list(TRIPLET_ANTIGRAVITY),
-        "tracked_fingerprints": fingerprints,
-        "fingerprint_count": len(fingerprints),
-        "graph_sha256": _sha256_bytes_antigravity(json_bytes),
+        "graph_sha256": _sha256_bytes_antigravity(graph_bytes),
         "html_sha256": _sha256_bytes_antigravity(html_bytes),
+        "tracked_fingerprints": _tracked_fingerprints_antigravity(),
+        "fingerprint_count": len(TRACKED_PATHS_ANTIGRAVITY),
     }
-    lock_bytes = (_canonical_json_antigravity(lock) + "\n").encode("utf-8")
-    expected_bytes = (html_bytes, json_bytes, lock_bytes)
 
+
+def _render_triplet_antigravity() -> tuple[dict[str, Any], bytes, bytes, bytes]:
+    source_parent = _source_parent_antigravity()
+    graph = _build_graph_antigravity(source_parent)
+    graph_bytes = _canonical_json_bytes_antigravity(graph)
+    html_bytes = _build_html_antigravity(graph).encode("utf-8")
+    lock_bytes = _canonical_json_bytes_antigravity(
+        _build_lock_antigravity(graph_bytes, html_bytes, source_parent),
+    )
+    return graph, graph_bytes, html_bytes, lock_bytes
+
+
+def build_triplet_antigravity(*, validate_only: bool = False) -> dict[str, Any]:
+    graph, graph_bytes, html_bytes, lock_bytes = _render_triplet_antigravity()
+    targets = (
+        (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0], html_bytes),
+        (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1], graph_bytes),
+        (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2], lock_bytes),
+    )
     if validate_only:
-        for path, expected in zip(triplet_paths, expected_bytes):
-            if not path.is_file():
-                raise FileNotFoundError(f"missing generated file: {path}")
-            actual = path.read_bytes()
-            if actual != expected:
-                raise ValueError(f"generated bytes differ for {path}")
+        mismatches = [
+            str(path)
+            for path, expected in targets
+            if (not path.is_file()) or path.read_bytes() != expected
+        ]
+        if mismatches:
+            raise SystemExit(
+                "Exp464 map triplet is stale; rebuild required: " + ", ".join(mismatches),
+            )
     else:
-        triplet_paths[0].write_bytes(html_bytes)
-        triplet_paths[1].write_bytes(json_bytes)
-        triplet_paths[2].write_bytes(lock_bytes)
-
+        for path, payload in targets:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(payload)
     return {
         "triplet_paths": list(TRIPLET_ANTIGRAVITY),
-        "source_parent": source_parent,
-        "allowed_source_commits": allowed_source_commits,
-        "node_count": graph["node_count"],
-        "edge_count": graph["edge_count"],
-        "flow_count": graph["flow_count"],
-        "fingerprint_count": lock["fingerprint_count"],
+        "source_parent": graph["source_parent"],
+        "allowed_source_commits": graph["allowed_source_commits"],
     }
 
 
-def main_antigravity(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+def _parse_args_antigravity() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--validate-only",
         action="store_true",
-        help="validate the existing triplet without writing files",
+        help="fail if the checked-in triplet differs from the generated content",
     )
-    args = parser.parse_args(argv)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = _parse_args_antigravity()
     build_triplet_antigravity(validate_only=args.validate_only)
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main_antigravity())
+    main()

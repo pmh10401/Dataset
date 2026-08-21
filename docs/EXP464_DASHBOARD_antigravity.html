@@ -1,40 +1,33 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Exp464 대시보드 — Task 3 완료 / Task 4 다음</title>
+<title>Exp464 대시보드 — Task 4 구현 / fresh review 대기</title>
 <style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
 <h1>Exp464 진행 대시보드</h1>
-<div class="note"><p><strong>현재 상태:</strong> <code>task_3_complete_pending_task_4</code>. Task 1–3 review는 clean으로 닫혔고, Task 3의 centered residual ramp scorer와 C0–C8 점수 구현은 heading+여섯 step까지 checked다. reviewer outcome은 SHIP/Approved, Critical 0 / Important 0이며, 다음 단계는 Task 4다.</p></div>
+<div class="note"><p><strong>현재 상태:</strong> <code>task_4_implemented_awaiting_fresh_review</code>. Task 1–3은 fresh review clean으로 닫혔고, Task 4의 qualification/evaluation/artifacts/replay/dashboard export 모듈과 다섯 focused test가 구현되었다. 다만 Task 4 heading과 step은 아직 unchecked이며, 다음 action은 fresh Task 4 review다.</p></div>
 <table>
 <tr><th>experiment</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
 <tr><th>dataset</th><td><code>ECG5000_normal_2</code> TRAIN only, <code>1413×140</code>, seeds <code>20260721</code> / <code>20261721</code>, blocked fold 5개, onset <code>56</code></td></tr>
 <tr><th>주 후보</th><td>C6 <code>template_residual_centered_ramp_confirmed_max</code></td></tr>
-<tr><th>shape confirmation</th><td><code>cosine ≥ 0.95</code> 고정. <code>0.99/0.995/0.999</code> sweep 없음</td></tr>
+<tr><th>Task 4 범위</th><td><code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td></tr>
+<tr><th>focused verification</th><td>Task 4 focused suite 10 tests × 2회 GREEN, Exp464 Task 2–3 regression 23 tests GREEN, governance+Exp463 regression 9 tests GREEN</td></tr>
 <tr><th>공식 root</th><td>없음 — <code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code></td></tr>
 <tr><th>공식 evaluate / inspect</th><td><code>0 / 0</code></td></tr>
 <tr><th>private run / label query</th><td><code>0 / 0</code></td></tr>
 <tr><th>공식 결과 hash</th><td>prediction / evaluation / decision / artifact / dashboard 모두 <code>null</code></td></tr>
-<tr><th>next action</th><td>Task 4 qualification/evaluation/artifacts/replay/dashboard export implementation</td></tr>
+<tr><th>next action</th><td>fresh Task 4 review before any Task 5 CLI or private TRAIN execution</td></tr>
 </table>
 
-<h2>왜 Exp464를 따로 만든가</h2>
-<div class="note"><p>Exp463에서 M0 9/10은 기본 성능을 지켰고, M1 0/10은 새 특징 단독이 너무 약하다는 뜻이었다. M2 7/10은 일부를 회복했지만 period를 끝까지 지키지 못했다. M4 9/10은 “공통 ECG 모양을 먼저 빼는 일”이 중요하다는 힌트를 줬다. 하지만 M4도 그대로 승격할 정도로 충분하지 않았기 때문에, 이번 Exp464에서는 M4를 <strong>진단 근거</strong>로만 사용하고 새 C6를 유일한 주 후보로 고정한다.</p></div>
-<table><thead><tr><th>Exp463 비교</th><th>통과</th><th>이번 해석</th></tr></thead><tbody>
-<tr><td>M0 기존 방식</td><td>9/10</td><td>지켜야 할 기준선</td></tr>
-<tr><td>M1 prefix ramp 단독</td><td>0/10</td><td>새 특징만 단독으로는 부족</td></tr>
-<tr><td>M2 0.995 gated max</td><td>7/10</td><td>드문 점수 gate만으로는 보수적 보호가 부족</td></tr>
-<tr><td>M4 median-template residual gated</td><td>9/10</td><td>공통 파형 제거의 필요성을 보여주는 진단용 증거, 승격 후보 아님</td></tr>
-</tbody></table>
-
-<h2>Task 3에서 구현한 범위</h2>
+<h2>Task 4에서 구현한 범위</h2>
 <ul>
-<li><code>centered_ramp_antigravity.py</code>와 <code>scoring_antigravity.py</code>를 추가해 centered residual ramp 증거와 C0–C8 fold 점수를 구현했다.</li>
-<li><code>test_centered_ramp_antigravity.py</code>와 <code>test_scoring_antigravity.py</code>로 strict RED→GREEN을 수행했고, Exp463의 ramp/scoring scientific regression도 다시 확인한다.</li>
-<li>MLX 가속은 프로젝트 고정 인터프리터에서 <code>mlx</code> import가 되지 않아 선택하지 않았다. 현재 기록된 실행 백엔드는 <code>numpy_cpu</code>다.</li>
-<li>champion, pending candidate, routing, promotion은 기존 값 그대로 유지한다.</li>
-<li>code map은 이제 Task 3 scorer의 호출자, 다음 영향 범위(Task 4/5), coverage를 함께 기록한다.</li>
+<li>점수 배열에서 네 변화 유형 AUC, 평균 AUC, normal false-positive Wilson upper, finite 여부, row pass/fail을 독립 재계산한다.</li>
+<li>C6만 고정 주 후보로 평가하고, 각 seed-fold에서 C0 대비 gradual/period 비열화와 두 historical period floor를 다시 확인한다.</li>
+<li>ordered normal/change pair 기준의 gradual·period fixed/broken diagnostics와 cosine confirmation counts/rates를 row 설명 필드로 보존한다.</li>
+<li>정확히 7개 canonical leaf만 publish하고, replay는 score-derived metrics·summary·decision·dashboard·artifact map을 다시 계산해 rehash tamper를 거부한다.</li>
+<li>dashboard는 등록된 method/family/metric scalar만 내보내며 raw score, path, label string을 포함하지 않는다.</li>
 </ul>
 
-<div class="stop"><p>이 대시보드는 아직 결과 대시보드가 아니다. qualification, replay, CLI, private TRAIN 실행, 공식 실행은 여전히 없다. 계획 checkbox는 이제 Task 1–3의 정확히 <code>21/42</code>만 checked이며, Task 4–6은 모두 unchecked다.</p></div>
+<div class="note"><p>체크박스 truth는 여전히 <code>21/42</code>다. Task 1–3 heading+step만 checked이며, Task 4는 구현이 끝났어도 fresh review 전이라 heading과 step을 모두 unchecked로 유지한다.</p></div>
+<div class="stop"><p>이 대시보드는 아직 결과 대시보드가 아니다. Task 5 CLI, private TRAIN reproduce, official evaluate/inspect, TEST label query, champion/pending mutation, routing, promotion은 모두 아직 수행하지 않았다.</p></div>
 </main></body></html>
