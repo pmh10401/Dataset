@@ -10,11 +10,8 @@ from types import MappingProxyType
 
 from .config_antigravity import (
     FROZEN_CONFIG_ANTIGRAVITY,
-    Exp463MethodSummarySnapshotAntigravity as Exp463MethodSummaryAntigravity,
+    Exp463MethodSummarySnapshotAntigravity,
 )
-
-
-_CONTROL_ORDER_ANTIGRAVITY = tuple(FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_summaries)
 
 
 def _int_antigravity(value: object, name: str, *, minimum: int = 0) -> int:
@@ -40,6 +37,61 @@ def _summary_field_float_antigravity(value: object, name: str) -> float:
     if type(value) is not float or not isfinite(value) or not 0.0 <= value <= 1.0:
         raise ValueError(f"{name} must be a finite float in [0, 1]")
     return value
+
+
+@dataclass(frozen=True, slots=True)
+class Exp463MethodSummaryAntigravity:
+    method: str
+    fold_count: int
+    passed_count: int
+    failed_count: int
+    min_gradual_drift_auc: float
+    min_period_change_auc: float
+    min_pooled_auc: float
+    max_normal_wilson_upper: float
+    all_scores_finite: bool
+
+    def __post_init__(self) -> None:
+        if type(self.method) is not str or self.method not in ("C0", "C1", "C2", "C7"):
+            raise ValueError("method must be one of the frozen Exp463 control IDs")
+        _int_antigravity(self.fold_count, "fold_count", minimum=1)
+        _int_antigravity(self.passed_count, "passed_count")
+        _int_antigravity(self.failed_count, "failed_count")
+        if self.fold_count != self.passed_count + self.failed_count:
+            raise ValueError("fold_count must equal passed_count + failed_count")
+        _summary_field_float_antigravity(self.min_gradual_drift_auc, "min_gradual_drift_auc")
+        _summary_field_float_antigravity(self.min_period_change_auc, "min_period_change_auc")
+        _summary_field_float_antigravity(self.min_pooled_auc, "min_pooled_auc")
+        _summary_field_float_antigravity(
+            self.max_normal_wilson_upper,
+            "max_normal_wilson_upper",
+        )
+        _bool_antigravity(self.all_scores_finite, "all_scores_finite")
+
+
+def _expected_summary_antigravity(
+    snapshot: Exp463MethodSummarySnapshotAntigravity,
+) -> Exp463MethodSummaryAntigravity:
+    return Exp463MethodSummaryAntigravity(
+        method=snapshot.method,
+        fold_count=snapshot.fold_count,
+        passed_count=snapshot.passed_count,
+        failed_count=snapshot.failed_count,
+        min_gradual_drift_auc=snapshot.min_gradual_drift_auc,
+        min_period_change_auc=snapshot.min_period_change_auc,
+        min_pooled_auc=snapshot.min_pooled_auc,
+        max_normal_wilson_upper=snapshot.max_normal_wilson_upper,
+        all_scores_finite=snapshot.all_scores_finite,
+    )
+
+
+_EXPECTED_CONTROL_SUMMARIES_ANTIGRAVITY = MappingProxyType(
+    {
+        method: _expected_summary_antigravity(summary)
+        for method, summary in FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_summaries.items()
+    }
+)
+_CONTROL_ORDER_ANTIGRAVITY = tuple(_EXPECTED_CONTROL_SUMMARIES_ANTIGRAVITY)
 
 
 def _summary_antigravity(value: object) -> Exp463MethodSummaryAntigravity:
@@ -132,7 +184,7 @@ def validate_exp463_authority_antigravity(authority: Exp463AuthorityAntigravity)
             raise ValueError(f"{field_name} differs from the frozen Exp463 authority")
     if tuple(authority.control_summaries) != _CONTROL_ORDER_ANTIGRAVITY:
         raise ValueError("control_summaries order differs from the frozen Exp463 authority")
-    for method, expected_summary in expected.predecessor_control_summaries.items():
+    for method, expected_summary in _EXPECTED_CONTROL_SUMMARIES_ANTIGRAVITY.items():
         actual_summary = authority.control_summaries[method]
         if type(actual_summary) is not Exp463MethodSummaryAntigravity:
             raise ValueError(f"{method} summary type differs from the frozen Exp463 authority")
