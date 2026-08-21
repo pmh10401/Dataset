@@ -102,7 +102,8 @@ expected_a = float(v @ q)
 expected_c = 0.0 if np.linalg.norm(v) == 0 else expected_a / np.linalg.norm(v)
 self.assertEqual(actual.amplitude, expected_a)
 self.assertEqual(actual.cosine, expected_c)
-self.assertEqual(float(np.sum(centered_suffix_basis_antigravity())), 0.0)</code></pre><p>Add exact cases: constant height shift gives amplitude/cosine 0; perfect positive ramp gives cosine 1; descending ramp gives cosine -1; zero vector gives cosine 0; inputs remain unchanged.</p></li>
+np.testing.assert_array_equal(centered_suffix_basis_antigravity(), q)
+self.assertEqual(float(np.sum(centered_suffix_basis_antigravity())), float(np.sum(q)))</code></pre><p>Add exact cases: constant height shift gives amplitude/cosine 0; perfect positive ramp keeps the raw formula cosine <code>0.9999999999999998</code>; descending ramp keeps the raw formula cosine; zero vector gives cosine 0; inputs remain unchanged.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 2 — Implement the minimal feature.</strong></label><pre><code>@dataclass(frozen=True, slots=True)
 class CenteredRampEvidenceAntigravity:
     amplitude: float

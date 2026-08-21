@@ -245,7 +245,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task3_centered_ramp_feature",
             "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/centered_ramp_antigravity.py",
-            "Caller: task3_scoring and task3_feature_test. Effect: computes centered residual amplitude/cosine evidence and the exact zero-sum suffix basis used by Task 3 scoring.",
+            "Caller: task3_scoring and task3_feature_test. Effect: computes centered residual amplitude/cosine evidence and the exact q=(t-mean)/norm suffix basis used by Task 3 scoring.",
             symbol="CenteredRampEvidenceAntigravity",
             tests=(task3_feature_test, task3_scoring_test, exp463_feature_regression),
         ),
@@ -259,7 +259,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task3_feature_test",
             task3_feature_test,
-            "Caller: Task 3 RED→GREEN feature verification. Effect: covers the exact NumPy formula, zero-sum basis, constant-shift invariance, signed cosine extremes, zero-vector handling, and input immutability.",
+            "Caller: Task 3 RED→GREEN feature verification. Effect: covers the exact NumPy formula, exact public-vs-scoring basis equality, constant-shift invariance, raw signed cosine outputs, zero-vector handling, and input immutability.",
             symbol="CenteredRampAntigravityTest",
             tests=(task3_feature_test,),
         ),

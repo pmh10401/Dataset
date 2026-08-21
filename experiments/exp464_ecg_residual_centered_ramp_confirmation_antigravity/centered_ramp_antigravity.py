@@ -36,7 +36,6 @@ def _scoring_basis_antigravity() -> np.ndarray:
 
 def centered_suffix_basis_antigravity() -> np.ndarray:
     basis = np.array(_scoring_basis_antigravity(), copy=True, order="C")
-    basis[-1] -= float(np.sum(basis, dtype=np.float64))
     basis.setflags(write=False)
     return basis
 
@@ -59,12 +58,6 @@ def centered_ramp_evidence_antigravity(
     amplitude = float(np.dot(centered, _scoring_basis_antigravity()))
     norm = float(np.linalg.norm(centered))
     cosine = 0.0 if norm == 0.0 else amplitude / norm
-    if np.isclose(cosine, 1.0, rtol=0.0, atol=1e-15):
-        cosine = 1.0
-    elif np.isclose(cosine, -1.0, rtol=0.0, atol=1e-15):
-        cosine = -1.0
-    elif np.isclose(cosine, 0.0, rtol=0.0, atol=1e-15):
-        cosine = 0.0
     return CenteredRampEvidenceAntigravity(amplitude=amplitude, cosine=cosine)
 
 
