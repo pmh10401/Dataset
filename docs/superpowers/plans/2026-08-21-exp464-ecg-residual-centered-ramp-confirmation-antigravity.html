@@ -16,7 +16,7 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><th>Architecture</th><td>Exp463의 TRAIN-only 평가 흐름을 controlled fork한다. 새 특징 모듈은 template residual, 평균 0인 ramp 기저, amplitude rank, Pearson cosine을 계산하고, scorer는 C0–C8 고정 비교를 만든다. qualification·publication·replay는 점수에서 결과를 다시 계산하며 private gate 통과 전에는 공식 실행을 열지 않는다.</td></tr>
 <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, stdlib unittest/json/hashlib/pathlib, 기존 aeon/Hydra CPU 경로. 고정 interpreter: <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>.</td></tr>
 <tr><th>Spec</th><td><code>docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html</code>, SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code>. Task 1은 구현 직전 같은 값을 다시 계산해 config와 ledgers에 고정한다.</td></tr>
-<tr><th>Current status</th><td><code>task_3_implemented_awaiting_fresh_review</code>; Task 1과 Task 2는 fresh review clean으로 닫혔고, Task 3 구현은 끝났지만 review 전이므로 heading과 여섯 step은 아직 unchecked다. 다음 단계는 fresh Task 3 review이며, Task 4는 그 뒤에만 진행한다.</td></tr>
+<tr><th>Current status</th><td><code>task_3_complete_pending_task_4</code>; Task 1–3은 fresh review clean으로 닫혔고 heading+step 21/42가 checked다. reviewer outcome은 SHIP/Approved, Critical 0 / Important 0이며, 다음 단계는 Task 4다.</td></tr>
 </table>
 
 <h2>Global constraints</h2>
@@ -91,11 +91,11 @@ $PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antig
 <li><label><input type="checkbox" checked disabled> <strong>Step 6 — Commit and review.</strong></label><p>Update dashboard/report/map, commit functional files, regenerate a clean map-only child, and close Task 2 after scoped re-review clean. Task 1+Task 2 now account for exactly 14 checked boxes total.</p></li>
 </ol>
 
-<h2><label><input type="checkbox" disabled> Task 3 — centered residual ramp and C0–C8 scores</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 3 — centered residual ramp and C0–C8 scores</label></h2>
 <p><strong>Files:</strong> Create <code>centered_ramp_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>tests/test_centered_ramp_antigravity.py</code>, <code>tests/test_scoring_antigravity.py</code>. Modify docs, plan, ledgers and map.</p>
 <p><strong>Interfaces:</strong> Produces <code>CenteredRampEvidenceAntigravity(amplitude: float, cosine: float)</code>, <code>centered_suffix_basis_antigravity() -&gt; np.ndarray</code>, <code>centered_ramp_evidence_antigravity(values, template) -&gt; CenteredRampEvidenceAntigravity</code>, and <code>score_fold_methods_antigravity(train, fit_indices, query_indices, seed, fold_index, authority) -&gt; FoldMethodScoresAntigravity</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED mathematical reference.</strong></label><pre><code>t = np.linspace(0.0, 1.0, 84, dtype=np.float64)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED mathematical reference.</strong></label><pre><code>t = np.linspace(0.0, 1.0, 84, dtype=np.float64)
 q = t - np.mean(t); q /= np.linalg.norm(q)
 v = residual[56:] - np.mean(residual[56:])
 expected_a = float(v @ q)
@@ -104,7 +104,7 @@ self.assertEqual(actual.amplitude, expected_a)
 self.assertEqual(actual.cosine, expected_c)
 np.testing.assert_array_equal(centered_suffix_basis_antigravity(), q)
 self.assertEqual(float(np.sum(centered_suffix_basis_antigravity())), float(np.sum(q)))</code></pre><p>Add exact cases: constant height shift gives amplitude/cosine 0; perfect positive ramp keeps the raw formula cosine <code>0.9999999999999998</code>; descending ramp keeps the raw formula cosine; zero vector gives cosine 0; inputs remain unchanged.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — Implement the minimal feature.</strong></label><pre><code>@dataclass(frozen=True, slots=True)
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Implement the minimal feature.</strong></label><pre><code>@dataclass(frozen=True, slots=True)
 class CenteredRampEvidenceAntigravity:
     amplitude: float
     cosine: float
@@ -116,10 +116,10 @@ def centered_ramp_evidence_antigravity(values: np.ndarray, template: np.ndarray)
     amplitude = float(centered @ centered_suffix_basis_antigravity())
     norm = float(np.linalg.norm(centered))
     return CenteredRampEvidenceAntigravity(amplitude, 0.0 if norm == 0.0 else amplitude / norm)</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED C0–C8 scoring semantics.</strong></label><p>Assert exact method order; C0/C1/C2/C7 reproduce Exp463; C3 uses centered rank alone; C4 always max; C5 omits template only; C6 uses per-row cosine <code>≥0.95</code>; C8 omits centering only. Test <code>0.95</code> inclusive boundary and <code>nextafter(0.95,0)</code> fallback.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — Implement fold scoring and diagnostics.</strong></label><p>Fit <code>template=np.median(train[fit_indices],axis=0)</code> once per fold. Build <code>a_fit</code> from non-injected fit rows. Apply each method independently to normal and four synthetic query variants. Return immutable score arrays plus per-type confirmation counts and exact provenance.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — MLX assessment.</strong></label><p>Use the same 32×140 input and seed <code>4643001</code>. Compare NumPy and MLX amplitude/cosine, candidate order at cosine 0.95 and elapsed time including transfer/sync. Select MLX only if finite, order identical, maximum absolute numeric difference exactly <code>0.0</code>, and speedup ≥1.1×; otherwise record <code>numpy_cpu</code>.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN and review.</strong></label><pre><code>$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_centered_ramp_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED C0–C8 scoring semantics.</strong></label><p>Assert exact method order; C0/C1/C2/C7 reproduce Exp463; C3 uses centered rank alone; C4 always max; C5 omits template only; C6 uses per-row cosine <code>≥0.95</code>; C8 omits centering only. Test <code>0.95</code> inclusive boundary and <code>nextafter(0.95,0)</code> fallback.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Implement fold scoring and diagnostics.</strong></label><p>Fit <code>template=np.median(train[fit_indices],axis=0)</code> once per fold. Build <code>a_fit</code> from non-injected fit rows. Apply each method independently to normal and four synthetic query variants. Return immutable score arrays plus per-type confirmation counts and exact provenance.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — MLX assessment.</strong></label><p>Use the same 32×140 input and seed <code>4643001</code>. Compare NumPy and MLX amplitude/cosine, candidate order at cosine 0.95 and elapsed time including transfer/sync. Select MLX only if finite, order identical, maximum absolute numeric difference exactly <code>0.0</code>, and speedup ≥1.1×; otherwise record <code>numpy_cpu</code>.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN and review.</strong></label><pre><code>$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_centered_ramp_antigravity experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity
 $PY -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_ramp_features_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_scoring_antigravity</code></pre><p>Run Exp464 focused twice, Exp463 scientific regression once, compile, map validation and diff check. Commit functional files and a clean map-only child; close only after review.</p></li>
 </ol>
 

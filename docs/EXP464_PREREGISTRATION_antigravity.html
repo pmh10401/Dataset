@@ -4,7 +4,7 @@
 <style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem;border-left:6px solid #2457a6}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
 <h1>Exp464 사전등록</h1>
-<p>이 문서는 Exp464의 과학 계약을 고정한다. 현재 구현 상태는 <code>task_3_implemented_awaiting_fresh_review</code>이며, Exp463 authority와 TRAIN source 위에 Task 3 centered residual ramp scorer를 구현했다. 다음 단계는 fresh review이고, 그 전에는 Task 4 이후 단계로 진행하지 않는다.</p>
+<p>이 문서는 Exp464의 과학 계약을 고정한다. 현재 구현 상태는 <code>task_3_complete_pending_task_4</code>이며, Exp463 authority와 TRAIN source 위에 Task 3 centered residual ramp scorer를 구현하고 fresh review clean으로 닫았다. 다음 단계는 Task 4이며, 그 전까지 private/official lifecycle은 열지 않는다.</p>
 <table>
 <tr><th>experiment / kind</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
@@ -41,5 +41,5 @@
 <div class="stop"><strong>중단 규칙:</strong> 하나라도 실패하면 공식 실행은 없다. cosine, onset, seed, fold, 방법 순서, 주 후보를 결과를 본 뒤 바꾸지 않는다. M4는 진단 근거이지 승격 후보가 아니다.</div>
 
 <h2>Task 2 handoff truth</h2>
-<div class="box"><p>Task 2는 Exp463 terminal authority와 Exp464 TRAIN source를 고정했고, Task 3는 <code>centered_ramp_antigravity.py</code>와 <code>scoring_antigravity.py</code>로 centered residual ramp scorer를 구현했다. 계획 checkbox는 여전히 정확히 <code>14/42</code>이며, Task 3 heading+6 steps는 fresh review 전까지 unchecked다. private run·official command·TEST label query는 여전히 0이고, MLX는 프로젝트 인터프리터에서 unavailable이라 <code>numpy_cpu</code>를 유지한다.</p></div>
+<div class="box"><p>Task 2는 Exp463 terminal authority와 Exp464 TRAIN source를 고정했고, Task 3는 <code>centered_ramp_antigravity.py</code>와 <code>scoring_antigravity.py</code>로 centered residual ramp scorer를 구현한 뒤 reviewer outcome SHIP/Approved, Critical 0 / Important 0으로 닫았다. 계획 checkbox는 이제 정확히 <code>21/42</code>이며, Task 1–3만 checked이고 Task 4–6은 모두 unchecked다. private run·official command·TEST label query는 여전히 0이고, MLX는 프로젝트 인터프리터에서 unavailable이라 <code>numpy_cpu</code>를 유지한다.</p></div>
 </main></body></html>

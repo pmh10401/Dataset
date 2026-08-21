@@ -132,28 +132,28 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             plan,
-            "Caller: Task 3 implementation and fresh review. Effect: records task_3_implemented_awaiting_fresh_review while preserving exactly fourteen checked boxes total for Task 1 and Task 2 only.",
-            symbol="task_3_implemented_awaiting_fresh_review",
+            "Caller: Task 3 closeout. Effect: records task_3_complete_pending_task_4 while preserving exactly twenty-one checked boxes total for Task 1–3 only.",
+            symbol="task_3_complete_pending_task_4",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean, records Task 3 code as implemented, and blocks Task 4 until fresh review.",
+            "Caller: status review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean, records Task 3 closeout clean, and points to Task 4 as the next consumer.",
             symbol="Exp464 진행 대시보드",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "preregistration",
             "docs/EXP464_PREREGISTRATION_antigravity.html",
-            "Caller: governance review. Effect: freezes C0–C8 order, C6 sole primary, checkbox truth 14/42, and MLX fallback to numpy_cpu in the review-pending state.",
+            "Caller: governance review. Effect: freezes C0–C8 order, C6 sole primary, checkbox truth 21/42, and MLX fallback to numpy_cpu in the Task 3 closed state.",
             symbol="Frozen C0–C8 comparison",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "runbook",
             "docs/EXP464_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: blocks Task 4 qualification, private run, official commands, TEST labels, routing, and promotion while Task 3 awaits fresh review.",
+            "Caller: future operators. Effect: keeps private run, official commands, TEST labels, routing, and promotion blocked at Task 3 closeout while Task 4 remains the next implementation step.",
             symbol="Exp464 Task 3 operator boundary",
             tests=(governance_test,),
         ),
@@ -167,28 +167,28 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores the task_3_implemented_awaiting_fresh_review Exp464 row with official/private/label counts at zero and null result hashes.",
+            "Caller: active research ledger. Effect: stores the task_3_complete_pending_task_4 Exp464 row with official/private/label counts at zero and null result hashes.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the task_3_implemented_awaiting_fresh_review Exp464 record without any scientific result or promotion.",
+            "Caller: experiment catalog. Effect: registers the task_3_complete_pending_task_4 Exp464 record without any scientific result or promotion.",
             symbol="\"id\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion history. Effect: appends the task_3_implemented_awaiting_fresh_review Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
+            "Caller: champion history. Effect: appends the task_3_complete_pending_task_4 Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
             symbol="\"experiment\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "governance_test",
             governance_test,
-            "Caller: Task 3 closeout verification. Effect: rejects missing Task 3 modules, ledger drift, any checkbox count other than Task 1 plus Task 2 only, stale map truth, root creation, or nonzero official/private/label counts.",
+            "Caller: Task 3 closeout verification. Effect: rejects missing Task 3 modules, ledger drift, any checkbox count other than Task 1 plus Task 2 plus Task 3 only, stale map truth, root creation, or nonzero official/private/label counts.",
             symbol="test_exp464_is_planned_without_results_antigravity",
             tests=(governance_test,),
         ),
@@ -392,7 +392,7 @@ def _html_bytes_antigravity(graph_json: str) -> bytes:
 <style>body{{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}}</style></head>
 <body><main>
 <h1>Exp464 Task 3 scoring code map</h1>
-<p>이 map은 Task 3 scorer 경계를 다루며, 다음 소비자가 Task 4 qualification과 Task 5 private qualification인 상태를 설명한다.</p>
+<p>이 map은 Task 3 scorer closeout 경계를 다루며, 다음 소비자가 Task 4 qualification과 Task 5 private qualification인 상태를 설명한다.</p>
 <script id="graph-data" type="application/json">{graph_json}</script>
 </main></body></html>
 """

@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 실행 가이드</title><style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #2457a6}.stop{padding:1rem;background:#fff4f2;border-left:6px solid #b42318}</style></head>
 <body><main>
 <h1>Exp464 Task 3 operator boundary</h1>
-<p>지금 단계는 Task 3 구현까지 끝난 상태의 실행 경계를 고정하는 문서다. 현재 상태는 <code>task_3_implemented_awaiting_fresh_review</code>이며, 다음 action은 fresh Task 3 review다.</p>
+<p>지금 단계는 Task 3 closeout이 끝난 상태의 실행 경계를 고정하는 문서다. 현재 상태는 <code>task_3_complete_pending_task_4</code>이며, reviewer outcome은 SHIP/Approved, Critical 0 / Important 0이고 다음 action은 Task 4다.</p>
 <table>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
 <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code> — must stay absent and non-symlink</td></tr>
@@ -13,7 +13,7 @@
 <tr><th>label query count</th><td>0</td></tr>
 <tr><th>MLX assessment</th><td><code>numpy_cpu</code> 유지 — project interpreter에서 <code>mlx</code> import 불가</td></tr>
 </table>
-<div class="stop"><strong>Do not run private evaluate.</strong><br><strong>Do not run official evaluate.</strong><br><strong>Do not run inspect.</strong><br>이 review-pending turn에서는 Task 4 qualification, replay, CLI, private run, official command를 새로 실행하지 않는다. TEST label/FN/FP/F1 접근, root 생성, routing, champion/pending 변경, promotion, package install도 모두 금지다.</div>
+<div class="stop"><strong>Do not run private evaluate.</strong><br><strong>Do not run official evaluate.</strong><br><strong>Do not run inspect.</strong><br>이 closeout turn에서는 Task 4 모듈을 새로 만들거나 실행하지 않는다. TEST label/FN/FP/F1 접근, root 생성, routing, champion/pending 변경, promotion, package install도 모두 금지다.</div>
 
 <h2>Task 3에서 준비한 것</h2>
 <ul>
@@ -24,5 +24,5 @@
 </ul>
 
 <h2>Task 3에서 아직 하지 않은 것</h2>
-<div class="box"><p>qualification, evaluation, artifacts, replay, dashboard export, CLI와 private/official lifecycle은 아직 만들지 않았다. 다음 소비자는 Task 4 qualification 경계지만, 이번 review-pending 단계에서는 그 모듈을 만들거나 실행하지 않는다.</p></div>
+<div class="box"><p>qualification, evaluation, artifacts, replay, dashboard export, CLI와 private/official lifecycle은 아직 만들지 않았다. 다음 소비자는 Task 4 qualification 경계지만, 이번 closeout에서는 그 모듈을 만들거나 실행하지 않는다.</p></div>
 </main></body></html>

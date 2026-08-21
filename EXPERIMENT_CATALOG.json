@@ -2736,8 +2736,8 @@
       "id": "Exp464",
       "experiment": "Exp464",
       "kind": "ecg_residual_centered_ramp_confirmation_qualification",
-      "status": "task_3_implemented_awaiting_fresh_review",
-      "implementation_status": "task_3_implemented_awaiting_fresh_review",
+      "status": "task_3_complete_pending_task_4",
+      "implementation_status": "task_3_complete_pending_task_4",
       "documents": {
         "dashboard": "docs/EXP464_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP464_PREREGISTRATION_antigravity.html",
@@ -2821,7 +2821,7 @@
       "scientific_winner_selected": false,
       "official_root_present": false,
       "review_only": false,
-      "notes": "Task 2 scoped re-review is clean: spec compliant, quality approved, C1/I1/I2 all addressed, and no new Critical or Important review item was opened. Exp464 now closes Task 2 with frozen config/contracts/predecessor/source modules, official/private/label counts still 0, the official root absent, and all official result hashes still null. Champion, pending candidate, routing, and promotion remain unchanged. Task 3 scorer implementation is next. No Task 3+ module execution, MLX, private run, official command, TEST label query, or package install occurred during this closeout."
+      "notes": "Task 3 closeout is clean: reviewer outcome SHIP/Approved, Critical 0 / Important 0 after the basis-contract/raw-cosine fix, and no new Critical or Important review item was opened. Exp464 now closes Task 3 with centered_ramp_antigravity.py and scoring_antigravity.py in place, official/private/label counts still 0, the official root absent, and all official result hashes still null. The plan checkbox truth is 21/42 because Task 1–3 are checked and Tasks 4–6 remain unchecked. Champion, pending candidate, routing, and promotion remain unchanged. Task 4 implementation is next. No Task 4+ module execution, MLX rerun, private run, official command, TEST label query, or package install occurred during this closeout."
     }
   ]
 }

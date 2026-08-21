@@ -58,8 +58,8 @@ DESIGN_SHA256_ANTIGRAVITY = (
 PRIMARY_CANDIDATE_ANTIGRAVITY = (
     "template_residual_centered_ramp_confirmed_max"
 )
-STATUS_ANTIGRAVITY = "task_3_implemented_awaiting_fresh_review"
-OLD_STATUS_ANTIGRAVITY = "task_2_complete_pending_task_3"
+STATUS_ANTIGRAVITY = "task_3_complete_pending_task_4"
+OLD_STATUS_ANTIGRAVITY = "task_3_implemented_awaiting_fresh_review"
 METHOD_ORDER_ANTIGRAVITY = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8")
 EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY = 42
 EXPECTED_PENDING_ANTIGRAVITY = {
@@ -299,7 +299,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("Task 3", preregistration_text)
-        self.assertIn("14/42", preregistration_text)
+        self.assertIn("21/42", preregistration_text)
         self.assertIn("numpy_cpu", preregistration_text)
 
         for relative in DOCUMENTS_ANTIGRAVITY:
@@ -311,7 +311,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         plan_parser.feed((ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY).read_text(encoding="utf-8"))
         plan_parser.close()
         self.assertEqual(plan_parser.checkbox_count, EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY)
-        self.assertEqual(plan_parser.checked_count, 14)
+        self.assertEqual(plan_parser.checked_count, 21)
 
         builder_module = load_builder_module_antigravity()
         build_result = builder_module.build_triplet_antigravity(validate_only=True)
