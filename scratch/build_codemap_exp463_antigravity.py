@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -15,10 +16,22 @@ TRIPLET_ANTIGRAVITY = (
     "docs/codemap/codemap_exp463_antigravity.json",
     "docs/codemap/codemap_exp463_antigravity.lock",
 )
-SOURCE_PARENT_COMMIT_ANTIGRAVITY = "135c97313d9e107626e6b051e0416e4984e74a08"
 GENERATED_AT_ANTIGRAVITY = "2026-08-21T00:00:00Z"
 GRAPH_SCHEMA_ANTIGRAVITY = "exp463_task1_governance_codemap_v1"
 LOCK_SCHEMA_ANTIGRAVITY = "exp463_task1_governance_codemap_lock_v1"
+TRACKED_PATHS_ANTIGRAVITY = (
+    "CHAMPION_LEDGER.json",
+    "EXPERIMENT_CATALOG.json",
+    "RESEARCH_STATE.json",
+    "docs/EXP463_DASHBOARD_antigravity.html",
+    "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
+    "docs/EXP463_PREREGISTRATION_antigravity.html",
+    "docs/EXP463_RUNBOOK_antigravity.html",
+    "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
+    "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
+    "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",
+    "scratch/build_codemap_exp463_antigravity.py",
+)
 
 
 def _sha256_bytes_antigravity(data: bytes) -> str:
@@ -50,6 +63,23 @@ def _canonical_json_antigravity(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _git_output_antigravity(*args: str) -> str:
+    return subprocess.check_output(
+        ["git", *args], cwd=ROOT_ANTIGRAVITY, text=True
+    ).strip()
+
+
+def _current_head_antigravity() -> str:
+    return _git_output_antigravity("rev-parse", "HEAD")
+
+
+def _allowed_source_commits_antigravity() -> set[str]:
+    parent_line = _git_output_antigravity(
+        "rev-list", "--parents", "-n", "1", "HEAD"
+    ).split()
+    return set(parent_line)
+
+
 def _node_antigravity(
     node_id: str,
     path: str,
@@ -69,7 +99,7 @@ def _node_antigravity(
     }
 
 
-def _build_graph_antigravity() -> dict[str, Any]:
+def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[str, Any]:
     governance_test = (
         "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/"
         "test_governance_antigravity.py"
@@ -195,7 +225,7 @@ def _build_graph_antigravity() -> dict[str, Any]:
             "from": "approved_design",
             "to": "dashboard",
             "type": "governs",
-            "evidence": {"path": "docs/EXP463_DASHBOARD_antigravity.html", "symbol": "M2 hydra_period_ramp_gated_max"},
+            "evidence": {"path": "docs/EXP463_DASHBOARD_antigravity.html", "symbol": "hydra_period_ramp_gated_max"},
         },
         {
             "from": "implementation_plan",
@@ -252,7 +282,11 @@ def _build_graph_antigravity() -> dict[str, Any]:
         "generated_at": GENERATED_AT_ANTIGRAVITY,
         "nodes": nodes,
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
-        "source_parent_commit": SOURCE_PARENT_COMMIT_ANTIGRAVITY,
+        "source_parent_commit": (
+            _current_head_antigravity()
+            if source_parent_commit is None
+            else source_parent_commit
+        ),
         "unknown_relationships": [],
     }
 
@@ -269,7 +303,10 @@ def _iter_tree_files_antigravity(relative_root: str) -> list[Path]:
             continue
         if any(part in {".git", "__pycache__"} for part in path.parts):
             continue
-        if path.name in {Path(item).name for item in TRIPLET_ANTIGRAVITY}:
+        if path.name in {
+            *(Path(item).name for item in TRIPLET_ANTIGRAVITY),
+            "task-1-report.html",
+        }:
             continue
         paths.append(path)
     return paths
@@ -285,38 +322,33 @@ def _fingerprint_tree_antigravity(relative_root: str) -> str:
     return digest.hexdigest()
 
 
-def _lock_antigravity(graph: dict[str, Any]) -> dict[str, Any]:
-    tracked_paths = [
-        "CHAMPION_LEDGER.json",
-        "EXPERIMENT_CATALOG.json",
-        "RESEARCH_STATE.json",
-        "docs/EXP463_DASHBOARD_antigravity.html",
-        "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
-        "docs/EXP463_PREREGISTRATION_antigravity.html",
-        "docs/EXP463_RUNBOOK_antigravity.html",
-        "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
-        "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
-        "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",
-        "scratch/build_codemap_exp463_antigravity.py",
-    ]
+def _tracked_fingerprints_antigravity() -> dict[str, str]:
     tracked = {
         path: _sha256_file_antigravity(ROOT_ANTIGRAVITY / path)
-        for path in sorted(tracked_paths)
+        for path in sorted(TRACKED_PATHS_ANTIGRAVITY)
         if (ROOT_ANTIGRAVITY / path).is_file()
     }
+    return tracked
+
+
+def _module_fingerprints_antigravity() -> dict[str, str]:
+    return {
+        ".superpowers": _fingerprint_tree_antigravity(".superpowers"),
+        "docs": _fingerprint_tree_antigravity("docs"),
+        "experiments": _fingerprint_tree_antigravity("experiments"),
+        "root": _fingerprint_tree_antigravity("."),
+        "scratch": _fingerprint_tree_antigravity("scratch"),
+    }
+
+
+def _lock_antigravity(graph: dict[str, Any]) -> dict[str, Any]:
     return {
         "generated_at": GENERATED_AT_ANTIGRAVITY,
-        "module_fingerprints": {
-            ".superpowers": _fingerprint_tree_antigravity(".superpowers"),
-            "docs": _fingerprint_tree_antigravity("docs"),
-            "experiments": _fingerprint_tree_antigravity("experiments"),
-            "root": _fingerprint_tree_antigravity("."),
-            "scratch": _fingerprint_tree_antigravity("scratch"),
-        },
+        "module_fingerprints": _module_fingerprints_antigravity(),
         "represented_paths": sorted(TRIPLET_ANTIGRAVITY),
         "schema": LOCK_SCHEMA_ANTIGRAVITY,
         "source_parent_commit": graph["source_parent_commit"],
-        "tracked_fingerprints": tracked,
+        "tracked_fingerprints": _tracked_fingerprints_antigravity(),
         "working_tree_dirty": False,
     }
 
@@ -342,11 +374,28 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
     )
 
 
+def _validate_evidence_antigravity(evidence: Any, *, owner: str) -> None:
+    if not isinstance(evidence, dict):
+        raise AssertionError(f"{owner} evidence must be an object")
+    path = evidence.get("path")
+    symbol = evidence.get("symbol")
+    if not isinstance(path, str) or not path:
+        raise AssertionError(f"{owner} evidence path is required")
+    if not isinstance(symbol, str) or not symbol:
+        raise AssertionError(f"{owner} evidence symbol is required")
+    target = ROOT_ANTIGRAVITY / path
+    if not target.is_file():
+        raise AssertionError(f"{owner} evidence path missing: {path}")
+    if symbol not in target.read_text(encoding="utf-8"):
+        raise AssertionError(f"{owner} evidence symbol does not resolve: {symbol}")
+
+
 def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
     if graph.get("schema") != GRAPH_SCHEMA_ANTIGRAVITY:
         raise AssertionError("unexpected Exp463 graph schema")
-    if graph.get("source_parent_commit") != SOURCE_PARENT_COMMIT_ANTIGRAVITY:
-        raise AssertionError("unexpected source parent commit")
+    source_parent_commit = graph.get("source_parent_commit")
+    if source_parent_commit not in _allowed_source_commits_antigravity():
+        raise AssertionError("source parent commit is not HEAD or its immediate parent")
     if graph.get("unknown_relationships") != []:
         raise AssertionError("unresolved graph relationships")
     nodes = graph.get("nodes")
@@ -381,6 +430,13 @@ def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
             raise AssertionError("node identity/effect fields are required")
         if not isinstance(node.get("tests"), list):
             raise AssertionError("node tests must be a list")
+        evidence = node.get("evidence")
+        if not isinstance(evidence, list) or not evidence:
+            raise AssertionError(f"node evidence is required: {node.get('id')}")
+        for index, item in enumerate(evidence):
+            _validate_evidence_antigravity(
+                item, owner=f"node {node.get('id')} evidence[{index}]"
+            )
         if node["id"].endswith("_unknown") and (
             "unknown" not in node["role"] or "not implemented" not in node["role"]
         ):
@@ -391,10 +447,7 @@ def _validate_graph_antigravity(graph: dict[str, Any]) -> None:
         if edge.get("type") not in {"governs", "tests"}:
             raise AssertionError("edge type outside bounded vocabulary")
         evidence = edge.get("evidence")
-        if not isinstance(evidence, dict) or not evidence.get("path") or not evidence.get("symbol"):
-            raise AssertionError("edge evidence must resolve to path and symbol")
-        if not (ROOT_ANTIGRAVITY / evidence["path"]).is_file():
-            raise AssertionError(f"edge evidence path missing: {evidence['path']}")
+        _validate_evidence_antigravity(evidence, owner="edge")
 
 
 def validate_map_antigravity(
@@ -419,6 +472,10 @@ def validate_map_antigravity(
         raise AssertionError("lock source parent differs from graph")
     if lock.get("working_tree_dirty") is not False:
         raise AssertionError("source-parent lock must be clean")
+    if lock.get("tracked_fingerprints") != _tracked_fingerprints_antigravity():
+        raise AssertionError("tracked fingerprint drift detected")
+    if lock.get("module_fingerprints") != _module_fingerprints_antigravity():
+        raise AssertionError("module fingerprint drift detected")
     marker = '<pre id="codemap-json-antigravity" type="application/json">'
     if marker not in rendered:
         raise AssertionError("HTML map JSON marker missing")

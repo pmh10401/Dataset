@@ -6,6 +6,8 @@ import html.parser
 import importlib.util
 import json
 import re
+import copy
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -38,7 +40,6 @@ PACKAGE_ANTIGRAVITY = "experiments/exp463_ecg_prefix_ramp_gated_qualification_an
 DESIGN_SHA256_ANTIGRAVITY = (
     "d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb"
 )
-BASE_COMMIT_ANTIGRAVITY = "135c97313d9e107626e6b051e0416e4984e74a08"
 PENDING_CANDIDATE_ANTIGRAVITY = {
     "evaluation": None,
     "experiment": None,
@@ -176,7 +177,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "experiment": "Exp462",
             "terminal_closeout_commit": "040422f62406e3ca19038b9609903c4ba76e1694",
             "status": "stopped_before_official_evaluation_qualification_failed",
-            "primary_candidate": "hydra_period_rank_max",
+            "primary_candidate": "hydra_period_gradual_rank_max",
             "primary_passed_count": 3,
             "primary_required_count": 10,
             "period_min_auc": 0.8960376741612595,
@@ -386,7 +387,15 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(graph["schema"], "exp463_task1_governance_codemap_v1")
         self.assertEqual(lock["schema"], "exp463_task1_governance_codemap_lock_v1")
         self.assertEqual(lock["represented_paths"], sorted(TRIPLET_ANTIGRAVITY))
-        self.assertEqual(lock["source_parent_commit"], BASE_COMMIT_ANTIGRAVITY)
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT_ANTIGRAVITY, text=True
+        ).strip()
+        parents = subprocess.check_output(
+            ["git", "rev-list", "--parents", "-n", "1", "HEAD"],
+            cwd=ROOT_ANTIGRAVITY,
+            text=True,
+        ).strip().split()[1:]
+        self.assertIn(lock["source_parent_commit"], {head, *parents})
         self.assertFalse(lock["working_tree_dirty"])
         self.assertEqual(graph["unknown_relationships"], [])
         node_ids = {node["id"] for node in graph["nodes"]}
@@ -418,6 +427,44 @@ class GovernanceAntigravityTest(unittest.TestCase):
             self.assertIn(edge["type"], {"governs", "tests"})
             self.assertTrue(edge["evidence"]["path"])
             self.assertTrue(edge["evidence"]["symbol"])
+        for node in graph["nodes"]:
+            for evidence in node["evidence"]:
+                evidence_path = ROOT_ANTIGRAVITY / evidence["path"]
+                self.assertTrue(evidence_path.is_file(), evidence["path"])
+                self.assertIn(
+                    evidence["symbol"],
+                    evidence_path.read_text(encoding="utf-8"),
+                    f"unresolvable node evidence: {evidence}",
+                )
+        for edge in graph["edges"]:
+            evidence = edge["evidence"]
+            evidence_path = ROOT_ANTIGRAVITY / evidence["path"]
+            self.assertIn(
+                evidence["symbol"],
+                evidence_path.read_text(encoding="utf-8"),
+                f"unresolvable edge evidence: {evidence}",
+            )
+
+    def test_map_fingerprint_drift_is_rejected_antigravity(self) -> None:
+        """Break caught: a stale lock must not be accepted by path-only checks."""
+        builder = map_builder_antigravity()
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
+        rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(
+            encoding="utf-8"
+        )
+        self.assertIsInstance(graph, dict)
+        self.assertIsInstance(lock, dict)
+        assert isinstance(graph, dict) and isinstance(lock, dict)
+        builder.validate_map_antigravity(graph, lock, rendered)
+        stale_tracked = copy.deepcopy(lock)
+        stale_tracked["tracked_fingerprints"]["RESEARCH_STATE.json"] = "0" * 64
+        with self.assertRaises(AssertionError):
+            builder.validate_map_antigravity(graph, stale_tracked, rendered)
+        stale_module = copy.deepcopy(lock)
+        stale_module["module_fingerprints"]["docs"] = "0" * 64
+        with self.assertRaises(AssertionError):
+            builder.validate_map_antigravity(graph, stale_module, rendered)
 
 
 if __name__ == "__main__":

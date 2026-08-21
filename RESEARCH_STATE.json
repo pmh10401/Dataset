@@ -2495,7 +2495,7 @@
         "hydra_local_gap",
         "period_signature_local_gap",
         "hydra_period_rank_max"
-      ],
+        ],
       "primary_candidate": "hydra_period_rank_max",
       "seed_pair": [
         20260721,
@@ -2835,7 +2835,7 @@
       "experiment": "Exp462",
       "terminal_closeout_commit": "040422f62406e3ca19038b9609903c4ba76e1694",
       "status": "stopped_before_official_evaluation_qualification_failed",
-      "primary_candidate": "hydra_period_rank_max",
+      "primary_candidate": "hydra_period_gradual_rank_max",
       "primary_passed_count": 3,
       "primary_required_count": 10,
       "period_min_auc": 0.8960376741612595,

@@ -38,7 +38,7 @@
 <h2>Validation evidence</h2>
 <ul>
 <li>Strict duplicate-key JSON parsing and HTML parser checks are in the governance test. A standalone validation also reported: <code>strict JSON: 5 files OK; HTML parse: 5 files OK; map validation: OK; official root: absent; label query count: 0</code>.</li>
-<li>The map builder validates graph node/edge evidence, future Task 2–5 unknown nodes, exact HTML-embedded JSON equality, and a clean source-parent lock at base commit <code>135c97313d9e107626e6b051e0416e4984e74a08</code>.</li>
+<li>The map builder validates every node/edge evidence symbol literally, future Task 2–5 unknown nodes, exact HTML-embedded JSON equality, recomputed tracked/module fingerprints, and a clean functional source-parent lock at <code>HEAD</code> or its immediate parent.</li>
 <li>Run-root absence, label0, official0, null hashes, and champion/pending invariance are asserted.</li>
 <li>MLX was not applicable to governance-only documents; no score-source execution or package installation occurred.</li>
 </ul>
