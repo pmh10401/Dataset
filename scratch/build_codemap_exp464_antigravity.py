@@ -1,4 +1,4 @@
-"""Build and validate the bounded Exp464 Task 2 foundation code-map triplet."""
+"""Build and validate the bounded Exp464 Task 2 closeout code-map triplet."""
 
 from __future__ import annotations
 
@@ -110,14 +110,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             plan,
-            "Caller: Task 2 implementation and later Task 3 planning. Effect: records task_2_implemented_awaiting_fresh_review while preserving exactly seven checked boxes total until review closes.",
-            symbol="task_2_implemented_awaiting_fresh_review",
+            "Caller: Task 2 closeout and later Task 3 planning. Effect: records task_2_complete_pending_task_3 while preserving exactly fourteen checked boxes total for Task 1 and Task 2 only.",
+            symbol="task_2_complete_pending_task_3",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean, states that Task 2 foundation is implemented, and keeps Task 3+ unstarted.",
+            "Caller: status review. Effect: explains Exp463 M0/M1/M2/M4 evidence in easy Korean, states that Task 2 is review-closed, and keeps Task 3+ unstarted.",
             symbol="Exp464 진행 대시보드",
             tests=(governance_test,),
         ),
@@ -138,35 +138,35 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 2 closeout review. Effect: records frozen Exp463 authority capture, TRAIN source boundary, zero official/private/label activity, and fresh Task 2 review next.",
+            "Caller: Task 2 closeout review. Effect: records frozen Exp463 authority capture, TRAIN source boundary, zero official/private/label activity, and Task 3 next.",
             symbol="Exp464 Task 2 구현 보고서",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores the task_2_implemented_awaiting_fresh_review Exp464 row with official/private/label counts at zero and null result hashes.",
+            "Caller: active research ledger. Effect: stores the task_2_complete_pending_task_3 Exp464 row with official/private/label counts at zero and null result hashes.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the task_2_implemented_awaiting_fresh_review Exp464 record without any scientific result or promotion.",
+            "Caller: experiment catalog. Effect: registers the task_2_complete_pending_task_3 Exp464 record without any scientific result or promotion.",
             symbol="\"id\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion history. Effect: appends the task_2_implemented_awaiting_fresh_review Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
+            "Caller: champion history. Effect: appends the task_2_complete_pending_task_3 Exp464 row while keeping champion, pending candidate, routing, and promotion unchanged.",
             symbol="\"experiment\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "governance_test",
             governance_test,
-            "Caller: Task 2 closeout verification. Effect: rejects missing foundation modules, ledger drift, any checkbox count other than Task 1 only, missing map triplet, root creation, or nonzero official/private/label counts.",
+            "Caller: Task 2 closeout verification. Effect: rejects missing foundation modules, ledger drift, any checkbox count other than Task 1 plus Task 2 only, missing map triplet, root creation, or nonzero official/private/label counts.",
             symbol="test_exp464_is_planned_without_results_antigravity",
             tests=(governance_test,),
         ),
@@ -301,8 +301,8 @@ def _html_bytes_antigravity(graph_json: str) -> bytes:
 <title>Exp464 Task 2 Foundation Code Map</title>
 <style>body{{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}}</style></head>
 <body><main>
-<h1>Exp464 Task 2 foundation code map</h1>
-<p>이 map은 Task 2 foundation 경계를 다루며, 다음 소비자가 Task 3 scorer인 상태를 설명한다.</p>
+<h1>Exp464 Task 2 closeout code map</h1>
+<p>이 map은 Task 2 closeout 경계를 다루며, 다음 소비자가 Task 3 scorer인 상태를 설명한다.</p>
 <script id="graph-data" type="application/json">{graph_json}</script>
 </main></body></html>
 """
