@@ -10,21 +10,21 @@
 <table>
 <tr><th>created</th><td><code>experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/ramp_features_antigravity.py</code>, <code>scoring_antigravity.py</code>, and matching feature/scoring tests.</td></tr>
 <tr><th>feature</th><td><code>prefix_ramp_score_antigravity(values)</code> validates one finite floating row of length <code>140</code>, uses prefix <code>[0:56]</code> median/MAD scale <code>1.4826</code>, a zero-then-<code>linspace(0,1,84)</code> basis, L2 normalization, and the signed dot product without mutating input.</td></tr>
-<tr><th>score boundary</th><td><code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index)</code> returns immutable evidence in exact <code>M0</code>–<code>M6</code> order. M2 gates the ramp rank at <code>0.995</code>; M3 and M6 always take max; M4 uses the TRAIN-fit timewise median residual; M5 uses whole-series median/MAD normalization.</td></tr>
+<tr><th>score boundary</th><td><code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index)</code> returns immutable evidence in exact <code>M0</code>–<code>M6</code> order. M2 gates the ramp rank at <code>0.995</code>; M3 always takes max; M4 uses the TRAIN-fit timewise median residual; M5 uses whole-series median/MAD normalization; M6 preserves the reviewed Exp462 replay control exactly without a second M0 combination.</td></tr>
 <tr><th>deferred aliases</th><td>The ambiguous Task 2 aliases were not adopted: <code>Exp462ResultRowAntigravity</code>, <code>Exp463SummaryContractAntigravity</code>, and <code>predecessor_artifact_sha256</code> remain untouched because Task 3 does not require them.</td></tr>
 </table>
 
 <h2>TDD evidence</h2>
 <table>
 <tr><th>RED</th><td><code>python3 -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_ramp_features_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_scoring_antigravity</code> produced <code>7</code> expected missing-module/import errors before the two production modules existed.</td></tr>
-<tr><th>GREEN 1</th><td>Focused Task 3 suite: <code>Ran 7 tests</code>, <code>OK</code>.</td></tr>
-<tr><th>GREEN 2</th><td>Focused Task 3 suite repeated after documentation and map synchronization: <code>Ran 7 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>GREEN 1</th><td>Initial focused Task 3 suite: <code>Ran 7 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>GREEN 2</th><td>Initial focused Task 3 suite repeated after documentation and map synchronization: <code>Ran 7 tests</code>, <code>OK</code>.</td></tr>
 <tr><th>Task 2 regression</th><td><code>python3 -m unittest experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_config_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_contracts_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.tests.test_sources_antigravity</code>: <code>Ran 11 tests</code>, <code>OK</code>.</td></tr>
 </table>
 
 <h2>Independent reference and boundary guards</h2>
 <ul><li>The feature test computes its expected value independently with NumPy and checks exact prefix/onset/basis semantics, finite output, signed value, unchanged input, deterministic repeated calls, wrong shape/dtype/nonfinite rejection, and zero-MAD rejection.</li>
-<li>The scoring tests check the exact tie-inclusive rank formula, equality at the <code>0.995</code> gate, baseline/replay seed-fold flow, M0–M6 order, M2/M3/M6 max semantics, read-only score evidence, and the closed public source boundary.</li>
+<li>The scoring tests check the exact tie-inclusive rank formula, equality at the <code>0.995</code> gate, baseline/replay seed-fold flow, M0–M6 order, independent exact M2/M3/M4/M5 vectors, exact M6 original/primary replay parity, read-only score evidence, and the closed public source boundary.</li>
 <li><code>py_compile</code> passed for both production modules, both matching tests, and the map builder. No new <code>__init__.py</code> or non-antigravity filename was created.</li></ul>
 
 <h2>MLX gate</h2>
@@ -47,6 +47,13 @@
 <div class="ok"><strong>Handoff:</strong> Functional Task 3 work is ready for fresh result-focused review. No Task 4/5/6 action is authorized by this report.</div>
 <div class="warn"><strong>Concern:</strong> M4 residual scores require a nonzero finite prefix MAD after the TRAIN-fit template subtraction, as required by the frozen robust-scale rule. Any later qualification must preserve this rejection behavior and recompute metrics from immutable score evidence.</div>
 <div class="stop"><strong>Safety:</strong> no TEST labels, official root, official evaluate/inspect, routing, promotion, or champion/pending mutation was accessed or changed.</div>
+
+<h2>Fix round 1 TDD append — reviewed replay and exact vectors</h2>
+<table>
+<tr><th>RED</th><td>After the independent M2–M6 assertions were added, the focused scoring run failed in two expected places: the old M6 implementation changed injected replay original values <code>[0.3,0.2,0.4,0.1]</code> through a second M0 max, and the synthetic whole-series gate fixture initially selected the wrong fit row. The fixture-selection error was corrected before production changes were accepted.</td></tr>
+<tr><th>GREEN 1</th><td>Removed the second M0 combination from M6 so original and all four primary vectors preserve the reviewed Exp462 replay result exactly; corrected the independent fixture selection. Focused feature+scoring suites: <code>Ran 8 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>GREEN 2</th><td>The same focused feature+scoring suites were repeated: <code>Ran 8 tests</code>, <code>OK</code>. The new test computes M2 below/at/above-gate vectors, M3 max, M4 fit-only template residual ranks, M5 whole-series ranks, and M6 original/primary replay equality independently of production helpers.</td></tr>
+</table>
 
 <h2>Commits</h2>
 <p>Functional implementation and map-child commit identifiers are recorded in the parent handoff after clean-closeout verification; this report is intentionally written before fresh review and does not claim Task 3 completion.</p>

@@ -17,7 +17,7 @@
 <h2>Task 3 implementation boundary</h2>
 <ul>
 <li><code>ramp_features_antigravity.py</code> implements <code>prefix_ramp_score_antigravity(values)</code> with prefix <code>[0:56]</code> median/MAD normalization, fixed zero-then-linear basis, L2 normalization, signed dot product, strict finite/scale checks, and unchanged input.</li>
-<li><code>scoring_antigravity.py</code> returns immutable ordered <code>M0</code>–<code>M6</code> score evidence. M2 uses the exact <code>rramp &gt;= 0.995</code> gate, M3/M6 always use max, M4 uses a TRAIN-fit timewise median residual, and M5 uses whole-series median/MAD normalization.</li>
+<li><code>scoring_antigravity.py</code> returns immutable ordered <code>M0</code>–<code>M6</code> score evidence. M2 uses the exact <code>rramp &gt;= 0.995</code> gate, M3 always uses max, M4 uses a TRAIN-fit timewise median residual, M5 uses whole-series median/MAD normalization, and M6 preserves the reviewed Exp462 replay control without a second M0 combination.</li>
 <li>Only M6 delegates the Exp462 24D replay control; M1–M5 use deterministic ramp features and do not instantiate a learned distance head.</li>
 </ul>
 

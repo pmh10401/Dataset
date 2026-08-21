@@ -390,7 +390,10 @@ def _score_fold_methods_with_dependencies_antigravity(
     m3_original = _always_max_antigravity(baseline_original, m1_rank)
     m4_original = _gated_max_antigravity(baseline_original, m4_rank)
     m5_original = _gated_max_antigravity(baseline_original, m5_rank)
-    m6_original = _always_max_antigravity(baseline_original, replay_original)
+    # The reviewed Exp462 branch already contains its own LocalGap rank-max
+    # semantics. Preserve that replay control exactly; do not combine it with
+    # the Exp461 M0 a second time here.
+    m6_original = replay_original
 
     m2_primary = MappingProxyType(
         {
@@ -428,15 +431,7 @@ def _score_fold_methods_with_dependencies_antigravity(
             for change_type in _CHANGE_TYPES_ANTIGRAVITY
         }
     )
-    m6_primary = MappingProxyType(
-        {
-            change_type: _always_max_antigravity(
-                baseline_primary[change_type],
-                replay_primary[change_type],
-            )
-            for change_type in _CHANGE_TYPES_ANTIGRAVITY
-        }
-    )
+    m6_primary = replay_primary
 
     return FoldMethodScoresAntigravity(
         methods=_METHODS_ANTIGRAVITY,
