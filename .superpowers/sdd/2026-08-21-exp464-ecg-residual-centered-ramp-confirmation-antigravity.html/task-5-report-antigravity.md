@@ -6,6 +6,7 @@
 - Implemented and hardened the closed Exp464 CLI boundary, outside-CWD launcher, and focused CLI tests.
 - Sealed the private seam so it can inject only a distinct non-official root, and made evaluate preflight reject invalid private roots before clean validation or heavy compute.
 - Moved the official lifecycle allowance onto the actual public dispatch path through an internal-only identity seam, so future Task 6 evaluate→inspect no longer depends on separate helper entrypoints.
+- Fixed the duplicate-process guard so the current shell/time wrapper ancestor chain is ignored while a genuinely separate active Exp464 launcher/process is still rejected.
 - Did not start either private TRAIN reproduction.
 - Did not modify Exp464 result truth, ledgers, checkbox state, official root, or Task 6 state.
 
@@ -26,6 +27,17 @@ Observed RED before round 2:
   - private-root rejection still happened after clean validation or after qualification entry
   - public dispatch still routed official evaluate/inspect through helper-only seams instead of carrying the internal authority itself
   - public interface still exposed official-lifecycle minting helpers
+
+Observed RED before round 3:
+
+- `Ran 16 tests`
+- `FAILED (errors=1)`
+- New regression proof:
+  - the focused CLI suite reproduced the controller-observed false positive where the current `zsh` + `/usr/bin/time` ancestor wrapper chain still contained the launcher path and triggered `duplicate Exp464 process is already active` before any science/publication/root creation
+- Retained pre-science operational evidence:
+  - first wrapper stop: `reviewed commit must be the exact clean current commit`
+  - corrected wrapper stop before this fix: `duplicate Exp464 process is already active`
+  - both stops remained pre-science, label-free, publication-free, and root-free; their antigravity stdout/stderr/time logs remain retained for later truthful Task 5 disclosure
 
 ## GREEN evidence
 
@@ -48,6 +60,38 @@ PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py3
 
 - `Ran 14 tests`
 - `OK`
+
+Focused CLI suite after duplicate-process fix, pass 1:
+
+```bash
+PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+"$PY" -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_cli_antigravity
+```
+
+- `Ran 16 tests`
+- `OK`
+
+Focused CLI suite after duplicate-process fix, pass 2:
+
+```bash
+PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+"$PY" -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_cli_antigravity
+```
+
+- pending fresh verification in this round's closeout block
+
+Full Exp464 discovery before the map-only child:
+
+```bash
+PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+"$PY" -m unittest discover -s experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity/tests -p 'test_*_antigravity.py'
+```
+
+- `Ran 58 tests`
+- `FAILED (errors=1)`
+- Exact blocker was expected for this boundary:
+  - `test_governance_antigravity` stopped with `Exp464 map triplet is stale; rebuild required: .../docs/codemap/codemap_exp464_antigravity.lock`
+  - no scientific/private/official/label path ran; the tracked report/CLI fingerprints changed and the required map-only child had not been created yet
 
 Full Exp464 discovery once after CLI integration:
 
@@ -82,12 +126,13 @@ Additional verification after the report/map updates:
   - `evaluate --reviewed-commit LOWER40HEX`
   - bare `inspect`
 - Private seam can inject only a non-official root, and evaluate rejects non-Path, official-alias, symlink, existing, and rebound private roots before validation or qualification can proceed.
+- The duplicate-process guard now ignores only the current PID and its full ancestor PID chain; a separate active Exp464 launcher/process outside that chain still stops evaluate.
 - Frozen clean-commit, duplicate-process, qualification, evaluation, publication, and replay paths remain bound inside the CLI and cannot be replaced by the private seam.
 - Evaluate publishes exactly seven leaves and then emits the same canonical replay-backed JSON that inspect emits.
 - Inspect remains source-free with no TRAIN load and no TEST-label path.
 - The actual public dispatch path now carries the exact official root only through an internal official lifecycle identity that is absent from public interfaces and helper exports.
 - Official Exp464 root remains absent.
-- No private run root was created in this Phase A report.
+- No private run root was created in this Phase A report, including the two retained pre-science wrapper failures.
 
 ## Commit boundary
 

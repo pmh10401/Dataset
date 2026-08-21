@@ -523,6 +523,41 @@ print(
         ):
             cli.main_antigravity(["evaluate", "--reviewed-commit", _COMMIT_ANTIGRAVITY])
 
+    def test_duplicate_process_guard_ignores_current_ancestor_wrapper_chain_antigravity(self) -> None:
+        """Break caught: the current shell/time wrapper trips the duplicate-process guard before science starts."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        process_output = "\n".join(
+            (
+                "300 200 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -c helper_antigravity",
+                f"200 100 zsh -lc /usr/bin/time -p -o logs/run1_corrected_evaluate_time_antigravity.log /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python {str(_LAUNCHER_ANTIGRAVITY)!s} evaluate --reviewed-commit { _COMMIT_ANTIGRAVITY }",
+                f"100 1 /usr/bin/time -p -o logs/run1_corrected_evaluate_time_antigravity.log /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python {str(_LAUNCHER_ANTIGRAVITY)!s} evaluate --reviewed-commit { _COMMIT_ANTIGRAVITY }",
+            ),
+        )
+        with (
+            patch.object(cli.os, "getpid", return_value=300),
+            patch.object(cli.subprocess, "check_output", return_value=process_output),
+        ):
+            cli._validate_no_duplicate_process_antigravity()
+
+    def test_duplicate_process_guard_still_rejects_independent_launcher_antigravity(self) -> None:
+        """Break caught: excluding ancestors also masks a genuinely separate active Exp464 launcher."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity import cli_antigravity as cli
+
+        process_output = "\n".join(
+            (
+                "300 200 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -c helper_antigravity",
+                "200 1 zsh -lc helper_antigravity",
+                f"999 1 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python {str(_LAUNCHER_ANTIGRAVITY)!s} evaluate --reviewed-commit {_COMMIT_ANTIGRAVITY}",
+            ),
+        )
+        with (
+            patch.object(cli.os, "getpid", return_value=300),
+            patch.object(cli.subprocess, "check_output", return_value=process_output),
+            self.assertRaisesRegex(ValueError, "duplicate Exp464 process is already active"),
+        ):
+            cli._validate_no_duplicate_process_antigravity()
+
     def test_inspect_dependency_path_avoids_source_sqlite_and_aeon_imports_antigravity(self) -> None:
         """Break caught: inspect imports TRAIN source, SQLite, or aeon."""
         completed = subprocess.run(

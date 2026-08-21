@@ -24,6 +24,9 @@ _REPOSITORY_ANTIGRAVITY = Path(__file__).resolve().parents[2]
 OFFICIAL_ROOT_ANTIGRAVITY = Path(FROZEN_CONFIG_ANTIGRAVITY.official_result_root)
 _PRIVATE_TEST_MODULE_ANTIGRAVITY = "_exp464_cli_private_test_antigravity"
 _PRIVATE_TEST_CAPABILITY_ANTIGRAVITY = "exp464_cli_private_test_antigravity_v1"
+_LAUNCHER_NAME_ANTIGRAVITY = (
+    "run_exp464_ecg_residual_centered_ramp_confirmation_antigravity.py"
+)
 _LEAVES_ANTIGRAVITY = (
     "context_antigravity.json",
     "method_fold_metrics_antigravity.jsonl",
@@ -140,20 +143,39 @@ def _inspect_target_antigravity() -> tuple[Path, object | None]:
     return OFFICIAL_ROOT_ANTIGRAVITY, _INTERNAL_OFFICIAL_ROOT_ANTIGRAVITY
 
 
+def _launcher_token_matches_antigravity(command: str) -> bool:
+    return any(
+        Path(token.strip("\"'")).name == _LAUNCHER_NAME_ANTIGRAVITY
+        for token in command.split()
+    )
+
+
 def _validate_no_duplicate_process_antigravity() -> None:
     process_output = subprocess.check_output(
-        ["ps", "-Ao", "pid=,command="],
+        ["ps", "-Ao", "pid=,ppid=,command="],
         text=True,
     )
-    active_processes: list[str] = []
+    process_rows: list[tuple[int, int, str, str]] = []
     for line in process_output.splitlines():
-        parts = line.strip().split(None, 1)
-        if len(parts) != 2:
+        parts = line.strip().split(None, 2)
+        if len(parts) != 3:
             continue
-        pid_text, command = parts
-        if pid_text == str(os.getpid()):
+        pid_text, ppid_text, command = parts
+        try:
+            process_rows.append((int(pid_text), int(ppid_text), command, line))
+        except ValueError:
             continue
-        if "run_exp464_ecg_residual_centered_ramp_confirmation_antigravity.py" not in command:
+    ancestor_pids: set[int] = set()
+    parent_by_pid = {pid: ppid for pid, ppid, _command, _line in process_rows}
+    next_pid = os.getpid()
+    while next_pid > 0 and next_pid not in ancestor_pids:
+        ancestor_pids.add(next_pid)
+        next_pid = parent_by_pid.get(next_pid, 0)
+    active_processes: list[str] = []
+    for pid, _ppid, command, line in process_rows:
+        if pid in ancestor_pids:
+            continue
+        if not _launcher_token_matches_antigravity(command):
             continue
         if (
             "test_cli_antigravity" in command
