@@ -55,6 +55,7 @@ PRIMARY_CANDIDATE_ANTIGRAVITY = (
     "template_residual_centered_ramp_confirmed_max"
 )
 STATUS_ANTIGRAVITY = "task_2_complete_pending_task_3"
+OLD_STATUS_ANTIGRAVITY = "task_2_implemented_awaiting_fresh_review"
 METHOD_ORDER_ANTIGRAVITY = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8")
 EXPECTED_CHECKBOX_COUNT_ANTIGRAVITY = 42
 EXPECTED_PENDING_ANTIGRAVITY = {
@@ -282,6 +283,17 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertIn("M4 9/10", dashboard_text)
         self.assertIn("진단용", dashboard_text)
         self.assertIn("config_antigravity.py", dashboard_text)
+
+        for relative in DOCUMENTS_ANTIGRAVITY:
+            text = (ROOT_ANTIGRAVITY / relative).read_text(encoding="utf-8")
+            with self.subTest(status_doc=relative):
+                self.assertIn(STATUS_ANTIGRAVITY, text)
+                self.assertNotIn(OLD_STATUS_ANTIGRAVITY, text)
+        preregistration_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[1]).read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Task 3", preregistration_text)
+        self.assertIn("14/42", preregistration_text)
 
         for relative in DOCUMENTS_ANTIGRAVITY:
             parser = HtmlParserAntigravity()

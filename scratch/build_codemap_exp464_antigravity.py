@@ -124,14 +124,14 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "preregistration",
             "docs/EXP464_PREREGISTRATION_antigravity.html",
-            "Caller: governance review. Effect: freezes C0–C8 order, C6 sole primary, and all gates while Task 2 foundation exists and Task 3+ science code remains absent.",
+            "Caller: governance review. Effect: freezes C0–C8 order, C6 sole primary, and all gates after Task 2 closeout while Task 3+ science code remains absent.",
             symbol="Frozen C0–C8 comparison",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "runbook",
             "docs/EXP464_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: blocks scoring, private run, official commands, TEST labels, routing, and promotion before Task 2 review.",
+            "Caller: future operators. Effect: blocks scoring, private run, official commands, TEST labels, routing, and promotion during the post-Task-2-closeout boundary before Task 3 code exists.",
             symbol="Exp464 Task 2 operator boundary",
             tests=(governance_test,),
         ),
