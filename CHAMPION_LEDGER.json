@@ -1785,9 +1785,9 @@
     {
       "experiment": "Exp464",
       "kind": "ecg_residual_centered_ramp_confirmation_qualification",
-    "status": "task_4_complete_pending_task_5",
-    "implementation_status": "task_4_complete_pending_task_5",
-    "reason": "Task 4 result pipeline implementation is complete and final review of commit ff0e871dda5c4353e467bc9d3070293022f0ad0e is SHIP (spec PASS, quality APPROVED, C/I0). Exp464 includes qualification_antigravity.py, evaluation_antigravity.py, artifacts_antigravity.py, replay_antigravity.py, and dashboard_export_antigravity.py on top of the frozen Task 2–3 authority/source/scoring boundary. The focused Task 4 suite is GREEN at 16 tests and the full Exp464 package is GREEN at 42 tests. The plan checkbox truth is exactly 28/42: Tasks 1–4 heading+steps are checked, while Task 5 and Task 6 each remain 0/7 unchecked. Official/private/label counts remain 0, the official root remains absent, and all official result hashes remain null. Champion, pending candidate, routing, and promotion remain unchanged. The next bounded work is the Task 5 closed CLI, then exactly two sequential private TRAIN reproductions.",
+    "status": "stopped_before_official_evaluation_qualification_failed",
+    "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
+    "reason": "Task 5 private TRAIN campaign completed exactly two sequential evaluate-to-inspect reproductions at clean reviewed commit b8646d0fa9bd57dcb1f6ab5e251064d34911a41c. The two roots /private/tmp/exp464_task5_private_run1_antigravity and /private/tmp/exp464_task5_private_run2_antigravity are exact-equal for all 90 metric rows, 30 failed rows, nine summaries, decision, dashboard, seven leaf bytes/hashes, and canonical stdout payload. Primary C6 template_residual_centered_ramp_confirmed_max passed 9/10 because one gradual_drift row remained at 0.8402557718424627 below 0.85, so frozen qualification failed and status is stopped_before_official_evaluation_qualification_failed. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, and champion, pending candidate, routing, and promotion remain unchanged. Two earlier pre-science wrapper failures were retained and disclosed: reviewed-commit mismatch and duplicate-process false positive; neither created a result root or counts as a reproduction. Both private scientific roots are retained for fresh review. Task 5 checkboxes remain unchecked and Task 6 is blocked.",
       "run_identity": "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
       "run_root": "/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821",
       "package": "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity",
@@ -1855,7 +1855,7 @@
       "official_inspect_count": 0,
       "official_evaluate_invocations": 0,
       "official_inspect_invocations": 0,
-      "private_run_count": 0,
+      "private_run_count": 2,
       "result_root_created": false,
       "official_result": null,
       "prediction_sha256": null,
@@ -1870,7 +1870,99 @@
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
       "official_root_present": false,
-      "review_only": false
+      "review_only": false,
+      "task5_private_train_result": {
+        "reviewed_commit": "b8646d0fa9bd57dcb1f6ab5e251064d34911a41c",
+        "runs": [
+          {"run": 1, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 269.67, "inspect_seconds": 6.62},
+          {"run": 2, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 261.50, "inspect_seconds": 6.64}
+        ],
+        "temporary_roots_removed": false,
+        "private_roots": [
+          "/private/tmp/exp464_task5_private_run1_antigravity",
+          "/private/tmp/exp464_task5_private_run2_antigravity"
+        ],
+        "row_count": 90,
+        "failed_row_count": 30,
+        "summary_count": 9,
+        "leaf_count": 7,
+        "exact_equality": {"rows": true, "failed_rows": true, "summaries": true, "decision": true, "dashboard": true, "leaf_bytes": true, "leaf_hashes": true, "artifact_map_hash": true, "stdout_payload": true},
+        "leaf_sha256": {
+          "context_antigravity.json": "577a8a989abaf7b64d69968578e3d15b2b597acb97618c7d71eeaaf45fc46653",
+          "method_fold_metrics_antigravity.jsonl": "51073f3caf4793a2a70602547d6f249e42bcc7dcd64709ab5a62ccfeba791bcf",
+          "failed_folds_antigravity.jsonl": "54eefdbb8bbc3d2495bfa1cd0d444c04ffa9845c5f12f4e79f6bc6e25717bff3",
+          "method_summary_antigravity.jsonl": "3f7ad67d51c7dd63a31e9f373b14eb2ce2ffc616a81a611db2dd599e083f5540",
+          "decision_antigravity.json": "d66a23ef0749833220700f7d6b3ec56422722a9167d443cf2f58d327ce9593cd",
+          "dashboard_snapshot_antigravity.json": "da1e2333728b2886cea918f4c34ad6d084d10e1811b48c8903c0946ad167e1cb",
+          "artifact_sha256_antigravity.json": "8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca"
+        },
+        "leaf_bytes": {
+          "context_antigravity.json": 1180,
+          "method_fold_metrics_antigravity.jsonl": 53043215,
+          "failed_folds_antigravity.jsonl": 5511663,
+          "method_summary_antigravity.jsonl": 3899,
+          "decision_antigravity.json": 428,
+          "dashboard_snapshot_antigravity.json": 3839,
+          "artifact_sha256_antigravity.json": 605
+        },
+        "stdout_sha256": "f41151e67a07b33bae607437501317e61c79d8f5508b62d0886b210b63180111",
+        "artifact_map_sha256": "8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca",
+        "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+        "primary_passed_count": 9,
+        "primary_required_count": 10,
+        "primary_min_per_type_auc": {
+          "amplitude_scaling": 0.9722347970424023,
+          "gradual_drift": 0.8402557718424627,
+          "level_shift": 0.9411749911976258,
+          "period_change": 0.907392736783864
+        },
+        "method_pass_counts": {
+          "C0": {"passed_count": 9, "failed_count": 1},
+          "C1": {"passed_count": 8, "failed_count": 2},
+          "C2": {"passed_count": 9, "failed_count": 1},
+          "C3": {"passed_count": 0, "failed_count": 10},
+          "C4": {"passed_count": 3, "failed_count": 7},
+          "C5": {"passed_count": 9, "failed_count": 1},
+          "C6": {"passed_count": 9, "failed_count": 1},
+          "C7": {"passed_count": 3, "failed_count": 7},
+          "C8": {"passed_count": 10, "failed_count": 0}
+        },
+        "decision": {
+          "eligible_for_routing_research": false,
+          "failure_reasons": [
+            "primary_candidate_not_10_of_10",
+            "primary_gradual_drift_auc_below_min",
+            "primary_gradual_drift_min_below_0.85"
+          ],
+          "label_query_count": 0,
+          "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+          "primary_passed_count": 9,
+          "primary_required_count": 10,
+          "routing_applied": false,
+          "status": "qualification_failed_blocked_before_routing_research",
+          "test_labels_opened": false
+        },
+        "status": "qualification_failed_blocked_before_routing_research",
+        "label_query_count": 0,
+        "official_root_exists_after": false,
+        "pre_science_failures_retained": [
+          {
+            "name": "reviewed_commit_mismatch",
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "8a3a459348603f9c79fd68fdd39cd39594dd87e63547e539a147bad29a4657cf",
+            "time_sha256": "e4a4cb4a2aa2fb6d1f64f82e137be621de64c2b92de18d41d25572d8949b90db",
+            "root_created": false
+          },
+          {
+            "name": "duplicate_process_false_positive",
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e67bee7ce606726713bd7aaa6df6a2cf978094c3d68123372b4f3d9bb23be1a4",
+            "time_sha256": "539f1596e3b178a02613d497aadf76b6bf99d0df3bab746117cc74e40e28b68a",
+            "root_created": false
+          }
+        ],
+        "overlap_nonresult": {"pre_science_failures_retained": 2, "writes": false}
+      }
     }
   ]
 }

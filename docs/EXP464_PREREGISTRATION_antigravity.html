@@ -4,7 +4,7 @@
 <style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem;border-left:6px solid #2457a6}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
 <h1>Exp464 사전등록</h1>
-<p>이 문서는 Exp464의 과학 계약을 고정한다. 현재 구현 상태는 <code>task_4_complete_pending_task_5</code>이며, reviewed implementation commit <code>ff0e871dda5c4353e467bc9d3070293022f0ad0e</code>의 최종 검토는 spec PASS, quality APPROVED, C/I0이다. Task 4 checkbox를 닫았지만 private/official lifecycle은 여전히 열지 않는다.</p>
+<p>이 문서는 Exp464의 과학 계약을 계속 고정한다. 현재 실행 상태는 <code>stopped_before_official_evaluation_qualification_failed</code>이며, clean reviewed commit <code>b8646d0fa9bd57dcb1f6ab5e251064d34911a41c</code>에서 두 번의 exact-equal private TRAIN reproduction을 마친 뒤 C6 qualification failure로 멈췄다. 과학 계약 자체는 바뀌지 않았고 official lifecycle은 여전히 열지 않는다.</p>
 <table>
 <tr><th>experiment / kind</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
 <tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
@@ -12,7 +12,7 @@
 <tr><th>predecessor</th><td>Exp463 terminal closeout commit <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
 <tr><th>data</th><td><code>ECG5000_normal_2</code> TRAIN only, exactly <code>1413×140</code>; seeds <code>20260721</code>, <code>20261721</code>; five time-ordered blocked folds</td></tr>
 <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code> must remain absent before separately approved Task 6</td></tr>
-<tr><th>boundaries</th><td>TEST labels, TEST FN/FP/F1, routing, champion/pending mutation, promotion, private run, official evaluate/inspect는 모두 아직 0이다. result hash와 artifact hash는 모두 <code>null</code>이다.</td></tr>
+<tr><th>boundaries</th><td>TEST labels, TEST FN/FP/F1, routing, champion/pending mutation, promotion, official evaluate/inspect는 모두 여전히 0이다. private scientific run은 정확히 2회 완료되었고 official result hash와 official artifact hash는 모두 계속 <code>null</code>이다.</td></tr>
 </table>
 
 <h2>Frozen C0–C8 comparison</h2>
@@ -41,5 +41,5 @@
 <div class="stop"><strong>중단 규칙:</strong> 하나라도 실패하면 공식 실행은 없다. cosine, onset, seed, fold, 방법 순서, 주 후보를 결과를 본 뒤 바꾸지 않는다. M4는 진단 근거이지 승격 후보가 아니다.</div>
 
 <h2>현재 handoff truth</h2>
-<div class="box"><p>Task 4의 qualification/evaluation/artifacts/replay/dashboard export 구현과 검토를 마쳤다. 계획 checkbox는 정확히 <code>28/42</code>이며 Task 1–4는 checked, Task 5와 Task 6은 각각 0/7 unchecked다. 다음 단계는 Task 5 closed CLI 구현 뒤 정확히 두 번의 순차 private TRAIN reproduction이며, private run·official command·TEST label query는 여전히 0이다.</p></div>
+<div class="box"><p>scientific contract stays frozen. 계획 checkbox는 여전히 정확히 <code>28/42</code>이며 Task 1–4만 checked다. Task 5의 두 private reproduction은 완료되었지만 fresh review가 끝나지 않아 Task 5와 Task 6은 각각 0/7 unchecked 상태로 유지된다. private roots are retained for fresh review, official command·official root·TEST label query는 계속 0이다.</p></div>
 </main></body></html>

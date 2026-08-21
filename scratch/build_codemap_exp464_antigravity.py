@@ -186,64 +186,64 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
-            "Caller: Task 4 closeout. Effect: records task_4_complete_pending_task_5 with exactly twenty-eight checked boxes for Tasks 1–4 and Task 5/6 each 0/7 unchecked.",
-            symbol="task_4_complete_pending_task_5",
+            "Caller: Task 5 result review. Effect: records stopped_before_official_evaluation_qualification_failed with exactly twenty-eight checked boxes for Tasks 1–4 while Task 5/6 remain 0/7 unchecked pending fresh review.",
+            symbol="stopped_before_official_evaluation_qualification_failed",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP464_DASHBOARD_antigravity.html",
-            "Caller: status review. Effect: summarizes the Task 4 SHIP closeout and the closed-CLI-before-two-sequential-private-runs Task 5 boundary.",
-            symbol="Exp464 대시보드 — Task 4 완료 / Task 5 대기",
+            "Caller: status review. Effect: summarizes the two exact-equal private Task 5 reproductions, the frozen C6 qualification failure, and the retained-root fresh-review boundary.",
+            symbol="Exp464 대시보드 — Task 5 private 재현 완료, fresh review 대기",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "preregistration",
             "docs/EXP464_PREREGISTRATION_antigravity.html",
-            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the 28/42 Task 4 complete checkbox truth before Task 5.",
+            "Caller: governance review. Effect: freezes the scientific contract, C6 gate thresholds, and the unchanged 28/42 checkbox truth after Task 5 qualification failure.",
             symbol="Frozen qualification gates for C6",
             tests=(governance_test, task4_qualification_test, task4_evaluation_test),
         ),
         _node_antigravity(
             "runbook",
             "docs/EXP464_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: requires a reviewed closed Task 5 CLI before exactly two sequential private TRAIN reproductions and keeps official evaluate/inspect, TEST labels, and promotion blocked.",
-            symbol="Exp464 Task 4 operator boundary",
+            "Caller: future operators. Effect: records that exactly two sequential private TRAIN reproductions already finished, keeps both private roots retained for review, and continues blocking official evaluate/inspect, TEST labels, and promotion.",
+            symbol="Exp464 Task 5 post-run operator boundary",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "implementation_report",
             "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 4 review. Effect: records SHIP/spec PASS/quality APPROVED/C/I0, focused suite evidence, tracked numpy_cpu frozen-interpreter fallback authority, and the unchanged no-results boundary.",
-            symbol="Exp464 Task 4 구현 보고서",
+            "Caller: Task 5 result review. Effect: records exact private-run hashes, timings, retained pre-science failures, tracked numpy_cpu frozen-interpreter fallback authority, and the qualification-failed stop boundary.",
+            symbol="Exp464 구현 보고서 — Task 5 private reproducibility complete",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: active research ledger. Effect: stores task_4_complete_pending_task_5, globally authorizes only closed Task 5 CLI then exactly two sequential private TRAIN reproductions, and keeps official/private/label counts at zero with all official result hashes null.",
+            "Caller: active research ledger. Effect: stores stopped_before_official_evaluation_qualification_failed, the two exact-equal private non-official reproductions, retained review roots, and still-zero official/label counts with all official result hashes null.",
             symbol="\"exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment catalog. Effect: registers the reviewed Task 4 SHIP closeout without any private or official result.",
+            "Caller: experiment catalog. Effect: registers the reviewed Task 5 private reproducibility closeout with qualification failure and no official result.",
             symbol="\"id\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion history. Effect: preserves champion and pending state while recording the Task 4 SHIP closeout and Task 5 handoff.",
+            "Caller: champion history. Effect: preserves champion and pending state while recording the Task 5 qualification-failed stop with no official result.",
             symbol="\"experiment\": \"Exp464\"",
             tests=(governance_test,),
         ),
         _node_antigravity(
             "governance_test",
             governance_test,
-            "Caller: Task 4 closeout verification. Effect: rejects missing Task 4 modules/tests, stale ledgers, wrong checkbox truth, stale map truth, official/private drift, or active Exp464 work.",
-            symbol="test_exp464_task4_complete_pending_task5_without_results_antigravity",
+            "Caller: Task 5 result verification. Effect: rejects stale ledgers, wrong checkbox truth, stale map truth, incorrect private-run hashes, official/private drift, or active Exp464 work.",
+            symbol="test_exp464_task5_private_runs_complete_and_task6_blocked_antigravity",
             tests=(governance_test,),
         ),
         _node_antigravity(
@@ -485,7 +485,7 @@ def _build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "Task 5 launcher/test -> closed CLI -> Task 4 qualification/evaluation/artifacts/replay -> private non-official result truth",
         "Task 4 artifacts/replay -> Task 5 closed CLI",
         "internal official lifecycle authority -> Task 4 artifacts/replay -> exact official root",
-        "Task 5 closed CLI -> future exactly-two sequential private TRAIN reproductions gate",
+        "Task 5 closed CLI -> two completed exact-equal private TRAIN reproductions -> fresh review gate",
     ]
     graph["flow_count"] = len(graph["flows"])
     return graph
@@ -500,7 +500,7 @@ def _build_html_antigravity(graph: dict[str, Any]) -> str:
         "<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}</style></head>\n"
         "<body><main>\n"
         "<h1>Exp464 Task 5 closed-CLI boundary code map</h1>\n"
-        "<p>이 map은 <code>task_4_complete_pending_task_5</code> 상태를 유지한 채, 구현된 Task 5 closed CLI·launcher·CLI test boundary를 설명한다. private seam은 non-official root만 허용하며 invalid private root는 validation이나 heavy compute 전에 거부된다. public dispatch는 exact official root를 내부 official lifecycle identity 경로로만 운반한다. 다음 단계는 reviewed CLI 이후 정확히 두 번의 순차 private TRAIN reproduction이다.</p>\n"
+        "<p>이 map은 <code>stopped_before_official_evaluation_qualification_failed</code> 상태에서, 구현된 Task 5 closed CLI·launcher·CLI test boundary와 이미 끝난 두 번의 exact-equal private TRAIN reproduction truth를 설명한다. private seam은 non-official root만 허용하며 invalid private root는 validation이나 heavy compute 전에 거부된다. public dispatch는 exact official root를 내부 official lifecycle identity 경로로만 운반한다. 현재 단계는 retained private roots에 대한 fresh review이며 Task 6은 blocked다.</p>\n"
         f'<script id="graph-data" type="application/json">{payload}</script>\n'
         "</main></body></html>\n"
     )
