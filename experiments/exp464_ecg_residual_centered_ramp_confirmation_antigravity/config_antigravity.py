@@ -152,6 +152,55 @@ _CONTROL_SUMMARIES_ANTIGRAVITY = MappingProxyType(
     }
 )
 
+# Provenance: these exact 40 control digests were reproduced under the fixed
+# reviewed Exp463 runtime and accepted only because the canonical
+# method_fold_metrics_antigravity.jsonl bytes rehashed to the frozen tracked
+# predecessor digest 84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6.
+_CONTROL_ROW_DIGESTS_ANTIGRAVITY = MappingProxyType(
+    {
+        "C0:20260721:0": "b73749fb4e799885055a93c753e780618ce21f50e919e185cc98866543f5e0cd",
+        "C0:20260721:1": "a8460f37ef0027237b6676a8aee4451d4a361cc714ed9bdbf73cf20d7e434e8e",
+        "C0:20260721:2": "2d08399b85e832f61414282051838cb63b58f63b9e01dfc58f52025b79577d4c",
+        "C0:20260721:3": "342e295f711c761520d7c978cf75af38df5e32e912090f61a368a0f36891f6dd",
+        "C0:20260721:4": "6b99d71d878531a330aab940c315d3e7dc6fce48eec380e8e1f4b8ef1a3f4ac8",
+        "C0:20261721:0": "f22c43349022b03296bf66ab803f6f865e0b171b8905dce23e0ffef375668a5d",
+        "C0:20261721:1": "ca895ef18f6873ba6ede95b037ac97b6042f53ccfbeef72e50d18c5c3b4868b1",
+        "C0:20261721:2": "18f11840468dcb5facb5231ad980f5ffaee006b26d3d7fee713d54820c9da0d7",
+        "C0:20261721:3": "f8a54afafd64d16ff365444a1f792ee17c534d93048c3d19ce3065b731e3f2bf",
+        "C0:20261721:4": "0fd5d81fe06591aaea9883e73943beb1657b588beea91145dcd4bcbd51729624",
+        "C1:20260721:0": "47bdc328963202322f1b728db83bc885f1e98fdcfdc59263563e9f30c8719733",
+        "C1:20260721:1": "2f819ca50542eed6c208afe8b542d2b4266b445e4a9897db3dcd02cdfb096f11",
+        "C1:20260721:2": "88fc5ea2919699b907d1d8603dfb51c6ede9d664c795274775f4307c58c2ae6f",
+        "C1:20260721:3": "e7dcb6a3d9e6335d3f62b8d80b15c2f0095183852a4b65163ac94013aacbbe2b",
+        "C1:20260721:4": "cd5999c8046d3a8eb93d88bec7a34884c5d33d929fb37986394606a244624af4",
+        "C1:20261721:0": "9c3316f29ceace9aad9ca4cfd3ccefb0a632b10dba4d076b918adb4e62489405",
+        "C1:20261721:1": "c0b8f9ae56e8cec7d3bd634e27bdb0b6e858410eae0cc65b9e061486417363d2",
+        "C1:20261721:2": "f9ee1fff7a5a9177c1f09e1628a3fe2c27e8eefc108c8a895989e6a401b3b96e",
+        "C1:20261721:3": "02475414d946064f9f08d1f47a8a0d57d4fadb45f0a59f5827215cd1603eaf4d",
+        "C1:20261721:4": "9c52f294898ced7037021c2101f6b6f3175426b3207697964a492284de1fe487",
+        "C2:20260721:0": "608ab51d3296359f8ee2b6c0e8b5c4d92321ff7f286134032d6c9be8aa3f0745",
+        "C2:20260721:1": "37b5c51f6b6974228a4defde23cd8cb707af5801c7fa025166f407a13b8b6b2b",
+        "C2:20260721:2": "a8869246d398ed7c8bf908f44776cedee930813b4da3da6ee361543a3831eb12",
+        "C2:20260721:3": "f68d9a52a07c979dbe6e908f42d52656a2340841e4f6e62b6276b198a44d8309",
+        "C2:20260721:4": "b0dd8a679d3b16c90b81b1f435d8944aee56a18301767f0eb92b0fd754fdb6a6",
+        "C2:20261721:0": "98cc35d6d6f13326b929482ddd145b0e82ccb0732e94559a6b9efed68bc894e9",
+        "C2:20261721:1": "467e99f1e4bf016d1a461e3997ca617b9c0c0cb3e4c7729ad543ce5f9116727f",
+        "C2:20261721:2": "5228d499e751e12d5545ed6b4fdc62ad96e11a03e936227beca4ea4771f93d66",
+        "C2:20261721:3": "5505e16d9ba875b76ade085f50e6a61a6a604421b68dde2473951e4467ea6030",
+        "C2:20261721:4": "76271582290c6cbe9fbb75dd30daf939512d88810374dace13a9185dc088c6d8",
+        "C7:20260721:0": "022e4ccd7c6a2d1834f8699d581f6dcf65404ef43b37a4e29d3e9612dcce93e2",
+        "C7:20260721:1": "e830fe8fd9a691165a82662d3eac1020de6702f80013e7122b6bbdd5893d4902",
+        "C7:20260721:2": "95e6f3a9edb841c79b09d6379cde321c5c0987edd081f95dfa1868bb46124359",
+        "C7:20260721:3": "238d6fdcb61980d5731c7027790738db6323e146377fd9a7857e70360b8f51ac",
+        "C7:20260721:4": "661f2bf62244a6499bbc840bfb63d53b503ad532398029545d07aba1d9391f09",
+        "C7:20261721:0": "323e51da0c27f1b05cbadf99191d5cacf88c4cd91240246bd91669468b75292c",
+        "C7:20261721:1": "c9157872b75212f55b7a7ae48b4cb1fd77c7c80ff3d264853116211cf9b00c11",
+        "C7:20261721:2": "eb1ed107eab3d5fbb735fae31e18ecac733daee23afdba7b6ba9bd1847cfccf6",
+        "C7:20261721:3": "a03ec96367339d0ee376eb91dff24663eca6583fd8f247ae2dc282857df14034",
+        "C7:20261721:4": "5ff52cddd96bf3bd8ac0aa55f8efe60396261629b0839a11f57a77284dea4be2",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Exp464ConfigAntigravity:
@@ -190,8 +239,10 @@ class Exp464ConfigAntigravity:
     predecessor_result_failed_row_count: int
     predecessor_result_summary_count: int
     predecessor_result_leaf_count: int
+    predecessor_method_fold_metrics_sha256: str
     predecessor_artifact_map_sha256: str
     predecessor_control_summaries: Mapping[str, Exp463MethodSummarySnapshotAntigravity]
+    predecessor_control_row_digests: Mapping[str, str]
     label_query_count_must_remain: int
     official_evaluate_count_must_remain: int
     official_inspect_count_must_remain: int
@@ -259,8 +310,10 @@ _FROZEN_VALUES_ANTIGRAVITY = MappingProxyType(
         "predecessor_result_failed_row_count": 30,
         "predecessor_result_summary_count": 7,
         "predecessor_result_leaf_count": 7,
+        "predecessor_method_fold_metrics_sha256": "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
         "predecessor_artifact_map_sha256": "25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
         "predecessor_control_summaries": _CONTROL_SUMMARIES_ANTIGRAVITY,
+        "predecessor_control_row_digests": _CONTROL_ROW_DIGESTS_ANTIGRAVITY,
         "label_query_count_must_remain": 0,
         "official_evaluate_count_must_remain": 0,
         "official_inspect_count_must_remain": 0,

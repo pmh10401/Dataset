@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import lru_cache
 from math import sqrt
 import unittest
 
@@ -94,6 +95,8 @@ def _fixed_broken_antigravity(
         c6_normal_score = c6_normal[normal_index]
         for change_index, c0_change_score in enumerate(c0_change):
             c6_change_score = c6_change[change_index]
+            if c0_change_score == c0_normal_score or c6_change_score == c6_normal_score:
+                continue
             correct_c0 = c0_change_score > c0_normal_score
             correct_c6 = c6_change_score > c6_normal_score
             if (not correct_c0) and correct_c6:
@@ -154,9 +157,70 @@ def _fold_container_antigravity(method_payloads: dict[str, dict[str, object]]):
             method: dict(method_payloads[method]["confirmation_counts"])
             for method in METHODS_ANTIGRAVITY
         },
+        fit_amplitudes={
+            method: np.asarray(
+                method_payloads[method].get("fit_amplitudes", ()),
+                dtype=np.float64,
+            )
+            for method in METHODS_ANTIGRAVITY
+        },
+        query_amplitudes={
+            method: {
+                scope: np.asarray(values, dtype=np.float64)
+                for scope, values in method_payloads[method].get(
+                    "query_amplitudes", {}
+                ).items()
+            }
+            for method in METHODS_ANTIGRAVITY
+        },
+        query_cosines={
+            method: {
+                scope: np.asarray(values, dtype=np.float64)
+                for scope, values in method_payloads[method].get(
+                    "query_cosines", {}
+                ).items()
+            }
+            for method in METHODS_ANTIGRAVITY
+        },
         feature_dimensions={method: int(method_payloads[method].get("feature_dimension", 1)) for method in METHODS_ANTIGRAVITY},
         provenance={method: str(method_payloads[method].get("provenance", f"fixture_{method.lower()}")) for method in METHODS_ANTIGRAVITY},
     )
+
+
+def _rank_query_amplitudes_antigravity(values: tuple[float, ...]) -> tuple[float, ...]:
+    return tuple((value * 100.0) - 1.5 for value in values)
+
+
+def _evidence_payload_antigravity(
+    *,
+    normal: tuple[float, ...],
+    primary: dict[str, tuple[float, ...]],
+    normal_confirmed: int,
+    primary_confirmed: int,
+) -> dict[str, object]:
+    fit_amplitudes = tuple(float(index) for index in range(99))
+    normal_cosines = tuple(
+        1.0 if index < normal_confirmed else 0.0 for index in range(len(normal))
+    )
+    primary_cosines = tuple(
+        1.0 if index < primary_confirmed else 0.0 for index in range(len(normal))
+    )
+    return {
+        "fit_amplitudes": fit_amplitudes,
+        "query_amplitudes": {
+            "normal": _rank_query_amplitudes_antigravity(normal),
+            **{
+                change_type: _rank_query_amplitudes_antigravity(primary[change_type])
+                for change_type in TYPES_ANTIGRAVITY
+            },
+        },
+        "query_cosines": {
+            "normal": normal_cosines,
+            **{
+                change_type: primary_cosines for change_type in TYPES_ANTIGRAVITY
+            },
+        },
+    }
 
 
 def synthetic_fold_payload_antigravity(
@@ -211,12 +275,24 @@ def synthetic_fold_payload_antigravity(
             "primary": _primary_scores_antigravity(gradual=(0.88, 0.94)),
             "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
             "provenance": "rank_only",
+            **_evidence_payload_antigravity(
+                normal=c0_normal,
+                primary=_primary_scores_antigravity(gradual=(0.88, 0.94)),
+                normal_confirmed=0,
+                primary_confirmed=0,
+            ),
         },
         "C4": {
             "normal": c0_normal,
             "primary": _primary_scores_antigravity(gradual=(0.89, 0.95)),
             "confirmation_counts": _confidence_counts_antigravity(normal=0, gradual=0, period=0, level=0, amplitude=0),
             "provenance": "always_max",
+            **_evidence_payload_antigravity(
+                normal=c0_normal,
+                primary=_primary_scores_antigravity(gradual=(0.89, 0.95)),
+                normal_confirmed=0,
+                primary_confirmed=0,
+            ),
         },
         "C5": {
             "normal": c0_normal,
@@ -224,6 +300,12 @@ def synthetic_fold_payload_antigravity(
             "confirmation_counts": _confidence_counts_antigravity(normal=1, gradual=2, period=2, level=2, amplitude=2),
             "feature_dimension": 2,
             "provenance": "raw_centered",
+            **_evidence_payload_antigravity(
+                normal=c0_normal,
+                primary=_primary_scores_antigravity(period=(0.91, 0.97)),
+                normal_confirmed=1,
+                primary_confirmed=2,
+            ),
         },
         "C6": {
             "normal": c0_normal,
@@ -231,6 +313,12 @@ def synthetic_fold_payload_antigravity(
             "confirmation_counts": _confidence_counts_antigravity(normal=1, gradual=2, period=2, level=2, amplitude=2),
             "feature_dimension": 2,
             "provenance": "template_residual_centered",
+            **_evidence_payload_antigravity(
+                normal=c0_normal,
+                primary=c6_primary,
+                normal_confirmed=1,
+                primary_confirmed=2,
+            ),
         },
         "C7": controls["C7"],
         "C8": {
@@ -239,6 +327,12 @@ def synthetic_fold_payload_antigravity(
             "confirmation_counts": _confidence_counts_antigravity(normal=1, gradual=2, period=2, level=2, amplitude=2),
             "feature_dimension": 2,
             "provenance": "uncentered",
+            **_evidence_payload_antigravity(
+                normal=c0_normal,
+                primary=_primary_scores_antigravity(period=(0.90, 0.96)),
+                normal_confirmed=1,
+                primary_confirmed=2,
+            ),
         },
     }
     return rows
@@ -263,24 +357,67 @@ def fold_scorer_antigravity(
 def qualification_antigravity(
     mutated_payloads: dict[tuple[int, int], dict[str, dict[str, object]]] | None = None,
 ):
-    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
-        capture_exp463_authority_antigravity,
-    )
+    if mutated_payloads is not None:
+        raise ValueError("mutated_payloads is no longer supported for qualification fixtures")
+    return _production_qualification_antigravity()
+
+
+@lru_cache(maxsize=1)
+def _production_qualification_antigravity():
     from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
-        _qualify_methods_with_dependencies_antigravity,
+        qualify_methods_antigravity,
     )
 
-    return _qualify_methods_with_dependencies_antigravity(
-        authority=capture_exp463_authority_antigravity(),
-        loader=train_antigravity,
-        fold_scorer=lambda train, fit_indices, query_indices, *, seed, fold_index: fold_scorer_antigravity(
-            train,
-            fit_indices,
-            query_indices,
-            seed=seed,
-            fold_index=fold_index,
-            mutated_payloads=mutated_payloads,
-        ),
+    return qualify_methods_antigravity()
+
+
+def _boundary_pass_row_antigravity():
+    from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
+        Exp464MethodFoldMetricAntigravity,
+    )
+
+    normal = tuple(float(index) / 100.0 for index in range(100))
+
+    def auc_scores_antigravity(wins: int) -> tuple[float, ...]:
+        losses = 100 - wins
+        return tuple([-1.0] * losses + [1.5] * wins)
+
+    return Exp464MethodFoldMetricAntigravity(
+        method="C6",
+        seed=20260721,
+        fold_index=3,
+        normal_trials=100,
+        normal_alerts=99,
+        normal_wilson_upper=1.0,
+        per_type_auc={name: 0.0 for name in TYPES_ANTIGRAVITY},
+        mean_auc=0.0,
+        scores_finite=False,
+        normal_scores=normal,
+        primary_scores={
+            "level_shift": auc_scores_antigravity(85),
+            "gradual_drift": auc_scores_antigravity(85),
+            "amplitude_scaling": auc_scores_antigravity(90),
+            "period_change": auc_scores_antigravity(100),
+        },
+        confirmation_counts=_confidence_counts_antigravity(),
+        confirmation_rates={name: 0.0 for name in CONFIRMATION_TYPES_ANTIGRAVITY},
+        pair_diagnostics={
+            change_type: {"total_pairs": 0, "fixed_pairs": 0, "broken_pairs": 0}
+            for change_type in PAIR_TYPES_ANTIGRAVITY
+        },
+        passed=False,
+        failure_reasons=("forged",),
+        feature_dimension=2,
+        provenance="boundary_fixture",
+        fit_amplitudes=tuple(float(index) for index in range(100)),
+        query_amplitudes={
+            name: tuple(float(index) for index in range(100))
+            for name in CONFIRMATION_TYPES_ANTIGRAVITY
+        },
+        query_cosines={
+            name: tuple(0.96 for _ in range(100))
+            for name in CONFIRMATION_TYPES_ANTIGRAVITY
+        },
     )
 
 
@@ -348,6 +485,13 @@ class QualificationAntigravityTest(unittest.TestCase):
             failure_reasons=("forged",),
             feature_dimension=2,
             provenance="fixture",
+            fit_amplitudes=(0.0, 1.0),
+            query_amplitudes={
+                name: (0.2, 0.8) for name in CONFIRMATION_TYPES_ANTIGRAVITY
+            },
+            query_cosines={
+                name: (0.96, 0.97) for name in CONFIRMATION_TYPES_ANTIGRAVITY
+            },
         )
         recomputed = recompute_metric_from_scores_antigravity(row)
         expected_auc = {
@@ -378,8 +522,35 @@ class QualificationAntigravityTest(unittest.TestCase):
             {name: 0.0 for name in TYPES_ANTIGRAVITY},
         )
 
-    def test_normalization_rejects_wrong_order_identity_and_type_and_recomputes_c6_against_c0_antigravity(self) -> None:
-        """Break caught: reordered rows, wrong IDs, or forged booleans survive normalization."""
+    def test_boundary_row_hits_exact_auc_mean_and_wilson_edges_antigravity(self) -> None:
+        """Break caught: exact C6 per-row thresholds drift around the frozen edges."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
+            recompute_metric_from_scores_antigravity,
+        )
+
+        passing = recompute_metric_from_scores_antigravity(_boundary_pass_row_antigravity())
+        self.assertEqual(passing.per_type_auc["level_shift"], 0.85)
+        self.assertEqual(passing.per_type_auc["gradual_drift"], 0.85)
+        self.assertEqual(passing.per_type_auc["amplitude_scaling"], 0.9)
+        self.assertEqual(passing.per_type_auc["period_change"], 1.0)
+        self.assertEqual(passing.mean_auc, 0.9)
+        self.assertLessEqual(passing.normal_wilson_upper, 0.05)
+        self.assertTrue(passing.scores_finite)
+        self.assertEqual(passing.failure_reasons, ())
+
+        lowered = replace(
+            _boundary_pass_row_antigravity(),
+            primary_scores={
+                **_boundary_pass_row_antigravity().primary_scores,
+                "level_shift": tuple([-1.0] * 16 + [1.5] * 84),
+            },
+        )
+        lowered_recomputed = recompute_metric_from_scores_antigravity(lowered)
+        self.assertIn("level_shift_auc_below_min", lowered_recomputed.failure_reasons)
+        self.assertIn("mean_auc_below_min", lowered_recomputed.failure_reasons)
+
+    def test_normalization_rejects_wrong_order_identity_and_forged_c6_scores_antigravity(self) -> None:
+        """Break caught: reordered rows or forged evidence-bearing C6 scores survive normalization."""
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
             capture_exp463_authority_antigravity,
         )
@@ -404,24 +575,48 @@ class QualificationAntigravityTest(unittest.TestCase):
             passed=True,
             failure_reasons=(),
         )
-        normalized = normalize_qualification_antigravity(
-            replace(qualification, fold_metrics=tuple(rows)),
-            authority,
-        )
-        c6_row = next(
-            row
-            for row in normalized.fold_metrics
-            if row.method == "C6" and row.seed == 20260721 and row.fold_index == 3
-        )
-        self.assertFalse(c6_row.passed)
-        self.assertIn("period_change_auc_below_c0", c6_row.failure_reasons)
-        self.assertIn("historical_period_change_below_min:20260721:3", c6_row.failure_reasons)
+        with self.assertRaises(ValueError):
+            normalize_qualification_antigravity(
+                replace(qualification, fold_metrics=tuple(rows)),
+                authority,
+            )
 
         reordered = list(qualification.fold_metrics)
         reordered[0], reordered[1] = reordered[1], reordered[0]
         with self.assertRaises(ValueError):
             normalize_qualification_antigravity(
                 replace(qualification, fold_metrics=tuple(reordered)),
+                authority,
+            )
+
+    def test_normalization_rejects_non_extremal_c0_mutation_before_c6_comparison_antigravity(self) -> None:
+        """Break caught: non-extremal C0 row drift can no longer survive summary preservation."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
+            capture_exp463_authority_antigravity,
+        )
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
+            normalize_qualification_antigravity,
+        )
+
+        authority = capture_exp463_authority_antigravity()
+        qualification = qualification_antigravity()
+        rows = list(qualification.fold_metrics)
+        c0_index = next(
+            index
+            for index, row in enumerate(rows)
+            if row.method == "C0" and row.seed == 20260721 and row.fold_index == 0
+        )
+        row = rows[c0_index]
+        rows[c0_index] = replace(
+            row,
+            primary_scores={
+                **row.primary_scores,
+                "level_shift": tuple(score + 0.001 for score in row.primary_scores["level_shift"]),
+            },
+        )
+        with self.assertRaises(ValueError):
+            normalize_qualification_antigravity(
+                replace(qualification, fold_metrics=tuple(rows)),
                 authority,
             )
 
@@ -448,9 +643,96 @@ class QualificationAntigravityTest(unittest.TestCase):
         self.assertEqual(gradual["total_pairs"], expected_total)
         self.assertEqual(gradual["fixed_pairs"], expected_fixed)
         self.assertEqual(gradual["broken_pairs"], expected_broken)
-        self.assertEqual(expected_total, 4)
-        self.assertEqual(expected_fixed, 0)
-        self.assertEqual(expected_broken, 0)
+        self.assertGreater(expected_total, 0)
+
+    def test_pair_diagnostics_ignore_c0_ties_and_c6_ties_antigravity(self) -> None:
+        """Break caught: tie pairs must enter neither fixed nor broken bucket."""
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.qualification_antigravity import (
+            _pair_diagnostics_for_rows_antigravity,
+            Exp464MethodFoldMetricAntigravity,
+        )
+
+        def row_antigravity(
+            *,
+            method: str,
+            normal_scores: tuple[float, ...],
+            gradual_scores: tuple[float, ...],
+        ) -> Exp464MethodFoldMetricAntigravity:
+            return Exp464MethodFoldMetricAntigravity(
+                method=method,
+                seed=20260721,
+                fold_index=0,
+                normal_trials=len(normal_scores),
+                normal_alerts=0,
+                normal_wilson_upper=0.0,
+                per_type_auc={name: 1.0 for name in TYPES_ANTIGRAVITY},
+                mean_auc=1.0,
+                scores_finite=True,
+                normal_scores=normal_scores,
+                primary_scores={
+                    **_primary_scores_antigravity(),
+                    "gradual_drift": gradual_scores,
+                },
+                confirmation_counts={name: 0 for name in CONFIRMATION_TYPES_ANTIGRAVITY},
+                confirmation_rates={name: 0.0 for name in CONFIRMATION_TYPES_ANTIGRAVITY},
+                pair_diagnostics={
+                    change_type: {"total_pairs": 0, "fixed_pairs": 0, "broken_pairs": 0}
+                    for change_type in PAIR_TYPES_ANTIGRAVITY
+                },
+                passed=True,
+                failure_reasons=(),
+                feature_dimension=1,
+                provenance="pair_fixture",
+                fit_amplitudes=(
+                    (0.0, 1.0) if method == "C6" else ()
+                ),
+                query_amplitudes=(
+                    {
+                        name: (0.2, 0.8)
+                        for name in CONFIRMATION_TYPES_ANTIGRAVITY
+                    }
+                    if method == "C6"
+                    else {}
+                ),
+                query_cosines=(
+                    {
+                        name: (0.96, 0.97)
+                        for name in CONFIRMATION_TYPES_ANTIGRAVITY
+                    }
+                    if method == "C6"
+                    else {}
+                ),
+            )
+
+        c0_tie = _pair_diagnostics_for_rows_antigravity(
+            row_antigravity(
+                method="C0",
+                normal_scores=(0.1, 0.1),
+                gradual_scores=(0.1, 0.1),
+            ),
+            row_antigravity(
+                method="C6",
+                normal_scores=(0.2, 0.3),
+                gradual_scores=(0.8, 0.9),
+            ),
+        )["gradual_drift"]
+        self.assertEqual(c0_tie["fixed_pairs"], 0)
+        self.assertEqual(c0_tie["broken_pairs"], 0)
+
+        c6_tie = _pair_diagnostics_for_rows_antigravity(
+            row_antigravity(
+                method="C0",
+                normal_scores=(0.1, 0.2),
+                gradual_scores=(0.8, 0.9),
+            ),
+            row_antigravity(
+                method="C6",
+                normal_scores=(0.2, 0.2),
+                gradual_scores=(0.2, 0.2),
+            ),
+        )["gradual_drift"]
+        self.assertEqual(c6_tie["fixed_pairs"], 0)
+        self.assertEqual(c6_tie["broken_pairs"], 0)
 
 
 if __name__ == "__main__":

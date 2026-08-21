@@ -101,6 +101,10 @@ class ConfigAntigravityTest(unittest.TestCase):
             config.predecessor_artifact_map_sha256,
             "25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
         )
+        self.assertEqual(
+            config.predecessor_method_fold_metrics_sha256,
+            "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
+        )
         self.assertEqual(config.label_query_count_must_remain, 0)
         self.assertEqual(config.official_evaluate_count_must_remain, 0)
         self.assertEqual(config.official_inspect_count_must_remain, 0)
@@ -112,6 +116,15 @@ class ConfigAntigravityTest(unittest.TestCase):
         self.assertEqual(config.predecessor_control_summaries["C1"].passed_count, 7)
         self.assertEqual(config.predecessor_control_summaries["C2"].passed_count, 9)
         self.assertEqual(config.predecessor_control_summaries["C7"].passed_count, 3)
+        self.assertEqual(len(config.predecessor_control_row_digests), 40)
+        self.assertEqual(
+            config.predecessor_control_row_digests["C0:20260721:0"],
+            "b73749fb4e799885055a93c753e780618ce21f50e919e185cc98866543f5e0cd",
+        )
+        self.assertEqual(
+            config.predecessor_control_row_digests["C7:20261721:4"],
+            "5ff52cddd96bf3bd8ac0aa55f8efe60396261629b0839a11f57a77284dea4be2",
+        )
         with self.assertRaises(FrozenInstanceError):
             config.primary_candidate = "C4"  # type: ignore[misc]
 
@@ -154,6 +167,13 @@ class ConfigAntigravityTest(unittest.TestCase):
             ("predecessor_terminal_closeout_commit", "147225831e9c13e9df5043fa88757bb03e01b70"),
             ("predecessor_result_row_count", 69),
             ("label_query_count_must_remain", 1),
+            (
+                "predecessor_control_row_digests",
+                {
+                    **dict(config.predecessor_control_row_digests),
+                    "C0:20260721:0": "0" * 64,
+                },
+            ),
             (
                 "predecessor_control_summaries",
                 {**dict(config.predecessor_control_summaries), "C0": forged_c0},

@@ -28,23 +28,52 @@ class DashboardExportAntigravityTest(unittest.TestCase):
         self.assertEqual(
             tuple(dashboard),
             (
-                "experiment",
-                "dataset",
-                "stage",
                 "primary_candidate",
-                "primary_status",
-                "method_order",
+                "primary_passed_count",
+                "primary_required_count",
+                "eligible_for_routing_research",
                 "method_summaries",
                 "failed_fold_count",
                 "historical_period_floors",
-                "non_degradation",
-                "decision",
+                "non_degradation_counts",
                 "label_query_count",
-                "result_scope",
             ),
         )
-        self.assertEqual(tuple(dashboard["method_order"]), ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"))
+        self.assertEqual(dashboard["primary_candidate"], "template_residual_centered_ramp_confirmed_max")
+        self.assertIsInstance(dashboard["primary_passed_count"], int)
+        self.assertIsInstance(dashboard["primary_required_count"], int)
+        self.assertIsInstance(dashboard["eligible_for_routing_research"], bool)
         self.assertEqual(len(dashboard["method_summaries"]), 9)
+        self.assertEqual(
+            tuple(dashboard["method_summaries"][0]),
+            (
+                "method",
+                "fold_count",
+                "passed_count",
+                "failed_count",
+                "min_level_shift_auc",
+                "min_gradual_drift_auc",
+                "min_amplitude_scaling_auc",
+                "min_period_change_auc",
+                "min_mean_auc",
+                "max_normal_wilson_upper",
+                "all_scores_finite",
+                "passed",
+            ),
+        )
+        self.assertEqual(
+            tuple(dashboard["historical_period_floors"][0]),
+            (
+                "seed",
+                "fold_index",
+                "required_period_change_auc_min",
+                "candidate_period_change_auc",
+            ),
+        )
+        self.assertEqual(
+            tuple(dashboard["non_degradation_counts"]),
+            ("gradual_rows_not_below_c0", "period_rows_not_below_c0"),
+        )
         payload = json.dumps(dashboard, ensure_ascii=False, sort_keys=True)
         for forbidden in (
             "normal_scores",
@@ -55,6 +84,12 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             "provenance",
             "/Users/mac",
             "label_sql",
+            "ECG5000_normal_2",
+            "Task4 implemented pending fresh review",
+            "qualification_failed_blocked_before_routing_research",
+            "result_scope",
+            "stage",
+            "status",
         ):
             self.assertNotIn(forbidden, payload)
 

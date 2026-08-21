@@ -39,6 +39,18 @@ def _readonly_vector_antigravity(values: object, name: str) -> np.ndarray:
     return result
 
 
+def _readonly_optional_vector_antigravity(values: object, name: str) -> np.ndarray:
+    if type(values) is not np.ndarray or values.ndim != 1:
+        raise ValueError(f"{name} must be a one-dimensional ndarray")
+    if not np.issubdtype(values.dtype, np.floating):
+        raise ValueError(f"{name} must use a floating dtype")
+    result = np.array(values, dtype=np.float64, copy=True, order="C")
+    if not np.isfinite(result).all():
+        raise ValueError(f"{name} must be finite")
+    result.setflags(write=False)
+    return result
+
+
 def _train_antigravity(train: object) -> np.ndarray:
     if type(train) is not np.ndarray or train.ndim != 2:
         raise ValueError("train must be a two-dimensional ndarray")
@@ -111,6 +123,26 @@ def _copy_confirmation_counts_antigravity(
     return MappingProxyType(frozen)
 
 
+def _copy_query_evidence_antigravity(
+    values: Mapping[str, object],
+    expected_len: int,
+    name: str,
+) -> Mapping[str, np.ndarray]:
+    if not isinstance(values, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    if tuple(values) == ():
+        return MappingProxyType({})
+    if tuple(values) != _CONFIRMATION_TYPES_ANTIGRAVITY:
+        raise ValueError(f"{name} must preserve evidence scope order")
+    frozen: dict[str, np.ndarray] = {}
+    for scope in _CONFIRMATION_TYPES_ANTIGRAVITY:
+        vector = _readonly_vector_antigravity(values[scope], f"{name}[{scope}]")
+        if len(vector) != expected_len:
+            raise ValueError(f"{name}[{scope}] length must match query size")
+        frozen[scope] = vector
+    return MappingProxyType(frozen)
+
+
 def anomaly_rank_antigravity(
     reference_scores: np.ndarray,
     scores: np.ndarray,
@@ -134,6 +166,9 @@ class FoldMethodScoresAntigravity:
     original: Mapping[str, np.ndarray]
     primary: Mapping[str, Mapping[str, np.ndarray]]
     confirmation_counts: Mapping[str, Mapping[str, int]]
+    fit_amplitudes: Mapping[str, np.ndarray]
+    query_amplitudes: Mapping[str, Mapping[str, np.ndarray]]
+    query_cosines: Mapping[str, Mapping[str, np.ndarray]]
     feature_dimensions: Mapping[str, int]
     provenance: Mapping[str, str]
 
@@ -146,6 +181,12 @@ class FoldMethodScoresAntigravity:
             raise ValueError("primary must preserve method order")
         if not isinstance(self.confirmation_counts, Mapping) or tuple(self.confirmation_counts) != self.methods:
             raise ValueError("confirmation_counts must preserve method order")
+        if not isinstance(self.fit_amplitudes, Mapping) or tuple(self.fit_amplitudes) != self.methods:
+            raise ValueError("fit_amplitudes must preserve method order")
+        if not isinstance(self.query_amplitudes, Mapping) or tuple(self.query_amplitudes) != self.methods:
+            raise ValueError("query_amplitudes must preserve method order")
+        if not isinstance(self.query_cosines, Mapping) or tuple(self.query_cosines) != self.methods:
+            raise ValueError("query_cosines must preserve method order")
         if not isinstance(self.feature_dimensions, Mapping) or tuple(self.feature_dimensions) != self.methods:
             raise ValueError("feature_dimensions must preserve method order")
         if not isinstance(self.provenance, Mapping) or tuple(self.provenance) != self.methods:
@@ -154,6 +195,9 @@ class FoldMethodScoresAntigravity:
         frozen_original: dict[str, np.ndarray] = {}
         frozen_primary: dict[str, Mapping[str, np.ndarray]] = {}
         frozen_counts: dict[str, Mapping[str, int]] = {}
+        frozen_fit_amplitudes: dict[str, np.ndarray] = {}
+        frozen_query_amplitudes: dict[str, Mapping[str, np.ndarray]] = {}
+        frozen_query_cosines: dict[str, Mapping[str, np.ndarray]] = {}
         expected_len: int | None = None
         for method in self.methods:
             original = _readonly_vector_antigravity(self.original[method], f"original[{method}]")
@@ -172,6 +216,29 @@ class FoldMethodScoresAntigravity:
                 len(original),
                 f"confirmation_counts[{method}]",
             )
+            fit_amplitudes = _readonly_optional_vector_antigravity(
+                self.fit_amplitudes[method],
+                f"fit_amplitudes[{method}]",
+            )
+            query_amplitudes = _copy_query_evidence_antigravity(
+                self.query_amplitudes[method],
+                len(original),
+                f"query_amplitudes[{method}]",
+            )
+            query_cosines = _copy_query_evidence_antigravity(
+                self.query_cosines[method],
+                len(original),
+                f"query_cosines[{method}]",
+            )
+            if tuple(query_amplitudes) != tuple(query_cosines):
+                raise ValueError("query amplitude/cosine scopes must match")
+            if tuple(query_amplitudes) and len(fit_amplitudes) < 1:
+                raise ValueError("evidence-bearing methods must keep fit amplitudes")
+            if not tuple(query_amplitudes) and len(fit_amplitudes) != 0:
+                raise ValueError("control methods must not keep fit amplitudes")
+            frozen_fit_amplitudes[method] = fit_amplitudes
+            frozen_query_amplitudes[method] = query_amplitudes
+            frozen_query_cosines[method] = query_cosines
 
         frozen_dimensions: dict[str, int] = {}
         frozen_provenance: dict[str, str] = {}
@@ -188,6 +255,9 @@ class FoldMethodScoresAntigravity:
         object.__setattr__(self, "original", MappingProxyType(frozen_original))
         object.__setattr__(self, "primary", MappingProxyType(frozen_primary))
         object.__setattr__(self, "confirmation_counts", MappingProxyType(frozen_counts))
+        object.__setattr__(self, "fit_amplitudes", MappingProxyType(frozen_fit_amplitudes))
+        object.__setattr__(self, "query_amplitudes", MappingProxyType(frozen_query_amplitudes))
+        object.__setattr__(self, "query_cosines", MappingProxyType(frozen_query_cosines))
         object.__setattr__(self, "feature_dimensions", MappingProxyType(frozen_dimensions))
         object.__setattr__(self, "provenance", MappingProxyType(frozen_provenance))
 
@@ -348,6 +418,10 @@ def _zero_confirmation_counts_antigravity() -> Mapping[str, int]:
     return MappingProxyType({name: 0 for name in _CONFIRMATION_TYPES_ANTIGRAVITY})
 
 
+def _empty_query_evidence_antigravity() -> Mapping[str, np.ndarray]:
+    return MappingProxyType({})
+
+
 def _score_fold_methods_with_dependency_antigravity(
     train: np.ndarray,
     fit_indices: np.ndarray,
@@ -462,6 +536,12 @@ def _score_fold_methods_with_dependency_antigravity(
     c5_primary: dict[str, np.ndarray] = {}
     c6_primary: dict[str, np.ndarray] = {}
     c8_primary: dict[str, np.ndarray] = {}
+    c6_query_amplitudes: dict[str, np.ndarray] = {"normal": query_c6_amp}
+    c6_query_cosines: dict[str, np.ndarray] = {"normal": query_c6_cos}
+    c5_query_amplitudes: dict[str, np.ndarray] = {"normal": query_c5_amp}
+    c5_query_cosines: dict[str, np.ndarray] = {"normal": query_c5_cos}
+    c8_query_amplitudes: dict[str, np.ndarray] = {"normal": query_c8_amp}
+    c8_query_cosines: dict[str, np.ndarray] = {"normal": query_c8_cos}
     c5_counts = {"normal": c5_normal_confirmed}
     c6_counts = {"normal": c6_normal_confirmed}
     c8_counts = {"normal": c8_normal_confirmed}
@@ -473,6 +553,8 @@ def _score_fold_methods_with_dependency_antigravity(
             rows,
             lambda row: centered_ramp_evidence_antigravity(row, template),
         )
+        c6_query_amplitudes[change_type] = c6_amp
+        c6_query_cosines[change_type] = c6_cos
         c3_primary[change_type] = _rank_only_scores_antigravity(fit_c6_amp, c6_amp)
         c4_primary[change_type] = _always_max_scores_antigravity(
             c0_primary[change_type],
@@ -487,6 +569,8 @@ def _score_fold_methods_with_dependency_antigravity(
         )
 
         c5_amp, c5_cos = _evidence_vectors_antigravity(rows, _centered_raw_evidence_antigravity)
+        c5_query_amplitudes[change_type] = c5_amp
+        c5_query_cosines[change_type] = c5_cos
         c5_primary[change_type], c5_counts[change_type] = _confirmed_scores_antigravity(
             c0_primary[change_type],
             fit_c5_amp,
@@ -498,6 +582,8 @@ def _score_fold_methods_with_dependency_antigravity(
             rows,
             lambda row: _uncentered_residual_evidence_antigravity(row, template),
         )
+        c8_query_amplitudes[change_type] = c8_amp
+        c8_query_cosines[change_type] = c8_cos
         c8_primary[change_type], c8_counts[change_type] = _confirmed_scores_antigravity(
             c0_primary[change_type],
             fit_c8_amp,
@@ -539,6 +625,39 @@ def _score_fold_methods_with_dependency_antigravity(
             "C6": MappingProxyType(c6_counts),
             "C7": _zero_confirmation_counts_antigravity(),
             "C8": MappingProxyType(c8_counts),
+        },
+        fit_amplitudes={
+            "C0": np.asarray([], dtype=np.float64),
+            "C1": np.asarray([], dtype=np.float64),
+            "C2": np.asarray([], dtype=np.float64),
+            "C3": fit_c6_amp,
+            "C4": fit_c6_amp,
+            "C5": fit_c5_amp,
+            "C6": fit_c6_amp,
+            "C7": np.asarray([], dtype=np.float64),
+            "C8": fit_c8_amp,
+        },
+        query_amplitudes={
+            "C0": _empty_query_evidence_antigravity(),
+            "C1": _empty_query_evidence_antigravity(),
+            "C2": _empty_query_evidence_antigravity(),
+            "C3": MappingProxyType(dict(c6_query_amplitudes)),
+            "C4": MappingProxyType(dict(c6_query_amplitudes)),
+            "C5": MappingProxyType(dict(c5_query_amplitudes)),
+            "C6": MappingProxyType(dict(c6_query_amplitudes)),
+            "C7": _empty_query_evidence_antigravity(),
+            "C8": MappingProxyType(dict(c8_query_amplitudes)),
+        },
+        query_cosines={
+            "C0": _empty_query_evidence_antigravity(),
+            "C1": _empty_query_evidence_antigravity(),
+            "C2": _empty_query_evidence_antigravity(),
+            "C3": MappingProxyType(dict(c6_query_cosines)),
+            "C4": MappingProxyType(dict(c6_query_cosines)),
+            "C5": MappingProxyType(dict(c5_query_cosines)),
+            "C6": MappingProxyType(dict(c6_query_cosines)),
+            "C7": _empty_query_evidence_antigravity(),
+            "C8": MappingProxyType(dict(c8_query_cosines)),
         },
         feature_dimensions={
             "C0": c0_dimension,

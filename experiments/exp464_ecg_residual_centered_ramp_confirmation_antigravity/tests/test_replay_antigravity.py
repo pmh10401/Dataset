@@ -66,19 +66,25 @@ class ReplayAntigravityTest(unittest.TestCase):
                 b"".join(canonical_antigravity(row) for row in rows)
             )
 
-        def tamper_amplitude_auc_antigravity(root: Path) -> None:
+        def tamper_amplitude_evidence_antigravity(root: Path) -> None:
             rows = rows_antigravity(root)
-            per_type = dict(rows[0]["per_type_auc"])  # type: ignore[arg-type]
-            per_type["amplitude_scaling"] -= 0.01
-            rows[0]["per_type_auc"] = per_type
+            amplitudes = dict(rows[60]["query_amplitudes"])  # type: ignore[arg-type]
+            amplitudes["amplitude_scaling"] = [value + 0.5 for value in amplitudes["amplitude_scaling"]]  # type: ignore[index]
+            rows[60]["query_amplitudes"] = amplitudes
             write_rows_antigravity(root, rows)
             rehash_antigravity(root)
 
-        def tamper_cosine_counts_antigravity(root: Path) -> None:
+        def tamper_cosine_evidence_and_matching_counts_rates_antigravity(root: Path) -> None:
             rows = rows_antigravity(root)
-            counts = dict(rows[0]["confirmation_counts"])  # type: ignore[arg-type]
-            counts["normal"] += 1
-            rows[0]["confirmation_counts"] = counts
+            cosines = dict(rows[60]["query_cosines"])  # type: ignore[arg-type]
+            cosines["normal"] = [0.96 for _ in cosines["normal"]]  # type: ignore[index]
+            rows[60]["query_cosines"] = cosines
+            counts = dict(rows[60]["confirmation_counts"])  # type: ignore[arg-type]
+            counts["normal"] = len(cosines["normal"])  # type: ignore[arg-type]
+            rows[60]["confirmation_counts"] = counts
+            rates = dict(rows[60]["confirmation_rates"])  # type: ignore[arg-type]
+            rates["normal"] = 1.0
+            rows[60]["confirmation_rates"] = rates
             write_rows_antigravity(root, rows)
             rehash_antigravity(root)
 
@@ -128,8 +134,8 @@ class ReplayAntigravityTest(unittest.TestCase):
             rehash_antigravity(root)
 
         mutations = (
-            ("amplitude_auc", tamper_amplitude_auc_antigravity),
-            ("cosine_counts", tamper_cosine_counts_antigravity),
+            ("amplitude_evidence", tamper_amplitude_evidence_antigravity),
+            ("cosine_evidence_counts_rates", tamper_cosine_evidence_and_matching_counts_rates_antigravity),
             ("pair_counts", tamper_pair_counts_antigravity),
             ("summary", tamper_summary_antigravity),
             ("decision", tamper_decision_antigravity),

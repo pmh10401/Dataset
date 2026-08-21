@@ -78,6 +78,13 @@ _PRIVATE_EQUALITY_FIELDS_ANTIGRAVITY = (
     "artifact_map_hash",
 )
 _CONTROL_METHOD_MAP_ANTIGRAVITY = {"0": "C0", "2": "C1", "4": "C2", "6": "C7"}
+def _canonical_json_bytes_antigravity(value: object) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8") + b"\n"
 
 
 def _strict_json_antigravity(path: Path) -> Any:
@@ -405,6 +412,14 @@ def _validate_report_evidence_antigravity(
     return report_summaries
 
 
+def _control_row_digests_antigravity() -> dict[str, str]:
+    result = dict(FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_row_digests)
+    expected = tuple(FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_row_digests)
+    if tuple(result) != expected:
+        raise ValueError("Exp463 control row digests drifted from frozen order")
+    return result
+
+
 def capture_exp463_authority_antigravity() -> Exp463AuthorityAntigravity:
     """Return the exact frozen Exp463 private TRAIN authority consumed by Exp464."""
 
@@ -435,11 +450,13 @@ def capture_exp463_authority_antigravity() -> Exp463AuthorityAntigravity:
         result_failed_row_count=task5_result["failed_row_count"],
         result_summary_count=task5_result["summary_count"],
         result_leaf_count=task5_result["leaf_count"],
+        method_fold_metrics_sha256=task5_result["leaf_sha256"]["method_fold_metrics_antigravity.jsonl"],
         artifact_map_sha256=task5_result["artifact_map_sha256"],
         official_evaluate_count=state["official_evaluate_invocations"],
         official_inspect_count=state["official_inspect_invocations"],
         label_query_count=state["label_query_count"],
         control_summaries=summaries,
+        control_row_digests=_control_row_digests_antigravity(),
     )
     validate_exp463_authority_antigravity(authority)
     return authority

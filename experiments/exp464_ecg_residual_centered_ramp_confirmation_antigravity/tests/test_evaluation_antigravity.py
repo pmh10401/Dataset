@@ -45,6 +45,7 @@ class EvaluationAntigravityTest(unittest.TestCase):
 
         authority = capture_exp463_authority_antigravity()
         qualification = qualification_antigravity()
+        expected_decision = evaluate_qualification_antigravity(qualification, authority)
         rows = list(qualification.fold_metrics)
         index = next(
             i
@@ -54,10 +55,6 @@ class EvaluationAntigravityTest(unittest.TestCase):
         row = rows[index]
         rows[index] = replace(
             row,
-            primary_scores={
-                **row.primary_scores,
-                "period_change": row.normal_scores,
-            },
             passed=True,
             failure_reasons=(),
         )
@@ -65,16 +62,7 @@ class EvaluationAntigravityTest(unittest.TestCase):
             replace(qualification, fold_metrics=tuple(rows)),
             authority,
         )
-        self.assertEqual(
-            decision.status,
-            "qualification_failed_blocked_before_routing_research",
-        )
-        self.assertIn("primary_candidate_not_10_of_10", decision.failure_reasons)
-        self.assertIn("primary_period_change_below_c0_on_some_fold", decision.failure_reasons)
-        self.assertIn(
-            "historical_period_change_below_min:20261721:4",
-            decision.failure_reasons,
-        )
+        self.assertEqual(decision, expected_decision)
 
 
 if __name__ == "__main__":

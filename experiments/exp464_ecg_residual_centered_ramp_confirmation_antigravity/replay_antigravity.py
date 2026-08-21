@@ -39,6 +39,15 @@ _PAIR_TYPES_ANTIGRAVITY = ("gradual_drift", "period_change")
 _PAIR_STAT_KEYS_ANTIGRAVITY = ("total_pairs", "fixed_pairs", "broken_pairs")
 
 
+def _evidence_mapping_antigravity(value: dict[str, object]) -> dict[str, tuple[object, ...]]:
+    if not value:
+        return {}
+    return {
+        scope: tuple(value[scope])
+        for scope in _CONFIRMATION_TYPES_ANTIGRAVITY
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class QualificationReplayAntigravity:
     qualification: Exp464QualificationContractAntigravity
@@ -127,6 +136,9 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
         "failure_reasons",
         "feature_dimension",
         "provenance",
+        "fit_amplitudes",
+        "query_amplitudes",
+        "query_cosines",
     }
     if (
         type(value) is not dict
@@ -138,6 +150,9 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
         or type(value["confirmation_counts"]) is not dict
         or type(value["confirmation_rates"]) is not dict
         or type(value["pair_diagnostics"]) is not dict
+        or type(value["fit_amplitudes"]) is not list
+        or type(value["query_amplitudes"]) is not dict
+        or type(value["query_cosines"]) is not dict
     ):
         raise ValueError("method metric row is invalid")
     primary = value["primary_scores"]
@@ -145,11 +160,15 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
     confirmation_counts = value["confirmation_counts"]
     confirmation_rates = value["confirmation_rates"]
     pair_diagnostics = value["pair_diagnostics"]
+    query_amplitudes = value["query_amplitudes"]
+    query_cosines = value["query_cosines"]
     assert isinstance(primary, dict)
     assert isinstance(per_type, dict)
     assert isinstance(confirmation_counts, dict)
     assert isinstance(confirmation_rates, dict)
     assert isinstance(pair_diagnostics, dict)
+    assert isinstance(query_amplitudes, dict)
+    assert isinstance(query_cosines, dict)
     return Exp464MethodFoldMetricAntigravity(
         method=value["method"],
         seed=value["seed"],
@@ -187,6 +206,9 @@ def _metric_row_antigravity(value: object) -> Exp464MethodFoldMetricAntigravity:
         failure_reasons=tuple(value["failure_reasons"]),
         feature_dimension=value["feature_dimension"],
         provenance=value["provenance"],
+        fit_amplitudes=tuple(value["fit_amplitudes"]),
+        query_amplitudes=_evidence_mapping_antigravity(query_amplitudes),
+        query_cosines=_evidence_mapping_antigravity(query_cosines),
     )
 
 

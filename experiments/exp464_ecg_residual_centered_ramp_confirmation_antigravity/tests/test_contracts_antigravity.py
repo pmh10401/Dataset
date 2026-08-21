@@ -75,11 +75,13 @@ class ContractsAntigravityTest(unittest.TestCase):
                 "result_failed_row_count",
                 "result_summary_count",
                 "result_leaf_count",
+                "method_fold_metrics_sha256",
                 "artifact_map_sha256",
                 "official_evaluate_count",
                 "official_inspect_count",
                 "label_query_count",
                 "control_summaries",
+                "control_row_digests",
             ),
         )
 
@@ -159,6 +161,7 @@ class ContractsAntigravityTest(unittest.TestCase):
                     result_failed_row_count=30,
                     result_summary_count=7,
                     result_leaf_count=7,
+                    method_fold_metrics_sha256="84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
                     artifact_map_sha256="25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
                     official_evaluate_count=0,
                     official_inspect_count=0,
@@ -171,6 +174,9 @@ class ContractsAntigravityTest(unittest.TestCase):
                             ("C7", self._summary_antigravity("C7", passed_count=3, failed_count=7, min_gradual_drift_auc=0.7953196519289775, min_period_change_auc=0.8960376741612595, min_pooled_auc=0.9010220185101353)),
                         )
                     ),
+                    control_row_digests=OrderedDict(
+                        (f"C0:20260721:{fold}", "0" * 64) for fold in range(5)
+                    ),
                 )
 
     def test_authority_constructor_copies_mapping_inputs_before_freezing_antigravity(self) -> None:
@@ -178,6 +184,9 @@ class ContractsAntigravityTest(unittest.TestCase):
         from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.contracts_antigravity import (
             Exp463AuthorityAntigravity,
             Exp463MethodSummaryAntigravity,
+        )
+        from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import (
+            capture_exp463_authority_antigravity,
         )
 
         summaries = OrderedDict(
@@ -240,6 +249,7 @@ class ContractsAntigravityTest(unittest.TestCase):
                 ),
             )
         )
+        frozen_authority = capture_exp463_authority_antigravity()
 
         authority = Exp463AuthorityAntigravity(
             predecessor_experiment="Exp463",
@@ -252,11 +262,13 @@ class ContractsAntigravityTest(unittest.TestCase):
             result_failed_row_count=30,
             result_summary_count=7,
             result_leaf_count=7,
+            method_fold_metrics_sha256="84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
             artifact_map_sha256="25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
             official_evaluate_count=0,
             official_inspect_count=0,
             label_query_count=0,
             control_summaries=summaries,
+            control_row_digests=OrderedDict(frozen_authority.control_row_digests),
         )
         summaries["C0"] = summaries["C1"]
         self.assertEqual(authority.control_summaries["C0"].passed_count, 9)
@@ -283,6 +295,7 @@ class ContractsAntigravityTest(unittest.TestCase):
             ("result_failed_row_count", 29),
             ("result_summary_count", 6),
             ("result_leaf_count", 8),
+            ("method_fold_metrics_sha256", "8" * 64),
             ("artifact_map_sha256", "1" * 64),
             ("official_evaluate_count", 1),
             ("official_inspect_count", 1),
@@ -316,6 +329,14 @@ class ContractsAntigravityTest(unittest.TestCase):
                     validate_exp463_authority_antigravity(
                         replace(authority, control_summaries=forged_map)
                     )
+
+        forged_digests = OrderedDict(authority.control_row_digests)
+        first_key = next(iter(forged_digests))
+        forged_digests[first_key] = "f" * 64
+        with self.assertRaises(ValueError):
+            validate_exp463_authority_antigravity(
+                replace(authority, control_row_digests=forged_digests)
+            )
 
 
 if __name__ == "__main__":

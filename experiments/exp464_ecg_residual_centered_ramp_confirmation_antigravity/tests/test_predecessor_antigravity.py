@@ -84,6 +84,10 @@ class PredecessorAntigravityTest(unittest.TestCase):
         self.assertEqual(authority.result_summary_count, 7)
         self.assertEqual(authority.result_leaf_count, 7)
         self.assertEqual(
+            authority.method_fold_metrics_sha256,
+            "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6",
+        )
+        self.assertEqual(
             authority.artifact_map_sha256,
             "25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
         )
@@ -101,6 +105,12 @@ class PredecessorAntigravityTest(unittest.TestCase):
                 ("C2", 9, 0.8399225391076908, 0.9044753785020874),
                 ("C7", 3, 0.7953196519289775, 0.8960376741612595),
             ),
+        )
+        self.assertEqual(len(authority.control_row_digests), 40)
+        self.assertIn("C0:20260721:0", authority.control_row_digests)
+        self.assertIn("C7:20261721:4", authority.control_row_digests)
+        self.assertTrue(
+            all(len(digest) == 64 for digest in authority.control_row_digests.values())
         )
 
     def test_capture_rejects_consistent_forged_terminal_row_fields_antigravity(self) -> None:

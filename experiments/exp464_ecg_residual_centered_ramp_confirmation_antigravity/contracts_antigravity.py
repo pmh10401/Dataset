@@ -92,6 +92,16 @@ _EXPECTED_CONTROL_SUMMARIES_ANTIGRAVITY = MappingProxyType(
     }
 )
 _CONTROL_ORDER_ANTIGRAVITY = tuple(_EXPECTED_CONTROL_SUMMARIES_ANTIGRAVITY)
+_EXPECTED_CONTROL_ROW_DIGESTS_ANTIGRAVITY = MappingProxyType(
+    {
+        key: value
+        for key, value in FROZEN_CONFIG_ANTIGRAVITY.predecessor_control_row_digests.items()
+    }
+)
+
+
+def _expected_control_row_digest_keys_antigravity() -> tuple[str, ...]:
+    return tuple(_EXPECTED_CONTROL_ROW_DIGESTS_ANTIGRAVITY)
 
 
 def _summary_antigravity(value: object) -> Exp463MethodSummaryAntigravity:
@@ -114,6 +124,24 @@ def _frozen_control_summaries_antigravity(
     return MappingProxyType(frozen)
 
 
+def _frozen_control_row_digests_antigravity(
+    value: Mapping[str, str] | object,
+) -> MappingProxyType[str, str]:
+    expected_keys = _expected_control_row_digest_keys_antigravity()
+    if not isinstance(value, Mapping):
+        raise ValueError("control_row_digests must be a mapping")
+    if tuple(value) != expected_keys:
+        raise ValueError("control_row_digests must preserve exact method/seed/fold order")
+    frozen = {
+        key: _sha64_antigravity(value[key], f"control_row_digests[{key}]")  # type: ignore[index]
+        for key in expected_keys
+    }
+    for key, expected_value in _EXPECTED_CONTROL_ROW_DIGESTS_ANTIGRAVITY.items():
+        if frozen[key] != expected_value:
+            raise ValueError(f"control_row_digests[{key}] differs from the frozen Exp463 authority")
+    return MappingProxyType(frozen)
+
+
 @dataclass(frozen=True, slots=True)
 class Exp463AuthorityAntigravity:
     predecessor_experiment: str
@@ -126,11 +154,13 @@ class Exp463AuthorityAntigravity:
     result_failed_row_count: int
     result_summary_count: int
     result_leaf_count: int
+    method_fold_metrics_sha256: str
     artifact_map_sha256: str
     official_evaluate_count: int
     official_inspect_count: int
     label_query_count: int
     control_summaries: Mapping[str, Exp463MethodSummaryAntigravity]
+    control_row_digests: Mapping[str, str]
 
     def __post_init__(self) -> None:
         if type(self.predecessor_experiment) is not str or self.predecessor_experiment != "Exp463":
@@ -147,6 +177,7 @@ class Exp463AuthorityAntigravity:
         _int_antigravity(self.result_failed_row_count, "result_failed_row_count")
         _int_antigravity(self.result_summary_count, "result_summary_count", minimum=1)
         _int_antigravity(self.result_leaf_count, "result_leaf_count", minimum=1)
+        _sha64_antigravity(self.method_fold_metrics_sha256, "method_fold_metrics_sha256")
         _sha64_antigravity(self.artifact_map_sha256, "artifact_map_sha256")
         _int_antigravity(self.official_evaluate_count, "official_evaluate_count")
         _int_antigravity(self.official_inspect_count, "official_inspect_count")
@@ -155,6 +186,11 @@ class Exp463AuthorityAntigravity:
             self,
             "control_summaries",
             _frozen_control_summaries_antigravity(self.control_summaries),
+        )
+        object.__setattr__(
+            self,
+            "control_row_digests",
+            _frozen_control_row_digests_antigravity(self.control_row_digests),
         )
 
 
@@ -173,6 +209,7 @@ def validate_exp463_authority_antigravity(authority: Exp463AuthorityAntigravity)
         "result_failed_row_count": expected.predecessor_result_failed_row_count,
         "result_summary_count": expected.predecessor_result_summary_count,
         "result_leaf_count": expected.predecessor_result_leaf_count,
+        "method_fold_metrics_sha256": expected.predecessor_method_fold_metrics_sha256,
         "artifact_map_sha256": expected.predecessor_artifact_map_sha256,
         "official_evaluate_count": expected.official_evaluate_count_must_remain,
         "official_inspect_count": expected.official_inspect_count_must_remain,
@@ -205,6 +242,16 @@ def validate_exp463_authority_antigravity(authority: Exp463AuthorityAntigravity)
                 raise ValueError(
                     f"{method}.{field_name} differs from the frozen Exp463 authority"
                 )
+    expected_row_digests = _expected_control_row_digest_keys_antigravity()
+    if tuple(authority.control_row_digests) != expected_row_digests:
+        raise ValueError("control_row_digests order differs from the frozen Exp463 authority")
+    for key in expected_row_digests:
+        actual_value = _sha64_antigravity(
+            authority.control_row_digests[key],
+            f"control_row_digests[{key}]",
+        )
+        if actual_value != _EXPECTED_CONTROL_ROW_DIGESTS_ANTIGRAVITY[key]:
+            raise ValueError(f"control_row_digests[{key}] differs from the frozen Exp463 authority")
 
 
 __all__ = (

@@ -22,8 +22,9 @@ def _summary_payloads_antigravity(
             "fold_count": summary.fold_count,
             "passed_count": summary.passed_count,
             "failed_count": summary.failed_count,
-            "min_per_type_auc": dict(summary.min_per_type_auc),
+            "min_level_shift_auc": summary.min_per_type_auc["level_shift"],
             "min_gradual_drift_auc": summary.min_gradual_drift_auc,
+            "min_amplitude_scaling_auc": summary.min_per_type_auc["amplitude_scaling"],
             "min_period_change_auc": summary.min_period_change_auc,
             "min_mean_auc": summary.min_mean_auc,
             "max_normal_wilson_upper": summary.max_normal_wilson_upper,
@@ -49,12 +50,10 @@ def export_dashboard_antigravity(
         row for row in normalized.fold_metrics if row.method == "C6"
     )
     return {
-        "experiment": FROZEN_CONFIG_ANTIGRAVITY.experiment,
-        "dataset": FROZEN_CONFIG_ANTIGRAVITY.dataset,
-        "stage": "Task4 implemented pending fresh review / Task5 blocked until review closeout",
         "primary_candidate": FROZEN_CONFIG_ANTIGRAVITY.primary_candidate,
-        "primary_status": decision.status,
-        "method_order": list(FROZEN_CONFIG_ANTIGRAVITY.method_order),
+        "primary_passed_count": decision.primary_passed_count,
+        "primary_required_count": decision.primary_required_count,
+        "eligible_for_routing_research": decision.eligible_for_routing_research,
         "method_summaries": _summary_payloads_antigravity(normalized),
         "failed_fold_count": sum(not row.passed for row in normalized.fold_metrics),
         "historical_period_floors": [
@@ -70,7 +69,7 @@ def export_dashboard_antigravity(
             }
             for item in FROZEN_CONFIG_ANTIGRAVITY.historical_period_fold_thresholds
         ],
-        "non_degradation": {
+        "non_degradation_counts": {
             "gradual_rows_not_below_c0": sum(
                 row.per_type_auc["gradual_drift"]
                 >= next(
@@ -94,14 +93,7 @@ def export_dashboard_antigravity(
                 for row in primary_rows
             ),
         },
-        "decision": {
-            "eligible_for_routing_research": decision.eligible_for_routing_research,
-            "status": decision.status,
-            "failure_reasons": list(decision.failure_reasons),
-            "routing_applied": decision.routing_applied,
-        },
         "label_query_count": FROZEN_CONFIG_ANTIGRAVITY.label_query_count_must_remain,
-        "result_scope": "aggregate_train_fold_qualification_only_no_labels_or_paths",
     }
 
 

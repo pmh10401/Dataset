@@ -261,11 +261,22 @@ class ScoringAntigravityTest(unittest.TestCase):
         self.assertEqual(result.methods, METHOD_ORDER_ANTIGRAVITY)
         self.assertEqual(tuple(result.original), METHOD_ORDER_ANTIGRAVITY)
         self.assertEqual(tuple(result.primary), METHOD_ORDER_ANTIGRAVITY)
+        self.assertEqual(tuple(result.fit_amplitudes), METHOD_ORDER_ANTIGRAVITY)
+        self.assertEqual(tuple(result.query_amplitudes), METHOD_ORDER_ANTIGRAVITY)
+        self.assertEqual(tuple(result.query_cosines), METHOD_ORDER_ANTIGRAVITY)
         self.assertEqual(tuple(result.provenance), METHOD_ORDER_ANTIGRAVITY)
         np.testing.assert_array_equal(result.original["C0"], np.asarray([0.20, 0.80, 0.40], dtype=np.float64))
         np.testing.assert_array_equal(result.original["C1"], np.asarray([0.31, 0.32, 0.33], dtype=np.float64))
         np.testing.assert_array_equal(result.original["C2"], np.asarray([0.41, 0.42, 0.43], dtype=np.float64))
         np.testing.assert_array_equal(result.original["C7"], np.asarray([0.51, 0.52, 0.53], dtype=np.float64))
+        self.assertEqual(tuple(result.query_amplitudes["C0"]), ())
+        self.assertEqual(tuple(result.query_cosines["C0"]), ())
+        self.assertEqual(tuple(result.query_amplitudes["C1"]), ())
+        self.assertEqual(tuple(result.query_cosines["C1"]), ())
+        self.assertEqual(tuple(result.query_amplitudes["C2"]), ())
+        self.assertEqual(tuple(result.query_cosines["C2"]), ())
+        self.assertEqual(tuple(result.query_amplitudes["C7"]), ())
+        self.assertEqual(tuple(result.query_cosines["C7"]), ())
         for method, base in (
             ("C0", np.asarray([0.20, 0.80, 0.40], dtype=np.float64)),
             ("C1", np.asarray([0.31, 0.32, 0.33], dtype=np.float64)),
@@ -289,6 +300,24 @@ class ScoringAntigravityTest(unittest.TestCase):
         }
         for method, expected in expected_provenance.items():
             self.assertEqual(result.provenance[method], expected)
+        self.assertEqual(
+            tuple(result.query_amplitudes["C6"]),
+            CONFIRMATION_ORDER_ANTIGRAVITY,
+        )
+        self.assertEqual(
+            tuple(result.query_cosines["C6"]),
+            CONFIRMATION_ORDER_ANTIGRAVITY,
+        )
+        for method in ("C3", "C4", "C5", "C6", "C8"):
+            self.assertEqual(tuple(result.query_amplitudes[method]), CONFIRMATION_ORDER_ANTIGRAVITY)
+            self.assertEqual(tuple(result.query_cosines[method]), CONFIRMATION_ORDER_ANTIGRAVITY)
+            self.assertFalse(result.fit_amplitudes[method].flags.writeable)
+            self.assertTrue(result.fit_amplitudes[method].flags.owndata)
+            for change_type in CONFIRMATION_ORDER_ANTIGRAVITY:
+                self.assertFalse(result.query_amplitudes[method][change_type].flags.writeable)
+                self.assertTrue(result.query_amplitudes[method][change_type].flags.owndata)
+                self.assertFalse(result.query_cosines[method][change_type].flags.writeable)
+                self.assertTrue(result.query_cosines[method][change_type].flags.owndata)
         np.testing.assert_array_equal(train, original_train)
         np.testing.assert_array_equal(fit_indices, original_fit)
         np.testing.assert_array_equal(query_indices, original_query)
@@ -526,11 +555,13 @@ class ScoringAntigravityTest(unittest.TestCase):
             result_failed_row_count=authority.result_failed_row_count,
             result_summary_count=authority.result_summary_count,
             result_leaf_count=authority.result_leaf_count,
+            method_fold_metrics_sha256=authority.method_fold_metrics_sha256,
             artifact_map_sha256=authority.artifact_map_sha256,
             official_evaluate_count=authority.official_evaluate_count,
             official_inspect_count=authority.official_inspect_count,
             label_query_count=authority.label_query_count,
             control_summaries=authority.control_summaries,
+            control_row_digests=authority.control_row_digests,
         )
         with self.assertRaises(ValueError):
             _score_fold_methods_with_dependency_antigravity(

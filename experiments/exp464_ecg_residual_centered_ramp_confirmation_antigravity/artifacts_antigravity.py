@@ -90,6 +90,15 @@ def _row_payload_antigravity(row: Exp464MethodFoldMetricAntigravity) -> dict[str
         "failure_reasons": list(row.failure_reasons),
         "feature_dimension": row.feature_dimension,
         "provenance": row.provenance,
+        "fit_amplitudes": list(row.fit_amplitudes),
+        "query_amplitudes": {
+            scope: list(row.query_amplitudes[scope])
+            for scope in row.query_amplitudes
+        },
+        "query_cosines": {
+            scope: list(row.query_cosines[scope])
+            for scope in row.query_cosines
+        },
     }
 
 
