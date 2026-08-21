@@ -55,10 +55,10 @@ _METHOD_DEFINITIONS_ANTIGRAVITY = MappingProxyType(
         "M0": "Exp461 reviewed hydra_period_rank_max score",
         "M1": "prefix median/MAD normalized one-dimensional ramp from onset 56",
         "M2": "same M1 ramp; if rramp >= 0.995, max(r461, rramp); otherwise exactly r461 (M0/Exp461 semantics)",
-        "M3": "same M1 ramp",
-        "M4": "TRAIN-fit per-time median template residual ramp",
-        "M5": "whole-series median/MAD normalized ramp",
-        "M6": "Exp462 24D signature + LocalGap replay control",
+        "M3": "same M1 ramp; always max(r461, rramp) against M0",
+        "M4": "TRAIN-fit per-time median template residual ramp; 0.995-gated max against M0",
+        "M5": "whole-series median/MAD normalized ramp; 0.995-gated max against M0",
+        "M6": "Exp462 24D signature + LocalGap replay control; always max against M0",
     }
 )
 

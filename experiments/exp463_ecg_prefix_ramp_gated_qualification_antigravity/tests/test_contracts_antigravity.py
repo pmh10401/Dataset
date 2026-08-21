@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, fields, replace
-from types import MappingProxyType
+from types import MappingProxyType, SimpleNamespace
 import unittest
 
 
@@ -100,6 +100,34 @@ class ContractsAntigravityTest(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             replace(snapshot, summaries=snapshot.summaries[:-1] + (forged_primary,))
+
+    def test_exp462_rejects_mutable_simple_namespace_summary_before_mutation_antigravity(self) -> None:
+        """Break caught: mutable lookalikes must not survive snapshot validation or later mutation."""
+        from experiments.exp463_ecg_prefix_ramp_gated_qualification_antigravity.predecessor_antigravity import (
+            capture_exp462_authority_antigravity,
+        )
+
+        snapshot = capture_exp462_authority_antigravity().result_snapshot
+        summary_fields = (
+            "method", "fold_count", "passed_count", "failed_count",
+            "min_gradual_drift_auc", "min_period_change_auc", "min_pooled_auc",
+            "max_normal_wilson_upper", "all_scores_finite", "passed",
+        )
+        mutable_summaries = tuple(
+            SimpleNamespace(**{field: getattr(summary, field) for field in summary_fields})
+            for summary in snapshot.summaries
+        )
+        try:
+            forged_snapshot = replace(snapshot, summaries=mutable_summaries)
+        except ValueError:
+            return
+
+        mutable_summaries[-1].passed_count = 9
+        self.assertEqual(
+            forged_snapshot.summaries[-1].passed_count,
+            3,
+            "a mutable summary changed after validation",
+        )
 
 
 if __name__ == "__main__":

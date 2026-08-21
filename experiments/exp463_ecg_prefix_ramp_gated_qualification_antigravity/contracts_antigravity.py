@@ -210,10 +210,14 @@ class Exp462ResultSnapshotAntigravity:
         )
         if self.rows != expected_rows:
             raise ValueError("Exp462 row order differs from method/seed/fold order")
-        if type(self.summaries) is not tuple or tuple(row.method for row in self.summaries) != _EXP462_METHODS_ANTIGRAVITY:
-            raise ValueError("summaries must preserve Exp462 method order")
+        if type(self.summaries) is not tuple:
+            raise ValueError("summaries must be a tuple")
         if len(self.summaries) != self.summary_count:
             raise ValueError("summary count mismatch")
+        if any(type(summary) is not Exp462MethodSummaryAntigravity for summary in self.summaries):
+            raise ValueError("summaries must contain exact Exp462MethodSummaryAntigravity values")
+        if tuple(summary.method for summary in self.summaries) != _EXP462_METHODS_ANTIGRAVITY:
+            raise ValueError("summaries must preserve Exp462 method order")
         expected_summary_signatures = tuple(
             tuple(_scalar_signature_antigravity(value) for value in expected)
             for expected in FROZEN_CONFIG_ANTIGRAVITY.predecessor_result_method_summaries
