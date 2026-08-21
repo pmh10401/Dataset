@@ -16,9 +16,13 @@ from experiments.exp459_ecg_normal2_blocked_validation_antigravity.contracts_ant
     wilson_upper_antigravity,
 )
 
-from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+from .config_antigravity import (
+    FROZEN_CONFIG_ANTIGRAVITY,
+    HistoricalPeriodThresholdAntigravity,
+)
 from .contracts_antigravity import (
     Exp462AuthorityAntigravity,
+    Exp463HistoricalPeriodFoldAntigravity,
     Exp463MethodFoldMetricAntigravity,
     Exp463MethodSummaryAntigravity,
     Exp463QualificationContractAntigravity,
@@ -32,6 +36,25 @@ if TYPE_CHECKING:
 _METHODS_ANTIGRAVITY = FROZEN_CONFIG_ANTIGRAVITY.method_order
 _CHANGE_TYPES_ANTIGRAVITY = FROZEN_CONFIG_ANTIGRAVITY.change_order
 _CONTROL_METHODS_ANTIGRAVITY = {"M0": 0, "M6": 2}
+
+
+def _m2_historical_period_thresholds_antigravity() -> tuple[HistoricalPeriodThresholdAntigravity, ...]:
+    """Return the exact Exp463/M2 historical thresholds.
+
+    These thresholds belong to the Exp463 qualification contract.  They are
+    intentionally separate from the Exp462 predecessor thresholds used by
+    the M6 reproduction control below.
+    """
+
+    return FROZEN_CONFIG_ANTIGRAVITY.historical_period_fold_thresholds
+
+
+def _m6_historical_period_thresholds_antigravity(
+    authority: Exp462AuthorityAntigravity,
+) -> tuple[Exp463HistoricalPeriodFoldAntigravity, ...]:
+    """Return the predecessor thresholds reserved for the Exp462/M6 control."""
+
+    return authority.historical_period_folds
 
 
 def _empirical_pvalues_antigravity(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
@@ -177,7 +200,12 @@ def recompute_row_pass_antigravity(
                 if row.method == "M2"
                 else "m6_period_change_auc_below_global_min"
             )
-        for historical in authority.historical_period_folds:
+        historical_thresholds = (
+            _m2_historical_period_thresholds_antigravity()
+            if row.method == "M2"
+            else _m6_historical_period_thresholds_antigravity(authority)
+        )
+        for historical in historical_thresholds:
             if row.seed == historical.seed and row.fold_index == historical.fold_index:
                 if row.per_type_auc["period_change"] < historical.period_change_auc:
                     reasons.append(

@@ -329,8 +329,8 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
         _node_antigravity(
             "task4_replay_tests",
             "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_replay_antigravity.py",
-            "Caller: Task 4 replay regression. Effect: covers source-free semantic equality and rehashed score/metric/summary/decision/dashboard/inventory tamper rejection.",
-            symbol="test_replay_rejects_rehashed_score_metric_summary_decision_dashboard_and_inventory_tamper_antigravity",
+            "Caller: Task 4 replay regression. Effect: covers source-free semantic equality and canonical-rehashed score-evidence, numeric-metric, summary, decision, dashboard, failed-fold, missing/extra-leaf, reordered-row, bool, and string-bool tamper rejection.",
+            symbol="test_replay_rejects_rehashed_tamper_matrix_antigravity",
             tests=("experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_replay_antigravity.py",),
         ),
         _node_antigravity(
@@ -530,7 +530,7 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
             "type": "tests",
             "evidence": {
                 "path": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_replay_antigravity.py",
-                "symbol": "test_replay_rejects_rehashed_score_metric_summary_decision_dashboard_and_inventory_tamper_antigravity",
+                "symbol": "test_replay_rejects_rehashed_tamper_matrix_antigravity",
             },
         },
         {

@@ -11,6 +11,7 @@ from .contracts_antigravity import (
     validate_exp462_authority_antigravity,
 )
 from .qualification_antigravity import (
+    _m2_historical_period_thresholds_antigravity,
     normalize_qualification_antigravity,
     recompute_row_pass_antigravity,
     validate_control_reproduction_antigravity,
@@ -87,7 +88,9 @@ def evaluate_qualification_antigravity(
         reasons.append("primary_normal_wilson_upper_above_max")
     if not primary_summary.all_scores_finite:
         reasons.append("primary_scores_not_finite")
-    for historical in trusted_authority.historical_period_folds:
+    # M2 uses the exact Exp463 thresholds.  Exp462 predecessor thresholds are
+    # reserved for the M6 control inside recompute_row_pass_antigravity.
+    for historical in _m2_historical_period_thresholds_antigravity():
         row = next(
             (
                 candidate
