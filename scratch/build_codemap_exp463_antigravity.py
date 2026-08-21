@@ -32,6 +32,11 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity/tests/test_governance_antigravity.py",
     "scratch/build_codemap_exp463_antigravity.py",
 )
+STABLE_FINGERPRINT_EXCLUDED_PREFIXES_ANTIGRAVITY = (
+    ".superpowers",
+    ".codex",
+    ".worktrees",
+)
 
 
 def _sha256_bytes_antigravity(data: bytes) -> str:
@@ -291,25 +296,51 @@ def _build_graph_antigravity(source_parent_commit: str | None = None) -> dict[st
     }
 
 
+def _git_tracked_paths_antigravity() -> tuple[Path, ...]:
+    output = subprocess.check_output(
+        ["git", "ls-files", "-z", "--cached"],
+        cwd=ROOT_ANTIGRAVITY,
+    )
+    return tuple(
+        Path(item)
+        for item in output.decode("utf-8").split("\0")
+        if item
+    )
+
+
+def _is_stable_fingerprint_path_antigravity(path: Path) -> bool:
+    normalized = path.as_posix()
+    if any(
+        normalized == prefix or normalized.startswith(f"{prefix}/")
+        for prefix in STABLE_FINGERPRINT_EXCLUDED_PREFIXES_ANTIGRAVITY
+    ):
+        return False
+    if normalized in TRIPLET_ANTIGRAVITY:
+        return False
+    return True
+
+
 def _iter_tree_files_antigravity(relative_root: str) -> list[Path]:
     root = ROOT_ANTIGRAVITY / relative_root
     if root.is_file():
-        return [root]
+        relative = root.relative_to(ROOT_ANTIGRAVITY)
+        return [root] if _is_stable_fingerprint_path_antigravity(relative) else []
     if not root.exists():
         return []
-    paths: list[Path] = []
-    for path in sorted(root.rglob("*")):
-        if not path.is_file():
+    root_prefix = Path(relative_root).as_posix()
+    tracked_paths = []
+    for relative in _git_tracked_paths_antigravity():
+        if not _is_stable_fingerprint_path_antigravity(relative):
             continue
-        if any(part in {".git", "__pycache__"} for part in path.parts):
+        if root_prefix not in {"", "."} and not (
+            relative.as_posix() == root_prefix
+            or relative.as_posix().startswith(f"{root_prefix}/")
+        ):
             continue
-        if path.name in {
-            *(Path(item).name for item in TRIPLET_ANTIGRAVITY),
-            "task-1-report.html",
-        }:
-            continue
-        paths.append(path)
-    return paths
+        path = ROOT_ANTIGRAVITY / relative
+        if path.is_file():
+            tracked_paths.append(path)
+    return sorted(tracked_paths)
 
 
 def _fingerprint_tree_antigravity(relative_root: str) -> str:

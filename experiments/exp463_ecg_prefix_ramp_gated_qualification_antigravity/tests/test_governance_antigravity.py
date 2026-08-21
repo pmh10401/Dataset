@@ -466,6 +466,40 @@ class GovernanceAntigravityTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             builder.validate_map_antigravity(graph, stale_module, rendered)
 
+    def test_review_scratch_is_stable_but_tracked_source_drifts_antigravity(self) -> None:
+        """Break caught: ignored review scratch is non-scientific, tracked source is not."""
+        builder = map_builder_antigravity()
+        graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
+        lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
+        rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(
+            encoding="utf-8"
+        )
+        self.assertIsInstance(graph, dict)
+        self.assertIsInstance(lock, dict)
+        assert isinstance(graph, dict) and isinstance(lock, dict)
+        builder.validate_map_antigravity(graph, lock, rendered)
+
+        review_artifact = (
+            ROOT_ANTIGRAVITY
+            / ".superpowers/sdd/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html/"
+            "fingerprint-regression-antigravity.html"
+        )
+        tracked_source = ROOT_ANTIGRAVITY / "RESEARCH_STATE.json"
+        original_source = tracked_source.read_bytes()
+        try:
+            review_artifact.write_text("review scratch v1\n", encoding="utf-8")
+            builder.validate_map_antigravity(graph, lock, rendered)
+            review_artifact.write_text("review scratch v2\n", encoding="utf-8")
+            builder.validate_map_antigravity(graph, lock, rendered)
+
+            tracked_source.write_bytes(original_source + b"\n")
+            with self.assertRaises(AssertionError):
+                builder.validate_map_antigravity(graph, lock, rendered)
+        finally:
+            tracked_source.write_bytes(original_source)
+            if review_artifact.exists():
+                review_artifact.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()
