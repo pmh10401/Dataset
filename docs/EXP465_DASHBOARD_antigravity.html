@@ -10,12 +10,12 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp465 진행 대시보드</h1>
-<div class="box"><strong>현재 상태:</strong> 설계 승인 및 HTML 작성 완료. 구현 계획 검토 전.</div>
+<div class="box"><strong>현재 상태:</strong> 설계 승인과 구현 계획 작성 완료. 구현 계획 검토 전.</div>
 <table>
 <tr><th>목표</th><td>ECG200 정상 TRAIN에서 Exp464 C8의 외부 재현성 확인</td></tr>
 <tr><th>자료</th><td>ECG200 TRAIN 100×96 중 정상 +1 라벨 69개</td></tr>
 <tr><th>주 후보</th><td>C8 exact</td></tr>
-<tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, Wilson ≤0.05, C0 gradual·period 비열화 0건</td></tr>
+<tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, finite, C0 gradual·period 비열화 0건, 각 seed 정상 69개 confirmation 0건</td></tr>
 <tr><th>현재 공식 성능</th><td>변경 없음: 전체 F1 0.624185, recall 0.488770, FN 2,003</td></tr>
 </table>
 
@@ -24,7 +24,8 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li><label><input type="checkbox" checked disabled> 외부 자료 선택</label></li>
 <li><label><input type="checkbox" checked disabled> 방법과 합격 기준 승인</label></li>
 <li><label><input type="checkbox" checked disabled> HTML 설계서 작성</label></li>
-<li><label><input type="checkbox" disabled> 구현 계획 작성 및 승인</label></li>
+<li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
+<li><label><input type="checkbox" disabled> 구현 계획 승인</label></li>
 <li><label><input type="checkbox" disabled> 구현</label></li>
 <li><label><input type="checkbox" disabled> private 실행 1</label></li>
 <li><label><input type="checkbox" disabled> private 실행 2 및 재현성 확인</label></li>

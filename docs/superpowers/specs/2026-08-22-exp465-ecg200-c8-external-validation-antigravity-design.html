@@ -28,7 +28,7 @@ input[type=checkbox]{width:1.05rem;height:1.05rem;vertical-align:-.15rem}
 <tr><th>run identity</th><td><code>exp465-ecg200-c8-external-validation-antigravity-20260822</code></td></tr>
 <tr><th>전임 결과</th><td>Exp464 final commit <code>1fdc8422996fe7e85325987f7543e00db79e22d9</code></td></tr>
 <tr><th>자료</th><td>ECG200 TRAIN <code>100×96</code> 중 정상 라벨 <code>+1</code>인 69개</td></tr>
-<tr><th>검증 단위</th><td>고정 seed <code>20260721</code>, <code>20261721</code> × 고정 5-fold = 10개 기록</td></tr>
+<tr><th>검증 단위</th><td>고정 seed <code>20260721</code>, <code>20261721</code> × 고정 5-fold = 10개 안정성 기록. 같은 정상 69개를 두 seed에서 반복하므로 독립 표본 690개로 해석하지 않는다.</td></tr>
 <tr><th>주 후보</th><td>Exp464 C8 exact</td></tr>
 <tr><th>현재 상태</th><td><code>design_approved_written_awaiting_document_review</code></td></tr>
 </table>
@@ -79,9 +79,11 @@ else:
 <tr><td>C6</td><td>Exp464 C6 exact</td><td>중심화 묶음과의 차이를 설명하는 진단 대조군</td></tr>
 </tbody></table>
 <p>C6가 좋아 보여도 C8을 대신할 수 없다. C8이 실패하면 Exp465는 실패다.</p>
+<p><strong>exact 경계:</strong> Exp465는 C0·C6·C8을 새로 다시 쓰지 않고 Exp464의 <code>score_fold_methods_antigravity</code>를 직접 호출한 뒤 세 방법만 고정 순서로 선택한다. 임의의 140점 golden fixture에서 Exp465의 세 score 배열, confirmation, evidence와 provenance가 Exp464 출력과 정확히 같아야 한다.</p>
 
 <h2>7. 합성 변화와 평가</h2>
-<p>level shift, gradual drift, amplitude change, period change의 네 합성 변화를 Exp464와 같은 식·크기·난수 순서로 만든다. 각 seed-fold에서 정상과 네 변화의 AUC, 네 AUC 평균, 정상 Wilson 상한과 finite 여부를 기록한다.</p>
+<p>level shift, gradual drift, amplitude change, period change의 네 합성 변화를 Exp464와 같은 식·크기·난수 순서로 만든다. 각 seed-fold에서 정상과 네 변화의 AUC, 네 AUC 평균과 finite 여부를 기록한다. 정상 confirmation은 seed별 5개 out-of-fold 결과를 합쳐 정확히 69개로 계산한다.</p>
+<p>정상 69개에서 confirmation이 0개여도 95% Wilson 상한은 <code>0.05273725818905172</code>라 <code>0.05</code>를 만족할 수 없다. 따라서 Wilson은 설명값으로 기록하고, 합격 기준은 각 seed에서 정상 confirmation이 정확히 0개인 것으로 고정한다.</p>
 <p>추가 설명값으로 C0 대비 C8이 바로잡은 normal×gradual 및 normal×period 순서쌍 수와 새로 망친 순서쌍 수를 기록한다. 동점은 양쪽에서 제외한다. 이 수치는 설명용이며 합격선을 새로 고르는 데 사용하지 않는다.</p>
 
 <h2>8. C8 합격 조건</h2>
@@ -90,10 +92,10 @@ else:
 <li>10개 seed-fold 기록 모두 통과</li>
 <li>각 기록의 네 변화 유형 AUC가 각각 <code>0.85 이상</code></li>
 <li>각 기록의 네 AUC 평균이 <code>0.90 이상</code></li>
-<li>각 기록의 정상 Wilson 상한이 <code>0.05 이하</code></li>
 <li>모든 입력과 점수가 유한값</li>
 <li>각 기록의 gradual AUC가 같은 기록의 C0보다 낮지 않음</li>
 <li>각 기록의 period AUC가 같은 기록의 C0보다 낮지 않음</li>
+<li>각 seed의 다섯 out-of-fold 정상 결과 69개에서 C8 confirmation이 정확히 0개</li>
 </ul>
 <p><code>0.85</code>가 모든 문제의 절대 정답이라는 주장은 하지 않는다. Exp464와 같은 난이도로 외부 재현성을 비교하기 위해 이번 실험 전에 고정한 값이다.</p>
 
@@ -123,6 +125,7 @@ else:
 <li>Exp465 안에서 실제 라우팅·FN·FP·F1 평가</li>
 <li>Exp464를 사후 성공으로 다시 기록</li>
 </ul>
+<p class="box note"><strong>FN 해석 제한:</strong> Exp465는 실제 심근경색 <code>-1</code> 행을 평가하지 않는다. 정상 69개와 합성 변화의 점수 자격만 검증하므로 실제 FN 감소 근거는 후속 라우팅 실험에서 따로 만들어야 한다.</p>
 
 <h2>12. 설계 단계 체크리스트</h2>
 <ul>
@@ -133,7 +136,7 @@ else:
 <li><label><input type="checkbox" checked disabled> AUC 0.85 및 보수적 C0 비교 기준 승인</label></li>
 <li><label><input type="checkbox" checked disabled> 설계 승인</label></li>
 <li><label><input type="checkbox" checked disabled> HTML 설계서 작성</label></li>
-<li><label><input type="checkbox" disabled> 구현 계획 작성</label></li>
+<li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
 <li><label><input type="checkbox" disabled> 구현 및 private 검증</label></li>
 <li><label><input type="checkbox" disabled> 공식 실행 승인과 실행</label></li>
 </ul>
