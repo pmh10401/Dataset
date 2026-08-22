@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 ECG200 C8 외부 검증 설계</title>
+<style>
+body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa}
+.good{border-left:6px solid #16794b}.stop{border-left:6px solid #b42318}.note{border-left:6px solid #2457a6}h1,h2{line-height:1.3}
+input[type=checkbox]{width:1.05rem;height:1.05rem;vertical-align:-.15rem}
+</style>
+</head>
+<body><main>
+<h1>Exp465 — ECG200에서 C8을 그대로 외부 검증</h1>
+<p><strong>한 줄 목표:</strong> ECG5000에서 가능성을 보인 C8이 다른 ECG 자료에서도 같은 엄격한 기준을 통과하는지 확인한다.</p>
+
+<h2>1. 왜 이 실험을 하는가?</h2>
+<p>현재 공식 전체 모델은 정밀도 86.34%이지만 재현율이 48.88%라 실제 이상 3,918개 중 2,003개를 놓친다. 따라서 핵심 문제는 잔여 FN이다.</p>
+<p>Exp464의 주 후보 C6은 10개 기록 중 9개만 통과했다. 반면 C8은 기본 검사에서 10/10이라는 단서를 보였다. 그러나 C8에는 C6과 같은 전체 비교 기준이 적용되지 않았으므로 아직 더 좋은 방법이라고 결론낼 수 없다.</p>
+<div class="box note"><p>Exp465는 C8을 뒤늦게 Exp464의 승자로 바꾸는 실험이 아니다. 새로운 외부 자료와 새로운 사전등록 기준으로 C8을 처음부터 주 후보로 검증한다.</p></div>
+
+<h2>2. 실험 범위</h2>
+<table>
+<tr><th>experiment</th><td><code>Exp465</code></td></tr>
+<tr><th>kind</th><td><code>ecg200_c8_external_train_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp465-ecg200-c8-external-validation-antigravity-20260822</code></td></tr>
+<tr><th>전임 결과</th><td>Exp464 final commit <code>1fdc8422996fe7e85325987f7543e00db79e22d9</code></td></tr>
+<tr><th>자료</th><td>ECG200 TRAIN <code>100×96</code> 중 정상 라벨 <code>+1</code>인 69개</td></tr>
+<tr><th>검증 단위</th><td>고정 seed <code>20260721</code>, <code>20261721</code> × 고정 5-fold = 10개 기록</td></tr>
+<tr><th>주 후보</th><td>Exp464 C8 exact</td></tr>
+<tr><th>현재 상태</th><td><code>design_approved_written_awaiting_document_review</code></td></tr>
+</table>
+<p>이 실험은 TRAIN-only 방법 자격 검증이다. 실제 FN·FP·F1, 라우팅, champion, pending candidate와 promotion은 바꾸지 않는다.</p>
+
+<h2>3. 자료 계약</h2>
+<ul>
+<li>공식 <a href="https://zenodo.org/records/11186675">ECG200 보관본</a>의 <code>ECG200_TRAIN.ts</code>만 사용한다. 공개된 MD5는 <code>808875aeac1c358a90c630fe369327c4</code>다.</li>
+<li>TRAIN 전체가 정확히 <code>100×96</code>, 정상 <code>+1</code> 69개, 심근경색 <code>-1</code> 31개인지 먼저 확인한다.</li>
+<li>방법 검증에는 정상 <code>+1</code> 69개만 사용한다.</li>
+<li><code>ECG200_TEST.ts</code>는 다운로드·열기·조회하지 않는다.</li>
+<li>크기, 라벨 수, 길이, finite 조건 중 하나라도 다르면 계산 전에 중단한다.</li>
+</ul>
+
+<h2>4. 길이 96을 140으로 바꾸는 고정 규칙</h2>
+<p>각 정상 행을 <code>np.interp</code>의 선형 보간으로 한 번만 <code>96→140</code> 변환한다. 원본의 첫 점과 마지막 점은 그대로 보존한다.</p>
+<pre><code>source = np.linspace(0.0, 1.0, 96, dtype=np.float64)
+target = np.linspace(0.0, 1.0, 140, dtype=np.float64)
+x140 = np.interp(target, source, x96)</code></pre>
+<p>보간을 마친 140점 정상 자료에 Exp464와 같은 합성 변화를 주입한다. 그 뒤 onset <code>56</code>, suffix 길이 <code>84</code>, 모든 점수식을 그대로 사용한다.</p>
+<div class="box stop"><p>원래 길이 96에서 onset 38·39를 비교하거나 다른 보간법을 시험하지 않는다. 그렇게 하면 C8 외부 검증이 아니라 새 방법 탐색이 된다.</p></div>
+
+<h2>5. 유일한 주 후보 C8</h2>
+<p>각 fold의 비주입 fit 정상 행에서 median template를 만든다.</p>
+<pre><code>template = median(X_fit, axis=0)
+e = x - template
+u = e[56:140]
+t = linspace(0, 1, 84)
+q0 = t / ||t||₂
+a0 = dot(u, q0)
+c0 = 0 if ||u||₂ == 0 else a0 / ||u||₂
+r0 = (1 + count(a0_fit &lt;= a0)) / (n_fit + 1)
+
+if c0 &gt;= 0.95:
+    result = max(C0_rank, r0)
+else:
+    result = C0_rank</code></pre>
+<ul>
+<li>template, <code>a0_fit</code>과 rank 기준은 해당 fold의 fit 정상 행에서만 만든다.</li>
+<li>query 원본과 각 합성 변형은 서로 독립적으로 cosine gate를 계산한다.</li>
+<li>onset <code>56</code>, cosine <code>0.95</code>, rank 식과 <code>max</code> 결합을 바꾸지 않는다.</li>
+</ul>
+
+<h2>6. 비교 방법</h2>
+<table><thead><tr><th>ID</th><th>방법</th><th>역할</th></tr></thead><tbody>
+<tr><td>C0</td><td>Exp464 C0 exact</td><td>기존 기준선</td></tr>
+<tr><td>C8</td><td>Exp464 C8 exact</td><td><strong>유일한 주 후보</strong></td></tr>
+<tr><td>C6</td><td>Exp464 C6 exact</td><td>중심화 묶음과의 차이를 설명하는 진단 대조군</td></tr>
+</tbody></table>
+<p>C6가 좋아 보여도 C8을 대신할 수 없다. C8이 실패하면 Exp465는 실패다.</p>
+
+<h2>7. 합성 변화와 평가</h2>
+<p>level shift, gradual drift, amplitude change, period change의 네 합성 변화를 Exp464와 같은 식·크기·난수 순서로 만든다. 각 seed-fold에서 정상과 네 변화의 AUC, 네 AUC 평균, 정상 Wilson 상한과 finite 여부를 기록한다.</p>
+<p>추가 설명값으로 C0 대비 C8이 바로잡은 normal×gradual 및 normal×period 순서쌍 수와 새로 망친 순서쌍 수를 기록한다. 동점은 양쪽에서 제외한다. 이 수치는 설명용이며 합격선을 새로 고르는 데 사용하지 않는다.</p>
+
+<h2>8. C8 합격 조건</h2>
+<p>C8은 다음 조건을 모두 만족해야 한다.</p>
+<ul>
+<li>10개 seed-fold 기록 모두 통과</li>
+<li>각 기록의 네 변화 유형 AUC가 각각 <code>0.85 이상</code></li>
+<li>각 기록의 네 AUC 평균이 <code>0.90 이상</code></li>
+<li>각 기록의 정상 Wilson 상한이 <code>0.05 이하</code></li>
+<li>모든 입력과 점수가 유한값</li>
+<li>각 기록의 gradual AUC가 같은 기록의 C0보다 낮지 않음</li>
+<li>각 기록의 period AUC가 같은 기록의 C0보다 낮지 않음</li>
+</ul>
+<p><code>0.85</code>가 모든 문제의 절대 정답이라는 주장은 하지 않는다. Exp464와 같은 난이도로 외부 재현성을 비교하기 위해 이번 실험 전에 고정한 값이다.</p>
+
+<h2>9. 결과 해석</h2>
+<table><thead><tr><th>결과</th><th>판단</th></tr></thead><tbody>
+<tr><td>C8 10/10 및 전체 조건 통과</td><td>다른 ECG에서도 방법 단서가 재현됨. 별도 라우팅 실험 설계 가능</td></tr>
+<tr><td>C8가 9/10 이하</td><td>외부 재현 실패. 공식 실행과 라우팅 연구로 이동하지 않음</td></tr>
+<tr><td>C8은 통과하지만 C0보다 gradual 또는 period가 낮음</td><td>보수적 개선 실패</td></tr>
+<tr><td>C6만 통과</td><td>진단 단서로만 보존. C8을 C6로 교체하지 않음</td></tr>
+</tbody></table>
+<div class="box note"><p>C8이 통과해도 실제 전체 파이프라인 FN 2,003개가 줄었다는 뜻은 아니다. 다음 실험에서 라우팅과 실제 FN·FP를 별도로 평가해야 한다.</p></div>
+
+<h2>10. 실행과 재현성</h2>
+<ul>
+<li>구현 후 서로 다른 private TRAIN root에서 evaluate→inspect를 정확히 두 번 순차 실행한다.</li>
+<li>두 실행의 행, 요약, 결정, 대시보드와 모든 결과 파일 byte/hash가 같아야 한다.</li>
+<li>private 자격 검증과 독립 검토가 통과한 뒤에만 별도 승인으로 공식 실행한다.</li>
+<li>새 score-source이므로 전체 실행 전에 MLX 가능성을 확인한다. 같은 입력·seed에서 후보 순서가 같고 수치 허용 범위를 만족하며 1.1배 이상 빠를 때만 MLX를 사용한다. 아니면 CPU를 유지한다.</li>
+<li>진행 상황과 결과는 쉬운 한국어 HTML 대시보드에 즉시 반영하고 완료된 단계의 체크박스를 체크한다.</li>
+</ul>
+
+<h2>11. 금지 사항</h2>
+<ul>
+<li>ECG200 TEST 파일 또는 TEST 라벨 접근</li>
+<li>실패 후 onset, cosine, 보간법, seed, fold 또는 AUC 기준 변경</li>
+<li>C6 또는 새 변형의 사후 승격</li>
+<li>Exp465 안에서 실제 라우팅·FN·FP·F1 평가</li>
+<li>Exp464를 사후 성공으로 다시 기록</li>
+</ul>
+
+<h2>12. 설계 단계 체크리스트</h2>
+<ul>
+<li><label><input type="checkbox" checked disabled> 전체 파이프라인 병목을 FN으로 확인</label></li>
+<li><label><input type="checkbox" checked disabled> 외부 자료를 ECG200으로 선택</label></li>
+<li><label><input type="checkbox" checked disabled> C8 exact를 유일한 주 후보로 선택</label></li>
+<li><label><input type="checkbox" checked disabled> 96→140 선형 보간과 onset 56 고정</label></li>
+<li><label><input type="checkbox" checked disabled> AUC 0.85 및 보수적 C0 비교 기준 승인</label></li>
+<li><label><input type="checkbox" checked disabled> 설계 승인</label></li>
+<li><label><input type="checkbox" checked disabled> HTML 설계서 작성</label></li>
+<li><label><input type="checkbox" disabled> 구현 계획 작성</label></li>
+<li><label><input type="checkbox" disabled> 구현 및 private 검증</label></li>
+<li><label><input type="checkbox" disabled> 공식 실행 승인과 실행</label></li>
+</ul>
+</main></body>
+</html>
