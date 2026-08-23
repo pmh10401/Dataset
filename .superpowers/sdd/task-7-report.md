@@ -1,159 +1,100 @@
-# Task 7 Report: Pipeline, Queue, And Dashboard Integration
+# Task 7 Report: Exp451 Code Map and Full Verification
 
-## Source And Scope
+## Source and scope
 
-- Required starting code SHA: `c01ae5cd` (`docs(exp264): record report preflight validation`).
-- Task 7 files:
-  - `experiments/exp263_264_full_missing_aware_integration/run_pipeline.py`
-  - `experiments/exp263_264_full_missing_aware_integration/tests/test_run_pipeline.py`
-  - `scratch/run_exp263_264_full_missing_aware_integration.py`
-  - `scratch/test_run_exp263_264_full_missing_aware_integration.py`
-  - Exp263/264 catalog hunks only in `serve_rank_dashboard.py`
-- The unrelated uncommitted dashboard, Vercel, Exp256-262, and documentation work was preserved and excluded from Task 7 staging.
+- Starting implementation commit: `a04930fb4f69f5123c906f353c83df24ab0ba72b`.
+- Task-owned implementation:
+  - `scratch/generate_exp451_codemap_antigravity.py`
+  - `docs/codemap/codemap_exp451_antigravity.{html,json,lock}`
+  - `experiments/exp451_verified_accelerated_resume_antigravity/tests/test_codemap_antigravity.py`
+  - this report
+- No Dataset root, TEST label, official command, running process, remote, or
+  external publication was accessed or changed.
 
-## Implementation
+## TDD evidence
 
-- Added the `audit`, `predict`, `evaluate`, and `report` phase CLI.
-- Every phase writes `status.json` atomically with experiment ID, PID, phase,
-  `done`/`expected` aliases used by the dashboard, current dataset, error list,
-  error count, and all output paths.
-- Exceptions retain prior artifacts, write `status="failed"`, and return nonzero.
-- The scratch runner atomically updates the canonical state, removes duplicate
-  or stale Exp263/264 queue entries, records phase and return code in history,
-  and removes Task 7 queue entries after a failure.
-- Dashboard catalog entries for Exp263 and Exp264 both retain the production
-  expectation of 1,117 datasets.
-- Smoke subsets are selected only after the full frozen source contract passes.
-  The production population and anomaly contracts remain 1,117 and 3,918;
-  smoke evaluation requires an explicit anomaly override.
+- The first focused run failed with `ModuleNotFoundError` because the Exp451
+  generator did not exist.
+- After the generator was staged, the next run had five passing contracts and
+  failed only because the Exp451 triplet did not exist.
+- A later synchronization test failed because the first lock did not bind the
+  standalone JSON and HTML hashes. The lock now records both artifact SHA-256
+  values and is published last.
+- Final focused result: 7 tests passed.
 
-## Commands And Results
+## Code-map closure
 
-- `python3 -m unittest discover -s experiments/exp263_264_full_missing_aware_integration/tests -v`
-  - Passed: 51 tests.
-- `python3 -m unittest scratch.test_run_exp263_264_full_missing_aware_integration scratch.test_dashboard_state_contract -v`
-  - Passed: 16 tests.
-- `python3 -m py_compile experiments/exp263_264_full_missing_aware_integration/run_pipeline.py scratch/run_exp263_264_full_missing_aware_integration.py serve_rank_dashboard.py`
-  - Passed.
-- `git diff --check`
-  - Passed.
-- Real failure contract:
-  - `python3 -m experiments.exp263_264_full_missing_aware_integration.run_pipeline --phase evaluate --dataset-limit 10 --output-root /tmp/exp263_264_failure_contract_task7_20260721`
-  - Exited `1`; status recorded `failed`, `error_count=1`, and the explicit missing anomaly-override error.
+- Exact node count: 42.
+- Exact AST-import edge count at this commit: 340.
+- Composition:
+  - 12 Exp451 production modules;
+  - 7 Exp451 tests, including the code-map contract test;
+  - the Exp451 CLI and generator;
+  - 21 direct external dependencies.
+- Direct external dependencies:
+  - Exp449 frozen config;
+  - Exp450 artifacts, contracts, evaluation, reporting, and runner;
+  - paper calibration, catalog, contracts, data, hard-route, and routing;
+  - paper hard-sources, imaging, KNN, legacy-route, MiniRocket,
+    MultiRocket/Hydra, preprocessing, ROCKET, and stability sources.
+- Every node has exactly `path`, `module`, `callers`, `effects`, and `tests`.
+- All 12 production nodes have non-empty caller, effect, and test answers.
+- Critical assertions cover the Exp450 evaluator/reporter delegates, verifier
+  checkpoint delegates, score-source dependencies, CLI lifecycle imports,
+  catalog/data access, and static test links to both the CLI and generator.
+- Caller discovery scans all index-tracked Python files. The selected closure
+  itself admits no untracked files.
 
-## Smoke Run
+## Triplet and frozen Exp450 policy
 
-- Output root: `/tmp/exp263_264_smoke_task7_20260721`.
-- Audit command:
-  - `python3 -m experiments.exp263_264_full_missing_aware_integration.run_pipeline --phase audit --dataset-limit 10 --output-root /tmp/exp263_264_smoke_task7_20260721`
-- Prediction command:
-  - `python3 -m experiments.exp263_264_full_missing_aware_integration.run_pipeline --phase predict --dataset-limit 10 --output-root /tmp/exp263_264_smoke_task7_20260721`
-- Evaluation command:
-  - `python3 -m experiments.exp263_264_full_missing_aware_integration.run_pipeline --phase evaluate --dataset-limit 10 --expected-total-anomalies 10 --output-root /tmp/exp263_264_smoke_task7_20260721`
-- Report command:
-  - `python3 -m experiments.exp263_264_full_missing_aware_integration.run_pipeline --phase report --dataset-limit 10 --output-root /tmp/exp263_264_smoke_task7_20260721`
-- All four commands exited `0`.
-- Selected datasets: `ACSF1_normal_0` through `ACSF1_normal_9`.
-- Audit coverage: baseline/statistical/structural/change-point `10/10`;
-  reconstruction `0/10`; missing override `0/10`; errors `0`.
-- Prediction rows: `10`; SHA256:
-  `dde03dc489040eaaf691123709fa71a815aafea9f3df770ae0bbe42d4606a90c`.
-- Evaluation: expected anomalies `10`, actual anomalies `10`, result rows `10`.
-- Final status: `completed`, phase `report`, `10/10`, current dataset
-  `ACSF1_normal_9`, error count `0`.
+- JSON and HTML carry the same parsed payload.
+- The lock contains the exact sorted 42-path scope, current SHA-256 for every
+  selected source, and SHA-256 bindings for the standalone JSON and HTML.
+- Generation stages and fsyncs all three files before replacement, publishes
+  the lock last, fsyncs the directory, and removes only temporary paths created
+  by that invocation.
+- Only no arguments (generate) and exact `--check` (read-only verification) are
+  accepted. Any other argument fails before generation.
+- The frozen Exp450 lock remains byte-identical with SHA-256
+  `026ee148b0b9db0e7be5cdfe7e311815896eb4eb8b9a468e7fb5d2a0decd0c3a`.
+  Its 36 recorded paths and all 36 current source hashes were reverified; the
+  canonical fingerprint-map SHA-256 remains
+  `29660a700804ac75bfa825e4ea49d8fd514d47526b7f752bc438d385cf0db402`.
+- The Exp450 HTML, JSON, and lock were not modified.
+- The legacy Exp450 `--check` is expected to report stale JSON because its
+  repository-wide caller scan now sees later Exp451 files: stored edges are
+  238 and current derived edges are 275. An independent comparison removed
+  caller/test relationships and found the remaining payload identical, while
+  the generated Exp450 lock remained byte-identical. This is caller-edge drift,
+  not a frozen code-fingerprint failure, so the Exp450 triplet was not
+  regenerated under the controller ruling.
 
-## Dashboard And Isolation
+## Verification
 
-- In-process dashboard contract check presented the smoke status as Exp264,
-  phase `report`, `10/10`, while both catalog entries remained at `1117`.
-- The canonical queue state mtime remained `2026-07-20 23:19:33`, before the
-  smoke run, confirming the direct phase commands did not mutate the full queue.
-- The existing dashboard server PID `32416` remained alive and received no
-  restart or signal. Review verification later used a separate temporary port.
-- The full production output root was not used by smoke commands.
+- `python3 scratch/generate_exp451_codemap_antigravity.py --check`
+  - passed.
+- `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_codemap_antigravity`
+  - passed: 7 tests.
+- `python3 -m unittest discover -s experiments/exp451_verified_accelerated_resume_antigravity/tests -p 'test_*_antigravity.py'`
+  - passed: 99 tests after the final synchronization contract was added.
+- `python3 -m unittest experiments.exp450_resampling_image_ablation_antigravity.tests.test_transforms_backend_antigravity experiments.exp450_resampling_image_ablation_antigravity.tests.test_imaging_antigravity`
+  - passed: 17 tests.
+- Independent lock/source fingerprint validation:
+  - passed: 42 Exp451 source hashes and 36 frozen Exp450 source hashes.
+- `python3 -m py_compile` for the Exp451 generator, CLI, all 12 production
+  modules, and the code-map test:
+  - passed.
+- `git diff --check` and `git diff --cached --check`:
+  - passed.
 
-## Concerns
+## Residual caveats
 
-- The first ten sorted datasets contain no missing-override or reconstruction
-  rows, so those branches remain covered by the existing focused Task 1-6 tests,
-  not this live smoke subset.
-- The smoke anomaly total is intentionally explicit and smoke-only. Task 8 must
-  omit both smoke arguments so production evaluation enforces 1,117 datasets and
-  3,918 anomalies.
-- The dashboard has unrelated user changes in the same file. Only the Exp263/264
-  catalog and explicit status-discovery hunks belong to Task 7 commits.
-
-## Review Fixes
-
-### Production Contract Protection
-
-- `--expected-total-anomalies` is now rejected unless `--dataset-limit` selects
-  a strict subset smaller than 1,117, in both the phase pipeline and scratch
-  runner. The pipeline also rejects that option outside the `evaluate` phase.
-- Production evaluation therefore always reaches `evaluate_all` without an
-  anomaly override and retains the fixed 3,918-anomaly contract.
-- Direct pipeline and runner checks with `--dataset-limit 1117` both exited `1`
-  before reading or writing production results.
-
-### Canonical State Ownership
-
-- The production runner uses the canonical
-  `/Users/minho/Documents/Dataset/rank_experiments_sequential.lock`; temporary
-  state files derive their own adjacent lock.
-- Each phase atomically claims an idle canonical slot under that lock with a
-  UUID ownership token before spawning its child process.
-- Child PID attachment, phase completion, queue cleanup, completed markers, and
-  return-code history are written only after reloading state under the lock and
-  matching that ownership token. A different owner causes a no-op, preserving
-  unrelated active runs.
-- The isolated scratch-runner smoke ended with `running=null`, an empty queue,
-  both experiment IDs completed, and four history rows with `return_code=0`.
-
-### Dashboard Smoke Discovery
-
-- `RANK_DASHBOARD_STATUS_PATH` explicitly selects one absolute Task 7
-  `status.json`; no directory scan or canonical queue mutation is required.
-- The reader accepts only Exp263/264 IDs and `running`, `completed`, or `failed`
-  states. Completed smoke records remain visible in `external_validation` and
-  the unified experiment list, while only running records become active.
-- The staged dashboard was launched separately on port `8880` with its PID file
-  redirected to `/tmp`. `/api/status` showed completed Exp264 phase `report`,
-  `10/10`, and the exact smoke status path. The temporary server was then
-  stopped; the existing server was not restarted or signaled.
-- An earlier verification invocation briefly replaced only the production PID
-  metadata because the writer's default path was bound at import time. The live
-  process was never signaled; its exact captured metadata was restored
-  immediately, and PID `32416` plus instance `7aa4963a53200ea0` were confirmed
-  alive before and after the corrected port-8880 check.
-- Both production catalog entries remain fixed at 1,117 datasets.
-
-### Error And Artifact Contracts
-
-- `SourceContractError` now writes the same failed atomic status and returns
-  exit code `2`; generic failures continue to return `1` and interrupts return
-  `130`.
-- `output_paths` now includes `independent_reaggregation.json`.
-
-### Review Verification
-
-- `python3 -m unittest discover -s experiments/exp263_264_full_missing_aware_integration/tests -v`
-  - Passed: 55 tests.
-- `python3 -m unittest scratch.test_run_exp263_264_full_missing_aware_integration scratch.test_dashboard_state_contract -v`
-  - Passed: 22 tests.
-- Scratch runner smoke:
-  - `python3 scratch/run_exp263_264_full_missing_aware_integration.py --dataset-limit 10 --expected-total-anomalies 10 --output-root /tmp/exp263_264_task7_final_smoke_20260721 --state-path /tmp/exp263_264_task7_final_state_20260721.json --poll-seconds 0.1`
-  - Exited `0`; prediction SHA256 remained
-    `dde03dc489040eaaf691123709fa71a815aafea9f3df770ae0bbe42d4606a90c`;
-    expected and actual anomalies remained `10`.
-- Final smoke state had `running=null`, `queue=[]`, both experiments completed,
-  and four history return codes of `0`. Its completed status was `10/10` with
-  zero errors and included the `independent_reaggregation.json` output path.
-- Canonical queue mtime remained `2026-07-20 23:19:33`, confirming the review
-  smoke did not alter the full queue.
-
-## Commit Record
-
-- Initial Task 7 implementation reviewed here: `25a7c633e787a1217362acf036d5d0bfe1c59764`.
-- The review fixes and this report are committed together. Their final SHA is
-  recorded in the completion response because a Git commit cannot contain its
-  own final hash.
+- AST import discovery intentionally cannot infer runtime-only dynamic imports;
+  the code-map test statically imports the CLI and generator to expose their
+  factual test relationship.
+- Repository-wide caller discovery means a future tracked Python caller can
+  make Exp451 `--check` stale even when the selected 42 source bytes do not
+  change. That drift must be reviewed and the Exp451 triplet regenerated
+  together; it must not be used to rewrite the frozen Exp450 triplet.
+- The final commit SHA is reported in the completion response because a commit
+  cannot contain its own SHA.
