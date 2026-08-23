@@ -265,8 +265,6 @@ def qualify_antigravity(
                 failure_reasons=reasons,
             ),
         )
-    if any(normal_confirmations.values()):
-        raise ValueError("normal_confirmation_present")
     return Exp466QualificationAntigravity(
         fold_results=tuple(fold_results),
         normal_trial_counts=MappingProxyType(

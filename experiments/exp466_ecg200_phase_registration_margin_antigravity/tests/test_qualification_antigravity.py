@@ -22,12 +22,8 @@ _CHANGE_TYPES_ANTIGRAVITY = (
 
 
 @lru_cache(maxsize=1)
-def authoritative_records_antigravity():
-    """Ten source-free score records over one deterministic 69-row fixture."""
-    from experiments.exp466_ecg200_phase_registration_margin_antigravity.scoring_antigravity import (
-        score_fold_methods_antigravity,
-    )
-
+def authoritative_train_antigravity() -> np.ndarray:
+    """Return the one deterministic 69-row synthetic Task 4 train fixture."""
     x = np.arange(140, dtype=np.float64)
     base = (
         0.01 * x
@@ -40,6 +36,14 @@ def authoritative_records_antigravity():
     )
     train = np.asarray(train, dtype=np.float64, order="C")
     train.setflags(write=False)
+    return train
+
+
+def score_records_antigravity(train: np.ndarray):
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.scoring_antigravity import (
+        score_fold_methods_antigravity,
+    )
+
     authority = capture_exp465_authority_antigravity()
     records = {}
     for seed in _SEEDS_ANTIGRAVITY:
@@ -60,6 +64,26 @@ def authoritative_records_antigravity():
                 authority=authority,
             )
     return MappingProxyType(records)
+
+
+@lru_cache(maxsize=1)
+def authoritative_records_antigravity():
+    """Ten source-free score records over one deterministic 69-row fixture."""
+    return score_records_antigravity(authoritative_train_antigravity())
+
+
+@lru_cache(maxsize=1)
+def normal_confirmation_records_antigravity():
+    """Real rescored fixture with one OOF normal confirmation per seed."""
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.synthetic_antigravity import (
+        primary_rows_antigravity,
+    )
+
+    train = np.array(authoritative_train_antigravity(), dtype=np.float64, copy=True)
+    train[0] = primary_rows_antigravity(train[0])["period_change"]
+    train = np.asarray(train, dtype=np.float64, order="C")
+    train.setflags(write=False)
+    return score_records_antigravity(train)
 
 
 class QualificationAntigravityTest(unittest.TestCase):
@@ -170,6 +194,49 @@ class QualificationAntigravityTest(unittest.TestCase):
             values.update(changes)
             with self.subTest(changes=changes):
                 self.assertEqual(_failure_reasons_antigravity(**values), expected)
+
+    def test_real_normal_confirmation_is_a_failed_result_not_an_exception_antigravity(
+        self,
+    ) -> None:
+        """Break caught: a measured normal confirmation cannot be published as a failure."""
+        from experiments.exp466_ecg200_phase_registration_margin_antigravity.evaluation_antigravity import (
+            evaluate_qualification_antigravity,
+        )
+        from experiments.exp466_ecg200_phase_registration_margin_antigravity.qualification_antigravity import (
+            qualify_antigravity,
+        )
+
+        qualification = qualify_antigravity(normal_confirmation_records_antigravity())
+        self.assertEqual(
+            dict(qualification.normal_confirmations),
+            {20260721: 1, 20261721: 1},
+        )
+        normal_failed = tuple(
+            (row.seed, row.fold_index)
+            for row in qualification.fold_results
+            if "normal_confirmation_present" in row.failure_reasons
+        )
+        self.assertEqual(normal_failed, ((20260721, 0), (20261721, 0)))
+        self.assertTrue(
+            all(
+                not row.passed
+                for row in qualification.fold_results
+                if row.fold_index == 0
+            ),
+        )
+
+        decision = evaluate_qualification_antigravity(qualification)
+        self.assertFalse(decision.eligible_for_exp467_design)
+        self.assertIn("c9_not_10_of_10", decision.failure_reasons)
+        self.assertIn("normal_confirmation_present", decision.failure_reasons)
+        self.assertIn(
+            "seed_20260721_normal_confirmations_not_zero",
+            decision.failure_reasons,
+        )
+        self.assertIn(
+            "seed_20261721_normal_confirmations_not_zero",
+            decision.failure_reasons,
+        )
 
     def test_rejects_wrong_record_order_and_duplicate_oof_before_replay_antigravity(self) -> None:
         """Break caught: ten records with reordered keys or repeated normal trials are accepted."""

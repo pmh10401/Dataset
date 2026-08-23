@@ -142,6 +142,8 @@ def _frozen_seed_counts_antigravity(
     value: Mapping[int, int] | object,
     name: str,
     expected_count: int,
+    *,
+    allow_below_expected: bool = False,
 ) -> MappingProxyType[int, int]:
     if type(value) is not MappingProxyType:
         raise ValueError(f"{name} must be an immutable mapping")
@@ -150,10 +152,11 @@ def _frozen_seed_counts_antigravity(
     frozen: dict[int, int] = {}
     for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds:
         count = _int_antigravity(value[seed], f"{name}[{seed}]")
-        if count != expected_count:
-            if name == "normal_trial_counts":
-                raise ValueError("normal_trial_counts must contain exactly 69 trials per seed")
-            raise ValueError("normal confirmation counts must remain exactly zero")
+        if allow_below_expected:
+            if count > expected_count:
+                raise ValueError("normal confirmation counts must be between 0 and 69")
+        elif count != expected_count:
+            raise ValueError("normal_trial_counts must contain exactly 69 trials per seed")
         frozen[seed] = count
     return MappingProxyType(frozen)
 
@@ -197,7 +200,8 @@ class Exp466QualificationAntigravity:
             _frozen_seed_counts_antigravity(
                 self.normal_confirmations,
                 "normal confirmations",
-                0,
+                FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed,
+                allow_below_expected=True,
             ),
         )
         for name, expected in (

@@ -95,8 +95,8 @@ class Exp466ContractsTestAntigravity(unittest.TestCase):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 self.fold_result_antigravity(**changes)
 
-    def test_qualification_rejects_mutable_reordered_and_wrong_69_counts_antigravity(self) -> None:
-        """Break caught: aggregate governance accepts mutable, reordered, or partial OOF truth."""
+    def test_qualification_accepts_bounded_failure_counts_and_rejects_bad_count_shapes_antigravity(self) -> None:
+        """Break caught: a publishable normal false positive is treated as an exception."""
         valid = self.valid_qualification_antigravity()
         self.assertIsInstance(valid.normal_confirmations, MappingProxyType)
         self.assertEqual(tuple(valid.normal_confirmations), (20260721, 20261721))
@@ -107,10 +107,30 @@ class Exp466ContractsTestAntigravity(unittest.TestCase):
                 valid,
                 normal_confirmations=MappingProxyType({20261721: 0, 20260721: 0}),
             )
-        with self.assertRaisesRegex(ValueError, "normal confirmation"):
+        for count in (1, 69):
+            with self.subTest(count=count):
+                failed = dataclasses.replace(
+                    valid,
+                    normal_confirmations=MappingProxyType(
+                        {20260721: count, 20261721: count},
+                    ),
+                )
+                self.assertEqual(dict(failed.normal_confirmations), {20260721: count, 20261721: count})
+        for count in (-1, 70, True):
+            with self.subTest(invalid_count=count), self.assertRaisesRegex(
+                ValueError,
+                "normal confirmation",
+            ):
+                dataclasses.replace(
+                    valid,
+                    normal_confirmations=MappingProxyType(
+                        {20260721: count, 20261721: 0},
+                    ),
+                )
+        with self.assertRaisesRegex(ValueError, "immutable"):
             dataclasses.replace(
                 valid,
-                normal_confirmations=MappingProxyType({20260721: 1, 20261721: 0}),
+                normal_confirmations={20260721: 1, 20261721: 0},
             )
         with self.assertRaisesRegex(ValueError, "69"):
             dataclasses.replace(
