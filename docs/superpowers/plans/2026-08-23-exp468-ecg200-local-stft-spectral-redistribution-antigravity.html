@@ -202,23 +202,23 @@ git commit -m "feat: qualify Exp468 conservative STFT scores"</code></pre></li>
 </section>
 
 <section class="task">
-<h2><label><input type="checkbox" disabled> Task 5 — 결과 파일·독립 replay·HTML 대시보드</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 5 — 결과 파일·독립 replay·HTML 대시보드</label></h2>
 <p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/artifacts_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/replay_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/dashboard_export_antigravity.py</code> and matching <code>tests/test_artifacts_antigravity.py</code>, <code>tests/test_replay_antigravity.py</code>, <code>tests/test_dashboard_export_antigravity.py</code> under the same Exp468 package. Modify <code>docs/EXP468_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP468_RUNBOOK_antigravity.html</code>, <code>docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>scratch/exp468_dashboard_artifact_antigravity.json</code>, <code>docs/EXP468_DASHBOARD_antigravity.html</code> and the Exp468 code-map triplet.</p>
 <p><strong>Interfaces:</strong> <code>publish_result_antigravity(root, records, qualification, decision) → PublishedResultAntigravity</code> creates exactly seven leaves; <code>inspect_result_antigravity(root) → InspectedResultAntigravity</code> reads only those leaves; <code>export_dashboard_antigravity(inspected) → str</code> returns deterministic HTML.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED seven-leaf·canonical bytes 검사.</strong></label><pre><code>self.assertEqual(tuple(sorted(p.name for p in root.iterdir())), (
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED seven-leaf·canonical bytes 검사.</strong></label><pre><code>self.assertEqual(tuple(sorted(p.name for p in root.iterdir())), (
  "artifact_sha256_antigravity.json", "context_antigravity.json",
  "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
  "failed_folds_antigravity.jsonl", "method_fold_metrics_antigravity.jsonl",
  "method_summary_antigravity.jsonl"))</code></pre><p>UTF-8, key sort, compact JSON, 마지막 newline 하나, seed-major JSONL 순서와 self-excluding hash map을 고정한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED 의미 변조 replay 검사.</strong></label><p>raw JS, fit max, rank, confirmation, C10 score, AUC, C0 delta, normal confirmation, decision 또는 hash를 하나씩 바꾼 뒤 hash를 다시 맞춰도 inspect가 원시 입력 재계산으로 거부해야 한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 대시보드 검사.</strong></label><pre><code>html = export_dashboard_antigravity(inspected)
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED 의미 변조 replay 검사.</strong></label><p>raw JS, fit max, rank, confirmation, C10 score, AUC, C0 delta, normal confirmation, decision 또는 hash를 하나씩 바꾼 뒤 hash를 다시 맞춰도 inspect가 원시 입력 재계산으로 거부해야 한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 대시보드 검사.</strong></label><pre><code>html = export_dashboard_antigravity(inspected)
 self.assertIn("period 변화", html)
 self.assertIn("C0보다 개선한 fold", html)
 self.assertIn("정상 확인 오류", html)
 self.assertIn('type="checkbox" checked disabled', html)</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 publication·replay·dashboard 구현.</strong></label><p>dashboard는 10개 fold의 C0/C10 period AUC, 차이, confirmation 수, 세 보호 변화의 최악 delta, seed별 normal confirmation, 두 실행 동일성, 최종 PASS/FAIL을 고등학생도 이해할 수 있는 한국어로 보여준다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — GREEN 두 번·portable HTML 검증.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_artifacts_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_replay_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_dashboard_export_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — 최소 publication·replay·dashboard 구현.</strong></label><p>dashboard는 10개 fold의 C0/C10 period AUC, 차이, confirmation 수, 세 보호 변화의 최악 delta, seed별 normal confirmation, 두 실행 동일성, 최종 PASS/FAIL을 고등학생도 이해할 수 있는 한국어로 보여준다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — GREEN 두 번·portable HTML 검증.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_artifacts_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_replay_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_dashboard_export_antigravity
 python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_artifacts_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_replay_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_dashboard_export_antigravity
 node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs --input scratch/exp468_dashboard_artifact_antigravity.json --output docs/EXP468_DASHBOARD_antigravity.html
 python3 scratch/build_codemap_exp468_antigravity.py --validate-only
@@ -262,5 +262,5 @@ git commit -m "exp: record Exp468 local STFT qualification result"</code></pre><
 <p><strong>1. Task별 에이전트 실행 — 권장:</strong> Task마다 fresh 구현자를 사용한다. OpenRouter Ox Alpha Ultra가 가능하면 구현·독립 의견에 적극 사용하고, 사용할 수 없으면 Sol 구현자로 전환한다. Codex가 매 Task의 diff, 테스트와 결과를 최종 승인한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task 1부터 순서대로 실행하고 각 Task 종료 때 사용자에게 checkpoint를 보여준다.</p>
 
-<div class="box ok"><strong>현재 상태:</strong> <code>implementation_task_4_complete_no_private_run</code>. Task 3의 실패한 가속 gate와 승인된 NumPy fallback을 그대로 소비해 C0/S10/C10 조립, exact blocked folds, raw-input 독립 replay, fold-local AUC, 평균을 쓰지 않는 고정 gate, scalar-only Task 4 결정을 구현했다. Task 4와 Steps 1~6을 완료로 체크했으며 다음 작업은 Task 5 publication·replay·HTML dashboard 구현이다. private/official qualification은 <code>0/0</code>회이고 결과·hash는 <code>null</code>이다.</div>
+<div class="box ok"><strong>현재 상태:</strong> <code>implementation_task_5_complete_no_private_run</code>. Task 3의 실패한 가속 gate와 승인된 NumPy fallback을 그대로 소비해 C0/S10/C10 조립, exact blocked folds, raw-input scorer replay, seven-leaf publication, semantic tamper rejection, deterministic HTML dashboard를 검증했다. Task 5와 Steps 1~5를 완료로 체크했으며 다음 작업은 Task 6 CLI/pipeline과 private checkpoint이다. private/official qualification은 <code>0/0</code>회이고 결과·hash는 <code>null</code>이다.</div>
 </main></body></html>

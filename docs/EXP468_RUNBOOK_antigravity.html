@@ -8,10 +8,10 @@
 </head>
 <body><main>
 <h1>Exp468 실행 runbook</h1>
-<div class="box"><p>현재 상태는 <code>implementation_task_1_complete</code>다. 설정과 불변 결과 형식만 준비됐으며, 실행 가능한 loader, scorer, qualification pipeline, CLI는 아직 없다.</p></div>
+<div class="box"><p>현재 상태는 <code>implementation_task_5_complete_no_private_run</code>다. Task 1~4의 고정 loader/scorer/qualification 계약과 Task 5의 seven-leaf publication, source-free replay, portable dashboard가 검증됐다. Task 6 CLI/pipeline과 private 실행은 아직 시작하지 않았다.</p></div>
 <table>
-<tr><th>현재 횟수</th><td>점수 계산 <code>0</code>, private run <code>0</code>, official run/evaluate/inspect <code>0/0/0</code>, label query <code>0</code>.</td></tr>
-<tr><th>현재 결과</th><td>official result, private result, artifact map, prediction, evaluation, decision, dashboard hash는 모두 <code>null</code>.</td></tr>
+<tr><th>현재 횟수</th><td>Task 5 fixture publication/replay만 검증했고, private run <code>0</code>, official run <code>0</code>, label query <code>0</code>이다. private 실행 1·2는 모두 <code>아직 실행하지 않음</code>이다.</td></tr>
+<tr><th>현재 결과</th><td>Task 5 publication root는 테스트 임시 경로에서만 만들었다. official/private result와 공식 result hash는 <code>null</code>이며 routing·promotion은 실행하지 않았다.</td></tr>
 <tr><th>TRAIN 경계</th><td>Task 1은 TRAIN을 열지 않는다. Task 2가 승인된 MD5와 정상 69개 경계를 exact import로 연결하기 전에는 데이터 명령을 실행하지 않는다.</td></tr>
 <tr><th>TEST 경계</th><td>ECG200 TEST 파일, TEST 라벨, 실제 FN·FP·F1을 열거나 조회하지 않는다.</td></tr>
 </table>
@@ -25,7 +25,13 @@ python3 -m json.tool docs/codemap/codemap_exp468_antigravity.lock &gt;/dev/null
 git diff --check</code></pre>
 <p>단위 검사 명령은 같은 상태에서 두 번 실행한다. 코드맵 검증은 HTML에 포함된 JSON, 필수 edge, 문서 구조, tracked fingerprint를 읽기 전용으로 확인한다.</p>
 <h2>다음 허용 작업</h2>
+<h2>Task 5 확인 절차</h2>
+<ol>
+<li>새 root에서 <code>artifacts_antigravity.py</code>가 정확한 일곱 leaf, canonical JSON/JSONL, self-excluding SHA-256 map과 seed-major record를 만드는지 확인한다.</li>
+<li><code>replay_antigravity.py</code>가 loader 없이 raw input을 다시 계산하고 raw JS, fit max, rank, confirmation, C10, AUC, delta, decision, context, summary, dashboard snapshot의 tamper를 hash 복구 후에도 거부하는지 확인한다.</li>
+<li><code>dashboard_export_antigravity.py</code>와 portable generator가 per-fold period AUC/delta/confirmation, C0 improvement fold, 세 보호 변화 최소 delta, seed별 normal confirmation 오류, private 대기 상태를 self-contained HTML로 표시하는지 확인한다.</li>
+</ol>
 <p>Task 2에서 Exp466의 TRAIN loader, 보간, 네 합성 변화, C0 함수를 같은 객체로 연결하고 byte parity를 검사한다. Task 1에서는 점수나 결과를 만들지 않는다.</p>
-<div class="box stop"><p><strong>금지:</strong> backend 선결정, STFT 점수 계산, ECG 파일 접근, private/official 실행, TEST/FN 검증, 설정 변경, routing·champion·pending·promotion 변경.</p></div>
+<div class="box stop"><p><strong>금지:</strong> Task 4 수학·임계값 변경, 기존 root 덮어쓰기, backend 선결정, ECG TEST/FN 접근, private/official 실행, TEST/FN 검증, 설정 변경, routing·champion·pending·promotion 변경.</p></div>
 </main></body>
 </html>

@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp468 사전등록</h1>
-<p>현재 상태는 <code>implementation_task_1_complete</code>다. Task 1은 승인된 설정, 결과 형식, 문서 골격만 고정했다. ECG 파일을 열거나 점수를 계산하거나 실험을 실행하지 않았다.</p>
+<p>현재 상태는 <code>implementation_task_5_complete_no_private_run</code>다. Task 1~4의 과학·점수·자격 판정 계약을 그대로 사용해 Task 5 결과 publication, 독립 replay, 결정적 HTML dashboard를 고정했다. 실제 private/official 실행은 아직 하지 않았다.</p>
 <table>
 <tr><th>실험</th><td><code>Exp468</code> — ECG200 국소 STFT 주파수 재분배 자격 검증</td></tr>
 <tr><th>승인 설계</th><td><code>docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html</code><br>SHA-256 <code>fa799dd628028163b6bc2dee5af6fd3f507b555849a00b194e32ecdc3f7078b7</code></td></tr>
@@ -24,6 +24,14 @@
 <li>method order는 <code>(C0,S10,C10)</code>, 유일한 주 후보는 <code>C10</code>, period AUC 하한은 <code>0.85</code>다. 평균 AUC 기준은 없다.</li>
 </ul>
 <div class="box"><p>Task 1에는 가속할 점수 연산이 없다. Numba/MLX 선택은 Task 3에서 같은 입력과 seed의 결정성, 수치 일치, 후보 index 일치, 전송·동기화 포함 1.1배 속도 기준을 확인한 뒤에만 한다.</p></div>
-<div class="box stop"><p><strong>현재 실행 truth:</strong> 점수 계산 <code>0</code>회, private run <code>0</code>회, official run/evaluate/inspect <code>0/0/0</code>, label query <code>0</code>회다. official result와 artifact/result/dashboard hash는 모두 <code>null</code>이다. ECG200 TEST, 실제 FN, routing, champion, pending, promotion은 범위 밖이다.</p></div>
+<div class="box stop"><p><strong>현재 실행 truth:</strong> Task 5 publication/replay 검증은 테스트 전용 결정론적 TRAIN-only fixture에서만 수행했다. private run <code>0</code>회, official run <code>0</code>회, label query <code>0</code>회이며 두 private 실행은 모두 <code>아직 실행하지 않음</code>이다. official/private result와 공식 result hash는 <code>null</code>이다. ECG200 TEST, 실제 FN, routing, champion, pending, promotion은 범위 밖이다.</p></div>
+
+<h2>Task 5 publication 계약</h2>
+<ul>
+<li><code>publish_result_antigravity</code>는 기존 root를 덮지 않고 정확히 일곱 leaf만 만든다. JSON은 UTF-8, <code>sort_keys=True</code>, compact separator, NaN 금지, 마지막 newline 하나를 사용한다.</li>
+<li><code>context_antigravity.json</code>에는 각 seed-fold의 동일한 <code>69×140</code> little-endian float64 C-order 입력, fit/query index, C0/S10/C10 score, raw JS, rank, strict confirmation, AUC 및 provenance가 보존된다. backend는 <code>numpy</code>, 승인 SHA는 <code>6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9</code>, 승인 전 benchmark SHA는 <code>938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b</code>다.</li>
+<li><code>inspect_result_antigravity</code>는 일곱 leaf만 읽고 ECG200 loader를 호출하지 않는다. 보존한 입력으로 Task 4 C0/S10/C10, AUC, qualification, decision을 다시 계산해 저장값과 exact equality를 요구하며, hash를 고쳐도 의미 변조를 거부한다.</li>
+<li>method 순서는 <code>C0,S10,C10</code>, record 순서는 seed-major 10개, metric은 seed→fold→method 30행, summary는 세 method 3행이다. Task 4 규칙인 C10 period gate·세 보호 변화·normal confirmation 0만 사용하며 P9/C9와 평균 gate는 사용하지 않는다.</li>
+</ul>
 </main></body>
 </html>
