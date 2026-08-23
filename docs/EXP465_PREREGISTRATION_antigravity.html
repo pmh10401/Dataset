@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 사전등록</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<body><main>
+<h1>Exp465 사전등록</h1>
+<p>이 문서는 승인된 과학 계약을 고정한다. 현재 상태는 <code>implementation_plan_written_awaiting_user_review</code>이며 Task 1은 계약·문서·코드맵만 완료했다. 자료 로딩과 점수 계산은 아직 구현하지 않았다.</p>
+<table>
+<tr><th>experiment / kind</th><td><code>Exp465</code> / <code>ecg200_c8_external_train_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp465-ecg200-c8-external-validation-antigravity-20260822</code></td></tr>
+<tr><th>approved design</th><td><code>docs/superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html</code><br>SHA-256 <code>a5f5f43e1787ad2942c883761ee95478e8cf5fcdcc958722a22fe0e1ad98d904</code></td></tr>
+<tr><th>predecessor</th><td>Exp464 terminal closeout commit <code>1fdc8422996fe7e85325987f7543e00db79e22d9</code>; C8은 당시에도 non-promotable clue였다.</td></tr>
+</table>
+<h2>고정된 ECG200 자료 계약</h2>
+<ul>
+<li>공식 <code>ECG200_TRAIN.ts</code>만 사용하고 MD5는 <code>808875aeac1c358a90c630fe369327c4</code>다.</li>
+<li>TRAIN 전체는 정확히 <code>100×96</code>, 정상 <code>+1</code> 69개, 심근경색 <code>-1</code> 31개여야 한다.</li>
+<li>방법 검증에는 정상 69개만 쓴다. <code>ECG200_TEST.ts</code>와 TEST 라벨은 열거나 조회하지 않는다.</li>
+<li>각 정상 행을 한 번만 <code>np.interp</code> 선형 보간으로 <code>96→140</code>으로 바꾸고 첫점과 끝점을 보존한다.</li>
+</ul>
+<h2>고정된 방법과 기록 단위</h2>
+<table><thead><tr><th>ID</th><th>정의</th><th>역할</th></tr></thead><tbody>
+<tr><td><code>C0</code></td><td>Exp464 C0 exact replay control</td><td>기준선</td></tr>
+<tr><td><code>C6</code></td><td>Exp464 C6 exact diagnostic contrast only</td><td>진단 대조군; 승격 금지</td></tr>
+<tr><td><code>C8</code></td><td>Exp464 C8 exact sole primary candidate</td><td><strong>유일한 주 후보</strong></td></tr>
+</tbody></table>
+<p>method order는 <code>("C0","C6","C8")</code>다. seed는 <code>20260721</code>, <code>20261721</code> 두 개이며 fold는 5개다. 같은 정상 69개를 반복하므로 10개 seed-fold는 안정성 기록이지 독립 표본 690개가 아니다. onset <code>56</code>, suffix <code>84</code>, cosine gate <code>0.95</code>는 바꾸지 않는다.</p>
+<h2>Frozen qualification gates for C8</h2>
+<ul>
+<li>10개 seed-fold 기록 모두 통과한다.</li>
+<li>각 기록의 level shift, gradual drift, amplitude change, period change AUC가 각각 <code>≥ 0.85</code>다.</li>
+<li>각 기록의 네 AUC 평균은 <code>≥ 0.90</code>이고 모든 입력과 점수는 finite여야 한다.</li>
+<li>각 기록에서 C8 gradual과 period가 같은 기록의 C0보다 낮아지면 실패다.</li>
+<li>각 seed의 out-of-fold 정상 69개에서 confirmation은 정확히 <code>0</code>개여야 한다. Wilson 상한은 설명값이다.</li>
+</ul>
+<div class="stop"><strong>중단 규칙:</strong> 하나라도 실패하면 공식 실행과 routing 연구로 가지 않는다. 실패 뒤에 onset, cosine, 보간법, seed, fold, AUC 기준을 바꾸지 않는다. C6나 새 변형을 사후 승격하지 않는다. 이 실험은 실제 FN·FP·F1, routing, champion, promotion을 바꾸지 않는다.</div>
+<h2>가속화 사전평가와 현재 handoff</h2>
+<div class="box"><p>PyTorch·MLX·MPS 가능성은 설계 단계에서 이미 등록했다. 점수 구현 전에는 canonical CPU fallback을 유지하고, MLX는 동일 입력·seed에서 candidate index 일치, 수치 허용 범위 충족, transfer/sync 포함 1.1배 이상 속도가 모두 확인될 때만 검토한다. Task 1 시점에는 tensor 연산이 구현돼 있지 않으므로 accelerated path를 채택하지 않았다. official evaluate/inspect는 0, label query count는 0이고 모든 결과 hash는 <code>null</code>이다.</p></div>
+</main></body></html>

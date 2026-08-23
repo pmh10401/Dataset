@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 구현 보고서</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
+<body><main>
+<h1>Exp465 구현 보고서</h1>
+<p>이 문서는 Exp465 Task 1의 구현 범위와 검증 근거를 기록한다. 상태는 <code>task_1_implementation_verified_fresh_review_pending</code>다.</p>
+<h2>구현 범위</h2>
+<ul>
+<li><code>config_antigravity.py</code>: ECG200 <code>100×96</code>, 정상 69, method order <code>("C0","C6","C8")</code>, primary <code>C8</code>, seeds/folds/onset/cosine, 네 유형 AUC <code>0.85</code>, 평균 <code>0.90</code>, 10/10, 정상 confirmation 0, official/label 0을 frozen dataclass로 고정했다.</li>
+<li><code>contracts_antigravity.py</code>: score/result contract와 초기 governance snapshot을 immutable contract로 추가하고 bool/int alias, mutable container, reordered mapping, mean drift, passed/reason 불일치, changed governance를 거부한다.</li>
+<li>한국어 사용자 문서 4종(대시보드·사전등록·runbook·보고서)과 versioned code-map triplet 작성기를 만들었다.</li>
+<li>세 truth ledger에 Exp465 Task 1 상태를 additive로 등록했고 Exp464 기록은 바꾸지 않았다.</li>
+</ul>
+<h2>TDD와 검증 근거</h2>
+<table>
+<tr><th>RED</th><td>보존된 config test가 missing-module error로 실패하는 것을 확인했다.</td></tr>
+<tr><th>GREEN</th><td>지정 interpreter로 config/contracts/governance suite를 동일하게 두 번 실행했고 총 8 tests를 두 번 모두 통과했다.</td></tr>
+<tr><th>code map</th><td><code>scratch/build_codemap_exp465_antigravity.py --validate-only</code>를 실행해 triplet fingerprint, embedded graph, evidence, source-parent binding을 읽기 전용으로 검증했다.</td></tr>
+<tr><th>diff hygiene</th><td><code>git diff --check</code>를 실행했고 whitespace error가 없었다.</td></tr>
+</table>
+<h2>가속화 판단과 안전 경계</h2>
+<div class="ok"><p>Task 1에는 tensor workload가 없다. PyTorch·MLX·MPS는 설계에 따라 나중에 점수 단계에서 다시 평가하며, 현재는 canonical CPU fallback만 기록한다. MLX 채택 조건은 candidate index 일치, 수치 허용 범위, transfer/sync 포함 1.1배 속도, manifest 증거다.</p></div>
+<div class="note"><p>남은 한계: fresh scientific review는 아직 없다. 계획의 Task 1 heading과 Step 6은 review가 끝난 뒤에야 checked로 바꾼다. 이 보고서는 데이터 로딩이나 점수 결과를 주장하지 않는다.</p></div>
+</main></body></html>

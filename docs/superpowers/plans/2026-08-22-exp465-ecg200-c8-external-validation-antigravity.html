@@ -33,16 +33,16 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <h2><label><input type="checkbox" disabled> Task 1 — 계약, 문서와 코드맵</label></h2>
 <p><strong>Files:</strong> Create config/contracts/tests, Exp465 HTML 3종, map builder/triplet. Modify dashboard, three ledgers and plan.</p>
 <p><strong>Interfaces:</strong> Produces <code>FROZEN_CONFIG_ANTIGRAVITY: Exp465ConfigAntigravity</code> and immutable score/result contracts.</p><ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED config.</strong></label><pre><code>config = FROZEN_CONFIG_ANTIGRAVITY
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED config.</strong></label><pre><code>config = FROZEN_CONFIG_ANTIGRAVITY
 self.assertEqual((config.train_rows, config.width, config.normal_rows), (100, 96, 69))
 self.assertEqual(config.method_order, ("C0", "C6", "C8"))
 self.assertEqual((config.primary_candidate, config.onset, config.cosine_min), ("C8", 56, 0.95))</code></pre><p>Run config test; expect import failure.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — Immutable config/contracts.</strong></label><p>Frozen dataclasses reject bool/int aliases, mutable containers, reordered mappings, non-C8 primary and changed gates.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED→GREEN governance.</strong></label><pre><code>self.assertEqual(state["label_query_count"], 0)
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Immutable config/contracts.</strong></label><p>Frozen dataclasses reject bool/int aliases, mutable containers, reordered mappings, non-C8 primary and changed gates.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED→GREEN governance.</strong></label><pre><code>self.assertEqual(state["label_query_count"], 0)
 self.assertEqual(state["official_evaluate_count"], 0)
 self.assertIsNone(state["artifact_map_sha256"])</code></pre><p>Create preregistration, runbook and implementation report in easy Korean HTML.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — Code map.</strong></label><p>Map answers what calls each module, what it affects and which tests cover it. Bare builder writes; exact <code>--validate-only</code> is read-only.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Code map.</strong></label><p>Map answers what calls each module, what it affects and which tests cover it. Bare builder writes; exact <code>--validate-only</code> is read-only.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
 $PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
 $PY scratch/build_codemap_exp465_antigravity.py --validate-only</code></pre></li>
 <li><label><input type="checkbox" disabled> <strong>Step 6 — Commit/review.</strong></label><p>Functional commit 후 clean map-only child. spec PASS와 quality APPROVED 뒤 Task 1 체크.</p></li></ol>

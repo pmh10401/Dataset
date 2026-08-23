@@ -10,13 +10,15 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp465 진행 대시보드</h1>
-<div class="box"><strong>현재 상태:</strong> 설계 승인과 구현 계획 작성 완료. 구현 계획 검토 전.</div>
+<div class="box"><strong>현재 상태:</strong> 설계 승인, 구현 계획 작성 완료. Task 1 계약·문서·코드맵 구현과 focused verification 완료; fresh review 대기 중.</div>
 <table>
 <tr><th>목표</th><td>ECG200 정상 TRAIN에서 Exp464 C8의 외부 재현성 확인</td></tr>
 <tr><th>자료</th><td>ECG200 TRAIN 100×96 중 정상 +1 라벨 69개</td></tr>
 <tr><th>주 후보</th><td>C8 exact</td></tr>
 <tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, finite, C0 gradual·period 비열화 0건, 각 seed 정상 69개 confirmation 0건</td></tr>
 <tr><th>현재 공식 성능</th><td>변경 없음: 전체 F1 0.624185, recall 0.488770, FN 2,003</td></tr>
+<tr><th>Task 1 검증</th><td>8 tests GREEN × 2회; code-map <code>--validate-only</code> 통과; <code>git diff --check</code> 통과</td></tr>
+<tr><th>실행 경계</th><td>official evaluate / inspect <code>0 / 0</code>, private run <code>0</code>, label query <code>0</code>, 모든 결과 hash <code>null</code></td></tr>
 </table>
 
 <h2>진행 상황</h2>
@@ -26,7 +28,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li><label><input type="checkbox" checked disabled> HTML 설계서 작성</label></li>
 <li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
 <li><label><input type="checkbox" disabled> 구현 계획 승인</label></li>
-<li><label><input type="checkbox" disabled> 구현</label></li>
+<li><label><input type="checkbox" disabled> Task 1 구현(계약·문서·코드맵)</label></li>
 <li><label><input type="checkbox" disabled> private 실행 1</label></li>
 <li><label><input type="checkbox" disabled> private 실행 2 및 재현성 확인</label></li>
 <li><label><input type="checkbox" disabled> 독립 검토</label></li>
@@ -34,7 +36,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li><label><input type="checkbox" disabled> 공식 실행 및 결과 판단</label></li>
 </ul>
 
-<div class="box stop"><strong>현재 금지:</strong> 구현 전 실험 실행, ECG200 TEST 접근, 후보 교체, 실제 라우팅과 공식 모델 변경.</div>
-<p>설계서: <a href="superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html">Exp465 설계 보기</a></p>
+<div class="box stop"><strong>현재 금지:</strong> 구현 전 공식 실행, ECG200 TEST 접근, 후보 교체, 실제 라우팅과 공식 모델 변경. 이 화면은 아직 qualification result가 아니다.</div>
+<p>설계서: <a href="superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html">Exp465 설계 보기</a>. 사전등록: <a href="EXP465_PREREGISTRATION_antigravity.html">보기</a>. Runbook: <a href="EXP465_RUNBOOK_antigravity.html">보기</a>. 구현 보고서: <a href="EXP465_IMPLEMENTATION_REPORT_antigravity.html">보기</a>.</p>
 </main></body>
 </html>
