@@ -36,6 +36,10 @@
 </tbody>
 </table>
 <p>NumPy와 Numba는 각각 전체 workload 21회를 순차 실행했다. raw workload 조립 뒤 clean child process를 시작하고, acceleration module·Numba import와 Hann/twiddle 생성 직전에 timer를 시작했다. 기록한 gate <code>0.5741005414s</code>는 backend 준비 <code>0.1001899168s</code>, cold compile <code>0.4413024997s</code>, warm 전체 실행 <code>0.0326081249s</code>를 모두 포함한다. child는 acceleration module이 timer 전에 preload되지 않았음을 검증한다. 초기 profile 개선은 유지했으며 수식·workload는 바꾸지 않았다.</p>
+<h2>왜 Numba 또는 MPS 추가 최적화로 통과할 수 없는가</h2>
+<p>NumPy 기준 <code>31.915ms</code>에서 1.1배 빨라지려면 후보의 준비·컴파일·계산·반환 전체가 <code>29.014ms</code> 이하여야 한다. 그러나 Numba는 실제 계산과 컴파일을 시작하기 전 backend 준비만 <code>100.190ms</code>이며, warm 전체 실행도 <code>32.608ms</code>다. 따라서 준비 뒤 계산 시간이 0초라고 가정해도 이 gate를 통과할 수 없다.</p>
+<p>Apple GPU와 현재 MLX/MPS runtime은 고정 수식에 필요한 float64/complex128 RFFT를 지원하지 않는다. float32 경로는 raw <code>atol=1e-12</code>를 보존할 수 없으며, GPU 초기화·전송 시간도 길이 28의 작은 frame 6,210개에서 회수되지 않는다. 이 결론을 뒤집으려면 동일 clean-process workload에서 모든 준비·전송·동기화를 포함한 총시간 <code>29.014ms</code> 이하, raw 오차 <code>≤1e-12</code>, exact rank/confirmation, 반복 결정성을 동시에 새로 증명해야 한다.</p>
+<p><strong>권고:</strong> 과학 수식과 결과 검증은 그대로 유지하고, 현재 가장 빠른 적격 경로인 NumPy CPU fallback을 명시적으로 승인한 뒤 Task 4의 성능 평가로 진행한다. gate나 허용오차를 조용히 낮추지는 않는다.</p>
 <h2>Task 2 완료 범위</h2>
 <ul>
 <li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>는 Exp466의 다섯 공개 함수를 직접 import하고 같은 객체로 re-export한다.</li>
