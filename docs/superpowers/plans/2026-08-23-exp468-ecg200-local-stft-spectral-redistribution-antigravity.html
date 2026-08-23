@@ -136,19 +136,19 @@ git commit -m "feat: bind Exp468 ECG200 inputs and C0"</code></pre></li>
 <p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/acceleration_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_acceleration_antigravity.py</code>, <code>scratch/exp468_acceleration_benchmark_antigravity.json</code>. Modify the Exp468 code-map triplet.</p>
 <p><strong>Interfaces:</strong> <code>window_power_distributions_antigravity(row: ndarray) → ndarray[5,14]</code>, <code>jensen_shannon_antigravity(p, q) → float</code>, <code>strict_confirmation_antigravity(query_raw_js, fit_normal_max_raw_js) → ndarray[bool]</code>, <code>score_local_stft_antigravity(fit_rows, query_rows, *, backend: str) → SpectralScoresAntigravity</code>, <code>assess_acceleration_antigravity(workload) → AccelerationAssessmentAntigravity</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED 창·분포·JS 검사.</strong></label><pre><code>power = window_power_distributions_antigravity(row)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED 창·분포·JS 검사.</strong></label><pre><code>power = window_power_distributions_antigravity(row)
 self.assertEqual(power.shape, (5, 14))
 np.testing.assert_allclose(power.sum(axis=1), np.ones(5), rtol=0, atol=1e-15)
 self.assertEqual(jensen_shannon_antigravity(power[0], power[0]), 0.0)
 self.assertTrue(np.allclose(window_power_distributions_antigravity(row + 7.0), power, rtol=0, atol=1e-12))
 self.assertTrue(np.isfinite(power).all())</code></pre><p>별도 fixture로 시작점 0/14/28/42/56, 28개 완전 창, padding 없음, DC 제거와 Nyquist 포함을 직접 검사한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED LOO·rank·strict confirmation 검사.</strong></label><pre><code>scores = score_local_stft_antigravity(fit_rows, query_rows)
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED LOO·rank·strict confirmation 검사.</strong></label><pre><code>scores = score_local_stft_antigravity(fit_rows, query_rows)
 expected_rank = (1 + np.count_nonzero(scores.fit_raw_js &lt;= scores.query_raw_js[0])) / (len(fit_rows) + 1)
 self.assertEqual(scores.ranks[0], expected_rank)
 boundary = np.array([scores.fit_normal_max_raw_js], dtype=np.float64)
 self.assertFalse(bool(strict_confirmation_antigravity(boundary, scores.fit_normal_max_raw_js)[0]))</code></pre><p>fit 각 행은 자신을 뺀 중앙값 reference를 사용하고 query는 전체 fit reference만 사용한다. query를 fit에 섞었을 때 결과가 달라지는 leakage fixture도 포함한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 CPU 구현.</strong></label><pre><code>frames = np.stack(tuple(suffix[start:start + 28] for start in (0, 14, 28, 42, 56)))
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity</code></pre></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — 최소 CPU 구현.</strong></label><pre><code>frames = np.stack(tuple(suffix[start:start + 28] for start in (0, 14, 28, 42, 56)))
 centered = frames - frames.mean(axis=1, keepdims=True)
 spectrum = np.fft.rfft(centered * np.hanning(28), n=28, axis=1)
 power = np.abs(spectrum[:, 1:]) ** 2
@@ -159,7 +159,7 @@ m = (p + q) / 2.0
 js = 0.5 * np.sum(p * np.log(p / m)) + 0.5 * np.sum(q * np.log(q / m))</code></pre><p>reference는 frame별 fit 분포의 성분별 중앙값을 구한 뒤 frame별 합이 1이 되도록 다시 나눈다. 한 행의 raw S10은 다섯 JS의 중앙값이다.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 5 — NumPy/Numba/MLX 동일성·속도 gate.</strong></label><p>동일한 고정 train140, 10개 fit/query fold와 seed를 사용한다. 세 경로의 output은 finite, raw score <code>atol=1e-12, rtol=0</code>, confirmation index exact equality여야 한다. Numba는 cold JIT 시간과 warm 시간을 따로 기록하고 공식 10-fold workload 총시간에는 한 번의 compile을 포함한다. MLX는 전송·동기화를 포함한다. NumPy 대비 <code>1.1×</code> 이상 빠른 Numba 또는 MLX/MPS 중 더 빠른 경로를 선택한다. 둘 다 실패하면 알고리즘을 바꾸지 않고 구현 profile·batching만 개선해 이 Step을 다시 실행하며, Task 3을 완료로 표시하지 않는다.</p><pre><code>python3 scratch/benchmark_exp468_local_stft_acceleration_antigravity.py \
   --output scratch/exp468_acceleration_benchmark_antigravity.json</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·benchmark parse·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN 두 번·benchmark parse·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
 python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
 python3 -m json.tool scratch/exp468_acceleration_benchmark_antigravity.json &gt;/dev/null
 python3 scratch/build_codemap_exp468_antigravity.py --validate-only
@@ -262,5 +262,5 @@ git commit -m "exp: record Exp468 local STFT qualification result"</code></pre><
 <p><strong>1. Task별 에이전트 실행 — 권장:</strong> Task마다 fresh 구현자를 사용한다. OpenRouter Ox Alpha Ultra가 가능하면 구현·독립 의견에 적극 사용하고, 사용할 수 없으면 Sol 구현자로 전환한다. Codex가 매 Task의 diff, 테스트와 결과를 최종 승인한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task 1부터 순서대로 실행하고 각 Task 종료 때 사용자에게 checkpoint를 보여준다.</p>
 
-<div class="box ok"><strong>현재 상태:</strong> <code>implementation_task_2_complete</code>. Task 2의 Exp466 TRAIN loader·보간·네 합성 변화·C0 exact import와 1-fold parity 검사를 완료했다. 결과·결과 hash는 null이고 official 실행은 0회다. 다음 단계는 Task 3의 S10 국소 STFT·JS 점수와 가속 gate다.</div>
+<div class="box stop"><strong>현재 상태:</strong> <code>implementation_task_3_acceleration_gate_blocked</code>. Task 3 Steps 1~4의 S10 수식·LOO·Numba parity는 완료했지만, profile 개선 후 Numba cold gate가 NumPy 대비 <code>0.071117x</code>이고 MLX는 GPU float64 RFFT를 지원하지 않아 Step 5와 Task 3은 체크하지 않았다. private/official qualification은 0/0회, 결과·hash는 null이다. Task 4 이후는 실행하지 않는다.</div>
 </main></body></html>

@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp468 구현 보고서</h1>
-<p>현재 구현 상태는 <code>implementation_task_2_complete</code>다. 승인된 STFT 설정과 결과 container에 이어 Exp466의 ECG200 TRAIN loader·보간·네 합성 변화·C0 점수 함수를 같은 객체로 연결했다.</p>
+<div class="box stop"><h2>기술 요약</h2><p>현재 구현 상태는 <code>implementation_task_3_acceleration_gate_blocked</code>다. S10의 고정 STFT·자연로그 JS·LOO·rank·confirmation 수식과 Numba parity는 검증됐지만, 개선 후에도 cold compile을 포함한 Numba gate가 NumPy 대비 <code>0.071117x</code>에 그쳐 필수 <code>1.1x</code>를 통과하지 못했다. MLX/MPS는 GPU float64 RFFT를 지원하지 않는다. 따라서 NumPy CPU fallback을 보존하고 Task 4 이후 및 공식·private qualification은 실행하지 않았다.</p></div>
 <h2>Task 1 완료 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only identity, seed/fold, 5×28 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, 네 변화 순서, C0/S10/C10 역할, period 기준과 설계 SHA-256을 exact-type frozen dataclass로 고정한다.</li>
@@ -16,6 +16,25 @@
 <li>qualification은 seed-major 10개 fold, seed 순서의 immutable count mapping, seed당 정상 trial 69개, label query 0, 실행 전 artifact hash <code>null</code>을 강제한다.</li>
 <li>Task 1은 passed/reason 일치와 타입·범위·순서·불변성만 검사한다. period 합격과 보호 변화 기준의 실제 계산은 Task 4에 남겼다.</li>
 </ul>
+<h2>Task 3 완료 범위와 중단 경계</h2>
+<ul>
+<li><code>local_stft_antigravity.py</code>는 exact float64 width 140에서 suffix <code>[56:140]</code>, 시작점 <code>(0,14,28,42,56)</code>, 길이 28의 완전한 다섯 창만 사용한다.</li>
+<li>각 창은 평균 제거, 대칭 Hann <code>0.5-0.5*cos(2*pi*n/27)</code>, 길이-28 RFFT, DC 제외·Nyquist 포함 14 bin, bin당 <code>1e-12</code>, frame L1 정규화를 적용한다. 직접 DFT fixture가 NumPy oracle과 <code>atol=1e-15</code>로 일치한다.</li>
+<li>fit raw는 각 행을 제외한 frame별 성분 중앙값 reference, query raw는 전체 fit reference를 사용한다. reference는 frame별 합 1로 재정규화한다. query를 fit에 섞는 leakage fixture와 duplicate/tied median fixture를 통과한다.</li>
+<li>자연로그 Jensen–Shannon의 다섯 frame 중앙값을 raw S10으로 사용한다. rank는 <code>(1+count(fit_raw&lt;=query_raw))/(n_fit+1)</code>, confirmation은 raw가 0과 fit 최댓값을 모두 엄격히 넘을 때만 true다.</li>
+<li>결과 배열은 finite exact float64/bool, shape, 최대값과 backend를 검증하고 소유 복사본을 read-only로 보존한다.</li>
+</ul>
+<h2>전체 10-fold 가속 결과</h2>
+<p>ECG200 TRAIN 정상 69행만 사용했다. 두 seed 각각 query 크기 <code>(14,14,14,14,13)</code>, fit 크기 <code>(55,55,55,55,56)</code>이며, normal과 네 합성 query를 fold별 combined batch 한 번으로 점수화해 fit calibration을 공유했다. 전체 workload는 fit raw 552개, query raw 690개, 변환 행 1,242개, 길이-28 frame 6,210개다. 데이터 load·보간·합성·조립은 timing 밖이고 backend 준비·host 반환은 timing 안이다.</p>
+<table>
+<thead><tr><th>backend</th><th>warm median</th><th>IQR</th><th>cold compile</th><th>gate 시간</th><th>NumPy 대비</th><th>parity·판정</th></tr></thead>
+<tbody>
+<tr><td>NumPy</td><td><code>0.0331811667s</code></td><td><code>0.0013064588s</code></td><td>해당 없음</td><td><code>0.0331811667s</code></td><td><code>1.0x</code></td><td>oracle·CPU fallback</td></tr>
+<tr><td>Numba 개선 후</td><td><code>0.0328727504s</code></td><td><code>0.0010325424s</code></td><td><code>0.4336977499s</code></td><td><code>0.4665705003s</code></td><td><code>0.0711171553x</code></td><td>finite, raw max error <code>5.551115e-16</code>, rank/confirmation exact, deterministic. 속도 gate 실패</td></tr>
+<tr><td>MLX/MPS</td><td colspan="5">측정 불가</td><td>GPU float64 RFFT 미지원으로 parity 실패</td></tr>
+</tbody>
+</table>
+<p>NumPy와 Numba는 각각 전체 workload 21회를 순차 실행했다. Numba는 clean process의 첫 진입부터 host 반환까지 cold 시간을 기록했다. 초기 Numba gate <code>1.2641031672s</code>가 실패한 뒤 profile에서 monolithic scorer compile <code>2.194s</code> 누적을 확인하고, 수식·workload를 바꾸지 않은 채 direct DFT transform만 JIT하도록 개선했다. gate는 <code>0.4665705003s</code>로 줄었지만 여전히 1.1x 기준을 통과하지 못했다.</p>
 <h2>Task 2 완료 범위</h2>
 <ul>
 <li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>는 Exp466의 다섯 공개 함수를 직접 import하고 같은 객체로 re-export한다.</li>
@@ -28,9 +47,20 @@
 <tr><th>Task 1 RED/GREEN</th><td>focused suite의 10개 검사가 새 config/contracts 모듈 부재로 실패한 뒤 최소 config/contracts 구현으로 <code>10/10</code> 통과했다.</td></tr>
 <tr><th>Task 2 RED</th><td>production adapter 작성 전에 새 네 test module을 실행했고, 새 Exp468 source/interpolation/synthetic/predecessor 모듈 부재로 <code>4</code>개 import error가 발생했다.</td></tr>
 <tr><th>Task 2 GREEN</th><td>다섯 exact re-export 뒤 focused suite의 <code>8/8</code> 검사가 통과한다. 최종 검증에서는 같은 명령을 두 번 실행하고 Exp466 lower regression도 실행한다.</td></tr>
-<tr><th>경계</th><td>Task 2 parity test 외 S10/C10 점수, backend 선택, qualification gate, private/official 실행을 추가하지 않았다.</td></tr>
+<tr><th>Task 3 RED</th><td>production 작성 전에 두 새 test module을 실행했고 <code>local_stft_antigravity</code>, <code>acceleration_antigravity</code> 부재로 정확히 두 import error가 발생했다.</td></tr>
+<tr><th>Task 3 GREEN</th><td>수식·LOO·leakage·경계·불변성·Numba parity·고정 gate 계약을 포함한 focused suite <code>14/14</code>가 통과한다. 최종 명령을 두 번 연속 실행한다.</td></tr>
+<tr><th>경계</th><td>C0/S10/C10 조립, AUC, qualification, routing, champion은 추가하지 않았다. TEST 파일·라벨·실제 FN은 열지 않았다.</td></tr>
 </table>
 <div class="box"><p><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. 이는 NumPy, Numba, MLX 중 실행 backend를 선택하는 필드가 아니다.</p></div>
-<div class="box stop"><p><strong>실행 truth:</strong> 점수 계산은 승인 TRAIN의 고정 1-fold C0 parity test 범위뿐이다. private/official 실행은 <code>0/0</code>회, label query는 <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 3~6은 아직 완료되지 않았다.</p></div>
+<h2>제한·robustness·다음 단계</h2>
+<ul>
+<li>가속 backend가 없으므로 Task 3과 Step 5는 체크하지 않는다. 완료된 Steps 1~4와 최종 검증 Step만 체크한다.</li>
+<li>선택 backend는 <code>numpy</code>지만 이는 gate 합격이 아니라 명시적 CPU fallback이다.</li>
+<li>다음 단계는 threshold를 낮추거나 cold compile을 timing에서 빼는 것이 아니다. controller가 <code>BLOCKED_AT_ACCELERATION_GATE</code> 증거를 검토하기 전에는 Task 4 이후를 실행하지 않는다.</li>
+<li>열린 질문은 cold-start gate를 유지한 별도 사전등록 실험에서 AOT 또는 이미 컴파일된 dense transform이 정당화될 수 있는지다. Exp468의 고정 기준은 바꾸지 않는다.</li>
+</ul>
+<h2>Self-review와 commit</h2>
+<p>수식은 승인 설계와 brief를 대조했고, 직접 DFT fixture·LOO 수동 reference·leakage·strict boundary·두 backend 전체 output parity를 독립 검사했다. benchmark JSON의 workload counts, versions, device, timings, parity, fallback, zero/null 실행 truth를 다시 확인한다. 커밋은 이 보고서를 포함하는 <code>feat: add Exp468 local STFT spectral evidence</code>이며 SHA는 self-referential 파일 안에 고정할 수 없으므로 enclosing commit을 <code>git rev-parse HEAD</code>로 식별한다.</p>
+<div class="box stop"><p><strong>실행 truth:</strong> <code>BLOCKED_AT_ACCELERATION_GATE</code>. 가속 benchmark initial/improved 2회 외 private/official qualification 실행은 <code>0/0</code>회, label query는 <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 3과 Step 5, Task 4~6은 완료되지 않았다.</p></div>
 </main></body>
 </html>
