@@ -13,11 +13,30 @@ from unittest.mock import patch
 
 
 def _verification_antigravity(*, total: int = 4468, manifests: tuple[str, ...] = ("A", "B", "C", "D"), native_c: int = 117):
-    from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
-        _fixture_verification_authority_antigravity,
-    )
-    return _fixture_verification_authority_antigravity(
-        total_successes=total, conditions=manifests, native_c=native_c,
+    """Test-only full 4,468-slot authority; production has no fixture issuer."""
+    from experiments.exp451_verified_accelerated_resume_antigravity import verifier_antigravity as verifier
+    from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import FROZEN_EXP451_CONFIG
+    datasets = [f"fixture_{index:04d}_antigravity" for index in range(1117)]
+    tests = [{"dataset": name, "count": 600 if index == 1116 else 175} for index, name in enumerate(datasets)]
+    entries = [{"dataset": name, "test": test} for name, test in zip(datasets, tests, strict=True)]
+    imported = {"A": 1117, "B": 1117, "C": 1000, "D": 1000}
+    native = {"A": 0, "B": 0, "C": native_c, "D": 117}
+    context = type("FixtureContextAntigravity", (), {
+        "database_sha256": FROZEN_EXP451_CONFIG.database_sha256, "sha256": "a" * 64,
+        "catalog_sha256": "b" * 64,
+        "backend": type("FixtureBackendAntigravity", (), {"artifact_record": lambda self: {}})(),
+    })()
+    records = {
+        condition: verifier._condition_manifest_antigravity(
+            condition=condition, entries=entries, context=context,
+            checkpoint_hashes=[{"dataset": name, "sha256": __import__("hashlib").sha256(f"{condition}:{name}".encode()).hexdigest()} for name in datasets],
+            imported=imported[condition], native=native[condition],
+        ) for condition in manifests
+    }
+    return verifier.Exp451VerificationAntigravity(
+        total, MappingProxyType(imported), MappingProxyType(native), MappingProxyType(records),
+        context.sha256, context.catalog_sha256, context.database_sha256,
+        verifier._inventory_sha256_antigravity(records), verifier._VERIFICATION_CAPABILITY_ANTIGRAVITY,
     )
 
 
@@ -78,11 +97,13 @@ class VerificationGateTests(unittest.TestCase):
         from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
             write_exp451_condition_manifests_antigravity,
         )
+        from experiments.exp451_verified_accelerated_resume_antigravity import verifier_antigravity
 
         with TemporaryDirectory(prefix="exp451_manifest_fixture_antigravity_") as temporary:
             root = Path(temporary).resolve()
-            first = write_exp451_condition_manifests_antigravity(root, _verification_antigravity())
-            second = write_exp451_condition_manifests_antigravity(root, _verification_antigravity())
+            with patch.object(verifier_antigravity, "OFFICIAL_ROOT", root):
+                first = write_exp451_condition_manifests_antigravity(root, _verification_antigravity())
+                second = write_exp451_condition_manifests_antigravity(root, _verification_antigravity())
         self.assertEqual(tuple(first), ("A", "B", "C", "D"))
         self.assertEqual(first, second)
 
@@ -160,3 +181,39 @@ class VerificationGateTests(unittest.TestCase):
         manifests = verification.condition_manifests
         self.assertEqual(sum(len(manifests[condition]["checkpoint_hashes"]) for condition in manifests), 4468)
         self.assertEqual(sum(item["count"] for item in manifests["A"]["test_identities"]), 195900)
+
+    def test_score_manifest_tamper_and_wrong_root_stop_before_labels(self) -> None:
+        """Changed score bytes and an unconfigured evaluation root cannot open labels."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import evaluate_exp451_antigravity
+        verification = _verification_antigravity()
+        called = []
+        with self.assertRaisesRegex(ValueError, "root"):
+            evaluate_exp451_antigravity(
+                Path("/tmp/wrong_exp451_eval_antigravity"), verification=verification,
+                score_manifests={}, label_loader=lambda _: called.append(True),
+            )
+        from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import EVALUATION_ROOT
+        tampered = {condition: {"score_rows": {}} for condition in ("A", "B", "C", "D")}
+        with self.assertRaisesRegex(ValueError, "score manifest"):
+            evaluate_exp451_antigravity(
+                EVALUATION_ROOT, verification=verification, score_manifests=tampered,
+                label_loader=lambda _: called.append(True),
+            )
+        self.assertEqual(called, [])
+
+    def test_missing_persisted_manifests_and_fabricated_evaluation_are_rejected(self) -> None:
+        """Neither absent manifest leaves nor a copied evaluation object can reach reporting."""
+        from experiments.exp451_verified_accelerated_resume_antigravity import verifier_antigravity
+        from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import read_persisted_exp451_condition_manifests_antigravity
+        verification = _verification_antigravity()
+        with TemporaryDirectory(prefix="exp451_missing_manifest_antigravity_") as temporary:
+            root = Path(temporary).resolve()
+            with patch.object(verifier_antigravity, "OFFICIAL_ROOT", root):
+                with self.assertRaises(ValueError):
+                    read_persisted_exp451_condition_manifests_antigravity(root, verification)
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import Exp451EvaluationAntigravity
+        from experiments.exp451_verified_accelerated_resume_antigravity.reporting_antigravity import write_exp451_report_antigravity
+        from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import REPORT_ROOT
+        forged = Exp451EvaluationAntigravity(None, verification.inventory_sha256, verification.context_sha256)
+        with self.assertRaisesRegex(ValueError, "evaluation authority"):
+            write_exp451_report_antigravity(forged, REPORT_ROOT, verification=verification)

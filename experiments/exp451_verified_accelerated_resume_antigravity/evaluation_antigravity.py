@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from hashlib import sha256
+import math
 from pathlib import Path
 
 from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigravity import (
@@ -15,11 +17,69 @@ from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigra
 )
 
 from .config_antigravity import EVALUATION_ROOT, EXP451_TOTAL_COORDINATES
+from .contracts_antigravity import canonical_json_bytes
 from .verifier_antigravity import (
     Exp451VerificationAntigravity,
     _validate_verification_authority_antigravity,
     provenance_summary_antigravity,
 )
+
+
+_EVALUATION_CAPABILITY_ANTIGRAVITY = object()
+
+
+def _plain_antigravity(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _plain_antigravity(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_plain_antigravity(item) for item in value]
+    return value
+
+
+def _validated_score_manifests_antigravity(
+    verification: Exp451VerificationAntigravity,
+    score_manifests: Mapping[str, Mapping[str, object]],
+) -> Mapping[str, Mapping[str, object]]:
+    """Bind score vectors to each verified checkpoint manifest before labels."""
+    if tuple(score_manifests) != METHOD_ORDER[:4]:
+        raise ValueError("Exp451 score manifest order differs")
+    checked: dict[str, Mapping[str, object]] = {}
+    for condition in METHOD_ORDER[:4]:
+        value = score_manifests[condition]
+        base = verification.condition_manifests[condition]
+        required = set(base) | {"score_schema", "base_manifest_sha256", "score_rows", "score_rows_sha256", "score_manifest_sha256"}
+        if not isinstance(value, Mapping) or set(value) != required:
+            raise ValueError("Exp451 score manifest schema differs")
+        if any(value[key] != base[key] for key in base):
+            raise ValueError("Exp451 score manifest base binding differs")
+        rows = value["score_rows"]
+        score_bare = {
+            "score_schema": "exp451-verified-score-manifest-antigravity.v1",
+            "base_manifest_sha256": base["manifest_sha256"],
+            "score_rows": rows,
+            "score_rows_sha256": value["score_rows_sha256"],
+        }
+        if (
+            value.get("score_schema") != "exp451-verified-score-manifest-antigravity.v1"
+            or value.get("base_manifest_sha256") != base["manifest_sha256"]
+            or value.get("score_rows_sha256") != sha256(canonical_json_bytes(rows)).hexdigest()
+            or value.get("score_manifest_sha256") != sha256(canonical_json_bytes(score_bare)).hexdigest()
+            or not isinstance(rows, Mapping)
+        ):
+            raise ValueError("Exp451 score manifest hash differs")
+        datasets = [entry["dataset"] for entry in base["datasets"]]
+        if tuple(rows) != tuple(datasets):
+            raise ValueError("Exp451 score manifest dataset identity differs")
+        for entry in base["datasets"]:
+            scores = rows[entry["dataset"]]
+            expected = entry["test"]["count"]
+            if (
+                not isinstance(scores, list) or len(scores) != expected
+                or any(type(score) is not float or not math.isfinite(score) for score in scores)
+            ):
+                raise ValueError("Exp451 score manifest score rows differ")
+        checked[condition] = value
+    return checked
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +89,39 @@ class Exp451EvaluationAntigravity:
     frozen_evaluation: Exp450EvaluationAntigravity
     inventory_sha256: str
     context_sha256: str
+    score_manifests_sha256: str = ""
+    evaluation_sha256: str = ""
+    _capability_antigravity: object | None = None
+
+
+def _evaluation_digest_antigravity(value: Exp450EvaluationAntigravity) -> str:
+    return sha256(canonical_json_bytes(_plain_antigravity({
+        "manifests": value.manifests,
+        "metric_tables": {
+            "method_order": value.metric_tables.method_order,
+            "per_dataset": value.metric_tables.per_dataset,
+            "macro": value.metric_tables.macro,
+            "micro": value.metric_tables.micro,
+            "paired_statistics": value.metric_tables.paired_statistics,
+        },
+        "curve_tables": value.curve_tables,
+    }))).hexdigest()
+
+
+def _validate_evaluation_antigravity(
+    value: object, verification: Exp451VerificationAntigravity,
+) -> Exp451EvaluationAntigravity:
+    if (
+        not isinstance(value, Exp451EvaluationAntigravity)
+        or value._capability_antigravity is not _EVALUATION_CAPABILITY_ANTIGRAVITY
+        or value.inventory_sha256 != verification.inventory_sha256
+        or value.context_sha256 != verification.context_sha256
+        or not isinstance(value.frozen_evaluation, Exp450EvaluationAntigravity)
+        or value.evaluation_sha256 != _evaluation_digest_antigravity(value.frozen_evaluation)
+        or not isinstance(value.score_manifests_sha256, str) or len(value.score_manifests_sha256) != 64
+    ):
+        raise ValueError("Exp451 evaluation authority is not bound to verified evidence")
+    return value
 
 
 def require_exp451_evaluation_ready_antigravity(
@@ -61,9 +154,7 @@ def evaluate_exp451_antigravity(
     require_exp451_evaluation_ready_antigravity(verification)
     if Path(root) != EVALUATION_ROOT:
         raise ValueError("Exp451 evaluation root differs from the frozen configured root")
-    if tuple(score_manifests) != METHOD_ORDER[:4]:
-        raise ValueError("Exp451 score manifest order differs")
-    frozen = dict(score_manifests)
+    frozen = _validated_score_manifests_antigravity(verification, score_manifests)
     def verifier(condition: str) -> Mapping[str, object]:
         manifest = frozen.get(condition)
         if not isinstance(manifest, Mapping):
@@ -77,8 +168,11 @@ def evaluate_exp451_antigravity(
     if baseline_verifier is not None:
         kwargs["baseline_verifier"] = baseline_verifier
     frozen_evaluation = evaluate_exp450_antigravity(Path(root), **kwargs)
+    score_digest = sha256(canonical_json_bytes(_plain_antigravity(frozen))).hexdigest()
     return Exp451EvaluationAntigravity(
         frozen_evaluation, verification.inventory_sha256, verification.context_sha256,
+        score_digest, _evaluation_digest_antigravity(frozen_evaluation),
+        _EVALUATION_CAPABILITY_ANTIGRAVITY,
     )
 
 

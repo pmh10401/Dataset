@@ -62,6 +62,7 @@ _CONDITION_MODES_ANTIGRAVITY = {
     "C": ("linear", "area"), "D": ("polyphase_pchip", "area"),
 }
 _CONDITION_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-condition-manifest-antigravity.v1"
+_SCORE_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-score-manifest-antigravity.v1"
 _VERIFICATION_CAPABILITY_ANTIGRAVITY = object()
 
 
@@ -297,52 +298,6 @@ def _validate_verification_authority_antigravity(verification: object) -> Exp451
     return verification
 
 
-def _issue_verification_authority_antigravity(
-    *, total: int, imported: Mapping[str, int], native: Mapping[str, int],
-    manifests: Mapping[str, Mapping[str, object]], context_sha256: str,
-    catalog_sha256: str, database_sha256: str,
-) -> Exp451VerificationAntigravity:
-    return Exp451VerificationAntigravity(
-        total, MappingProxyType(dict(imported)), MappingProxyType(dict(native)),
-        MappingProxyType(dict(manifests)), context_sha256, catalog_sha256,
-        database_sha256, _inventory_sha256_antigravity(manifests),
-        _VERIFICATION_CAPABILITY_ANTIGRAVITY,
-    )
-
-
-def _fixture_verification_authority_antigravity(
-    *, total_successes: int = 4468, conditions: tuple[str, ...] = _CONDITIONS_ANTIGRAVITY,
-    native_c: int = 117,
-) -> Exp451VerificationAntigravity:
-    """Private test-only full-population authority; production never calls this."""
-    datasets = [f"fixture_{index:04d}_antigravity" for index in range(1117)]
-    tests = [
-        {"dataset": name, "count": 600 if index == 1116 else 175}
-        for index, name in enumerate(datasets)
-    ]
-    entries = [{"dataset": name, "test": test} for name, test in zip(datasets, tests, strict=True)]
-    imported = {"A": 1117, "B": 1117, "C": 1000, "D": 1000}
-    native = {"A": 0, "B": 0, "C": native_c, "D": 117}
-    context, catalog = "a" * 64, "b" * 64
-    manifests: dict[str, Mapping[str, object]] = {}
-    for condition in conditions:
-        manifests[condition] = _condition_manifest_antigravity(
-            condition=condition, entries=entries,
-            context=type("FixtureContextAntigravity", (), {
-                "database_sha256": FROZEN_EXP451_CONFIG.database_sha256,
-                "sha256": context, "catalog_sha256": catalog,
-                "backend": type("FixtureBackendAntigravity", (), {"artifact_record": lambda self: {}})(),
-            })(),
-            checkpoint_hashes=[{"dataset": name, "sha256": sha256(f"{condition}:{name}".encode()).hexdigest()} for name in datasets],
-            imported=imported[condition], native=native[condition],
-        )
-    return _issue_verification_authority_antigravity(
-        total=total_successes, imported=imported, native=native, manifests=manifests,
-        context_sha256=context, catalog_sha256=catalog,
-        database_sha256=FROZEN_EXP451_CONFIG.database_sha256,
-    )
-
-
 def verify_exp451_completion_antigravity(
     root: Path, *, context: Exp451RunContext, catalog: Mapping[str, object],
     migration_manifest: Exp451MigrationManifest,
@@ -397,10 +352,11 @@ def verify_exp451_completion_antigravity(
     total = sum(imported_counts.values()) + sum(native_counts.values())
     if total != EXP451_TOTAL_COORDINATES:
         raise ValueError("Exp451 completion count differs")
-    return _issue_verification_authority_antigravity(
-        total=total, imported=imported_counts, native=native_counts, manifests=manifests,
-        context_sha256=context.sha256, catalog_sha256=context.catalog_sha256,
-        database_sha256=context.database_sha256,
+    return Exp451VerificationAntigravity(
+        total, MappingProxyType(imported_counts), MappingProxyType(native_counts),
+        MappingProxyType(manifests), context.sha256, context.catalog_sha256,
+        context.database_sha256, _inventory_sha256_antigravity(manifests),
+        _VERIFICATION_CAPABILITY_ANTIGRAVITY,
     )
 
 
@@ -433,8 +389,8 @@ def write_exp451_condition_manifests_antigravity(
     ):
         raise ValueError("Exp451 cannot publish incomplete condition manifests")
     root = Path(root)
-    if not root.is_absolute():
-        raise ValueError("Exp451 condition manifest root must be absolute")
+    if root != OFFICIAL_ROOT or root.is_symlink():
+        raise ValueError("Exp451 condition manifest root differs from the frozen configured root")
     results: dict[str, Path] = {}
     for condition in _CONDITIONS_ANTIGRAVITY:
         manifest = verification.condition_manifests[condition]
@@ -446,6 +402,27 @@ def write_exp451_condition_manifests_antigravity(
         _publish_create_only_antigravity(path, payload)
         results[condition] = path
     return MappingProxyType(results)
+
+
+def read_persisted_exp451_condition_manifests_antigravity(
+    root: Path, verification: Exp451VerificationAntigravity,
+) -> Mapping[str, Mapping[str, object]]:
+    """Reopen the four create-only leaves and bind their exact bytes to authority."""
+    _validate_verification_authority_antigravity(verification)
+    root = Path(root)
+    if root != OFFICIAL_ROOT or root.is_symlink():
+        raise ValueError("Exp451 condition manifest root differs from the frozen configured root")
+    opened: dict[str, Mapping[str, object]] = {}
+    for condition in _CONDITIONS_ANTIGRAVITY:
+        path = _checked_target_path_antigravity(
+            root, f"condition_manifests_antigravity/{condition}_condition_manifest_antigravity.json", create=False,
+        )
+        value, raw = _canonical_object_antigravity(path)
+        expected = canonical_json_bytes(dict(verification.condition_manifests[condition]))
+        if raw != expected or value != dict(verification.condition_manifests[condition]):
+            raise ValueError("Exp451 persisted condition manifest differs")
+        opened[condition] = MappingProxyType(value)
+    return MappingProxyType(opened)
 
 
 def build_exp451_score_manifests_antigravity(
@@ -500,11 +477,16 @@ def build_exp451_score_manifests_antigravity(
             dataset: [float(value) for value in policy.scores[dataset]]
             for dataset in raw_datasets
         }
-        bare = dict(source)
-        bare.pop("manifest_sha256", None)
-        bare["score_rows"] = rows
+        base = dict(source)
+        score_bare = {
+            "score_schema": _SCORE_MANIFEST_SCHEMA_ANTIGRAVITY,
+            "base_manifest_sha256": base["manifest_sha256"],
+            "score_rows": rows,
+            "score_rows_sha256": sha256(canonical_json_bytes(rows)).hexdigest(),
+        }
         score_manifests[condition] = MappingProxyType({
-            **bare, "manifest_sha256": sha256(canonical_json_bytes(bare)).hexdigest(),
+            **base, **score_bare,
+            "score_manifest_sha256": sha256(canonical_json_bytes(score_bare)).hexdigest(),
         })
     return verification, MappingProxyType(score_manifests)
 
@@ -512,5 +494,5 @@ def build_exp451_score_manifests_antigravity(
 __all__ = [
     "Exp451VerificationAntigravity", "provenance_summary_antigravity",
     "verify_exp451_completion_antigravity", "write_exp451_condition_manifests_antigravity",
-    "build_exp451_score_manifests_antigravity",
+    "read_persisted_exp451_condition_manifests_antigravity", "build_exp451_score_manifests_antigravity",
 ]

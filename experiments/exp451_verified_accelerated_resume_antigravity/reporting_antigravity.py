@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
+import shutil
+import tempfile
 
 from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
     Exp450ReportArtifactAntigravity,
@@ -13,7 +16,7 @@ from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigrav
 from .contracts_antigravity import canonical_json_bytes
 from .artifacts_antigravity import _checked_target_path_antigravity, _publish_create_only_antigravity
 from .config_antigravity import REPORT_ROOT
-from .evaluation_antigravity import Exp451EvaluationAntigravity, require_exp451_evaluation_ready_antigravity
+from .evaluation_antigravity import Exp451EvaluationAntigravity, _validate_evaluation_antigravity, require_exp451_evaluation_ready_antigravity
 from .verifier_antigravity import Exp451VerificationAntigravity, _validate_verification_authority_antigravity, provenance_summary_antigravity
 
 
@@ -25,23 +28,51 @@ class Exp451ReportArtifactAntigravity:
     provenance_path: Path
 
 
+def _dir_fsync_antigravity(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Path:
+    """Publish a complete staged report directory by one no-clobber rename."""
+    parent = destination.parent
+    _checked_target_path_antigravity(parent, "report_guard_antigravity.json", create=True)
+    current = destination.lstat() if destination.exists() or destination.is_symlink() else None
+    if current is not None:
+        if destination.is_symlink() or not destination.is_dir():
+            raise ValueError("Exp451 report destination is unsafe")
+        expected = {path.name: path.read_bytes() for path in stage.iterdir() if path.is_file()}
+        actual = {path.name: path.read_bytes() for path in destination.iterdir() if path.is_file()}
+        if expected != actual or len(actual) != len(list(destination.iterdir())):
+            raise ValueError("Exp451 report destination already differs")
+        return destination
+    try:
+        os.rename(stage, destination)
+    except FileExistsError:
+        return _publish_report_directory_antigravity(stage, destination)
+    _dir_fsync_antigravity(parent)
+    return destination
+
+
 def write_exp451_report_antigravity(
     evaluation: Exp451EvaluationAntigravity, root: Path, *, verification: Exp451VerificationAntigravity,
 ) -> Exp451ReportArtifactAntigravity:
     """Write unchanged comparison figures only after the 4,468-result gate closes."""
     require_exp451_evaluation_ready_antigravity(verification)
     verification = _validate_verification_authority_antigravity(verification)
-    if (
-        not isinstance(evaluation, Exp451EvaluationAntigravity)
-        or evaluation.inventory_sha256 != verification.inventory_sha256
-        or evaluation.context_sha256 != verification.context_sha256
-    ):
-        raise ValueError("Exp451 report evaluation is not bound to the verified inventory")
+    evaluation = _validate_evaluation_antigravity(evaluation, verification)
     if Path(root) != REPORT_ROOT or Path(root).is_symlink():
         raise ValueError("Exp451 report root differs from the frozen configured root")
-    frozen = write_exp450_report_antigravity(evaluation.frozen_evaluation, Path(root))
-    summary = provenance_summary_antigravity(verification)
-    payload = {
+    report_root = Path(root)
+    stage_parent = report_root.parent
+    stage_root = Path(tempfile.mkdtemp(prefix=".exp451_report_stage_antigravity_", dir=stage_parent))
+    try:
+        frozen_stage = write_exp450_report_antigravity(evaluation.frozen_evaluation, stage_root)
+        summary = provenance_summary_antigravity(verification)
+        payload = {
         "schema": "exp451-report-provenance-antigravity.v1",
         "experiment": "Exp451",
         "frozen_metric_definition": "exp450_resampling_image_ablation_antigravity",
@@ -50,14 +81,33 @@ def write_exp451_report_antigravity(
             "roc": {"x": "false_positive_rate", "y": "true_positive_rate"},
             "precision_recall": {"x": "recall", "y": "precision"},
         },
-        **summary,
-    }
-    data = canonical_json_bytes(payload)
-    path = _checked_target_path_antigravity(
-        frozen.root, "exp451_report_provenance_antigravity.json", create=True
-    )
-    _publish_create_only_antigravity(path, data)
-    return Exp451ReportArtifactAntigravity(frozen, path)
+            **summary,
+        }
+        data = canonical_json_bytes(payload)
+        stage_provenance = _checked_target_path_antigravity(
+            frozen_stage.root, "exp451_report_provenance_antigravity.json", create=True
+        )
+        _publish_create_only_antigravity(stage_provenance, data)
+        _dir_fsync_antigravity(frozen_stage.root)
+        final_directory = _publish_report_directory_antigravity(
+            frozen_stage.root, report_root / "exp450_report_artifacts_antigravity"
+        )
+        frozen = Exp450ReportArtifactAntigravity(
+            root=final_directory,
+            metric_csv_path=final_directory / frozen_stage.metric_csv_path.name,
+            metric_json_path=final_directory / frozen_stage.metric_json_path.name,
+            curve_csv_path=final_directory / frozen_stage.curve_csv_path.name,
+            curve_json_path=final_directory / frozen_stage.curve_json_path.name,
+            paired_csv_path=final_directory / frozen_stage.paired_csv_path.name,
+            paired_json_path=final_directory / frozen_stage.paired_json_path.name,
+            png_path=final_directory / frozen_stage.png_path.name,
+            svg_path=final_directory / frozen_stage.svg_path.name,
+            html_path=final_directory / frozen_stage.html_path.name,
+            manifest_path=final_directory / frozen_stage.manifest_path.name,
+        )
+        return Exp451ReportArtifactAntigravity(frozen, final_directory / stage_provenance.name)
+    finally:
+        shutil.rmtree(stage_root, ignore_errors=True)
 
 
 __all__ = ["Exp451ReportArtifactAntigravity", "write_exp451_report_antigravity"]

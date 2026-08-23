@@ -188,16 +188,23 @@ def _evaluate_result_antigravity():
     )
     from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
         build_exp451_score_manifests_antigravity,
+        read_persisted_exp451_condition_manifests_antigravity,
         verify_exp451_completion_antigravity,
+        write_exp451_condition_manifests_antigravity,
     )
 
     context, catalog, manifest = _verify_migration_antigravity()
     # Verify all result envelopes before even the label-free raw-data reopen.
     # ``build_exp451_score_manifests_antigravity`` repeats this binding while
     # reconstructing typed score inputs, so there is no unchecked hand-off.
-    verify_exp451_completion_antigravity(
+    verification = verify_exp451_completion_antigravity(
         context.run_root, context=context, catalog=catalog, migration_manifest=manifest,
     )
+    # Persisted manifests are required label-boundary evidence. They may be
+    # published only from the complete in-memory authority and are reopened
+    # before the score/label stages proceed.
+    write_exp451_condition_manifests_antigravity(context.run_root, verification)
+    read_persisted_exp451_condition_manifests_antigravity(context.run_root, verification)
     raw = _load_raw_antigravity(catalog)
     verification, score_manifests = build_exp451_score_manifests_antigravity(
         context.run_root, context=context, catalog=catalog,
