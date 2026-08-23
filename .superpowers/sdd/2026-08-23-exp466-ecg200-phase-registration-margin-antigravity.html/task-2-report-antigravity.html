@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp466 Task 2 구현 보고</title>
+  <style>
+    body { max-width: 1120px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.65 system-ui, sans-serif; color: #172033; }
+    h1, h2 { line-height: 1.25; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { border: 1px solid #aab3bf; padding: .55rem; text-align: left; vertical-align: top; }
+    code, pre { background: #eef2f7; }
+    code { padding: .1rem .3rem; overflow-wrap: anywhere; }
+    pre { padding: 1rem; overflow: auto; white-space: pre-wrap; }
+    .ok { border-left: 6px solid #16794b; background: #f5fff9; padding: 1rem; }
+    .note { border-left: 6px solid #2457a6; background: #f5f7fa; padding: 1rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp466 Task 2 — ECG200 입력·합성 변화·C0 권한</h1>
+  <p><strong>상태:</strong> <code>task_2_implementation_review_pass_map_closeout_complete</code>. 네 어댑터와 네 테스트를 구현하고, 요구된 RED와 동일한 focused GREEN 두 번, 전체 Exp466 회귀 테스트, Luna 검토, Task 2 코드맵 확장과 diff 검사를 완료했다.</p>
+
+  <h2>커밋</h2>
+  <table>
+    <tr><th>구현 커밋</th><td><code>039824461dd82656781f8f909b88ec5f8bf3415d</code></td></tr>
+    <tr><th>메시지</th><td><code>feat: bind Exp466 ECG200 input and C0 authority</code></td></tr>
+    <tr><th>범위</th><td>구현 커밋에는 어댑터 4개와 테스트 4개만 포함한다. 이 보고서와 Task 2 caller/effect/test 코드맵은 구현 커밋 <code>039824461dd82656781f8f909b88ec5f8bf3415d</code>를 source boundary로 사용하는 별도 문서 closeout에 포함한다.</td></tr>
+  </table>
+
+  <h2>변경 파일과 인터페이스</h2>
+  <table>
+    <tr><th>파일</th><th>인터페이스와 효과</th></tr>
+    <tr><td><code>sources_antigravity.py</code></td><td><code>load_ecg200_normal_train_antigravity(path: Path) -&gt; ndarray</code>. Exp465 함수 객체를 그대로 다시 내보낸다.</td></tr>
+    <tr><td><code>interpolation_antigravity.py</code></td><td><code>interpolate_to_140_antigravity(values: ndarray) -&gt; ndarray</code>. Exp465 함수 객체를 그대로 다시 내보낸다.</td></tr>
+    <tr><td><code>synthetic_antigravity.py</code></td><td><code>primary_rows_antigravity(row: ndarray) -&gt; Mapping[str, ndarray]</code>. Exp464의 level shift, gradual drift, amplitude scaling, period change 수식을 고정 순서로 적용하고 owned, C-contiguous, finite, read-only float64 배열을 반환한다.</td></tr>
+    <tr><td><code>predecessor_antigravity.py</code></td><td><code>capture_exp465_authority_antigravity()</code>, <code>score_c0_fold_antigravity(..., *, seed, fold_index, authority) -&gt; C0FoldScoresAntigravity</code>. Exp465 closeout 커밋과 정확한 Exp465 fold scorer를 고정하고 C0의 <code>normal_scores</code>/<code>primary_scores</code>만 불변 projection한다.</td></tr>
+    <tr><td><code>tests/test_sources_antigravity.py</code></td><td>함수 객체 동일성과 TEST 이름의 open 이전 거부를 검증한다.</td></tr>
+    <tr><td><code>tests/test_interpolation_antigravity.py</code></td><td>함수 객체 동일성을 검증한다.</td></tr>
+    <tr><td><code>tests/test_synthetic_antigravity.py</code></td><td>네 수식, 키 순서, exact period warp, 소유권·불변성·finite·float64, 잘못된 입력 거부를 검증한다.</td></tr>
+    <tr><td><code>tests/test_predecessor_antigravity.py</code></td><td>closeout/source identity, keyword-only 인터페이스, C0 byte parity와 불변 출력을 검증한다.</td></tr>
+  </table>
+
+  <h2>Strict TDD 증거</h2>
+  <p>구현 파일을 만들기 전에 네 테스트 파일을 먼저 추가하고 다음 명령을 실행했다.</p>
+  <pre>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity</pre>
+  <table>
+    <tr><th>RED</th><td>exit <code>1</code>; <code>Ran 4 tests</code>; <code>FAILED (errors=4)</code>. 정확한 원인은 <code>sources_antigravity</code>, <code>interpolation_antigravity</code>, <code>synthetic_antigravity</code>, <code>predecessor_antigravity</code> 각각에 대한 <code>ModuleNotFoundError</code>였다. 즉 오타나 fixture 문제가 아니라 네 Task 2 구현이 아직 없어서 실패했다.</td></tr>
+    <tr><th>GREEN 1</th><td>exit <code>0</code>; <code>.......</code>; <code>Ran 7 tests in 3.822s</code>; <code>OK</code>.</td></tr>
+    <tr><th>GREEN 2</th><td>exit <code>0</code>; <code>.......</code>; <code>Ran 7 tests in 2.846s</code>; <code>OK</code>.</td></tr>
+    <tr><th>전체 Exp466 회귀</th><td><code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'</code>: exit <code>0</code>; <code>Ran 14 tests in 2.797s</code>; <code>OK</code>.</td></tr>
+  </table>
+  <details>
+    <summary>Exact RED output</summary>
+    <pre>EEEE
+======================================================================
+ERROR: test_sources_antigravity (unittest.loader._FailedTest.test_sources_antigravity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_sources_antigravity
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity/experiments/exp466_ecg200_phase_registration_margin_antigravity/tests/test_sources_antigravity.py", line 10, in &lt;module&gt;
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.sources_antigravity import (
+        load_ecg200_normal_train_antigravity as exp466_load_antigravity,
+    )
+ModuleNotFoundError: No module named 'experiments.exp466_ecg200_phase_registration_margin_antigravity.sources_antigravity'
+
+======================================================================
+ERROR: test_interpolation_antigravity (unittest.loader._FailedTest.test_interpolation_antigravity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_interpolation_antigravity
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity/experiments/exp466_ecg200_phase_registration_margin_antigravity/tests/test_interpolation_antigravity.py", line 8, in &lt;module&gt;
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.interpolation_antigravity import (
+        interpolate_to_140_antigravity as exp466_interpolate_antigravity,
+    )
+ModuleNotFoundError: No module named 'experiments.exp466_ecg200_phase_registration_margin_antigravity.interpolation_antigravity'
+
+======================================================================
+ERROR: test_synthetic_antigravity (unittest.loader._FailedTest.test_synthetic_antigravity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_synthetic_antigravity
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity/experiments/exp466_ecg200_phase_registration_margin_antigravity/tests/test_synthetic_antigravity.py", line 8, in &lt;module&gt;
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.synthetic_antigravity import (
+        primary_rows_antigravity,
+    )
+ModuleNotFoundError: No module named 'experiments.exp466_ecg200_phase_registration_margin_antigravity.synthetic_antigravity'
+
+======================================================================
+ERROR: test_predecessor_antigravity (unittest.loader._FailedTest.test_predecessor_antigravity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_predecessor_antigravity
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity/experiments/exp466_ecg200_phase_registration_margin_antigravity/tests/test_predecessor_antigravity.py", line 12, in &lt;module&gt;
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.predecessor_antigravity import (
+    ...&lt;4 lines&gt;...
+    )
+ModuleNotFoundError: No module named 'experiments.exp466_ecg200_phase_registration_margin_antigravity.predecessor_antigravity'
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+FAILED (errors=4)</pre>
+  </details>
+
+  <h2>C0 byte parity와 TEST-before-open</h2>
+  <div class="ok">
+    <p><strong>C0 parity:</strong> 고정 RNG seed <code>4662026</code>으로 만든 read-only <code>(20, 140)</code> float64 fixture, fit indices <code>[0..5]</code>, query indices <code>[6,7,8,10,12]</code>, Exp466 seed <code>20260721</code>, fold <code>0</code>에서 어댑터 결과를 Exp465 fold scorer 직접 결과와 비교했다. C0 normal 한 배열과 고정 순서의 primary 네 배열 모두 <code>tobytes()</code>가 동일했고 dtype은 float64, 값은 finite, 출력은 read-only였다.</p>
+    <p><strong>TEST-before-open:</strong> <code>Path.open</code>을 호출 즉시 실패하는 spy로 바꾼 상태에서 로컬 TEST 이름 fixture를 전달했다. loader가 <code>ValueError("TEST paths are forbidden...")</code>를 먼저 냈고 spy 호출 수는 <code>0</code>이었다. 실제 ECG200 TEST 파일이나 label은 열거나 조회하지 않았다.</p>
+  </div>
+
+  <h2>Luna 검토</h2>
+  <div class="ok">
+    <p>controller가 전달한 Luna 검토 결과는 <strong><code>SPEC PASS / QUALITY PASS</code></strong>다. 이 verdict는 Task 2의 exact Exp465 source/interpolation identity, frozen synthetic formulas, reviewed Exp465 C0 authority projection, focused tests, 금지 경계 준수에 대한 구현 검토 결과로 기록한다.</p>
+  </div>
+
+  <h2>검증과 diff</h2>
+  <table>
+    <tr><th>코드맵 시작 검사</th><td>Task 2 확장 전 <code>python3 scratch/build_codemap_exp466_antigravity.py --validate-only</code> exit <code>0</code>, 출력 없음.</td></tr>
+    <tr><th>코드맵 종료 검사</th><td>builder를 source commit <code>039824461dd82656781f8f909b88ec5f8bf3415d</code>로 실행해 HTML/JSON/lock을 재생성한 뒤 같은 validate-only 명령 exit <code>0</code>, 출력 없음. 네 어댑터, 네 테스트, 이 보고서의 fingerprint와 caller/effect/test node·edge·flow를 고정했다.</td></tr>
+    <tr><th>closeout 전체 회귀</th><td><code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'</code> exit <code>0</code>; <code>Ran 14 tests in 3.575s</code>; <code>OK</code>.</td></tr>
+    <tr><th>diff 검사</th><td><code>git diff --cached --check</code>와 closeout commit 대상 검사를 실행해 whitespace 오류가 없고 변경 범위가 builder, code-map triplet, 이 보고서뿐임을 확인했다.</td></tr>
+    <tr><th>cache 검사</th><td>Exp466 패키지 아래 <code>__pycache__</code>, <code>*.pyc</code>, <code>*.pyo</code>를 제거하고 남은 항목이 없음을 확인한 뒤 커밋했다.</td></tr>
+    <tr><th>MLX 판단</th><td>loader와 interpolation은 exact Exp465 함수 객체여야 하고 C0는 exact Exp465 source byte parity를 유지해야 하므로 backend 교체는 frozen 알고리즘·source identity를 바꾼다. synthetic stage도 작은 고정 NumPy 벡터 연산이며 full run은 수행하지 않았다. 따라서 이번 Task 2는 canonical CPU 경로를 유지했다.</td></tr>
+  </table>
+
+  <h2>코드맵 caller/effect/test 답변</h2>
+  <table>
+    <tr><th>무엇이 호출하는가?</th><td>현재 Task 1 코드맵의 future-task 경계와 Exp465/Exp464 구조에 따라 향후 Exp466 phase scorer와 qualification이 source, interpolation, synthetic, C0 predecessor 어댑터를 호출한다. 네 focused test가 각 공개 경계를 직접 호출한다.</td></tr>
+    <tr><th>무엇에 영향을 주는가?</th><td>TRAIN normal 입력과 96→140 보간은 Exp465와 동일한 객체에 고정되고, synthetic은 네 frozen primary row만 만든다. predecessor는 reviewed Exp465 closeout <code>23528af929da9dbf57cbcdf87c06abd58cb2363b</code>과 exact C0 scorer를 고정해 normal/primary score bytes만 projection한다. P9/C9, qualification, publication, official/private truth에는 영향을 주지 않는다.</td></tr>
+    <tr><th>어떤 테스트가 덮는가?</th><td><code>test_sources_antigravity</code>, <code>test_interpolation_antigravity</code>, <code>test_synthetic_antigravity</code>, <code>test_predecessor_antigravity</code>가 각각 객체 identity/비접근, interpolation identity, 네 수식·불변성, authority/C0 parity를 덮는다.</td></tr>
+  </table>
+
+  <h2>보존한 경계와 concern</h2>
+  <div class="note">
+    <p>Task 1 config/contracts/truth docs/ledgers/dashboard/plan의 의미는 수정하지 않았다. 기존 Task 1 코드맵 node·answer·flow는 보존하고 Task 2 경계만 추가했다. P9/C9, phase qualification, publication, CLI, private/official 실행, routing, champion, pending, promotion을 구현하거나 변경하지 않았다. 실제 ECG200 TEST와 label에 접근하지 않았고 official/private result를 만들지 않았다.</p>
+    <p><strong>Concern:</strong> brief는 <code>C0FoldScoresAntigravity</code>의 내부 field 이름을 별도로 고정하지 않았다. 기존 Exp465 qualification 용어와 controller 지시에 맞춰 최소 불변 projection인 <code>normal_scores</code>와 <code>primary_scores</code>를 선택했다. 기능 blocker는 없으며, 이후 Task 3 소비자는 이 두 field를 사용해야 한다.</p>
+  </div>
+</main>
+</body>
+</html>
