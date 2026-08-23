@@ -9,6 +9,18 @@
 - Added unique coordinate-wave failure records, wave-one-before-wave-two retry
   control, and fsynced JSONL progress emitted only after the corresponding
   success or failure record is durable.
+- Added a root-contained cross-process exclusive run lock. An existing lock,
+  including a stale one, fails closed and requires explicit operator inspection;
+  it is never removed automatically.
+- ETA now uses `native_elapsed_seconds / native_attempts × remaining` only.
+  The 4,234 imported coordinates do not affect the rate. The two native fields
+  are persisted in JSONL, so a resumed run continues from the latest durable
+  native rate record.
+- Progress paths reject links and non-regular files before open, use
+  no-follow flags where the platform provides them, and fsync each full line.
+- `status` returns completed, failed, remaining, total, elapsed time, ETA, and
+  the latest coordinate/event. CLI accepts the planned `--mode full` and
+  rejects unsupported modes.
 - Added the `migrate`, `verify-migration`, `run`, `status`, `verify`,
   `evaluate`, and `report` CLI surface. The final three commands intentionally
   stop with a clear Task 6 dependency rather than duplicate verification,
@@ -17,9 +29,9 @@
 ## Verification
 
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_contracts_config_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_transforms_backend_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_scoring_imaging_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_runner_cli_antigravity`
-  passed: 56 tests.
+  passed: 61 tests.
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_migration_artifacts_antigravity`
-  passed: 7 tests.
+  passed: 7 tests. Total Exp451 tests: 68.
 - `python3 -m py_compile experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py scratch/run_exp451_verified_accelerated_resume_antigravity.py`
   passed.
 - No official source or result checkpoint was read, written, moved, or deleted

@@ -138,13 +138,20 @@ def _run_antigravity() -> dict[str, object]:
 
 
 def _status_antigravity() -> dict[str, object]:
+    from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import (
+        status_snapshot_antigravity,
+    )
+
     roots = _roots_antigravity()
     official = roots["official"]
+    manifest = official / "migration_manifest_antigravity.json"
+    migrated = 4234 if manifest.is_file() and not manifest.is_symlink() else 0
     return {
         "experiment": "Exp451", "command": "status",
         "roots": {name: {"path": str(root), "exists": root.exists()} for name, root in roots.items()},
-        "migration_manifest_exists": (official / "migration_manifest_antigravity.json").is_file(),
+        "migration_manifest_exists": migrated == 4234,
         "progress_log": str(official / "progress_antigravity.jsonl"),
+        **status_snapshot_antigravity(official, imported_completed=migrated),
     }
 
 
@@ -158,6 +165,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "command", choices=("migrate", "verify-migration", "run", "status", "verify", "evaluate", "report")
     )
+    parser.add_argument("--mode", choices=("full",), default="full")
     arguments = parser.parse_args(argv)
     try:
         if arguments.command == "migrate":

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -10,6 +11,7 @@ import os
 from pathlib import Path
 import stat
 from time import monotonic
+from uuid import uuid4
 
 from paper.equipment_anomaly_detection.contracts_paper import RawDataset
 
@@ -209,6 +211,19 @@ def build_resume_inventory_antigravity(
     )
 
 
+def wave_one_coordinates_antigravity(
+    inventory: Exp451ResumeInventoryAntigravity,
+) -> tuple[tuple[str, str], ...]:
+    """Return unattempted gaps only; all first-wave work precedes every retry."""
+    if not isinstance(inventory, Exp451ResumeInventoryAntigravity):
+        raise ValueError("Exp451 resume inventory is invalid")
+    failed_once = {
+        (record.dataset, record.condition_id)
+        for record in inventory.failures if record.wave == 1
+    }
+    return tuple(coordinate for coordinate in inventory.pending if coordinate not in failed_once)
+
+
 def build_execution_schedule_antigravity(context: Exp451RunContext) -> Exp451ExecutionScheduleAntigravity:
     """Record CPU policy while explicitly serialising MPS-heavy C/D coordinates."""
     if not isinstance(context, Exp451RunContext):
@@ -223,25 +238,31 @@ def build_execution_schedule_antigravity(context: Exp451RunContext) -> Exp451Exe
 
 def progress_event_antigravity(
     *, dataset: str, condition: str, status: str, completed: int, failed: int,
-    total: int, elapsed_seconds: float,
+    total: int, elapsed_seconds: float, native_attempts: int,
+    native_elapsed_seconds: float,
 ) -> dict[str, object]:
-    """Return one complete JSONL progress event after a durable outcome."""
+    """Return one complete event; ETA is native elapsed / native attempts × remaining."""
     if (
         type(dataset) is not str or not dataset or condition not in _CONDITIONS_ANTIGRAVITY
         or status not in {"success", "failure"} or type(completed) is not int
         or type(failed) is not int or type(total) is not int or completed < 0
         or failed < 0 or total != EXP451_TOTAL_COORDINATES or completed > total
         or type(elapsed_seconds) not in {int, float} or elapsed_seconds < 0
+        or type(native_attempts) is not int or native_attempts < 0
+        or type(native_elapsed_seconds) not in {int, float} or native_elapsed_seconds < 0
     ):
         raise ValueError("Exp451 progress event is invalid")
     remaining = total - completed
-    observed = completed + failed
-    eta = 0.0 if observed == 0 else max(0.0, float(elapsed_seconds) / observed * remaining)
+    eta = 0.0 if native_attempts == 0 else max(
+        0.0, float(native_elapsed_seconds) / native_attempts * remaining
+    )
     return {
         "experiment": "Exp451", "dataset": dataset, "condition": condition,
         "status": status, "completed": completed, "failed": failed,
         "remaining": remaining, "total": total,
         "elapsed_seconds": float(elapsed_seconds), "eta_seconds": float(eta),
+        "native_attempts": native_attempts,
+        "native_elapsed_seconds": float(native_elapsed_seconds),
     }
 
 
@@ -325,6 +346,16 @@ def _canonical_read_antigravity(path: Path) -> dict[str, object]:
     if not isinstance(value, dict) or canonical_json_bytes(value) != raw:
         raise ValueError("Exp451 artifact is noncanonical")
     return value
+
+
+def _write_all_antigravity(descriptor: int, data: bytes) -> None:
+    """Write a complete durable-record buffer; short writes are never accepted."""
+    view = memoryview(data)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise OSError("Exp451 durable write made no progress")
+        view = view[written:]
 
 
 def _read_native_coordinates_antigravity(
@@ -453,18 +484,136 @@ def append_progress_event_antigravity(root: Path, event: Mapping[str, object]) -
         raise ValueError("Exp451 progress root must be absolute")
     required = {
         "experiment", "dataset", "condition", "status", "completed", "failed", "remaining",
-        "total", "elapsed_seconds", "eta_seconds",
+        "total", "elapsed_seconds", "eta_seconds", "native_attempts", "native_elapsed_seconds",
     }
     if set(event) != required:
         raise ValueError("Exp451 progress event schema differs")
     path = _checked_target_path_antigravity(Path(root), _PROGRESS_NAME_ANTIGRAVITY, create=True)
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    expected = progress_event_antigravity(
+        dataset=event["dataset"], condition=event["condition"], status=event["status"],
+        completed=event["completed"], failed=event["failed"], total=event["total"],
+        elapsed_seconds=event["elapsed_seconds"], native_attempts=event["native_attempts"],
+        native_elapsed_seconds=event["native_elapsed_seconds"],
+    )
+    if dict(event) != expected:
+        raise ValueError("Exp451 progress event differs")
+    details = path.lstat() if path.exists() or path.is_symlink() else None
+    if details is not None and (stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode)):
+        raise ValueError("Exp451 progress path is unsafe")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(path, flags, 0o600)
     try:
-        os.write(descriptor, canonical_json_bytes(dict(event)))
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("Exp451 progress path is unsafe")
+        _write_all_antigravity(descriptor, canonical_json_bytes(dict(event)))
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
     return path
+
+
+def _read_progress_events_antigravity(root: Path) -> tuple[dict[str, object], ...]:
+    """Read the append-only JSONL log without creating paths or following links."""
+    root = Path(root)
+    if not root.is_absolute():
+        raise ValueError("Exp451 progress root must be absolute")
+    if not root.exists() and not root.is_symlink():
+        return ()
+    root_details = root.lstat()
+    if stat.S_ISLNK(root_details.st_mode) or not stat.S_ISDIR(root_details.st_mode):
+        raise ValueError("Exp451 progress root is unsafe")
+    path = root / _PROGRESS_NAME_ANTIGRAVITY
+    if not path.exists() and not path.is_symlink():
+        return ()
+    details = path.lstat()
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+        raise ValueError("Exp451 progress path is unsafe")
+    records: list[dict[str, object]] = []
+    for line in path.read_bytes().splitlines(keepends=True):
+        if not line.endswith(b"\n"):
+            raise ValueError("Exp451 progress log is noncanonical")
+        try:
+            value = json.loads(line.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("Exp451 progress log is invalid") from error
+        if not isinstance(value, dict) or canonical_json_bytes(value) != line:
+            raise ValueError("Exp451 progress log is noncanonical")
+        expected = progress_event_antigravity(
+            dataset=value.get("dataset"), condition=value.get("condition"), status=value.get("status"),
+            completed=value.get("completed"), failed=value.get("failed"), total=value.get("total"),
+            elapsed_seconds=value.get("elapsed_seconds"), native_attempts=value.get("native_attempts"),
+            native_elapsed_seconds=value.get("native_elapsed_seconds"),
+        )
+        if value != expected:
+            raise ValueError("Exp451 progress log differs")
+        records.append(value)
+    return tuple(records)
+
+
+def status_snapshot_antigravity(root: Path, *, imported_completed: int) -> dict[str, object]:
+    """Return the latest durable live counters; no event means no native rate yet."""
+    if type(imported_completed) is not int or not 0 <= imported_completed <= EXP451_TOTAL_COORDINATES:
+        raise ValueError("Exp451 imported progress count is invalid")
+    events = _read_progress_events_antigravity(Path(root))
+    if not events:
+        return {
+            "completed": imported_completed, "failed": 0,
+            "remaining": EXP451_TOTAL_COORDINATES - imported_completed,
+            "total": EXP451_TOTAL_COORDINATES, "elapsed_seconds": 0.0,
+            "eta_seconds": 0.0, "latest_coordinate": None, "latest_event": None,
+            "native_attempts": 0, "native_elapsed_seconds": 0.0,
+        }
+    latest = events[-1]
+    return {
+        "completed": latest["completed"], "failed": latest["failed"],
+        "remaining": latest["remaining"], "total": latest["total"],
+        "elapsed_seconds": latest["elapsed_seconds"], "eta_seconds": latest["eta_seconds"],
+        "latest_coordinate": [latest["dataset"], latest["condition"]],
+        "latest_event": latest, "native_attempts": latest["native_attempts"],
+        "native_elapsed_seconds": latest["native_elapsed_seconds"],
+    }
+
+
+@contextmanager
+def exclusive_run_lock_antigravity(root: Path):
+    """Fail closed on an existing lock; stale locks require explicit operator inspection."""
+    root = Path(root)
+    if not root.is_absolute():
+        raise ValueError("Exp451 run lock root must be absolute")
+    path = _checked_target_path_antigravity(root, "run_lock_antigravity.json", create=True)
+    existing = path.lstat() if path.exists() or path.is_symlink() else None
+    if existing is not None:
+        if stat.S_ISLNK(existing.st_mode) or not stat.S_ISREG(existing.st_mode):
+            raise ValueError("Exp451 run lock is unsafe")
+        raise ValueError("Exp451 run lock exists; stale locks require explicit inspection")
+    record = canonical_json_bytes({"pid": os.getpid(), "token": uuid4().hex})
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except FileExistsError as error:
+        raise ValueError("Exp451 run lock exists; stale locks require explicit inspection") from error
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("Exp451 run lock is unsafe")
+        _write_all_antigravity(descriptor, record)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    try:
+        yield
+    finally:
+        details = path.lstat() if path.exists() or path.is_symlink() else None
+        if details is not None and stat.S_ISREG(details.st_mode) and path.read_bytes() == record:
+            path.unlink()
+            directory_fd = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
 
 
 def execute_resume_coordinates_antigravity(
@@ -472,15 +621,22 @@ def execute_resume_coordinates_antigravity(
     persist_success: Callable[[str, str, object], None],
     progress: Callable[[dict[str, object]], None] | None, completed: int, failed: int,
     total: int, wave: int, append_failure: Callable[[FailureRecordAntigravity], None],
-) -> tuple[int, int]:
+    native_attempts: int, native_elapsed_seconds: float,
+) -> tuple[int, int, int, float]:
     """Serialise MPS-heavy work and emit progress strictly after durable persistence."""
     if wave not in {1, 2}:
         raise ValueError("Exp451 execution wave differs")
     started = monotonic()
     current_completed, current_failed = completed, failed
+    current_attempts, current_elapsed = native_attempts, float(native_elapsed_seconds)
     for dataset, condition in coordinates:
         try:
             result = scorer(dataset, condition)
+            if (
+                getattr(result, "dataset", None) != dataset
+                or getattr(result, "condition_id", None) != condition
+            ):
+                raise ValueError("Exp451 scorer result coordinate differs")
             persist_success(dataset, condition, result)
         except Exception as error:
             append_failure(FailureRecordAntigravity(dataset, condition, wave, type(error).__name__, str(error)))
@@ -489,13 +645,16 @@ def execute_resume_coordinates_antigravity(
         else:
             current_completed += 1
             status = "success"
+        current_attempts += 1
+        current_elapsed = float(native_elapsed_seconds) + (monotonic() - started)
         if progress is not None:
             progress(progress_event_antigravity(
                 dataset=dataset, condition=condition, status=status,
                 completed=current_completed, failed=current_failed, total=total,
-                elapsed_seconds=monotonic() - started,
+                elapsed_seconds=current_elapsed, native_attempts=current_attempts,
+                native_elapsed_seconds=current_elapsed,
             ))
-    return current_completed, current_failed
+    return current_completed, current_failed, current_attempts, current_elapsed
 
 
 def execute_exp451_resume_antigravity(
@@ -503,7 +662,7 @@ def execute_exp451_resume_antigravity(
     manifest: Exp451MigrationManifest, raw_datasets: Mapping[str, RawDataset],
     *, progress: Callable[[dict[str, object]], None] | None = None,
 ) -> Exp451ResumeInventoryAntigravity:
-    """Run exactly the missing coordinates in wave one, then one retry wave only."""
+    """Run exactly the missing coordinates under one root-contained exclusive lock."""
     if Path(root) != context.run_root or manifest.target_context_sha256 != context.sha256:
         raise ValueError("Exp451 resume context differs")
     datasets = _catalog_datasets_antigravity(catalog)
@@ -512,6 +671,18 @@ def execute_exp451_resume_antigravity(
         for dataset in datasets
     ):
         raise ValueError("Exp451 resume raw inventory differs")
+    with exclusive_run_lock_antigravity(Path(root)):
+        return _execute_exp451_resume_locked_antigravity(
+            Path(root), context, catalog, manifest, raw_datasets, progress=progress
+        )
+
+
+def _execute_exp451_resume_locked_antigravity(
+    root: Path, context: Exp451RunContext, catalog: Mapping[str, object],
+    manifest: Exp451MigrationManifest, raw_datasets: Mapping[str, RawDataset],
+    *, progress: Callable[[dict[str, object]], None] | None,
+) -> Exp451ResumeInventoryAntigravity:
+    """Execute the two bounded waves after the public runner has acquired its lock."""
     schedule = build_execution_schedule_antigravity(context)
     if context.backend.tensor_backend == "mps" and schedule.maximum_concurrent_mps_jobs != 1:
         raise ValueError("Exp451 MPS serialization differs")
@@ -541,23 +712,22 @@ def execute_exp451_resume_antigravity(
             progress(event)
 
     inventory = live_inventory()
-    attempted_failure_count = len(inventory.failures)
-    first_wave = tuple(
-        coordinate for coordinate in inventory.pending
-        if coordinate not in {(record.dataset, record.condition_id) for record in inventory.failures if record.wave == 1}
-    )
-    completed, failed = execute_resume_coordinates_antigravity(
+    persisted = status_snapshot_antigravity(root, imported_completed=len(inventory.imported))
+    first_wave = wave_one_coordinates_antigravity(inventory)
+    completed, failed, native_attempts, native_elapsed = execute_resume_coordinates_antigravity(
         first_wave, scorer=scorer, persist_success=persist, progress=emit,
-        completed=inventory.completed_count, failed=attempted_failure_count,
+        completed=inventory.completed_count, failed=len(inventory.failures),
         total=EXP451_TOTAL_COORDINATES, wave=1, append_failure=record_failure,
+        native_attempts=max(int(persisted["native_attempts"]), len(inventory.native)),
+        native_elapsed_seconds=float(persisted["native_elapsed_seconds"]),
     )
-    del completed, failed
     inventory = live_inventory()
     if inventory.wave_two:
         execute_resume_coordinates_antigravity(
             inventory.wave_two, scorer=scorer, persist_success=persist, progress=emit,
-            completed=inventory.completed_count, failed=len(inventory.failures),
+            completed=completed, failed=failed,
             total=EXP451_TOTAL_COORDINATES, wave=2, append_failure=record_failure,
+            native_attempts=native_attempts, native_elapsed_seconds=native_elapsed,
         )
     inventory = live_inventory()
     if inventory.pending:
@@ -580,6 +750,8 @@ __all__ = [
     "append_failure_antigravity", "append_progress_event_antigravity",
     "build_execution_schedule_antigravity", "build_resume_inventory_antigravity",
     "context_conditions_antigravity", "execute_exp451_resume_antigravity",
-    "execute_resume_coordinates_antigravity", "progress_event_antigravity",
-    "validate_failure_records_antigravity", "write_native_success_antigravity",
+    "execute_resume_coordinates_antigravity", "exclusive_run_lock_antigravity",
+    "progress_event_antigravity", "status_snapshot_antigravity",
+    "validate_failure_records_antigravity", "wave_one_coordinates_antigravity",
+    "write_native_success_antigravity",
 ]
