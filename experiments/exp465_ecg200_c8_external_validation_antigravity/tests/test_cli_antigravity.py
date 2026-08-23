@@ -128,6 +128,33 @@ class CliAntigravityTest(unittest.TestCase):
         self.assertIn("private Task 5 root capability is required", completed.stderr)
         self.assertFalse(_OFFICIAL_ROOT_ANTIGRAVITY.exists())
 
+    def test_launcher_accepts_only_preregistered_private_capabilities_antigravity(self) -> None:
+        """Break caught: the real launcher cannot enter private qualification or accepts an arbitrary root."""
+        with tempfile.TemporaryDirectory(prefix="exp465_launcher_private_capability_antigravity_") as temporary:
+            environment = dict(__import__("os").environ)
+            environment["EXP465_TASK5_PRIVATE_CAPABILITY_ANTIGRAVITY"] = "run1"
+            completed = subprocess.run(
+                [sys.executable, str(_LAUNCHER_ANTIGRAVITY), "inspect"],
+                cwd=temporary,
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("artifact inventory differs", completed.stderr)
+        self.assertNotIn("root capability is required", completed.stderr)
+        environment["EXP465_TASK5_PRIVATE_CAPABILITY_ANTIGRAVITY"] = "/tmp/arbitrary"
+        rejected = subprocess.run(
+            [sys.executable, str(_LAUNCHER_ANTIGRAVITY), "inspect"],
+            cwd=_REPOSITORY_ANTIGRAVITY,
+            env=environment,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertIn("private capability is not preregistered", rejected.stderr)
+
     def test_private_seam_injects_only_one_nonofficial_path_antigravity(self) -> None:
         """Break caught: the private seam replaces dependencies or selects official output."""
         from experiments.exp465_ecg200_c8_external_validation_antigravity import cli_antigravity as cli
@@ -180,6 +207,12 @@ class CliAntigravityTest(unittest.TestCase):
                 with patch(
                     "experiments.exp465_ecg200_c8_external_validation_antigravity.scoring_antigravity.score_fold_methods_antigravity",
                     side_effect=AssertionError("inspect must not score"),
+                ), patch(
+                    "experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.scoring_antigravity.score_fold_methods_antigravity",
+                    side_effect=AssertionError("inspect must not call Exp464 scorer"),
+                ), patch(
+                    "experiments.exp465_ecg200_c8_external_validation_antigravity.qualification_antigravity.score_exp464_fold_methods_antigravity",
+                    side_effect=AssertionError("inspect must not call cached Exp464 scorer"),
                 ):
                     inspected = self._run_payload_antigravity(cli, ["inspect"])
             self.assertEqual(evaluated, inspected)

@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><title>Exp465 Task 5 구현 보고</title></head>
 <body><main>
 <h1>Exp465 Task 5 — 닫힌 CLI 구현 보고</h1>
-<p><strong>상태:</strong> 구현 및 사전 검증 완료. 실제 private 실행과 공식 실행은 이 작업에서 수행하지 않았다.</p>
+<p><strong>상태:</strong> 독립 검토의 CLI 지적을 수정하고 사전 검증을 다시 수행했다. 실제 private 실행과 공식 실행은 이 작업에서 수행하지 않았다.</p>
 <h2>구현 파일</h2>
 <ul>
 <li><code>experiments/exp465_ecg200_c8_external_validation_antigravity/cli_antigravity.py</code></li>
@@ -16,13 +16,17 @@
 <li>evaluate는 고정 TRAIN 경로, 96→140 보간, 2 seeds×5 folds, Task 3 scorer, Task 4 판정·출판·재생을 한 번 연결한다.</li>
 <li>inspect는 기존 private root의 semantic replay만 열며, CLI의 TRAIN loader와 fold scorer를 다시 호출하지 않는다.</li>
 <li>공식 root 생성, TEST 접근, label query는 하지 않는다.</li>
+<li>launcher의 내부 capability는 <code>run1</code> 또는 <code>run2</code>만 각각 사전등록 private root로 해석한다. CLI 인자로 root를 받을 수 없다.</li>
+<li>inspect는 저장된 seven leaves의 hash, 원점수 AUC, confirmation, Wilson 설명값, pair 진단, 요약, 결정과 대시보드를 다시 계산한다. Exp464·Task 3 scorer를 호출하지 않는다.</li>
 </ul>
 <h2>RED → GREEN</h2>
 <p>RED: CLI와 launcher가 없는 상태에서 새 7개 CLI 테스트를 실행했다. 예상대로 모듈 import와 launcher 경로가 없어 5 errors, 2 failures가 발생했다.</p>
 <p>GREEN: 최소 CLI·launcher를 구현한 뒤, create-only root, clean commit, duplicate process, lazy import, outside-CWD runtime, 10-fold Task 2→4 private fixture 흐름을 통과시켰다.</p>
+<p>보정 RED: fresh review가 launcher capability 부재와 inspect의 Exp464 scorer 재호출을 지적했다. authorized <code>run1</code> launcher와 Exp464/Task 3 scorer를 모두 차단한 inspect 테스트가 기존 코드에서 실패하는 것을 확인했다.</p>
+<p>보정 GREEN: launcher는 두 사전등록 private root만 주입하도록 했고, inspect는 persisted evidence-only 재생으로 바꿨다. scorer를 모두 차단한 상태에서도 evaluate와 inspect 출력이 같다.</p>
 <h2>검증</h2>
 <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_cli_antigravity
-# 7 tests OK (두 번)
+# 8 tests OK (보정 후 두 번)
 
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest \
   experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_sources_antigravity \
@@ -38,7 +42,7 @@
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m compileall -q experiments/exp465_ecg200_c8_external_validation_antigravity scratch/run_exp465_ecg200_c8_external_validation_antigravity.py
 git diff --check</code></pre>
 <h2>커밋</h2>
-<p>구현: <code>e6791d615a8f00ffb1d37d32a1ba4533fd9a584a</code> (<code>feat(exp465): add closed private qualification CLI</code>)</p>
+<p>초기 구현: <code>e6791d615a8f00ffb1d37d32a1ba4533fd9a584a</code> (<code>feat(exp465): add closed private qualification CLI</code>). 보정 커밋은 아래 검증 뒤 기록한다.</p>
 <h2>우려사항</h2>
 <p>이 보고서의 private 흐름은 외부 ECG200 파일을 읽지 않는 결정론적 test fixture다. 실제 private root 두 번의 재현 실행과 결과 비교는 controller 및 fresh review 이후에만 수행한다.</p>
 </main></body></html>

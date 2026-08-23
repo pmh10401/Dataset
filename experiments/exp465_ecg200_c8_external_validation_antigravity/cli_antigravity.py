@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
+from hashlib import sha256
 import json
+from math import isfinite, sqrt
 import os
 from pathlib import Path
 import re
@@ -179,26 +181,324 @@ def _jsonl_leaf_antigravity(path: Path) -> list[object]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def _result_payload_from_root_antigravity(root: Path, replayed: object) -> dict[str, object]:
-    decision = getattr(replayed, "decision", None)
-    if getattr(decision, "label_query_count", None) != 0:
+def _canonical_json_antigravity(payload: bytes) -> object:
+    def no_duplicates(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON key")
+            result[key] = value
+        return result
+
+    try:
+        value = json.loads(
+            payload.decode("utf-8"),
+            object_pairs_hook=no_duplicates,
+            parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError("artifact JSON is invalid") from error
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8") + b"\n"
+    if payload != canonical:
+        raise ValueError("artifact JSON is not canonical")
+    return value
+
+
+def _canonical_jsonl_antigravity(payload: bytes) -> tuple[object, ...]:
+    if not payload:
+        return ()
+    if not payload.endswith(b"\n"):
+        raise ValueError("artifact JSONL is invalid")
+    return tuple(_canonical_json_antigravity(line + b"\n") for line in payload.splitlines())
+
+
+def _auc_from_scores_antigravity(normal: list[object], changed: list[object]) -> float:
+    if not normal or len(normal) != len(changed):
+        raise ValueError("score vectors must be equal-length and nonempty")
+    if any(type(value) is not float or not isfinite(value) for value in (*normal, *changed)):
+        raise ValueError("score vectors must be finite floats")
+    wins = sum(change > base for change in changed for base in normal)
+    ties = sum(change == base for change in changed for base in normal)
+    return float((wins + 0.5 * ties) / (len(normal) * len(changed)))
+
+
+def _wilson_upper_antigravity(successes: int, trials: int) -> float:
+    if type(successes) is not int or type(trials) is not int or not 0 <= successes <= trials or trials < 1:
+        raise ValueError("confirmation counts are invalid")
+    z = 1.959963984540054
+    proportion = successes / trials
+    denominator = 1.0 + z * z / trials
+    center = proportion + z * z / (2.0 * trials)
+    radius = z * sqrt((proportion * (1.0 - proportion) + z * z / (4.0 * trials)) / trials)
+    return float((center + radius) / denominator)
+
+
+def _persisted_metric_rows_antigravity(rows: tuple[object, ...]) -> tuple[dict[str, object], ...]:
+    expected = tuple(
+        (method, seed, fold)
+        for method in FROZEN_CONFIG_ANTIGRAVITY.method_order
+        for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds
+        for fold in range(FROZEN_CONFIG_ANTIGRAVITY.folds)
+    )
+    if len(rows) != len(expected) or any(type(row) is not dict for row in rows):
+        raise ValueError("persisted metric rows differ from the frozen inventory")
+    typed = tuple(rows)  # type: ignore[assignment]
+    actual = tuple((row.get("method"), row.get("seed"), row.get("fold_index")) for row in typed)
+    if actual != expected:
+        raise ValueError("persisted metric order differs from the frozen contract")
+    change_types = ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+    for row in typed:
+        normal = row.get("normal_scores")
+        primary = row.get("primary_scores")
+        stored_auc = row.get("per_type_auc")
+        if type(normal) is not list or type(primary) is not dict or type(stored_auc) is not list or set(primary) != set(change_types) or len(stored_auc) != 4:
+            raise ValueError("persisted score fields differ from the frozen contract")
+        auc = tuple(_auc_from_scores_antigravity(normal, primary[name]) for name in change_types if type(primary[name]) is list)
+        if len(auc) != 4 or tuple(stored_auc) != auc:
+            raise ValueError("persisted AUC differs from raw scores")
+        mean = float(sum(auc) / len(auc))
+        if row.get("mean_auc") != mean or row.get("all_scores_finite") is not True:
+            raise ValueError("persisted score summary differs from raw scores")
+        counts = row.get("confirmation_counts")
+        cosines = row.get("query_cosines")
+        if type(counts) is not dict or type(cosines) is not dict:
+            raise ValueError("persisted confirmation evidence is invalid")
+        if not cosines:
+            if any(value != 0 for value in counts.values()):
+                raise ValueError("persisted confirmation evidence is invalid")
+        elif set(counts) != set(cosines):
+            raise ValueError("persisted confirmation evidence is invalid")
+        for scope, count in counts.items():
+            values = cosines.get(scope, [0.0] * len(normal))
+            if type(count) is not int or type(values) is not list or len(values) != len(normal):
+                raise ValueError("persisted confirmation evidence is invalid")
+            if any(type(value) is not float or not isfinite(value) for value in values):
+                raise ValueError("persisted confirmation cosine is invalid")
+            if count != sum(value >= FROZEN_CONFIG_ANTIGRAVITY.cosine_min for value in values):
+                raise ValueError("persisted confirmation count differs from cosine evidence")
+        if row.get("normal_wilson_upper") != _wilson_upper_antigravity(counts["normal"], len(normal)):
+            raise ValueError("persisted Wilson value differs from confirmation evidence")
+    return typed
+
+
+def _derived_failure_reasons_antigravity(
+    row: dict[str, object],
+    control: dict[str, object] | None,
+) -> tuple[str, ...]:
+    auc = row["per_type_auc"]
+    reasons = [
+        f"{name}_auc_below_0.85"
+        for name, value in zip(
+            ("level_shift", "gradual_drift", "amplitude_scaling", "period_change"),
+            auc,
+            strict=True,
+        )
+        if value < FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min
+    ]
+    if row["mean_auc"] < FROZEN_CONFIG_ANTIGRAVITY.mean_auc_min:
+        reasons.append("mean_auc_below_0.90")
+    if control is not None:
+        if auc[1] < control["per_type_auc"][1]:
+            reasons.append("gradual_auc_below_c0")
+        if auc[3] < control["per_type_auc"][3]:
+            reasons.append("period_auc_below_c0")
+        return tuple(sorted(set(reasons)))
+    return tuple(reasons)
+
+
+def _pair_diagnostics_antigravity(
+    control: dict[str, object],
+    candidate: dict[str, object],
+) -> dict[str, dict[str, int]]:
+    result: dict[str, dict[str, int]] = {}
+    for change_type in ("gradual_drift", "period_change"):
+        fixed = 0
+        broken = 0
+        control_changes = control["primary_scores"][change_type]
+        candidate_changes = candidate["primary_scores"][change_type]
+        for normal_index, control_normal in enumerate(control["normal_scores"]):
+            candidate_normal = candidate["normal_scores"][normal_index]
+            for change_index, control_change in enumerate(control_changes):
+                candidate_change = candidate_changes[change_index]
+                if control_change == control_normal or candidate_change == candidate_normal:
+                    continue
+                if control_change <= control_normal and candidate_change > candidate_normal:
+                    fixed += 1
+                elif control_change > control_normal and candidate_change <= candidate_normal:
+                    broken += 1
+        result[change_type] = {
+            "total_pairs": len(control["normal_scores"]) * len(control_changes),
+            "fixed_pairs": fixed,
+            "broken_pairs": broken,
+        }
+    return result
+
+
+def _validate_persisted_derived_fields_antigravity(
+    rows: tuple[dict[str, object], ...],
+    summaries: tuple[object, ...],
+    decision: dict[str, object],
+    dashboard: dict[str, object],
+) -> None:
+    by_identity = {(row["method"], row["seed"], row["fold_index"]): row for row in rows}
+    for row in rows:
+        control = by_identity[("C0", row["seed"], row["fold_index"])] if row["method"] == "C8" else None
+        reasons = _derived_failure_reasons_antigravity(row, control)
+        if row.get("failure_reasons") != list(reasons) or row.get("passed") is not (not reasons):
+            raise ValueError("persisted pass fields differ from raw scores")
+        pair = _pair_diagnostics_antigravity(control, row) if control is not None else {
+            name: {"total_pairs": 0, "fixed_pairs": 0, "broken_pairs": 0}
+            for name in ("gradual_drift", "period_change")
+        }
+        if row.get("pair_diagnostics") != pair:
+            raise ValueError("persisted pair diagnostics differ from raw scores")
+    expected_summaries: list[dict[str, object]] = []
+    for method in FROZEN_CONFIG_ANTIGRAVITY.method_order:
+        selected = tuple(row for row in rows if row["method"] == method)
+        pair = {
+            name: {
+                key: sum(row["pair_diagnostics"][name][key] for row in selected)
+                for key in ("total_pairs", "fixed_pairs", "broken_pairs")
+            }
+            for name in ("gradual_drift", "period_change")
+        }
+        expected_summaries.append({
+            "method": method,
+            "fold_count": len(selected),
+            "passed_count": sum(row["passed"] for row in selected),
+            "failed_count": sum(not row["passed"] for row in selected),
+            "min_per_type_auc": [min(row["per_type_auc"][index] for row in selected) for index in range(4)],
+            "min_mean_auc": min(row["mean_auc"] for row in selected),
+            "max_normal_wilson_upper": max(row["normal_wilson_upper"] for row in selected),
+            "normal_confirmation_count": sum(row["confirmation_counts"]["normal"] for row in selected),
+            "all_scores_finite": True,
+            "pair_diagnostics": pair,
+            "passed": all(row["passed"] for row in selected),
+        })
+    if list(summaries) != expected_summaries:
+        raise ValueError("persisted summaries differ from raw scores")
+    c8_rows = tuple(row for row in rows if row["method"] == "C8")
+    seed_confirmations = {
+        seed: sum(row["confirmation_counts"]["normal"] for row in c8_rows if row["seed"] == seed)
+        for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds
+    }
+    decision_reasons: list[str] = []
+    if expected_summaries[2]["passed_count"] != FROZEN_CONFIG_ANTIGRAVITY.required_stability_records:
+        decision_reasons.append("c8_not_10_of_10")
+    for seed, confirmations in seed_confirmations.items():
+        if confirmations != 0:
+            decision_reasons.append(f"seed_{seed}_normal_confirmations_not_zero")
+    for row in c8_rows:
+        control = by_identity[("C0", row["seed"], row["fold_index"])]
+        if row["per_type_auc"][1] < control["per_type_auc"][1]:
+            decision_reasons.append("c8_gradual_auc_below_c0")
+        if row["per_type_auc"][3] < control["per_type_auc"][3]:
+            decision_reasons.append("c8_period_auc_below_c0")
+    failure_reasons = sorted(set(decision_reasons))
+    expected_decision = {
+        "status": "qualification_passed_ready_for_task5_reproducibility" if not failure_reasons else "qualification_failed_blocked_before_routing_research",
+        "primary_candidate": "C8",
+        "eligible_for_routing_research": not failure_reasons,
+        "primary_passed_count": expected_summaries[2]["passed_count"],
+        "primary_required_count": FROZEN_CONFIG_ANTIGRAVITY.required_stability_records,
+        "failure_reasons": failure_reasons,
+        "routing_applied": False,
+        "test_labels_opened": False,
+        "label_query_count": 0,
+    }
+    if decision != expected_decision:
+        raise ValueError("persisted decision differs from raw scores")
+    expected_dashboard = {
+        "후보": "C8",
+        "통과_기록": expected_decision["primary_passed_count"],
+        "필요_기록": expected_decision["primary_required_count"],
+        "다음_재현_가능": expected_decision["eligible_for_routing_research"],
+        "실패_이유": failure_reasons,
+        "정상_confirmation": {str(seed): seed_confirmations[seed] for seed in seed_confirmations},
+        "정상_Wilson_설명값": {str(seed): _wilson_upper_antigravity(seed_confirmations[seed], 69) for seed in seed_confirmations},
+        "방법_요약": [{
+            "방법": item["method"], "통과": item["passed_count"], "실패": item["failed_count"],
+            "최저_AUC": item["min_per_type_auc"], "최저_평균_AUC": item["min_mean_auc"],
+            "정상_confirmation": item["normal_confirmation_count"], "점수_유한": item["all_scores_finite"], "통과_여부": item["passed"],
+        } for item in expected_summaries],
+        "보수성_비교": {
+            "gradual_not_below_c0": sum(row["per_type_auc"][1] >= by_identity[("C0", row["seed"], row["fold_index"])]["per_type_auc"][1] for row in c8_rows),
+            "period_not_below_c0": sum(row["per_type_auc"][3] >= by_identity[("C0", row["seed"], row["fold_index"])]["per_type_auc"][3] for row in c8_rows),
+        },
+        "TEST_라벨_조회": 0,
+    }
+    if dashboard != expected_dashboard:
+        raise ValueError("persisted dashboard differs from raw scores")
+
+
+def _inspect_persisted_root_antigravity(root: Path) -> dict[str, object]:
+    if not isinstance(root, Path) or not root.is_dir() or root.is_symlink():
+        raise ValueError("artifact inventory differs")
+    if {entry.name for entry in root.iterdir()} != set(_LEAVES_ANTIGRAVITY):
+        raise ValueError("artifact inventory differs")
+    leaves = {name: (root / name).read_bytes() for name in _LEAVES_ANTIGRAVITY}
+    artifact_map = _canonical_json_antigravity(leaves["artifact_sha256_antigravity.json"])
+    expected_hashes = {name: sha256(leaves[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY[:-1]}
+    if artifact_map != expected_hashes:
+        raise ValueError("artifact hash map differs")
+    context = _canonical_json_antigravity(leaves["context_antigravity.json"])
+    decision = _canonical_json_antigravity(leaves["decision_antigravity.json"])
+    dashboard = _canonical_json_antigravity(leaves["dashboard_snapshot_antigravity.json"])
+    rows = _persisted_metric_rows_antigravity(_canonical_jsonl_antigravity(leaves["method_fold_metrics_antigravity.jsonl"]))
+    summaries = _canonical_jsonl_antigravity(leaves["method_summary_antigravity.jsonl"])
+    failed = _canonical_jsonl_antigravity(leaves["failed_folds_antigravity.jsonl"])
+    if type(context) is not dict or type(decision) is not dict or type(dashboard) is not dict:
+        raise ValueError("persisted artifact payload is invalid")
+    if context.get("experiment") != FROZEN_CONFIG_ANTIGRAVITY.experiment or context.get("label_query_count") != 0 or context.get("official_evaluate_count") != 0:
+        raise ValueError("persisted context violates the Task 5 boundary")
+    if decision.get("label_query_count") != 0 or decision.get("test_labels_opened") is not False or decision.get("routing_applied") is not False:
+        raise ValueError("inspection opened labels or applied routing")
+    if context.get("method_fold_metrics_sha256") != sha256(leaves["method_fold_metrics_antigravity.jsonl"]).hexdigest():
+        raise ValueError("persisted metric hash differs")
+    if tuple(failed) != tuple(row for row in rows if row.get("passed") is False):
+        raise ValueError("persisted failed-fold list differs")
+    if len(summaries) != len(FROZEN_CONFIG_ANTIGRAVITY.method_order):
+        raise ValueError("persisted summaries differ from the frozen contract")
+    _validate_persisted_derived_fields_antigravity(rows, summaries, decision, dashboard)
+    return {
+        "context": context,
+        "method_fold_metrics": list(rows),
+        "failed_folds": list(failed),
+        "method_summaries": list(summaries),
+        "decision": decision,
+        "dashboard_snapshot": dashboard,
+        "leaf_sha256": {name: sha256(leaves[name]).hexdigest() for name in _LEAVES_ANTIGRAVITY},
+        "artifact_map_sha256": sha256(leaves["artifact_sha256_antigravity.json"]).hexdigest(),
+        "artifact_sha256": artifact_map,
+    }
+
+
+def _result_payload_from_root_antigravity(root: Path, replayed: dict[str, object]) -> dict[str, object]:
+    decision = replayed.get("decision")
+    if type(decision) is not dict or decision.get("label_query_count") != 0:
         raise ValueError("inspection opened labels")
-    leaf_sha256 = getattr(replayed, "leaf_sha256", None)
-    artifact_map_sha256 = getattr(replayed, "artifact_map_sha256", None)
-    if type(leaf_sha256) is not tuple or type(artifact_map_sha256) is not str:
+    leaf_sha256 = replayed.get("leaf_sha256")
+    artifact_map_sha256 = replayed.get("artifact_map_sha256")
+    if type(leaf_sha256) is not dict or type(artifact_map_sha256) is not str:
         raise ValueError("inspector must return the Exp465 replay payload")
     return {
         "experiment": FROZEN_CONFIG_ANTIGRAVITY.experiment,
         "kind": FROZEN_CONFIG_ANTIGRAVITY.kind,
-        "context": _json_leaf_antigravity(root / "context_antigravity.json"),
-        "method_fold_metrics": _jsonl_leaf_antigravity(root / "method_fold_metrics_antigravity.jsonl"),
-        "failed_folds": _jsonl_leaf_antigravity(root / "failed_folds_antigravity.jsonl"),
-        "method_summaries": _jsonl_leaf_antigravity(root / "method_summary_antigravity.jsonl"),
-        "decision": _json_leaf_antigravity(root / "decision_antigravity.json"),
-        "dashboard_snapshot": _json_leaf_antigravity(root / "dashboard_snapshot_antigravity.json"),
-        "leaf_sha256": dict(leaf_sha256),
+        "context": replayed["context"],
+        "method_fold_metrics": replayed["method_fold_metrics"],
+        "failed_folds": replayed["failed_folds"],
+        "method_summaries": replayed["method_summaries"],
+        "decision": decision,
+        "dashboard_snapshot": replayed["dashboard_snapshot"],
+        "leaf_sha256": leaf_sha256,
         "artifact_map_sha256": artifact_map_sha256,
-        "artifact_sha256": _json_leaf_antigravity(root / "artifact_sha256_antigravity.json"),
+        "artifact_sha256": replayed["artifact_sha256"],
     }
 
 
@@ -230,7 +530,6 @@ def _evaluate_at_root_antigravity(root: Path) -> dict[str, object]:
     from .evaluation_antigravity import QualificationDecisionAntigravity, evaluate_qualification_antigravity
     from .interpolation_antigravity import interpolate_to_140_antigravity
     from .qualification_antigravity import Exp465QualificationResultAntigravity, qualify_methods_antigravity
-    from .replay_antigravity import inspect_replay_at_antigravity
     from .scoring_antigravity import score_fold_methods_antigravity
     from .sources_antigravity import load_ecg200_normal_train_antigravity
 
@@ -271,16 +570,20 @@ def _evaluate_at_root_antigravity(root: Path) -> dict[str, object]:
         or len(publication.leaf_sha256) != len(_LEAVES_ANTIGRAVITY)
     ):
         raise ValueError("publisher must create the exact seven-leaf result")
-    payload = _result_payload_from_root_antigravity(root, inspect_replay_at_antigravity(root))
+    payload = _result_payload_from_root_antigravity(
+        root,
+        _inspect_persisted_root_antigravity(root),
+    )
     if payload["decision"]["label_query_count"] != 0:  # type: ignore[index]
         raise ValueError("published result opened labels")
     return payload
 
 
 def _inspect_at_root_antigravity(root: Path) -> dict[str, object]:
-    from .replay_antigravity import inspect_replay_at_antigravity
-
-    return _result_payload_from_root_antigravity(root, inspect_replay_at_antigravity(root))
+    return _result_payload_from_root_antigravity(
+        root,
+        _inspect_persisted_root_antigravity(root),
+    )
 
 
 def _load_evaluate_antigravity():
