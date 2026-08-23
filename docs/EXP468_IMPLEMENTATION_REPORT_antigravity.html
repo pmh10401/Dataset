@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp468 구현 보고서</h1>
-<p>현재 구현 상태는 <code>implementation_task_1_complete</code>다. 승인된 STFT 설정과 결과 container를 구현했지만 ECG 데이터 처리와 점수 계산은 아직 시작하지 않았다.</p>
+<p>현재 구현 상태는 <code>implementation_task_2_complete</code>다. 승인된 STFT 설정과 결과 container에 이어 Exp466의 ECG200 TRAIN loader·보간·네 합성 변화·C0 점수 함수를 같은 객체로 연결했다.</p>
 <h2>Task 1 완료 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only identity, seed/fold, 5×28 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, 네 변화 순서, C0/S10/C10 역할, period 기준과 설계 SHA-256을 exact-type frozen dataclass로 고정한다.</li>
@@ -16,13 +16,21 @@
 <li>qualification은 seed-major 10개 fold, seed 순서의 immutable count mapping, seed당 정상 trial 69개, label query 0, 실행 전 artifact hash <code>null</code>을 강제한다.</li>
 <li>Task 1은 passed/reason 일치와 타입·범위·순서·불변성만 검사한다. period 합격과 보호 변화 기준의 실제 계산은 Task 4에 남겼다.</li>
 </ul>
+<h2>Task 2 완료 범위</h2>
+<ul>
+<li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>는 Exp466의 다섯 공개 함수를 직접 import하고 같은 객체로 re-export한다.</li>
+<li>승인 TRAIN의 MD5 <code>808875aeac1c358a90c630fe369327c4</code>와 정상 <code>69×96</code> 경계를 실제 loader로 확인했다. TEST 이름은 파일 열기 전에 거부되며 TEST 데이터·라벨·실제 FN은 열지 않았다.</li>
+<li>승인 TRAIN을 <code>96→140</code>으로 보간한 고정 1-fold fixture에서 C0 정상 배열과 <code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code> 배열의 dtype·shape·bytes가 Exp466과 같음을 확인한다.</li>
+<li>새 loading, interpolation, synthetic 또는 scoring 로직은 추가하지 않았다. 실제 score 계산은 focused parity test 범위에만 한정했다.</li>
+</ul>
 <h2>TDD 증거</h2>
 <table>
-<tr><th>RED</th><td>focused suite의 10개 검사가 새 config/contracts 모듈 부재로 모두 <code>ModuleNotFoundError</code>를 내며 실패했다.</td></tr>
-<tr><th>GREEN</th><td>최소 config/contracts 구현 뒤 같은 focused suite의 <code>10/10</code> 검사가 통과했다. 최종 검증에서는 같은 명령을 두 번 실행한다.</td></tr>
-<tr><th>경계</th><td>loader, scorer, 배열, backend 선택, qualification gate 계산, ECG 접근, 실험 실행을 추가하지 않았다.</td></tr>
+<tr><th>Task 1 RED/GREEN</th><td>focused suite의 10개 검사가 새 config/contracts 모듈 부재로 실패한 뒤 최소 config/contracts 구현으로 <code>10/10</code> 통과했다.</td></tr>
+<tr><th>Task 2 RED</th><td>production adapter 작성 전에 새 네 test module을 실행했고, 새 Exp468 source/interpolation/synthetic/predecessor 모듈 부재로 <code>4</code>개 import error가 발생했다.</td></tr>
+<tr><th>Task 2 GREEN</th><td>다섯 exact re-export 뒤 focused suite의 <code>8/8</code> 검사가 통과한다. 최종 검증에서는 같은 명령을 두 번 실행하고 Exp466 lower regression도 실행한다.</td></tr>
+<tr><th>경계</th><td>Task 2 parity test 외 S10/C10 점수, backend 선택, qualification gate, private/official 실행을 추가하지 않았다.</td></tr>
 </table>
 <div class="box"><p><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. 이는 NumPy, Numba, MLX 중 실행 backend를 선택하는 필드가 아니다.</p></div>
-<div class="box stop"><p><strong>실행 truth:</strong> 점수 계산 <code>0</code>회, private/official 실행 <code>0/0</code>회, label query <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 2~6은 아직 완료되지 않았다.</p></div>
+<div class="box stop"><p><strong>실행 truth:</strong> 점수 계산은 승인 TRAIN의 고정 1-fold C0 parity test 범위뿐이다. private/official 실행은 <code>0/0</code>회, label query는 <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 3~6은 아직 완료되지 않았다.</p></div>
 </main></body>
 </html>
