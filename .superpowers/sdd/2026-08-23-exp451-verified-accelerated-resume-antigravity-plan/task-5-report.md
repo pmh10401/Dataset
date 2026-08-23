@@ -12,10 +12,11 @@
 - Added a root-contained cross-process exclusive run lock. An existing lock,
   including a stale one, fails closed and requires explicit operator inspection;
   it is never removed automatically.
-- ETA now uses `native_elapsed_seconds / native_attempts × remaining` only.
-  The 4,234 imported coordinates do not affect the rate. The two native fields
-  are persisted in JSONL, so a resumed run continues from the latest durable
-  native rate record.
+- ETA uses `native_elapsed_seconds / native_attempts × remaining` only. The
+  4,234 imported coordinates do not affect the rate. JSONL also persists
+  `timing_epoch` and `timing_incomplete`; a crash reconciliation resets both
+  native timing counters into a new epoch, so prior measurements cannot make a
+  post-crash ETA spuriously optimistic.
 - Progress paths reject links and non-regular files before open, use
   no-follow flags where the platform provides them, and fsync each full line.
 - `status` returns completed, failed, remaining, total, elapsed time, ETA, and
@@ -24,8 +25,9 @@
 - The runner reconciles a durable native checkpoint that lacks its JSONL event
   after a crash. It emits a `reconciled` event before scheduling any new work,
   never recomputes the recovered coordinate, and preserves the missing timing
-  as unknown rather than zero. ETA is `null` until two measured native attempts
-  exist; only then it is `native_elapsed_seconds / native_attempts × remaining`.
+  as unknown rather than zero. The reconciliation survives restart without a
+  second reset. ETA is `null` until two fresh measured native attempts in the
+  new epoch exist; only then it uses that epoch's native timing rate.
 - `status` first runs the full migration authority verifier and then validates
   the native/failure inventory. A present, malformed, or tampered manifest is
   not treated as a completed migration.
@@ -37,9 +39,9 @@
 ## Verification
 
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_contracts_config_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_transforms_backend_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_scoring_imaging_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_runner_cli_antigravity`
-  passed: 65 tests.
+  passed: 66 tests.
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_migration_artifacts_antigravity`
-  passed: 7 tests. Total Exp451 tests: 72.
+  passed: 7 tests. Total Exp451 tests: 73.
 - `python3 -m py_compile experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py scratch/run_exp451_verified_accelerated_resume_antigravity.py`
   passed.
 - No official source or result checkpoint was read, written, moved, or deleted

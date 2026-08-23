@@ -128,6 +128,8 @@ class Exp451ProgressStateAntigravity:
     native_attempts: int
     native_elapsed_seconds: float
     eta_seconds: float | None
+    timing_epoch: int
+    timing_incomplete: bool
     reconciled: bool = False
 
 
@@ -249,7 +251,8 @@ def build_execution_schedule_antigravity(context: Exp451RunContext) -> Exp451Exe
 def progress_event_antigravity(
     *, dataset: str, condition: str, status: str, completed: int, failed: int,
     total: int, elapsed_seconds: float, native_attempts: int,
-    native_elapsed_seconds: float,
+    native_elapsed_seconds: float, timing_epoch: int = 0,
+    timing_incomplete: bool = False,
 ) -> dict[str, object]:
     """Return one complete event; ETA is native elapsed / native attempts × remaining."""
     if (
@@ -260,11 +263,13 @@ def progress_event_antigravity(
         or type(elapsed_seconds) not in {int, float} or elapsed_seconds < 0
         or type(native_attempts) is not int or native_attempts < 0
         or type(native_elapsed_seconds) not in {int, float} or native_elapsed_seconds < 0
+        or type(timing_epoch) is not int or timing_epoch < 0
+        or type(timing_incomplete) is not bool
     ):
         raise ValueError("Exp451 progress event is invalid")
     remaining = total - completed
     # One timing observation is too noisy to responsibly predict a 234-coordinate tail.
-    eta = None if native_attempts < 2 else max(
+    eta = None if timing_incomplete or native_attempts < 2 else max(
         0.0, float(native_elapsed_seconds) / native_attempts * remaining
     )
     return {
@@ -274,6 +279,8 @@ def progress_event_antigravity(
         "elapsed_seconds": float(elapsed_seconds), "eta_seconds": None if eta is None else float(eta),
         "native_attempts": native_attempts,
         "native_elapsed_seconds": float(native_elapsed_seconds),
+        "timing_epoch": timing_epoch,
+        "timing_incomplete": timing_incomplete,
     }
 
 
@@ -510,6 +517,7 @@ def append_progress_event_antigravity(root: Path, event: Mapping[str, object]) -
     required = {
         "experiment", "dataset", "condition", "status", "completed", "failed", "remaining",
         "total", "elapsed_seconds", "eta_seconds", "native_attempts", "native_elapsed_seconds",
+        "timing_epoch", "timing_incomplete",
     }
     if set(event) != required:
         raise ValueError("Exp451 progress event schema differs")
@@ -519,6 +527,7 @@ def append_progress_event_antigravity(root: Path, event: Mapping[str, object]) -
         completed=event["completed"], failed=event["failed"], total=event["total"],
         elapsed_seconds=event["elapsed_seconds"], native_attempts=event["native_attempts"],
         native_elapsed_seconds=event["native_elapsed_seconds"],
+        timing_epoch=event["timing_epoch"], timing_incomplete=event["timing_incomplete"],
     )
     if dict(event) != expected:
         raise ValueError("Exp451 progress event differs")
@@ -570,6 +579,7 @@ def _read_progress_events_antigravity(root: Path) -> tuple[dict[str, object], ..
             completed=value.get("completed"), failed=value.get("failed"), total=value.get("total"),
             elapsed_seconds=value.get("elapsed_seconds"), native_attempts=value.get("native_attempts"),
             native_elapsed_seconds=value.get("native_elapsed_seconds"),
+            timing_epoch=value.get("timing_epoch"), timing_incomplete=value.get("timing_incomplete"),
         )
         if value != expected:
             raise ValueError("Exp451 progress log differs")
@@ -599,6 +609,7 @@ def status_snapshot_antigravity(
             "total": EXP451_TOTAL_COORDINATES, "elapsed_seconds": 0.0,
             "eta_seconds": None, "latest_coordinate": None, "latest_event": None,
             "native_attempts": 0, "native_elapsed_seconds": 0.0,
+            "timing_epoch": 0, "timing_incomplete": False,
         }
     latest = events[-1]
     differs = (
@@ -615,6 +626,7 @@ def status_snapshot_antigravity(
         "latest_coordinate": [latest["dataset"], latest["condition"]],
         "latest_event": latest, "native_attempts": latest["native_attempts"],
         "native_elapsed_seconds": latest["native_elapsed_seconds"],
+        "timing_epoch": latest["timing_epoch"], "timing_incomplete": latest["timing_incomplete"],
     }
 
 
@@ -638,22 +650,35 @@ def reconcile_resume_progress_antigravity(
     latest_failed = 0 if latest is None else latest["failed"]
     attempts = 0 if latest is None else latest["native_attempts"]
     elapsed = 0.0 if latest is None else latest["native_elapsed_seconds"]
-    if unlogged_native or completed != latest_completed or failed != latest_failed:
+    epoch = 0 if latest is None else latest["timing_epoch"]
+    incomplete = False if latest is None else latest["timing_incomplete"]
+    # With no prior event, an unlogged native leaf is a crash boundary. Once a
+    # reconciled event has the current durable counters, do not reset again on
+    # restart merely because that event is not a normal success event.
+    needs_reconciliation = (
+        bool(unlogged_native) if latest is None
+        else completed != latest_completed or failed != latest_failed
+    )
+    if needs_reconciliation:
         dataset, condition = unlogged_native[-1] if unlogged_native else (
             inventory.pending[0] if inventory.pending else ("reconciliation_antigravity", "C")
         )
+        # An unlogged checkpoint has unknown duration. Reset the timing epoch
+        # instead of combining an incomplete old denominator with new samples.
+        epoch += 1
         event = progress_event_antigravity(
             dataset=dataset, condition=condition, status="reconciled", completed=completed,
-            failed=failed, total=EXP451_TOTAL_COORDINATES, elapsed_seconds=elapsed,
-            native_attempts=attempts, native_elapsed_seconds=elapsed,
+            failed=failed, total=EXP451_TOTAL_COORDINATES, elapsed_seconds=0.0,
+            native_attempts=0, native_elapsed_seconds=0.0,
+            timing_epoch=epoch, timing_incomplete=True,
         )
         append_progress_event_antigravity(Path(root), event)
         if progress is not None:
             progress(event)
-        return Exp451ProgressStateAntigravity(completed, failed, attempts, elapsed, None, True)
+        return Exp451ProgressStateAntigravity(completed, failed, 0, 0.0, None, epoch, True, True)
     return Exp451ProgressStateAntigravity(
         completed, failed, attempts, elapsed,
-        None if latest is None else latest["eta_seconds"], False,
+        None if latest is None else latest["eta_seconds"], epoch, incomplete, False,
     )
 
 
@@ -703,13 +728,15 @@ def execute_resume_coordinates_antigravity(
     progress: Callable[[dict[str, object]], None] | None, completed: int, failed: int,
     total: int, wave: int, append_failure: Callable[[FailureRecordAntigravity], None],
     native_attempts: int, native_elapsed_seconds: float,
-) -> tuple[int, int, int, float]:
+    timing_epoch: int = 0, timing_incomplete: bool = False,
+) -> tuple[int, int, int, float, int, bool]:
     """Serialise MPS-heavy work and emit progress strictly after durable persistence."""
     if wave not in {1, 2}:
         raise ValueError("Exp451 execution wave differs")
     started = monotonic()
     current_completed, current_failed = completed, failed
     current_attempts, current_elapsed = native_attempts, float(native_elapsed_seconds)
+    current_epoch, current_incomplete = timing_epoch, timing_incomplete
     for dataset, condition in coordinates:
         try:
             result = scorer(dataset, condition)
@@ -728,14 +755,17 @@ def execute_resume_coordinates_antigravity(
             status = "success"
         current_attempts += 1
         current_elapsed = float(native_elapsed_seconds) + (monotonic() - started)
+        # The first new duration after a reconciled boundary begins a fresh epoch.
+        current_incomplete = False
         if progress is not None:
             progress(progress_event_antigravity(
                 dataset=dataset, condition=condition, status=status,
                 completed=current_completed, failed=current_failed, total=total,
                 elapsed_seconds=current_elapsed, native_attempts=current_attempts,
                 native_elapsed_seconds=current_elapsed,
+                timing_epoch=current_epoch, timing_incomplete=current_incomplete,
             ))
-    return current_completed, current_failed, current_attempts, current_elapsed
+    return current_completed, current_failed, current_attempts, current_elapsed, current_epoch, current_incomplete
 
 
 def execute_exp451_resume_antigravity(
@@ -791,12 +821,14 @@ def _execute_exp451_resume_locked_antigravity(
     inventory = live_inventory()
     reconciliation = reconcile_resume_progress_antigravity(root, inventory, progress=progress)
     first_wave = wave_one_coordinates_antigravity(inventory)
-    completed, failed, native_attempts, native_elapsed = execute_resume_coordinates_antigravity(
+    completed, failed, native_attempts, native_elapsed, timing_epoch, timing_incomplete = execute_resume_coordinates_antigravity(
         first_wave, scorer=scorer, persist_success=persist, progress=emit,
         completed=inventory.completed_count, failed=len(inventory.failures),
         total=EXP451_TOTAL_COORDINATES, wave=1, append_failure=record_failure,
         native_attempts=reconciliation.native_attempts,
         native_elapsed_seconds=reconciliation.native_elapsed_seconds,
+        timing_epoch=reconciliation.timing_epoch,
+        timing_incomplete=reconciliation.timing_incomplete,
     )
     inventory = live_inventory()
     if inventory.wave_two:
@@ -805,6 +837,7 @@ def _execute_exp451_resume_locked_antigravity(
             completed=completed, failed=failed,
             total=EXP451_TOTAL_COORDINATES, wave=2, append_failure=record_failure,
             native_attempts=native_attempts, native_elapsed_seconds=native_elapsed,
+            timing_epoch=timing_epoch, timing_incomplete=timing_incomplete,
         )
     inventory = live_inventory()
     if inventory.pending:

@@ -105,6 +105,7 @@ class ResumeInventoryTests(unittest.TestCase):
                     "experiment", "dataset", "condition", "status", "completed",
                     "failed", "remaining", "total", "elapsed_seconds", "eta_seconds",
                     "native_attempts", "native_elapsed_seconds",
+                    "timing_epoch", "timing_incomplete",
                 },
             )
             self.assertEqual(event["remaining"], 234)
@@ -335,6 +336,78 @@ class ResumeInventoryTests(unittest.TestCase):
                 ))
             status = status_snapshot_antigravity(root, imported_completed=4234)
         self.assertEqual(status["eta_seconds"], 6.0 * (4468 - 4236))
+
+    def test_reconciliation_resets_prior_timing_epoch_until_two_fresh_attempts(self) -> None:
+        """Old timing is discarded after an unlogged checkpoint rather than understating ETA."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import (
+            append_progress_event_antigravity,
+            build_resume_inventory_antigravity,
+            execute_resume_coordinates_antigravity,
+            progress_event_antigravity,
+            reconcile_resume_progress_antigravity,
+            status_snapshot_antigravity,
+        )
+
+        coordinate = ("dataset_1000_antigravity", "C")
+        logged_one = ("dataset_1001_antigravity", "C")
+        logged_two = ("dataset_1002_antigravity", "C")
+        inventory = build_resume_inventory_antigravity(
+            self.manifest, self.catalog, native=(coordinate, logged_one, logged_two)
+        )
+        with TemporaryDirectory(prefix="exp451_epoch_fixture_antigravity_") as temporary:
+            root = Path(temporary).resolve()
+            for attempts, elapsed, completed in ((1, 5.0, 4235), (2, 10.0, 4236)):
+                append_progress_event_antigravity(root, progress_event_antigravity(
+                    dataset=f"dataset_{1000 + attempts:04d}_antigravity", condition="C",
+                    status="success", completed=completed, failed=0, total=4468,
+                    elapsed_seconds=elapsed, native_attempts=attempts,
+                    native_elapsed_seconds=elapsed,
+                ))
+            recovered = reconcile_resume_progress_antigravity(root, inventory)
+            after_recovery = status_snapshot_antigravity(
+                root, imported_completed=4234, durable_completed=inventory.completed_count,
+                durable_failed=0,
+            )
+            restarted = reconcile_resume_progress_antigravity(root, inventory)
+
+            class Result:
+                def __init__(self, dataset: str, condition: str) -> None:
+                    self.dataset, self.condition_id = dataset, condition
+
+            def persist(*_args: object) -> None:
+                return None
+
+            def progress(event: dict[str, object]) -> None:
+                append_progress_event_antigravity(root, event)
+
+            _, _, attempts, elapsed, epoch, incomplete = execute_resume_coordinates_antigravity(
+                (("dataset_1003_antigravity", "C"),), scorer=lambda dataset, condition: Result(dataset, condition),
+                persist_success=persist, progress=progress, completed=4237, failed=0,
+                total=4468, wave=1, append_failure=lambda *_: None,
+                native_attempts=recovered.native_attempts,
+                native_elapsed_seconds=recovered.native_elapsed_seconds,
+                timing_epoch=recovered.timing_epoch, timing_incomplete=recovered.timing_incomplete,
+            )
+            after_one = status_snapshot_antigravity(root, imported_completed=4234)
+            execute_resume_coordinates_antigravity(
+                (("dataset_1004_antigravity", "C"),), scorer=lambda dataset, condition: Result(dataset, condition),
+                persist_success=persist, progress=progress, completed=4238, failed=0,
+                total=4468, wave=1, append_failure=lambda *_: None,
+                native_attempts=attempts, native_elapsed_seconds=elapsed,
+                timing_epoch=epoch, timing_incomplete=incomplete,
+            )
+            after_two = status_snapshot_antigravity(root, imported_completed=4234)
+        self.assertEqual(recovered.timing_epoch, 1)
+        self.assertTrue(recovered.timing_incomplete)
+        self.assertIsNone(after_recovery["eta_seconds"])
+        self.assertEqual(after_recovery["native_attempts"], 0)
+        self.assertEqual(after_recovery["timing_epoch"], 1)
+        self.assertFalse(restarted.reconciled)
+        self.assertEqual(restarted.timing_epoch, 1)
+        self.assertIsNone(after_one["eta_seconds"])
+        self.assertEqual(after_one["timing_epoch"], 1)
+        self.assertIsNotNone(after_two["eta_seconds"])
+        self.assertEqual(after_two["timing_epoch"], 1)
 
     def test_status_fails_closed_when_authority_verifier_rejects_manifest(self) -> None:
         """A regular-looking manifest never substitutes for authority verification."""
