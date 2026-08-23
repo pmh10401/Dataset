@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp465 Task 3 code-map triplet."""
+"""Build and validate the bounded Exp465 Task 4 code-map triplet."""
 from __future__ import annotations
 
 import argparse
@@ -35,21 +35,32 @@ TRACKED_PATHS_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-1-report-antigravity.html",
     ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-2-report-antigravity.html",
     ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-3-report-antigravity.html",
+    ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-4-report-antigravity.html",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/config_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/contracts_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/interpolation_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/scoring_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/qualification_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/evaluation_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/artifacts_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/replay_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/dashboard_export_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/sources_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_interpolation_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_sources_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_scoring_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_qualification_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_artifacts_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_replay_antigravity.py",
+    "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_dashboard_export_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_config_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_contracts_antigravity.py",
     "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_governance_antigravity.py",
     "scratch/build_codemap_exp465_antigravity.py",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp465_task3_scoring_projection_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp465_task3_scoring_projection_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp465_task4_qualification_publication_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp465_task4_qualification_publication_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-22T00:00:00Z"
 
 
@@ -156,20 +167,31 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     task1_report = ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-1-report-antigravity.html"
     task2_report = ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-2-report-antigravity.html"
     task3_report = ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-3-report-antigravity.html"
+    task4_report = ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/task-4-report-antigravity.html"
     sources = "experiments/exp465_ecg200_c8_external_validation_antigravity/sources_antigravity.py"
     interpolation = "experiments/exp465_ecg200_c8_external_validation_antigravity/interpolation_antigravity.py"
     scoring = "experiments/exp465_ecg200_c8_external_validation_antigravity/scoring_antigravity.py"
     sources_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_sources_antigravity.py"
     interpolation_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_interpolation_antigravity.py"
     scoring_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_scoring_antigravity.py"
+    qualification = "experiments/exp465_ecg200_c8_external_validation_antigravity/qualification_antigravity.py"
+    evaluation = "experiments/exp465_ecg200_c8_external_validation_antigravity/evaluation_antigravity.py"
+    artifacts = "experiments/exp465_ecg200_c8_external_validation_antigravity/artifacts_antigravity.py"
+    replay = "experiments/exp465_ecg200_c8_external_validation_antigravity/replay_antigravity.py"
+    dashboard_export = "experiments/exp465_ecg200_c8_external_validation_antigravity/dashboard_export_antigravity.py"
+    qualification_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_qualification_antigravity.py"
+    evaluation_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_evaluation_antigravity.py"
+    artifacts_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_artifacts_antigravity.py"
+    replay_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_replay_antigravity.py"
+    dashboard_export_test = "experiments/exp465_ecg200_c8_external_validation_antigravity/tests/test_dashboard_export_antigravity.py"
     governance_symbol = "test_task1_truth_documents_ledgers_and_readonly_codemap_antigravity"
     nodes = [
         _node_antigravity("approved_design", design, "Caller: Exp465 plan and Task 1 contract. Effect: freezes ECG200 TRAIN 100x96 normal69, C0/C6/C8 order with C8-only primary, seeds 20260721/20261721, five folds, onset 56, cosine 0.95, four AUC gates 0.85, mean 0.90, finite/non-degradation/zero-confirmation gates, and 10-of-10 requirement.", "Exp465 — ECG200에서 C8을 그대로 외부 검증", governance_test),
-        _node_antigravity("implementation_plan", plan, "Caller: implementers and reviewers. Effect: records Tasks 1–3 reviewed complete with every Task 3 checkbox checked and keeps Tasks 4–6 unchecked.", "Task 3 — Exp464-bound C0/C6/C8 점수", governance_test),
-        _node_antigravity("dashboard", dashboard, "Caller: user-facing status review. Effect: reports Tasks 1–3 reviewed complete, exact gates and counts, absent official root, official0/private0/label0, null result hashes, and TEST/routing/promotion boundaries.", "SPEC PASS / QUALITY APPROVED", governance_test),
+        _node_antigravity("implementation_plan", plan, "Caller: implementers and reviewers. Effect: records Tasks 1–4 reviewed complete, including Task 4 final review, while Tasks 5–6 remain pending.", "Task 4 — 판정, 결과, 재생, 대시보드", governance_test),
+        _node_antigravity("dashboard", dashboard, "Caller: user-facing status review. Effect: reports Tasks 1–4 final-review completion, exact gates and counts, absent official root, official0/private0/label0, null result hashes, and TEST/routing/promotion boundaries.", "현재 상태:", governance_test),
         _node_antigravity("preregistration", preregistration, "Caller: governance review. Effect: freezes immutable data/method/gate contract and records Wilson as explanatory only plus CPU fallback acceleration assessment before any scoring run.", "Frozen qualification gates for C8", governance_test),
         _node_antigravity("runbook", runbook, "Caller: operators. Effect: records Tasks 1–3 review completion, keeps official root absent, forbids TEST access and post-failure contract drift, and requires later sequential complete private reproductions.", "Task 1–3은 독립 검토까지 통과했다", governance_test),
-        _node_antigravity("implementation_report", report, "Caller: fresh review and audit. Effect: records Tasks 1–3 scope, RED-to-GREEN evidence, TRAIN smoke, scorer-call spy coverage, CPU fallback assessment, codemap validation, diff hygiene, and Task 3 independent review approval without claiming qualification.", "task_3_review_pass_complete", governance_test),
+        _node_antigravity("implementation_report", report, "Caller: fresh review and audit. Effect: records Tasks 1–4 scope, reviewed Task 4 raw-evidence replay, exact 69 OOF check, seed Wilson explanation, and no qualification result claim.", "task_4_review_pass_complete", governance_test),
         _node_antigravity("task1_report", task1_report, "Caller: controller and fresh reviewer. Effect: records exact double-GREEN/codemap/diff-check evidence, unchanged official0/private0/label0/null hashes, review PASS, and completed Task 1 checkbox truth.", "task_1_review_pass_complete", governance_test),
         _node_antigravity("task2_report", task2_report, "Caller: controller and reviewer. Effect: records Task 2 source/interpolation RED-to-GREEN, real Zenodo TRAIN smoke hashes and shapes, CPU fallback assessment, fresh review approval, unchanged official0/private0/label0/null governance, and completed Task 2 checkbox truth.", "task_2_review_pass_complete", governance_test),
         _node_antigravity("research_state", state, "Caller: active research ledger. Effect: adds Exp465 implementation status while preserving prior experiments; stores label0/official0/null artifact-map governance truth and blocks routing/promotion.", "\"exp465\"", governance_test),
@@ -186,8 +208,19 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity("task2_sources_test", sources_test, "Caller: Task 2 TDD verification. Effect: covers TRAIN-only export, exact fixture contract, ownership/read-only flags, TEST-name rejection before reads, wrong MD5/width/labels/count/nonfinite rejection, and alias-value rejection.", "SourcesAntigravityTest", sources_test),
         _node_antigravity("task2_interpolation_test", interpolation_test, "Caller: Task 2 TDD verification. Effect: covers single-entrypoint boundary, exact np.interp equality, endpoints, constant/nonlinear rows, no input aliasing, owned read-only flags, and shape/dtype/finiteness rejection.", "InterpolationAntigravityTest", interpolation_test),
         _node_antigravity("task3_report", task3_report, "Caller: controller and reviewer. Effect: records Task 3 scoring RED-to-GREEN, exact Exp464 C0/C6/C8 parity across both frozen seeds and five folds, immutable 13-field projection, CPU fallback ruling, unchanged official0/private0/label0/null governance, and independent review approval.", "task_3_review_pass_complete", governance_test),
-        _node_antigravity("task3_scoring", scoring, "Caller: future Exp465 qualification tasks. Effect: calls the exact Exp464 fold scorer once, projects only C0/C6/C8 in frozen order into a local frozen/slots 13-field result without copying or rewriting Exp464 mathematics, and preserves source values exactly.", "score_fold_methods_antigravity", scoring_test),
+        _node_antigravity("task3_scoring", scoring, "Caller: Task 4 qualification/replay. Effect: calls the exact Exp464 fold scorer once, projects C0/C6/C8 in frozen order, and retains canonical train140 plus fit/query index evidence for exact C0 replay.", "score_fold_methods_antigravity", scoring_test),
         _node_antigravity("task3_scoring_test", scoring_test, "Caller: Task 3 TDD verification. Effect: proves fixed entrypoint shape, exact Exp464 parity for every required field on both frozen seeds and all five folds, mapping key order, read-only mappings, and a spy showing every entrypoint invocation calls the imported Exp464 scorer exactly once.", "test_entrypoint_spy_proves_one_exp464_scorer_call_per_invocation_antigravity", scoring_test),
+        _node_antigravity("task4_report", task4_report, "Caller: controller and reviewer. Effect: records final Task 4 review approval while keeping qualification execution pending.", "task_4_review_pass_complete", qualification_test),
+        _node_antigravity("task4_qualification", qualification, "Caller: Task 4 evaluation, publication, replay, and dashboard. Effect: recomputes AUC, mean, finite state, confirmations, 69 OOF totals, seed Wilson explanatory value, C0/C8 pair diagnostics, C8 non-degradation, exact C0 input replay, and C6/C8 raw-evidence replay.", "qualify_methods_antigravity", qualification_test),
+        _node_antigravity("task4_evaluation", evaluation, "Caller: publication, replay, and dashboard. Effect: applies only the C8 10/10, zero-confirmation, finite, and C0 gradual/period non-degradation decision; it does not route or access labels.", "evaluate_qualification_antigravity", evaluation_test),
+        _node_antigravity("task4_artifacts", artifacts, "Caller: temporary Task 4 publication and replay. Effect: writes canonical context, metrics, failed rows, summaries, decision, dashboard, and SHA-256 map leaves to a new path.", "publish_result_antigravity", artifacts_test),
+        _node_antigravity("task4_replay", replay, "Caller: artifact inspection. Effect: reconstructs score-derived evidence and rejects noncanonical or semantically altered output.", "inspect_replay_at_antigravity", replay_test),
+        _node_antigravity("task4_dashboard_export", dashboard_export, "Caller: canonical publication dashboard leaf. Effect: creates a simple Korean, label-free C8 qualification snapshot from recomputed evidence.", "export_dashboard_antigravity", dashboard_export_test),
+        _node_antigravity("task4_qualification_test", qualification_test, "Caller: Task 4 focused TDD verification. Effect: tests ten C8 records and rejects inconsistent confirmation evidence without opening data files.", "QualificationAntigravityTest", qualification_test),
+        _node_antigravity("task4_evaluation_test", evaluation_test, "Caller: Task 4 focused TDD verification. Effect: proves C8 is the sole decision candidate and zero normal confirmation is required.", "EvaluationAntigravityTest", evaluation_test),
+        _node_antigravity("task4_artifacts_test", artifacts_test, "Caller: Task 4 focused TDD verification. Effect: proves canonical publication creates exactly seven leaves.", "ArtifactsAntigravityTest", artifacts_test),
+        _node_antigravity("task4_replay_test", replay_test, "Caller: Task 4 focused TDD verification. Effect: proves semantic inspection accepts its own temporary publication and rejects a changed decision leaf.", "ReplayAntigravityTest", replay_test),
+        _node_antigravity("task4_dashboard_export_test", dashboard_export_test, "Caller: Task 4 focused TDD verification. Effect: proves the C8 dashboard snapshot uses simple Korean summary fields.", "DashboardExportAntigravityTest", dashboard_export_test),
     ]
     edges = [
         _edge_antigravity("approved_design", "governs", "task1_config", design, "C8 합격 조건"),
@@ -217,6 +250,20 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("task3_scoring_test", "tests", "task3_scoring", scoring_test, "test_entrypoint_spy_proves_one_exp464_scorer_call_per_invocation_antigravity"),
         _edge_antigravity("task1_governance_test", "tests", "task3_report", governance_test, governance_symbol),
         _edge_antigravity("map_builder", "documents_boundary", "task1_config", builder, "build_triplet_antigravity"),
+        _edge_antigravity("implementation_plan", "governs", "task4_qualification", plan, "Task 4 — 판정, 결과, 재생, 대시보드"),
+        _edge_antigravity("task3_scoring", "governs", "task4_qualification", scoring, "decode_train140_antigravity"),
+        _edge_antigravity("task1_config", "governs", "task4_evaluation", config, "FROZEN_CONFIG_ANTIGRAVITY"),
+        _edge_antigravity("task4_qualification", "governs", "task4_evaluation", qualification, "recompute_qualification_antigravity"),
+        _edge_antigravity("task4_qualification", "governs", "task4_artifacts", qualification, "Exp465QualificationResultAntigravity"),
+        _edge_antigravity("task4_evaluation", "governs", "task4_artifacts", evaluation, "QualificationDecisionAntigravity"),
+        _edge_antigravity("task4_evaluation", "governs", "task4_dashboard_export", evaluation, "QualificationDecisionAntigravity"),
+        _edge_antigravity("task4_artifacts", "governs", "task4_replay", artifacts, "_LEAVES_ANTIGRAVITY"),
+        _edge_antigravity("task4_qualification_test", "tests", "task4_qualification", qualification_test, "test_recomputes_c8_ten_of_ten_from_raw_scores_antigravity"),
+        _edge_antigravity("task4_evaluation_test", "tests", "task4_evaluation", evaluation_test, "test_c8_only_decision_requires_zero_confirmation_antigravity"),
+        _edge_antigravity("task4_artifacts_test", "tests", "task4_artifacts", artifacts_test, "test_publish_creates_exact_seven_leaves_antigravity"),
+        _edge_antigravity("task4_replay_test", "tests", "task4_replay", replay_test, "test_semantic_replay_rejects_tampered_decision_antigravity"),
+        _edge_antigravity("task4_dashboard_export_test", "tests", "task4_dashboard_export", dashboard_export_test, "test_dashboard_uses_simple_korean_and_c8_summary_antigravity"),
+        _edge_antigravity("task4_report", "documents_boundary", "task4_qualification", task4_report, "task_4_review_pass_complete"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -230,6 +277,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "design/plan -> config -> contracts -> Task2 sources/interpolation -> future scoring/qualification",
             "Task2 source RED/GREEN + interpolation RED/GREEN -> real TRAIN smoke and document truth",
             "Task3 entrypoint -> imported Exp464 scorer once -> C0/C6/C8 exact projection",
+            "Task3 input evidence + raw scores -> 69-OOF/C0/C6/C8 semantic qualification -> C8-only decision -> seven canonical leaves -> semantic replay/dashboard snapshot",
             "config/contracts/scoring tests + governance regression -> documents, ledgers, dashboard, plan truth",
             "map_builder --validate-only -> read-only triplet/evidence/fingerprint verification",
         ],
@@ -248,8 +296,8 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
     nodes = "".join(node_items)
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp465 Task 3 코드맵</title><style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp465 Task 3 코드맵</h1><p>이 map은 frozen ECG200 C8 contract와 TRAIN-only loader, 고정 96→140 interpolation, Exp464-bound C0/C6/C8 projection, focused tests, truth documents, ledgers, dashboard, plan checkbox truth, and the read-only map boundary를 설명한다. qualification result는 아직 아니다.</p>'
+        '<title>Exp465 Task 4 코드맵</title><style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp465 Task 4 코드맵</h1><p>이 map은 frozen ECG200 C8 contract와 TRAIN-only loader, 고정 96→140 interpolation, input-evidence-preserving Exp464-bound C0/C6/C8 projection, Task 4 69 OOF·Wilson·raw-evidence 판정, C8-only decision, seven-leaf publication, semantic replay, dashboard export, focused tests, final review documents, ledgers, dashboard, plan checkbox truth, and the read-only map boundary를 설명한다. qualification execution result는 아직 아니다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         "</main></body></html>"
     )

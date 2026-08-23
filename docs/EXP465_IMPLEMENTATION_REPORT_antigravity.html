@@ -4,7 +4,17 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 구현 보고서</h1>
-<p>이 문서는 Exp465 Task 1–3의 구현 범위와 검증 근거를 기록한다. 상태는 각각 <code>task_1_review_pass_complete</code>, <code>task_2_review_pass_complete</code>, <code>task_3_review_pass_complete</code>다.</p>
+<p>이 문서는 Exp465 Task 1–4의 구현 범위와 검증 근거를 기록한다. Task 1–4는 독립 검토까지 완료됐다. 이전 상태는 <code>task_1_review_pass_complete</code>, <code>task_2_review_pass_complete</code>, <code>task_3_review_pass_complete</code>이며 현재 상태는 <code>task_4_review_pass_complete</code>다.</p>
+<h2>Task 4 구현 범위와 검증</h2>
+<ul>
+<li>저장된 합격 표시를 믿지 않고 normal 및 네 합성 변화의 원점수에서 AUC·평균·유한값 여부를 다시 계산한다.</li>
+<li>C8은 10개 기록 모두 통과하고, seed별 정상 confirmation이 0이며, gradual·period AUC가 같은 기록의 C0보다 낮지 않을 때만 통과한다.</li>
+<li>normal×gradual/period fixed·broken 수와 Wilson 상한은 설명값으로만 보존한다.</li>
+<li>일곱 결과 파일을 canonical 형식으로 만들고, 재생 시 score·AUC·Wilson·confirmation·요약·판정·대시보드 변조를 거부한다.</li>
+<li>최종 집중 검사 9개를 두 번, Task 3 점수 회귀 검사 3개와 전체 Exp465 검사를 통과했다. <code>compileall</code>과 <code>git diff --check</code>도 통과했다.</li>
+</ul>
+<p>Task 4의 집계와 JSON 생성은 작은 CPU 작업이다. MLX를 위해 판정 수학을 다시 쓰면 exact 경계가 바뀌고 1.1배 속도 조건을 정당화할 수 없어 CPU를 유지했다.</p>
+<div class="note"><p>첫 검토의 지적을 반영해 seed마다 정확히 69개 OOF를 재생에서도 강제하고, Wilson을 seed 단위 0/69로 계산하며, C0는 보존된 입력과 fold 인덱스로 exact Exp464 scorer를 다시 실행한다. C6/C8은 원시 벡터 근거에서 다시 계산한다. 최종 fresh 검토 결과는 <code>SPEC PASS / QUALITY APPROVED</code>다.</p></div>
 <h2>Task 2 구현 범위</h2>
 <ul>
 <li><code>sources_antigravity.py</code>: TRAIN 이름 강제, TEST 경로 사전 거부, MD5 gate, <code>rsplit(":", 1)</code> 파싱, float64/finite/int ±1 검증, 100×96과 69/31 확인 후 정상 69×96 read-only 반환.</li>

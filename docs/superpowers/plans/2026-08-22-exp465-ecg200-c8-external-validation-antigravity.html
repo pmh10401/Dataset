@@ -83,20 +83,20 @@ return project_methods_antigravity(source, ("C0", "C6", "C8"))</code></pre><p>Do
 <li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_scoring_antigravity
 $PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity</code></pre><p>Run Exp465 twice and Exp464 once; require exact parity.</p></li></ol>
 
-<h2><label><input type="checkbox" disabled> Task 4 — 판정, 결과, 재생, 대시보드</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 4 — 판정, 결과, 재생, 대시보드</label></h2>
 <p><strong>Files:</strong> Create qualification/evaluation/artifacts/replay/dashboard-export modules and tests. Modify truth docs, ledgers, map.</p>
 <p><strong>Interfaces:</strong> <code>qualify_methods_antigravity</code>, <code>evaluate_qualification_antigravity</code>, <code>publish_result_antigravity</code>, <code>inspect_replay_at_antigravity</code>, <code>export_dashboard_antigravity</code>.</p><ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED metrics.</strong></label><p>Raw scores에서 four AUC, mean, finite, C8-vs-C0 gradual/period와 10/10을 재계산하고 위조 booleans를 거부한다. 각 seed의 5-fold out-of-fold 정상 confirmation 합계는 정확히 0이어야 한다. Wilson <code>0.05273725818905172</code>는 설명값으로만 기록한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED diagnostics.</strong></label><pre><code>fixed = count((not correct_c0) and correct_c8)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED metrics.</strong></label><p>Raw scores에서 four AUC, mean, finite, C8-vs-C0 gradual/period와 10/10을 재계산하고 위조 booleans를 거부한다. 각 seed의 5-fold out-of-fold 정상 confirmation 합계는 정확히 0이어야 한다. Wilson <code>0.05273725818905172</code>는 설명값으로만 기록한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED diagnostics.</strong></label><pre><code>fixed = count((not correct_c0) and correct_c8)
 broken = count(correct_c0 and (not correct_c8))
 # ties: neither</code></pre><p>normal×gradual/period total/fixed/broken은 설명값만 된다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — Decision.</strong></label><pre><code>passed = c8_passed_records == 10 and all(seed_normal_confirmations[s] == 0 for s in seeds) and all(
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — Decision.</strong></label><pre><code>passed = c8_passed_records == 10 and all(seed_normal_confirmations[s] == 0 for s in seeds) and all(
     r.c8_gradual_auc &gt;= r.c0_gradual_auc and r.c8_period_auc &gt;= r.c0_period_auc
     for r in rows
 )</code></pre><p>각 row는 four AUC ≥0.85, mean ≥0.90와 finite를 요구한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — Seven leaves.</strong></label><p>context, fold metrics, failed folds, summaries, decision, dashboard snapshot, artifact map을 canonical하게 출판한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — Semantic replay.</strong></label><p>모든 score-derived field를 재계산하고 score/AUC/Wilson 설명값/confirmation/count/summary/decision/dashboard 변조를 거부한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_evaluation_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_artifacts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_replay_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_dashboard_export_antigravity</code></pre><p>Focused twice, Tasks 1–3 once, temporary publish→inspect, compile/map/diff, then commit/review.</p></li></ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Seven leaves.</strong></label><p>context, fold metrics, failed folds, summaries, decision, dashboard snapshot, artifact map을 canonical하게 출판한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — Semantic replay.</strong></label><p>모든 score-derived field를 재계산하고 score/AUC/Wilson 설명값/confirmation/count/summary/decision/dashboard 변조를 거부한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_evaluation_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_artifacts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_replay_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_dashboard_export_antigravity</code></pre><p>Focused twice, Tasks 1–3 once, temporary publish→inspect, compile/map/diff, then commit/review.</p></li></ol>
 
 <h2><label><input type="checkbox" disabled> Task 5 — 닫힌 CLI와 private 재현 2회</label></h2>
 <p><strong>Files:</strong> Create CLI, launcher, CLI tests. Modify all truth docs, ledgers, plan, map.</p>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import unittest
-from .test_qualification_antigravity import passing_scores_antigravity
+from experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity import passing_scores_antigravity
 
 class DashboardExportAntigravityTest(unittest.TestCase):
     def test_dashboard_uses_simple_korean_and_c8_summary_antigravity(self):

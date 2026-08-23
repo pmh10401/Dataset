@@ -1,6 +1,6 @@
 from __future__ import annotations
 import unittest
-from .test_qualification_antigravity import passing_scores_antigravity
+from experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity import passing_scores_antigravity
 
 class EvaluationAntigravityTest(unittest.TestCase):
     def test_c8_only_decision_requires_zero_confirmation_antigravity(self):

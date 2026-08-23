@@ -2,7 +2,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 import unittest
-from .test_qualification_antigravity import passing_scores_antigravity
+from experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity import passing_scores_antigravity
 
 class ArtifactsAntigravityTest(unittest.TestCase):
     def test_publish_creates_exact_seven_leaves_antigravity(self):

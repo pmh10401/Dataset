@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 from hashlib import sha256
 import json
-from .test_qualification_antigravity import passing_scores_antigravity
+from experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity import passing_scores_antigravity
 
 class ReplayAntigravityTest(unittest.TestCase):
     def test_semantic_replay_rejects_tampered_decision_antigravity(self):
