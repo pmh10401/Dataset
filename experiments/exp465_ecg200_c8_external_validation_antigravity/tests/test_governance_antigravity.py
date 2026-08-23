@@ -115,14 +115,14 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         dashboard_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         for phrase in (
-            "Task 1–4가 완료됐다",
-            "SPEC PASS / QUALITY APPROVED",
+            "Task 5 private qualification은 두 번 똑같이 재현됐지만",
+            "C8은 <code>0/10</code>",
             "8 tests GREEN × 2회",
             "code-map <code>--validate-only</code> 통과",
             "official evaluate / inspect <code>0 / 0</code>",
-            "private run <code>0</code>",
+            "private run <code>2</code>",
             "label query <code>0</code>",
-            "모든 결과 hash <code>null</code>",
+            "공식 결과 hash는 계속 <code>null</code>",
         ):
             self.assertIn(phrase, dashboard_text)
 

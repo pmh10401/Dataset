@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import redirect_stderr, redirect_stdout
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -141,8 +142,11 @@ class CliAntigravityTest(unittest.TestCase):
                 capture_output=True,
                 check=False,
             )
-        self.assertNotEqual(completed.returncode, 0)
-        self.assertIn("artifact inventory differs", completed.stderr)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(
+            hashlib.sha256(completed.stdout.encode("utf-8")).hexdigest(),
+            "0436fbbd727815daf2cecdac353b380d0624b923ff74f43a03197536f894f891",
+        )
         self.assertNotIn("root capability is required", completed.stderr)
         environment["EXP465_TASK5_PRIVATE_CAPABILITY_ANTIGRAVITY"] = "/tmp/arbitrary"
         rejected = subprocess.run(
