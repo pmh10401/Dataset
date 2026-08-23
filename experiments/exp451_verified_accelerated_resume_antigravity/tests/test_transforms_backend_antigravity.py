@@ -245,6 +245,153 @@ class Exp451TransformsBackendTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "out of memory"):
                 adaptive_average_1d_antigravity(values_1d, 3, device="mps")
 
+    def test_backend_assessment_records_typed_provenance_record(self) -> None:
+        """Backend assessment must record tensor eligibility, overhead, parity, fallback, and benchmark requirement."""
+        with patch.object(
+            backend_antigravity,
+            "_probe_antigravity",
+            return_value={
+                "torch_version": "2.13.0",
+                "mps_available": True,
+                "mlx_available": False,
+                "logical_cpu_count": 12,
+            },
+        ):
+            decision = assess_exp451_backend_antigravity()
+        self.assertEqual(decision.tensor_backend, "mps")
+        self.assertEqual(decision.cpu_workers, 11)
+        self.assertEqual(decision.inner_numerical_threads, 1)
+        self.assertTrue(decision.tensor_eligible)
+        self.assertTrue(decision.tensor_eligibility)
+        self.assertEqual(
+            decision.transfer_compilation_overhead,
+            "bounded_device_transfer_and_cpu_pool_fallback",
+        )
+        self.assertEqual(
+            decision.deterministic_numerical_parity,
+            "finite_scores_identical_candidate_indices_within_tolerance",
+        )
+        self.assertEqual(
+            decision.parity_numerical_requirements,
+            "finite_scores_identical_candidate_indices_within_tolerance",
+        )
+        self.assertEqual(
+            decision.canonical_cpu_fallback,
+            "pytorch_cpu_native_adaptive_avg_pool",
+        )
+        self.assertEqual(
+            decision.benchmark_requirement,
+            "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
+        )
+        self.assertEqual(
+            decision.benchmark_required,
+            "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
+        )
+        self.assertEqual(
+            decision.artifact_record(),
+            {
+                "tensor_backend": "mps",
+                "torch_version": "2.13.0",
+                "mps_available": True,
+                "mlx_available": False,
+                "logical_cpu_count": 12,
+                "cpu_workers": 11,
+                "inner_numerical_threads": 1,
+                "tensor_eligible": True,
+                "transfer_compilation_overhead": "bounded_device_transfer_and_cpu_pool_fallback",
+                "deterministic_numerical_parity": "finite_scores_identical_candidate_indices_within_tolerance",
+                "canonical_cpu_fallback": "pytorch_cpu_native_adaptive_avg_pool",
+                "benchmark_requirement": "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
+            },
+        )
+
+    def test_mps_pooling_reraises_adversarial_error_with_recognized_substring_and_extra_text(
+        self,
+    ) -> None:
+        """Adversarial errors containing recognized substrings plus extra text must propagate."""
+        adversarial_messages = (
+            "Adaptive pool MPS: input sizes must be divisible by output sizes extra adversarial text",
+            "Adaptive pool MPS: input sizes must be divisible by output sizes. Memory corruption occurred",
+            "Adaptive pool MPS: output sizes must be divisible by input sizes. Unrelated failure",
+            "Adaptive pool MPS: Input height and width must both be greater than, or equal to, or lesser than output height and width. System crash",
+            "Corrupted prefix: Adaptive pool MPS: input sizes must be divisible by output sizes",
+            "Adaptive pool MPS: input sizes must be divisible by output sizes..",
+        )
+        values_2d = np.arange(16, dtype=np.float32).reshape(1, 4, 4)
+        for message in adversarial_messages:
+            with self.subTest(message=message), patch.object(
+                transforms_antigravity.torch_functional,
+                "adaptive_avg_pool2d",
+                side_effect=RuntimeError(message),
+            ):
+                with self.assertRaises(RuntimeError) as context:
+                    adaptive_average_2d_antigravity(values_2d, 3, device="mps")
+                self.assertEqual(str(context.exception), message)
+
+    def test_regression_guard_fallback_never_invokes_scalar_window_stack(self) -> None:
+        """1D, 2D, and mixed-axis fallbacks must use native CPU pooling and never invoke torch.stack."""
+        original_pool1d = torch_functional.adaptive_avg_pool1d
+        original_pool2d = torch_functional.adaptive_avg_pool2d
+
+        def fail_1d_on_mps(tensor: torch.Tensor, output_size: int) -> torch.Tensor:
+            if tensor.device.type == "mps":
+                raise RuntimeError(
+                    "Adaptive pool MPS: input sizes must be divisible by output sizes."
+                )
+            return original_pool1d(tensor, output_size)
+
+        def fail_2d_on_mps(tensor: torch.Tensor, output_size: tuple[int, int]) -> torch.Tensor:
+            if tensor.device.type == "mps":
+                raise RuntimeError(
+                    "Adaptive pool MPS: input sizes must be divisible by output sizes."
+                )
+            return original_pool2d(tensor, output_size)
+
+        def fail_mixed_on_mps(tensor: torch.Tensor, output_size: tuple[int, int]) -> torch.Tensor:
+            if tensor.device.type == "mps":
+                raise RuntimeError(
+                    "Adaptive pool MPS: Input height and width must both be greater than, or equal to, or lesser than output height and width."
+                )
+            return original_pool2d(tensor, output_size)
+
+        # Patch torch.stack to fail loudly if any scalar-window stack is invoked
+        with patch(
+            "torch.stack",
+            side_effect=AssertionError("scalar window torch.stack must not be invoked"),
+        ):
+            # 1. 1D fallback
+            with patch.object(
+                transforms_antigravity.torch_functional,
+                "adaptive_avg_pool1d",
+                side_effect=fail_1d_on_mps,
+            ):
+                res_1d = adaptive_average_1d_antigravity(
+                    np.asarray([[0.0, 1.0, 2.0, 3.0]], dtype=np.float32), 3, device="mps"
+                )
+                self.assertEqual(res_1d.shape, (1, 3))
+
+            # 2. 2D fallback
+            with patch.object(
+                transforms_antigravity.torch_functional,
+                "adaptive_avg_pool2d",
+                side_effect=fail_2d_on_mps,
+            ):
+                res_2d = adaptive_average_2d_antigravity(
+                    np.arange(16, dtype=np.float32).reshape(1, 4, 4), 3, device="mps"
+                )
+                self.assertEqual(res_2d.shape, (1, 3, 3))
+
+            # 3. Mixed-axis 2D fallback
+            with patch.object(
+                transforms_antigravity.torch_functional,
+                "adaptive_avg_pool2d",
+                side_effect=fail_mixed_on_mps,
+            ):
+                res_mixed = adaptive_average_2d_antigravity(
+                    np.arange(8, dtype=np.float32).reshape(1, 2, 4), 3, device="mps"
+                )
+                self.assertEqual(res_mixed.shape, (1, 3, 3))
+
     def test_cpu_device_does_not_catch_runtime_error(self) -> None:
         """When device is CPU, runtime errors are not caught by MPS fallback."""
         values = np.arange(16, dtype=np.float32).reshape(1, 4, 4)

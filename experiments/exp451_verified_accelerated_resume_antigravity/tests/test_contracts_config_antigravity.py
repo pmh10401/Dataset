@@ -271,6 +271,11 @@ class Exp451ContractsTests(unittest.TestCase):
             logical_cpu_count=12,
             cpu_workers=11,
             inner_numerical_threads=1,
+            tensor_eligible=True,
+            transfer_compilation_overhead="bounded_device_transfer_and_cpu_pool_fallback",
+            deterministic_numerical_parity="finite_scores_identical_candidate_indices_within_tolerance",
+            canonical_cpu_fallback="pytorch_cpu_native_adaptive_avg_pool",
+            benchmark_requirement="mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
         )
         self.assertEqual(
             decision.artifact_record(),
@@ -282,7 +287,21 @@ class Exp451ContractsTests(unittest.TestCase):
                 "logical_cpu_count": 12,
                 "cpu_workers": 11,
                 "inner_numerical_threads": 1,
+                "tensor_eligible": True,
+                "transfer_compilation_overhead": "bounded_device_transfer_and_cpu_pool_fallback",
+                "deterministic_numerical_parity": "finite_scores_identical_candidate_indices_within_tolerance",
+                "canonical_cpu_fallback": "pytorch_cpu_native_adaptive_avg_pool",
+                "benchmark_requirement": "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
             },
+        )
+        self.assertTrue(decision.tensor_eligibility)
+        self.assertEqual(
+            decision.parity_numerical_requirements,
+            "finite_scores_identical_candidate_indices_within_tolerance",
+        )
+        self.assertEqual(
+            decision.benchmark_required,
+            "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
         )
         with self.assertRaises(FrozenInstanceError):
             decision.cpu_workers = 1  # type: ignore[misc]

@@ -50,6 +50,11 @@ def assess_exp451_backend_antigravity() -> Exp451BackendDecision:
         logical_cpu_count=count,
         cpu_workers=max(1, count - 1),
         inner_numerical_threads=1,
+        tensor_eligible=True,
+        transfer_compilation_overhead="bounded_device_transfer_and_cpu_pool_fallback",
+        deterministic_numerical_parity="finite_scores_identical_candidate_indices_within_tolerance",
+        canonical_cpu_fallback="pytorch_cpu_native_adaptive_avg_pool",
+        benchmark_requirement="mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
     )
 
 

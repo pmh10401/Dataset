@@ -86,6 +86,13 @@ class Exp451BackendDecision:
     logical_cpu_count: int
     cpu_workers: int
     inner_numerical_threads: int = 1
+    tensor_eligible: bool = True
+    transfer_compilation_overhead: str = "bounded_device_transfer_and_cpu_pool_fallback"
+    deterministic_numerical_parity: str = (
+        "finite_scores_identical_candidate_indices_within_tolerance"
+    )
+    canonical_cpu_fallback: str = "pytorch_cpu_native_adaptive_avg_pool"
+    benchmark_requirement: str = "mlx_or_mps_speedup_ge_1_1x_with_device_transfer"
 
     def __post_init__(self) -> None:
         if self.tensor_backend != ("mps" if self.mps_available else "cpu"):
@@ -100,6 +107,28 @@ class Exp451BackendDecision:
             raise ValueError("Exp451 CPU worker policy is invalid")
         if self.inner_numerical_threads != 1:
             raise ValueError("Exp451 inner numerical threads must remain one")
+        if type(self.tensor_eligible) is not bool:
+            raise ValueError("Exp451 tensor eligibility must be boolean")
+        if not self.transfer_compilation_overhead or type(self.transfer_compilation_overhead) is not str:
+            raise ValueError("Exp451 transfer compilation overhead must be a non-empty string")
+        if not self.deterministic_numerical_parity or type(self.deterministic_numerical_parity) is not str:
+            raise ValueError("Exp451 deterministic numerical parity must be a non-empty string")
+        if not self.canonical_cpu_fallback or type(self.canonical_cpu_fallback) is not str:
+            raise ValueError("Exp451 canonical CPU fallback must be a non-empty string")
+        if not self.benchmark_requirement or type(self.benchmark_requirement) is not str:
+            raise ValueError("Exp451 benchmark requirement must be a non-empty string")
+
+    @property
+    def tensor_eligibility(self) -> bool:
+        return self.tensor_eligible
+
+    @property
+    def parity_numerical_requirements(self) -> str:
+        return self.deterministic_numerical_parity
+
+    @property
+    def benchmark_required(self) -> str:
+        return self.benchmark_requirement
 
     def artifact_record(self) -> dict[str, object]:
         return {
@@ -110,6 +139,11 @@ class Exp451BackendDecision:
             "logical_cpu_count": self.logical_cpu_count,
             "cpu_workers": self.cpu_workers,
             "inner_numerical_threads": self.inner_numerical_threads,
+            "tensor_eligible": self.tensor_eligible,
+            "transfer_compilation_overhead": self.transfer_compilation_overhead,
+            "deterministic_numerical_parity": self.deterministic_numerical_parity,
+            "canonical_cpu_fallback": self.canonical_cpu_fallback,
+            "benchmark_requirement": self.benchmark_requirement,
         }
 
 

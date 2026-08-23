@@ -120,17 +120,29 @@ def _cpu_float32_output_antigravity(tensor: torch.Tensor, device: str) -> np.nda
     return output
 
 
+_APPROVED_MPS_POOL_ERROR_MESSAGES = frozenset(
+    {
+        "Adaptive pool MPS: input sizes must be divisible by output sizes",
+        "Adaptive pool MPS: output sizes must be divisible by input sizes",
+        "Adaptive pool MPS: Input height and width must both be greater than, or equal to, or lesser than output height and width",
+        "Adaptive pool MPS: input sizes must be divisible by output sizes. Non-divisible input sizes are not implemented on MPS device yet. For now, you can manually transfer tensor to cpu in this case. Please refer to [this issue](https://github.com/pytorch/pytorch/issues/96056)",
+        "Adaptive pool MPS: output sizes must be divisible by input sizes. Non-divisible input sizes are not implemented on MPS device yet. For now, you can manually transfer tensor to cpu in this case. Please refer to [this issue](https://github.com/pytorch/pytorch/issues/96056)",
+    }
+)
+
+
+def _normalize_error_message_antigravity(message: str) -> str:
+    """Strip outer whitespace and at most one terminal period."""
+    cleaned = message.strip()
+    if cleaned.endswith("."):
+        cleaned = cleaned[:-1].rstrip()
+    return cleaned
+
+
 def _is_mps_nondivisible_pool_error_antigravity(error: RuntimeError) -> bool:
-    """Recognize only observed native MPS adaptive-pooling shape-limit errors."""
-    message = str(error)
-    return (
-        "input sizes must be divisible by output sizes" in message
-        or "output sizes must be divisible by input sizes" in message
-        or (
-            "Input height and width must both be greater than, or equal to, or lesser than "
-            "output height and width" in message
-        )
-    )
+    """Recognize only exact observed native MPS adaptive-pooling shape-limit errors."""
+    normalized = _normalize_error_message_antigravity(str(error))
+    return normalized in _APPROVED_MPS_POOL_ERROR_MESSAGES
 
 
 def _adaptive_pool_1d_antigravity(
