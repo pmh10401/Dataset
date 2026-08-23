@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -235,6 +236,26 @@ class PhaseRegistrationAntigravityTest(unittest.TestCase):
                 scores,
                 query_margins=np.array((0.25, np.nan, 0.75, -1.0)),
             )
+
+    def test_zero_margin_is_not_confirmed_above_negative_fit_max_antigravity(
+        self,
+    ) -> None:
+        """Break caught: deleting the positive-margin conjunct confirms exact zero."""
+        base = self._base_antigravity()
+        fit_rows = np.stack((base, base + 0.01 * np.sin(np.arange(140))))
+        query_rows = np.array(base[None, :], dtype=np.float64, copy=True)
+        margin_source = (
+            "experiments.exp466_ecg200_phase_registration_margin_antigravity."
+            "phase_registration_antigravity.phase_registration_margin_antigravity"
+        )
+
+        with patch(margin_source, side_effect=(-2.0, -1.0, 0.0)):
+            scores = score_phase_registration_antigravity(fit_rows, query_rows)
+
+        self.assertEqual(scores.query_margins[0], 0.0)
+        self.assertEqual(scores.fit_normal_max_margin, -1.0)
+        self.assertGreater(0.0, scores.fit_normal_max_margin)
+        self.assertFalse(scores.confirmed[0])
 
 
 if __name__ == "__main__":
