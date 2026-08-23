@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp466 구현 보고서</h1>
-<p>현재 공식 실험 결과 상태는 <code>planned_implementation_not_started</code>다. Task 1~5의 권한, 입력 연결, P9 고정 위상 정렬, C9 qualification, canonical 결과 파일과 독립 replay를 구현했고, Task 6의 닫힌 CLI·고정 launcher도 사전검증을 마쳤다. 실제 성능, private 또는 official 결과는 아직 만들거나 주장하지 않는다.</p>
+<p>현재 공식 실험 결과 상태는 <code>planned_implementation_not_started</code>다. Task 1~5의 권한, 입력 연결, P9 고정 위상 정렬, C9 qualification, canonical 결과 파일과 독립 replay를 구현했고, Task 6의 닫힌 CLI·고정 launcher는 깨끗한 reviewed commit까지 고정했다. 실제 성능, private 또는 official 결과는 아직 만들거나 주장하지 않는다.</p>
 <h2>Task 1 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only 입력, seed/fold, onset/suffix, warp/shared length, C0/P9/C9 순서, C9 단독 primary, AUC gate와 0-use governance를 exact-type frozen dataclass로 고정한다.</li>
@@ -62,10 +62,11 @@
 <tr><th>집중 검사</th><td><code>17/17</code> GREEN을 같은 상태에서 두 번 확인했다.</td></tr>
 <tr><th>전체·이전 검사</th><td>전체 Exp466 <code>56/56</code>, 이전 Exp465 <code>7/7</code>을 통과했다.</td></tr>
 <tr><th>기본 검사</th><td><code>compileall</code>과 <code>git diff --check</code>를 통과했다.</td></tr>
-<tr><th>독립 검토</th><td>fresh Sol 판정은 <code>SHIP</code>이다. 이 판정은 구현 사전검증에 대한 것이며, 아직 Step 3의 깨끗한 reviewed commit 고정이나 private 실행 완료를 뜻하지 않는다.</td></tr>
+<tr><th>독립 검토</th><td>깨끗한 commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에 대한 fresh Sol 판정은 <code>SHIP</code>이며 Critical 0건, Important 0건, Minor 0건이다.</td></tr>
+<tr><th>실행 전 검사</th><td>reviewed commit 고정 시점의 worktree clean, official root 부재, 중복 Exp466 process 부재 검사가 모두 <code>PASS</code>였다.</td></tr>
 <tr><th>실행 내용</th><td><code>evaluate</code>는 TRAIN을 한 번 읽고, 보간과 Exp465 C0 권한 준비를 각각 한 번 수행한 뒤 seed 순서대로 2×5 fold를 점수화한다. 이어서 qualification·decision·7개 결과 파일을 만들고 저장된 결과만으로 다시 검사한다. <code>inspect</code>는 데이터나 scorer를 부르지 않고 저장된 7개 파일만 다시 검사한다.</td></tr>
-<tr><th>남은 단계</th><td>Task 6 제목과 Step 3~6은 아직 완료되지 않았다. 하나의 깨끗한 reviewed commit을 고정하고, private run 1·2를 순서대로 실행한 뒤 두 결과를 byte 단위로 비교해야 한다.</td></tr>
+<tr><th>남은 단계</th><td>Task 6 제목과 Step 4~6은 아직 완료되지 않았다. reviewed commit <code>0aed6d75…</code>에서 private run 1·2를 순서대로 실행한 뒤 두 결과를 byte 단위로 비교해야 한다.</td></tr>
 </table>
-<p>Task 1~5와 Task 6 Step 1~2를 완료했다. ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. routing, champion, pending, promotion은 변경하지 않았다.</p>
+<p>Task 1~5와 Task 6 Step 1~3을 완료했다. ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. routing, champion, pending, promotion은 변경하지 않았다.</p>
 </main></body>
 </html>
