@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp466 Task 1 구현 보고</h1>
-<p>상태: <code>task_1_authority_contract_documents_verified_precommit</code>. 실험 truth 상태는 <code>planned_implementation_not_started</code>이며, 이 보고서는 Task 1 골격만 다룬다.</p>
+<p>상태: <code>task_1_authority_contract_documents_committed</code>. 실험 truth 상태는 <code>planned_implementation_not_started</code>이며, 이 보고서는 Task 1 골격만 다룬다.</p>
 <h2>변경 파일과 인터페이스</h2>
 <ul>
 <li><code>experiments/exp466_ecg200_phase_registration_margin_antigravity/config_antigravity.py</code>: <code>FROZEN_CONFIG_ANTIGRAVITY</code>와 frozen exact-type config.</li>
@@ -25,7 +25,7 @@
 <tr><th>GREEN 2</th><td>같은 명령 → <code>.......</code>, 7 tests, <code>OK</code>, exit 0, 0.005초.</td></tr>
 <tr><th>코드맵</th><td id="exp466-task1-map-result-antigravity"><code>python3 scratch/build_codemap_exp466_antigravity.py --validate-only</code> → exit 0. graph 16 nodes / 14 edges / unknown 0, caller/effect/test 답 3개와 tracked fingerprints 18개를 검증했다.</td></tr>
 <tr><th>diff-check</th><td id="exp466-task1-diff-result-antigravity"><code>git diff --check</code> → exit 0, 출력 없음. 세 ledger와 Exp466 graph/lock을 포함한 5개 JSON도 모두 parse됐다.</td></tr>
-<tr><th>commit hash</th><td id="exp466-task1-commit-antigravity">사전 구현 기준 commit <code>d0c93aa4dd6e70b8ee188ffcbbaa623a3a785da1</code>. Task 1 구현 commit hash는 commit 생성 직후 closeout binding에서 이 항목에 기록한다.</td></tr>
+<tr><th>commit hash</th><td id="exp466-task1-commit-antigravity">Task 1 구현 commit <code>5de243dede76c175c160d9612cc5b834900e559f</code> (<code>feat: freeze Exp466 authority and contracts</code>).</td></tr>
 </table>
 <h2>코드맵 질문 답</h2>
 <table>
@@ -37,6 +37,6 @@
 <div class="note"><p>ECG200 TEST와 라벨을 열지 않았다. ECG200 TRAIN도 읽지 않았으며 점수 계산, candidate index 생성, private/official 실행을 하지 않았다. official evaluate/inspect, private run, label query는 모두 0이고 official result와 모든 result hash는 <code>null</code>이다. Exp465는 수정하지 않았고 routing, champion, pending candidate, promotion도 바꾸지 않았다. 계획 Task/Step 체크박스는 controller 소유로 그대로 두었다.</p></div>
 <div class="ok"><p>Task 1에는 MLX 대상 score workload가 없다. 이후 full run 전 동일 입력·seed CPU/MLX parity, finite 출력, 모든 사전등록 alpha의 candidate index 일치, 수치 허용 범위, transfer/synchronization 포함 1.1배 속도 gate를 만족해야만 MLX를 쓴다.</p></div>
 <h2>우려 사항</h2>
-<div class="stop"><p>Task 1 구현 commit은 보고서 내용과 같은 commit에 자기 자신의 hash를 포함할 수 없다. 첫 commit 직후 exact hash를 이 보고서와 code-map fingerprint에 바인딩하는 closeout commit이 필요하다. 그 외 알려진 blocker는 없다.</p></div>
+<div class="stop"><p>자기 참조를 피하기 위해 구현 commit hash는 후속 closeout commit에서 이 보고서와 code-map fingerprint에 바인딩한다. closeout은 보고서와 triplet 결합만 바꾸며 config/contracts/ledger/dashboard 의미는 바꾸지 않는다. 알려진 기능·과학 blocker는 없다.</p></div>
 </main></body>
 </html>
