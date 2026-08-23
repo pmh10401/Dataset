@@ -213,7 +213,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, 42)
-        self.assertEqual(checkbox_parser.checked_count, 28)
+        self.assertEqual(checkbox_parser.checked_count, 30)
         task1_marker = '<h2><label><input type="checkbox" checked disabled> Task 1 —'
         task2_marker = '<h2><label><input type="checkbox" checked disabled> Task 2 —'
         task3_marker = '<h2><label><input type="checkbox" checked disabled> Task 3 —'
@@ -241,8 +241,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
-        self.assertEqual(graph["schema"], "exp465_task4_qualification_publication_codemap_v1")
-        self.assertEqual(lock["schema"], "exp465_task4_qualification_publication_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp465_task5_closed_private_cli_codemap_v1")
+        self.assertEqual(lock["schema"], "exp465_task5_closed_private_cli_codemap_lock_v1")
         self.assertEqual(graph["source_parent_commit"], source_parent)
         self.assertEqual(lock["source_parent_commit"], source_parent)
         self.assertEqual(graph["unknown_relationships"], [])
@@ -282,6 +282,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task4_artifacts_test",
             "task4_replay_test",
             "task4_dashboard_export_test",
+            "task5_report",
+            "task5_cli",
+            "task5_launcher",
+            "task5_cli_test",
             "map_builder",
         }
         self.assertEqual(node_ids, expected_nodes)
