@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 구현 보고서</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}</style>
+</head>
+<body><main>
+<h1>Exp468 구현 보고서</h1>
+<p>현재 구현 상태는 <code>implementation_task_1_complete</code>다. 승인된 STFT 설정과 결과 container를 구현했지만 ECG 데이터 처리와 점수 계산은 아직 시작하지 않았다.</p>
+<h2>Task 1 완료 범위</h2>
+<ul>
+<li><code>config_antigravity.py</code>는 TRAIN-only identity, seed/fold, 5×28 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, 네 변화 순서, C0/S10/C10 역할, period 기준과 설계 SHA-256을 exact-type frozen dataclass로 고정한다.</li>
+<li><code>contracts_antigravity.py</code>는 fold와 qualification 형식을 불변으로 제공한다. 두 AUC tuple은 config의 네 변화 순서에 묶이며 exact finite float와 <code>[0,1]</code> 범위만 허용한다.</li>
+<li>qualification은 seed-major 10개 fold, seed 순서의 immutable count mapping, seed당 정상 trial 69개, label query 0, 실행 전 artifact hash <code>null</code>을 강제한다.</li>
+<li>Task 1은 passed/reason 일치와 타입·범위·순서·불변성만 검사한다. period 합격과 보호 변화 기준의 실제 계산은 Task 4에 남겼다.</li>
+</ul>
+<h2>TDD 증거</h2>
+<table>
+<tr><th>RED</th><td>focused suite의 10개 검사가 새 config/contracts 모듈 부재로 모두 <code>ModuleNotFoundError</code>를 내며 실패했다.</td></tr>
+<tr><th>GREEN</th><td>최소 config/contracts 구현 뒤 같은 focused suite의 <code>10/10</code> 검사가 통과했다. 최종 검증에서는 같은 명령을 두 번 실행한다.</td></tr>
+<tr><th>경계</th><td>loader, scorer, 배열, backend 선택, qualification gate 계산, ECG 접근, 실험 실행을 추가하지 않았다.</td></tr>
+</table>
+<div class="box"><p><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. 이는 NumPy, Numba, MLX 중 실행 backend를 선택하는 필드가 아니다.</p></div>
+<div class="box stop"><p><strong>실행 truth:</strong> 점수 계산 <code>0</code>회, private/official 실행 <code>0/0</code>회, label query <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 2~6은 아직 완료되지 않았다.</p></div>
+</main></body>
+</html>

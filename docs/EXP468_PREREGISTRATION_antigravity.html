@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 사전등록</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}</style>
+</head>
+<body><main>
+<h1>Exp468 사전등록</h1>
+<p>현재 상태는 <code>implementation_task_1_complete</code>다. Task 1은 승인된 설정, 결과 형식, 문서 골격만 고정했다. ECG 파일을 열거나 점수를 계산하거나 실험을 실행하지 않았다.</p>
+<table>
+<tr><th>실험</th><td><code>Exp468</code> — ECG200 국소 STFT 주파수 재분배 자격 검증</td></tr>
+<tr><th>승인 설계</th><td><code>docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html</code><br>SHA-256 <code>fa799dd628028163b6bc2dee5af6fd3f507b555849a00b194e32ecdc3f7078b7</code></td></tr>
+<tr><th>입력 경계</th><td>ECG200 TRAIN <code>100×96</code>, 정상 69개, <code>96→140</code> 보간을 사전등록했다. Task 1에서는 TRAIN과 TEST를 모두 열지 않았다.</td></tr>
+<tr><th>반복</th><td>seed <code>(20260721, 20261721)</code>, seed당 5 fold, 총 10개 결과 형식을 고정했다.</td></tr>
+</table>
+<h2>고정한 과학 정의</h2>
+<ul>
+<li>suffix <code>[56:140]</code>의 길이는 84이며, 시작점 <code>(0,14,28,42,56)</code>에서 길이 28인 창 다섯 개만 사용한다.</li>
+<li>대칭 Hann의 기준식은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>이다. <code>hann_definition</code>은 이 수학 기준을 뜻하며 실행 backend를 고르지 않는다.</li>
+<li>RFFT 길이는 28, DC 제외 bin은 14, epsilon은 <code>1e-12</code>, JS 로그는 자연로그다.</li>
+<li>AUC 위치 순서는 <code>(level_shift, gradual_drift, amplitude_scaling, period_change)</code>다. 네 번째 <code>period_change</code>는 Task 2에서 Exp466 합성 범위를 그대로 연결하고, AUC 계산은 Task 4에서 한다.</li>
+<li>method order는 <code>(C0,S10,C10)</code>, 유일한 주 후보는 <code>C10</code>, period AUC 하한은 <code>0.85</code>다. 평균 AUC 기준은 없다.</li>
+</ul>
+<div class="box"><p>Task 1에는 가속할 점수 연산이 없다. Numba/MLX 선택은 Task 3에서 같은 입력과 seed의 결정성, 수치 일치, 후보 index 일치, 전송·동기화 포함 1.1배 속도 기준을 확인한 뒤에만 한다.</p></div>
+<div class="box stop"><p><strong>현재 실행 truth:</strong> 점수 계산 <code>0</code>회, private run <code>0</code>회, official run/evaluate/inspect <code>0/0/0</code>, label query <code>0</code>회다. official result와 artifact/result/dashboard hash는 모두 <code>null</code>이다. ECG200 TEST, 실제 FN, routing, champion, pending, promotion은 범위 밖이다.</p></div>
+</main></body>
+</html>

@@ -3,8 +3,8 @@
   "manifest": {
     "version": 1,
     "surface": "dashboard",
-    "title": "Exp468 ECG200 국소 STFT 설계 대시보드",
-    "description": "Exp466 실패 근거와 Exp468의 승인된 단일 후보, 합격 기준, 구현 계획 및 진행 상태를 보여주는 스냅샷.",
+    "title": "Exp468 ECG200 국소 STFT Task 1 대시보드",
+    "description": "Exp466 실패 근거, Exp468 고정 설정·결과 계약, 합격 기준과 Task 1 완료 상태를 보여주는 source-backed 스냅샷.",
     "generatedAt": "2026-08-23T00:00:00Z",
     "cards": [
       {
@@ -37,11 +37,20 @@
       },
       {
         "id": "official_runs",
-        "description": "구현과 별도 실행 지시 전까지 유지해야 하는 공식 실행 횟수.",
-        "dataset": "design_summary",
-        "sourceId": "exp468_design",
+        "description": "Task 1 완료 시점의 공식 실행 횟수. 점수 계산과 결과 생성은 시작하지 않았다.",
+        "dataset": "implementation_summary",
+        "sourceId": "exp468_task1_truth",
         "metrics": [
           {"label": "공식 실행", "field": "official_runs", "format": "number"}
+        ]
+      },
+      {
+        "id": "score_calculations",
+        "description": "Task 1은 설정과 형식만 고정하므로 실제 점수 계산 횟수는 0이다.",
+        "dataset": "implementation_summary",
+        "sourceId": "exp468_task1_truth",
+        "metrics": [
+          {"label": "점수 계산", "field": "score_calculations", "format": "number"}
         ]
       }
     ],
@@ -83,9 +92,9 @@
       {
         "id": "progress_checklist",
         "title": "진행 체크",
-        "subtitle": "완료된 단계는 체크 상태로 표시한다.",
+        "subtitle": "Task 1은 완료됐고 Task 2부터는 아직 시작하지 않았다.",
         "dataset": "progress_checklist",
-        "sourceId": "exp468_design",
+        "sourceId": "exp468_task1_truth",
         "defaultSort": {"field": "order", "direction": "asc"},
         "columns": [
           {"field": "order", "label": "단계", "format": "number"},
@@ -123,6 +132,19 @@
         }
       },
       {
+        "id": "exp468_task1_truth",
+        "label": "Exp468 Task 1 구현 truth",
+        "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Task 1 구현 보고서와 계획에서 완료 상태, 점수 계산 0회와 공식 실행 0회를 재현한다.",
+          "sql": "SELECT 'implementation_task_1_complete' AS status, 0 AS score_calculations, 0 AS official_runs",
+          "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
+          "executed_at": "2026-08-23T00:00:00Z"
+        }
+      },
+      {
         "id": "qualification_gap_query",
         "label": "Exp466 관측값과 Exp468 필수 수준 비교",
         "path": "scratch/exp468_dashboard_artifact_antigravity.json",
@@ -140,21 +162,22 @@
       {
         "id": "status_note",
         "type": "markdown",
-        "body": "## 현재 판정\n\n**작성된 설계서 승인 · HTML 구현 계획 완료 · Task 1 대기**\n\nExp468은 아직 구현되거나 실행되지 않았습니다. 다음 행동은 Task별 에이전트 실행 또는 현재 세션 순차 실행 중 하나를 선택하는 것입니다. TEST/FN 평가는 없습니다."
+        "sourceId": "exp468_task1_truth",
+        "body": "## Task 1 설정과 결과 형식을 완료했습니다\n\n**implementation_task_1_complete**\n\n승인된 STFT 설정, AUC 변화 순서와 불변 fold/qualification 형식을 구현했습니다. 점수 계산과 private·official 실행은 0회이며 official/private result와 결과 hash는 null입니다. TEST/FN 평가는 없습니다."
       },
-      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs"]},
+      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs", "score_calculations"]},
       {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
       {"id": "methods", "type": "table", "tableId": "method_comparison", "layout": "full"},
       {"id": "checklist", "type": "table", "tableId": "progress_checklist", "layout": "full"},
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" disabled> Task 1~5 구현·검증</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" disabled> Task 2~5 구현·검증</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\n[Exp468 HTML 구현 계획](superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html)을 확인하고 실행 방식을 선택합니다. 1번은 Task별 에이전트 실행, 2번은 현재 세션 순차 실행입니다."
+        "body": "## 다음 한 단계\n\n[Exp468 HTML 구현 계획](superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html)의 Task 2에서 Exp466 TRAIN loader·보간·네 합성 변화·C0를 exact import하고 parity를 검사합니다."
       }
     ]
   },
@@ -168,6 +191,9 @@
       ],
       "design_summary": [
         {"candidate_count": 1, "planned_folds": 10, "official_runs": 0}
+      ],
+      "implementation_summary": [
+        {"status": "implementation_task_1_complete", "score_calculations": 0, "official_runs": 0, "official_result": null, "private_result": null, "result_hash": null}
       ],
       "qualification_gap": [
         {"condition": "period AUC ≥ 0.85", "series": "Exp466 관측", "share": 0.0, "count_text": "0/10"},
@@ -190,8 +216,9 @@
         {"order": 5, "checked": "☑", "task": "작성된 HTML 설계서 최종 승인", "status": "완료"},
         {"order": 6, "checked": "☑", "task": "6개 Task HTML 구현 계획 작성", "status": "완료"},
         {"order": 7, "checked": "☑", "task": "OpenRouter 구현 계획 독립 검토", "status": "PASS"},
-        {"order": 8, "checked": "☐", "task": "Task 1~5 구현·검증", "status": "대기"},
-        {"order": 9, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "대기"}
+        {"order": 8, "checked": "☑", "task": "Task 1 고정 설정·결과 계약·문서 골격", "status": "완료"},
+        {"order": 9, "checked": "☐", "task": "Task 2~5 구현·검증", "status": "대기"},
+        {"order": 10, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "대기"}
       ]
     }
   },
@@ -219,6 +246,19 @@
         "description": "Exp468 설계서에서 후보 수, 검증 수와 공식 실행 경계를 재현한다.",
         "sql": "SELECT 1 AS candidate_count, 10 AS planned_folds, 0 AS official_runs",
         "tables_used": ["docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
+        "executed_at": "2026-08-23T00:00:00Z"
+      }
+    },
+    {
+      "id": "exp468_task1_truth",
+      "label": "Exp468 Task 1 구현 truth",
+      "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Task 1 구현 보고서와 계획에서 완료 상태, 점수 계산 0회와 공식 실행 0회를 재현한다.",
+        "sql": "SELECT 'implementation_task_1_complete' AS status, 0 AS score_calculations, 0 AS official_runs",
+        "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
         "executed_at": "2026-08-23T00:00:00Z"
       }
     },

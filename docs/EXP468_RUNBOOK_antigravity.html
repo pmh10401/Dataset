@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 실행 runbook</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}</style>
+</head>
+<body><main>
+<h1>Exp468 실행 runbook</h1>
+<div class="box"><p>현재 상태는 <code>implementation_task_1_complete</code>다. 설정과 불변 결과 형식만 준비됐으며, 실행 가능한 loader, scorer, qualification pipeline, CLI는 아직 없다.</p></div>
+<table>
+<tr><th>현재 횟수</th><td>점수 계산 <code>0</code>, private run <code>0</code>, official run/evaluate/inspect <code>0/0/0</code>, label query <code>0</code>.</td></tr>
+<tr><th>현재 결과</th><td>official result, private result, artifact map, prediction, evaluation, decision, dashboard hash는 모두 <code>null</code>.</td></tr>
+<tr><th>TRAIN 경계</th><td>Task 1은 TRAIN을 열지 않는다. Task 2가 승인된 MD5와 정상 69개 경계를 exact import로 연결하기 전에는 데이터 명령을 실행하지 않는다.</td></tr>
+<tr><th>TEST 경계</th><td>ECG200 TEST 파일, TEST 라벨, 실제 FN·FP·F1을 열거나 조회하지 않는다.</td></tr>
+</table>
+<h2>Task 1 집중 검증</h2>
+<pre><code>python3 -m unittest \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+python3 -m json.tool docs/codemap/codemap_exp468_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp468_antigravity.lock &gt;/dev/null
+git diff --check</code></pre>
+<p>단위 검사 명령은 같은 상태에서 두 번 실행한다. 코드맵 검증은 HTML에 포함된 JSON, 필수 edge, 문서 구조, tracked fingerprint를 읽기 전용으로 확인한다.</p>
+<h2>다음 허용 작업</h2>
+<p>Task 2에서 Exp466의 TRAIN loader, 보간, 네 합성 변화, C0 함수를 같은 객체로 연결하고 byte parity를 검사한다. Task 1에서는 점수나 결과를 만들지 않는다.</p>
+<div class="box stop"><p><strong>금지:</strong> backend 선결정, STFT 점수 계산, ECG 파일 접근, private/official 실행, TEST/FN 검증, 설정 변경, routing·champion·pending·promotion 변경.</p></div>
+</main></body>
+</html>
