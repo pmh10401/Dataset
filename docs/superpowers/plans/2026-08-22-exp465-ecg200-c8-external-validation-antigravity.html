@@ -67,19 +67,19 @@ $PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tes
 <h2><label><input type="checkbox" disabled> Task 3 — Exp464-bound C0/C6/C8 점수</label></h2>
 <p><strong>Files:</strong> Create <code>scoring_antigravity.py</code> and <code>tests/test_scoring_antigravity.py</code>. Modify docs, ledgers, map.</p>
 <p><strong>Interfaces:</strong> <code>score_fold_methods_antigravity(train140, fit_indices, query_indices, *, seed, fold_index, authority) -&gt; FoldMethodScoresAntigravity</code>. Result methods are exactly <code>("C0","C6","C8")</code>; <code>original</code> holds normal scores and <code>primary</code> holds exactly four synthetic-type score arrays.</p><ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED direct binding.</strong></label><pre><code>source = score_exp464_fold_methods_antigravity(train140, fit, query, seed=seed, fold_index=fold, authority=authority)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED direct binding.</strong></label><pre><code>source = score_exp464_fold_methods_antigravity(train140, fit, query, seed=seed, fold_index=fold, authority=authority)
 actual = score_fold_methods_antigravity(train140, fit, query, seed=seed, fold_index=fold, authority=authority)
 self.assertEqual(actual.methods, ("C0", "C6", "C8"))
 for method in actual.methods:
     np.testing.assert_array_equal(actual.original[method], source.original[method])</code></pre><p>Also require exact equality for four primary arrays, confirmation, amplitudes, cosines, evidence blobs and provenance.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — Golden fixture.</strong></label><p>Use fixed finite 20×140 input, sorted fit/query indices, both seeds and all five folds. Compare directly with Exp464 for every invocation.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — Projection only.</strong></label><pre><code>source = score_exp464_fold_methods_antigravity(
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Golden fixture.</strong></label><p>Use fixed finite 20×140 input, sorted fit/query indices, both seeds and all five folds. Compare directly with Exp464 for every invocation.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — Projection only.</strong></label><pre><code>source = score_exp464_fold_methods_antigravity(
     train140, fit_indices, query_indices,
     seed=seed, fold_index=fold_index, authority=authority,
 )
 return project_methods_antigravity(source, ("C0", "C6", "C8"))</code></pre><p>Do not rewrite C0, the synthetic generator, C6 or C8 mathematics.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — Stability interpretation.</strong></label><p>The same 69 rows under two seeds produce 10 repeated stability records, not 690 independent observations.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — MLX gate.</strong></label><p>Same 69×140 input and seed 4653001. Record versions/device/transfer-sync/parity/speed. CPU unless every project gate passes.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Stability interpretation.</strong></label><p>The same 69 rows under two seeds produce 10 repeated stability records, not 690 independent observations.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — MLX gate.</strong></label><p>Same 69×140 input and seed 4653001. Record versions/device/transfer-sync/parity/speed. CPU unless every project gate passes.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_scoring_antigravity
 $PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity</code></pre><p>Run Exp465 twice and Exp464 once; require exact parity.</p></li></ol>
 

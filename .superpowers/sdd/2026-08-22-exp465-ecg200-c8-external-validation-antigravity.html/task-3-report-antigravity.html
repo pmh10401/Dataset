@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Exp465 Task 3 report</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
+<body><main>
+<h1>Exp465 Task 3 report — Exp464-bound C0/C6/C8 점수</h1>
+<p>상태: <code>task_3_implementation_complete_awaiting_independent_review</code>. Implementation은 GREEN이지만, 계획의 Task 3 heading과 Step 6은 독립 검토 전까지 unchecked로 유지된다. 이 보고서는 independent approval 또는 qualification result를 주장하지 않는다.</p>
+<h2>구현 결과</h2>
+<ul>
+<li><code>scoring_antigravity.py</code>: local frozen/slots <code>FoldMethodScoresAntigravity</code>는 정확히 13필드를 가진다. entrypoint는 imported Exp464 scorer를 직접 한 번 호출하고, 그 결과에서 C0,C6,C8만 frozen order로 projection한다. C0, synthetic generator, C6, C8 수학을 복사하거나 다시 쓰지 않는다.</li>
+<li>모든 12개 method mapping과 nested score/confirmation/amplitude/cosine/evidence/blob/dimension/provenance 값은 Exp464 원본과 exact equality를 검증한다. 최상위 method key 순서와 read-only mapping도 확인한다.</li>
+<li>Test spy는 entrypoint 호출마다 imported Exp464 scorer 호출이 정확히 한 번임을 호출 인자·키워드·소스 identity까지 기록해 증명한다.</li>
+</ul>
+<h2>검증</h2>
+<table>
+<tr><th>Exp465 scoring</th><td>pinned interpreter로 3 tests GREEN ×2회; 10 seed-fold golden parity와 spy 포함</td></tr>
+<tr><th>Tasks 1–3 regression</th><td>21 tests 집합을 두 번 실행했다. 두 번 모두 map-staleness checkpoint 앞 문단까지 통과했고, 유일한 error는 HEAD-bound 이전 map의 예상된 <code>fingerprint drift</code>였다. functional/map child commit 후 동일 조건을 read-only로 재검증했다.</td></tr>
+<tr><th>Exp464 scoring regression</th><td>3 tests GREEN ×1회</td></tr>
+<tr><th>compile / diff</th><td>touched Python <code>py_compile</code> 통과, <code>git diff --check</code> whitespace error 없음</td></tr>
+<tr><th>가속화</th><td>전체 점수 단계를 MLX화하려면 공식 Exp464 CPU scorer 재작성이 필요해 acceleration policy condition 1을 만족하지 않는다. benchmark 없이 canonical CPU fallback, timing N/A, parity N/A를 기록한다.</td></tr>
+</table>
+<h2>커밋</h2>
+<ul>
+<li>Functional commit: <code>Implement Exp465 Task 3 scoring projection</code> — scoring implementation, tests, truth documents, ledgers, dashboard/runbook/report, map builder, and this report.</li>
+<li>Map-only child commit: <code>Bind Exp465 Task 3 scoring code map</code> — exactly the HTML/JSON/lock triplet, bound to the functional parent.</li>
+</ul>
+<p>정확한 commit hash는 review 시점에 <code>git log -2 --oneline</code>으로 확인한다. 별도 push, merge, routing, promotion은 하지 않는다.</p>
+<h2>경계</h2>
+<div class="note"><p>ECG200 TEST를 열거나 조회하지 않았다. official evaluate/inspect <code>0/0</code>, private run <code>0</code>, label query <code>0</code>, 모든 결과 hash <code>null</code>을 유지한다. Task 4 이후, routing, promotion, scientific threshold 변경은 하지 않았다.</p></div>
+</main></body></html>

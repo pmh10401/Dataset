@@ -3138,7 +3138,7 @@
     "experiment": "Exp465",
     "kind": "ecg200_c8_external_train_qualification",
     "status": "implementation_plan_written_awaiting_user_review",
-    "implementation_status": "task_2_review_pass_complete",
+    "implementation_status": "task_3_implementation_complete_awaiting_independent_review",
     "run_identity": "exp465-ecg200-c8-external-validation-antigravity-20260822",
     "run_root": "/Users/mac/Documents/Dataset/exp465_ecg200_c8_external_validation_antigravity_20260822",
     "package": "experiments/exp465_ecg200_c8_external_validation_antigravity",
@@ -3207,7 +3207,7 @@
     "scientific_winner_selected": false,
     "official_root_present": false,
     "review_only": false,
-    "next_action": "task_2_independent_review_before_task_3_scoring",
-    "notes": "Task 2 adds the official ECG200 TRAIN-only loader and fixed 96-to-140 interpolation with real-TRAIN smoke; official evaluate/inspect remain 0, label query count remains 0, private run count remains 0, and all result hashes remain null."
+    "next_action": "task_3_independent_review_before_task_4_qualification",
+    "notes": "Task 3 projects Exp464 C0/C6/C8 through one direct Exp464 call proven by exact golden parity and a scorer-call spy; qualification and official/private execution remain unstarted."
   }
 }

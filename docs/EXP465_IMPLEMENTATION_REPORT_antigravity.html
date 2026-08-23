@@ -4,12 +4,17 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 구현 보고서</h1>
-<p>이 문서는 Exp465 Task 1과 Task 2의 구현 범위와 검증 근거를 기록한다. Task 1 상태는 <code>task_1_review_pass_complete</code>, 현재 상태는 <code>task_2_review_pass_complete</code>다.</p>
+<p>이 문서는 Exp465 Task 1–3의 구현 범위와 검증 근거를 기록한다. Task 1 상태는 <code>task_1_review_pass_complete</code>, Task 2 상태는 <code>task_2_review_pass_complete</code>, 현재 상태는 <code>task_3_implementation_complete_awaiting_independent_review</code>다.</p>
 <h2>Task 2 구현 범위</h2>
 <ul>
 <li><code>sources_antigravity.py</code>: TRAIN 이름 강제, TEST 경로 사전 거부, MD5 gate, <code>rsplit(":", 1)</code> 파싱, float64/finite/int ±1 검증, 100×96과 69/31 확인 후 정상 69×96 read-only 반환.</li>
 <li><code>interpolation_antigravity.py</code>: 고정 <code>np.linspace</code> 그리드와 행별 단일 <code>np.interp</code>로만 96→140 변환. 첫·끝점 보존, owned/C-contiguous/read-only float64 출력.</li>
 <li>Tests: source RED 5건과 interpolation RED 5건을 먼저 작성해 import failure로 확인한 뒤 GREEN으로 전환했다.</li>
+</ul>
+<h2>Task 3 구현 범위와 검증</h2>
+<ul>
+<li><code>scoring_antigravity.py</code>: Exp465-local frozen/slots <code>FoldMethodScoresAntigravity</code>, fixed C0/C6/C8 projection, and one direct call to Exp464 <code>score_fold_methods_antigravity</code>. It copies no C0, synthetic generator, C6, or C8 mathematics.</li>
+<li>Tests: fixed finite 20×140 fixture with sorted fit/query indices covers both frozen seeds and all five folds (10 calls), exact equality for all 13 fields and every nested value, read-only mapping checks, plus a scorer-call spy proving every entrypoint invocation calls the imported Exp464 scorer exactly once.</li>
 </ul>
 <h2>Task 2 실제 TRAIN smoke과 가속화 판단</h2>
 <table>
@@ -17,6 +22,13 @@
 <tr><th>URL / MD5 / SHA-256</th><td>Zenodo record 11186675 <code>ECG200_TRAIN.ts</code>; MD5 <code>808875aeac1c358a90c630fe369327c4</code>; SHA-256 <code>6b855dbcbae2d968937c2416d22bdc2dc74be90d5ce6345f56950fa7e754b3fe</code></td></tr>
 <tr><th>smoke 결과</th><td>TRAIN 100×96, +1 69개/-1 31개, 정상 출력 69×140 finite read-only; TEST 파일은 다운로드·열기·조회하지 않았다.</td></tr>
 <tr><th>가속화</th><td>작은 CPU parsing/행별 <code>np.interp</code>이며 알고리즘 변경 없는 MLX 1.1× gate 근거가 없어 canonical CPU fallback을 유지한다.</td></tr>
+</table>
+<h2>Task 3 가속화 판정</h2>
+<table>
+<tr><th>PyTorch / MPS</th><td>tensor-eligible downstream Exp464 workload exists, but Task 3 is an immutable boundary projection and does not own or rewrite that scorer.</td></tr>
+<tr><th>MLX availability</th><td>repository Python has MLX 0.32.0 on <code>Device(gpu,0)</code>; pinned runtime has no MLX. PyTorch 2.13.0 is present in both runtimes.</td></tr>
+<tr><th>Ruling</th><td>The whole scoring stage can be accelerated only by rewriting the official Exp464 CPU scorer, violating acceleration policy condition 1. No benchmark was run because it would change the algorithm under assessment.</td></tr>
+<tr><th>Record</th><td>CPU fallback; transfer/sync timing N/A; CPU-vs-MLX parity N/A; canonical implementation remains Exp464 CPU scoring followed by exact projection.</td></tr>
 </table>
 <h2>구현 범위</h2>
 <ul>
@@ -34,5 +46,5 @@
 </table>
 <h2>가속화 판단과 안전 경계</h2>
 <div class="ok"><p>Task 1에는 tensor workload가 없다. PyTorch·MLX·MPS는 설계에 따라 나중에 점수 단계에서 다시 평가하며, 현재는 canonical CPU fallback만 기록한다. MLX 채택 조건은 candidate index 일치, 수치 허용 범위, transfer/sync 포함 1.1배 속도, manifest 증거다.</p></div>
-<div class="note"><p>새 Ox Alpha Ultra 세션의 독립 검토 결과는 <code>SPEC PASS / QUALITY APPROVED</code>다. 계획의 Task 2 heading과 Step 6을 checked로 바꿨다. 이 보고서는 scoring 또는 qualification 결과를 주장하지 않는다.</p></div>
+<div class="note"><p>새 Ox Alpha Ultra 세션의 독립 검토 결과는 <code>SPEC PASS / QUALITY APPROVED</code>다. 계획의 Task 2 heading과 Step 6을 checked로 바꿨다. Task 3 heading과 Step 6은 독립 검토 전까지 unchecked로 유지된다. 이 보고서는 implementation GREEN 상태일 뿐 independent approval 또는 qualification 결과를 주장하지 않는다.</p></div>
 </main></body></html>
