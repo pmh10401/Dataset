@@ -15,12 +15,17 @@ def test_frozen_config_antigravity(self):
     self.assertEqual((c.per_type_auc_min, c.mean_auc_min), (0.85, 0.90))
 ```
 
-2. **Step 2 — RED contract test.** Mutable/reordered mapping, non-finite margin, wrong 69-count, wrong SHA와 0이 아닌 official/label count를 각각 거부한다.
+2. **Step 2 — RED contract test.** 정상 confirmation은 seed 순서를 지킨 불변 정수 mapping에서 `0..69`를 유효한 실패 증거로 허용한다. Mutable/reordered mapping, 범위 밖 count, non-finite margin, wrong 69-count, wrong SHA와 0이 아닌 official/label count를 각각 거부하며, 모든 seed가 0일 때만 pass gate를 만족한다.
 
 ```python
 valid = valid_qualification_antigravity()
+failed = dataclasses.replace(
+    valid,
+    normal_confirmations=MappingProxyType({20260721: 1, 20261721: 0}),
+)
+self.assertEqual(failed.normal_confirmations[20260721], 1)
 with self.assertRaisesRegex(ValueError, "normal confirmation"):
-    dataclasses.replace(valid, normal_confirmations=MappingProxyType({20260721: 1, 20261721: 0}))
+    dataclasses.replace(valid, normal_confirmations=MappingProxyType({20260721: 70, 20261721: 0}))
 ```
 
 3. **Step 3 — RED 확인.**
