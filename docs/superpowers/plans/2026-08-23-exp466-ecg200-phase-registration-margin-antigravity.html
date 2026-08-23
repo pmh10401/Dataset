@@ -146,7 +146,8 @@ git commit -m "feat: qualify Exp466 C9 phase scores"</code></pre></li>
 
 <h2><label><input type="checkbox" disabled> Task 5 — canonical 결과·replay·HTML snapshot</label></h2>
 <p><strong>Files:</strong> Create artifacts/replay/dashboard_export modules and three tests. Update implementation report/runbook/dashboard/map.</p>
-<p><strong>Interfaces:</strong> <code>publish_result_antigravity(root, qualification, decision)</code> creates exactly seven leaves; <code>inspect_result_antigravity(root)</code> is scorer-free and dataset-free.</p>
+<p><strong>Interfaces:</strong> <code>publish_result_antigravity(root, records, qualification, decision)</code> creates exactly seven leaves; <code>inspect_result_antigravity(root)</code> is scorer-free and dataset-free.</p>
+<p><strong>Publication input:</strong> <code>records</code>는 <code>FoldMethodScoresAntigravity</code>의 정확한 frozen seed-major mapping이다. Qualification은 scalar-only이고 hidden state는 금지되므로 publisher가 이 입력을 명시적으로 받아야 한다.</p>
 <ol>
 <li><label><input type="checkbox" disabled> <strong>Step 1 — RED seven-leaf test.</strong></label><pre><code>self.assertEqual(tuple(sorted(p.name for p in root.iterdir())), (
  "artifact_sha256_antigravity.json", "context_antigravity.json",
