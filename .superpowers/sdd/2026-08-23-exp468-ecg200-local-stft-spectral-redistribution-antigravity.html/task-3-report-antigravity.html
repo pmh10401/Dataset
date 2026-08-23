@@ -4,6 +4,7 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem}.box{padding:1rem;border-left:6px solid #b42318;background:#fff4f2}</style></head>
 <body><main>
 <h1>Exp468 Task 3 — BLOCKED_AT_ACCELERATION_GATE</h1>
+<p><strong>후속 상태:</strong> 이 문서는 승인 전 시점의 <code>BLOCKED</code> 상태를 보존하는 point-in-time 기록이며, 현재 authoritative closure는 <a href="task-3-fallback-report-antigravity.html"><code>task-3-fallback-report-antigravity.html</code></a>이다.</p>
 <div class="box"><p><strong>결론:</strong> 고정 S10 수식과 Numba parity는 통과했지만 clean-process backend 준비와 cold compile을 포함한 1.1x 가속 gate가 실패했다. MLX도 float64 RFFT를 유지하지 못한다. NumPy CPU fallback을 기록하고 Task 3·Step 5를 미체크로 남겼으며 공식 실험은 실행하지 않았다.</p></div>
 
 <h2>RED/GREEN</h2>
