@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp468 구현 보고서</h1>
-<div class="box stop"><h2>기술 요약</h2><p>현재 구현 상태는 <code>implementation_task_3_acceleration_gate_blocked</code>다. S10의 고정 STFT·자연로그 JS·LOO·rank·confirmation 수식과 Numba parity는 검증됐지만, 개선 후에도 cold compile을 포함한 Numba gate가 NumPy 대비 <code>0.071117x</code>에 그쳐 필수 <code>1.1x</code>를 통과하지 못했다. MLX/MPS는 GPU float64 RFFT를 지원하지 않는다. 따라서 NumPy CPU fallback을 보존하고 Task 4 이후 및 공식·private qualification은 실행하지 않았다.</p></div>
+<div class="box stop"><h2>기술 요약</h2><p>현재 구현 상태는 <code>implementation_task_3_acceleration_gate_blocked</code>다. S10의 고정 STFT·자연로그 JS·LOO·rank·confirmation 수식과 Numba parity는 검증됐지만, clean subprocess에서 backend 준비부터 포함한 Numba gate가 NumPy 대비 <code>0.055592x</code>에 그쳐 필수 <code>1.1x</code>를 통과하지 못했다. MLX/MPS는 GPU float64 RFFT를 지원하지 않는다. 따라서 NumPy CPU fallback을 보존하고 Task 4 이후 및 공식·private qualification은 실행하지 않았다.</p></div>
 <h2>Task 1 완료 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only identity, seed/fold, 5×28 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, 네 변화 순서, C0/S10/C10 역할, period 기준과 설계 SHA-256을 exact-type frozen dataclass로 고정한다.</li>
@@ -22,19 +22,20 @@
 <li>각 창은 평균 제거, 대칭 Hann <code>0.5-0.5*cos(2*pi*n/27)</code>, 길이-28 RFFT, DC 제외·Nyquist 포함 14 bin, bin당 <code>1e-12</code>, frame L1 정규화를 적용한다. 직접 DFT fixture가 NumPy oracle과 <code>atol=1e-15</code>로 일치한다.</li>
 <li>fit raw는 각 행을 제외한 frame별 성분 중앙값 reference, query raw는 전체 fit reference를 사용한다. reference는 frame별 합 1로 재정규화한다. query를 fit에 섞는 leakage fixture와 duplicate/tied median fixture를 통과한다.</li>
 <li>자연로그 Jensen–Shannon의 다섯 frame 중앙값을 raw S10으로 사용한다. rank는 <code>(1+count(fit_raw&lt;=query_raw))/(n_fit+1)</code>, confirmation은 raw가 0과 fit 최댓값을 모두 엄격히 넘을 때만 true다.</li>
+<li>승인 수식에 없는 수치 clamp는 없다. <code>1.999998644061338e-20</code>의 작은 양의 JS와 raw가 0으로 바뀌지 않고 strict confirmation의 <code>raw&gt;0</code> 의미를 보존하는 회귀 검사를 통과한다.</li>
 <li>결과 배열은 finite exact float64/bool, shape, 최대값과 backend를 검증하고 소유 복사본을 read-only로 보존한다.</li>
 </ul>
 <h2>전체 10-fold 가속 결과</h2>
 <p>ECG200 TRAIN 정상 69행만 사용했다. 두 seed 각각 query 크기 <code>(14,14,14,14,13)</code>, fit 크기 <code>(55,55,55,55,56)</code>이며, normal과 네 합성 query를 fold별 combined batch 한 번으로 점수화해 fit calibration을 공유했다. 전체 workload는 fit raw 552개, query raw 690개, 변환 행 1,242개, 길이-28 frame 6,210개다. 데이터 load·보간·합성·조립은 timing 밖이고 backend 준비·host 반환은 timing 안이다.</p>
 <table>
-<thead><tr><th>backend</th><th>warm median</th><th>IQR</th><th>cold compile</th><th>gate 시간</th><th>NumPy 대비</th><th>parity·판정</th></tr></thead>
+<thead><tr><th>backend</th><th>warm median</th><th>IQR</th><th>backend 준비</th><th>cold compile</th><th>gate 시간</th><th>NumPy 대비</th><th>parity·판정</th></tr></thead>
 <tbody>
-<tr><td>NumPy</td><td><code>0.0331811667s</code></td><td><code>0.0013064588s</code></td><td>해당 없음</td><td><code>0.0331811667s</code></td><td><code>1.0x</code></td><td>oracle·CPU fallback</td></tr>
-<tr><td>Numba 개선 후</td><td><code>0.0328727504s</code></td><td><code>0.0010325424s</code></td><td><code>0.4336977499s</code></td><td><code>0.4665705003s</code></td><td><code>0.0711171553x</code></td><td>finite, raw max error <code>5.551115e-16</code>, rank/confirmation exact, deterministic. 속도 gate 실패</td></tr>
-<tr><td>MLX/MPS</td><td colspan="5">측정 불가</td><td>GPU float64 RFFT 미지원으로 parity 실패</td></tr>
+<tr><td>NumPy</td><td><code>0.0319152502s</code></td><td><code>0.0004911665s</code></td><td><code>0s</code></td><td>해당 없음</td><td><code>0.0319152502s</code></td><td><code>1.0x</code></td><td>oracle·CPU fallback</td></tr>
+<tr><td>Numba 개선 후</td><td><code>0.0326081249s</code></td><td><code>0.0014127083s</code></td><td><code>0.1001899168s</code></td><td><code>0.4413024997s</code></td><td><code>0.5741005414s</code></td><td><code>0.0555917438x</code></td><td>finite, raw max error <code>5.551115e-16</code>, rank/confirmation exact, deterministic. 속도 gate 실패</td></tr>
+<tr><td>MLX/MPS</td><td colspan="6">측정 불가</td><td>GPU float64 RFFT 미지원으로 parity 실패</td></tr>
 </tbody>
 </table>
-<p>NumPy와 Numba는 각각 전체 workload 21회를 순차 실행했다. Numba는 clean process의 첫 진입부터 host 반환까지 cold 시간을 기록했다. 초기 Numba gate <code>1.2641031672s</code>가 실패한 뒤 profile에서 monolithic scorer compile <code>2.194s</code> 누적을 확인하고, 수식·workload를 바꾸지 않은 채 direct DFT transform만 JIT하도록 개선했다. gate는 <code>0.4665705003s</code>로 줄었지만 여전히 1.1x 기준을 통과하지 못했다.</p>
+<p>NumPy와 Numba는 각각 전체 workload 21회를 순차 실행했다. raw workload 조립 뒤 clean child process를 시작하고, acceleration module·Numba import와 Hann/twiddle 생성 직전에 timer를 시작했다. 기록한 gate <code>0.5741005414s</code>는 backend 준비 <code>0.1001899168s</code>, cold compile <code>0.4413024997s</code>, warm 전체 실행 <code>0.0326081249s</code>를 모두 포함한다. child는 acceleration module이 timer 전에 preload되지 않았음을 검증한다. 초기 profile 개선은 유지했으며 수식·workload는 바꾸지 않았다.</p>
 <h2>Task 2 완료 범위</h2>
 <ul>
 <li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>는 Exp466의 다섯 공개 함수를 직접 import하고 같은 객체로 re-export한다.</li>
@@ -48,7 +49,7 @@
 <tr><th>Task 2 RED</th><td>production adapter 작성 전에 새 네 test module을 실행했고, 새 Exp468 source/interpolation/synthetic/predecessor 모듈 부재로 <code>4</code>개 import error가 발생했다.</td></tr>
 <tr><th>Task 2 GREEN</th><td>다섯 exact re-export 뒤 focused suite의 <code>8/8</code> 검사가 통과한다. 최종 검증에서는 같은 명령을 두 번 실행하고 Exp466 lower regression도 실행한다.</td></tr>
 <tr><th>Task 3 RED</th><td>production 작성 전에 두 새 test module을 실행했고 <code>local_stft_antigravity</code>, <code>acceleration_antigravity</code> 부재로 정확히 두 import error가 발생했다.</td></tr>
-<tr><th>Task 3 GREEN</th><td>수식·LOO·leakage·경계·불변성·Numba parity·고정 gate 계약을 포함한 focused suite <code>14/14</code>가 통과한다. 최종 명령을 두 번 연속 실행한다.</td></tr>
+<tr><th>Task 3 GREEN</th><td>수식·LOO·leakage·경계·불변성·Numba parity·고정 gate 계약을 포함한 focused suite <code>17/17</code>가 통과한다. review fix round 1에서 small-positive JS clamp, clean-subprocess preparation timing, 직접 5×14 DFT bin parity의 RED를 각각 확인한 뒤 GREEN으로 전환했다.</td></tr>
 <tr><th>경계</th><td>C0/S10/C10 조립, AUC, qualification, routing, champion은 추가하지 않았다. TEST 파일·라벨·실제 FN은 열지 않았다.</td></tr>
 </table>
 <div class="box"><p><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. 이는 NumPy, Numba, MLX 중 실행 backend를 선택하는 필드가 아니다.</p></div>

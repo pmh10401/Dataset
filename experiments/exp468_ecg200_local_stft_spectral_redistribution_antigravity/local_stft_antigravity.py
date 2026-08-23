@@ -158,9 +158,7 @@ def jensen_shannon_antigravity(p: object, q: object) -> float:
     divergence += 0.5 * float(
         np.sum(right[right_positive] * np.log(right[right_positive] / midpoint[right_positive])),
     )
-    if abs(divergence) <= 1e-18:
-        return 0.0
-    return max(0.0, divergence)
+    return divergence
 
 
 def _reference_antigravity(distributions: FloatArrayAntigravity) -> FloatArrayAntigravity:
@@ -181,8 +179,6 @@ def _raw_rows_antigravity(
         references * np.log(references / midpoint), axis=2,
     )
     raw = np.median(divergence, axis=1).astype(np.float64, copy=False)
-    raw[np.abs(raw) <= 1e-18] = 0.0
-    np.maximum(raw, 0.0, out=raw)
     return raw
 
 

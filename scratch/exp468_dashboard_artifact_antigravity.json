@@ -92,7 +92,7 @@
       {
         "id": "acceleration_benchmark",
         "title": "전체 10-fold 가속 gate 결과",
-        "subtitle": "동일한 1,242행·6,210 frame workload이며 Numba gate에는 cold compile을 포함한다.",
+        "subtitle": "동일한 1,242행·6,210 frame workload이며 Numba gate에는 clean-process backend 준비와 cold compile을 포함한다.",
         "dataset": "acceleration_benchmark",
         "sourceId": "exp468_task3_truth",
         "defaultSort": {"field": "order", "direction": "asc"},
@@ -100,6 +100,7 @@
           {"field": "order", "label": "순서", "format": "number"},
           {"field": "backend", "label": "backend", "type": "text"},
           {"field": "median_seconds", "label": "warm median(초)", "format": "number"},
+          {"field": "preparation_seconds", "label": "backend 준비(초)", "format": "number"},
           {"field": "gate_seconds", "label": "gate 시간(초)", "format": "number"},
           {"field": "speedup", "label": "NumPy 대비", "format": "number"},
           {"field": "parity", "label": "parity", "type": "text"},
@@ -181,7 +182,7 @@
         "id": "status_note",
         "type": "markdown",
         "sourceId": "exp468_task3_truth",
-        "body": "## S10은 검증됐지만 가속 gate에서 중단됐습니다\n\n**implementation_task_3_acceleration_gate_blocked**\n\n고정 5×28 STFT·자연로그 JS·fit LOO·query full-fit reference·tie rank·strict confirmation 검사를 통과했습니다. Numba는 raw 최대 오차 5.55e-16과 exact rank/confirmation을 만족했지만 cold compile+한 번의 warm 전체 실행이 0.46657초로 NumPy median 0.03318초보다 느려 1.1x gate를 통과하지 못했습니다. MLX는 GPU float64 RFFT를 지원하지 않습니다. 공식·private qualification은 각각 0회이고 result/hash는 null이며 TEST/FN 평가는 없습니다."
+        "body": "## S10은 검증됐지만 가속 gate에서 중단됐습니다\n\n**implementation_task_3_acceleration_gate_blocked**\n\n고정 5×28 STFT·자연로그 JS·fit LOO·query full-fit reference·tie rank·strict confirmation 검사를 통과했습니다. 승인 수식에 없던 JS clamp를 제거해 작은 양의 raw를 보존했습니다. Numba는 raw 최대 오차 5.55e-16과 exact rank/confirmation을 만족했지만 clean-process backend 준비+cold compile+한 번의 warm 전체 실행이 0.57410초로 NumPy median 0.03192초보다 느려 1.1x gate를 통과하지 못했습니다. MLX는 GPU float64 RFFT를 지원하지 않습니다. 공식·private qualification은 각각 0회이고 result/hash는 null이며 TEST/FN 평가는 없습니다."
       },
       {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs", "score_calculations"]},
       {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
@@ -228,9 +229,9 @@
         {"order": 3, "method": "Wavelet packet", "decision": "보류", "reason": "기저·깊이·트리 선택이 추가되어 숨은 튜닝 위험이 큼"}
       ],
       "acceleration_benchmark": [
-        {"order": 1, "backend": "NumPy", "median_seconds": 0.033181166741997004, "gate_seconds": 0.033181166741997004, "speedup": 1.0, "parity": "oracle", "eligible": "fallback", "reason": "고정 CPU oracle"},
-        {"order": 2, "backend": "Numba", "median_seconds": 0.03287275042384863, "gate_seconds": 0.46657050028443336, "speedup": 0.07111715533187142, "parity": "PASS (max 5.55e-16)", "eligible": "아니요", "reason": "cold compile 포함 1.1x gate 실패"},
-        {"order": 3, "backend": "MLX/MPS", "median_seconds": null, "gate_seconds": null, "speedup": null, "parity": "FAIL", "eligible": "아니요", "reason": "GPU float64 RFFT 미지원"}
+        {"order": 1, "backend": "NumPy", "median_seconds": 0.03191525023430586, "preparation_seconds": 0.0, "gate_seconds": 0.03191525023430586, "speedup": 1.0, "parity": "oracle", "eligible": "fallback", "reason": "고정 CPU oracle"},
+        {"order": 2, "backend": "Numba", "median_seconds": 0.032608124893158674, "preparation_seconds": 0.10018991678953171, "gate_seconds": 0.5741005414165556, "speedup": 0.05559174383559552, "parity": "PASS (max 5.55e-16)", "eligible": "아니요", "reason": "backend 준비+cold compile 포함 1.1x gate 실패"},
+        {"order": 3, "backend": "MLX/MPS", "median_seconds": null, "preparation_seconds": null, "gate_seconds": null, "speedup": null, "parity": "FAIL", "eligible": "아니요", "reason": "GPU float64 RFFT 미지원"}
       ],
       "progress_checklist": [
         {"order": 1, "checked": "☑", "task": "Exp466 실패 근거 확인", "status": "완료"},

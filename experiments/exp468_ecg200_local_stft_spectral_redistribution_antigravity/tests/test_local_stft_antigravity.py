@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 
 from experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.local_stft_antigravity import (
+    _raw_rows_antigravity,
     jensen_shannon_antigravity,
     score_local_stft_antigravity,
     strict_confirmation_antigravity,
@@ -145,6 +146,29 @@ class JensenShannonAntigravityTest(unittest.TestCase):
                 np.array([0.5, 0.5], dtype=np.float64),
             )
 
+    def test_small_positive_js_is_not_clamped_and_preserves_raw_confirmation_antigravity(self) -> None:
+        delta = np.float64(1e-10)
+        p = np.array([0.5 + delta, 0.5 - delta], dtype=np.float64)
+        q = np.array([0.5 - delta, 0.5 + delta], dtype=np.float64)
+        midpoint = (p + q) / 2.0
+        expected = float(
+            0.5 * np.sum(p * np.log(p / midpoint))
+            + 0.5 * np.sum(q * np.log(q / midpoint))
+        )
+        self.assertGreater(expected, 0.0)
+        self.assertLess(expected, 1e-18)
+
+        actual = jensen_shannon_antigravity(p, q)
+        self.assertEqual(actual, expected)
+        distributions = np.broadcast_to(p, (1, 5, 2)).copy()
+        references = np.broadcast_to(q, (1, 5, 2)).copy()
+        raw = _raw_rows_antigravity(distributions, references)
+        self.assertEqual(float(raw[0]), expected)
+        np.testing.assert_array_equal(
+            strict_confirmation_antigravity(raw, 0.0),
+            np.array([True]),
+        )
+
 
 class LocalStftScoringAntigravityTest(unittest.TestCase):
     def test_fit_uses_loo_query_uses_full_fit_with_tied_medians_antigravity(self) -> None:
@@ -215,8 +239,14 @@ class LocalStftScoringAntigravityTest(unittest.TestCase):
     def test_rank_counts_tied_fit_raw_with_less_than_or_equal_antigravity(self) -> None:
         identical = _rows_antigravity((2.0, 2.0, 2.0, 2.0))
         scores = score_local_stft_antigravity(identical, identical[:1])
-        np.testing.assert_array_equal(scores.fit_raw_js, np.zeros(4, dtype=np.float64))
-        np.testing.assert_array_equal(scores.query_raw_js, np.zeros(1, dtype=np.float64))
+        np.testing.assert_array_equal(
+            scores.fit_raw_js,
+            np.full(4, scores.fit_raw_js[0], dtype=np.float64),
+        )
+        np.testing.assert_array_equal(
+            scores.query_raw_js,
+            scores.fit_raw_js[:1],
+        )
         np.testing.assert_array_equal(scores.query_ranks, np.ones(1, dtype=np.float64))
 
     def test_strict_confirmation_boundaries_antigravity(self) -> None:

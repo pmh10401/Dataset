@@ -141,7 +141,9 @@ if _numba_antigravity is not None:
     )
 
     @_numba_antigravity.njit(cache=False, fastmath=False)
-    def _power_numba_antigravity(rows: FloatArrayAntigravity) -> FloatArrayAntigravity:
+    def _power_distributions_numba_antigravity(
+        rows: FloatArrayAntigravity,
+    ) -> FloatArrayAntigravity:
         output = np.empty((rows.shape[0], 5, 14), dtype=np.float64)
         starts = (0, 14, 28, 42, 56)
         weighted = np.empty(28, dtype=np.float64)
@@ -175,10 +177,6 @@ if _numba_antigravity is not None:
             midpoint = (p[index] + q[index]) / 2.0
             divergence += 0.5 * p[index] * np.log(p[index] / midpoint)
             divergence += 0.5 * q[index] * np.log(q[index] / midpoint)
-        if np.abs(divergence) <= 1e-18:
-            return 0.0
-        if divergence < 0.0:
-            return 0.0
         return divergence
 
     @_numba_antigravity.njit(cache=False, fastmath=False)
@@ -186,8 +184,8 @@ if _numba_antigravity is not None:
         fit_rows: FloatArrayAntigravity,
         query_rows: FloatArrayAntigravity,
     ) -> tuple[FloatArrayAntigravity, FloatArrayAntigravity]:
-        fit_power = _power_numba_antigravity(fit_rows)
-        query_power = _power_numba_antigravity(query_rows)
+        fit_power = _power_distributions_numba_antigravity(fit_rows)
+        query_power = _power_distributions_numba_antigravity(query_rows)
         fit_raw = np.empty(fit_rows.shape[0], dtype=np.float64)
         query_raw = np.empty(query_rows.shape[0], dtype=np.float64)
         reference = np.empty((5, 14), dtype=np.float64)
@@ -241,8 +239,8 @@ def _score_local_stft_numba_antigravity(
         raise RuntimeError("Numba is not installed")
     # Profile-guided second path: compile only the direct DFT transform. NumPy's
     # vectorized reference/JS reduction is already faster and remains the oracle.
-    fit_power = _power_numba_antigravity(fit_rows)
-    query_power = _power_numba_antigravity(query_rows)
+    fit_power = _power_distributions_numba_antigravity(fit_rows)
+    query_power = _power_distributions_numba_antigravity(query_rows)
     return _score_from_power_numpy_antigravity(
         fit_power, query_power, backend="numba",
     )

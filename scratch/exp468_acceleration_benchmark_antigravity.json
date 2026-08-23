@@ -3,6 +3,7 @@
     "mlx": {
       "available": true,
       "backend": "mlx",
+      "backend_preparation_seconds": 0.0,
       "cold_compile_seconds": null,
       "cold_total_seconds": null,
       "confirmation_exact": false,
@@ -21,24 +22,26 @@
     "numba": {
       "available": true,
       "backend": "numba",
-      "cold_compile_seconds": 0.43369774986058474,
-      "cold_total_seconds": 0.46657050028443336,
+      "backend_preparation_seconds": 0.10018991678953171,
+      "cold_compile_seconds": 0.44130249973386526,
+      "cold_total_seconds": 0.5741005414165556,
       "confirmation_exact": true,
       "deterministic": true,
       "eligible": false,
-      "fallback_reason": "Numba cold compile plus one warm execution missed the 1.1x gate",
+      "fallback_reason": "Numba clean-process backend preparation, cold compile, and one warm execution missed the 1.1x gate",
       "finite": true,
-      "gate_seconds": 0.46657050028443336,
+      "gate_seconds": 0.5741005414165556,
       "max_raw_abs_error": 5.551115123125783e-16,
       "parity_passed": true,
       "rank_exact": true,
-      "speedup": 0.07111715533187142,
-      "warm_iqr_seconds": 0.0010325424373149872,
-      "warm_median_seconds": 0.03287275042384863
+      "speedup": 0.05559174383559552,
+      "warm_iqr_seconds": 0.0014127083122730255,
+      "warm_median_seconds": 0.032608124893158674
     },
     "numpy": {
       "available": true,
       "backend": "numpy",
+      "backend_preparation_seconds": 0.0,
       "cold_compile_seconds": null,
       "cold_total_seconds": null,
       "confirmation_exact": true,
@@ -46,13 +49,13 @@
       "eligible": false,
       "fallback_reason": null,
       "finite": true,
-      "gate_seconds": 0.033181166741997004,
+      "gate_seconds": 0.03191525023430586,
       "max_raw_abs_error": 0.0,
       "parity_passed": true,
       "rank_exact": true,
       "speedup": 1.0,
-      "warm_iqr_seconds": 0.001306458842009306,
-      "warm_median_seconds": 0.033181166741997004
+      "warm_iqr_seconds": 0.0004911664873361588,
+      "warm_median_seconds": 0.03191525023430586
     }
   },
   "environment": {
@@ -69,7 +72,7 @@
     "numpy": "2.3.5",
     "python": "3.14.6"
   },
-  "fallback_reason": "No eligible backend passed exact parity, determinism, and the cold 1.1x gate; retain NumPy CPU.",
+  "fallback_reason": "No eligible backend passed exact parity, determinism, and the clean-process cold 1.1x gate; retain NumPy CPU.",
   "gate_passed": false,
   "official_runs": 0,
   "private_runs": 0,
@@ -94,7 +97,10 @@
   "selected_backend": "numpy",
   "status": "BLOCKED_AT_ACCELERATION_GATE",
   "timing_protocol": {
-    "gate_definition": "cold_compile_plus_one_warm_10_fold_execution",
+    "acceleration_preloaded_before_timer": false,
+    "backend_preparation_included": true,
+    "clean_subprocess": true,
+    "gate_definition": "clean_process_backend_preparation_plus_cold_compile_plus_one_warm_10_fold_execution",
     "numba_clean_process_cold_entries": 1,
     "numba_warm_full_workload_repetitions": 21,
     "numpy_full_workload_repetitions": 21,

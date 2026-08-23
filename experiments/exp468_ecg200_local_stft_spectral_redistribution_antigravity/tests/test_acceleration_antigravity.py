@@ -6,11 +6,18 @@ import unittest
 
 import numpy as np
 
+from scratch import benchmark_exp468_local_stft_acceleration_antigravity as benchmark_antigravity
+from experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity import (
+    acceleration_antigravity as acceleration_module_antigravity,
+)
 from experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.acceleration_antigravity import (
     AccelerationFoldAntigravity,
     AccelerationWorkloadAntigravity,
     assess_acceleration_antigravity,
     run_acceleration_workload_antigravity,
+)
+from experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.local_stft_antigravity import (
+    window_power_distributions_antigravity,
 )
 
 
@@ -69,6 +76,15 @@ class AccelerationParityAntigravityTest(unittest.TestCase):
                     actual.confirmation_mask, expected.confirmation_mask,
                 )
 
+    def test_numba_direct_dft_distribution_matches_numpy_rfft_bins_antigravity(self) -> None:
+        row = _fixture_rows_antigravity(1, 0.37)[0]
+        expected = window_power_distributions_antigravity(row)
+        actual = acceleration_module_antigravity._power_distributions_numba_antigravity(
+            row[None, :],
+        )[0]
+        self.assertEqual(actual.shape, (5, 14))
+        np.testing.assert_allclose(actual, expected, rtol=0.0, atol=1e-12)
+
     def test_assessment_records_fixed_gate_and_backend_truth_antigravity(self) -> None:
         assessment = assess_acceleration_antigravity(self.workload)
 
@@ -96,6 +112,36 @@ class AccelerationParityAntigravityTest(unittest.TestCase):
                 fit_rows=np.zeros((3, 139), dtype=np.float64),
                 query_scopes=(np.zeros((1, 140), dtype=np.float64),),
             )
+
+    def test_clean_subprocess_cold_time_includes_backend_preparation_antigravity(self) -> None:
+        raw_workload = (
+            (
+                _fixture_rows_antigravity(4, 0.0),
+                (
+                    _fixture_rows_antigravity(2, 0.3),
+                    _fixture_rows_antigravity(2, 0.7),
+                ),
+            ),
+        )
+        payload = benchmark_antigravity.measure_clean_subprocess_antigravity(
+            raw_workload,
+            numpy_repetitions=1,
+            warm_repetitions=1,
+        )
+        numba = payload["backends"]["numba"]
+        self.assertTrue(payload["timing_protocol"]["clean_subprocess"])
+        self.assertFalse(
+            payload["timing_protocol"]["acceleration_preloaded_before_timer"],
+        )
+        self.assertGreater(numba["backend_preparation_seconds"], 0.0)
+        self.assertGreaterEqual(
+            numba["cold_total_seconds"],
+            numba["backend_preparation_seconds"],
+        )
+        self.assertGreaterEqual(
+            numba["gate_seconds"],
+            numba["backend_preparation_seconds"],
+        )
 
 
 if __name__ == "__main__":
