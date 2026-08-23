@@ -26,8 +26,9 @@
     <tr><th>커밋</th><td><code>cd8bb23a2f131976a928a0e9f385556545ae457e</code></td></tr>
     <tr><th>메시지</th><td><code>feat: add Exp466 fixed phase registration evidence</code></td></tr>
     <tr><th>Review fix 커밋</th><td><code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code> — <code>test: lock Exp466 zero-margin confirmation boundary</code>.</td></tr>
-    <tr><th>Map source boundary</th><td>Terra P2 fix와 이 보고서를 포함하고 최종 검토에서 승인된 <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 graph와 lock의 유일한 <code>source_parent_commit</code>으로 고정했다.</td></tr>
-    <tr><th>범위</th><td>구현 커밋은 <code>phase_registration_antigravity.py</code>와 최초 5-test 파일만 포함한다. Review fix 커밋은 exact-zero 경계 test와 이 보고서를 포함한다. 이번 closeout은 builder, code-map HTML/JSON/lock, 이 보고서만 수정한다.</td></tr>
+    <tr><th>Map closeout 커밋</th><td><code>fcbc26464bbab566989c829a2dc53942e2d8b7e3</code> — <code>docs: map Exp466 task 3 boundaries</code>.</td></tr>
+    <tr><th>Map source boundary</th><td>기능·경계 테스트와 독립 검토를 승인한 뒤 생성한 map/report closeout <code>fcbc26464bbab566989c829a2dc53942e2d8b7e3</code>를 graph와 lock의 <code>source_parent_commit</code>으로 고정했다.</td></tr>
+    <tr><th>범위</th><td>구현 커밋은 <code>phase_registration_antigravity.py</code>와 최초 5-test 파일만 포함한다. Review fix 커밋은 exact-zero 경계 test와 이 보고서를 포함한다. Map closeout은 builder, code-map HTML/JSON/lock, 이 보고서만 수정했다.</td></tr>
   </table>
 
   <h2>공개 인터페이스와 결과 계약</h2>
@@ -85,6 +86,11 @@ FAILED (errors=1)</pre>
     <p><strong>최종 verdict:</strong> <code>PASS</code>. P2 exact-zero/negative-threshold fixture와 mutation 검출 evidence를 포함한 accepted Task 3 boundary <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 재검토했고, 남은 finding은 <code>0</code>개였다. Production 수정 요구나 추가 concern은 없었다.</p>
   </div>
 
+  <h2>Terra map/report scoped review</h2>
+  <div class="ok">
+    <p><strong>최종 verdict:</strong> <code>PASS</code>, finding 0건. <code>f24dbc6f..fcbc264</code>에는 code-map triplet, builder, 이 보고서만 포함됐고 functional code/test 변경은 없었다. Task 1/2 graph는 그대로 보존됐으며 Task 3 caller/effect/test, unknown 0, fingerprint <code>30/30</code>, embedded HTML graph, 전체 Exp466 20개 검사와 diff 검사가 모두 통과했다.</p>
+  </div>
+
   <h2>수식·경계 검증</h2>
   <div class="ok">
     <p><strong>고정 수식:</strong> 동일 template은 margin이 0 이하이고, suffix에 <code>np.interp(arange(84) / 1.25, arange(84), suffix)</code>를 적용한 period-warp row는 margin이 0보다 큼을 확인했다. row와 template에 서로 다른 상수 level 및 양의 amplitude scale을 적용해도 margin 차이가 <code>1e-12</code> 이하임을 확인했다.</p>
@@ -136,7 +142,7 @@ FAILED (errors=1)</pre>
   <table>
     <tr><th>Focused 6</th><td>accepted review evidence의 동일 focused command를 두 번 실행했고 각각 exit <code>0</code>, <code>......</code>, <code>Ran 6 tests in 0.013s</code>, <code>OK</code>였다.</td></tr>
     <tr><th>Full 20</th><td>closeout에서 <code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'</code>를 다시 실행했다. exit <code>0</code>, <code>....................</code>, <code>Ran 20 tests in 3.341s</code>, <code>OK</code>.</td></tr>
-    <tr><th>Map generation/validation</th><td><code>python3 scratch/build_codemap_exp466_antigravity.py --source-commit f24dbc6f0d04168e742b4074b495fe5bce04f689</code>와 이어진 <code>--validate-only</code>가 모두 exit <code>0</code>이었다. Graph/lock source는 모두 accepted Task 3 commit과 정확히 같고 HTML embedded graph는 canonical JSON과 일치했다.</td></tr>
+    <tr><th>Map generation/validation</th><td>기능·테스트 검토 직후에는 <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 기준으로 생성·검토했다. 최종 Task 3 문서 체크와 함께 scoped review를 통과한 map closeout <code>fcbc26464bbab566989c829a2dc53942e2d8b7e3</code>를 source boundary로 갱신하며, 이어진 <code>--validate-only</code>에서 HTML embedded graph와 canonical JSON 일치를 다시 확인한다.</td></tr>
     <tr><th>JSON·fingerprints</th><td>JSON 세 파일 parse가 exit <code>0</code>이었고 graph는 <code>28/35/9</code> node/edge/flow, unknown <code>0</code>, lock은 <code>30</code> fingerprints를 기록했다. 각 tracked path를 SHA-256으로 다시 계산해 lock의 path/order/hash와 <code>30/30</code> exact match를 확인했다.</td></tr>
     <tr><th>Diff</th><td><code>git diff --cached --check</code> exit <code>0</code>, 출력 없음. Commit 대상은 builder, Task 3 report, code-map HTML/JSON/lock의 정확히 5개 파일이며 functional code/tests와 금지된 truth surfaces는 포함하지 않는다.</td></tr>
   </table>
@@ -151,7 +157,7 @@ FAILED (errors=1)</pre>
   <h2>Concern</h2>
   <div class="note">
     <p><strong>기능 blocker는 없다.</strong> Terra P2 exact-zero 경계는 mutation으로 검출력을 확인하고 <code>RESOLVED</code> 처리했다. MLX는 confirmed indices를 보존했지만 float margin tolerance와 speed gate를 모두 실패했으므로 CPU-only가 고정 결정이다. 실제 experiment/data/private/official 경로는 금지되어 검증하지 않았으며, 이는 이번 Task 범위에 맞는 의도적 미실행이다.</p>
-    <p>Task 3 code-map/report closeout까지 닫혔다. 남은 기능 또는 행정 blocker는 없다.</p>
+    <p>Task 3 code-map/report scoped review와 HTML 완료 체크까지 닫혔다. 남은 기능 또는 행정 blocker는 없으며 다음 작업은 Task 4다.</p>
   </div>
 </main>
 </body>

@@ -105,7 +105,7 @@ TASK3_REPORT_ANTIGRAVITY = (
     "task-3-report-antigravity.html"
 )
 TASK3_SOURCE_COMMIT_ANTIGRAVITY = (
-    "f24dbc6f0d04168e742b4074b495fe5bce04f689"
+    "fcbc26464bbab566989c829a2dc53942e2d8b7e3"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -472,7 +472,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "map_builder",
             BUILDER_ANTIGRAVITY,
-            "Caller: Task 1-2 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-2 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
+            "Caller: Task 1-3 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-3 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
             "build_triplet_antigravity",
             map_test,
         ),

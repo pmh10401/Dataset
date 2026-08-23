@@ -98,18 +98,18 @@ python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigrav
 git commit -m "feat: bind Exp466 ECG200 input and C0 authority"</code></pre></li>
 </ol>
 
-<h2><label><input type="checkbox" disabled> Task 3 — P9 고정 위상 정렬 evidence</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 3 — P9 고정 위상 정렬 evidence</label></h2>
 <p><strong>Files:</strong> Create <code>phase_registration_antigravity.py</code> and its unit test.</p>
 <p><strong>Interfaces:</strong> Produce <code>phase_registration_margin_antigravity(row, template) → float</code> and <code>score_phase_registration_antigravity(fit_rows, query_rows) → PhaseScoresAntigravity</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED 수식 tests.</strong></label><pre><code>normal = template.copy()
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED 수식 tests.</strong></label><pre><code>normal = template.copy()
 warped = template.copy()
 warped[56:] = np.interp(np.arange(84)/1.25, np.arange(84), template[56:])
 self.assertLessEqual(phase_registration_margin_antigravity(normal, template), 0.0)
 self.assertGreater(phase_registration_margin_antigravity(warped, template), 0.0)</code></pre><p>상수 level과 양의 amplitude scaling 뒤에도 margin이 <code>1e-12</code> 안에서 같아야 한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED 경계 tests.</strong></label><p>wrong shape/dtype, nonfinite, zero MAD와 alias output을 거부하고 shared length 67을 확인한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_phase_registration_antigravity</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 margin 구현.</strong></label><pre><code>def phase_registration_margin_antigravity(row, template):
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED 경계 tests.</strong></label><p>wrong shape/dtype, nonfinite, zero MAD와 alias output을 거부하고 shared length 67을 확인한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_phase_registration_antigravity</code></pre></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — 최소 margin 구현.</strong></label><pre><code>def phase_registration_margin_antigravity(row, template):
     q = _standardized_suffix_antigravity(row)
     t = _standardized_suffix_antigravity(template)
     x = np.arange(67, dtype=np.float64)
@@ -117,9 +117,9 @@ self.assertGreater(phase_registration_margin_antigravity(warped, template), 0.0)
     undone = np.interp(1.25 * x, np.arange(84, dtype=np.float64), q)
     undo_error = float(np.mean((undone - t[:67]) ** 2))
     return identity_error - undo_error</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — fit calibration과 confirmation.</strong></label><pre><code>confirmed = (query_margins &gt; 0.0) &amp; (query_margins &gt; np.max(fit_margins))
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — fit calibration과 confirmation.</strong></label><pre><code>confirmed = (query_margins &gt; 0.0) &amp; (query_margins &gt; np.max(fit_margins))
 ranks = anomaly_rank_antigravity(fit_margins, query_margins)</code></pre><p>fit은 leave-one-out median template, query는 full-fit median template을 사용한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — CPU/MLX smoke·GREEN·commit·review.</strong></label><p>동일 55×140 fit과 14×140 query에서 finite, margin tolerance <code>1e-12</code>, confirmed indices exact equality를 요구한다. MLX가 전체 단계에서 <code>1.1×</code> 미만이면 CPU를 manifest에 고정한다.</p><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_phase_registration_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — CPU/MLX smoke·GREEN·commit·review.</strong></label><p>동일 55×140 fit과 14×140 query에서 finite, margin tolerance <code>1e-12</code>, confirmed indices exact equality를 요구한다. MLX가 전체 단계에서 <code>1.1×</code> 미만이면 CPU를 manifest에 고정한다.</p><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_phase_registration_antigravity
 git commit -m "feat: add Exp466 fixed phase registration evidence"</code></pre></li>
 </ol>
 
