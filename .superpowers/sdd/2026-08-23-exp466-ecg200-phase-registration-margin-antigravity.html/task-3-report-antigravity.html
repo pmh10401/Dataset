@@ -19,13 +19,15 @@
 <body>
 <main>
   <h1>Exp466 Task 3 — P9 고정 위상 정렬 evidence</h1>
-  <p><strong>상태:</strong> <code>task_3_terra_p2_resolved_cpu_frozen_report_ready</code>. 엄격한 RED→GREEN 순서로 고정 위상 정렬 margin, leave-one-out fit calibration, full-fit query calibration, exact anomaly rank, strict confirmation, 불변 결과 계약을 구현했다. Terra P2가 지적한 exact-zero/negative-threshold confirmation 경계도 mutation RED와 회귀 테스트로 고정했다. 실제 실험·데이터·private·official 경로는 실행하지 않았다.</p>
+  <p><strong>상태:</strong> <code>task_3_accepted_map_report_closeout_complete_cpu_frozen</code>. 엄격한 RED→GREEN 순서로 고정 위상 정렬 margin, leave-one-out fit calibration, full-fit query calibration, exact anomaly rank, strict confirmation, 불변 결과 계약을 구현했다. Terra P2가 지적한 exact-zero/negative-threshold confirmation 경계도 mutation RED와 회귀 테스트로 고정했고, 최종 Terra 재검토와 Task 3 code-map closeout을 완료했다. 실제 실험·데이터·private·official 경로는 실행하지 않았다.</p>
 
   <h2>구현 커밋</h2>
   <table>
     <tr><th>커밋</th><td><code>cd8bb23a2f131976a928a0e9f385556545ae457e</code></td></tr>
     <tr><th>메시지</th><td><code>feat: add Exp466 fixed phase registration evidence</code></td></tr>
-    <tr><th>범위</th><td><code>phase_registration_antigravity.py</code>와 <code>tests/test_phase_registration_antigravity.py</code> 두 파일, 454 insertions만 포함한다. 이 보고서는 구현 커밋을 확정한 뒤 그 hash를 기록하기 위해 별도 controller closeout 대상으로 남긴다.</td></tr>
+    <tr><th>Review fix 커밋</th><td><code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code> — <code>test: lock Exp466 zero-margin confirmation boundary</code>.</td></tr>
+    <tr><th>Map source boundary</th><td>Terra P2 fix와 이 보고서를 포함하고 최종 검토에서 승인된 <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 graph와 lock의 유일한 <code>source_parent_commit</code>으로 고정했다.</td></tr>
+    <tr><th>범위</th><td>구현 커밋은 <code>phase_registration_antigravity.py</code>와 최초 5-test 파일만 포함한다. Review fix 커밋은 exact-zero 경계 test와 이 보고서를 포함한다. 이번 closeout은 builder, code-map HTML/JSON/lock, 이 보고서만 수정한다.</td></tr>
   </table>
 
   <h2>공개 인터페이스와 결과 계약</h2>
@@ -78,6 +80,11 @@ FAILED (errors=1)</pre>
     <p><strong>범위:</strong> review fix는 Task 3 test와 이 Task 3 report만 변경한다. production, code map, plan, dashboard, implementation report, ledgers는 변경하지 않았고 MLX/data/private/official 실행도 추가하지 않았다.</p>
   </div>
 
+  <h2>Terra final review</h2>
+  <div class="ok">
+    <p><strong>최종 verdict:</strong> <code>PASS</code>. P2 exact-zero/negative-threshold fixture와 mutation 검출 evidence를 포함한 accepted Task 3 boundary <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 재검토했고, 남은 finding은 <code>0</code>개였다. Production 수정 요구나 추가 concern은 없었다.</p>
+  </div>
+
   <h2>수식·경계 검증</h2>
   <div class="ok">
     <p><strong>고정 수식:</strong> 동일 template은 margin이 0 이하이고, suffix에 <code>np.interp(arange(84) / 1.25, arange(84), suffix)</code>를 적용한 period-warp row는 margin이 0보다 큼을 확인했다. row와 template에 서로 다른 상수 level 및 양의 amplitude scale을 적용해도 margin 차이가 <code>1e-12</code> 이하임을 확인했다.</p>
@@ -122,20 +129,29 @@ FAILED (errors=1)</pre>
     <tr><th>무엇이 호출하는가?</th><td>현재는 <code>test_phase_registration_antigravity.py</code>가 두 공개 scorer 경계와 result contract를 직접 호출한다. 이후 별도로 승인된 Exp466 C9/qualification 단계가 P9 margin/rank/confirmation을 소비할 수 있으나 이번 Task에서는 구현하지 않았다.</td></tr>
     <tr><th>무엇에 영향을 주는가?</th><td>Task 2가 제공하는 140-point fit/query rows를 읽어 P9 fit/query margins, fit max, exact anomaly ranks, strict confirmation bool만 생성한다. 입력, C0, synthetic rows, config/contracts, data source, qualification/publication/routing state는 변경하지 않는다.</td></tr>
     <tr><th>어떤 테스트가 덮는가?</th><td><code>test_phase_registration_antigravity.py</code>의 6개 test가 고정 수식·affine invariance·shared 67, LOO/full-fit calibration, predecessor rank, strict confirmation, exact-zero/negative-threshold 경계, geometry/dtype/finite/MAD 경계, 소유권·불변 결과를 덮는다. 전체 Exp466 20-test regression이 Task 1/2 인터페이스 보존을 확인한다.</td></tr>
-    <tr><th>map closeout</th><td>Task 3 brief가 controller에게 Task 3 node 추가를 요구하는 동시에 이 implementer에게 map 편집을 금지했다. 따라서 기존 map triplet을 수정하지 않았고, controller가 구현 커밋 <code>cd8bb23a2f131976a928a0e9f385556545ae457e</code>를 source boundary로 Task 3 caller/effect/test node와 fingerprint를 별도 closeout해야 한다.</td></tr>
+    <tr><th>map closeout</th><td><code>exp466_task3_phase_registration_codemap_v1</code> graph에 phase module, 6-test boundary, 이 report의 세 Task 3 node를 추가했다. 기존 Task 1/2의 25 nodes, 30 edges, 7 flows와 caller/effect/test answers를 보존하고 Task 3 관계를 더해 총 <code>28 nodes</code>, <code>35 edges</code>, <code>9 flows</code>, unknown relationship <code>0</code>으로 닫았다. Lock schema는 <code>exp466_task3_phase_registration_codemap_lock_v1</code>이며 tracked fingerprints는 <code>30</code>개다.</td></tr>
+  </table>
+
+  <h2>최종 MAP/REPORT closeout 검증</h2>
+  <table>
+    <tr><th>Focused 6</th><td>accepted review evidence의 동일 focused command를 두 번 실행했고 각각 exit <code>0</code>, <code>......</code>, <code>Ran 6 tests in 0.013s</code>, <code>OK</code>였다.</td></tr>
+    <tr><th>Full 20</th><td>closeout에서 <code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'</code>를 다시 실행했다. exit <code>0</code>, <code>....................</code>, <code>Ran 20 tests in 3.341s</code>, <code>OK</code>.</td></tr>
+    <tr><th>Map generation/validation</th><td><code>python3 scratch/build_codemap_exp466_antigravity.py --source-commit f24dbc6f0d04168e742b4074b495fe5bce04f689</code>와 이어진 <code>--validate-only</code>가 모두 exit <code>0</code>이었다. Graph/lock source는 모두 accepted Task 3 commit과 정확히 같고 HTML embedded graph는 canonical JSON과 일치했다.</td></tr>
+    <tr><th>JSON·fingerprints</th><td>JSON 세 파일 parse가 exit <code>0</code>이었고 graph는 <code>28/35/9</code> node/edge/flow, unknown <code>0</code>, lock은 <code>30</code> fingerprints를 기록했다. 각 tracked path를 SHA-256으로 다시 계산해 lock의 path/order/hash와 <code>30/30</code> exact match를 확인했다.</td></tr>
+    <tr><th>Diff</th><td><code>git diff --cached --check</code> exit <code>0</code>, 출력 없음. Commit 대상은 builder, Task 3 report, code-map HTML/JSON/lock의 정확히 5개 파일이며 functional code/tests와 금지된 truth surfaces는 포함하지 않는다.</td></tr>
   </table>
 
   <h2>Diff 검사와 보존 경계</h2>
   <table>
     <tr><th>구현 diff</th><td>exact 두 구현 파일을 stage한 뒤 <code>git diff --cached --check</code> exit <code>0</code>, 출력 없음. <code>git diff --cached --name-only</code>에는 owned module/test 두 파일만 있었고 commit 결과는 <code>2 files changed, 454 insertions(+)</code>였다.</td></tr>
     <tr><th>cache</th><td>커밋 전에 Exp466 package 아래 <code>__pycache__</code>, <code>*.pyc</code>, <code>*.pyo</code>를 제거했다.</td></tr>
-    <tr><th>보존 경계</th><td>Task 1 config/contracts와 Task 2 source/interpolation/synthetic/predecessor 및 그 tests를 수정하지 않았다. docs, ledgers, map, dashboard, plan도 수정하지 않았다. C0/P9/C9 fusion, qualification, publication, CLI, TEST/label, private/official execution, routing, champion, pending, promotion을 구현하거나 실행하지 않았다.</td></tr>
+    <tr><th>보존 경계</th><td>Task 1 config/contracts와 Task 2 source/interpolation/synthetic/predecessor, Task 3 functional code/tests를 수정하지 않았다. Code-map triplet, builder, 이 Task 3 report 외의 docs, ledgers, dashboard, plan, implementation report, runbook은 수정하지 않았다. C0/P9/C9 fusion, qualification, publication, CLI, TEST/label, private/official execution, routing, champion, pending, promotion을 구현하거나 실행하지 않았다.</td></tr>
   </table>
 
   <h2>Concern</h2>
   <div class="note">
     <p><strong>기능 blocker는 없다.</strong> Terra P2 exact-zero 경계는 mutation으로 검출력을 확인하고 <code>RESOLVED</code> 처리했다. MLX는 confirmed indices를 보존했지만 float margin tolerance와 speed gate를 모두 실패했으므로 CPU-only가 고정 결정이다. 실제 experiment/data/private/official 경로는 금지되어 검증하지 않았으며, 이는 이번 Task 범위에 맞는 의도적 미실행이다.</p>
-    <p>남은 행정 작업은 controller 소유의 Task 3 code-map/report closeout뿐이다. 구현과 test commit에는 이를 섞지 않았다.</p>
+    <p>Task 3 code-map/report closeout까지 닫혔다. 남은 기능 또는 행정 blocker는 없다.</p>
   </div>
 </main>
 </body>

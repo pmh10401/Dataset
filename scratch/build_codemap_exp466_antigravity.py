@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp466 Task 1-2 code-map triplet."""
+"""Build and validate the bounded Exp466 Task 1-3 code-map triplet."""
 
 from __future__ import annotations
 
@@ -71,6 +71,14 @@ PREDECESSOR_TEST_ANTIGRAVITY = (
     "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
     "tests/test_predecessor_antigravity.py"
 )
+PHASE_REGISTRATION_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "phase_registration_antigravity.py"
+)
+PHASE_REGISTRATION_TEST_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "tests/test_phase_registration_antigravity.py"
+)
 BUILDER_ANTIGRAVITY = "scratch/build_codemap_exp466_antigravity.py"
 DESIGN_ANTIGRAVITY = (
     "docs/superpowers/specs/"
@@ -90,6 +98,14 @@ TASK2_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/"
     "2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/"
     "task-2-report-antigravity.html"
+)
+TASK3_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/"
+    "task-3-report-antigravity.html"
+)
+TASK3_SOURCE_COMMIT_ANTIGRAVITY = (
+    "f24dbc6f0d04168e742b4074b495fe5bce04f689"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -115,13 +131,16 @@ TRACKED_PATHS_ANTIGRAVITY = (
     SYNTHETIC_TEST_ANTIGRAVITY,
     PREDECESSOR_TEST_ANTIGRAVITY,
     TASK2_REPORT_ANTIGRAVITY,
+    PHASE_REGISTRATION_ANTIGRAVITY,
+    PHASE_REGISTRATION_TEST_ANTIGRAVITY,
+    TASK3_REPORT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     "docs/codemap/codemap_exp465_antigravity.html",
     "docs/codemap/codemap_exp465_antigravity.json",
     "docs/codemap/codemap_exp465_antigravity.lock",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task2_input_synthetic_c0_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp466_task2_input_synthetic_c0_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task3_phase_registration_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp466_task3_phase_registration_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-23T00:00:00+09:00"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
@@ -250,6 +269,8 @@ def _tracked_fingerprints_antigravity() -> list[dict[str, str]]:
 def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     if re.fullmatch(r"[0-9a-f]{40}", source_parent) is None:
         raise ValueError("source_parent must be a lowercase 40-hex commit")
+    if source_parent != TASK3_SOURCE_COMMIT_ANTIGRAVITY:
+        raise ValueError("source_parent must be the accepted Task 3 commit")
     map_test = (BUILDER_ANTIGRAVITY,)
     config_test = (CONFIG_TEST_ANTIGRAVITY,)
     contracts_test = (CONTRACTS_TEST_ANTIGRAVITY,)
@@ -257,6 +278,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     interpolation_test = (INTERPOLATION_TEST_ANTIGRAVITY,)
     synthetic_test = (SYNTHETIC_TEST_ANTIGRAVITY,)
     predecessor_test = (PREDECESSOR_TEST_ANTIGRAVITY,)
+    phase_registration_test = (PHASE_REGISTRATION_TEST_ANTIGRAVITY,)
     nodes = [
         _node_antigravity(
             "task1_brief",
@@ -364,6 +386,27 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             predecessor_test,
         ),
         _node_antigravity(
+            "task3_phase_registration",
+            PHASE_REGISTRATION_ANTIGRAVITY,
+            "Caller: focused Task 3 tests and future separately authorized Exp466 C9/qualification stages. Effect: standardizes each onset56/suffix84 independently with median and 1.4826×MAD, computes the fixed warp1.25/shared67 identity-minus-undo margin, calibrates fit with leave-one-out medians and query with the full-fit median, reuses the exact frozen anomaly rank, applies strict positive fit-max confirmation, and returns owned read-only finite outputs without MLX, data, private, or official execution.",
+            "score_phase_registration_antigravity",
+            phase_registration_test,
+        ),
+        _node_antigravity(
+            "task3_phase_registration_test",
+            PHASE_REGISTRATION_TEST_ANTIGRAVITY,
+            "Caller: focused Task 3 RED/GREEN, mutation review, and full Exp466 regression. Effect: detects fixed-formula, affine-invariance, shared67, LOO/full-fit calibration, exact-rank, strict-confirmation, geometry/dtype/finite/MAD, ownership/immutability, and exact-zero-above-negative-fit-max drift across six tests.",
+            "PhaseRegistrationAntigravityTest",
+            phase_registration_test,
+        ),
+        _node_antigravity(
+            "task3_report",
+            TASK3_REPORT_ANTIGRAVITY,
+            "Caller: Task 3 implementation, Terra review, and map closeout audit. Effect: consolidates original RED, two focused GREEN runs, full regression, mathematical boundaries, exact CPU/MLX manifest and CPU fallback, zero-margin mutation disposition, accepted source commit, Terra final PASS with no findings, map/JSON/fingerprint/diff evidence, preserved boundaries, and concerns.",
+            "Exp466 Task 3",
+            map_test,
+        ),
+        _node_antigravity(
             "preregistration",
             "docs/EXP466_PREREGISTRATION_antigravity.html",
             "Caller: governance and scientific reviewers. Effect: states planned_implementation_not_started, freezes C0/P9/C9 and C9 gates, records zero/null truth, CPU/MLX pre-run gate, and forbidden scope.",
@@ -456,6 +499,10 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("task2_interpolation_test", "tests", "task2_interpolation", INTERPOLATION_TEST_ANTIGRAVITY, "test_export_is_exact_exp465_interpolator_antigravity"),
         _edge_antigravity("task2_synthetic_test", "tests", "task2_synthetic", SYNTHETIC_TEST_ANTIGRAVITY, "test_four_exp464_formulas_are_exact_owned_and_read_only_antigravity"),
         _edge_antigravity("task2_predecessor_test", "tests", "task2_predecessor", PREDECESSOR_TEST_ANTIGRAVITY, "test_c0_normal_and_primary_scores_are_byte_equal_to_exp465_antigravity"),
+        _edge_antigravity("approved_design", "governs", "task3_phase_registration", DESIGN_ANTIGRAVITY, "위상 정렬 마진"),
+        _edge_antigravity("task1_config", "governs", "task3_phase_registration", CONFIG_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
+        _edge_antigravity("task3_phase_registration_test", "tests", "task3_phase_registration", PHASE_REGISTRATION_TEST_ANTIGRAVITY, "test_zero_margin_is_not_confirmed_above_negative_fit_max_antigravity"),
+        _edge_antigravity("task3_report", "verifies", "task3_phase_registration", TASK3_REPORT_ANTIGRAVITY, "수식·경계 검증"),
         _edge_antigravity("map_builder", "verifies", "preregistration", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
         _edge_antigravity("map_builder", "verifies", "runbook", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
         _edge_antigravity("map_builder", "verifies", "implementation_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
@@ -465,6 +512,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("map_builder", "verifies", "champion_ledger", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
         _edge_antigravity("map_builder", "verifies", "task1_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
         _edge_antigravity("map_builder", "verifies", "task2_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
+        _edge_antigravity("map_builder", "verifies", "task3_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -489,6 +537,11 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "effects": "source/interpolation preserve exact Exp465 function-object behavior, synthetic creates only the four frozen owned read-only float64 changes, and predecessor pins the reviewed Exp465 closeout/scorer while projecting byte-equal immutable C0 normal/primary vectors; no P9/C9, private/official, routing, or promotion state changes.",
             "tests": "test_sources_antigravity covers exact export and TEST-before-open; test_interpolation_antigravity covers exact export; test_synthetic_antigravity covers formulas/order/ownership/validation; test_predecessor_antigravity covers closeout/source identity, signature, immutability, and C0 byte parity; the map builder validates all nodes, edges, HTML, embedded JSON, and tracked fingerprints.",
         },
+        "task3_answers": {
+            "callers": "the six focused Task 3 tests call the phase margin, fold scorer, and immutable result contract directly; only a future separately authorized Exp466 C9/qualification stage may consume P9 margins, ranks, and confirmations.",
+            "effects": "reads validated 140-point fit/query rows and emits only LOO fit margins, full-fit query margins, the fit maximum, exact frozen anomaly ranks, and strict positive fit-max confirmations as owned read-only finite arrays; it does not mutate Task 1/2 inputs or create C9, qualification, publication, routing, private, official, or MLX state.",
+            "tests": "test_phase_registration_antigravity covers fixed onset56/suffix84/warp1.25/shared67 math, affine invariance, literal LOO/full-fit calibration, exact ranks, strict confirmations including query_margin==0 above a negative fit maximum, malformed input/MAD rejection, and immutable non-aliasing outputs; the full 20-test Exp466 suite preserves Task 1/2 interfaces, and the map builder validates Task 3 nodes, edges, report HTML, embedded JSON, source boundary, and all fingerprints.",
+        },
         "flows": [
             "task1 brief + approved design -> frozen config -> immutable contracts -> future Tasks 2-6",
             "focused config/contracts RED-GREEN tests -> executable Task 1 authority verification",
@@ -497,6 +550,8 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "frozen config + Exp464 formulas -> four-change synthetic adapter -> owned read-only primary query rows -> future Exp466 phase scoring/qualification",
             "reviewed Exp465 closeout + exact Exp465 fold scorer -> predecessor C0 adapter -> byte-equal immutable C0 normal/primary score projection",
             "four focused Task 2 tests + Luna review + Task 2 report -> map builder -> Task 2 caller/effect/test boundaries and fingerprints",
+            "frozen 140-point geometry -> independently standardized suffix84 -> fixed warp1.25/shared67 margin -> LOO/full-fit calibration -> exact ranks and strict confirmations",
+            "six focused Task 3 tests + Terra final PASS + Task 3 report -> map builder -> Task 3 caller/effect/test boundaries and fingerprints",
         ],
     }
 
@@ -516,8 +571,8 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp466 Task 1-2 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp466 Task 1-2 코드맵</h1><p>이 map은 Exp465 triplet을 구조 기준으로 삼아 Exp466의 caller, effect, test 관계를 고정한다. Task 1의 권한·불변 계약·planned zero/null truth를 보존하면서 Task 2의 exact TRAIN source/interpolation, frozen synthetic changes, Exp465 C0 authority projection 경계를 추가한다. 실제 TEST, private/official 실행, P9/C9, qualification, routing, promotion은 포함하지 않는다.</p>'
+        '<title>Exp466 Task 1-3 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp466 Task 1-3 코드맵</h1><p>이 map은 Exp465 triplet을 구조 기준으로 삼아 Exp466의 caller, effect, test 관계를 고정한다. Task 1의 권한·불변 계약·planned zero/null truth와 Task 2의 exact TRAIN source/interpolation, frozen synthetic changes, Exp465 C0 authority projection을 보존하면서 Task 3의 fixed P9 phase-registration margin, LOO/full-fit calibration, exact rank, strict confirmation 경계를 추가한다. 실제 TEST, private/official 실행, C9 fusion, qualification, routing, promotion은 포함하지 않는다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2>'
         f'<pre id="codemap-json-antigravity">{payload}</pre>'
         '</main></body></html>'
@@ -542,6 +597,8 @@ def validate_map_antigravity(
     lock: dict[str, Any],
     rendered: str,
 ) -> None:
+    if graph.get("source_parent_commit") != TASK3_SOURCE_COMMIT_ANTIGRAVITY:
+        raise ValueError("graph source must be the accepted Task 3 commit")
     if graph.get("unknown_relationships") != []:
         raise ValueError("unknown relationships must stay empty")
     if graph.get("baseline_triplet") != [
@@ -567,10 +624,32 @@ def validate_map_antigravity(
         item = edge.get("evidence")
         if set(item) != {"path", "symbol"} or not _evidence_resolves_antigravity(item["path"], item["symbol"]):
             raise ValueError(f"unresolved edge evidence: {item}")
+    required_task3_nodes = {
+        "task3_phase_registration",
+        "task3_phase_registration_test",
+        "task3_report",
+    }
+    if not required_task3_nodes.issubset(ids):
+        raise ValueError("Task 3 nodes are incomplete")
+    edge_keys = {
+        (edge["from"], edge["type"], edge["to"])
+        for edge in graph["edges"]
+    }
+    required_task3_edges = {
+        ("approved_design", "governs", "task3_phase_registration"),
+        ("task1_config", "governs", "task3_phase_registration"),
+        ("task3_phase_registration_test", "tests", "task3_phase_registration"),
+        ("task3_report", "verifies", "task3_phase_registration"),
+        ("map_builder", "verifies", "task3_report"),
+    }
+    if not required_task3_edges.issubset(edge_keys):
+        raise ValueError("Task 3 caller/effect/test edges are incomplete")
     if set(graph.get("task1_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 1 caller/effect/test answers are incomplete")
     if set(graph.get("task2_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 2 caller/effect/test answers are incomplete")
+    if set(graph.get("task3_answers", {})) != {"callers", "effects", "tests"}:
+        raise ValueError("Task 3 caller/effect/test answers are incomplete")
     if lock.get("source_parent_commit") != graph.get("source_parent_commit"):
         raise ValueError("graph/lock source mismatch")
     if lock.get("represented_paths") != sorted(TRIPLET_ANTIGRAVITY):
@@ -603,6 +682,7 @@ def validate_map_antigravity(
         "docs/EXP466_RUNBOOK_antigravity.html",
         TASK_REPORT_ANTIGRAVITY,
         TASK2_REPORT_ANTIGRAVITY,
+        TASK3_REPORT_ANTIGRAVITY,
     ):
         _validated_html_text_antigravity(ROOT_ANTIGRAVITY / relative)
     for relative in ("CHAMPION_LEDGER.json", "EXPERIMENT_CATALOG.json", "RESEARCH_STATE.json"):
