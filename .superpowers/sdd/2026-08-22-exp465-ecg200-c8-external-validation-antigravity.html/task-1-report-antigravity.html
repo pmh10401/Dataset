@@ -4,7 +4,7 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 Task 1 report — 계약, 문서와 코드맵</h1>
-<p>상태: <code>implementation_verified_precommit_fresh_review_pending</code>. 이 보고서는 구현과 focused verification까지만 주장하며 qualification result는 아니다. commit hash는 커밋 직후 별도 closeout에서 기록한다.</p>
+<p>상태: <code>task_1_review_pass_complete</code>. 구현, focused verification, 코드맵 결합, Ox Alpha Ultra 독립 재검토가 완료됐다. qualification result는 아직 아니다.</p>
 <h2>구현 결과</h2>
 <ul>
 <li>Frozen config: <code>experiments/exp465_ecg200_c8_external_validation_antigravity/config_antigravity.py</code></li>
@@ -12,7 +12,7 @@
 <li>Tests: <code>test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_governance_antigravity.py</code></li>
 <li>Documents: <code>docs/EXP465_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP465_RUNBOOK_antigravity.html</code>, <code>docs/EXP465_IMPLEMENTATION_REPORT_antigravity.html</code>, updated <code>docs/EXP465_DASHBOARD_antigravity.html</code></li>
 <li>Code map: <code>scratch/build_codemap_exp465_antigravity.py</code> and <code>docs/codemap/codemap_exp465_antigravity.{html,json,lock}</code></li>
-<li>Additive ledgers and plan: <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>, Task 1 Steps 1–5 checked only.</li>
+<li>Additive ledgers and plan: <code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>, Task 1 heading과 Steps 1–6을 checked로 완료했다.</li>
 </ul>
 <h2>TDD와 검증</h2>
 <table>
@@ -24,5 +24,5 @@
 </table>
 <h2>경계</h2>
 <div class="note"><p>자료 loading과 scoring은 구현하지 않았다. official evaluate/inspect는 0, private run은 0, label query count는 0이고 모든 결과 hash는 <code>null</code>이다. ECG200 TEST 파일은 열지 않았다. MLX/MPS assessment는 canonical CPU fallback을 유지하며, tensor stage에서 프로젝트 gate를 통과해야만 accelerated path를 검토한다.</p></div>
-<div class="ok"><p>남은 검토 경계: Task 1 heading과 Step 6은 fresh review가 통과할 때까지 unchecked로 보존한다. 이후 Task 2는 ECG200 TRAIN source와 <code>96→140</code> 보간이다.</p></div>
+<div class="ok"><p>Fresh review 결과는 PASS이며 blocker가 없다. 다음 Task 2는 ECG200 TRAIN source와 <code>96→140</code> 보간이다.</p></div>
 </main></body></html>

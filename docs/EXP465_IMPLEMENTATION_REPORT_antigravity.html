@@ -4,7 +4,7 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 구현 보고서</h1>
-<p>이 문서는 Exp465 Task 1의 구현 범위와 검증 근거를 기록한다. 상태는 <code>task_1_implementation_verified_fresh_review_pending</code>다.</p>
+<p>이 문서는 Exp465 Task 1의 구현 범위와 검증 근거를 기록한다. 상태는 <code>task_1_review_pass_complete</code>다.</p>
 <h2>구현 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>: ECG200 <code>100×96</code>, 정상 69, method order <code>("C0","C6","C8")</code>, primary <code>C8</code>, seeds/folds/onset/cosine, 네 유형 AUC <code>0.85</code>, 평균 <code>0.90</code>, 10/10, 정상 confirmation 0, official/label 0을 frozen dataclass로 고정했다.</li>
@@ -21,5 +21,5 @@
 </table>
 <h2>가속화 판단과 안전 경계</h2>
 <div class="ok"><p>Task 1에는 tensor workload가 없다. PyTorch·MLX·MPS는 설계에 따라 나중에 점수 단계에서 다시 평가하며, 현재는 canonical CPU fallback만 기록한다. MLX 채택 조건은 candidate index 일치, 수치 허용 범위, transfer/sync 포함 1.1배 속도, manifest 증거다.</p></div>
-<div class="note"><p>남은 한계: fresh scientific review는 아직 없다. 계획의 Task 1 heading과 Step 6은 review가 끝난 뒤에야 checked로 바꾼다. 이 보고서는 데이터 로딩이나 점수 결과를 주장하지 않는다.</p></div>
+<div class="note"><p>Ox Alpha Ultra의 fresh review는 PASS했고 계획의 Task 1 heading과 Step 6을 checked로 바꿨다. 이 보고서는 데이터 로딩이나 점수 결과를 주장하지 않는다.</p></div>
 </main></body></html>

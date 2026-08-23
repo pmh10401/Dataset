@@ -30,7 +30,7 @@ body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><td>지도</td><td><code>build_codemap_exp465_antigravity.py</code>, <code>codemap_exp465_antigravity.{html,json,lock}</code></td><td>호출자·영향·테스트</td></tr>
 </tbody></table><p>package: <code>experiments/exp465_ecg200_c8_external_validation_antigravity/</code></p>
 
-<h2><label><input type="checkbox" disabled> Task 1 — 계약, 문서와 코드맵</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 1 — 계약, 문서와 코드맵</label></h2>
 <p><strong>Files:</strong> Create config/contracts/tests, Exp465 HTML 3종, map builder/triplet. Modify dashboard, three ledgers and plan.</p>
 <p><strong>Interfaces:</strong> Produces <code>FROZEN_CONFIG_ANTIGRAVITY: Exp465ConfigAntigravity</code> and immutable score/result contracts.</p><ol>
 <li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED config.</strong></label><pre><code>config = FROZEN_CONFIG_ANTIGRAVITY
@@ -45,7 +45,7 @@ self.assertIsNone(state["artifact_map_sha256"])</code></pre><p>Create preregistr
 <li><label><input type="checkbox" checked disabled> <strong>Step 5 — GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
 $PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
 $PY scratch/build_codemap_exp465_antigravity.py --validate-only</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — Commit/review.</strong></label><p>Functional commit 후 clean map-only child. spec PASS와 quality APPROVED 뒤 Task 1 체크.</p></li></ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — Commit/review.</strong></label><p>Functional commit 후 clean map-only child. spec PASS와 quality APPROVED 뒤 Task 1 체크.</p></li></ol>
 
 <h2><label><input type="checkbox" disabled> Task 2 — ECG200 TRAIN과 96→140 보간</label></h2>
 <p><strong>Files:</strong> Create sources/interpolation modules and tests. Modify docs, ledgers, map.</p>

@@ -116,7 +116,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         dashboard_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[0]).read_text(encoding="utf-8")
         for phrase in (
             "Task 1 계약·문서·코드맵 구현",
-            "fresh review 대기 중",
+            "독립 재검토도 PASS",
             "8 tests GREEN × 2회",
             "code-map <code>--validate-only</code> 통과",
             "official evaluate / inspect <code>0 / 0</code>",
@@ -210,12 +210,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, 42)
-        self.assertEqual(checkbox_parser.checked_count, 5)
-        task1_marker = '<h2><label><input type="checkbox" disabled> Task 1 —'
+        self.assertEqual(checkbox_parser.checked_count, 7)
+        task1_marker = '<h2><label><input type="checkbox" checked disabled> Task 1 —'
         task2_marker = '<h2><label><input type="checkbox" disabled> Task 2 —'
         task1_section = plan_text[plan_text.index(task1_marker):plan_text.index(task2_marker)]
-        self.assertEqual(task1_section.count('type="checkbox" checked disabled'), 5)
-        self.assertEqual(task1_section.count('type="checkbox" disabled'), 2)
+        self.assertEqual(task1_section.count('type="checkbox" checked disabled'), 7)
+        self.assertEqual(task1_section.count('type="checkbox" disabled'), 0)
 
         builder = load_builder_antigravity()
         source_parent = subprocess.check_output([
