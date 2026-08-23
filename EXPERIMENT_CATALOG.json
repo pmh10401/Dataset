@@ -2943,7 +2943,7 @@
       "experiment": "Exp465",
       "kind": "ecg200_c8_external_train_qualification",
       "status": "private_qualification_failed_blocked_before_routing_research",
-      "implementation_status": "task_5_private_reproduction_complete_awaiting_final_review",
+      "implementation_status": "task_5_reviewed_closeout_qualification_failed",
       "documents": {
         "dashboard": "docs/EXP465_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP465_PREREGISTRATION_antigravity.html",

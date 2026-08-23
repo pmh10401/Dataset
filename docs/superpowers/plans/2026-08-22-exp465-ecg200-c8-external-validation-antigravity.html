@@ -98,7 +98,7 @@ broken = count(correct_c0 and (not correct_c8))
 <li><label><input type="checkbox" checked disabled> <strong>Step 5 — Semantic replay.</strong></label><p>모든 score-derived field를 재계산하고 score/AUC/Wilson 설명값/confirmation/count/summary/decision/dashboard 변조를 거부한다.</p></li>
 <li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_evaluation_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_artifacts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_replay_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_dashboard_export_antigravity</code></pre><p>Focused twice, Tasks 1–3 once, temporary publish→inspect, compile/map/diff, then commit/review.</p></li></ol>
 
-<h2><label><input type="checkbox" disabled> Task 5 — 닫힌 CLI와 private 재현 2회</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 5 — 닫힌 CLI와 private 재현 2회</label></h2>
 <p><strong>Files:</strong> Create CLI, launcher, CLI tests. Modify all truth docs, ledgers, plan, map.</p>
 <p><strong>Interfaces:</strong> Public CLI accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>; root/seed/fold/gate/retry/resume forbidden.</p><ol>
 <li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED CLI.</strong></label><p>Test parser, fixed interpreter, outside-CWD launcher, lazy imports, official-root absence, private seam and label0.</p></li>
@@ -107,7 +107,7 @@ $PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tes
 <li><label><input type="checkbox" checked disabled> <strong>Step 3 — Private run 1.</strong></label><p>Clean reviewed commit에서 <code>/private/tmp/exp465_task5_private_run1_antigravity</code> evaluate→inspect once.</p></li>
 <li><label><input type="checkbox" checked disabled> <strong>Step 4 — Private run 2.</strong></label><p>Run 1 종료 뒤 run2에서 stdout, leaves/hashes, rows, summaries, decision, dashboard exact equality 확인.</p></li>
 <li><label><input type="checkbox" checked disabled> <strong>Step 5 — Frozen decision.</strong></label><p>C8 gate 하나라도 실패하면 Task 6 금지. 통과하면 <code>private_qualification_passed_awaiting_fresh_review</code>만 기록.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — Full verify/review.</strong></label><pre><code>$PY -m unittest discover -s experiments/exp465_ecg200_c8_external_validation_antigravity/tests -p 'test_*_antigravity.py'
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — Full verify/review.</strong></label><pre><code>$PY -m unittest discover -s experiments/exp465_ecg200_c8_external_validation_antigravity/tests -p 'test_*_antigravity.py'
 $PY scratch/build_codemap_exp465_antigravity.py --validate-only
 $PY -m compileall -q experiments/exp465_ecg200_c8_external_validation_antigravity scratch/run_exp465_ecg200_c8_external_validation_antigravity.py
 git diff --check</code></pre><p>Exp465 twice, Exp464 science once, fresh scientific review.</p></li></ol>

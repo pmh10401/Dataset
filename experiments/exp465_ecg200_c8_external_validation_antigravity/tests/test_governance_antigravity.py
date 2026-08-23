@@ -151,7 +151,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "task_5_private_reproduction_complete_awaiting_final_review",
+            "task_5_reviewed_closeout_qualification_failed",
             "qualification_failed_blocked_before_routing_research",
             "Task 3 구현 범위와 검증",
             "scorer-call spy",
@@ -178,7 +178,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp465")
                 self.assertEqual(record["kind"], "ecg200_c8_external_train_qualification")
                 self.assertEqual(record["status"], "private_qualification_failed_blocked_before_routing_research")
-                self.assertEqual(record["implementation_status"], "task_5_private_reproduction_complete_awaiting_final_review")
+                self.assertEqual(record["implementation_status"], "task_5_reviewed_closeout_qualification_failed")
                 self.assertEqual(record["run_identity"], "exp465-ecg200-c8-external-validation-antigravity-20260822")
                 self.assertEqual(record["run_root"], OFFICIAL_ROOT_TEXT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -217,12 +217,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, 42)
-        self.assertEqual(checkbox_parser.checked_count, 33)
+        self.assertEqual(checkbox_parser.checked_count, 35)
         task1_marker = '<h2><label><input type="checkbox" checked disabled> Task 1 —'
         task2_marker = '<h2><label><input type="checkbox" checked disabled> Task 2 —'
         task3_marker = '<h2><label><input type="checkbox" checked disabled> Task 3 —'
         task4_marker = '<h2><label><input type="checkbox" checked disabled> Task 4 —'
-        task5_marker = '<h2><label><input type="checkbox" disabled> Task 5 —'
+        task5_marker = '<h2><label><input type="checkbox" checked disabled> Task 5 —'
         task1_section = plan_text[plan_text.index(task1_marker):plan_text.index(task2_marker)]
         self.assertEqual(task1_section.count('type="checkbox" checked disabled'), 7)
         self.assertEqual(task1_section.count('type="checkbox" disabled'), 0)
@@ -236,6 +236,12 @@ class GovernanceAntigravityTest(unittest.TestCase):
         task4_section = plan_text[plan_text.index(task4_marker):plan_text.index(task5_marker)]
         self.assertEqual(task4_section.count('type="checkbox" checked disabled'), 7)
         self.assertEqual(task4_section.count('type="checkbox" disabled'), 0)
+        task5_section = plan_text[plan_text.index(task5_marker):plan_text.index('<h2><label><input type="checkbox" disabled> Task 6 —')]
+        self.assertEqual(task5_section.count('type="checkbox" checked disabled'), 7)
+        self.assertEqual(task5_section.count('type="checkbox" disabled'), 0)
+        task6_section = plan_text[plan_text.index('<h2><label><input type="checkbox" disabled> Task 6 —'):]
+        self.assertEqual(task6_section.count('type="checkbox" disabled checked'), 0)
+        self.assertEqual(task6_section.count('type="checkbox" disabled'), 7)
 
         builder = load_builder_antigravity()
         source_parent = subprocess.check_output([
