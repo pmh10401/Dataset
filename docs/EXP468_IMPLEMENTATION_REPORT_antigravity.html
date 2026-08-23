@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Exp468 구현 보고서</title>
-<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}</style>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}.ok{background:#eefbf4;border-left-color:#16794b}</style>
 </head>
 <body><main>
 <h1>Exp468 구현 보고서</h1>
-<div class="box stop"><h2>기술 요약</h2><p>현재 구현 상태는 <code>implementation_task_3_acceleration_gate_blocked</code>다. S10의 고정 STFT·자연로그 JS·LOO·rank·confirmation 수식과 Numba parity는 검증됐지만, clean subprocess에서 backend 준비부터 포함한 Numba gate가 NumPy 대비 <code>0.055592x</code>에 그쳐 필수 <code>1.1x</code>를 통과하지 못했다. MLX/MPS는 GPU float64 RFFT를 지원하지 않는다. 따라서 NumPy CPU fallback을 보존하고 Task 4 이후 및 공식·private qualification은 실행하지 않았다.</p></div>
+<div class="box ok"><h2>기술 요약</h2><p>현재 구현 상태는 <code>implementation_task_3_complete_numpy_fallback_authorized</code>다. S10의 고정 STFT·자연로그 JS·LOO·rank·confirmation 수식과 Numba parity를 검증했다. clean subprocess에서 backend 준비부터 포함한 Numba 결과는 NumPy 대비 <code>0.05559174383559552x</code>라서 필수 <code>1.1x</code>를 통과하지 못했고, MLX/MPS도 GPU float64 RFFT를 지원하지 않는다. 사용자는 2026-08-24에 NumPy CPU 예외를 승인했다. 따라서 <code>gate_passed=false</code>, <code>fallback_authorized=true</code>, <code>selected_backend=numpy</code>를 서로 다른 사실로 보존하고 Task 3을 완료했다. 다음 작업은 Task 4이며 공식·private qualification은 실행하지 않았다.</p></div>
 <h2>Task 1 완료 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only identity, seed/fold, 5×28 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, 네 변화 순서, C0/S10/C10 역할, period 기준과 설계 SHA-256을 exact-type frozen dataclass로 고정한다.</li>
@@ -16,7 +16,7 @@
 <li>qualification은 seed-major 10개 fold, seed 순서의 immutable count mapping, seed당 정상 trial 69개, label query 0, 실행 전 artifact hash <code>null</code>을 강제한다.</li>
 <li>Task 1은 passed/reason 일치와 타입·범위·순서·불변성만 검사한다. period 합격과 보호 변화 기준의 실제 계산은 Task 4에 남겼다.</li>
 </ul>
-<h2>Task 3 완료 범위와 중단 경계</h2>
+<h2>Task 3 완료 범위와 승인 예외</h2>
 <ul>
 <li><code>local_stft_antigravity.py</code>는 exact float64 width 140에서 suffix <code>[56:140]</code>, 시작점 <code>(0,14,28,42,56)</code>, 길이 28의 완전한 다섯 창만 사용한다.</li>
 <li>각 창은 평균 제거, 대칭 Hann <code>0.5-0.5*cos(2*pi*n/27)</code>, 길이-28 RFFT, DC 제외·Nyquist 포함 14 bin, bin당 <code>1e-12</code>, frame L1 정규화를 적용한다. 직접 DFT fixture가 NumPy oracle과 <code>atol=1e-15</code>로 일치한다.</li>
@@ -36,10 +36,13 @@
 </tbody>
 </table>
 <p>NumPy와 Numba는 각각 전체 workload 21회를 순차 실행했다. raw workload 조립 뒤 clean child process를 시작하고, acceleration module·Numba import와 Hann/twiddle 생성 직전에 timer를 시작했다. 기록한 gate <code>0.5741005414s</code>는 backend 준비 <code>0.1001899168s</code>, cold compile <code>0.4413024997s</code>, warm 전체 실행 <code>0.0326081249s</code>를 모두 포함한다. child는 acceleration module이 timer 전에 preload되지 않았음을 검증한다. 초기 profile 개선은 유지했으며 수식·workload는 바꾸지 않았다.</p>
+<h2>NumPy fallback 승인과 불변 선택 계약</h2>
+<p>승인 문서는 <code>docs/superpowers/specs/2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html</code>이며 SHA-256은 benchmark artifact의 <code>fallback_authorization.approval_document_sha256</code>에 기록한다. 승인 전 benchmark 전체 바이트 SHA-256 <code>938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b</code>도 함께 보존한다.</p>
+<p><code>backend_selection_antigravity.py</code>는 기존 <code>AccelerationAssessmentAntigravity</code>를 수정하지 않고 별도의 frozen decision을 만든다. 가속 성공을 주장하려면 선택 backend가 NumPy가 아니고 <code>eligible</code>, <code>parity_passed</code>, <code>deterministic</code>, <code>speedup&gt;=1.1</code>을 모두 만족해야 한다. 실패 fallback은 모든 non-NumPy 후보의 비어 있지 않은 실패 이유와 64자리 lowercase 승인 SHA-256을 요구한다. 승인 없이 실패 assessment를 Task 4용으로 확정하면 <code>PermissionError</code>가 발생한다.</p>
 <h2>왜 Numba 또는 MPS 추가 최적화로 통과할 수 없는가</h2>
 <p>NumPy 기준 <code>31.915ms</code>에서 1.1배 빨라지려면 후보의 준비·컴파일·계산·반환 전체가 <code>29.014ms</code> 이하여야 한다. 그러나 Numba는 실제 계산과 컴파일을 시작하기 전 backend 준비만 <code>100.190ms</code>이며, warm 전체 실행도 <code>32.608ms</code>다. 따라서 준비 뒤 계산 시간이 0초라고 가정해도 이 gate를 통과할 수 없다.</p>
 <p>Apple GPU와 현재 MLX/MPS runtime은 고정 수식에 필요한 float64/complex128 RFFT를 지원하지 않는다. float32 경로는 raw <code>atol=1e-12</code>를 보존할 수 없으며, GPU 초기화·전송 시간도 길이 28의 작은 frame 6,210개에서 회수되지 않는다. 이 결론을 뒤집으려면 동일 clean-process workload에서 모든 준비·전송·동기화를 포함한 총시간 <code>29.014ms</code> 이하, raw 오차 <code>≤1e-12</code>, exact rank/confirmation, 반복 결정성을 동시에 새로 증명해야 한다.</p>
-<p><strong>권고:</strong> 과학 수식과 결과 검증은 그대로 유지하고, 현재 가장 빠른 적격 경로인 NumPy CPU fallback을 명시적으로 승인한 뒤 Task 4의 성능 평가로 진행한다. gate나 허용오차를 조용히 낮추지는 않는다.</p>
+<p><strong>승인 반영:</strong> 과학 수식과 결과 검증, gate와 허용오차를 그대로 유지하고 현재 가장 빠른 적격 경로인 NumPy CPU로 Task 4의 성능 평가를 진행한다. 이는 Numba 또는 MLX가 가속 gate를 통과했다는 뜻이 아니다.</p>
 <h2>Task 2 완료 범위</h2>
 <ul>
 <li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>는 Exp466의 다섯 공개 함수를 직접 import하고 같은 객체로 re-export한다.</li>
@@ -54,18 +57,19 @@
 <tr><th>Task 2 GREEN</th><td>다섯 exact re-export 뒤 focused suite의 <code>8/8</code> 검사가 통과한다. 최종 검증에서는 같은 명령을 두 번 실행하고 Exp466 lower regression도 실행한다.</td></tr>
 <tr><th>Task 3 RED</th><td>production 작성 전에 두 새 test module을 실행했고 <code>local_stft_antigravity</code>, <code>acceleration_antigravity</code> 부재로 정확히 두 import error가 발생했다.</td></tr>
 <tr><th>Task 3 GREEN</th><td>수식·LOO·leakage·경계·불변성·Numba parity·고정 gate 계약을 포함한 focused suite <code>17/17</code>가 통과한다. review fix round 1에서 small-positive JS clamp, clean-subprocess preparation timing, 직접 5×14 DFT bin parity의 RED를 각각 확인한 뒤 GREEN으로 전환했다.</td></tr>
+<tr><th>Task 3 fallback RED/GREEN</th><td>production selection 모듈 전에 승인·gate·실패 이유·SHA·불변성 계약을 작성했고 모듈 부재로 1개 import error가 발생했다. 최소 immutable decision 구현과 승인 근거 연결 뒤 새 검사 <code>5/5</code>가 통과한다.</td></tr>
 <tr><th>경계</th><td>C0/S10/C10 조립, AUC, qualification, routing, champion은 추가하지 않았다. TEST 파일·라벨·실제 FN은 열지 않았다.</td></tr>
 </table>
 <div class="box"><p><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. 이는 NumPy, Numba, MLX 중 실행 backend를 선택하는 필드가 아니다.</p></div>
 <h2>제한·robustness·다음 단계</h2>
 <ul>
-<li>가속 backend가 없으므로 Task 3과 Step 5는 체크하지 않는다. 완료된 Steps 1~4와 최종 검증 Step만 체크한다.</li>
-<li>선택 backend는 <code>numpy</code>지만 이는 gate 합격이 아니라 명시적 CPU fallback이다.</li>
-<li>다음 단계는 threshold를 낮추거나 cold compile을 timing에서 빼는 것이 아니다. controller가 <code>BLOCKED_AT_ACCELERATION_GATE</code> 증거를 검토하기 전에는 Task 4 이후를 실행하지 않는다.</li>
+<li>Task 3과 Step 5는 승인 fallback 예외의 감사 연결을 완료했기 때문에 체크한다. 가속 gate 자체는 계속 실패 상태다.</li>
+<li>선택 backend는 <code>numpy</code>이며 이는 gate 합격이 아니라 사용자가 명시적으로 승인한 CPU fallback이다.</li>
+<li>다음 단계는 threshold를 낮추거나 cold compile을 timing에서 빼는 것이 아니라 Task 4의 고정 C0/S10/C10 구현과 성능 평가다.</li>
 <li>열린 질문은 cold-start gate를 유지한 별도 사전등록 실험에서 AOT 또는 이미 컴파일된 dense transform이 정당화될 수 있는지다. Exp468의 고정 기준은 바꾸지 않는다.</li>
 </ul>
 <h2>Self-review와 commit</h2>
-<p>수식은 승인 설계와 brief를 대조했고, 직접 DFT fixture·LOO 수동 reference·leakage·strict boundary·두 backend 전체 output parity를 독립 검사했다. benchmark JSON의 workload counts, versions, device, timings, parity, fallback, zero/null 실행 truth를 다시 확인한다. 커밋은 이 보고서를 포함하는 <code>feat: add Exp468 local STFT spectral evidence</code>이며 SHA는 self-referential 파일 안에 고정할 수 없으므로 enclosing commit을 <code>git rev-parse HEAD</code>로 식별한다.</p>
-<div class="box stop"><p><strong>실행 truth:</strong> <code>BLOCKED_AT_ACCELERATION_GATE</code>. 가속 benchmark initial/improved 2회 외 private/official qualification 실행은 <code>0/0</code>회, label query는 <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 3과 Step 5, Task 4~6은 완료되지 않았다.</p></div>
+<p>수식은 승인 설계와 brief를 대조했고, 직접 DFT fixture·LOO 수동 reference·leakage·strict boundary·두 backend 전체 output parity를 독립 검사했다. benchmark JSON의 workload counts, versions, device, timings, parity, 승인 전 bytes SHA, 승인 문서 SHA, zero/null 실행 truth를 다시 확인한다. fallback closure 커밋은 이 보고서를 포함하는 <code>feat: authorize Exp468 NumPy fallback</code>이며 SHA는 self-referential 파일 안에 고정할 수 없으므로 enclosing commit을 <code>git rev-parse HEAD</code>로 식별한다.</p>
+<div class="box ok"><p><strong>실행 truth:</strong> <code>TASK_3_COMPLETE_NUMPY_FALLBACK_AUTHORIZED</code>. <code>gate_passed=false</code>, <code>fallback_authorized=true</code>, <code>selected_backend=numpy</code>다. 가속 benchmark initial/improved 2회 외 private/official qualification 실행은 <code>0/0</code>회, label query는 <code>0</code>회다. official/private result와 모든 결과 hash는 <code>null</code>이다. Task 3과 Step 5는 완료했고 Task 4~6은 아직 완료하지 않았다.</p></div>
 </main></body>
 </html>

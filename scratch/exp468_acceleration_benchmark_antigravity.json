@@ -72,6 +72,14 @@
     "numpy": "2.3.5",
     "python": "3.14.6"
   },
+  "fallback_authorization": {
+    "approval_date": "2026-08-24",
+    "approval_document_path": "docs/superpowers/specs/2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html",
+    "approval_document_sha256": "6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9",
+    "authorized": true,
+    "pre_approval_benchmark_sha256": "938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b"
+  },
+  "fallback_authorized": true,
   "fallback_reason": "No eligible backend passed exact parity, determinism, and the clean-process cold 1.1x gate; retain NumPy CPU.",
   "gate_passed": false,
   "official_runs": 0,
@@ -95,7 +103,7 @@
   "result_hash": null,
   "schema": "exp468_acceleration_benchmark_v1",
   "selected_backend": "numpy",
-  "status": "BLOCKED_AT_ACCELERATION_GATE",
+  "status": "TASK_3_COMPLETE_NUMPY_FALLBACK_AUTHORIZED",
   "timing_protocol": {
     "acceleration_preloaded_before_timer": false,
     "backend_preparation_included": true,

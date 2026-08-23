@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp468 Task 3 code-map triplet."""
+"""Build and validate the bounded Exp468 Task 3 fallback code-map triplet."""
 
 from __future__ import annotations
 
@@ -68,16 +68,34 @@ TASK3_BRIEF_ANTIGRAVITY = (
     "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
     "task-3-brief-antigravity.html"
 )
+TASK3_FALLBACK_BRIEF_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
+    "task-3-fallback-brief-antigravity.html"
+)
 LOCAL_STFT_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/local_stft_antigravity.py"
 ACCELERATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/acceleration_antigravity.py"
+BACKEND_SELECTION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/backend_selection_antigravity.py"
 LOCAL_STFT_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_local_stft_antigravity.py"
 ACCELERATION_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_acceleration_antigravity.py"
+BACKEND_SELECTION_TEST_ANTIGRAVITY = (
+    f"{PACKAGE_ANTIGRAVITY}/tests/test_backend_selection_antigravity.py"
+)
 BENCHMARK_ANTIGRAVITY = "scratch/benchmark_exp468_local_stft_acceleration_antigravity.py"
 BENCHMARK_ARTIFACT_ANTIGRAVITY = "scratch/exp468_acceleration_benchmark_antigravity.json"
 TASK3_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/"
     "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
     "task-3-report-antigravity.html"
+)
+TASK3_FALLBACK_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
+    "task-3-fallback-report-antigravity.html"
+)
+FALLBACK_AMENDMENT_ANTIGRAVITY = (
+    "docs/superpowers/specs/"
+    "2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html"
 )
 PREREGISTRATION_ANTIGRAVITY = "docs/EXP468_PREREGISTRATION_antigravity.html"
 RUNBOOK_ANTIGRAVITY = "docs/EXP468_RUNBOOK_antigravity.html"
@@ -92,6 +110,7 @@ TRACKED_PATHS_ANTIGRAVITY = (
     TASK1_BRIEF_ANTIGRAVITY,
     TASK2_BRIEF_ANTIGRAVITY,
     TASK3_BRIEF_ANTIGRAVITY,
+    TASK3_FALLBACK_BRIEF_ANTIGRAVITY,
     CONFIG_ANTIGRAVITY,
     CONTRACTS_ANTIGRAVITY,
     CONFIG_TEST_ANTIGRAVITY,
@@ -106,11 +125,15 @@ TRACKED_PATHS_ANTIGRAVITY = (
     PREDECESSOR_TEST_ANTIGRAVITY,
     LOCAL_STFT_TEST_ANTIGRAVITY,
     ACCELERATION_TEST_ANTIGRAVITY,
+    BACKEND_SELECTION_TEST_ANTIGRAVITY,
     LOCAL_STFT_ANTIGRAVITY,
     ACCELERATION_ANTIGRAVITY,
+    BACKEND_SELECTION_ANTIGRAVITY,
     BENCHMARK_ANTIGRAVITY,
     BENCHMARK_ARTIFACT_ANTIGRAVITY,
     TASK3_REPORT_ANTIGRAVITY,
+    TASK3_FALLBACK_REPORT_ANTIGRAVITY,
+    FALLBACK_AMENDMENT_ANTIGRAVITY,
     EXP466_SOURCES_ANTIGRAVITY,
     EXP466_INTERPOLATION_ANTIGRAVITY,
     EXP466_SYNTHETIC_ANTIGRAVITY,
@@ -122,10 +145,13 @@ TRACKED_PATHS_ANTIGRAVITY = (
     DASHBOARD_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp468_task3_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp468_task3_codemap_lock_v1"
-SOURCE_PARENT_COMMIT_ANTIGRAVITY = "e3ac7b7b40bb83bccf0af0a4a3a7e8c091dee15a"
-GENERATED_AT_ANTIGRAVITY = "2026-08-24T00:00:00+09:00"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp468_task3_fallback_codemap_v2"
+LOCK_SCHEMA_ANTIGRAVITY = "exp468_task3_fallback_codemap_lock_v2"
+SOURCE_PARENT_COMMIT_ANTIGRAVITY = "0c27d0b745311c31e4ed2a822bbe90cbd2c78d08"
+GENERATED_AT_ANTIGRAVITY = "2026-08-24T06:07:26+09:00"
+PRE_APPROVAL_BENCHMARK_SHA256_ANTIGRAVITY = (
+    "938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b"
+)
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -246,6 +272,13 @@ def build_graph_antigravity() -> dict[str, Any]:
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
+            "task3_fallback_brief",
+            TASK3_FALLBACK_BRIEF_ANTIGRAVITY,
+            "Caller: exact Task 3 fallback closure authority. Effect: requires selection-contract RED/GREEN, immutable gate/fallback separation, approval-document and pre-approval benchmark hashes, checked Task 3 truth, zero/null execution boundaries, code-map updates, verification, report, and commit.",
+            "이 문서가 이번 보완 작업의 전체 요구사항이다.",
+            [BUILDER_ANTIGRAVITY],
+        ),
+        _node_antigravity(
             "approved_design",
             DESIGN_ANTIGRAVITY,
             "Caller: approved scientific authority. Effect: fixes TRAIN-only identity, 5x28 local STFT geometry, symmetric-Hann reference, natural-log JS, C0/S10/C10 roles, and the period-focused qualification boundary.",
@@ -255,8 +288,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             PLAN_ANTIGRAVITY,
-            "Caller: Task-by-Task controller and later implementers. Effect: records Task 1-2 completion, checked Task 3 Steps 1-4, unchecked Task 3/Step 5, exact change_types order, backend-neutral Hann definition, cold acceleration failure, zero/null truth, and stopped Task 4-6 boundaries.",
-            "implementation_task_3_acceleration_gate_blocked",
+            "Caller: Task-by-Task controller and later implementers. Effect: records Task 1-3 completion, the unchanged failed 1.1x gate, separately authorized NumPy fallback, exact scientific definitions, zero/null truth, and Task 4 as the next implementation boundary.",
+            "implementation_task_3_complete_numpy_fallback_authorized",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
@@ -358,6 +391,13 @@ def build_graph_antigravity() -> dict[str, Any]:
             [ACCELERATION_TEST_ANTIGRAVITY],
         ),
         _node_antigravity(
+            "task3_backend_selection_test",
+            BACKEND_SELECTION_TEST_ANTIGRAVITY,
+            "Caller: Task 3 fallback RED/GREEN suite and audit preflight. Effect: detects approval bypass, gate-condition omission, missing non-NumPy failure reasons, malformed approval SHA-256, mutable decisions, and drift between the production decision and approval-linked benchmark artifact.",
+            "BackendSelectionAntigravityTest",
+            [BACKEND_SELECTION_TEST_ANTIGRAVITY],
+        ),
+        _node_antigravity(
             "task3_local_stft",
             LOCAL_STFT_ANTIGRAVITY,
             "Caller: Task 3 focused tests, acceleration backends, and future Task 4 scoring. Effect: implements the frozen 5x28 float64 STFT distribution, natural-log JS, fit LOO/query full-fit references, <= rank, strict confirmation, and immutable validated spectral-score result without C10/AUC/qualification logic.",
@@ -372,6 +412,13 @@ def build_graph_antigravity() -> dict[str, Any]:
             [ACCELERATION_TEST_ANTIGRAVITY],
         ),
         _node_antigravity(
+            "task3_backend_selection",
+            BACKEND_SELECTION_ANTIGRAVITY,
+            "Caller: the fallback behavior suite now and future Task 4 scorer. Effect: binds an unchanged AccelerationAssessmentAntigravity to an immutable operational decision, requiring the full non-NumPy gate for acceleration or audited approval SHA and candidate failure reasons for NumPy fallback.",
+            "finalize_backend_decision_antigravity",
+            [BACKEND_SELECTION_TEST_ANTIGRAVITY],
+        ),
+        _node_antigravity(
             "task3_benchmark",
             BENCHMARK_ANTIGRAVITY,
             "Caller: Task 3 operator. Effect: assembles but does not time the TRAIN-only seed-major ten-fold normal plus four-change workload from exact Task 2 adapters and Exp466 folds, then times the complete S10 workload sequentially and emits source-backed blocked evidence.",
@@ -381,15 +428,29 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "task3_benchmark_artifact",
             BENCHMARK_ARTIFACT_ANTIGRAVITY,
-            "Caller: Task 3 report, implementation report, dashboard, code map, and controller review. Effect: records versions/device, exact 552/690/1242/6210 counts, 21-run timings, cold compile, parity, profile improvement, NumPy fallback, zero runs, and null results/hashes.",
-            "BLOCKED_AT_ACCELERATION_GATE",
-            [BUILDER_ANTIGRAVITY],
+            "Caller: backend selection test, Task 3 reports, implementation report, dashboard, code map, and controller review. Effect: preserves versions/device, exact 552/690/1242/6210 counts, every timing and parity value, gate_passed=false, while adding fallback_authorized=true, selected_backend=numpy, approval document SHA, pre-approval bytes SHA, zero runs, and null results/hashes.",
+            "TASK_3_COMPLETE_NUMPY_FALLBACK_AUTHORIZED",
+            [BACKEND_SELECTION_TEST_ANTIGRAVITY, BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "task3_report",
             TASK3_REPORT_ANTIGRAVITY,
             "Caller: controller and final reviewer. Effect: records RED/GREEN, exact formula/LOO/leakage evidence, complete benchmark table, parity/fallback/profile truth, unchecked Task 3/Step 5, zero/null execution truth, self-review, commit identity convention, and concern.",
             "BLOCKED_AT_ACCELERATION_GATE",
+            [BUILDER_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task3_fallback_amendment",
+            FALLBACK_AMENDMENT_ANTIGRAVITY,
+            "Caller: user approval and fallback decision. Effect: authorizes NumPy for Task 4 without changing the failed acceleration gate, benchmark values, scientific formula, inputs, seeds/folds, workload, tolerance, confirmation rule, or zero/null execution truth.",
+            "승인 결론",
+            [BACKEND_SELECTION_TEST_ANTIGRAVITY, BUILDER_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task3_fallback_report",
+            TASK3_FALLBACK_REPORT_ANTIGRAVITY,
+            "Caller: controller and final reviewer. Effect: records fallback RED/GREEN, owned changes, preserved benchmark values, checked Task 3 truth, exact verification commands/counts, enclosing commit convention, and concrete concerns.",
+            "Exp468 Task 3 NumPy fallback closure 보고서",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
@@ -437,28 +498,28 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "implementation_report",
             IMPLEMENTATION_REPORT_ANTIGRAVITY,
-            "Caller: Task 1-2 closeout and later audit. Effect: records both RED/GREEN scopes, five exact re-exports, approved TRAIN and TEST-name boundaries, fixed-fold C0 parity, and zero/null official pre-run truth.",
-            "Task 2 완료 범위",
+            "Caller: Task 1-3 closeout and later audit. Effect: records earlier scientific/parity evidence plus the immutable NumPy fallback decision, approval and pre-approval hashes, unchanged failed gate, Task 4 next, and zero/null official pre-run truth.",
+            "NumPy fallback 승인과 불변 선택 계약",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "dashboard_artifact",
             DASHBOARD_ARTIFACT_ANTIGRAVITY,
-            "Caller: portable dashboard generator. Effect: stores bounded source-backed Task 2 status, one focused parity fixture, zero official runs, null result truth, checklist state, and unchanged Exp466 comparison evidence.",
+            "Caller: portable dashboard generator. Effect: stores bounded source-backed Task 3 completion truth, unchanged failed acceleration gate, approved NumPy fallback facts, exact benchmark table, Task 4 next, zero official/private runs, null results, and checklist state.",
             "implementation_summary",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "dashboard",
             DASHBOARD_ANTIGRAVITY,
-            "Caller: user-facing progress review. Effect: renders Task 3 S10 verification and acceleration-gate failure, exact benchmark table, unchecked Task 3, NumPy fallback, and zero/null/no-TEST truth.",
-            "implementation_task_3_acceleration_gate_blocked",
+            "Caller: user-facing progress review. Effect: renders Task 3 completion through the approved NumPy fallback, the still-failed acceleration gate, exact benchmark table, checked Task 3, Task 4 next, and zero/null/no-TEST truth.",
+            "implementation_task_3_complete_numpy_fallback_authorized",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "map_builder",
             BUILDER_ANTIGRAVITY,
-            "Caller: Task 2 closeout and every later Exp468 code-changing task preflight. Effect: generates the canonical HTML/JSON/lock triplet or validates Task 1-2 structure, evidence, exact-import edges, embedded JSON, dashboard truth, and all tracked fingerprints without writing in validate-only mode.",
+            "Caller: Task 3 fallback closeout and every later Exp468 code-changing task preflight. Effect: generates the canonical HTML/JSON/lock triplet or validates Task 1-3 structure, immutable selection and approval evidence, exact benchmark preservation, embedded JSON, dashboard truth, and all tracked fingerprints without writing in validate-only mode.",
             "build_triplet_antigravity",
             [BUILDER_ANTIGRAVITY],
         ),
@@ -490,6 +551,10 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("task2_predecessor", "imports_exact", "exp466_predecessor", PREDECESSOR_ANTIGRAVITY, "score_c0_fold_antigravity"),
         _edge_antigravity("task3_brief", "governs", "task3_local_stft_test", TASK3_BRIEF_ANTIGRAVITY, "TDD Step 1–4"),
         _edge_antigravity("task3_brief", "governs", "task3_acceleration_test", TASK3_BRIEF_ANTIGRAVITY, "Task 3 Step 5"),
+        _edge_antigravity("task3_fallback_brief", "governs", "task3_backend_selection_test", TASK3_FALLBACK_BRIEF_ANTIGRAVITY, "RED."),
+        _edge_antigravity("task3_fallback_brief", "governs", "task3_backend_selection", TASK3_FALLBACK_BRIEF_ANTIGRAVITY, "GREEN."),
+        _edge_antigravity("task3_fallback_brief", "governs", "task3_fallback_amendment", TASK3_FALLBACK_BRIEF_ANTIGRAVITY, "승인 HTML."),
+        _edge_antigravity("task3_fallback_brief", "governs", "task3_benchmark_artifact", TASK3_FALLBACK_BRIEF_ANTIGRAVITY, "증거 연결."),
         _edge_antigravity("implementation_plan", "governs", "task3_local_stft_test", PLAN_ANTIGRAVITY, "Task 3 — S10 국소 STFT·JS 점수와 Numba/MLX 가속"),
         _edge_antigravity("implementation_plan", "governs", "task3_acceleration_test", PLAN_ANTIGRAVITY, "Step 5 — NumPy/Numba/MLX 동일성·속도 gate"),
         _edge_antigravity("task3_brief", "governs", "task3_local_stft", TASK3_BRIEF_ANTIGRAVITY, "고정 과학 수식"),
@@ -499,11 +564,17 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("task1_config", "governs", "task3_local_stft", CONFIG_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
         _edge_antigravity("task3_local_stft_test", "tests", "task3_local_stft", LOCAL_STFT_TEST_ANTIGRAVITY, "LocalStftScoringAntigravityTest"),
         _edge_antigravity("task3_acceleration_test", "tests", "task3_acceleration", ACCELERATION_TEST_ANTIGRAVITY, "AccelerationParityAntigravityTest"),
+        _edge_antigravity("task3_backend_selection_test", "tests", "task3_backend_selection", BACKEND_SELECTION_TEST_ANTIGRAVITY, "finalize_backend_decision_antigravity"),
+        _edge_antigravity("task3_backend_selection_test", "tests", "task3_benchmark_artifact", BACKEND_SELECTION_TEST_ANTIGRAVITY, "pre_approval_benchmark_sha256"),
         _edge_antigravity("task3_acceleration", "calls", "task3_local_stft", ACCELERATION_ANTIGRAVITY, "score_local_stft_antigravity"),
+        _edge_antigravity("task3_backend_selection", "binds", "task3_acceleration", BACKEND_SELECTION_ANTIGRAVITY, "AccelerationAssessmentAntigravity"),
+        _edge_antigravity("task3_fallback_amendment", "authorizes", "task3_backend_selection", FALLBACK_AMENDMENT_ANTIGRAVITY, "gate_passed=false"),
         _edge_antigravity("task3_benchmark", "calls", "task3_acceleration", BENCHMARK_ANTIGRAVITY, "assess_acceleration_antigravity"),
         _edge_antigravity("task3_benchmark", "generates", "task3_benchmark_artifact", BENCHMARK_ANTIGRAVITY, "assessment_payload_antigravity"),
-        _edge_antigravity("task3_benchmark_artifact", "informs", "task3_report", BENCHMARK_ARTIFACT_ANTIGRAVITY, "BLOCKED_AT_ACCELERATION_GATE"),
+        _edge_antigravity("task3_benchmark_artifact", "informs", "task3_report", BENCHMARK_ARTIFACT_ANTIGRAVITY, '"gate_passed": false'),
         _edge_antigravity("task3_report", "informs", "implementation_report", TASK3_REPORT_ANTIGRAVITY, "Self-review·commit·concerns"),
+        _edge_antigravity("task3_benchmark_artifact", "informs", "task3_fallback_report", BENCHMARK_ARTIFACT_ANTIGRAVITY, "TASK_3_COMPLETE_NUMPY_FALLBACK_AUTHORIZED"),
+        _edge_antigravity("task3_fallback_report", "informs", "implementation_report", TASK3_FALLBACK_REPORT_ANTIGRAVITY, "변경 파일"),
         _edge_antigravity("task3_benchmark_artifact", "informs", "dashboard_artifact", BENCHMARK_ARTIFACT_ANTIGRAVITY, "selected_backend"),
         _edge_antigravity("task1_config", "documents", "preregistration", PREREGISTRATION_ANTIGRAVITY, "고정한 과학 정의"),
         _edge_antigravity("task1_contracts", "documents", "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "qualification은 seed-major 10개 fold"),
@@ -514,6 +585,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("map_builder", "verifies", "preregistration", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
         _edge_antigravity("map_builder", "verifies", "runbook", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
         _edge_antigravity("map_builder", "verifies", "implementation_report", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
+        _edge_antigravity("map_builder", "verifies", "task3_fallback_amendment", BUILDER_ANTIGRAVITY, "_validate_fallback_evidence_antigravity"),
+        _edge_antigravity("map_builder", "verifies", "task3_fallback_report", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
         _edge_antigravity("map_builder", "verifies", "dashboard_artifact", BUILDER_ANTIGRAVITY, "_validate_dashboard_antigravity"),
         _edge_antigravity("map_builder", "verifies", "dashboard", BUILDER_ANTIGRAVITY, "_validate_dashboard_antigravity"),
     ]
@@ -542,8 +615,11 @@ def build_graph_antigravity() -> dict[str, Any]:
             ["task3_brief", "task3_acceleration_test"],
             ["task3_brief", "task3_local_stft_test", "task3_local_stft"],
             ["task3_brief", "task3_acceleration_test", "task3_acceleration"],
+            ["task3_fallback_brief", "task3_backend_selection_test", "task3_backend_selection", "task3_acceleration"],
+            ["task3_fallback_brief", "task3_fallback_amendment", "task3_backend_selection"],
             ["task3_benchmark", "task3_acceleration", "task3_local_stft"],
             ["task3_benchmark", "task3_benchmark_artifact", "task3_report", "implementation_report"],
+            ["task3_benchmark_artifact", "task3_fallback_report", "implementation_report"],
             ["implementation_plan", "preregistration", "runbook", "implementation_report"],
             ["implementation_report", "dashboard_artifact", "dashboard"],
             ["map_builder", "preregistration", "runbook", "implementation_report", "dashboard"],
@@ -559,9 +635,9 @@ def build_graph_antigravity() -> dict[str, Any]:
             "tests": "test_sources_antigravity covers object identity, approved TRAIN MD5/69x96, and pre-open TEST-name rejection; test_interpolation_antigravity covers exact object identity; test_synthetic_antigravity covers exact identity and four-scope order; test_predecessor_antigravity covers both exact C0 objects and fixed-fold normal/four-scope byte parity. build_codemap_exp468_antigravity.py --validate-only covers the exact-import edges, dashboard truth, HTML/JSON structure, embedded JSON, and tracked fingerprints.",
         },
         "task3_answers": {
-            "callers": "The Task 3 brief, plan, and focused suites call local_stft and acceleration; acceleration calls local_stft; the TRAIN-only benchmark calls acceleration using exact Task 2 adapters and Exp466 fold indices; benchmark evidence informs the Task report, implementation report, dashboard, map, and controller. Future Task 4 may call score_local_stft only after this blocked gate is resolved by authority.",
-            "effects": "Adds frozen S10 local spectral evidence, sequential Numba/MLX assessment, and honest blocked-state artifacts. Exact 5x28 distributions, natural-log JS, fit LOO/query full-fit references, <= ranks, strict raw confirmation, immutable arrays, 552/690/1242/6210 workload counts, parity, versions/device, profile improvement, NumPy fallback, zero runs, and null results/hashes are preserved. It does not assemble C10, calculate AUC, qualify, route, promote, or access TEST/FN.",
-            "tests": "test_local_stft_antigravity covers independent DFT geometry, normalization/invariances, natural-log JS, validation, tied LOO/full-fit references, leakage, <= rank, strict confirmation, and immutability. test_acceleration_antigravity covers complete NumPy/Numba raw/rank/confirmation parity, finite/deterministic gate truth, counts, and invalid workload shape. The benchmark JSON parser and map validator cover timings, evidence, dashboard truth, HTML structure, and fingerprints.",
+            "callers": "The original Task 3 brief, plan, and focused suites call local_stft and acceleration; acceleration calls local_stft; the TRAIN-only benchmark calls acceleration. The fallback brief and approval amendment govern backend_selection, whose behavior suite also reads the approval-linked benchmark artifact. Future Task 4 calls the immutable decision and selected NumPy scorer; reports, dashboard, map, and controller consume the same evidence.",
+            "effects": "Preserves the frozen S10 science, all acceleration measurements, and gate_passed=false while adding a separate immutable operational decision with fallback_authorized=true and selected_backend=numpy. Approval document SHA, pre-approval benchmark bytes SHA, every non-NumPy failure reason, exact 552/690/1242/6210 counts, parity, versions/device, zero runs, and null results/hashes remain auditable. It does not assemble C10, calculate AUC, qualify, route, promote, or access TEST/FN.",
+            "tests": "test_local_stft_antigravity covers the frozen score science; test_acceleration_antigravity covers complete NumPy/Numba parity, deterministic gate truth, counts, and validation; test_backend_selection_antigravity covers gate-success invariants, approval-required fallback, candidate failure reasons, lowercase SHA-256 evidence, immutability, and the real approval artifact link. The map validator covers exact benchmark preservation, approval hashes, dashboard truth, HTML structure, edges, and fingerprints.",
         },
         "unknown_relationships": [],
     }
@@ -604,15 +680,100 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         json.dumps(graph, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
     return f"""<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 3 가속 gate 코드맵</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 3 NumPy fallback 코드맵</title>
 <style>body{{max-width:1240px;margin:2rem auto;padding:0 1rem;font:15px/1.65 system-ui;color:#172033}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.48rem;text-align:left;vertical-align:top}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow:auto}}.box{{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}}</style></head>
-<body><main><h1>Exp468 Task 3 가속 gate 코드맵</h1>
-<div class="box"><p><strong>상태:</strong> <code>implementation_task_3_acceleration_gate_blocked</code>. 이 지도는 Task 1-2 완료 경계, Task 3 S10·backend·benchmark·보고·대시보드의 호출자·영향·검사와 cold 1.1x gate 중단을 기록한다.</p></div>
+<body><main><h1>Exp468 Task 3 NumPy fallback 코드맵</h1>
+<div class="box"><p><strong>상태:</strong> <code>implementation_task_3_complete_numpy_fallback_authorized</code>. 이 지도는 Task 1-3 완료 경계, 그대로 실패한 cold 1.1x gate, 별도 승인된 NumPy fallback, benchmark·보고·대시보드의 호출자·영향·검사를 기록한다.</p></div>
 <h2>세 질문</h2><table><tr><th>무엇이 호출하는가?</th><td>{html_module.escape(answers['callers'])}</td></tr><tr><th>무엇에 영향을 주는가?</th><td>{html_module.escape(answers['effects'])}</td></tr><tr><th>어떤 검사가 덮는가?</th><td>{html_module.escape(answers['tests'])}</td></tr></table>
 <h2>노드</h2><table><thead><tr><th>ID</th><th>파일</th><th>호출자와 영향</th><th>검사</th></tr></thead><tbody>{node_rows}</tbody></table>
 <h2>관계</h2><table><thead><tr><th>시작</th><th>관계</th><th>도착</th><th>근거</th></tr></thead><tbody>{edge_rows}</tbody></table>
 <h2>기계 판독 JSON</h2><pre id="codemap-json-antigravity">{embedded}</pre>
 </main></body></html>"""
+
+
+def _validate_fallback_evidence_antigravity() -> None:
+    payload = json.loads(
+        (ROOT_ANTIGRAVITY / BENCHMARK_ARTIFACT_ANTIGRAVITY).read_text(
+            encoding="utf-8",
+        ),
+    )
+    expected_truth = {
+        "status": "TASK_3_COMPLETE_NUMPY_FALLBACK_AUTHORIZED",
+        "gate_passed": False,
+        "fallback_authorized": True,
+        "selected_backend": "numpy",
+        "official_runs": 0,
+        "private_runs": 0,
+        "result": None,
+        "result_hash": None,
+    }
+    for key, expected in expected_truth.items():
+        if payload.get(key) != expected:
+            raise ValueError(f"benchmark fallback truth differs: {key}")
+    authorization = payload.get("fallback_authorization")
+    if not isinstance(authorization, dict) or authorization.get("authorized") is not True:
+        raise ValueError("benchmark fallback authorization is missing")
+    if authorization.get("approval_date") != "2026-08-24":
+        raise ValueError("benchmark approval date differs")
+    if authorization.get("approval_document_path") != FALLBACK_AMENDMENT_ANTIGRAVITY:
+        raise ValueError("benchmark approval document path differs")
+    if (
+        authorization.get("pre_approval_benchmark_sha256")
+        != PRE_APPROVAL_BENCHMARK_SHA256_ANTIGRAVITY
+    ):
+        raise ValueError("pre-approval benchmark SHA-256 differs")
+    approval_bytes = (ROOT_ANTIGRAVITY / FALLBACK_AMENDMENT_ANTIGRAVITY).read_bytes()
+    if authorization.get("approval_document_sha256") != hashlib.sha256(
+        approval_bytes,
+    ).hexdigest():
+        raise ValueError("approval document SHA-256 differs")
+
+    numpy_backend = payload["backends"]["numpy"]
+    numba_backend = payload["backends"]["numba"]
+    mlx_backend = payload["backends"]["mlx"]
+    exact_measurements = (
+        (numpy_backend, "warm_median_seconds", 0.03191525023430586),
+        (numpy_backend, "warm_iqr_seconds", 0.0004911664873361588),
+        (numpy_backend, "gate_seconds", 0.03191525023430586),
+        (numpy_backend, "speedup", 1.0),
+        (numba_backend, "backend_preparation_seconds", 0.10018991678953171),
+        (numba_backend, "cold_compile_seconds", 0.44130249973386526),
+        (numba_backend, "cold_total_seconds", 0.5741005414165556),
+        (numba_backend, "warm_median_seconds", 0.032608124893158674),
+        (numba_backend, "warm_iqr_seconds", 0.0014127083122730255),
+        (numba_backend, "gate_seconds", 0.5741005414165556),
+        (numba_backend, "speedup", 0.05559174383559552),
+        (numba_backend, "max_raw_abs_error", 5.551115123125783e-16),
+    )
+    for backend, key, expected in exact_measurements:
+        if backend.get(key) != expected:
+            raise ValueError(f"benchmark measurement differs: {key}")
+    initial = payload["profile_and_batching_review"]["initial_measurement"]
+    expected_initial = {
+        "numba_cold_gate_seconds": 1.2641031672246754,
+        "numba_max_raw_abs_error": 5.967448757360216e-16,
+        "numba_speedup": 0.02543374318247438,
+        "numba_warm_median_seconds": 0.029086542315781116,
+        "numpy_median_seconds": 0.03215087531134486,
+    }
+    if initial != expected_initial:
+        raise ValueError("initial benchmark measurements differ")
+    if payload["timing_protocol"].get("required_speedup") != 1.1:
+        raise ValueError("required acceleration speedup differs")
+    if not isinstance(payload.get("workload"), dict):
+        raise ValueError("benchmark workload must be a mapping")
+    for key, expected in {
+        "fit_raw": 552,
+        "query_raw": 690,
+        "transformed_rows": 1242,
+        "frames": 6210,
+        "length_28_frame_transforms": 6210,
+    }.items():
+        if payload["workload"].get(key) != expected:
+            raise ValueError(f"benchmark workload differs: {key}")
+    mlx_reason = mlx_backend.get("fallback_reason")
+    if not isinstance(mlx_reason, str) or "float64 is not supported on the GPU" not in mlx_reason:
+        raise ValueError("MLX float64 failure reason differs")
 
 
 def _validate_dashboard_antigravity() -> None:
@@ -625,7 +786,10 @@ def _validate_dashboard_antigravity() -> None:
         raise ValueError("dashboard source inventories differ")
     summary = artifact.get("snapshot", {}).get("datasets", {}).get("implementation_summary")
     expected = [{
-        "status": "implementation_task_3_acceleration_gate_blocked",
+        "status": "implementation_task_3_complete_numpy_fallback_authorized",
+        "acceleration_gate_passed": False,
+        "fallback_authorized": True,
+        "selected_backend": "numpy",
         "score_calculations": 2,
         "score_calculation_scope": "acceleration_benchmark_full_workload_initial_and_improved",
         "official_runs": 0,
@@ -640,19 +804,22 @@ def _validate_dashboard_antigravity() -> None:
     if "exp468_task3_truth" not in source_ids:
         raise ValueError("dashboard Task 3 source is missing")
     rows = artifact["snapshot"]["datasets"].get("progress_checklist", [])
+    if artifact.get("snapshot", {}).get("status") != "ready":
+        raise ValueError("dashboard snapshot status differs")
     if not any(
         row.get("task") == "Task 3 S10 국소 STFT·가속 gate"
-        and row.get("checked") == "☐"
-        and row.get("status") == "BLOCKED_AT_ACCELERATION_GATE"
+        and row.get("checked") == "☑"
+        and row.get("status") == "완료 — 승인된 NumPy fallback"
         for row in rows
     ):
-        raise ValueError("dashboard Task 3 blocked checklist truth differs")
+        raise ValueError("dashboard Task 3 completion checklist truth differs")
     rendered = _validated_html_text_antigravity(ROOT_ANTIGRAVITY / DASHBOARD_ANTIGRAVITY)
     for required in (
-        "implementation_task_3_acceleration_gate_blocked",
+        "implementation_task_3_complete_numpy_fallback_authorized",
         "exp468_task3_truth",
         "Task 3 S10 국소 STFT·가속 gate",
-        "BLOCKED_AT_ACCELERATION_GATE",
+        "fallback_authorized=true",
+        "gate_passed=false",
     ):
         if required not in rendered:
             raise ValueError(f"dashboard HTML is missing {required}")
@@ -694,20 +861,21 @@ def validate_map_antigravity(
             ):
                 raise ValueError(f"unresolved node evidence: {evidence}")
     required_nodes = {
-        "task1_brief", "task2_brief", "task3_brief", "approved_design", "implementation_plan", "task1_config", "task1_contracts",
+        "task1_brief", "task2_brief", "task3_brief", "task3_fallback_brief", "approved_design", "implementation_plan", "task1_config", "task1_contracts",
         "task1_config_test", "task1_contracts_test", "preregistration", "runbook",
         "implementation_report", "dashboard_artifact", "dashboard", "map_builder",
         "task2_sources", "task2_interpolation", "task2_synthetic", "task2_predecessor",
         "task2_sources_test", "task2_interpolation_test", "task2_synthetic_test",
         "task2_predecessor_test", "exp466_sources", "exp466_interpolation",
         "exp466_synthetic", "exp466_predecessor",
-        "task3_local_stft_test", "task3_acceleration_test",
-        "task3_local_stft", "task3_acceleration", "task3_benchmark",
-        "task3_benchmark_artifact", "task3_report",
+        "task3_local_stft_test", "task3_acceleration_test", "task3_backend_selection_test",
+        "task3_local_stft", "task3_acceleration", "task3_backend_selection", "task3_benchmark",
+        "task3_benchmark_artifact", "task3_report", "task3_fallback_amendment",
+        "task3_fallback_report",
     }
     if ids != required_nodes:
         raise ValueError("Task 1-3 nodes differ")
-    allowed_types = {"governs", "tests", "imports_exact", "documents", "informs", "generates", "verifies", "calls"}
+    allowed_types = {"governs", "tests", "imports_exact", "documents", "informs", "generates", "verifies", "calls", "binds", "authorizes"}
     edge_keys: set[tuple[str, str, str]] = set()
     for edge in graph.get("edges", []):
         if edge.get("from") not in ids or edge.get("to") not in ids or edge.get("type") not in allowed_types:
@@ -745,6 +913,10 @@ def validate_map_antigravity(
         ("task2_predecessor", "imports_exact", "exp466_predecessor"),
         ("task3_brief", "governs", "task3_local_stft_test"),
         ("task3_brief", "governs", "task3_acceleration_test"),
+        ("task3_fallback_brief", "governs", "task3_backend_selection_test"),
+        ("task3_fallback_brief", "governs", "task3_backend_selection"),
+        ("task3_fallback_brief", "governs", "task3_fallback_amendment"),
+        ("task3_fallback_brief", "governs", "task3_benchmark_artifact"),
         ("implementation_plan", "governs", "task3_local_stft_test"),
         ("implementation_plan", "governs", "task3_acceleration_test"),
         ("task3_brief", "governs", "task3_local_stft"),
@@ -754,11 +926,17 @@ def validate_map_antigravity(
         ("task1_config", "governs", "task3_local_stft"),
         ("task3_local_stft_test", "tests", "task3_local_stft"),
         ("task3_acceleration_test", "tests", "task3_acceleration"),
+        ("task3_backend_selection_test", "tests", "task3_backend_selection"),
+        ("task3_backend_selection_test", "tests", "task3_benchmark_artifact"),
         ("task3_acceleration", "calls", "task3_local_stft"),
+        ("task3_backend_selection", "binds", "task3_acceleration"),
+        ("task3_fallback_amendment", "authorizes", "task3_backend_selection"),
         ("task3_benchmark", "calls", "task3_acceleration"),
         ("task3_benchmark", "generates", "task3_benchmark_artifact"),
         ("task3_benchmark_artifact", "informs", "task3_report"),
         ("task3_report", "informs", "implementation_report"),
+        ("task3_benchmark_artifact", "informs", "task3_fallback_report"),
+        ("task3_fallback_report", "informs", "implementation_report"),
         ("task3_benchmark_artifact", "informs", "dashboard_artifact"),
         ("implementation_plan", "documents", "dashboard_artifact"),
         ("implementation_report", "informs", "dashboard_artifact"),
@@ -766,6 +944,8 @@ def validate_map_antigravity(
         ("map_builder", "verifies", "preregistration"),
         ("map_builder", "verifies", "runbook"),
         ("map_builder", "verifies", "implementation_report"),
+        ("map_builder", "verifies", "task3_fallback_amendment"),
+        ("map_builder", "verifies", "task3_fallback_report"),
         ("map_builder", "verifies", "dashboard_artifact"),
         ("map_builder", "verifies", "dashboard"),
     }
@@ -805,12 +985,16 @@ def validate_map_antigravity(
         TASK1_BRIEF_ANTIGRAVITY,
         TASK2_BRIEF_ANTIGRAVITY,
         TASK3_BRIEF_ANTIGRAVITY,
+        TASK3_FALLBACK_BRIEF_ANTIGRAVITY,
         TASK3_REPORT_ANTIGRAVITY,
+        TASK3_FALLBACK_REPORT_ANTIGRAVITY,
+        FALLBACK_AMENDMENT_ANTIGRAVITY,
         PREREGISTRATION_ANTIGRAVITY,
         RUNBOOK_ANTIGRAVITY,
         IMPLEMENTATION_REPORT_ANTIGRAVITY,
     ):
         _validated_html_text_antigravity(ROOT_ANTIGRAVITY / relative)
+    _validate_fallback_evidence_antigravity()
     _validate_dashboard_antigravity()
     if compare_files:
         if JSON_PATH_ANTIGRAVITY.read_bytes() != _canonical_bytes_antigravity(graph):

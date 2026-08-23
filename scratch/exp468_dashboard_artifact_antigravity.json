@@ -3,8 +3,8 @@
   "manifest": {
     "version": 1,
     "surface": "dashboard",
-    "title": "Exp468 ECG200 국소 STFT 가속 gate 대시보드",
-    "description": "S10 수식·LOO·Numba parity는 검증됐지만 런타임 하한 때문에 cold 1.1x 가속 gate에서 중단된 Task 3 source-backed 스냅샷.",
+    "title": "Exp468 ECG200 국소 STFT NumPy fallback 승인 대시보드",
+    "description": "cold 1.1x 가속 gate 실패를 유지하면서 사용자 승인 SHA로 NumPy fallback을 확정한 Task 3 source-backed 스냅샷.",
     "generatedAt": "2026-08-24T00:00:00Z",
     "cards": [
       {
@@ -37,7 +37,7 @@
       },
       {
         "id": "official_runs",
-        "description": "Task 3 가속 gate 중단 시점의 공식 실행 횟수. qualification 결과 생성은 시작하지 않았다.",
+        "description": "Task 3 NumPy fallback 승인 시점의 공식 실행 횟수. qualification 결과 생성은 시작하지 않았다.",
         "dataset": "implementation_summary",
         "sourceId": "exp468_task3_truth",
         "metrics": [
@@ -92,7 +92,7 @@
       {
         "id": "acceleration_benchmark",
         "title": "전체 10-fold 가속 gate 결과",
-        "subtitle": "동일한 1,242행·6,210 frame workload이며 Numba gate에는 clean-process backend 준비와 cold compile을 포함한다.",
+        "subtitle": "동일한 1,242행·6,210 frame workload다. 가속 gate는 실패했고 NumPy는 별도 승인 fallback으로 선택됐다.",
         "dataset": "acceleration_benchmark",
         "sourceId": "exp468_task3_truth",
         "defaultSort": {"field": "order", "direction": "asc"},
@@ -126,7 +126,7 @@
       {
         "id": "progress_checklist",
         "title": "진행 체크",
-        "subtitle": "Task 3 Steps 1~4와 검증은 끝났지만 Step 5 cold 1.1x gate 실패로 Task 3은 미완료다.",
+        "subtitle": "Step 5의 cold 1.1x 실패와 승인 예외를 각각 보존했으며 Task 3은 완료, Task 4가 다음이다.",
         "dataset": "progress_checklist",
         "sourceId": "exp468_task3_truth",
         "defaultSort": {"field": "order", "direction": "asc"},
@@ -167,14 +167,14 @@
       },
       {
         "id": "exp468_task3_truth",
-        "label": "Exp468 Task 3 가속 gate truth",
+        "label": "Exp468 Task 3 NumPy fallback 승인 truth",
         "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
         "query": {
           "engine": "duckdb",
           "language": "sql",
-          "description": "Task 3 보고서·benchmark·계획에서 blocked 상태, 실제 timing/parity, 공식·private 실행 0회를 재현한다.",
-          "sql": "SELECT 'implementation_task_3_acceleration_gate_blocked' AS status, 2 AS score_calculations, 0 AS official_runs, 0 AS private_runs",
-          "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", "scratch/exp468_acceleration_benchmark_antigravity.json", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
+          "description": "Task 3 보고서·benchmark·승인 보완·계획에서 gate 실패와 승인 fallback, 실제 timing/parity, 공식·private 실행 0회를 재현한다.",
+          "sql": "SELECT 'implementation_task_3_complete_numpy_fallback_authorized' AS status, FALSE AS acceleration_gate_passed, TRUE AS fallback_authorized, 'numpy' AS selected_backend, 2 AS score_calculations, 0 AS official_runs, 0 AS private_runs",
+          "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", "scratch/exp468_acceleration_benchmark_antigravity.json", "docs/superpowers/specs/2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
           "executed_at": "2026-08-24T00:00:00Z"
         }
       },
@@ -197,7 +197,7 @@
         "id": "status_note",
         "type": "markdown",
         "sourceId": "exp468_task3_truth",
-        "body": "## S10은 검증됐지만 가속 gate에서 중단됐습니다\n\n**implementation_task_3_acceleration_gate_blocked**\n\n고정 5×28 STFT·자연로그 JS·fit LOO·query full-fit reference·tie rank·strict confirmation 검사를 통과했습니다. 승인 수식에 없던 JS clamp를 제거해 작은 양의 raw를 보존했습니다. Numba는 raw 최대 오차 5.55e-16과 exact rank/confirmation을 만족했지만 clean-process backend 준비+cold compile+한 번의 warm 전체 실행이 0.57410초로 NumPy median 0.03192초보다 느려 1.1x gate를 통과하지 못했습니다. 통과하려면 전체 시간이 0.02901초 이하여야 하지만 Numba 준비만 0.10019초이고 warm 실행도 0.03261초입니다. MLX/MPS는 GPU float64 RFFT를 지원하지 않습니다. 공식·private qualification은 각각 0회이고 result/hash는 null이며 TEST/FN 평가는 없습니다."
+        "body": "## Task 3을 승인된 NumPy fallback으로 완료했습니다\n\n**implementation_task_3_complete_numpy_fallback_authorized**\n\n고정 5×28 STFT·자연로그 JS·fit LOO·query full-fit reference·tie rank·strict confirmation 검사를 통과했습니다. Numba는 raw 최대 오차 5.551115123125783e-16과 exact rank/confirmation을 만족했지만 clean-process gate 시간 0.5741005414165556초, speedup 0.05559174383559552x라서 1.1x gate에 실패했습니다. NumPy 기준은 0.03191525023430586초이고 MLX/MPS는 GPU float64 RFFT를 지원하지 않습니다. 사용자는 2026-08-24에 NumPy CPU 예외를 승인했습니다. gate_passed=false, fallback_authorized=true, selected_backend=numpy를 각각 보존합니다. 공식·private qualification은 각각 0회이고 result/hash는 null이며 TEST/FN 평가는 없습니다."
       },
       {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs", "score_calculations"]},
       {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
@@ -208,19 +208,19 @@
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 입력·합성 변화·C0 exact import와 parity</label></p><p><label><input type=\"checkbox\" disabled> Task 3 S10·가속 gate 완료</label></p><p><label><input type=\"checkbox\" disabled> Task 4~5 구현·검증</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 입력·합성 변화·C0 exact import와 parity</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 S10·가속 gate 실패와 승인 NumPy fallback</label></p><p><label><input type=\"checkbox\" disabled> Task 4~5 구현·검증</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\n추가 조사 결과, 현재 고정 workload와 하드웨어에서 Numba 또는 MPS가 1.1x gate를 정직하게 통과하는 경로는 없습니다. 권장 선택은 **NumPy CPU fallback을 명시적으로 승인하고 Task 4 성능 평가로 진행**하는 것입니다. 승인 전까지 Task 3은 **BLOCKED_AT_ACCELERATION_GATE**로 남고 Task 4 이후와 공식·private qualification은 실행하지 않습니다."
+        "body": "## 다음 한 단계\n\nTask 3의 가속 gate 실패와 NumPy fallback 승인을 모두 감사 가능한 상태로 닫았습니다. 다음은 **Task 4의 고정 C0/S10/C10 구현과 성능 평가**입니다. 공식·private qualification은 계속 실행하지 않으며 result/hash는 null입니다."
       }
     ]
   },
   "snapshot": {
     "version": 1,
     "generatedAt": "2026-08-24T00:00:00Z",
-    "status": "blocked",
+    "status": "ready",
     "datasets": {
       "baseline_summary": [
         {"pass_folds": 0, "required_folds": 10}
@@ -229,7 +229,7 @@
         {"candidate_count": 1, "planned_folds": 10, "official_runs": 0}
       ],
       "implementation_summary": [
-        {"status": "implementation_task_3_acceleration_gate_blocked", "score_calculations": 2, "score_calculation_scope": "acceleration_benchmark_full_workload_initial_and_improved", "official_runs": 0, "private_runs": 0, "official_result": null, "private_result": null, "result_hash": null}
+        {"status": "implementation_task_3_complete_numpy_fallback_authorized", "acceleration_gate_passed": false, "fallback_authorized": true, "selected_backend": "numpy", "score_calculations": 2, "score_calculation_scope": "acceleration_benchmark_full_workload_initial_and_improved", "official_runs": 0, "private_runs": 0, "official_result": null, "private_result": null, "result_hash": null}
       ],
       "qualification_gap": [
         {"condition": "period AUC ≥ 0.85", "series": "Exp466 관측", "share": 0.0, "count_text": "0/10"},
@@ -245,7 +245,7 @@
         {"order": 3, "method": "Wavelet packet", "decision": "보류", "reason": "기저·깊이·트리 선택이 추가되어 숨은 튜닝 위험이 큼"}
       ],
       "acceleration_benchmark": [
-        {"order": 1, "backend": "NumPy", "median_seconds": 0.03191525023430586, "preparation_seconds": 0.0, "gate_seconds": 0.03191525023430586, "speedup": 1.0, "parity": "oracle", "eligible": "fallback", "reason": "고정 CPU oracle"},
+        {"order": 1, "backend": "NumPy", "median_seconds": 0.03191525023430586, "preparation_seconds": 0.0, "gate_seconds": 0.03191525023430586, "speedup": 1.0, "parity": "oracle", "eligible": "승인된 fallback", "reason": "사용자가 승인한 고정 CPU oracle"},
         {"order": 2, "backend": "Numba", "median_seconds": 0.032608124893158674, "preparation_seconds": 0.10018991678953171, "gate_seconds": 0.5741005414165556, "speedup": 0.05559174383559552, "parity": "PASS (max 5.55e-16)", "eligible": "아니요", "reason": "backend 준비+cold compile 포함 1.1x gate 실패"},
         {"order": 3, "backend": "MLX/MPS", "median_seconds": null, "preparation_seconds": null, "gate_seconds": null, "speedup": null, "parity": "FAIL", "eligible": "아니요", "reason": "GPU float64 RFFT 미지원"}
       ],
@@ -266,8 +266,8 @@
         {"order": 7, "checked": "☑", "task": "OpenRouter 구현 계획 독립 검토", "status": "PASS"},
         {"order": 8, "checked": "☑", "task": "Task 1 고정 설정·결과 계약·문서 골격", "status": "완료"},
         {"order": 9, "checked": "☑", "task": "Task 2 입력·합성 변화·C0 exact import와 parity", "status": "완료"},
-        {"order": 10, "checked": "☐", "task": "Task 3 S10 국소 STFT·가속 gate", "status": "BLOCKED_AT_ACCELERATION_GATE"},
-        {"order": 11, "checked": "☐", "task": "Task 4~5 구현·검증", "status": "중단"},
+        {"order": 10, "checked": "☑", "task": "Task 3 S10 국소 STFT·가속 gate", "status": "완료 — 승인된 NumPy fallback"},
+        {"order": 11, "checked": "☐", "task": "Task 4~5 구현·검증", "status": "Task 4 다음"},
         {"order": 12, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "미실행"}
       ]
     }
@@ -301,14 +301,14 @@
     },
     {
       "id": "exp468_task3_truth",
-      "label": "Exp468 Task 3 가속 gate truth",
+      "label": "Exp468 Task 3 NumPy fallback 승인 truth",
       "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
       "query": {
         "engine": "duckdb",
         "language": "sql",
-        "description": "Task 3 보고서·benchmark·계획에서 blocked 상태, 실제 timing/parity, 공식·private 실행 0회를 재현한다.",
-        "sql": "SELECT 'implementation_task_3_acceleration_gate_blocked' AS status, 2 AS score_calculations, 0 AS official_runs, 0 AS private_runs",
-        "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", "scratch/exp468_acceleration_benchmark_antigravity.json", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
+        "description": "Task 3 보고서·benchmark·승인 보완·계획에서 gate 실패와 승인 fallback, 실제 timing/parity, 공식·private 실행 0회를 재현한다.",
+        "sql": "SELECT 'implementation_task_3_complete_numpy_fallback_authorized' AS status, FALSE AS acceleration_gate_passed, TRUE AS fallback_authorized, 'numpy' AS selected_backend, 2 AS score_calculations, 0 AS official_runs, 0 AS private_runs",
+        "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", "scratch/exp468_acceleration_benchmark_antigravity.json", "docs/superpowers/specs/2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
         "executed_at": "2026-08-24T00:00:00Z"
       }
     },
