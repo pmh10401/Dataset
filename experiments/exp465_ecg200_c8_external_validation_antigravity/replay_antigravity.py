@@ -72,6 +72,9 @@ def _metric_antigravity(value: object) -> Exp465MethodFoldMetricAntigravity:
             mean_auc=value["mean_auc"], all_scores_finite=value["all_scores_finite"], normal_wilson_upper=value["normal_wilson_upper"],
             pair_diagnostics={name: {key: value["pair_diagnostics"][name][key] for key in ("total_pairs", "fixed_pairs", "broken_pairs")} for name in ("gradual_drift", "period_change")}, passed=value["passed"], failure_reasons=tuple(value["failure_reasons"]),
             feature_dimension=value["feature_dimension"], provenance=value["provenance"],
+            input_train140_blob=value["input_train140_blob"],
+            input_fit_indices=tuple(value["input_fit_indices"]),
+            input_query_indices=tuple(value["input_query_indices"]),
         )
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError("metric row is invalid") from error

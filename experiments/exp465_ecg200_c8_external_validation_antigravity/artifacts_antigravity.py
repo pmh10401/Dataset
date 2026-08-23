@@ -53,6 +53,9 @@ def _row_payload_antigravity(row: Exp465MethodFoldMetricAntigravity) -> dict[str
         "pair_diagnostics": {key: dict(row.pair_diagnostics[key]) for key in row.pair_diagnostics},
         "passed": row.passed, "failure_reasons": list(row.failure_reasons),
         "feature_dimension": row.feature_dimension, "provenance": row.provenance,
+        "input_train140_blob": row.input_train140_blob,
+        "input_fit_indices": list(row.input_fit_indices),
+        "input_query_indices": list(row.input_query_indices),
     }
 
 
@@ -80,6 +83,8 @@ def _context_payload_antigravity(*, method_fold_metrics_sha256: str) -> dict[str
             "data_split": FROZEN_CONFIG_ANTIGRAVITY.data_split, "method_order": list(FROZEN_CONFIG_ANTIGRAVITY.method_order),
             "primary_candidate": "C8", "seeds": list(FROZEN_CONFIG_ANTIGRAVITY.seeds), "folds": FROZEN_CONFIG_ANTIGRAVITY.folds,
             "gates": {"per_type_auc_min": FROZEN_CONFIG_ANTIGRAVITY.per_type_auc_min, "mean_auc_min": FROZEN_CONFIG_ANTIGRAVITY.mean_auc_min, "normal_confirmation_must_equal": 0},
+            "normal_trials_per_seed": FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed,
+            "input_evidence_schema": "train140_blob_plus_fit_query_indices_v1",
             "label_query_count": 0, "official_evaluate_count": 0, "method_fold_metrics_sha256": method_fold_metrics_sha256}
 
 

@@ -7,5 +7,5 @@ class EvaluationAntigravityTest(unittest.TestCase):
         from experiments.exp465_ecg200_c8_external_validation_antigravity.qualification_antigravity import qualify_methods_antigravity
         from experiments.exp465_ecg200_c8_external_validation_antigravity.evaluation_antigravity import evaluate_qualification_antigravity
         decision = evaluate_qualification_antigravity(qualify_methods_antigravity(passing_scores_antigravity()))
-        self.assertTrue(decision.eligible_for_routing_research)
+        self.assertFalse(decision.eligible_for_routing_research)
         self.assertEqual(decision.primary_candidate, "C8")

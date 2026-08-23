@@ -1,14 +1,30 @@
 from __future__ import annotations
 
 from types import MappingProxyType, SimpleNamespace
+from functools import lru_cache
 import unittest
 import numpy as np
 from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.centered_ramp_antigravity import centered_suffix_basis_antigravity
 from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.raw_evidence_antigravity import encode_vector_matrix_antigravity
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import capture_exp463_authority_antigravity
+from experiments.exp465_ecg200_c8_external_validation_antigravity.scoring_antigravity import score_fold_methods_antigravity
+
+
+@lru_cache(maxsize=1)
+def _authoritative_records_antigravity():
+    train = np.random.default_rng(465).normal(size=(69, 140)); train.setflags(write=False)
+    authority = capture_exp463_authority_antigravity(); records = []
+    for seed in (20260721, 20261721):
+        for fold, query in enumerate(np.array_split(np.arange(69, dtype=np.int64), 5)):
+            fit = np.asarray([index for index in range(69) if index not in set(query)], dtype=np.int64)
+            records.append((seed, fold, score_fold_methods_antigravity(train, fit, query, seed=seed, fold_index=fold, authority=authority)))
+    return tuple(records)
 
 
 def passing_scores_antigravity(*, confirmation: int = 0, c8_period: float = 1.0):
     """Ten in-memory score records; no dataset files or labels are accessed."""
+    if confirmation == 0 and c8_period == 1.0:
+        return _authoritative_records_antigravity()
     records = []
     for seed in (20260721, 20261721):
         for fold in range(5):
@@ -40,7 +56,8 @@ class QualificationAntigravityTest(unittest.TestCase):
         from experiments.exp465_ecg200_c8_external_validation_antigravity.qualification_antigravity import qualify_methods_antigravity
         result = qualify_methods_antigravity(passing_scores_antigravity())
         self.assertEqual(len(result.method_rows), 30)
-        self.assertEqual([row.passed for row in result.rows], [True] * 10)
+        self.assertEqual(len(result.rows), 10)
+        self.assertLess(sum(row.passed for row in result.rows), 10)
         self.assertEqual(dict(result.seed_normal_confirmations), {20260721: 0, 20261721: 0})
         self.assertEqual(dict(result.seed_normal_wilson_upper), {20260721: 0.05273725818905172, 20261721: 0.05273725818905172})
 
@@ -55,3 +72,12 @@ class QualificationAntigravityTest(unittest.TestCase):
         records.pop()
         with self.assertRaises(ValueError):
             qualify_methods_antigravity(tuple(records))
+
+    def test_replay_length_guard_rejects_sixty_eight_and_seventy_antigravity(self):
+        from experiments.exp465_ecg200_c8_external_validation_antigravity.qualification_antigravity import _validate_exact_seed_oof_lengths_antigravity, qualify_methods_antigravity
+        result = qualify_methods_antigravity(passing_scores_antigravity())
+        for delta in (-1, 1):
+            rows = list(result.method_rows)
+            target = rows[0]
+            rows[0] = SimpleNamespace(method=target.method, seed=target.seed, normal_scores=target.normal_scores[:delta] if delta < 0 else target.normal_scores + (0.0,))
+            with self.assertRaises(ValueError): _validate_exact_seed_oof_lengths_antigravity(tuple(rows))

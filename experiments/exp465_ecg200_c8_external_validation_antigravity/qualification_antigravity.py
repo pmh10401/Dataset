@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from math import isfinite
 from types import MappingProxyType
 from typing import Any
+from functools import lru_cache
 
 import numpy as np
 
@@ -20,6 +21,8 @@ from experiments.exp459_ecg_normal2_blocked_validation_antigravity.contracts_ant
     wilson_upper_antigravity,
 )
 from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.raw_evidence_antigravity import amplitudes_cosines_from_vectors_antigravity, decode_vector_matrix_antigravity
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.predecessor_antigravity import capture_exp463_authority_antigravity
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.scoring_antigravity import score_fold_methods_antigravity as score_exp464_fold_methods_antigravity
 from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.scoring_antigravity import anomaly_rank_antigravity
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
@@ -244,6 +247,9 @@ class Exp465MethodFoldMetricAntigravity:
     failure_reasons: tuple[str, ...]
     feature_dimension: int
     provenance: str
+    input_train140_blob: str = ""
+    input_fit_indices: tuple[int, ...] = ()
+    input_query_indices: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if type(self.method) is not str or self.method not in _METHODS_ANTIGRAVITY:
@@ -307,6 +313,24 @@ class Exp465MethodFoldMetricAntigravity:
             raise ValueError("feature_dimension must be positive")
         if type(self.provenance) is not str or not self.provenance:
             raise ValueError("provenance must be non-empty")
+        if type(self.input_train140_blob) is not str:
+            raise ValueError("input_train140_blob must be a string")
+        for name, values in (
+            ("input_fit_indices", self.input_fit_indices),
+            ("input_query_indices", self.input_query_indices),
+        ):
+            if type(values) is not tuple or any(type(value) is not int for value in values):
+                raise ValueError(f"{name} must be an integer tuple")
+        if self.input_train140_blob:
+            from .scoring_antigravity import decode_train140_antigravity
+
+            decode_train140_antigravity(self.input_train140_blob)
+            if not self.input_fit_indices or not self.input_query_indices:
+                raise ValueError("input indices are required with train evidence")
+            if set(self.input_fit_indices) & set(self.input_query_indices):
+                raise ValueError("input fit/query indices must be disjoint")
+        elif self.input_fit_indices or self.input_query_indices:
+            raise ValueError("input indices require train evidence")
         object.__setattr__(self, "normal_scores", normal)
         object.__setattr__(self, "primary_scores", primary)
         object.__setattr__(self, "confirmation_counts", counts)
@@ -319,6 +343,8 @@ class Exp465MethodFoldMetricAntigravity:
         object.__setattr__(self, "all_scores_finite", finite)
         object.__setattr__(self, "normal_wilson_upper", expected_wilson)
         object.__setattr__(self, "pair_diagnostics", pair)
+        object.__setattr__(self, "input_fit_indices", tuple(self.input_fit_indices))
+        object.__setattr__(self, "input_query_indices", tuple(self.input_query_indices))
 
 
 @dataclass(frozen=True, slots=True)
@@ -455,6 +481,9 @@ def _metric_from_score_antigravity(
         failure_reasons=tuple(reasons),
         feature_dimension=int(getattr(score, "feature_dimensions")[method]),
         provenance=str(getattr(score, "provenance")[method]),
+        input_train140_blob=str(getattr(score, "input_train140_blob", "")),
+        input_fit_indices=tuple(getattr(score, "input_fit_indices", ())),
+        input_query_indices=tuple(getattr(score, "input_query_indices", ())),
     )
 
 
@@ -500,6 +529,9 @@ def _replay_base_row_antigravity(
         passed=not _base_failure_reasons_antigravity(auc, mean, finite),
         failure_reasons=_base_failure_reasons_antigravity(auc, mean, finite),
         feature_dimension=row.feature_dimension, provenance=row.provenance,
+        input_train140_blob=row.input_train140_blob,
+        input_fit_indices=row.input_fit_indices,
+        input_query_indices=row.input_query_indices,
     )
 
 
@@ -553,6 +585,67 @@ def _validate_c6_c8_raw_scores_antigravity(rows: tuple[Exp465MethodFoldMetricAnt
                 raise ValueError("C6/C8 scores differ from raw evidence replay")
 
 
+def _validate_exact_c0_exp464_antigravity(
+    rows: tuple[Exp465MethodFoldMetricAntigravity, ...],
+) -> None:
+    """Re-run the frozen Exp464 scorer from the carried fold input evidence.
+
+    Task 4 does not replace the Exp464 scorer.  When Task 3 supplied its input
+    evidence, replay calls that exact scorer and checks both C0 score vectors.
+    The small in-memory fixtures from the first RED tests predate the input
+    evidence field; those fixtures remain score-only and are intentionally not
+    treated as an official/private run.
+    """
+
+    grouped: dict[tuple[int, int], dict[str, Exp465MethodFoldMetricAntigravity]] = {}
+    for row in rows:
+        grouped.setdefault((row.seed, row.fold_index), {})[row.method] = row
+    authority = capture_exp463_authority_antigravity()
+    for identity, methods in grouped.items():
+        if set(methods) != set(_METHODS_ANTIGRAVITY):
+            raise ValueError("each fold must contain C0, C6, and C8")
+        evidence = tuple(
+            (row.input_train140_blob, row.input_fit_indices, row.input_query_indices)
+            for row in methods.values()
+        )
+        if not any(item[0] for item in evidence):
+            raise ValueError("published replay requires fold input evidence")
+        if any(not item[0] for item in evidence) or len(set(evidence)) != 1:
+            raise ValueError("fold input evidence must be shared by all methods")
+        blob, fit_indices, query_indices = evidence[0]
+        expected = _cached_exp464_fold_antigravity(blob, fit_indices, query_indices, identity[0], identity[1])
+        actual = methods["C0"]
+        if tuple(float(value) for value in expected.original["C0"]) != actual.normal_scores:
+            raise ValueError("C0 normal scores differ from exact Exp464 replay")
+        for change_type in _CHANGE_TYPES_ANTIGRAVITY:
+            if tuple(float(value) for value in expected.primary["C0"][change_type]) != actual.primary_scores[change_type]:
+                raise ValueError("C0 primary scores differ from exact Exp464 replay")
+
+
+@lru_cache(maxsize=32)
+def _cached_exp464_fold_antigravity(blob: str, fit_indices: tuple[int, ...], query_indices: tuple[int, ...], seed: int, fold_index: int) -> object:
+    from .scoring_antigravity import decode_train140_antigravity
+    return score_exp464_fold_methods_antigravity(decode_train140_antigravity(blob), np.asarray(fit_indices, dtype=np.int64), np.asarray(query_indices, dtype=np.int64), seed=seed, fold_index=fold_index, authority=capture_exp463_authority_antigravity())
+
+
+def _validate_exact_seed_oof_lengths_antigravity(
+    rows: tuple[Exp465MethodFoldMetricAntigravity, ...],
+) -> None:
+    """Require the frozen 69 normal rows for every seed and method."""
+
+    for method in _METHODS_ANTIGRAVITY:
+        for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds:
+            total = sum(
+                len(row.normal_scores)
+                for row in rows
+                if row.method == method and row.seed == seed
+            )
+            if total != FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed:
+                raise ValueError(
+                    f"{method} seed {seed} must contain exactly 69 OOF normal scores"
+                )
+
+
 def _with_c8_comparison_antigravity(
     c8: Exp465MethodFoldMetricAntigravity,
     c0: Exp465MethodFoldMetricAntigravity,
@@ -580,6 +673,9 @@ def _with_c8_comparison_antigravity(
         failure_reasons=tuple(sorted(set(reasons))),
         feature_dimension=c8.feature_dimension,
         provenance=c8.provenance,
+        input_train140_blob=c8.input_train140_blob,
+        input_fit_indices=c8.input_fit_indices,
+        input_query_indices=c8.input_query_indices,
     )
 
 
@@ -703,6 +799,7 @@ def recompute_qualification_antigravity(
     if type(qualification) is not Exp465QualificationResultAntigravity:
         raise ValueError("semantic replay requires the Exp465 qualification result")
     stored_rows = qualification.method_rows
+    _validate_exact_seed_oof_lengths_antigravity(stored_rows)
     base_rows = tuple(_replay_base_row_antigravity(row) for row in stored_rows)
     by_identity = {(row.method, row.seed, row.fold_index): row for row in base_rows}
     rows = tuple(
@@ -710,6 +807,7 @@ def recompute_qualification_antigravity(
         for row in base_rows
     )
     _validate_c6_c8_raw_scores_antigravity(rows)
+    _validate_exact_c0_exp464_antigravity(rows)
     c8_rows = tuple(row for row in rows if row.method == "C8")
     expected_c8 = tuple(
         _with_c8_comparison_antigravity(

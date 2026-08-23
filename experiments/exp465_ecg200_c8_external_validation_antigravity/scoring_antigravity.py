@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+import base64
+import zlib
 from types import MappingProxyType
 from typing import Any
 
@@ -48,9 +50,31 @@ class FoldMethodScoresAntigravity:
     raw_query_vector_blobs: Mapping[str, Mapping[str, str]]
     feature_dimensions: Mapping[str, int]
     provenance: Mapping[str, str]
+    input_train140_blob: str = ""
+    input_fit_indices: tuple[int, ...] = ()
+    input_query_indices: tuple[int, ...] = ()
 
 
-def project_methods_antigravity(source: object, methods: Sequence[str]) -> FoldMethodScoresAntigravity:
+def _encode_train140_antigravity(train140: np.ndarray) -> str:
+    matrix = np.asarray(train140, dtype=np.float64, order="C")
+    if matrix.ndim != 2 or matrix.shape[1] != 140 or not np.isfinite(matrix).all():
+        raise ValueError("train140 evidence must be finite Nx140")
+    return f"{matrix.shape[0]}:140:{base64.b64encode(zlib.compress(matrix.tobytes(order='C'), 9)).decode('ascii')}"
+
+
+def decode_train140_antigravity(blob: str) -> np.ndarray:
+    try:
+        rows, width, encoded = blob.split(":", 2); count = int(rows)
+        raw = zlib.decompress(base64.b64decode(encoded.encode("ascii"), validate=True))
+        matrix = np.frombuffer(raw, dtype=np.float64).reshape(count, int(width))
+    except (ValueError, zlib.error) as error:
+        raise ValueError("train140 evidence is invalid") from error
+    if count < 1 or matrix.shape != (count, 140) or not np.isfinite(matrix).all():
+        raise ValueError("train140 evidence is invalid")
+    output = np.array(matrix, dtype=np.float64, copy=True, order="C"); output.setflags(write=False); return output
+
+
+def project_methods_antigravity(source: object, methods: Sequence[str], *, input_train140_blob: str = "", input_fit_indices: tuple[int, ...] = (), input_query_indices: tuple[int, ...] = ()) -> FoldMethodScoresAntigravity:
     """Project exactly the requested methods from one Exp464 result without copying mathematics."""
     method_order = tuple(methods)
     if method_order != ("C0", "C6", "C8"):
@@ -66,6 +90,7 @@ def project_methods_antigravity(source: object, methods: Sequence[str]) -> FoldM
         if not isinstance(source_mapping, Mapping) or not all(method in source_mapping for method in method_order):
             raise ValueError(f"source.{field_name} is incomplete")
         projected[field_name] = MappingProxyType({method: source_mapping[method] for method in method_order})
+    projected.update(input_train140_blob=input_train140_blob, input_fit_indices=input_fit_indices, input_query_indices=input_query_indices)
     return FoldMethodScoresAntigravity(**projected)
 
 
@@ -79,17 +104,15 @@ def score_fold_methods_antigravity(
     authority: Exp463AuthorityAntigravity,
 ) -> FoldMethodScoresAntigravity:
     """Call Exp464 once and return only its exact C0/C6/C8 fields."""
-    return project_methods_antigravity(
-        score_exp464_fold_methods_antigravity(
+    source = score_exp464_fold_methods_antigravity(
             train140,
             fit_indices,
             query_indices,
             seed=seed,
             fold_index=fold_index,
             authority=authority,
-        ),
-        ("C0", "C6", "C8"),
-    )
+        )
+    return project_methods_antigravity(source, ("C0", "C6", "C8"), input_train140_blob=_encode_train140_antigravity(train140), input_fit_indices=tuple(int(value) for value in fit_indices), input_query_indices=tuple(int(value) for value in query_indices))
 
 
 __all__ = (
