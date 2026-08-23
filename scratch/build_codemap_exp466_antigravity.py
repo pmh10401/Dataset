@@ -511,7 +511,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "map_builder",
             BUILDER_ANTIGRAVITY,
-            "Caller: Task 1-3 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-3 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
+            "Caller: Task 1-4 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-4 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
             "build_triplet_antigravity",
             map_test,
         ),
