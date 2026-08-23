@@ -68,6 +68,7 @@ def _metric_antigravity(value: object) -> Exp465MethodFoldMetricAntigravity:
             primary_scores={key: tuple(value["primary_scores"][key]) for key in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")},
             confirmation_counts={key: value["confirmation_counts"][key] for key in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")},
             query_cosines={key: tuple(value["query_cosines"][key]) for key in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")} if value["query_cosines"] else {}, per_type_auc=tuple(value["per_type_auc"]),
+            fit_amplitudes=tuple(value["fit_amplitudes"]), query_amplitudes={key: tuple(value["query_amplitudes"][key]) for key in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")} if value["query_amplitudes"] else {}, raw_evidence_kind=value["raw_evidence_kind"], raw_fit_vector_blob=value["raw_fit_vector_blob"], raw_query_vector_blobs={key: value["raw_query_vector_blobs"][key] for key in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")} if value["raw_query_vector_blobs"] else {},
             mean_auc=value["mean_auc"], all_scores_finite=value["all_scores_finite"], normal_wilson_upper=value["normal_wilson_upper"],
             pair_diagnostics={name: {key: value["pair_diagnostics"][name][key] for key in ("total_pairs", "fixed_pairs", "broken_pairs")} for name in ("gradual_drift", "period_change")}, passed=value["passed"], failure_reasons=tuple(value["failure_reasons"]),
             feature_dimension=value["feature_dimension"], provenance=value["provenance"],
@@ -84,7 +85,8 @@ def _qualification_antigravity(rows: tuple[Exp465MethodFoldMetricAntigravity, ..
         c8_gradual_auc=row.per_type_auc[1], c8_period_auc=row.per_type_auc[3], all_scores_finite=row.all_scores_finite, passed=row.passed, failure_reasons=row.failure_reasons) for row in c8)
     summaries = tuple(_summary_from_rows_antigravity(rows, method) for method in _METHODS_ANTIGRAVITY)
     seeds = {seed: sum(row.confirmation_counts["normal"] for row in rows if row.method == "C8" and row.seed == seed) for seed in (20260721, 20261721)}
-    return Exp465QualificationResultAntigravity(rows=result_rows, seed_normal_confirmations=seeds, label_query_count=0, official_evaluate_count=0, artifact_map_sha256=None, method_rows=rows, summaries=summaries)
+    return Exp465QualificationResultAntigravity(rows=result_rows, seed_normal_confirmations=seeds, label_query_count=0, official_evaluate_count=0, artifact_map_sha256=None, method_rows=rows, summaries=summaries,
+        seed_normal_wilson_upper={seed: __import__("experiments.exp459_ecg_normal2_blocked_validation_antigravity.contracts_antigravity", fromlist=["wilson_upper_antigravity"]).wilson_upper_antigravity(seeds[seed], 69) for seed in seeds})
 
 
 def _summary_from_rows_antigravity(rows: tuple[Exp465MethodFoldMetricAntigravity, ...], method: str) -> Exp465MethodSummaryAntigravity:

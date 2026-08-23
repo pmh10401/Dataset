@@ -22,6 +22,7 @@ def export_dashboard_antigravity(
         "다음_재현_가능": decision.eligible_for_routing_research,
         "실패_이유": list(decision.failure_reasons),
         "정상_confirmation": {str(seed): replayed.seed_normal_confirmations[seed] for seed in replayed.seed_normal_confirmations},
+        "정상_Wilson_설명값": {str(seed): replayed.seed_normal_wilson_upper[seed] for seed in replayed.seed_normal_wilson_upper},
         "방법_요약": [
             {
                 "방법": summary.method,

@@ -44,6 +44,10 @@ def _row_payload_antigravity(row: Exp465MethodFoldMetricAntigravity) -> dict[str
         "primary_scores": {key: list(row.primary_scores[key]) for key in row.primary_scores},
         "confirmation_counts": dict(row.confirmation_counts),
         "query_cosines": {key: list(row.query_cosines[key]) for key in row.query_cosines},
+        "fit_amplitudes": list(row.fit_amplitudes),
+        "query_amplitudes": {key: list(row.query_amplitudes[key]) for key in row.query_amplitudes},
+        "raw_evidence_kind": row.raw_evidence_kind, "raw_fit_vector_blob": row.raw_fit_vector_blob,
+        "raw_query_vector_blobs": dict(row.raw_query_vector_blobs),
         "per_type_auc": list(row.per_type_auc), "mean_auc": row.mean_auc,
         "all_scores_finite": row.all_scores_finite, "normal_wilson_upper": row.normal_wilson_upper,
         "pair_diagnostics": {key: dict(row.pair_diagnostics[key]) for key in row.pair_diagnostics},
@@ -86,7 +90,7 @@ def _payloads_antigravity(qualification: Exp465QualificationResultAntigravity, d
     rows = tuple(_row_payload_antigravity(row) for row in replayed.method_rows)
     metrics = _jsonl_bytes_antigravity(rows)
     return {
-        "context_antigravity.json": canonical_json_bytes_antigravity(_context_payload_antigravity(method_fold_metrics_sha256=sha256(metrics).hexdigest())),
+        "context_antigravity.json": canonical_json_bytes_antigravity({**_context_payload_antigravity(method_fold_metrics_sha256=sha256(metrics).hexdigest()), "seed_normal_wilson_upper": {str(seed): replayed.seed_normal_wilson_upper[seed] for seed in replayed.seed_normal_wilson_upper}}),
         "method_fold_metrics_antigravity.jsonl": metrics,
         "failed_folds_antigravity.jsonl": _jsonl_bytes_antigravity(tuple(row for row in rows if not row["passed"])),
         "method_summary_antigravity.jsonl": _jsonl_bytes_antigravity(tuple(_summary_payload_antigravity(item) for item in replayed.summaries)),

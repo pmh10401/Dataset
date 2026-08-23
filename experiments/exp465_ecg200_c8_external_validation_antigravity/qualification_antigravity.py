@@ -19,6 +19,8 @@ from experiments.exp459_ecg_normal2_blocked_validation_antigravity.contracts_ant
     mann_whitney_auc_antigravity,
     wilson_upper_antigravity,
 )
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.raw_evidence_antigravity import amplitudes_cosines_from_vectors_antigravity, decode_vector_matrix_antigravity
+from experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.scoring_antigravity import anomaly_rank_antigravity
 
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
 from .contracts_antigravity import (
@@ -228,6 +230,11 @@ class Exp465MethodFoldMetricAntigravity:
     primary_scores: Mapping[str, tuple[float, ...]]
     confirmation_counts: Mapping[str, int]
     query_cosines: Mapping[str, tuple[float, ...]]
+    fit_amplitudes: tuple[float, ...]
+    query_amplitudes: Mapping[str, tuple[float, ...]]
+    raw_evidence_kind: str
+    raw_fit_vector_blob: str
+    raw_query_vector_blobs: Mapping[str, str]
     per_type_auc: tuple[float, float, float, float]
     mean_auc: float
     all_scores_finite: bool
@@ -265,6 +272,16 @@ class Exp465MethodFoldMetricAntigravity:
         )
         if cosines and any(len(cosines[name]) != len(normal) for name in _CONFIRMATION_TYPES_ANTIGRAVITY):
             raise ValueError("query cosine length differs from normal scores")
+        fit = _readonly_float_tuple_antigravity(self.fit_amplitudes, "fit_amplitudes") if self.method in ("C6", "C8") else ()
+        amplitudes = _ordered_float_mapping_antigravity(self.query_amplitudes, _CONFIRMATION_TYPES_ANTIGRAVITY, "query_amplitudes", required=self.method in ("C6", "C8"))
+        blobs = _strict_mapping_antigravity(self.raw_query_vector_blobs, "raw_query_vector_blobs")
+        if self.method in ("C6", "C8"):
+            if type(self.raw_evidence_kind) is not str or not self.raw_evidence_kind or type(self.raw_fit_vector_blob) is not str or not self.raw_fit_vector_blob or tuple(blobs) != _CONFIRMATION_TYPES_ANTIGRAVITY:
+                raise ValueError("C6/C8 raw evidence is required")
+            if any(len(amplitudes[scope]) != len(normal) or type(blobs[scope]) is not str or not blobs[scope] for scope in _CONFIRMATION_TYPES_ANTIGRAVITY):
+                raise ValueError("C6/C8 raw evidence shape is invalid")
+        elif fit or amplitudes or self.raw_evidence_kind or self.raw_fit_vector_blob or tuple(blobs):
+            raise ValueError("C0 must not carry raw evidence")
         auc, mean, finite = _metric_auc_antigravity(normal, primary)
         if tuple(self.per_type_auc) != auc:
             raise ValueError("per_type_auc differs from raw score replay")
@@ -294,6 +311,9 @@ class Exp465MethodFoldMetricAntigravity:
         object.__setattr__(self, "primary_scores", primary)
         object.__setattr__(self, "confirmation_counts", counts)
         object.__setattr__(self, "query_cosines", cosines)
+        object.__setattr__(self, "fit_amplitudes", fit)
+        object.__setattr__(self, "query_amplitudes", amplitudes)
+        object.__setattr__(self, "raw_query_vector_blobs", MappingProxyType(dict(blobs)))
         object.__setattr__(self, "per_type_auc", auc)
         object.__setattr__(self, "mean_auc", mean)
         object.__setattr__(self, "all_scores_finite", finite)
@@ -322,6 +342,7 @@ class Exp465QualificationResultAntigravity(Exp465QualificationContractAntigravit
 
     method_rows: tuple[Exp465MethodFoldMetricAntigravity, ...]
     summaries: tuple[Exp465MethodSummaryAntigravity, ...]
+    seed_normal_wilson_upper: Mapping[int, float]
 
     def __post_init__(self) -> None:
         Exp465QualificationContractAntigravity.__post_init__(self)
@@ -340,6 +361,15 @@ class Exp465QualificationResultAntigravity(Exp465QualificationContractAntigravit
             raise ValueError("method_rows must preserve method/seed/fold order")
         if type(self.summaries) is not tuple or tuple(item.method for item in self.summaries) != _METHODS_ANTIGRAVITY:
             raise ValueError("summaries must preserve method order")
+        if tuple(self.seed_normal_wilson_upper) != FROZEN_CONFIG_ANTIGRAVITY.seeds:
+            raise ValueError("seed_normal_wilson_upper must preserve frozen seed order")
+        expected = {
+            seed: float(wilson_upper_antigravity(self.seed_normal_confirmations[seed], FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed))
+            for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds
+        }
+        if any(self.seed_normal_wilson_upper[seed] != expected[seed] for seed in expected):
+            raise ValueError("seed Wilson values differ from aggregate confirmation evidence")
+        object.__setattr__(self, "seed_normal_wilson_upper", MappingProxyType(expected))
 
     @property
     def contract(self) -> Exp465QualificationContractAntigravity:
@@ -411,6 +441,11 @@ def _metric_from_score_antigravity(
         primary_scores=primary,
         confirmation_counts=counts,
         query_cosines=cosines,
+        fit_amplitudes=tuple(float(item) for item in getattr(score, "fit_amplitudes")[method]),
+        query_amplitudes=(MappingProxyType({}) if method == "C0" else MappingProxyType({scope: _readonly_float_tuple_antigravity(getattr(score, "query_amplitudes")[method][scope], f"query_amplitudes[{method}][{scope}]") for scope in _CONFIRMATION_TYPES_ANTIGRAVITY})),
+        raw_evidence_kind=str(getattr(score, "raw_evidence_kind")[method]),
+        raw_fit_vector_blob=str(getattr(score, "raw_fit_vector_blobs")[method]),
+        raw_query_vector_blobs=getattr(score, "raw_query_vector_blobs")[method],
         per_type_auc=auc,
         mean_auc=mean,
         all_scores_finite=finite,
@@ -458,6 +493,7 @@ def _replay_base_row_antigravity(
         method=row.method, seed=row.seed, fold_index=row.fold_index,
         normal_scores=row.normal_scores, primary_scores=row.primary_scores,
         confirmation_counts=counts, query_cosines=cosines, per_type_auc=auc,
+        fit_amplitudes=row.fit_amplitudes, query_amplitudes=row.query_amplitudes, raw_evidence_kind=row.raw_evidence_kind, raw_fit_vector_blob=row.raw_fit_vector_blob, raw_query_vector_blobs=row.raw_query_vector_blobs,
         mean_auc=mean, all_scores_finite=finite,
         normal_wilson_upper=float(wilson_upper_antigravity(counts["normal"], len(row.normal_scores))),
         pair_diagnostics=_zero_pair_mapping_antigravity(),
@@ -496,6 +532,27 @@ def _pair_diagnostics_for_c8_antigravity(
     return MappingProxyType(result)
 
 
+def _validate_c6_c8_raw_scores_antigravity(rows: tuple[Exp465MethodFoldMetricAntigravity, ...]) -> None:
+    """Replay Exp464 carrier evidence; C0 has no local raw carrier and stays authority-bound upstream."""
+    c0 = {(row.seed, row.fold_index): row for row in rows if row.method == "C0"}
+    for row in rows:
+        if row.method not in ("C6", "C8"):
+            continue
+        control = c0[(row.seed, row.fold_index)]
+        fit, _ = amplitudes_cosines_from_vectors_antigravity(row.raw_evidence_kind, decode_vector_matrix_antigravity(row.raw_fit_vector_blob, "raw_fit_vector_blob"))
+        if tuple(float(value) for value in fit) != row.fit_amplitudes:
+            raise ValueError("fit amplitudes differ from raw evidence")
+        for scope, baseline in (("normal", control.normal_scores), *tuple((kind, control.primary_scores[kind]) for kind in _CHANGE_TYPES_ANTIGRAVITY)):
+            amplitudes, cosines = amplitudes_cosines_from_vectors_antigravity(row.raw_evidence_kind, decode_vector_matrix_antigravity(row.raw_query_vector_blobs[scope], f"raw_query_vector_blobs[{scope}]"))
+            if tuple(float(value) for value in amplitudes) != row.query_amplitudes[scope] or tuple(float(value) for value in cosines) != row.query_cosines[scope]:
+                raise ValueError("query evidence differs from raw evidence")
+            ranks = anomaly_rank_antigravity(np.asarray(row.fit_amplitudes, dtype=np.float64), np.asarray(row.query_amplitudes[scope], dtype=np.float64))
+            expected = tuple(float(value) for value in np.where(np.asarray(row.query_cosines[scope]) >= FROZEN_CONFIG_ANTIGRAVITY.cosine_min, np.maximum(np.asarray(baseline), ranks), np.asarray(baseline)))
+            actual = row.normal_scores if scope == "normal" else row.primary_scores[scope]
+            if actual != expected:
+                raise ValueError("C6/C8 scores differ from raw evidence replay")
+
+
 def _with_c8_comparison_antigravity(
     c8: Exp465MethodFoldMetricAntigravity,
     c0: Exp465MethodFoldMetricAntigravity,
@@ -513,6 +570,7 @@ def _with_c8_comparison_antigravity(
         primary_scores=c8.primary_scores,
         confirmation_counts=c8.confirmation_counts,
         query_cosines=c8.query_cosines,
+        fit_amplitudes=c8.fit_amplitudes, query_amplitudes=c8.query_amplitudes, raw_evidence_kind=c8.raw_evidence_kind, raw_fit_vector_blob=c8.raw_fit_vector_blob, raw_query_vector_blobs=c8.raw_query_vector_blobs,
         per_type_auc=c8.per_type_auc,
         mean_auc=c8.mean_auc,
         all_scores_finite=c8.all_scores_finite,
@@ -570,6 +628,14 @@ def qualify_methods_antigravity(
     """Recompute all Task 4 metrics from exactly ten Task 3 score records."""
 
     records = _normalise_fold_scores_antigravity(fold_scores)
+    expected_lengths: dict[int, int] = {seed: 0 for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds}
+    for seed, _fold_index, score in records:
+        lengths = tuple(len(_readonly_float_tuple_antigravity(getattr(score, "original")[method], f"original[{method}]")) for method in _METHODS_ANTIGRAVITY)
+        if len(set(lengths)) != 1:
+            raise ValueError("C0/C6/C8 per-fold normal score lengths must align")
+        expected_lengths[seed] += lengths[0]
+    if any(expected_lengths[seed] != FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed for seed in expected_lengths):
+        raise ValueError("each seed must contain exactly 69 out-of-fold normal scores")
     method_rows: list[Exp465MethodFoldMetricAntigravity] = []
     for seed, fold_index, score in records:
         for method in _METHODS_ANTIGRAVITY:
@@ -622,6 +688,10 @@ def qualify_methods_antigravity(
         artifact_map_sha256=None,
         method_rows=ordered_rows,
         summaries=summaries,
+        seed_normal_wilson_upper=MappingProxyType({
+            seed: float(wilson_upper_antigravity(seed_confirmations[seed], FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed))
+            for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds
+        }),
     )
 
 
@@ -639,6 +709,7 @@ def recompute_qualification_antigravity(
         _with_c8_comparison_antigravity(row, by_identity[("C0", row.seed, row.fold_index)]) if row.method == "C8" else row
         for row in base_rows
     )
+    _validate_c6_c8_raw_scores_antigravity(rows)
     c8_rows = tuple(row for row in rows if row.method == "C8")
     expected_c8 = tuple(
         _with_c8_comparison_antigravity(
@@ -677,6 +748,12 @@ def recompute_qualification_antigravity(
     )
     if dict(qualification.seed_normal_confirmations) != dict(expected_seed):
         raise ValueError("seed confirmation summary differs from raw evidence")
+    expected_wilson = {
+        seed: float(wilson_upper_antigravity(expected_seed[seed], FROZEN_CONFIG_ANTIGRAVITY.normal_trials_per_seed))
+        for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds
+    }
+    if dict(qualification.seed_normal_wilson_upper) != expected_wilson:
+        raise ValueError("seed Wilson summary differs from aggregate confirmation evidence")
     expected_summaries = tuple(_summary_antigravity(rows, method) for method in _METHODS_ANTIGRAVITY)
     if qualification.summaries != expected_summaries:
         raise ValueError("method summaries differ from raw evidence")
