@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp466 사전등록</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}</style>
+</head>
+<body><main>
+<h1>Exp466 사전등록</h1>
+<p>현재 상태는 <code>planned_implementation_not_started</code>다. Task 1은 승인된 권한·계약·문서 골격만 고정하며, 데이터 로딩·점수 계산·private 실행·공식 평가는 시작하지 않는다.</p>
+<table>
+<tr><th>실험</th><td><code>Exp466</code> — ECG200 고정 위상 정렬 마진 자격 검증</td></tr>
+<tr><th>승인 설계</th><td><code>docs/superpowers/specs/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html</code><br>SHA-256 <code>eddb057724e0ef21402c07b9f362bc6b260fc917a9f6bfdcb130f118b30a5c66</code></td></tr>
+<tr><th>입력</th><td>ECG200 TRAIN <code>100×96</code>, MD5 <code>808875aeac1c358a90c630fe369327c4</code>; 정상 <code>+1</code> 69개만 사용하고 <code>96→140</code>으로 고정 보간</td></tr>
+<tr><th>반복</th><td>seed <code>(20260721, 20261721)</code>, seed당 5 fold, 총 10개 안정성 기록</td></tr>
+</table>
+<h2>고정 방법</h2>
+<ul>
+<li><code>C0</code>: Exp465 C0 정확 재생 대조군.</li>
+<li><code>P9</code>: 고정 역정렬 전후 거리 차이인 <code>margin = identity_error - undo_error</code>와 정상 기준 순위를 기록하는 설명용 신호.</li>
+<li><code>C9</code>: P9가 <code>query_margin &gt; 0</code>이고 <code>query_margin &gt; max(fit_normal_margins)</code>일 때만 C0와 P9 rank를 결합하는 유일한 주 후보.</li>
+</ul>
+<p>onset은 <code>56</code>, suffix는 <code>84</code>, warp는 <code>1.25</code>, 공유 길이는 <code>67</code>이다. method order는 <code>("C0","P9","C9")</code>이며 다른 warp, threshold, alpha는 탐색하지 않는다.</p>
+<h2>Frozen C9 qualification gates</h2>
+<ul>
+<li>10개 fold 결과가 모두 finite이고 네 유형 AUC가 각각 <code>≥0.85</code>, 평균이 <code>≥0.90</code>이어야 한다.</li>
+<li>모든 fold에서 C9 period AUC는 C0보다 엄격히 높고 gradual AUC는 C0보다 낮지 않아야 한다.</li>
+<li>모든 fold에서 period confirmation이 1개 이상이고 seed별 OOF 정상 69개 confirmation 합계는 정확히 0이어야 한다.</li>
+<li>서로 다른 private root의 두 완전 실행 결과·해시·판정이 정확히 같아야 한다.</li>
+</ul>
+<div class="box"><p>Task 1에는 가속할 수 있는 점수 연산이 없다. 전체 score-source 실행 전에 동일 입력·seed CPU/MLX parity와 transfer/synchronization 포함 속도를 측정하며, 후보 index가 같고 MLX가 1.1배 이상 빠를 때만 사용한다. 그 전에는 CPU 경계를 유지한다.</p></div>
+<div class="box stop"><p><strong>금지:</strong> ECG200 TEST 또는 라벨 접근, C8 임계값 변경, warp grid·threshold·alpha 탐색, unconditional max, Exp461 FFT+ACF 재도입, private/official 실행, routing, champion·pending·promotion 변경.</p></div>
+<p>현재 official evaluate/inspect, private run, label query는 모두 <code>0</code>이며 official result와 prediction/evaluation/decision/artifact/dashboard hash는 모두 <code>null</code>이다.</p>
+</main></body>
+</html>

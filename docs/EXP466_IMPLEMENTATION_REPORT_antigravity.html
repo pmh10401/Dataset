@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp466 구현 보고서</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style>
+</head>
+<body><main>
+<h1>Exp466 구현 보고서</h1>
+<p>현재 실험 상태는 <code>planned_implementation_not_started</code>다. 이 문서는 Task 1의 권한·계약·문서·코드맵 골격만 기록하며 qualification 결과를 주장하지 않는다.</p>
+<h2>Task 1 범위</h2>
+<ul>
+<li><code>config_antigravity.py</code>는 TRAIN-only 입력, seed/fold, onset/suffix, warp/shared length, C0/P9/C9 순서, C9 단독 primary, AUC gate와 0-use governance를 exact-type frozen dataclass로 고정한다.</li>
+<li><code>contracts_antigravity.py</code>는 <code>Exp466PhaseEvidenceAntigravity</code>, <code>Exp466FoldResultAntigravity</code>, <code>Exp466QualificationAntigravity</code>를 불변 contract로 제공한다.</li>
+<li>계약은 mutable/reordered seed mapping, non-finite margin, 잘못된 정상 69개 집계, 잘못된 SHA-256, nonzero official/label count를 거부한다.</li>
+<li>사전등록·runbook·구현 보고서, 기존 dashboard의 Task 1 필드, 세 ledger의 additive planned entry, Exp466 코드맵 triplet을 작성한다.</li>
+</ul>
+<h2>TDD 증거</h2>
+<table>
+<tr><th>RED</th><td>focused suite가 새 config/contracts 모듈 부재로 <code>ModuleNotFoundError</code>를 내며 7 tests / 14 errors / exit 1로 실패했다.</td></tr>
+<tr><th>GREEN 1</th><td>최소 config/contracts 구현 후 7 tests, <code>OK</code>, exit 0.</td></tr>
+<tr><th>GREEN 2</th><td id="exp466-green-2-antigravity">동일 focused suite 재실행: 7 tests, <code>OK</code>, exit 0, 0.005초.</td></tr>
+<tr><th>코드맵·diff</th><td id="exp466-map-diff-antigravity"><code>scratch/build_codemap_exp466_antigravity.py --validate-only</code>, 5개 JSON parse, 다섯 사용자 HTML 구조 검증, <code>git diff --check</code>가 모두 exit 0이었다.</td></tr>
+</table>
+<div class="box"><p>Task 1에는 점수 workload가 없으므로 MLX를 채택하지 않는다. score-source full run 전 동일 입력·seed parity, candidate index equality, 수치 허용 범위, transfer/sync 포함 1.1배 속도 gate를 다시 평가한다.</p></div>
+<p>ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. Tasks 2–6, routing, champion, pending, promotion은 변경하지 않았다.</p>
+</main></body>
+</html>
