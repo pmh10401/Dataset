@@ -65,20 +65,6 @@ _CONDITION_MODES_ANTIGRAVITY = {
 _CONDITION_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-condition-manifest-antigravity.v1"
 _SCORE_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-score-manifest-antigravity.v1"
 
-def _identity_registry_antigravity():
-    """Return closure-private issue/validate operations; the set is not a module value."""
-    issued: WeakSet[object] = WeakSet()
-    def issue(value: object) -> object:
-        issued.add(value)
-        return value
-    def validates(value: object) -> bool:
-        return value in issued
-    return issue, validates
-
-
-_issue_verified_authority_antigravity, _is_verified_authority_antigravity = _identity_registry_antigravity()
-
-
 @dataclass(frozen=True, slots=True, eq=False, weakref_slot=True)
 class Exp451VerificationAntigravity:
     """The only completion authority accepted by Exp451 evaluation/reporting."""
@@ -93,8 +79,35 @@ class Exp451VerificationAntigravity:
     inventory_sha256: str = ""
 
 
+@dataclass(frozen=True, slots=True, eq=False, weakref_slot=True)
+class Exp451ScoreManifestsAntigravity:
+    """Opaque, issued score evidence tied to one verified Exp451 inventory.
+
+    ``manifests`` is intentionally readable for the frozen Exp450 evaluator, but
+    it is not an authority by itself: evaluation also requires this exact issued
+    object and rechecks the digest below before TEST labels are opened.
+    """
+
+    manifests: Mapping[str, Mapping[str, object]]
+    inventory_sha256: str
+    context_sha256: str
+    score_manifests_sha256: str
+
+
 def _sha256_antigravity(value: object) -> bool:
     return type(value) is str and len(value) == 64 and all(item in "0123456789abcdef" for item in value)
+
+
+def _file_sha256_antigravity(path: Path) -> str:
+    """Hash the frozen database itself; catalog metadata alone is not authority."""
+    details = path.lstat() if path.exists() or path.is_symlink() else None
+    if details is None or stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode):
+        raise ValueError("Exp451 frozen database is missing or unsafe")
+    digest = sha256()
+    with path.open("rb") as stream:
+        while block := stream.read(1024 * 1024):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def _canonical_object_antigravity(path: Path) -> tuple[dict[str, object], bytes]:
@@ -117,6 +130,7 @@ def _catalog_entries_antigravity(catalog: Mapping[str, object], context: Exp451R
         not isinstance(entries, list) or len(entries) != 1117
         or catalog.get("catalog_sha256") != context.catalog_sha256
         or context.database_sha256 != FROZEN_EXP451_CONFIG.database_sha256
+        or _file_sha256_antigravity(Path(FROZEN_EXP451_CONFIG.database_path)) != FROZEN_EXP451_CONFIG.database_sha256
         or not isinstance(catalog.get("database"), Mapping)
         or catalog["database"].get("sha256") != FROZEN_EXP451_CONFIG.database_sha256
         or catalog.get("mode") != "full"
@@ -234,7 +248,7 @@ def _validate_verification_authority_antigravity(verification: object) -> Exp451
     """Validate the opaque issued capability and all frozen manifest contents."""
     if (
         not isinstance(verification, Exp451VerificationAntigravity)
-        or not _is_verified_authority_antigravity(verification)
+        or not _verification_authority_is_issued_antigravity(verification)
     ):
         raise ValueError("Exp451 verification authority is invalid")
     if verification.total_successes != EXP451_TOTAL_COORDINATES:
@@ -248,7 +262,7 @@ def _validate_verification_authority_antigravity(verification: object) -> Exp451
     if tuple(manifests) != _CONDITIONS_ANTIGRAVITY:
         raise ValueError("Exp451 verification authority requires four frozen condition manifests")
     if (
-        verification.database_sha256 != FROZEN_EXP451_CONFIG.database_sha256
+        not _sha256_antigravity(verification.database_sha256)
         or not _sha256_antigravity(verification.context_sha256)
         or not _sha256_antigravity(verification.catalog_sha256)
         or not _sha256_antigravity(verification.inventory_sha256)
@@ -310,9 +324,9 @@ def _validate_verification_authority_antigravity(verification: object) -> Exp451
     return verification
 
 
-def verify_exp451_completion_antigravity(
+def _verify_exp451_completion_impl_antigravity(
     root: Path, *, context: Exp451RunContext, catalog: Mapping[str, object],
-    migration_manifest: Exp451MigrationManifest,
+    migration_manifest: Exp451MigrationManifest, issue: object,
 ) -> Exp451VerificationAntigravity:
     """Verify all 4,468 checkpoint envelopes before evaluation may see TEST labels."""
     if (
@@ -354,7 +368,9 @@ def verify_exp451_completion_antigravity(
                 value, raw = _canonical_object_antigravity(path)
                 _check_native_envelope_antigravity(value, entry=entry, condition=condition, context=context)
                 native_counts[condition] += 1
-            hashes.append(MappingProxyType({"dataset": dataset, "sha256": sha256(raw).hexdigest()}))
+            # Condition manifests are canonical JSON evidence, so nested
+            # checkpoint records must remain ordinary JSON mappings.
+            hashes.append({"dataset": dataset, "sha256": sha256(raw).hexdigest()})
         if imported_counts[condition] + native_counts[condition] != EXP451_FINAL_COUNTS_BY_CONDITION[condition]:
             raise ValueError("Exp451 condition completion count differs")
         manifests[condition] = _condition_manifest_antigravity(
@@ -369,7 +385,30 @@ def verify_exp451_completion_antigravity(
         MappingProxyType(manifests), context.sha256, context.catalog_sha256,
         context.database_sha256, _inventory_sha256_antigravity(manifests),
     )
-    return _issue_verified_authority_antigravity(authority)
+    assert callable(issue)
+    return issue(authority)
+
+
+def _make_verifier_api_antigravity():
+    """Keep the identity registry and issuing operation inside this closure."""
+    issued: WeakSet[object] = WeakSet()
+    def is_issued(value: object) -> bool:
+        return value in issued
+    def verify(
+        root: Path, *, context: Exp451RunContext, catalog: Mapping[str, object],
+        migration_manifest: Exp451MigrationManifest,
+    ) -> Exp451VerificationAntigravity:
+        def issue(value: Exp451VerificationAntigravity) -> Exp451VerificationAntigravity:
+            issued.add(value)
+            return value
+        return _verify_exp451_completion_impl_antigravity(
+            root, context=context, catalog=catalog, migration_manifest=migration_manifest, issue=issue,
+        )
+    return verify, is_issued
+
+
+verify_exp451_completion_antigravity, _verification_authority_is_issued_antigravity = _make_verifier_api_antigravity()
+del _make_verifier_api_antigravity
 
 
 def provenance_summary_antigravity(verification: Exp451VerificationAntigravity) -> dict[str, object]:
@@ -437,19 +476,30 @@ def read_persisted_exp451_condition_manifests_antigravity(
     return MappingProxyType(opened)
 
 
-def build_exp451_score_manifests_antigravity(
-    root: Path, *, context: Exp451RunContext, catalog: Mapping[str, object],
-    migration_manifest: Exp451MigrationManifest, raw_datasets: Mapping[str, object],
-) -> tuple[Exp451VerificationAntigravity, Mapping[str, Mapping[str, object]]]:
+def _score_manifests_digest_antigravity(manifests: Mapping[str, Mapping[str, object]]) -> str:
+    return sha256(canonical_json_bytes({
+        condition: dict(manifests[condition]) for condition in _CONDITIONS_ANTIGRAVITY
+    })).hexdigest()
+
+
+def _build_exp451_score_manifests_impl_antigravity(
+    root: Path, *, verification: Exp451VerificationAntigravity, context: Exp451RunContext,
+    catalog: Mapping[str, object], migration_manifest: Exp451MigrationManifest,
+    raw_datasets: Mapping[str, object], issue: object,
+) -> Exp451ScoreManifestsAntigravity:
     """Compose label-free continuous scores using the unchanged Exp450 closure.
 
     The function is intentionally separate from ``verify_exp451_completion``:
     checkpoint verification must finish before values-only global composition,
     and neither operation obtains TEST labels.
     """
-    verification = verify_exp451_completion_antigravity(
-        root, context=context, catalog=catalog, migration_manifest=migration_manifest,
-    )
+    verification = _validate_verification_authority_antigravity(verification)
+    if (
+        Path(root) != OFFICIAL_ROOT or Path(root) != context.run_root
+        or migration_manifest.target_context_sha256 != verification.context_sha256
+        or context.sha256 != verification.context_sha256
+    ):
+        raise ValueError("Exp451 score manifest verification binding differs")
     entries = _catalog_entries_antigravity(catalog, context)
     if tuple(raw_datasets) != tuple(entry["dataset"] for entry in entries):
         raise ValueError("Exp451 raw dataset inventory differs")
@@ -500,11 +550,41 @@ def build_exp451_score_manifests_antigravity(
             **base, **score_bare,
             "score_manifest_sha256": sha256(canonical_json_bytes(score_bare)).hexdigest(),
         })
-    return verification, MappingProxyType(score_manifests)
+    frozen = MappingProxyType(score_manifests)
+    authority = Exp451ScoreManifestsAntigravity(
+        frozen, verification.inventory_sha256, verification.context_sha256,
+        _score_manifests_digest_antigravity(frozen),
+    )
+    assert callable(issue)
+    return issue(authority)
+
+
+def _make_score_manifest_api_antigravity():
+    """Keep score-evidence issuance inaccessible outside the builder closure."""
+    issued: WeakSet[object] = WeakSet()
+    def is_issued(value: object) -> bool:
+        return value in issued
+    def build(
+        root: Path, *, verification: Exp451VerificationAntigravity, context: Exp451RunContext,
+        catalog: Mapping[str, object], migration_manifest: Exp451MigrationManifest,
+        raw_datasets: Mapping[str, object],
+    ) -> Exp451ScoreManifestsAntigravity:
+        def issue(value: Exp451ScoreManifestsAntigravity) -> Exp451ScoreManifestsAntigravity:
+            issued.add(value)
+            return value
+        return _build_exp451_score_manifests_impl_antigravity(
+            root, verification=verification, context=context, catalog=catalog,
+            migration_manifest=migration_manifest, raw_datasets=raw_datasets, issue=issue,
+        )
+    return build, is_issued
+
+
+build_exp451_score_manifests_antigravity, _score_manifest_authority_is_issued_antigravity = _make_score_manifest_api_antigravity()
+del _make_score_manifest_api_antigravity
 
 
 __all__ = [
-    "Exp451VerificationAntigravity", "provenance_summary_antigravity",
+    "Exp451ScoreManifestsAntigravity", "Exp451VerificationAntigravity", "provenance_summary_antigravity",
     "verify_exp451_completion_antigravity", "write_exp451_condition_manifests_antigravity",
     "read_persisted_exp451_condition_manifests_antigravity", "build_exp451_score_manifests_antigravity",
 ]

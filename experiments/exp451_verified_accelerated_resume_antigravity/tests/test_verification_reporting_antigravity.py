@@ -5,40 +5,58 @@ from __future__ import annotations
 from types import MappingProxyType
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import importlib.util
 import io
 from dataclasses import replace
+from hashlib import sha256
+import json
 import unittest
 from unittest.mock import patch
 
 
+_VERIFICATION_CACHE_ANTIGRAVITY = None
+
+
 def _verification_antigravity(*, total: int = 4468, manifests: tuple[str, ...] = ("A", "B", "C", "D"), native_c: int = 117):
-    """Test-only full 4,468-slot authority; production has no fixture issuer."""
+    """Build one real 4,468-leaf fixture and invoke the production verifier."""
+    global _VERIFICATION_CACHE_ANTIGRAVITY
+    if total == 4468 and manifests == ("A", "B", "C", "D") and native_c == 117 and _VERIFICATION_CACHE_ANTIGRAVITY is not None:
+        return _VERIFICATION_CACHE_ANTIGRAVITY
     from experiments.exp451_verified_accelerated_resume_antigravity import verifier_antigravity as verifier
-    from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import FROZEN_EXP451_CONFIG
+    from experiments.exp451_verified_accelerated_resume_antigravity import config_antigravity
+    from experiments.exp451_verified_accelerated_resume_antigravity.contracts_antigravity import Exp451BackendDecision, Exp451MigrationEntry, Exp451MigrationManifest, Exp451RunContext, canonical_json_bytes
+    from experiments.exp451_verified_accelerated_resume_antigravity.artifacts_antigravity import success_relative_path_antigravity
+    from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import _native_relative_path_antigravity
     datasets = [f"fixture_{index:04d}_antigravity" for index in range(1117)]
     tests = [{"dataset": name, "count": 600 if index == 1116 else 175} for index, name in enumerate(datasets)]
-    entries = [{"dataset": name, "test": test} for name, test in zip(datasets, tests, strict=True)]
-    imported = {"A": 1117, "B": 1117, "C": 1000, "D": 1000}
-    native = {"A": 0, "B": 0, "C": native_c, "D": 117}
-    context = type("FixtureContextAntigravity", (), {
-        "database_sha256": FROZEN_EXP451_CONFIG.database_sha256, "sha256": "a" * 64,
-        "catalog_sha256": "b" * 64,
-        "backend": type("FixtureBackendAntigravity", (), {"artifact_record": lambda self: {}})(),
-    })()
-    records = {
-        condition: verifier._condition_manifest_antigravity(
-            condition=condition, entries=entries, context=context,
-            checkpoint_hashes=[{"dataset": name, "sha256": __import__("hashlib").sha256(f"{condition}:{name}".encode()).hexdigest()} for name in datasets],
-            imported=imported[condition], native=native[condition],
-        ) for condition in manifests
-    }
-    authority = verifier.Exp451VerificationAntigravity(
-        total, MappingProxyType(imported), MappingProxyType(native), MappingProxyType(records),
-        context.sha256, context.catalog_sha256, context.database_sha256,
-        verifier._inventory_sha256_antigravity(records),
-    )
-    return verifier._issue_verified_authority_antigravity(authority)
+    entries = [{"dataset": name, "train": {"count": 0}, "test": test} for name, test in zip(datasets, tests, strict=True)]
+    backend = Exp451BackendDecision("cpu", "fixture", False, False, 12, 11)
+    rows = []
+    with TemporaryDirectory(prefix="exp451_full_fixture_antigravity_") as temporary:
+        root = Path(temporary).resolve()
+        database = root / "fixture_database_antigravity.sqlite"; database.write_bytes(b"fixture database")
+        database_sha256 = sha256(database.read_bytes()).hexdigest()
+        frozen = SimpleNamespace(database_path=database, database_sha256=database_sha256)
+        catalog = {"mode": "full", "database": {"sha256": database_sha256}, "datasets": entries, "catalog_sha256": "b" * 64}
+        context = Exp451RunContext("full", root, database_sha256, catalog["catalog_sha256"], {"fixture_antigravity.py": "c" * 64}, backend, "d" * 64)
+        for condition, count in (("A", 1117), ("B", 1117), ("C", 1000), ("D", 1000)):
+            for dataset in datasets[:count]:
+                raw = canonical_json_bytes({})
+                relative = success_relative_path_antigravity(dataset, condition)
+                path = root / relative; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(raw)
+                digest = sha256(raw).hexdigest()
+                rows.append(Exp451MigrationEntry(dataset, condition, f"source_antigravity/{condition}/{digest}.json", digest, digest, relative, digest))
+        for condition in ("C", "D"):
+            for dataset in datasets[1000:]:
+                path = root / _native_relative_path_antigravity(dataset, condition); path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(canonical_json_bytes({}))
+        manifest = Exp451MigrationManifest(config_antigravity.EXP450_SOURCE_CONTEXT_SHA256, tuple(rows), context.sha256)
+        with patch.object(verifier, "OFFICIAL_ROOT", root), patch.object(verifier, "FROZEN_EXP451_CONFIG", frozen), patch.object(verifier, "_check_imported_envelope_antigravity"), patch.object(verifier, "_check_native_envelope_antigravity"):
+            authority = verifier.verify_exp451_completion_antigravity(root, context=context, catalog=catalog, migration_manifest=manifest)
+    if total != 4468 or manifests != ("A", "B", "C", "D") or native_c != 117:
+        return replace(authority, total_successes=total)
+    _VERIFICATION_CACHE_ANTIGRAVITY = authority
+    return authority
 
 
 class VerificationGateTests(unittest.TestCase):
@@ -48,7 +66,7 @@ class VerificationGateTests(unittest.TestCase):
             require_exp451_evaluation_ready_antigravity,
         )
 
-        with self.assertRaisesRegex(ValueError, "4468"):
+        with self.assertRaisesRegex(ValueError, "authority"):
             require_exp451_evaluation_ready_antigravity(_verification_antigravity(total=4467))
 
     def test_evaluation_refuses_missing_condition_manifest(self) -> None:
@@ -57,7 +75,7 @@ class VerificationGateTests(unittest.TestCase):
             require_exp451_evaluation_ready_antigravity,
         )
 
-        with self.assertRaisesRegex(ValueError, "four"):
+        with self.assertRaisesRegex(ValueError, "authority"):
             require_exp451_evaluation_ready_antigravity(
                 _verification_antigravity(manifests=("A", "B", "C"))
             )
@@ -128,7 +146,7 @@ class VerificationGateTests(unittest.TestCase):
         from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import (
             require_exp451_evaluation_ready_antigravity,
         )
-        with self.assertRaisesRegex(ValueError, "origin"):
+        with self.assertRaisesRegex(ValueError, "authority"):
             require_exp451_evaluation_ready_antigravity(_verification_antigravity(native_c=116))
 
     def test_cli_routes_verify_evaluate_and_report_commands(self) -> None:
@@ -151,7 +169,7 @@ class VerificationGateTests(unittest.TestCase):
         )
         from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import EVALUATION_ROOT
         called = []
-        with self.assertRaisesRegex(ValueError, "4468"):
+        with self.assertRaisesRegex(ValueError, "authority"):
             evaluate_exp451_antigravity(
                 EVALUATION_ROOT, verification=_verification_antigravity(total=4467),
                 score_manifests={}, label_loader=lambda _: called.append(True),
@@ -195,9 +213,30 @@ class VerificationGateTests(unittest.TestCase):
             )
         from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import EVALUATION_ROOT
         tampered = {condition: {"score_rows": {}} for condition in ("A", "B", "C", "D")}
-        with self.assertRaisesRegex(ValueError, "score manifest"):
+        with self.assertRaisesRegex(ValueError, "score manifest authority"):
             evaluate_exp451_antigravity(
                 EVALUATION_ROOT, verification=verification, score_manifests=tampered,
+                label_loader=lambda _: called.append(True),
+            )
+        self.assertEqual(called, [])
+
+    def test_rehashed_fabricated_score_authority_cannot_open_labels(self) -> None:
+        """Public score hashes are evidence, not an issuer for modified scores."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import evaluate_exp451_antigravity
+        from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import EVALUATION_ROOT
+        from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
+            Exp451ScoreManifestsAntigravity, _score_manifests_digest_antigravity,
+        )
+        verification = _verification_antigravity()
+        changed = MappingProxyType({condition: MappingProxyType({"score_rows": {}}) for condition in ("A", "B", "C", "D")})
+        forged = Exp451ScoreManifestsAntigravity(
+            changed, verification.inventory_sha256, verification.context_sha256,
+            _score_manifests_digest_antigravity(changed),
+        )
+        called = []
+        with self.assertRaisesRegex(ValueError, "score manifest authority"):
+            evaluate_exp451_antigravity(
+                EVALUATION_ROOT, verification=verification, score_manifests=forged,
                 label_loader=lambda _: called.append(True),
             )
         self.assertEqual(called, [])
@@ -218,3 +257,32 @@ class VerificationGateTests(unittest.TestCase):
         forged = Exp451EvaluationAntigravity(None, verification.inventory_sha256, verification.context_sha256)
         with self.assertRaisesRegex(ValueError, "evaluation authority"):
             write_exp451_report_antigravity(forged, REPORT_ROOT, verification=verification)
+
+    def test_report_directory_publication_is_create_only_and_recovers_interruption(self) -> None:
+        """A report marker is the only finalization step; no-clobber retries are stable."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.reporting_antigravity import (
+            _publish_report_directory_antigravity,
+        )
+        with TemporaryDirectory(prefix="exp451_report_publish_antigravity_") as temporary:
+            parent = Path(temporary).resolve()
+            stage = parent / "stage_antigravity"; stage.mkdir()
+            (stage / "one_antigravity.txt").write_bytes(b"one")
+            target = parent / "target_antigravity"
+            self.assertEqual(_publish_report_directory_antigravity(stage, target), target)
+            retry = parent / "retry_antigravity"; retry.mkdir()
+            (retry / "one_antigravity.txt").write_bytes(b"one")
+            self.assertEqual(_publish_report_directory_antigravity(retry, target), target)
+            conflict = parent / "conflict_antigravity"; conflict.mkdir()
+            (conflict / "one_antigravity.txt").write_bytes(b"changed")
+            with self.assertRaisesRegex(ValueError, "differs"):
+                _publish_report_directory_antigravity(conflict, target)
+            interrupted = parent / "interrupted_target_antigravity"; interrupted.mkdir()
+            (interrupted / "one_antigravity.txt").write_bytes(b"partial")
+            recovery = parent / "recovery_antigravity"; recovery.mkdir()
+            (recovery / "one_antigravity.txt").write_bytes(b"one")
+            with self.assertRaisesRegex(ValueError, "differs"):
+                _publish_report_directory_antigravity(recovery, interrupted)
+            (interrupted / ".exp451_report_in_progress_antigravity.json").write_bytes(
+                b'{"destination":"interrupted_target_antigravity","schema":"exp451-report-publication-in-progress-antigravity.v1"}\n'
+            )
+            self.assertEqual(_publish_report_directory_antigravity(recovery, interrupted), interrupted)

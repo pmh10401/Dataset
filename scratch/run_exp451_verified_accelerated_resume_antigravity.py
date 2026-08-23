@@ -194,9 +194,9 @@ def _evaluate_result_antigravity():
     )
 
     context, catalog, manifest = _verify_migration_antigravity()
-    # Verify all result envelopes before even the label-free raw-data reopen.
-    # ``build_exp451_score_manifests_antigravity`` repeats this binding while
-    # reconstructing typed score inputs, so there is no unchecked hand-off.
+    # Make one authority, then bind the persisted four-manifest evidence and
+    # label-free scores to that exact object.  A second verification here would
+    # create a distinct capability and weaken the hand-off audit trail.
     verification = verify_exp451_completion_antigravity(
         context.run_root, context=context, catalog=catalog, migration_manifest=manifest,
     )
@@ -206,8 +206,8 @@ def _evaluate_result_antigravity():
     write_exp451_condition_manifests_antigravity(context.run_root, verification)
     read_persisted_exp451_condition_manifests_antigravity(context.run_root, verification)
     raw = _load_raw_antigravity(catalog)
-    verification, score_manifests = build_exp451_score_manifests_antigravity(
-        context.run_root, context=context, catalog=catalog,
+    score_manifests = build_exp451_score_manifests_antigravity(
+        context.run_root, verification=verification, context=context, catalog=catalog,
         migration_manifest=manifest, raw_datasets=raw,
     )
     return verification, evaluate_exp451_antigravity(

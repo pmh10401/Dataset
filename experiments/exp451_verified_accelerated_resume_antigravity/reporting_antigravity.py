@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+from hashlib import sha256
 
 from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
     Exp450ReportArtifactAntigravity,
@@ -37,24 +38,77 @@ def _dir_fsync_antigravity(path: Path) -> None:
 
 
 def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Path:
-    """Publish a complete staged report directory by one no-clobber rename."""
+    """Publish staged leaves under a mkdir reservation and completion marker.
+
+    Portable ``rename`` can replace an existing directory, so it is not a
+    create-only primitive.  The sibling mkdir reservation serializes publishers;
+    individual leaves use hard-link create-only publication and the marker is
+    written last.  A directory lacking that marker is an interrupted staging
+    attempt, never a valid final report, and is removed only while holding its
+    own reservation before a retry.
+    """
     parent = destination.parent
     _checked_target_path_antigravity(parent, "report_guard_antigravity.json", create=True)
-    current = destination.lstat() if destination.exists() or destination.is_symlink() else None
-    if current is not None:
-        if destination.is_symlink() or not destination.is_dir():
-            raise ValueError("Exp451 report destination is unsafe")
-        expected = {path.name: path.read_bytes() for path in stage.iterdir() if path.is_file()}
-        actual = {path.name: path.read_bytes() for path in destination.iterdir() if path.is_file()}
-        if expected != actual or len(actual) != len(list(destination.iterdir())):
-            raise ValueError("Exp451 report destination already differs")
-        return destination
+    if stage.is_symlink() or not stage.is_dir():
+        raise ValueError("Exp451 report stage is unsafe")
+    expected = {path.name: path.read_bytes() for path in stage.iterdir() if path.is_file()}
+    if len(expected) != len(list(stage.iterdir())):
+        raise ValueError("Exp451 report stage contains an unsafe leaf")
+    marker_name = ".exp451_report_complete_antigravity.json"
+    progress_name = ".exp451_report_in_progress_antigravity.json"
+    marker_data = canonical_json_bytes({
+        "schema": "exp451-report-publication-antigravity.v1",
+        "leaves_sha256": sha256(canonical_json_bytes({
+            name: sha256(data).hexdigest() for name, data in sorted(expected.items())
+        })).hexdigest(),
+    })
+    lock = parent / f".{destination.name}.publish_lock_antigravity"
+    progress_data = canonical_json_bytes({
+        "schema": "exp451-report-publication-in-progress-antigravity.v1",
+        "destination": destination.name,
+    })
     try:
-        os.rename(stage, destination)
+        lock.mkdir()
     except FileExistsError:
-        return _publish_report_directory_antigravity(stage, destination)
-    _dir_fsync_antigravity(parent)
-    return destination
+        raise ValueError("Exp451 report publication is already in progress") from None
+    try:
+        current = destination.lstat() if destination.exists() or destination.is_symlink() else None
+        if current is not None:
+            if destination.is_symlink() or not destination.is_dir():
+                raise ValueError("Exp451 report destination is unsafe")
+            marker = destination / marker_name
+            if marker.exists() and marker.is_file() and marker.read_bytes() == marker_data:
+                actual = {path.name: path.read_bytes() for path in destination.iterdir() if path.is_file() and path.name not in {marker_name, progress_name}}
+                if (
+                    expected != actual or (destination / progress_name).read_bytes() != progress_data
+                    or len(actual) + 2 != len(list(destination.iterdir()))
+                ):
+                    raise ValueError("Exp451 report destination already differs")
+                return destination
+            # Only an incomplete directory made by this protocol can be cleaned.
+            progress = destination / progress_name
+            if (
+                marker.exists() or not progress.is_file() or progress.read_bytes() != progress_data
+                or any(path.is_symlink() or not path.is_file() for path in destination.iterdir())
+            ):
+                raise ValueError("Exp451 report destination already differs")
+            shutil.rmtree(destination)
+            _dir_fsync_antigravity(parent)
+        destination.mkdir()
+        _publish_create_only_antigravity(destination / progress_name, progress_data)
+        for name, data in expected.items():
+            _publish_create_only_antigravity(destination / name, data)
+        _dir_fsync_antigravity(destination)
+        _publish_create_only_antigravity(destination / marker_name, marker_data)
+        _dir_fsync_antigravity(destination)
+        _dir_fsync_antigravity(parent)
+        return destination
+    finally:
+        try:
+            lock.rmdir()
+            _dir_fsync_antigravity(parent)
+        except FileNotFoundError:
+            pass
 
 
 def write_exp451_report_antigravity(
