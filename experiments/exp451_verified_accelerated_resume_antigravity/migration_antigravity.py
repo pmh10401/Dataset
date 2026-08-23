@@ -108,7 +108,7 @@ class Exp450SourceContextAntigravity:
 
 
 @dataclass(frozen=True, slots=True)
-class FixtureMigrationAuthorityAntigravity:
+class _FixtureMigrationAuthorityAntigravity:
     """Explicit test-only source authority; production never infers this authority."""
 
     source_root: Path
@@ -308,7 +308,7 @@ def _source_envelope_antigravity(
 
 def _source_authority_antigravity(
     repository: Path, source_root: Path, catalog: Mapping[str, object],
-    fixture_authority: FixtureMigrationAuthorityAntigravity | None,
+    fixture_authority: _FixtureMigrationAuthorityAntigravity | None,
 ) -> tuple[Path, Exp450SourceContextAntigravity | _FixtureSourceContextAntigravity]:
     """Select frozen official authority, or an explicit isolated fixture authority."""
     source_root = Path(source_root)
@@ -388,9 +388,9 @@ def _write_manifest_antigravity(target_root: Path, manifest: Exp451MigrationMani
     return destination
 
 
-def migrate_verified_exp450_results_antigravity(
+def _migrate_with_authority_antigravity(
     *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
-    target_context_sha256: str, fixture_authority: FixtureMigrationAuthorityAntigravity | None = None,
+    target_context_sha256: str, fixture_authority: _FixtureMigrationAuthorityAntigravity | None,
 ) -> Exp451MigrationManifest:
     """Verify every historical source leaf, then create-only publish its Exp451 twin."""
     if not _digest_antigravity(target_context_sha256):
@@ -434,9 +434,9 @@ def migrate_verified_exp450_results_antigravity(
     return manifest
 
 
-def verify_migration_manifest_antigravity(
+def _verify_with_authority_antigravity(
     *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
-    target_context_sha256: str, fixture_authority: FixtureMigrationAuthorityAntigravity | None = None,
+    target_context_sha256: str, fixture_authority: _FixtureMigrationAuthorityAntigravity | None,
 ) -> Exp451MigrationManifest:
     """Revalidate the complete source-to-target mapping without modifying either root."""
     repository = _require_historical_commit_antigravity(Path(repository))
@@ -458,6 +458,10 @@ def verify_migration_manifest_antigravity(
     )
     if manifest.sha256 != value["manifest_sha256"] or manifest.source_context_sha256 != source_context.sha256 or manifest.target_context_sha256 != target_context_sha256:
         raise ValueError("Exp451 migration manifest context differs")
+    inventory_paths = set(_source_checkpoint_paths_antigravity(source_root))
+    manifest_paths = {entry.source_relative_path for entry in manifest.entries}
+    if inventory_paths != manifest_paths:
+        raise ValueError("Exp451 migration source inventory differs from manifest")
     for entry in manifest.entries:
         if entry.source_relative_path != _source_relative_path_antigravity(entry.dataset, entry.condition_id):
             raise ValueError("Exp451 migration source path differs")
@@ -480,6 +484,54 @@ def verify_migration_manifest_antigravity(
         ):
             raise ValueError("Exp451 migration entry differs")
     return manifest
+
+
+def migrate_verified_exp450_results_antigravity(
+    *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
+    target_context_sha256: str,
+) -> Exp451MigrationManifest:
+    """Migrate only from the frozen official Exp450 source authority."""
+    return _migrate_with_authority_antigravity(
+        repository=repository, source_root=source_root, target_root=target_root,
+        catalog=catalog, target_context_sha256=target_context_sha256,
+        fixture_authority=None,
+    )
+
+
+def verify_migration_manifest_antigravity(
+    *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
+    target_context_sha256: str,
+) -> Exp451MigrationManifest:
+    """Reverify only against the frozen official Exp450 source authority."""
+    return _verify_with_authority_antigravity(
+        repository=repository, source_root=source_root, target_root=target_root,
+        catalog=catalog, target_context_sha256=target_context_sha256,
+        fixture_authority=None,
+    )
+
+
+def _migrate_fixture_antigravity(
+    *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
+    target_context_sha256: str, authority: _FixtureMigrationAuthorityAntigravity,
+) -> Exp451MigrationManifest:
+    """Private fixture-only migration helper; never part of the production surface."""
+    return _migrate_with_authority_antigravity(
+        repository=repository, source_root=source_root, target_root=target_root,
+        catalog=catalog, target_context_sha256=target_context_sha256,
+        fixture_authority=authority,
+    )
+
+
+def _verify_fixture_migration_antigravity(
+    *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
+    target_context_sha256: str, authority: _FixtureMigrationAuthorityAntigravity,
+) -> Exp451MigrationManifest:
+    """Private fixture-only verification helper; never part of the production surface."""
+    return _verify_with_authority_antigravity(
+        repository=repository, source_root=source_root, target_root=target_root,
+        catalog=catalog, target_context_sha256=target_context_sha256,
+        fixture_authority=authority,
+    )
 
 
 __all__ = [

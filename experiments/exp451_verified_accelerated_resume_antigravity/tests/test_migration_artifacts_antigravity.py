@@ -122,10 +122,10 @@ class MigrationAuthorityTests(unittest.TestCase):
                     self.repository, source, relative, context, fixture_catalog
                 )
 
-    def test_nonofficial_source_root_requires_explicit_fixture_authority(self) -> None:
-        """Production migration cannot silently treat an arbitrary directory as Exp450."""
+    def test_public_migration_has_no_fixture_authority_override(self) -> None:
+        """Production migration exposes no arbitrary source-authority escape hatch."""
         from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
-            FixtureMigrationAuthorityAntigravity,
+            _FixtureMigrationAuthorityAntigravity,
             migrate_verified_exp450_results_antigravity,
         )
 
@@ -139,12 +139,12 @@ class MigrationAuthorityTests(unittest.TestCase):
                 catalog=self.catalog,
                 target_context_sha256="f" * 64,
             )
-        authority = FixtureMigrationAuthorityAntigravity(
+        authority = _FixtureMigrationAuthorityAntigravity(
             source_root=source,
             source_context_sha256="a" * 64,
             catalog_sha256=EXP450_SOURCE_CATALOG_SHA256,
         )
-        with self.assertRaisesRegex(ValueError, "checkpoint"):
+        with self.assertRaises(TypeError):
             migrate_verified_exp450_results_antigravity(
                 repository=self.repository,
                 source_root=source,
@@ -157,38 +157,73 @@ class MigrationAuthorityTests(unittest.TestCase):
     def test_full_fixture_migration_reverification_and_failure_boundaries(self) -> None:
         """Only a fully typed 4,234-coordinate fixture publishes a manifest."""
         from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
-            migrate_verified_exp450_results_antigravity,
-            verify_migration_manifest_antigravity,
+            _migrate_fixture_antigravity,
+            _verify_fixture_migration_antigravity,
         )
 
         source, catalog, authority, source_paths = _full_source_fixture(self.root)
         target = self.root / "target_antigravity"
         before = _tree_hashes(source)
-        manifest = migrate_verified_exp450_results_antigravity(
+        manifest = _migrate_fixture_antigravity(
             repository=self.repository, source_root=source, target_root=target,
             catalog=catalog, target_context_sha256="f" * 64,
-            fixture_authority=authority,
+            authority=authority,
         )
         self.assertEqual(manifest.total_count, 4234)
         self.assertEqual(manifest.counts_by_condition, {"A": 1117, "B": 1117, "C": 1000, "D": 1000})
         self.assertEqual(
-            verify_migration_manifest_antigravity(
+            _verify_fixture_migration_antigravity(
                 repository=self.repository, source_root=source, target_root=target,
                 catalog=catalog, target_context_sha256="f" * 64,
-                fixture_authority=authority,
+                authority=authority,
             ),
             manifest,
         )
         self.assertEqual(_tree_hashes(source), before)
 
+        added = source / (
+            "checkpoints_antigravity/A_antigravity/extra_antigravity/"
+            "dataset_condition_success_antigravity.json"
+        )
+        added.parent.mkdir(parents=True)
+        added.write_bytes(b"{}\n")
+        with self.assertRaisesRegex(ValueError, "inventory"):
+            _verify_fixture_migration_antigravity(
+                repository=self.repository, source_root=source, target_root=target,
+                catalog=catalog, target_context_sha256="f" * 64,
+                authority=authority,
+            )
+        added.unlink()
+        added.parent.rmdir()
+
+        failures = source / "checkpoints_antigravity/failures_antigravity"
+        failures.mkdir()
+        with self.assertRaisesRegex(ValueError, "failure ledger"):
+            _verify_fixture_migration_antigravity(
+                repository=self.repository, source_root=source, target_root=target,
+                catalog=catalog, target_context_sha256="f" * 64,
+                authority=authority,
+            )
+        failures.rmdir()
+
+        unexpected = source / "checkpoints_antigravity/unexpected_antigravity.json"
+        unexpected.write_bytes(b"{}\n")
+        with self.assertRaisesRegex(ValueError, "unexpected"):
+            _verify_fixture_migration_antigravity(
+                repository=self.repository, source_root=source, target_root=target,
+                catalog=catalog, target_context_sha256="f" * 64,
+                authority=authority,
+            )
+        unexpected.unlink()
+
         target_leaf = target / manifest.entries[0].target_relative_path
         target_value = json.loads(target_leaf.read_text(encoding="utf-8"))
         target_leaf.write_bytes(canonical_json_bytes({**target_value, "backend": {}}))
         with self.assertRaisesRegex(ValueError, "entry"):
-            verify_migration_manifest_antigravity(
+            _verify_fixture_migration_antigravity(
                 repository=self.repository, source_root=source, target_root=target,
                 catalog=catalog, target_context_sha256="f" * 64,
-                fixture_authority=authority,
+                authority=authority,
             )
 
         source_leaf = source / source_paths[0]
@@ -201,10 +236,10 @@ class MigrationAuthorityTests(unittest.TestCase):
         source_before_reject = _tree_hashes(source)
         partial_target = self.root / "typed_reject_target_antigravity"
         with self.assertRaisesRegex(ValueError, "typed payload"):
-            migrate_verified_exp450_results_antigravity(
+            _migrate_fixture_antigravity(
                 repository=self.repository, source_root=source, target_root=partial_target,
                 catalog=catalog, target_context_sha256="f" * 64,
-                fixture_authority=authority,
+                authority=authority,
             )
         self.assertFalse((partial_target / "migration_manifest_antigravity.json").exists())
         self.assertEqual(_tree_hashes(source), source_before_reject)
@@ -214,10 +249,10 @@ class MigrationAuthorityTests(unittest.TestCase):
         source_before_partial = _tree_hashes(source)
         incomplete_target = self.root / "incomplete_target_antigravity"
         with self.assertRaisesRegex(ValueError, "counts"):
-            migrate_verified_exp450_results_antigravity(
+            _migrate_fixture_antigravity(
                 repository=self.repository, source_root=source, target_root=incomplete_target,
                 catalog=catalog, target_context_sha256="f" * 64,
-                fixture_authority=authority,
+                authority=authority,
             )
         self.assertFalse((incomplete_target / "migration_manifest_antigravity.json").exists())
         self.assertEqual(_tree_hashes(source), source_before_partial)
@@ -228,35 +263,35 @@ class MigrationAuthorityTests(unittest.TestCase):
             write_exp451_dataset_condition_success_antigravity,
         )
         from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
-            FixtureMigrationAuthorityAntigravity,
-            migrate_verified_exp450_results_antigravity,
+            _FixtureMigrationAuthorityAntigravity,
+            _migrate_fixture_antigravity,
         )
 
         source = self.root / "source_antigravity"
         source.mkdir()
-        authority = FixtureMigrationAuthorityAntigravity(
+        authority = _FixtureMigrationAuthorityAntigravity(
             source_root=source, source_context_sha256="a" * 64, catalog_sha256="b" * 64,
         )
         symlink_base = source / "checkpoints_antigravity"
         symlink_base.symlink_to(self.root / "elsewhere_antigravity")
         with self.assertRaisesRegex(ValueError, "invalid"):
-            migrate_verified_exp450_results_antigravity(
+            _migrate_fixture_antigravity(
                 repository=self.repository, source_root=source,
                 target_root=self.root / "target_antigravity", catalog={"catalog_sha256": "b" * 64},
-                target_context_sha256="f" * 64, fixture_authority=authority,
+                target_context_sha256="f" * 64, authority=authority,
             )
         symlink_base.unlink()
         with self.assertRaisesRegex(ValueError, "overlap"):
-            migrate_verified_exp450_results_antigravity(
+            _migrate_fixture_antigravity(
                 repository=self.repository, source_root=source,
                 target_root=source / "nested_target_antigravity", catalog={"catalog_sha256": "b" * 64},
-                target_context_sha256="f" * 64, fixture_authority=authority,
+                target_context_sha256="f" * 64, authority=authority,
             )
         with self.assertRaisesRegex(ValueError, "overlap"):
-            migrate_verified_exp450_results_antigravity(
+            _migrate_fixture_antigravity(
                 repository=self.repository, source_root=source,
                 target_root=source.parent, catalog={"catalog_sha256": "b" * 64},
-                target_context_sha256="f" * 64, fixture_authority=authority,
+                target_context_sha256="f" * 64, authority=authority,
             )
         actual_target = self.root / "actual_target_antigravity"
         actual_target.mkdir()
@@ -309,7 +344,7 @@ def _tree_hashes(root: Path) -> dict[str, str]:
 
 def _full_source_fixture(root: Path) -> tuple[Path, dict[str, object], object, tuple[str, ...]]:
     from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
-        FixtureMigrationAuthorityAntigravity,
+        _FixtureMigrationAuthorityAntigravity,
     )
 
     source = root / "source_full_antigravity"
@@ -320,7 +355,7 @@ def _full_source_fixture(root: Path) -> tuple[Path, dict[str, object], object, t
     ]
     bare = {"schema": "fixture-catalog-antigravity.v1", "mode": "full", "database": {}, "datasets": datasets}
     catalog = {**bare, "catalog_sha256": sha256(canonical_json_bytes(bare)).hexdigest()}
-    authority = FixtureMigrationAuthorityAntigravity(
+    authority = _FixtureMigrationAuthorityAntigravity(
         source_root=source, source_context_sha256="a" * 64,
         catalog_sha256=catalog["catalog_sha256"],
     )
