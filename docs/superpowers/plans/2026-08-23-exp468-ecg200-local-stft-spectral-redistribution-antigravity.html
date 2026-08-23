@@ -16,7 +16,7 @@ body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <table>
 <tr><th>목표</th><td>ECG200 TRAIN-only에서 5개 국소 STFT 창의 주파수 재분배 점수 S10을 만들고, 신호가 확실할 때만 C0를 보완하는 C10이 period change를 안정적으로 개선하는지 검증한다.</td></tr>
 <tr><th>구조</th><td>Exp466의 ECG200 loader, 96→140 보간, 네 합성 변화, 2×5 fold와 C0 점수를 그대로 재사용한다. 새 모듈은 suffix 84개를 5개 창으로 나눠 STFT 분포와 Jensen–Shannon 발산을 계산한다. C10은 원시 JS가 정상 fit 최댓값을 엄격히 넘을 때만 <code>max(C0, S10_rank)</code>를 사용한다.</td></tr>
-<tr><th>기술</th><td>Python 3, NumPy, 표준 라이브러리 dataclass/JSON/SHA-256/unittest, 선택적 MLX parity·speed smoke, 자체 포함 HTML 대시보드</td></tr>
+<tr><th>기술</th><td>Python 3, NumPy, Numba, MLX/MPS, 표준 라이브러리 dataclass/JSON/SHA-256/unittest, 자체 포함 HTML 대시보드</td></tr>
 <tr><th>승인 설계</th><td><a href="../specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html">Exp468 승인 설계서</a> · SHA-256 <code>fa799dd628028163b6bc2dee5af6fd3f507b555849a00b194e32ecdc3f7078b7</code></td></tr>
 <tr><th>기준 코드</th><td>Exp466 종료 commit <code>8b5e1fcfcb9049b1d3f36938efd68f59bc363cc8</code>. Exp466은 다시 실행하거나 수정하지 않는다.</td></tr>
 </table>
@@ -39,7 +39,7 @@ body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li>method order는 <code>(C0,S10,C10)</code>이며 유일한 주 후보는 C10이다. C10은 strict raw-JS confirmation에서만 C0와 S10 rank의 max를 사용한다.</li>
 <li>합격은 10개 모두 finite, period AUC <code>≥0.85</code>, period AUC <code>&gt; C0</code>, period confirmation 1개 이상, level/gradual/amplitude AUC <code>≥ C0</code>, seed별 OOF normal confirmation 0, private 두 실행 byte equality를 모두 요구한다. 평균 AUC gate는 없다.</li>
 <li>실패 뒤 같은 실험에서 창·hop·window·FFT·epsilon·JS 집계·문턱·seed·fold·합격선을 바꾸지 않는다. CWT나 wavelet packet은 Exp468에 추가하지 않는다.</li>
-<li>전체 실행 전에 CPU/MLX 동일 입력·seed smoke를 실행한다. finite, 점수 허용오차 <code>1e-12</code>, confirmation index exact equality, 전체 단계 속도 <code>1.1×</code> 이상을 모두 만족할 때만 MLX를 사용한다.</li>
+<li>전체 실행 전에 NumPy 기준, Numba, MLX/MPS를 동일 입력·seed로 비교한다. finite, raw score 허용오차 <code>1e-12</code>, confirmation index exact equality를 만족하고 전체 10-fold workload가 <code>1.1×</code> 이상 빨라야 채택한다. Task 3은 Numba 또는 MLX/MPS 중 하나가 이 속도 gate를 통과해야 완료된다.</li>
 <li>각 코드 Task 시작 전 <code>docs/codemap/codemap_exp468_antigravity.lock</code>을 확인하고 JSON에서 호출자·영향·테스트를 읽는다. 경계가 바뀌면 HTML/JSON/lock 세 파일을 같은 commit에서 갱신한다.</li>
 </ul>
 
@@ -50,7 +50,7 @@ body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><td><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code></td><td>고정 숫자, 승인 설계 해시, 점수·fold·자격 결과의 불변 형식</td></tr>
 <tr><td><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code></td><td>Exp466 loader·보간·합성 변화·C0 함수 객체를 그대로 연결</td></tr>
 <tr><td><code>local_stft_antigravity.py</code></td><td>5×28 STFT 분포, fit 중앙값 기준, 자연로그 JS, LOO 원시 점수, rank와 strict confirmation</td></tr>
-<tr><td><code>acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_mlx_antigravity.py</code></td><td>동일 입력 CPU/MLX 점수·confirmation·속도 비교와 CPU fallback 기록</td></tr>
+<tr><td><code>acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_acceleration_antigravity.py</code></td><td>동일 입력 NumPy·Numba·MLX/MPS 점수, confirmation과 전체 workload 속도 비교</td></tr>
 <tr><td><code>scoring_antigravity.py</code>, <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code></td><td>C0/S10/C10 조립, 네 변화 AUC, 10-fold 고정 판정</td></tr>
 <tr><td><code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td><td>결과 파일, 입력 근거 재계산, 쉬운 한국어 HTML 대시보드</td></tr>
 <tr><td><code>cli_antigravity.py</code>, <code>scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py</code></td><td>고정 evaluate/inspect 실행과 두 private 결과 root 생성</td></tr>
@@ -128,9 +128,9 @@ git commit -m "feat: bind Exp468 ECG200 inputs and C0"</code></pre></li>
 </section>
 
 <section class="task">
-<h2><label><input type="checkbox" disabled> Task 3 — S10 국소 STFT·JS 점수와 MLX 판단</label></h2>
-<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/acceleration_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_mlx_antigravity.py</code>, <code>scratch/exp468_mlx_benchmark_antigravity.json</code>. Modify the Exp468 code-map triplet.</p>
-<p><strong>Interfaces:</strong> <code>window_power_distributions_antigravity(row: ndarray) → ndarray[5,14]</code>, <code>jensen_shannon_antigravity(p, q) → float</code>, <code>strict_confirmation_antigravity(query_raw_js, fit_normal_max_raw_js) → ndarray[bool]</code>, <code>score_local_stft_antigravity(fit_rows, query_rows) → SpectralScoresAntigravity</code>, <code>assess_mlx_acceleration_antigravity(fit_rows, query_rows) → MlxAssessmentAntigravity</code>.</p>
+<h2><label><input type="checkbox" disabled> Task 3 — S10 국소 STFT·JS 점수와 Numba/MLX 가속</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/acceleration_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_acceleration_antigravity.py</code>, <code>scratch/exp468_acceleration_benchmark_antigravity.json</code>. Modify the Exp468 code-map triplet.</p>
+<p><strong>Interfaces:</strong> <code>window_power_distributions_antigravity(row: ndarray) → ndarray[5,14]</code>, <code>jensen_shannon_antigravity(p, q) → float</code>, <code>strict_confirmation_antigravity(query_raw_js, fit_normal_max_raw_js) → ndarray[bool]</code>, <code>score_local_stft_antigravity(fit_rows, query_rows, *, backend: str) → SpectralScoresAntigravity</code>, <code>assess_acceleration_antigravity(workload) → AccelerationAssessmentAntigravity</code>.</p>
 <ol>
 <li><label><input type="checkbox" disabled> <strong>Step 1 — RED 창·분포·JS 검사.</strong></label><pre><code>power = window_power_distributions_antigravity(row)
 self.assertEqual(power.shape, (5, 14))
@@ -153,11 +153,11 @@ power = power / power.sum(axis=1, keepdims=True)
 
 m = (p + q) / 2.0
 js = 0.5 * np.sum(p * np.log(p / m)) + 0.5 * np.sum(q * np.log(q / m))</code></pre><p>reference는 frame별 fit 분포의 성분별 중앙값을 구한 뒤 frame별 합이 1이 되도록 다시 나눈다. 한 행의 raw S10은 다섯 JS의 중앙값이다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — CPU/MLX 동일성·속도 smoke.</strong></label><p>동일한 고정 train140, fit/query index, seed를 사용한다. 두 경로의 output은 finite, raw score <code>atol=1e-12, rtol=0</code>, confirmation index exact equality여야 한다. 전송·동기화 포함 속도가 CPU 대비 <code>1.1×</code> 미만이거나 어떤 parity라도 실패하면 CPU를 선택한다.</p><pre><code>python3 scratch/benchmark_exp468_local_stft_mlx_antigravity.py \
-  --output scratch/exp468_mlx_benchmark_antigravity.json</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — NumPy/Numba/MLX 동일성·속도 gate.</strong></label><p>동일한 고정 train140, 10개 fit/query fold와 seed를 사용한다. 세 경로의 output은 finite, raw score <code>atol=1e-12, rtol=0</code>, confirmation index exact equality여야 한다. Numba는 cold JIT 시간과 warm 시간을 따로 기록하고 공식 10-fold workload 총시간에는 한 번의 compile을 포함한다. MLX는 전송·동기화를 포함한다. NumPy 대비 <code>1.1×</code> 이상 빠른 Numba 또는 MLX/MPS 중 더 빠른 경로를 선택한다. 둘 다 실패하면 알고리즘을 바꾸지 않고 구현 profile·batching만 개선해 이 Step을 다시 실행하며, Task 3을 완료로 표시하지 않는다.</p><pre><code>python3 scratch/benchmark_exp468_local_stft_acceleration_antigravity.py \
+  --output scratch/exp468_acceleration_benchmark_antigravity.json</code></pre></li>
 <li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·benchmark parse·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
 python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
-python3 -m json.tool scratch/exp468_mlx_benchmark_antigravity.json &gt;/dev/null
+python3 -m json.tool scratch/exp468_acceleration_benchmark_antigravity.json &gt;/dev/null
 python3 scratch/build_codemap_exp468_antigravity.py --validate-only
 git commit -m "feat: add Exp468 local STFT spectral evidence"</code></pre></li>
 </ol>
