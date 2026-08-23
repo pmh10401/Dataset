@@ -10,7 +10,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp466 진행 대시보드</h1>
-<div class="box ok"><strong>현재 상태:</strong> Task 1의 권한·계약·문서·코드맵 골격을 TDD로 구현했다. 실험 상태는 <code>planned_implementation_not_started</code>이며 성능 실행은 시작하지 않았다.</div>
+<div class="box ok"><strong>현재 상태:</strong> Task 1의 권한·계약·문서·코드맵 골격은 TDD와 Terra 독립 검토를 통과했다. Task 2의 TRAIN-only 입력·합성 변화·C0 권한을 구현하고 있다. 실험 결과 상태는 <code>planned_implementation_not_started</code>이며 성능 실행은 아직 시작하지 않았다.</div>
 <table>
 <tr><th>목표</th><td>ECG200 period-change AUC를 고정 phase-registration margin으로 개선</td></tr>
 <tr><th>주 후보</th><td><code>C9 = confirmed max(C0, P9 rank)</code></td></tr>
@@ -18,6 +18,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, period가 매 fold C0보다 높음, 정상 confirmation 0</td></tr>
 <tr><th>현재 결과</th><td>아직 없음</td></tr>
 <tr><th>Task 1 검증</th><td>focused 7 tests GREEN × 2회, Exp466 code-map <code>--validate-only</code>, 5개 JSON parse, HTML 구조 검증, <code>git diff --check</code> 통과</td></tr>
+<tr><th>Task 1 독립 검토</th><td>Terra High: <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 지적 0건</td></tr>
 <tr><th>실행 경계</th><td>official evaluate/inspect <code>0/0</code>, private run <code>0</code>, label query <code>0</code>, official result와 모든 result hash <code>null</code></td></tr>
 </table>
 

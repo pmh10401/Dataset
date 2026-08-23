@@ -43,23 +43,23 @@ body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><td><code>scratch/build_codemap_exp466_antigravity.py</code></td><td>호출·영향·테스트를 담은 HTML/JSON/lock code map 생성과 검증</td></tr>
 </table>
 
-<h2><label><input type="checkbox" disabled> Task 1 — 권한·계약·문서 골격</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 1 — 권한·계약·문서 골격</label></h2>
 <p><strong>Files:</strong> Create package config/contracts, two tests, preregistration/runbook/implementation report HTML and map builder. Modify three ledgers and dashboard.</p>
 <p><strong>Interfaces:</strong> Produce <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>Exp466PhaseEvidenceAntigravity</code>, <code>Exp466FoldResultAntigravity</code>, <code>Exp466QualificationAntigravity</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED config test.</strong></label><pre><code>def test_frozen_config_antigravity(self):
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED config test.</strong></label><pre><code>def test_frozen_config_antigravity(self):
     c = FROZEN_CONFIG_ANTIGRAVITY
     self.assertEqual((c.experiment, c.method_order, c.primary_candidate),
                      ("Exp466", ("C0", "P9", "C9"), "C9"))
     self.assertEqual((c.warp_factor, c.shared_length), (1.25, 67))
     self.assertEqual((c.per_type_auc_min, c.mean_auc_min), (0.85, 0.90))</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED contract test.</strong></label><p>Mutable/reordered mapping, non-finite margin, wrong 69-count, wrong SHA와 0이 아닌 official/label count를 각각 거부한다.</p><pre><code>valid = valid_qualification_antigravity()
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED contract test.</strong></label><p>Mutable/reordered mapping, non-finite margin, wrong 69-count, wrong SHA와 0이 아닌 official/label count를 각각 거부한다.</p><pre><code>valid = valid_qualification_antigravity()
 with self.assertRaisesRegex(ValueError, "normal confirmation"):
     dataclasses.replace(valid, normal_confirmations=MappingProxyType({20260721: 1, 20261721: 0}))</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest \
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest \
   experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_config_antigravity \
   experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity</code></pre><p>Expected: import 또는 정의 부재로 FAIL.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 GREEN 구현.</strong></label><pre><code>_FROZEN_VALUES_ANTIGRAVITY = MappingProxyType({
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — 최소 GREEN 구현.</strong></label><pre><code>_FROZEN_VALUES_ANTIGRAVITY = MappingProxyType({
     "experiment": "Exp466", "dataset": "ECG200", "data_split": "TRAIN_only",
     "normal_rows": 69, "interpolated_width": 140,
     "seeds": (20260721, 20261721), "folds": 5,
@@ -69,8 +69,8 @@ with self.assertRaisesRegex(ValueError, "normal confirmation"):
     "per_type_auc_min": 0.85, "mean_auc_min": 0.90,
     "approved_design_sha256": "eddb057724e0ef21402c07b9f362bc6b260fc917a9f6bfdcb130f118b30a5c66",
 })</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — HTML/ledger/map 골격.</strong></label><p>세 Exp466 truth HTML과 ledger에는 <code>planned_implementation_not_started</code>, official/result/hash 0 또는 null만 기록한다. map은 Task 1 caller/effect/test를 검증한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·commit·fresh review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_config_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — HTML/ledger/map 골격.</strong></label><p>세 Exp466 truth HTML과 ledger에는 <code>planned_implementation_not_started</code>, official/result/hash 0 또는 null만 기록한다. map은 Task 1 caller/effect/test를 검증한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN 두 번·commit·fresh review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_config_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity
 python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_config_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity
 git diff --check
 git commit -m "feat: freeze Exp466 authority and contracts"</code></pre></li>
@@ -190,5 +190,5 @@ git diff --check</code></pre><p>결과에 맞춰 HTML checkbox, dashboard, ledge
 <h2>실행 선택</h2>
 <p><strong>1. Task별 서브에이전트:</strong> Task마다 fresh implementer를 배정하고 제가 diff·테스트·결과를 검증한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task별 checkpoint를 거쳐 진행한다.</p>
-<div class="box"><strong>현재 상태:</strong> 사용자가 Task별 서브에이전트 실행을 승인했다. Task 1을 진행하고 있으며, 성능 실행은 아직 시작하지 않았다.</div>
+<div class="box"><strong>현재 상태:</strong> Task 1은 TDD와 Terra 독립 검토를 통과해 완료됐다. Task 2의 TRAIN-only 입력·합성 변화·C0 권한 구현을 시작한다. 성능 실행은 아직 시작하지 않았다.</div>
 </main></body></html>
