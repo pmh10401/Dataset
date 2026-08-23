@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp466 구현 보고서</h1>
-<p>현재 실험 상태는 <code>planned_implementation_not_started</code>다. Task 1~3의 권한, 입력 연결, P9 고정 위상 정렬과 CPU 선택까지 기록하며 qualification 결과를 주장하지 않는다.</p>
+<p>현재 실험 상태는 <code>planned_implementation_not_started</code>다. Task 1~4의 권한, 입력 연결, P9 고정 위상 정렬, C9 점수와 qualification 계약까지 기록하며 실제 성능 결과를 주장하지 않는다.</p>
 <h2>Task 1 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only 입력, seed/fold, onset/suffix, warp/shared length, C0/P9/C9 순서, C9 단독 primary, AUC gate와 0-use governance를 exact-type frozen dataclass로 고정한다.</li>
@@ -40,6 +40,13 @@
 <tr><th>독립 검토</th><td>Terra High 최종 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 지적 0건. 초기 지적 1건은 0 margin이 음수 정상 기준보다 높아도 확인되지 않음을 고정하는 테스트로 해결했다.</td></tr>
 <tr><th>MLX 판단</th><td>CPU와 MLX 모두 같은 후보 7개를 골랐지만 margin 차이가 허용 범위 <code>1e-12</code>를 넘었다. CPU <code>0.0125초</code>, MLX <code>0.3121초</code>로 MLX가 더 느렸으므로 NumPy CPU를 고정했다.</td></tr>
 </table>
-<p>ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. Tasks 4–6, routing, champion, pending, promotion은 아직 변경하지 않았다.</p>
+<h2>Task 4 완료</h2>
+<p>C9는 P9가 정상 기준을 엄격히 넘은 위치에서만 <code>max(C0, P9)</code>를 사용하고, 나머지는 C0 값을 그대로 유지한다. 두 seed × 다섯 fold의 순서, seed별 서로 다른 정상 69개, 원시 입력에서 C0/P9/C9 재계산, 모든 고정 합격 기준을 코드로 잠갔다.</p>
+<table>
+<tr><th>검증</th><td>최초 RED 7개, 집중 검사 8개 GREEN ×2, 전체 Exp466 28개, Exp465 회귀 7개, 코드맵 37/37 fingerprint 통과</td></tr>
+<tr><th>독립 검토</th><td>Terra High 최종 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 남은 지적 0건. 코드맵 누락과 Task 5 원시 기록 입력 누락은 각각 map 확장과 명시적 <code>records</code> 인자로 해결했다.</td></tr>
+<tr><th>결과 상태</th><td>이 단계는 합성 fixture 단위 검사만 수행했다. 실제 ECG200 TRAIN qualification 성능과 private 결과는 아직 없다.</td></tr>
+</table>
+<p>ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. Tasks 5–6, routing, champion, pending, promotion은 아직 변경하지 않았다.</p>
 </main></body>
 </html>

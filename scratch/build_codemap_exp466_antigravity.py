@@ -134,7 +134,7 @@ TASK4_REPORT_ANTIGRAVITY = (
     "task-4-report-antigravity.html"
 )
 TASK4_SOURCE_COMMIT_ANTIGRAVITY = (
-    "a47f28cfc8c4c20e1e5d969b99fb055b1fbaf68c"
+    "aa04dfe7a03e32d5e87f200fee55c88368cbd085"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",

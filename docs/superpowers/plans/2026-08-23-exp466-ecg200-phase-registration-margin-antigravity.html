@@ -123,22 +123,22 @@ ranks = anomaly_rank_antigravity(fit_margins, query_margins)</code></pre><p>fit�
 git commit -m "feat: add Exp466 fixed phase registration evidence"</code></pre></li>
 </ol>
 
-<h2><label><input type="checkbox" disabled> Task 4 — C0/P9/C9 점수와 qualification</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 4 — C0/P9/C9 점수와 qualification</label></h2>
 <p><strong>Files:</strong> Create scoring/qualification/evaluation modules and three tests.</p>
 <p><strong>Interfaces:</strong> <code>score_fold_methods_antigravity(train140: ndarray, fit_indices: ndarray, query_indices: ndarray, *, seed: int, fold_index: int, authority: Exp465AuthorityAntigravity) → FoldMethodScoresAntigravity</code>, <code>qualify_antigravity(records: Mapping[tuple[int,int], FoldMethodScoresAntigravity]) → Exp466QualificationAntigravity</code>, <code>evaluate_qualification_antigravity(q: Exp466QualificationAntigravity) → QualificationDecisionAntigravity</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED scoring test.</strong></label><pre><code>result = score_fold_methods_antigravity(train, fit, query, seed=20260721, fold_index=0, authority=authority)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED scoring test.</strong></label><pre><code>result = score_fold_methods_antigravity(train, fit, query, seed=20260721, fold_index=0, authority=authority)
 self.assertEqual(result.methods, ("C0", "P9", "C9"))
 np.testing.assert_array_equal(result.original["C9"],
     np.where(result.confirmed["normal"], np.maximum(result.original["C0"], result.original["P9"]), result.original["C0"]))</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED qualification/evaluation tests.</strong></label><p>period <code>==C0</code>, gradual <code>&lt;C0</code>, period confirmation 0, normal confirmation 1, AUC <code>0.849999</code>, mean <code>0.899999</code>와 nonfinite를 각각 고정 failure reason으로 거부한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_scoring_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_qualification_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_evaluation_antigravity</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 C9 조립.</strong></label><pre><code>c9 = np.where(confirmed, np.maximum(c0, phase_ranks), c0)
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED qualification/evaluation tests.</strong></label><p>period <code>==C0</code>, gradual <code>&lt;C0</code>, period confirmation 0, normal confirmation 1, AUC <code>0.849999</code>, mean <code>0.899999</code>와 nonfinite를 각각 고정 failure reason으로 거부한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_scoring_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_qualification_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_evaluation_antigravity</code></pre></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — 최소 C9 조립.</strong></label><pre><code>c9 = np.where(confirmed, np.maximum(c0, phase_ranks), c0)
 passed = finite and all(auc &gt;= 0.85 for auc in per_type_auc) and mean_auc &gt;= 0.90 \
     and c9_period_auc &gt; c0_period_auc and c9_gradual_auc &gt;= c0_gradual_auc \
     and period_confirmations &gt; 0</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — full 10-record invariant.</strong></label><p>seed별 OOF normal score 69개와 confirmation 합계 0, C0 input replay exact, P9 margin/rank/confirmation과 C9 score의 raw-input 재계산을 검증한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·lower regression·commit·review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_scoring_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_qualification_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_evaluation_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — full 10-record invariant.</strong></label><p>seed별 OOF normal score 69개와 confirmation 합계 0, C0 input replay exact, P9 margin/rank/confirmation과 C9 score의 raw-input 재계산을 검증한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN 두 번·lower regression·commit·review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_scoring_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_qualification_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_evaluation_antigravity
 python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_scoring_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_qualification_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_evaluation_antigravity
 python3 -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_scoring_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity
 git commit -m "feat: qualify Exp466 C9 phase scores"</code></pre></li>
