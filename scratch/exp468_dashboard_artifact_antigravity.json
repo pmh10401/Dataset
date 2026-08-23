@@ -1,0 +1,240 @@
+{
+  "surface": "dashboard",
+  "manifest": {
+    "version": 1,
+    "surface": "dashboard",
+    "title": "Exp468 ECG200 국소 STFT 설계 대시보드",
+    "description": "Exp466 실패 근거와 Exp468의 승인된 단일 후보, 합격 기준 및 진행 상태를 보여주는 설계 단계 스냅샷.",
+    "generatedAt": "2026-08-23T00:00:00Z",
+    "cards": [
+      {
+        "id": "exp466_pass_folds",
+        "description": "Exp466 C9가 고정 자격 기준을 통과한 seed-fold 수. 분모는 10이다.",
+        "dataset": "baseline_summary",
+        "sourceId": "exp466_result",
+        "metrics": [
+          {"label": "Exp466 통과 fold", "field": "pass_folds", "format": "number"},
+          {"label": "필요 fold", "field": "required_folds", "format": "number"}
+        ]
+      },
+      {
+        "id": "candidate_count",
+        "description": "Exp468에서 사전등록할 새 점수 후보 수. 결과를 보고 고르는 후보 묶음은 없다.",
+        "dataset": "design_summary",
+        "sourceId": "exp468_design",
+        "metrics": [
+          {"label": "새 후보", "field": "candidate_count", "format": "number"}
+        ]
+      },
+      {
+        "id": "planned_folds",
+        "description": "두 seed와 다섯 fold로 구성된 TRAIN-only 자격 검증 수.",
+        "dataset": "design_summary",
+        "sourceId": "exp468_design",
+        "metrics": [
+          {"label": "계획된 검증", "field": "planned_folds", "format": "number"}
+        ]
+      },
+      {
+        "id": "official_runs",
+        "description": "작성된 설계서가 최종 승인되기 전까지 유지해야 하는 공식 실행 횟수.",
+        "dataset": "design_summary",
+        "sourceId": "exp468_design",
+        "metrics": [
+          {"label": "공식 실행", "field": "official_runs", "format": "number"}
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "qualification_gap",
+        "title": "Exp466 관측값과 Exp468 필수 수준",
+        "subtitle": "Exp468은 period 개선에 직접 초점을 두며, 모든 기준은 실행 전에 고정한다.",
+        "headerMarkdown": "비율 1.0은 해당 조건을 모든 대상에서 만족해야 한다는 뜻입니다.",
+        "type": "bar",
+        "dataset": "qualification_gap",
+        "sourceId": "qualification_gap_query",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {"field": "condition", "type": "nominal", "label": "조건"},
+          "y": {"field": "share", "type": "quantitative", "label": "충족 비율", "format": "percent"},
+          "color": {"field": "series", "type": "nominal", "label": "구분"},
+          "tooltip": [
+            {"field": "count_text", "type": "nominal", "label": "개수"}
+          ]
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "method_comparison",
+        "title": "세 후보 비교",
+        "subtitle": "즉시 검증하는 방법은 국소 STFT 하나뿐이다.",
+        "dataset": "method_comparison",
+        "sourceId": "exp468_design",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "순서", "format": "number"},
+          {"field": "method", "label": "방법", "type": "text"},
+          {"field": "decision", "label": "판정", "type": "text"},
+          {"field": "reason", "label": "이유", "type": "text"}
+        ]
+      },
+      {
+        "id": "progress_checklist",
+        "title": "진행 체크",
+        "subtitle": "완료된 단계는 체크 상태로 표시한다.",
+        "dataset": "progress_checklist",
+        "sourceId": "exp468_design",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "단계", "format": "number"},
+          {"field": "checked", "label": "체크", "type": "text"},
+          {"field": "task", "label": "작업", "type": "text"},
+          {"field": "status", "label": "상태", "type": "text"}
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "exp466_result",
+        "label": "Exp466 최종 결과 대시보드",
+        "path": "docs/EXP466_DASHBOARD_antigravity.html",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Exp466 최종 대시보드에서 통과 fold와 고정 분모를 재현한다.",
+          "sql": "SELECT 0 AS pass_folds, 10 AS required_folds",
+          "tables_used": ["docs/EXP466_DASHBOARD_antigravity.html"],
+          "executed_at": "2026-08-23T00:00:00Z"
+        }
+      },
+      {
+        "id": "exp468_design",
+        "label": "Exp468 작성된 설계서",
+        "path": "docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Exp468 설계서에서 후보 수, 검증 수와 공식 실행 경계를 재현한다.",
+          "sql": "SELECT 1 AS candidate_count, 10 AS planned_folds, 0 AS official_runs",
+          "tables_used": ["docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
+          "executed_at": "2026-08-23T00:00:00Z"
+        }
+      },
+      {
+        "id": "qualification_gap_query",
+        "label": "Exp466 관측값과 Exp468 필수 수준 비교",
+        "path": "scratch/exp468_dashboard_artifact_antigravity.json",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Exp466의 관측 충족 비율과 Exp468 사전등록 필수 비율을 같은 grain으로 만든다.",
+          "sql": "SELECT * FROM (VALUES ('period AUC ≥ 0.85','Exp466 관측',0.0,'0/10'),('period AUC ≥ 0.85','Exp468 필수',1.0,'10/10'),('period > C0','Exp466 관측',0.0,'0/10'),('period > C0','Exp468 필수',1.0,'10/10'),('period 확인 존재','Exp466 관측',0.2,'2/10'),('period 확인 존재','Exp468 필수',1.0,'10/10')) AS t(condition, series, share, count_text)",
+          "tables_used": ["docs/EXP466_DASHBOARD_antigravity.html", "docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
+          "executed_at": "2026-08-23T00:00:00Z"
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "status_note",
+        "type": "markdown",
+        "body": "## 현재 판정\n\n**개념 설계 승인 · 작성된 HTML 설계서 검토 대기**\n\nExp468은 아직 실행되지 않았습니다. 다음 행동은 설계서 최종 승인뿐이며, 그 전에는 구현 계획·공식 실행·TEST/FN 평가가 없습니다."
+      },
+      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs"]},
+      {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
+      {"id": "methods", "type": "table", "tableId": "method_comparison", "layout": "full"},
+      {"id": "checklist", "type": "table", "tableId": "progress_checklist", "layout": "full"},
+      {
+        "id": "checkboxes",
+        "type": "html",
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" disabled> 구현 계획과 구현</label></p></section>"
+      },
+      {
+        "id": "next_step",
+        "type": "markdown",
+        "body": "## 다음 한 단계\n\n작성된 HTML 설계서를 검토하고 승인합니다. 승인 후에만 구현 계획을 별도 HTML로 작성합니다."
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-23T00:00:00Z",
+    "status": "ready",
+    "datasets": {
+      "baseline_summary": [
+        {"pass_folds": 0, "required_folds": 10}
+      ],
+      "design_summary": [
+        {"candidate_count": 1, "planned_folds": 10, "official_runs": 0}
+      ],
+      "qualification_gap": [
+        {"condition": "period AUC ≥ 0.85", "series": "Exp466 관측", "share": 0.0, "count_text": "0/10"},
+        {"condition": "period AUC ≥ 0.85", "series": "Exp468 필수", "share": 1.0, "count_text": "10/10"},
+        {"condition": "period > C0", "series": "Exp466 관측", "share": 0.0, "count_text": "0/10"},
+        {"condition": "period > C0", "series": "Exp468 필수", "share": 1.0, "count_text": "10/10"},
+        {"condition": "period 확인 존재", "series": "Exp466 관측", "share": 0.2, "count_text": "2/10"},
+        {"condition": "period 확인 존재", "series": "Exp468 필수", "share": 1.0, "count_text": "10/10"}
+      ],
+      "method_comparison": [
+        {"order": 1, "method": "국소 STFT", "decision": "선택", "reason": "샘플 번호만으로 창과 주파수 축을 고정하고 실제 Hz를 가정하지 않음"},
+        {"order": 2, "method": "Morlet CWT", "decision": "보류", "reason": "sampling period가 없어 scale 선택 근거가 약하고 기존 전역 CWT와 겹침"},
+        {"order": 3, "method": "Wavelet packet", "decision": "보류", "reason": "기저·깊이·트리 선택이 추가되어 숨은 튜닝 위험이 큼"}
+      ],
+      "progress_checklist": [
+        {"order": 1, "checked": "☑", "task": "Exp466 실패 근거 확인", "status": "완료"},
+        {"order": 2, "checked": "☑", "task": "OpenRouter 독립 검토", "status": "완료"},
+        {"order": 3, "checked": "☑", "task": "단일 STFT 후보와 범위 승인", "status": "완료"},
+        {"order": 4, "checked": "☑", "task": "Exp468 HTML 설계서·대시보드 작성", "status": "완료"},
+        {"order": 5, "checked": "☐", "task": "작성된 HTML 설계서 최종 승인", "status": "대기"},
+        {"order": 6, "checked": "☐", "task": "구현 계획과 구현", "status": "대기"}
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "exp466_result",
+      "label": "Exp466 최종 결과 대시보드",
+      "path": "docs/EXP466_DASHBOARD_antigravity.html",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Exp466 최종 대시보드에서 통과 fold와 고정 분모를 재현한다.",
+        "sql": "SELECT 0 AS pass_folds, 10 AS required_folds",
+        "tables_used": ["docs/EXP466_DASHBOARD_antigravity.html"],
+        "executed_at": "2026-08-23T00:00:00Z"
+      }
+    },
+    {
+      "id": "exp468_design",
+      "label": "Exp468 작성된 설계서",
+      "path": "docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Exp468 설계서에서 후보 수, 검증 수와 공식 실행 경계를 재현한다.",
+        "sql": "SELECT 1 AS candidate_count, 10 AS planned_folds, 0 AS official_runs",
+        "tables_used": ["docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
+        "executed_at": "2026-08-23T00:00:00Z"
+      }
+    },
+    {
+      "id": "qualification_gap_query",
+      "label": "Exp466 관측값과 Exp468 필수 수준 비교",
+      "path": "scratch/exp468_dashboard_artifact_antigravity.json",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Exp466의 관측 충족 비율과 Exp468 사전등록 필수 비율을 같은 grain으로 만든다.",
+        "sql": "SELECT * FROM (VALUES ('period AUC ≥ 0.85','Exp466 관측',0.0,'0/10'),('period AUC ≥ 0.85','Exp468 필수',1.0,'10/10'),('period > C0','Exp466 관측',0.0,'0/10'),('period > C0','Exp468 필수',1.0,'10/10'),('period 확인 존재','Exp466 관측',0.2,'2/10'),('period 확인 존재','Exp468 필수',1.0,'10/10')) AS t(condition, series, share, count_text)",
+        "tables_used": ["docs/EXP466_DASHBOARD_antigravity.html", "docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
+        "executed_at": "2026-08-23T00:00:00Z"
+      }
+    }
+  ],
+  "package_info": {
+    "originUrl": "artifact://exp468-ecg200-local-stft-design-antigravity",
+    "controls": {"edit": false, "refresh": false}
+  }
+}
