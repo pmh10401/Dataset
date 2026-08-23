@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from hashlib import sha256
 import json
 from pathlib import Path
 import stat
 import subprocess
+import sys
+from types import ModuleType
 from typing import Mapping
 from types import MappingProxyType
 
@@ -104,6 +107,34 @@ class Exp450SourceContextAntigravity:
         return sha256(canonical_json_bytes(self.artifact_record())).hexdigest()
 
 
+@dataclass(frozen=True, slots=True)
+class FixtureMigrationAuthorityAntigravity:
+    """Explicit test-only source authority; production never infers this authority."""
+
+    source_root: Path
+    source_context_sha256: str
+    catalog_sha256: str
+    backend: Mapping[str, object] = MappingProxyType(_EXP450_BACKEND_RECORD_ANTIGRAVITY)
+
+    def __post_init__(self) -> None:
+        root = Path(self.source_root)
+        if not root.is_absolute() or root == EXP450_SOURCE_ROOT:
+            raise ValueError("Exp451 fixture source authority root is invalid")
+        if not _digest_antigravity(self.source_context_sha256) or not _digest_antigravity(self.catalog_sha256):
+            raise ValueError("Exp451 fixture source authority digest is invalid")
+        if dict(self.backend) != _EXP450_BACKEND_RECORD_ANTIGRAVITY:
+            raise ValueError("Exp451 fixture source authority backend is invalid")
+        object.__setattr__(self, "source_root", root)
+        object.__setattr__(self, "backend", MappingProxyType(dict(self.backend)))
+
+
+@dataclass(frozen=True, slots=True)
+class _FixtureSourceContextAntigravity:
+    sha256: str
+    catalog_sha256: str
+    backend: Mapping[str, object]
+
+
 def _historical_git_bytes_antigravity(repository: Path, path: str) -> bytes:
     result = subprocess.run(
         ["git", "-C", str(repository), "show", f"{_EXP450_COMMIT_FULL_ANTIGRAVITY}:{path}"],
@@ -146,6 +177,50 @@ def reconstruct_exp450_source_context_antigravity(
     if context.sha256 != EXP450_SOURCE_CONTEXT_SHA256:
         raise ValueError("Exp450 reconstructed context digest differs")
     return context
+
+
+@lru_cache(maxsize=1)
+def _historical_artifact_parser_antigravity(repository: Path) -> ModuleType:
+    """Load the frozen Exp450 serializer from its fixed Git object, never the worktree."""
+    source = _historical_git_bytes_antigravity(
+        repository,
+        "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+    )
+    module = ModuleType("_exp450_historical_artifacts_antigravity")
+    module.__package__ = "experiments.exp450_resampling_image_ablation_antigravity"
+    sys.modules[module.__name__] = module
+    try:
+        exec(
+            compile(source, "eac0d3b4:exp450/artifacts_antigravity.py", "exec"),
+            module.__dict__,
+        )
+    except Exception:
+        sys.modules.pop(module.__name__, None)
+        raise
+    return module
+
+
+def _validate_historical_typed_payload_antigravity(
+    repository: Path, payload: object, entry: Mapping[str, object]
+) -> None:
+    """Deserialize and serialise the frozen typed source/route closure exactly once."""
+    if not isinstance(payload, dict) or set(payload) != {"sources", "route"}:
+        raise ValueError("Exp450 source checkpoint payload differs")
+    train, test = entry.get("train"), entry.get("test")
+    if not isinstance(train, dict) or not isinstance(test, dict) or type(train.get("count")) is not int or type(test.get("count")) is not int:
+        raise ValueError("Exp450 source checkpoint raw identity differs")
+    parser = _historical_artifact_parser_antigravity(repository)
+    try:
+        sources = parser._sources_from_payload(payload["sources"], train["count"], test["count"])
+        route = parser._route_from_payload(payload["route"], test["count"])
+        round_trip = {
+            "sources": parser._source_payload(sources, train["count"], test["count"]),
+            "route": parser._route_payload(route, test["count"]),
+        }
+    except (TypeError, ValueError, KeyError) as error:
+        raise ValueError("Exp450 source checkpoint typed payload differs") from error
+    if canonical_json_bytes(round_trip) != canonical_json_bytes(payload):
+        raise ValueError("Exp450 source checkpoint typed payload round-trip differs")
 
 
 def _canonical_json_file_antigravity(path: Path, *, source: bool) -> dict[str, object]:
@@ -196,7 +271,7 @@ def _source_relative_path_antigravity(dataset: str, condition_id: str) -> str:
 
 
 def _source_envelope_antigravity(
-    source_root: Path, relative_path: str, context: Exp450SourceContextAntigravity,
+    repository: Path, source_root: Path, relative_path: str, context: Exp450SourceContextAntigravity | _FixtureSourceContextAntigravity,
     catalog: Mapping[str, object],
 ) -> tuple[dict[str, object], bytes]:
     source_root = Path(source_root)
@@ -223,11 +298,37 @@ def _source_envelope_antigravity(
         raise ValueError("Exp450 source checkpoint backend differs")
     if value["raw_identity"] != _catalog_entry_antigravity(catalog, value["dataset"]):
         raise ValueError("Exp450 source checkpoint raw identity differs")
-    if not isinstance(value["payload"], dict) or set(value["payload"]) != {"sources", "route"}:
-        raise ValueError("Exp450 source checkpoint payload differs")
     if value["payload_sha256"] != sha256(canonical_json_bytes(value["payload"])).hexdigest():
         raise ValueError("Exp450 source checkpoint payload digest differs")
+    _validate_historical_typed_payload_antigravity(
+        Path(repository), value["payload"], value["raw_identity"]
+    )
     return value, raw
+
+
+def _source_authority_antigravity(
+    repository: Path, source_root: Path, catalog: Mapping[str, object],
+    fixture_authority: FixtureMigrationAuthorityAntigravity | None,
+) -> tuple[Path, Exp450SourceContextAntigravity | _FixtureSourceContextAntigravity]:
+    """Select frozen official authority, or an explicit isolated fixture authority."""
+    source_root = Path(source_root)
+    if fixture_authority is None:
+        if source_root.resolve(strict=False) != EXP450_SOURCE_ROOT:
+            raise ValueError("Exp451 migration source root must be the frozen official Exp450 root")
+        context = reconstruct_exp450_source_context_antigravity(repository, catalog)
+        _verify_source_catalog_antigravity(catalog)
+        return source_root, context
+    if source_root.resolve(strict=False) != fixture_authority.source_root.resolve(strict=False):
+        raise ValueError("Exp451 fixture source root differs from explicit authority")
+    if source_root.resolve(strict=False) == EXP450_SOURCE_ROOT:
+        raise ValueError("Exp451 fixture authority cannot authorize the official source root")
+    if not isinstance(catalog, Mapping) or catalog.get("catalog_sha256") != fixture_authority.catalog_sha256:
+        raise ValueError("Exp451 fixture source catalog differs")
+    return source_root, _FixtureSourceContextAntigravity(
+        fixture_authority.source_context_sha256,
+        fixture_authority.catalog_sha256,
+        fixture_authority.backend,
+    )
 
 
 def _source_checkpoint_paths_antigravity(source_root: Path) -> tuple[str, ...]:
@@ -239,9 +340,11 @@ def _source_checkpoint_paths_antigravity(source_root: Path) -> tuple[str, ...]:
     if stat.S_ISLNK(source_details.st_mode) or not stat.S_ISDIR(source_details.st_mode):
         raise ValueError("Exp450 source root is invalid")
     base = source_root / "checkpoints_antigravity"
-    if not base.exists():
-        raise ValueError("Exp450 source checkpoint directory is missing")
-    if base.is_symlink() or not base.is_dir():
+    try:
+        base_details = base.lstat()
+    except FileNotFoundError as error:
+        raise ValueError("Exp450 source checkpoint directory is missing") from error
+    if stat.S_ISLNK(base_details.st_mode) or not stat.S_ISDIR(base_details.st_mode):
         raise ValueError("Exp450 source checkpoint directory is invalid")
     failures = base / "failures_antigravity"
     if failures.exists() or failures.is_symlink():
@@ -287,22 +390,25 @@ def _write_manifest_antigravity(target_root: Path, manifest: Exp451MigrationMani
 
 def migrate_verified_exp450_results_antigravity(
     *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
-    target_context_sha256: str,
+    target_context_sha256: str, fixture_authority: FixtureMigrationAuthorityAntigravity | None = None,
 ) -> Exp451MigrationManifest:
     """Verify every historical source leaf, then create-only publish its Exp451 twin."""
     if not _digest_antigravity(target_context_sha256):
         raise ValueError("Exp451 target context digest is invalid")
-    source_context = reconstruct_exp450_source_context_antigravity(repository, catalog)
-    _verify_source_catalog_antigravity(catalog)
-    source_root, target_root = Path(source_root), Path(target_root)
+    repository = _require_historical_commit_antigravity(Path(repository))
+    source_root, source_context = _source_authority_antigravity(
+        repository, source_root, catalog, fixture_authority
+    )
+    target_root = Path(target_root)
     if not source_root.is_absolute() or not target_root.is_absolute() or source_root == target_root:
         raise ValueError("Exp451 migration roots are invalid")
-    if target_root.is_relative_to(source_root):
-        raise ValueError("Exp451 target may not nest beneath source evidence")
+    source_real, target_real = source_root.resolve(strict=False), target_root.resolve(strict=False)
+    if source_real.is_relative_to(target_real) or target_real.is_relative_to(source_real):
+        raise ValueError("Exp451 source and target roots may not overlap")
     entries: list[Exp451MigrationEntry] = []
     seen: set[tuple[str, str]] = set()
     for relative_path in _source_checkpoint_paths_antigravity(source_root):
-        source, raw = _source_envelope_antigravity(source_root, relative_path, source_context, catalog)
+        source, raw = _source_envelope_antigravity(repository, source_root, relative_path, source_context, catalog)
         coordinate = (source["dataset"], source["condition_id"])
         if coordinate in seen:
             raise ValueError("Exp450 source checkpoint coordinate is duplicated")
@@ -330,12 +436,18 @@ def migrate_verified_exp450_results_antigravity(
 
 def verify_migration_manifest_antigravity(
     *, repository: Path, source_root: Path, target_root: Path, catalog: Mapping[str, object],
-    target_context_sha256: str,
+    target_context_sha256: str, fixture_authority: FixtureMigrationAuthorityAntigravity | None = None,
 ) -> Exp451MigrationManifest:
     """Revalidate the complete source-to-target mapping without modifying either root."""
-    source_context = reconstruct_exp450_source_context_antigravity(repository, catalog)
-    _verify_source_catalog_antigravity(catalog)
-    manifest_path = Path(target_root) / "migration_manifest_antigravity.json"
+    repository = _require_historical_commit_antigravity(Path(repository))
+    source_root, source_context = _source_authority_antigravity(
+        repository, source_root, catalog, fixture_authority
+    )
+    target_root = Path(target_root)
+    source_real, target_real = source_root.resolve(strict=False), target_root.resolve(strict=False)
+    if source_real.is_relative_to(target_real) or target_real.is_relative_to(source_real):
+        raise ValueError("Exp451 source and target roots may not overlap")
+    manifest_path = target_root / "migration_manifest_antigravity.json"
     value = _canonical_json_file_antigravity(manifest_path, source=False)
     expected = {"source_context_sha256", "target_context_sha256", "total_entries", "counts_by_condition", "entries", "manifest_sha256"}
     if set(value) != expected or value["manifest_sha256"] != sha256(canonical_json_bytes({key: value[key] for key in value if key != "manifest_sha256"})).hexdigest():
@@ -347,8 +459,15 @@ def verify_migration_manifest_antigravity(
     if manifest.sha256 != value["manifest_sha256"] or manifest.source_context_sha256 != source_context.sha256 or manifest.target_context_sha256 != target_context_sha256:
         raise ValueError("Exp451 migration manifest context differs")
     for entry in manifest.entries:
-        source, raw = _source_envelope_antigravity(source_root, entry.source_relative_path, source_context, catalog)
+        if entry.source_relative_path != _source_relative_path_antigravity(entry.dataset, entry.condition_id):
+            raise ValueError("Exp451 migration source path differs")
+        if entry.target_relative_path != success_relative_path_antigravity(entry.dataset, entry.condition_id):
+            raise ValueError("Exp451 migration target path differs")
+        source, raw = _source_envelope_antigravity(repository, source_root, entry.source_relative_path, source_context, catalog)
         target = read_exp451_dataset_condition_success_antigravity(target_root, entry.target_relative_path)
+        expected_target = _target_envelope_antigravity(
+            source, source_context, target_context_sha256, entry.source_envelope_sha256
+        )
         if (
             sha256(raw).hexdigest() != entry.source_envelope_sha256
             or target["source_envelope_sha256"] != entry.source_envelope_sha256
@@ -357,6 +476,7 @@ def verify_migration_manifest_antigravity(
             or target["payload"] != source["payload"]
             or target["dataset"] != entry.dataset
             or target["condition_id"] != entry.condition_id
+            or canonical_json_bytes(target) != canonical_json_bytes(expected_target)
         ):
             raise ValueError("Exp451 migration entry differs")
     return manifest
