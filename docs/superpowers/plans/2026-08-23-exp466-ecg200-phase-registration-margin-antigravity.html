@@ -76,24 +76,24 @@ git diff --check
 git commit -m "feat: freeze Exp466 authority and contracts"</code></pre></li>
 </ol>
 
-<h2><label><input type="checkbox" disabled> Task 2 — ECG200 입력·합성 변화·C0 권한</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 2 — ECG200 입력·합성 변화·C0 권한</label></h2>
 <p><strong>Files:</strong> Create source/interpolation/synthetic/predecessor adapters and four tests.</p>
 <p><strong>Interfaces:</strong> Produce <code>load_ecg200_normal_train_antigravity(path: Path) → ndarray</code>, <code>interpolate_to_140_antigravity(values: ndarray) → ndarray</code>, <code>primary_rows_antigravity(row: ndarray) → Mapping[str, ndarray]</code>, <code>score_c0_fold_antigravity(train140: ndarray, fit_indices: ndarray, query_indices: ndarray, *, seed: int, fold_index: int, authority: Exp465AuthorityAntigravity) → C0FoldScoresAntigravity</code>.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED exact-adapter tests.</strong></label><pre><code>self.assertIs(exp466_load, exp465_load)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED exact-adapter tests.</strong></label><pre><code>self.assertIs(exp466_load, exp465_load)
 self.assertIs(exp466_interpolate, exp465_interpolate)
 self.assertEqual(capture_exp465_authority_antigravity().closeout_commit,
                  "23528af929da9dbf57cbcdf87c06abd58cb2363b")</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED synthetic test.</strong></label><pre><code>changes = primary_rows_antigravity(np.linspace(-2.0, 3.0, 140))
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED synthetic test.</strong></label><pre><code>changes = primary_rows_antigravity(np.linspace(-2.0, 3.0, 140))
 self.assertEqual(tuple(changes), ("level_shift", "gradual_drift", "amplitude_scaling", "period_change"))
 np.testing.assert_allclose(changes["period_change"][56:],
     np.interp(np.arange(84) / 1.25, np.arange(84), np.linspace(-2.0, 3.0, 140)[56:]),
     rtol=0, atol=0)</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 GREEN.</strong></label><pre><code>from experiments.exp465_ecg200_c8_external_validation_antigravity.sources_antigravity import load_ecg200_normal_train_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity</code></pre></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — 최소 GREEN.</strong></label><pre><code>from experiments.exp465_ecg200_c8_external_validation_antigravity.sources_antigravity import load_ecg200_normal_train_antigravity
 from experiments.exp465_ecg200_c8_external_validation_antigravity.interpolation_antigravity import interpolate_to_140_antigravity</code></pre><p>synthetic 함수는 Exp464의 네 수식을 exact float64로 옮기고 predecessor adapter는 Exp465 closeout commit과 C0 source를 고정한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — parity와 비접근 확인.</strong></label><p>고정 fixture에서 Exp466 C0 normal/primary score가 Exp465 C0와 byte-equal이고 loader가 TRAIN 한 파일 외에는 열지 않으며 TEST 이름을 거부하는 spy test를 통과시킨다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·commit·review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — parity와 비접근 확인.</strong></label><p>고정 fixture에서 Exp466 C0 normal/primary score가 Exp465 C0와 byte-equal이고 loader가 TRAIN 한 파일 외에는 열지 않으며 TEST 이름을 거부하는 spy test를 통과시킨다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN 두 번·commit·review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity
 python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity
 git commit -m "feat: bind Exp466 ECG200 input and C0 authority"</code></pre></li>
 </ol>
@@ -190,5 +190,5 @@ git diff --check</code></pre><p>결과에 맞춰 HTML checkbox, dashboard, ledge
 <h2>실행 선택</h2>
 <p><strong>1. Task별 서브에이전트:</strong> Task마다 fresh implementer를 배정하고 제가 diff·테스트·결과를 검증한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task별 checkpoint를 거쳐 진행한다.</p>
-<div class="box"><strong>현재 상태:</strong> Task 1은 TDD와 Terra 독립 검토를 통과해 완료됐다. Task 2의 TRAIN-only 입력·합성 변화·C0 권한 구현을 시작한다. 성능 실행은 아직 시작하지 않았다.</div>
+<div class="box"><strong>현재 상태:</strong> Task 2까지 TDD·C0 byte parity·TEST 비접근·Luna 독립 검토·코드맵 동기화를 통과했다. Task 3의 P9 고정 위상 정렬 evidence와 CPU/MLX 평가를 시작한다. 성능 실행은 아직 시작하지 않았다.</div>
 </main></body></html>
