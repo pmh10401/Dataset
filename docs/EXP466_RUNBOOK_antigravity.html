@@ -8,13 +8,13 @@
 </head>
 <body><main>
 <h1>Exp466 실행 runbook</h1>
-<div class="box"><p>공식 결과 상태는 아직 <code>planned_implementation_not_started</code>다. Task 1~5와 Task 6 Step 1~3을 마쳤다. 집중 검사 <code>17/17</code> 두 번, 전체 Exp466 <code>56/56</code>, 이전 Exp465 <code>7/7</code>, compile/diff 검사를 통과했다. 깨끗한 reviewed commit은 <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>이며 fresh Sol은 Critical·Important·Minor 모두 0건인 <code>SHIP</code>으로 판정했다. private run과 공식 명령은 아직 실행하지 않았다.</p></div>
+<div class="box"><p>현재 판정은 <code>qualification_failed_blocked_before_fn_validation</code>다. Task 6 Step 4·5에서 비공개 evaluate→inspect를 run1과 run2에 각각 한 번 수행했고 두 결과가 byte 단위로 같음을 확인했다. C9는 <code>0/10</code> fold만 합격해 FN 검증 전에 중단됐다. 공식 실행은 없었고, 다음 허용 작업은 Step 6 truth/full verify와 최종 독립 검토뿐이다.</p></div>
 <table>
 <tr><th>공식 root</th><td><code>/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823</code>는 별도 승인 전까지 생성하지 않는다.</td></tr>
 <tr><th>TRAIN 경계</th><td>로더는 MD5 <code>808875aeac1c358a90c630fe369327c4</code>인 ECG200 TRAIN의 정상 69개만 허용한다. Task 5 replay는 loader나 scorer를 호출하지 않고 저장된 7개 파일만 읽는다.</td></tr>
 <tr><th>TEST 경계</th><td><code>ECG200_TEST.ts</code>와 TEST 라벨을 열거나 조회하지 않는다.</td></tr>
-<tr><th>현재 횟수</th><td>official evaluate <code>0</code>, official inspect <code>0</code>, private run <code>0</code>, label query <code>0</code>.</td></tr>
-<tr><th>현재 결과</th><td>official result와 모든 result hash는 <code>null</code>.</td></tr>
+<tr><th>현재 횟수</th><td>private run/evaluate/inspect <code>2/2/2</code>, official evaluate/inspect <code>0/0</code>, label query <code>0</code>.</td></tr>
+<tr><th>현재 결과</th><td>private 판정은 <code>qualification_failed_blocked_before_fn_validation</code>. 공식 root는 없고 official result와 공식 용도 hash는 모두 <code>null</code>.</td></tr>
 </table>
 <h2>Task 1 focused verification</h2>
 <pre><code>python3 -m unittest \
@@ -30,7 +30,7 @@ git diff --check</code></pre>
   experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity
 python3 scratch/build_codemap_exp466_antigravity.py --validate-only
 git diff --check</code></pre>
-<p>검증된 기준은 집중 검사 <code>10/10</code> 두 번, 전체 Exp466 <code>39/39</code>, Exp465 하위 회귀 <code>7/7</code>다. 임시 publish→inspect는 새 임시 경로에서만 수행하고, 정확히 7개 파일, qualification·decision·artifact-map equality, loader/scorer 비호출을 확인한다. 이 절차는 합성 fixture 검증이며 실제 성능 실행이 아니다.</p>
+<p>검증된 기준은 집중 검사 <code>10/10</code> 두 번, 전체 Exp466 <code>39/39</code>, Exp465 하위 회귀 <code>7/7</code>다. 이 단락은 Task 5 당시의 합성 fixture 단위 검증 기록이다. 뒤의 Task 6에서 실제 비공개 TRAIN-only 자격 검증을 수행했으며, official 또는 TEST 성능은 여전히 없다.</p>
 <h2>Task 6 사전검증</h2>
 <table>
 <tr><th>RED</th><td>CLI와 launcher가 없을 때 새 경계 검사가 실패하는 것을 먼저 확인했다.</td></tr>
@@ -40,9 +40,9 @@ git diff --check</code></pre>
 <tr><th>독립 검토</th><td>commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에 대한 fresh Sol 판정은 <code>SHIP</code>이며 Critical 0건, Important 0건, Minor 0건이다.</td></tr>
 <tr><th>실행 전 검사</th><td>reviewed commit 고정 시점의 worktree clean, official root 부재, 중복 Exp466 process 부재 검사가 모두 <code>PASS</code>였다.</td></tr>
 </table>
-<h2>승인된 private 실행 순서</h2>
-<p>아래 네 명령은 Step 3에서 승인된 commit <code>0aed6d75…</code>로, 한 번에 하나씩 위에서 아래 순서로만 실행한다. 환경 선택자는 <code>run1</code> 또는 <code>run2</code>만 허용하며 각각 고정 private root 하나를 선택한다.</p>
-<p><strong>실행 위치:</strong> 네 명령은 일반 작업 폴더가 아니라 commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에 정확히 고정되고 변경 파일이 없는 별도 worktree에서 실행한다. 현재 승인된 실행 위치는 <code>/Users/mac/Documents/Time Series/.worktrees/exp466-task6-private-run-antigravity</code>다.</p>
+<h2>완료된 private 실행 기록 — 재실행 금지</h2>
+<p>아래 네 명령은 Step 3에서 승인된 commit <code>0aed6d75…</code>로 이미 한 번씩 실행했다. 환경 선택자 <code>run1</code>과 <code>run2</code>가 각각 고정 root 하나를 골랐고, run1 evaluate→inspect 뒤에 run2 evaluate→inspect 순서를 지켰다. 이 명령은 기록용이며 다시 실행하지 않는다.</p>
+<p><strong>실행 위치:</strong> commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에 고정되고 변경 파일이 없던 별도 worktree <code>/Users/mac/Documents/Time Series/.worktrees/exp466-task6-private-run-antigravity</code>에서 실행했다.</p>
 <pre><code>REVIEWED_COMMIT='0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a'
 
 EXP466_TASK6_PRIVATE_CAPABILITY_ANTIGRAVITY=run1 \
@@ -57,10 +57,19 @@ python3 scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py inspe
 <table>
 <tr><th>run1 root</th><td><code>/private/tmp/exp466_task6_private_run1_antigravity</code></td></tr>
 <tr><th>run2 root</th><td><code>/private/tmp/exp466_task6_private_run2_antigravity</code></td></tr>
-<tr><th>외부 순서 상태</th><td><code>/private/tmp/exp466_task6_private_sequence_state_antigravity.json</code>은 결과 root 밖에서 <code>run1_evaluated → run1_inspected → run2_evaluated → run2_inspected</code> 순서와 같은 reviewed commit을 기록한다. 명령이 성공한 뒤에만 다음 단계로 바뀌며, 두 결과 root의 7개 결과 파일에는 포함되지 않는다.</td></tr>
+<tr><th>외부 순서 상태</th><td><code>/private/tmp/exp466_task6_private_sequence_state_antigravity.json</code>은 결과 root 밖에서 <code>run1_evaluated → run1_inspected → run2_evaluated → run2_inspected</code> 순서와 같은 reviewed commit을 기록했다. 최종 stage는 <code>run2_inspected</code>, SHA-256은 <code>19c4896ea55b415c9a546ff9d3d49eeab982d146df3acacc5bb15ea287f982bd</code>다. 이 파일은 두 root의 7개 결과 파일에는 포함되지 않는다.</td></tr>
 </table>
-<p>외부 순서 상태와 두 root는 실행 전에 모두 없어야 한다. 시작한 뒤에는 상태 파일이나 root를 수동으로 지우거나 고치지 않는다. 기존 경로, dirty worktree, 다른 commit, 건너뛴 단계, 반복 실행, 동시 Exp466 process가 있으면 launcher가 실행 전에 중단한다.</p>
+<p>실행 전에는 외부 순서 상태와 두 root가 모두 없었고 launcher의 clean commit·official root 부재·중복 process 부재 검사를 통과했다. 현재는 완료 증거이므로 상태 파일이나 두 root를 수동으로 지우거나 고치지 않는다.</p>
 <p>Task 6은 Task 3에서 검증해 고정한 NumPy CPU 경로를 그대로 사용한다. 수식, warp, threshold, seed, fold, runtime을 다시 고르지 않는다.</p>
-<div class="box stop"><p><strong>현재 경계:</strong> 다음 허용 단계는 위 네 private 명령의 순차 실행뿐이다. 모든 official 평가, TEST/라벨 접근, warp·threshold·alpha 탐색, routing/champion/pending/promotion 변경은 계속 금지한다. 현재 private/official/label count는 모두 <code>0</code>이고 result/hash는 <code>null</code>이다.</p></div>
+<h2>측정된 실패와 재현성</h2>
+<table>
+<tr><th>재현성</th><td>네 stdout과 두 root의 7개 파일이 모두 byte-equal. 공통 stdout SHA-256은 <code>7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1</code>.</td></tr>
+<tr><th>최종 판정</th><td><code>qualification_failed_blocked_before_fn_validation</code>, C9 <code>0/10</code>, 모든 점수 finite.</td></tr>
+<tr><th>period</th><td>AUC 0.85 미만 10/10, 범위 <code>0.6862244897959183</code>~<code>0.826530612244898</code>. C0보다 개선 0개, 같음 8개, 악화 2개. confirmation 없음 8개.</td></tr>
+<tr><th>평균·gradual</th><td>평균 AUC 0.90 미만 7/10, 범위 <code>0.8628826530612246</code>~<code>0.9056122448979591</code>. gradual AUC가 C0보다 낮은 fold 2개.</td></tr>
+<tr><th>정상 confirmation</th><td>seed <code>20260721</code>과 <code>20261721</code> 모두 정상 69회 중 1회. 합격 조건은 각각 0회.</td></tr>
+</table>
+<div class="box stop"><p><strong>출처 주의:</strong> 보존된 canonical 파일 안의 Task 5, <code>actual=false</code>, “합성 단위 결과” 문구는 이번 Task 6 실행의 출처 설명으로 사용하지 않는다. 과학 점수, FAIL 판정, 두 번 실행의 byte 재현성은 유효하지만 이것은 official 또는 TEST 성능이 아니다. 보존 root는 수정하지 않고 Exp466도 재실행하지 않는다. 출처 문구까지 깨끗한 결과는 별도 승인된 새 실험과 새 root에서만 만든다.</p></div>
+<div class="box stop"><p><strong>현재 경계:</strong> private 명령을 다시 실행하지 않는다. 다음 작업은 Task 6 Step 6 truth/full verify와 최종 독립 검토다. official 평가, TEST/라벨 접근, warp·threshold·alpha 탐색, routing/champion/pending/promotion 변경은 계속 금지한다.</p></div>
 </main></body>
 </html>

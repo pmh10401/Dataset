@@ -10,47 +10,58 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp466 진행 대시보드</h1>
-<div class="box ok"><strong>현재 상태:</strong> Task 5까지의 실험 파이프라인과 Task 6 Step 1~3을 마쳤다. 닫힌 CLI·고정 launcher는 깨끗한 commit <code>0aed6d75…</code>에서 fresh Sol <code>SHIP</code>과 실행 전 검사를 통과했다. 다음 단계는 같은 commit에서 private run 1·2를 순서대로 실행하는 것이다. 실험 결과 상태는 여전히 <code>planned_implementation_not_started</code>이며 실제 성능, private, official 결과는 아직 없다.</div>
+<div class="box stop"><strong>현재 판정:</strong> <code>qualification_failed_blocked_before_fn_validation</code>. C9는 고정 합격 기준을 10개 fold 중 하나도 통과하지 못했다. 두 번의 비공개 TRAIN-only 실행은 완전히 같았으므로 결과는 재현됐지만, 이 후보로 FN 검증을 진행할 수는 없다.</div>
 <table>
-<tr><th>목표</th><td>ECG200 period-change AUC를 고정 phase-registration margin으로 개선</td></tr>
-<tr><th>주 후보</th><td><code>C9 = confirmed max(C0, P9 rank)</code></td></tr>
-<tr><th>고정 warp</th><td>기존 period generator의 <code>1.25</code> 한 개만 사용</td></tr>
-<tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, period가 매 fold C0보다 높음, 정상 confirmation 0</td></tr>
-<tr><th>현재 결과</th><td>아직 없음</td></tr>
-<tr><th>Task 1 검증</th><td>focused 7 tests GREEN × 2회, Exp466 code-map <code>--validate-only</code>, 5개 JSON parse, HTML 구조 검증, <code>git diff --check</code> 통과</td></tr>
-<tr><th>Task 1 독립 검토</th><td>Terra High: <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 지적 0건</td></tr>
-<tr><th>Task 3 검증</th><td>집중 검사 6개와 전체 Exp466 검사 20개 통과. 독립 검토 지적 1건은 0 경계 테스트를 추가해 해결했고, 최종 지적은 0건이다.</td></tr>
-<tr><th>Task 3 MLX 판단</th><td>후보 선택은 같았지만 수치 오차가 허용 범위를 넘었고 MLX가 더 느렸다. 따라서 실제 구현은 NumPy CPU만 사용한다.</td></tr>
-<tr><th>Task 4 검증</th><td>집중 검사 8개를 두 번, 전체 Exp466 검사 28개, 이전 Exp465 검사 7개를 통과했다. Terra 최종 판정은 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 남은 지적 0건이다.</td></tr>
-<tr><th>Task 4 결과</th><td>점수와 합격 판정 코드는 준비됐지만 실제 10개 fold 성능은 아직 실행하지 않았다. 현재 결과는 계속 “없음”이다.</td></tr>
-<tr><th>Task 5 검증</th><td>집중 검사 10개를 두 번(<code>60.970초</code>, <code>60.886초</code>), 전체 Exp466 검사 39개(<code>124.598초</code>), 이전 Exp465 검사 7개(<code>30.359초</code>) 통과를 확인했다. 임시 경로에서 정확히 7개 파일과 publish→inspect의 qualification·decision·artifact-map 일치도 확인했다.</td></tr>
-<tr><th>Task 5 독립 검토</th><td>fresh Sol 판정은 <code>SHIP</code>이며 Critical 0건, Important 0건이다. publisher와 replay의 일부 계산 중복은 저장 결과를 믿지 않고 독립 검증하기 위한 의도된 경계라서 막지 않는 minor로 남겼다.</td></tr>
-<tr><th>Task 6 사전검증</th><td>CLI·launcher 부재를 잡는 RED를 먼저 확인했다. 집중 검사 <code>17/17</code>을 두 번, 전체 Exp466 <code>56/56</code>, 이전 Exp465 <code>7/7</code>, compile/diff 검사를 통과했다.</td></tr>
-<tr><th>Task 6 reviewed commit</th><td><code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>. fresh Sol 판정은 <code>SHIP</code>이며 Critical 0건, Important 0건, Minor 0건이다. commit 고정 시점의 worktree clean, official root 부재, 중복 Exp466 process 부재 검사도 모두 통과했다.</td></tr>
-<tr><th>Task 6 실행 경계</th><td><code>evaluate --reviewed-commit LOWER40HEX</code>와 인수 없는 <code>inspect</code>만 허용한다. run1/run2는 두 고정 root만 선택하며, 별도 순서 상태 파일이 네 명령의 순서와 동일 commit을 확인한다.</td></tr>
-<tr><th>다음 단계</th><td>Task 6 Step 4에서 reviewed commit <code>0aed6d75…</code>로 private run 1·2를 순서대로 실행한다. 아직 실제 ECG200 성능, private 결과, official 결과를 만들거나 주장하지 않는다.</td></tr>
-<tr><th>실행 경계</th><td>official evaluate/inspect <code>0/0</code>, private run <code>0</code>, label query <code>0</code>, official result와 모든 result hash <code>null</code></td></tr>
+<tr><th>목표</th><td>ECG200의 period 변화 탐지를 고정 위상 정렬 점수로 개선하는지 확인</td></tr>
+<tr><th>후보</th><td><code>C9 = confirmed max(C0, P9 rank)</code></td></tr>
+<tr><th>실행 기준</th><td>reviewed commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>, TRAIN-only, seed 2개 × fold 5개</td></tr>
+<tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 AUC ≥0.90, period가 모든 fold에서 C0보다 높음, 정상 confirmation 0</td></tr>
+<tr><th>실제 결과</th><td><strong>C9 합격 0/10 — 실패</strong>. 모든 점수는 유한한 값이었다.</td></tr>
+<tr><th>구현 상태</th><td><code>task_6_step_5_private_qualification_complete_final_review_pending</code></td></tr>
+<tr><th>다음 단계</th><td>새 실험을 시작하지 않고 Task 6 Step 6의 truth/full verify와 최종 독립 검토를 먼저 끝낸다.</td></tr>
 </table>
+
+<h2>왜 실패했나</h2>
+<table>
+<tr><th>period AUC</th><td>10/10 fold가 0.85보다 낮았다. 범위는 <code>0.6862244897959183</code>~<code>0.826530612244898</code>였다.</td></tr>
+<tr><th>평균 AUC</th><td>7/10 fold가 0.90보다 낮았다. 범위는 <code>0.8628826530612246</code>~<code>0.9056122448979591</code>였다.</td></tr>
+<tr><th>C0보다 나아졌나</th><td>period AUC가 더 좋아진 fold는 <strong>0개</strong>였다. 8개는 같고 2개는 더 나빴으며, 가장 큰 하락은 <code>-0.0535714285714286</code>였다.</td></tr>
+<tr><th>확인 신호</th><td>period confirmation이 없는 fold가 8/10이었다. gradual AUC가 C0보다 낮은 fold도 2/10이었다.</td></tr>
+<tr><th>정상 오탐</th><td>두 seed 모두 정상 69번 중 confirmation 1번이 생겼다. 합격 조건은 각각 0번이다.</td></tr>
+</table>
+
+<h2>두 번 실행과 보존 증거</h2>
+<table>
+<tr><th>횟수</th><td>private run/evaluate/inspect <code>2/2/2</code>; official evaluate/inspect <code>0/0</code>; label query <code>0</code></td></tr>
+<tr><th>run1 root</th><td><code>/private/tmp/exp466_task6_private_run1_antigravity</code></td></tr>
+<tr><th>run2 root</th><td><code>/private/tmp/exp466_task6_private_run2_antigravity</code></td></tr>
+<tr><th>재현성</th><td>네 stdout과 두 root의 7개 파일이 모두 byte 단위로 같았다.</td></tr>
+<tr><th>stdout SHA-256</th><td><code>7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1</code></td></tr>
+<tr><th>순서 상태</th><td><code>run2_inspected</code>; SHA-256 <code>19c4896ea55b415c9a546ff9d3d49eeab982d146df3acacc5bb15ea287f982bd</code></td></tr>
+<tr><th>공식 결과</th><td>공식 root 없음, official result <code>null</code>, 공식 용도의 prediction/evaluation/decision/artifact/dashboard hash 모두 <code>null</code></td></tr>
+</table>
+<details><summary>7개 private 파일의 SHA-256 보기</summary><table>
+<tr><th><code>artifact_sha256_antigravity.json</code></th><td><code>50bee8c512f6fed258062ac462c9921932ca234c4add09991037d66fd4241d0f</code></td></tr>
+<tr><th><code>context_antigravity.json</code></th><td><code>21771cf942b19811f416a2be6d5e31d3b27ef20d2a382e373f3932b4f57faa4d</code></td></tr>
+<tr><th><code>dashboard_snapshot_antigravity.json</code></th><td><code>29c79e275942afa28285a429d0787678dfbe9706955767da10e3bea728d3409d</code></td></tr>
+<tr><th><code>decision_antigravity.json</code></th><td><code>ee50e2e92481dd69d6cb38a19b4411e6079d84d23f422f0fe2d02272ded199aa</code></td></tr>
+<tr><th><code>failed_folds_antigravity.jsonl</code></th><td><code>766b4704453f68f60754830c7bb96bc8369b67c8f9318cbe88e822bc18ec9fc5</code></td></tr>
+<tr><th><code>method_fold_metrics_antigravity.jsonl</code></th><td><code>f5eb24cbd86b1c424abab9dd6b37df94d115c5717a95d4e53f6f8fd39fc194fe</code></td></tr>
+<tr><th><code>method_summary_antigravity.jsonl</code></th><td><code>7c83f3cad3c013ed376d491310f4818fffeba87869610a00b6b05c76173251cb</code></td></tr>
+</table></details>
+
+<div class="box stop"><strong>중요한 출처 주의:</strong> 보존된 7개 파일 안에는 Task 5용 <code>actual=false</code>와 “합성 단위 결과”라는 오래된 문구가 들어 있다. 이 문구는 이번 Task 6 실행의 출처 설명으로 사용하면 안 된다. 이번 값은 실제 Exp466 Task 6의 비공개 TRAIN-only 합성 변화 자격 검증 결과다. 다만 공식 결과나 TEST 성능은 아니다. 점수, 실패 판정, 두 번 실행의 byte 재현성은 유효하다. Exp466에서는 다시 실행하지 않으며, 출처 문구까지 깨끗한 새 결과가 필요하면 별도 승인된 새 실험과 새 root를 사용해야 한다.</div>
 
 <h2>진행 단계</h2>
 <ul>
-<li><label><input type="checkbox" checked disabled> Exp465 실패 원인과 retained evidence 확인</label></li>
-<li><label><input type="checkbox" checked disabled> Terra·Luna·Ox Alpha Ultra·Sol 아이디어 공유 및 교차 검토</label></li>
-<li><label><input type="checkbox" checked disabled> Exp466 설계 승인 및 HTML 설계서 작성</label></li>
-<li><label><input type="checkbox" checked disabled> HTML 구현 계획 작성</label></li>
-<li><label><input type="checkbox" checked disabled> 구현 계획 승인과 Task별 서브에이전트 실행 방식 선택</label></li>
-<li><label><input type="checkbox" checked disabled> Task 1 TDD 구현과 MLX 적용 대상 없음 확인</label></li>
-<li><label><input type="checkbox" checked disabled> Task 2 TRAIN-only 입력·합성 변화·C0 권한 구현과 독립 검토</label></li>
-<li><label><input type="checkbox" checked disabled> Task 3 P9 고정 위상 정렬·0 경계·CPU 선택·독립 검토</label></li>
-<li><label><input type="checkbox" checked disabled> Task 4 C0/P9/C9 점수·10-record qualification·독립 검토</label></li>
-<li><label><input type="checkbox" checked disabled> Task 5 결과 파일 7개·독립 replay·HTML snapshot</label></li>
+<li><label><input type="checkbox" checked disabled> Task 1~5 구현과 검증</label></li>
 <li><label><input type="checkbox" checked disabled> Task 6 닫힌 CLI·고정 launcher RED와 사전검증</label></li>
-<li><label><input type="checkbox" checked disabled> Task 6 reviewed clean commit <code>0aed6d75…</code>과 fresh Sol SHIP</label></li>
-<li><label><input type="checkbox" disabled> private 실행 1</label></li>
-<li><label><input type="checkbox" disabled> private 실행 2와 재현성 비교</label></li>
-<li><label><input type="checkbox" disabled> 결과 독립 검토와 종료 판단</label></li>
+<li><label><input type="checkbox" checked disabled> reviewed clean commit <code>0aed6d75…</code>과 fresh Sol SHIP</label></li>
+<li><label><input type="checkbox" checked disabled> private 실행 1</label></li>
+<li><label><input type="checkbox" checked disabled> private 실행 2와 재현성 비교</label></li>
+<li><label><input type="checkbox" disabled> Step 6 truth/full verify와 최종 독립 검토</label></li>
 </ul>
 
-<div class="box stop"><strong>현재 금지:</strong> ECG200 TEST 접근, 공식 실행, C8 임계값 조정, warp grid 탐색, 라우팅, champion·pending·promotion 변경.</div>
+<div class="box stop"><strong>계속 금지:</strong> ECG200 TEST·라벨 접근, 공식 실행, 임계값·warp 재조정, 라우팅, champion·pending·promotion 변경. 이 항목들은 모두 0 또는 false로 유지한다.</div>
 <p>설계서: <a href="superpowers/specs/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html">Exp466 설계 보기</a>. 사전등록: <a href="EXP466_PREREGISTRATION_antigravity.html">보기</a>. Runbook: <a href="EXP466_RUNBOOK_antigravity.html">보기</a>. 구현 보고서: <a href="EXP466_IMPLEMENTATION_REPORT_antigravity.html">보기</a>.</p>
 </main></body></html>

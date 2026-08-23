@@ -2062,9 +2062,9 @@
     {
       "experiment": "Exp466",
       "kind": "ecg200_phase_registration_margin_qualification",
-      "status": "planned_implementation_not_started",
-      "implementation_status": "planned_implementation_not_started",
-      "reason": "Task 1 freezes the Exp466 TRAIN-only C0/P9/C9 authority and immutable contracts without running a score or evaluation. Champion, pending candidate, routing, promotion, and official result remain unchanged.",
+      "status": "qualification_failed_blocked_before_fn_validation",
+      "implementation_status": "task_6_step_5_private_qualification_complete_final_review_pending",
+      "reason": "Task 6 completed two byte-identical private TRAIN-only qualifications at reviewed commit 0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a. C9 passed 0 of 10 folds, so Exp466 is blocked before FN validation. Champion, pending candidate, routing, promotion, TEST/labels, and official result remain unchanged. Step 6 truth verification and final independent review remain.",
       "run_identity": "exp466-ecg200-phase-registration-margin-antigravity-20260823",
       "run_root": "/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823",
       "package": "experiments/exp466_ecg200_phase_registration_margin_antigravity",
@@ -2114,7 +2114,78 @@
       "official_inspect_started": false,
       "official_evaluate_count": 0,
       "official_inspect_count": 0,
-      "private_run_count": 0,
+      "private_run_count": 2,
+      "private_evaluate_count": 2,
+      "private_inspect_count": 2,
+      "private_result_roots": [
+        "/private/tmp/exp466_task6_private_run1_antigravity",
+        "/private/tmp/exp466_task6_private_run2_antigravity"
+      ],
+      "private_stdout_sha256": {
+        "run1_evaluate": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run1_inspect": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run2_evaluate": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run2_inspect": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1"
+      },
+      "private_leaf_sha256": {
+        "artifact_sha256_antigravity.json": "50bee8c512f6fed258062ac462c9921932ca234c4add09991037d66fd4241d0f",
+        "context_antigravity.json": "21771cf942b19811f416a2be6d5e31d3b27ef20d2a382e373f3932b4f57faa4d",
+        "dashboard_snapshot_antigravity.json": "29c79e275942afa28285a429d0787678dfbe9706955767da10e3bea728d3409d",
+        "decision_antigravity.json": "ee50e2e92481dd69d6cb38a19b4411e6079d84d23f422f0fe2d02272ded199aa",
+        "failed_folds_antigravity.jsonl": "766b4704453f68f60754830c7bb96bc8369b67c8f9318cbe88e822bc18ec9fc5",
+        "method_fold_metrics_antigravity.jsonl": "f5eb24cbd86b1c424abab9dd6b37df94d115c5717a95d4e53f6f8fd39fc194fe",
+        "method_summary_antigravity.jsonl": "7c83f3cad3c013ed376d491310f4818fffeba87869610a00b6b05c76173251cb"
+      },
+      "private_sequence_state": {
+        "path": "/private/tmp/exp466_task6_private_sequence_state_antigravity.json",
+        "schema": "exp466_task6_private_sequence_antigravity_v1",
+        "reviewed_commit": "0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a",
+        "stage": "run2_inspected",
+        "sha256": "19c4896ea55b415c9a546ff9d3d49eeab982d146df3acacc5bb15ea287f982bd"
+      },
+      "private_qualification": {
+        "status": "qualification_failed_blocked_before_fn_validation",
+        "exact_reproduction": true,
+        "stdout_and_all_seven_leaves_byte_equal": true,
+        "all_scores_finite": true,
+        "c9_passed_count": 0,
+        "c9_required_count": 10,
+        "period_auc_below_0_85_fold_count": 10,
+        "period_auc_min": 0.6862244897959183,
+        "period_auc_max": 0.826530612244898,
+        "mean_auc_below_0_90_fold_count": 7,
+        "mean_auc_min": 0.8628826530612246,
+        "mean_auc_max": 0.9056122448979591,
+        "period_auc_improved_over_c0_fold_count": 0,
+        "period_auc_equal_to_c0_fold_count": 8,
+        "period_auc_below_c0_fold_count": 2,
+        "period_auc_delta_min": -0.0535714285714286,
+        "period_auc_delta_max": 0,
+        "period_confirmation_missing_fold_count": 8,
+        "gradual_auc_below_c0_fold_count": 2,
+        "gradual_auc_delta_min": -0.0357142857142857,
+        "normal_trial_counts": {
+          "20260721": 69,
+          "20261721": 69
+        },
+        "normal_confirmation_counts": {
+          "20260721": 1,
+          "20261721": 1
+        },
+        "failure_reasons": [
+          "c9_not_10_of_10",
+          "period_change_auc_below_0.85",
+          "mean_auc_below_0.90",
+          "period_auc_not_strictly_above_c0",
+          "period_confirmation_missing",
+          "gradual_auc_below_c0",
+          "normal_confirmation_present",
+          "seed_20260721_normal_confirmations_not_zero",
+          "seed_20261721_normal_confirmations_not_zero"
+        ],
+        "preserved_artifact_provenance_valid_for_downstream": false,
+        "preserved_artifact_provenance_caveat": "The preserved canonical leaves contain obsolete Task5, actual=false, and synthetic-only wording. That wording must not be used as Task6 provenance. The scientific scores, failed decision, and byte reproducibility remain valid. Exp466 will not be rerun; clean provenance artifacts require a separately approved experiment and new roots."
+      },
       "result_root_created": false,
       "official_result": null,
       "prediction_sha256": null,
@@ -2128,6 +2199,7 @@
       "promotion_allowed": false,
       "pending_candidate_changed": false,
       "scientific_winner_selected": false,
+      "eligible_for_exp467_design": false,
       "official_root_present": false,
       "review_only": false
     }
