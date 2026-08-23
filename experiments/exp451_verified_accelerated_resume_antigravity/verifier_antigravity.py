@@ -11,7 +11,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 import json
-import os
 from pathlib import Path
 import stat
 from types import MappingProxyType
@@ -32,6 +31,8 @@ from experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity
 
 from .artifacts_antigravity import (
     SUCCESS_SCHEMA_ANTIGRAVITY,
+    _checked_target_path_antigravity,
+    _publish_create_only_antigravity,
     success_relative_path_antigravity,
 )
 from .config_antigravity import (
@@ -39,6 +40,8 @@ from .config_antigravity import (
     EXP451_FINAL_COUNTS_BY_CONDITION,
     EXP451_MIGRATED_COUNTS_BY_CONDITION,
     EXP451_TOTAL_COORDINATES,
+    FROZEN_EXP451_CONFIG,
+    OFFICIAL_ROOT,
 )
 from .contracts_antigravity import (
     Exp451MigrationManifest,
@@ -59,6 +62,7 @@ _CONDITION_MODES_ANTIGRAVITY = {
     "C": ("linear", "area"), "D": ("polyphase_pchip", "area"),
 }
 _CONDITION_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-condition-manifest-antigravity.v1"
+_VERIFICATION_CAPABILITY_ANTIGRAVITY = object()
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +73,11 @@ class Exp451VerificationAntigravity:
     imported_by_condition: Mapping[str, int]
     native_by_condition: Mapping[str, int]
     condition_manifests: Mapping[str, Mapping[str, object]]
+    context_sha256: str = ""
+    catalog_sha256: str = ""
+    database_sha256: str = ""
+    inventory_sha256: str = ""
+    _capability_antigravity: object | None = None
 
 
 def _sha256_antigravity(value: object) -> bool:
@@ -94,6 +103,10 @@ def _catalog_entries_antigravity(catalog: Mapping[str, object], context: Exp451R
     if (
         not isinstance(entries, list) or len(entries) != 1117
         or catalog.get("catalog_sha256") != context.catalog_sha256
+        or context.database_sha256 != FROZEN_EXP451_CONFIG.database_sha256
+        or not isinstance(catalog.get("database"), Mapping)
+        or catalog["database"].get("sha256") != FROZEN_EXP451_CONFIG.database_sha256
+        or catalog.get("mode") != "full"
     ):
         raise ValueError("Exp451 catalog differs")
     datasets = tuple(entry.get("dataset") if isinstance(entry, dict) else None for entry in entries)
@@ -102,6 +115,8 @@ def _catalog_entries_antigravity(catalog: Mapping[str, object], context: Exp451R
         or len(set(datasets)) != len(datasets) or tuple(sorted(datasets)) != datasets
     ):
         raise ValueError("Exp451 catalog dataset inventory differs")
+    if sum(entry.get("test", {}).get("count", -1) for entry in entries if isinstance(entry, Mapping)) != 195900:
+        raise ValueError("Exp451 catalog TEST total differs")
     return tuple(entries)
 
 
@@ -196,13 +211,146 @@ def _condition_manifest_antigravity(
     return MappingProxyType({**bare, "manifest_sha256": sha256(canonical_json_bytes(bare)).hexdigest()})
 
 
+def _inventory_sha256_antigravity(manifests: Mapping[str, Mapping[str, object]]) -> str:
+    return sha256(canonical_json_bytes({
+        condition: dict(manifests[condition]) for condition in manifests
+    })).hexdigest()
+
+
+def _validate_verification_authority_antigravity(verification: object) -> Exp451VerificationAntigravity:
+    """Validate the opaque issued capability and all frozen manifest contents."""
+    if (
+        not isinstance(verification, Exp451VerificationAntigravity)
+        or verification._capability_antigravity is not _VERIFICATION_CAPABILITY_ANTIGRAVITY
+    ):
+        raise ValueError("Exp451 verification authority is invalid")
+    if verification.total_successes != EXP451_TOTAL_COORDINATES:
+        raise ValueError("Exp451 verification authority requires exactly 4468 successes")
+    imported, native = dict(verification.imported_by_condition), dict(verification.native_by_condition)
+    expected_imported = {"A": 1117, "B": 1117, "C": 1000, "D": 1000}
+    expected_native = {"A": 0, "B": 0, "C": 117, "D": 117}
+    if imported != expected_imported or native != expected_native:
+        raise ValueError("Exp451 verification authority origin distribution differs")
+    manifests = verification.condition_manifests
+    if tuple(manifests) != _CONDITIONS_ANTIGRAVITY:
+        raise ValueError("Exp451 verification authority requires four frozen condition manifests")
+    if (
+        verification.database_sha256 != FROZEN_EXP451_CONFIG.database_sha256
+        or not _sha256_antigravity(verification.context_sha256)
+        or not _sha256_antigravity(verification.catalog_sha256)
+        or not _sha256_antigravity(verification.inventory_sha256)
+    ):
+        raise ValueError("Exp451 verification authority database/context differs")
+    expected_datasets: tuple[str, ...] | None = None
+    expected_tests: list[object] | None = None
+    for condition in _CONDITIONS_ANTIGRAVITY:
+        manifest = manifests[condition]
+        required = {
+            "schema", "database_sha256", "context_sha256", "catalog_sha256", "condition",
+            "backend", "datasets", "test_identities", "checkpoint_hashes", "origin_counts",
+            "manifest_sha256",
+        }
+        if not isinstance(manifest, Mapping) or set(manifest) != required:
+            raise ValueError("Exp451 verification authority manifest schema differs")
+        bare = {key: manifest[key] for key in manifest if key != "manifest_sha256"}
+        if (
+            manifest["schema"] != _CONDITION_MANIFEST_SCHEMA_ANTIGRAVITY
+            or manifest["manifest_sha256"] != sha256(canonical_json_bytes(bare)).hexdigest()
+            or manifest["database_sha256"] != verification.database_sha256
+            or manifest["context_sha256"] != verification.context_sha256
+            or manifest["catalog_sha256"] != verification.catalog_sha256
+            or manifest["condition"] != {
+                "condition_id": condition,
+                "length_mode": _CONDITION_MODES_ANTIGRAVITY[condition][0],
+                "image_mode": _CONDITION_MODES_ANTIGRAVITY[condition][1],
+            }
+            or manifest["origin_counts"] != {
+                _IMPORTED_ORIGIN_ANTIGRAVITY: imported[condition],
+                _NATIVE_ORIGIN_ANTIGRAVITY: native[condition],
+            }
+            or not isinstance(manifest["datasets"], list) or len(manifest["datasets"]) != 1117
+            or not isinstance(manifest["test_identities"], list) or len(manifest["test_identities"]) != 1117
+            or not isinstance(manifest["checkpoint_hashes"], list) or len(manifest["checkpoint_hashes"]) != 1117
+        ):
+            raise ValueError("Exp451 verification authority manifest differs")
+        datasets = tuple(item.get("dataset") if isinstance(item, Mapping) else None for item in manifest["datasets"])
+        hashes = manifest["checkpoint_hashes"]
+        if (
+            any(type(dataset) is not str or not dataset for dataset in datasets)
+            or len(set(datasets)) != 1117
+            or [item.get("dataset") if isinstance(item, Mapping) else None for item in hashes] != list(datasets)
+            or any(not _sha256_antigravity(item.get("sha256")) for item in hashes if isinstance(item, Mapping))
+        ):
+            raise ValueError("Exp451 verification authority checkpoint inventory differs")
+        tests = manifest["test_identities"]
+        if [item.get("dataset") if isinstance(item, Mapping) else None for item in tests] != list(datasets):
+            raise ValueError("Exp451 verification authority TEST identity differs")
+        if expected_datasets is None:
+            expected_datasets, expected_tests = datasets, tests
+        elif datasets != expected_datasets or tests != expected_tests:
+            raise ValueError("Exp451 verification authority cross-condition identity differs")
+    assert expected_tests is not None
+    if sum(item.get("count", -1) for item in expected_tests if isinstance(item, Mapping)) != 195900:
+        raise ValueError("Exp451 verification authority TEST total differs")
+    if _inventory_sha256_antigravity(manifests) != verification.inventory_sha256:
+        raise ValueError("Exp451 verification authority inventory hash differs")
+    return verification
+
+
+def _issue_verification_authority_antigravity(
+    *, total: int, imported: Mapping[str, int], native: Mapping[str, int],
+    manifests: Mapping[str, Mapping[str, object]], context_sha256: str,
+    catalog_sha256: str, database_sha256: str,
+) -> Exp451VerificationAntigravity:
+    return Exp451VerificationAntigravity(
+        total, MappingProxyType(dict(imported)), MappingProxyType(dict(native)),
+        MappingProxyType(dict(manifests)), context_sha256, catalog_sha256,
+        database_sha256, _inventory_sha256_antigravity(manifests),
+        _VERIFICATION_CAPABILITY_ANTIGRAVITY,
+    )
+
+
+def _fixture_verification_authority_antigravity(
+    *, total_successes: int = 4468, conditions: tuple[str, ...] = _CONDITIONS_ANTIGRAVITY,
+    native_c: int = 117,
+) -> Exp451VerificationAntigravity:
+    """Private test-only full-population authority; production never calls this."""
+    datasets = [f"fixture_{index:04d}_antigravity" for index in range(1117)]
+    tests = [
+        {"dataset": name, "count": 600 if index == 1116 else 175}
+        for index, name in enumerate(datasets)
+    ]
+    entries = [{"dataset": name, "test": test} for name, test in zip(datasets, tests, strict=True)]
+    imported = {"A": 1117, "B": 1117, "C": 1000, "D": 1000}
+    native = {"A": 0, "B": 0, "C": native_c, "D": 117}
+    context, catalog = "a" * 64, "b" * 64
+    manifests: dict[str, Mapping[str, object]] = {}
+    for condition in conditions:
+        manifests[condition] = _condition_manifest_antigravity(
+            condition=condition, entries=entries,
+            context=type("FixtureContextAntigravity", (), {
+                "database_sha256": FROZEN_EXP451_CONFIG.database_sha256,
+                "sha256": context, "catalog_sha256": catalog,
+                "backend": type("FixtureBackendAntigravity", (), {"artifact_record": lambda self: {}})(),
+            })(),
+            checkpoint_hashes=[{"dataset": name, "sha256": sha256(f"{condition}:{name}".encode()).hexdigest()} for name in datasets],
+            imported=imported[condition], native=native[condition],
+        )
+    return _issue_verification_authority_antigravity(
+        total=total_successes, imported=imported, native=native, manifests=manifests,
+        context_sha256=context, catalog_sha256=catalog,
+        database_sha256=FROZEN_EXP451_CONFIG.database_sha256,
+    )
+
+
 def verify_exp451_completion_antigravity(
     root: Path, *, context: Exp451RunContext, catalog: Mapping[str, object],
     migration_manifest: Exp451MigrationManifest,
 ) -> Exp451VerificationAntigravity:
     """Verify all 4,468 checkpoint envelopes before evaluation may see TEST labels."""
     if (
-        Path(root) != context.run_root or not isinstance(migration_manifest, Exp451MigrationManifest)
+        Path(root) != OFFICIAL_ROOT or context.run_root != OFFICIAL_ROOT
+        or not isinstance(migration_manifest, Exp451MigrationManifest)
         or migration_manifest.source_context_sha256 != EXP450_SOURCE_CONTEXT_SHA256
         or migration_manifest.target_context_sha256 != context.sha256
         or migration_manifest.counts_by_condition != EXP451_MIGRATED_COUNTS_BY_CONDITION
@@ -249,18 +397,16 @@ def verify_exp451_completion_antigravity(
     total = sum(imported_counts.values()) + sum(native_counts.values())
     if total != EXP451_TOTAL_COORDINATES:
         raise ValueError("Exp451 completion count differs")
-    return Exp451VerificationAntigravity(
-        total_successes=total,
-        imported_by_condition=MappingProxyType(imported_counts),
-        native_by_condition=MappingProxyType(native_counts),
-        condition_manifests=MappingProxyType(manifests),
+    return _issue_verification_authority_antigravity(
+        total=total, imported=imported_counts, native=native_counts, manifests=manifests,
+        context_sha256=context.sha256, catalog_sha256=context.catalog_sha256,
+        database_sha256=context.database_sha256,
     )
 
 
 def provenance_summary_antigravity(verification: Exp451VerificationAntigravity) -> dict[str, object]:
     """Return origin-separated counts for reports without reopening any checkpoints."""
-    if not isinstance(verification, Exp451VerificationAntigravity):
-        raise ValueError("Exp451 verification authority is invalid")
+    verification = _validate_verification_authority_antigravity(verification)
     imported = dict(verification.imported_by_condition)
     native = dict(verification.native_by_condition)
     if set(imported) != set(_CONDITIONS_ANTIGRAVITY) or set(native) != set(_CONDITIONS_ANTIGRAVITY):
@@ -274,27 +420,6 @@ def provenance_summary_antigravity(verification: Exp451VerificationAntigravity) 
         "imported_total": sum(imported.values()),
         "native_total": sum(native.values()),
     }
-
-
-def _write_create_only_antigravity(path: Path, payload: bytes) -> None:
-    """Persist one manifest without permitting a later conflicting replacement."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    except FileExistsError:
-        if path.read_bytes() != payload:
-            raise ValueError("Exp451 condition manifest already exists with different bytes") from None
-        return
-    try:
-        view = memoryview(payload)
-        while view:
-            written = os.write(descriptor, view)
-            if written <= 0:
-                raise OSError("Exp451 condition manifest write made no progress")
-            view = view[written:]
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
 
 
 def write_exp451_condition_manifests_antigravity(
@@ -316,8 +441,9 @@ def write_exp451_condition_manifests_antigravity(
         if not isinstance(manifest, Mapping):
             raise ValueError("Exp451 condition manifest is invalid")
         payload = canonical_json_bytes(dict(manifest))
-        path = root / "condition_manifests_antigravity" / f"{condition}_condition_manifest_antigravity.json"
-        _write_create_only_antigravity(path, payload)
+        relative = f"condition_manifests_antigravity/{condition}_condition_manifest_antigravity.json"
+        path = _checked_target_path_antigravity(root, relative, create=True)
+        _publish_create_only_antigravity(path, payload)
         results[condition] = path
     return MappingProxyType(results)
 

@@ -6,6 +6,12 @@ Exp451은 Exp450의 검증된 결과 4,234개를 다시 계산하지 않고 별�
 
 ## 조건과 실행 출처
 
+아래 표는 **실행 전 고정 검증 계약**이다. 아직 공식 Exp451 실행이 끝나지
+않았다면 이 수치는 관측 결과가 아니라, 평가를 열기 위해 반드시 충족해야 하는
+예정된 분포다. 실제 관측된 checkpoint SHA-256, context SHA-256, 실행 시간과
+조건 manifest SHA-256은 `verify` 이후 생성되는 manifest와 최종 report provenance
+artifact에서만 확정한다.
+
 | 조건 | 길이 정렬 | 영상 특징 | 이관 결과 | 신규 native 결과 | 최종 |
 | --- | --- | --- | ---: | ---: | ---: |
 | A | linear | linear | 1,117 | 0 | 1,117 |
@@ -14,7 +20,7 @@ Exp451은 Exp450의 검증된 결과 4,234개를 다시 계산하지 않고 별�
 | D | polyphase_pchip | area | 1,000 | 117 | 1,117 |
 | 합계 |  |  | 4,234 | 234 | 4,468 |
 
-이관 결과의 `execution_origin`은 `imported_exp450_mps`이고, 새 결과의 `execution_origin`은 `exp451_native_cpu_pool_fallback`이다. 두 수는 평가 및 보고서에서도 합치지 않고 별도로 기록한다.
+이관 결과의 `execution_origin`은 `imported_exp450_mps`이고, 새 결과의 `execution_origin`은 `exp451_native_cpu_pool_fallback`이다. 두 수는 평가 및 보고서에서도 합치지 않고 별도로 기록한다. 실행 전 이 문서는 결과 우위를 주장하지 않으며, 실제 report 생성 시 provenance artifact가 관측된 출처 분포를 덧붙인다.
 
 ## 고정 권한과 데이터베이스
 

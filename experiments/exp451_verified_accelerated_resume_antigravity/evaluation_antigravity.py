@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigravity import (
@@ -13,16 +14,28 @@ from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigra
     metric_tables_exp450_antigravity,
 )
 
-from .config_antigravity import EXP451_TOTAL_COORDINATES
-from .verifier_antigravity import Exp451VerificationAntigravity, provenance_summary_antigravity
+from .config_antigravity import EVALUATION_ROOT, EXP451_TOTAL_COORDINATES
+from .verifier_antigravity import (
+    Exp451VerificationAntigravity,
+    _validate_verification_authority_antigravity,
+    provenance_summary_antigravity,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Exp451EvaluationAntigravity:
+    """Frozen metric result cryptographically bound to one verified inventory."""
+
+    frozen_evaluation: Exp450EvaluationAntigravity
+    inventory_sha256: str
+    context_sha256: str
 
 
 def require_exp451_evaluation_ready_antigravity(
     verification: Exp451VerificationAntigravity,
 ) -> None:
     """Close the TEST-label boundary until all results and four manifests verify."""
-    if not isinstance(verification, Exp451VerificationAntigravity):
-        raise ValueError("Exp451 verified completion authority is required")
+    verification = _validate_verification_authority_antigravity(verification)
     if verification.total_successes != EXP451_TOTAL_COORDINATES:
         raise ValueError("Exp451 evaluation requires exactly 4468 verified successes")
     if tuple(verification.condition_manifests) != ("A", "B", "C", "D"):
@@ -43,9 +56,11 @@ def evaluate_exp451_antigravity(
     baseline_roots: Mapping[str, object] | None = None,
     label_loader: Callable[[tuple[str, ...]], Mapping[str, Sequence[object]]] | None = None,
     baseline_verifier: Callable[[Path], object] | None = None,
-) -> Exp450EvaluationAntigravity:
+) -> Exp451EvaluationAntigravity:
     """Evaluate only after the Exp451 gate, using unchanged Exp450 metric definitions."""
     require_exp451_evaluation_ready_antigravity(verification)
+    if Path(root) != EVALUATION_ROOT:
+        raise ValueError("Exp451 evaluation root differs from the frozen configured root")
     if tuple(score_manifests) != METHOD_ORDER[:4]:
         raise ValueError("Exp451 score manifest order differs")
     frozen = dict(score_manifests)
@@ -61,7 +76,10 @@ def evaluate_exp451_antigravity(
     }
     if baseline_verifier is not None:
         kwargs["baseline_verifier"] = baseline_verifier
-    return evaluate_exp450_antigravity(Path(root), **kwargs)
+    frozen_evaluation = evaluate_exp450_antigravity(Path(root), **kwargs)
+    return Exp451EvaluationAntigravity(
+        frozen_evaluation, verification.inventory_sha256, verification.context_sha256,
+    )
 
 
 def curve_tables_exp451_antigravity(
@@ -77,7 +95,7 @@ def metric_tables_exp451_antigravity(*args: object, **kwargs: object):
 
 
 __all__ = [
-    "METHOD_ORDER", "Exp450EvaluationAntigravity", "curve_tables_exp451_antigravity",
+    "METHOD_ORDER", "Exp450EvaluationAntigravity", "Exp451EvaluationAntigravity", "curve_tables_exp451_antigravity",
     "evaluate_exp451_antigravity", "metric_tables_exp451_antigravity",
     "require_exp451_evaluation_ready_antigravity",
 ]

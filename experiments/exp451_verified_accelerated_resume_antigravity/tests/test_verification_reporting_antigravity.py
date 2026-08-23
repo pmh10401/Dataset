@@ -5,23 +5,19 @@ from __future__ import annotations
 from types import MappingProxyType
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import importlib.util
+import io
+from dataclasses import replace
 import unittest
+from unittest.mock import patch
 
 
-def _verification_antigravity(*, total: int = 4468, manifests: tuple[str, ...] = ("A", "B", "C", "D")):
+def _verification_antigravity(*, total: int = 4468, manifests: tuple[str, ...] = ("A", "B", "C", "D"), native_c: int = 117):
     from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
-        Exp451VerificationAntigravity,
+        _fixture_verification_authority_antigravity,
     )
-
-    condition_manifests = {
-        condition: {"condition": {"condition_id": condition}}
-        for condition in manifests
-    }
-    return Exp451VerificationAntigravity(
-        total_successes=total,
-        imported_by_condition={"A": 1117, "B": 1117, "C": 1000, "D": 1000},
-        native_by_condition={"A": 0, "B": 0, "C": 117, "D": 117},
-        condition_manifests=MappingProxyType(condition_manifests),
+    return _fixture_verification_authority_antigravity(
+        total_successes=total, conditions=manifests, native_c=native_c,
     )
 
 
@@ -89,3 +85,78 @@ class VerificationGateTests(unittest.TestCase):
             second = write_exp451_condition_manifests_antigravity(root, _verification_antigravity())
         self.assertEqual(tuple(first), ("A", "B", "C", "D"))
         self.assertEqual(first, second)
+
+    def test_forged_public_dataclass_does_not_open_label_boundary(self) -> None:
+        """Only an authority issued by checkpoint verification can cross the gate."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import (
+            require_exp451_evaluation_ready_antigravity,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
+            Exp451VerificationAntigravity,
+        )
+        forged = Exp451VerificationAntigravity(
+            4468, {"A": 1117, "B": 1117, "C": 1000, "D": 1000},
+            {"A": 0, "B": 0, "C": 117, "D": 117}, MappingProxyType({}),
+        )
+        with self.assertRaisesRegex(ValueError, "authority"):
+            require_exp451_evaluation_ready_antigravity(forged)
+
+    def test_gate_rejects_one_coordinate_origin_distribution_drift(self) -> None:
+        """C/D native counts are fixed at 117 each; total alone is insufficient."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import (
+            require_exp451_evaluation_ready_antigravity,
+        )
+        with self.assertRaisesRegex(ValueError, "origin"):
+            require_exp451_evaluation_ready_antigravity(_verification_antigravity(native_c=116))
+
+    def test_cli_routes_verify_evaluate_and_report_commands(self) -> None:
+        """Public documented commands no longer end at the former Task 6 placeholder."""
+        script = Path(__file__).resolve().parents[3] / "scratch" / "run_exp451_verified_accelerated_resume_antigravity.py"
+        specification = importlib.util.spec_from_file_location("exp451_task6_cli_antigravity", script)
+        assert specification is not None and specification.loader is not None
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        for command, function in (("verify", "_verify_antigravity"), ("evaluate", "_evaluate_antigravity"), ("report", "_report_antigravity")):
+            output = io.StringIO()
+            with patch.object(module, function, return_value={"experiment": "Exp451", "command": command}), patch("sys.stdout", output):
+                self.assertEqual(module.main([command, "--mode", "full"]), 0)
+            self.assertIn(f'"command":"{command}"', output.getvalue())
+
+    def test_evaluation_does_not_call_label_loader_when_completion_is_partial(self) -> None:
+        """The public evaluator reaches no label callback when its first gate fails."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import (
+            evaluate_exp451_antigravity,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import EVALUATION_ROOT
+        called = []
+        with self.assertRaisesRegex(ValueError, "4468"):
+            evaluate_exp451_antigravity(
+                EVALUATION_ROOT, verification=_verification_antigravity(total=4467),
+                score_manifests={}, label_loader=lambda _: called.append(True),
+            )
+        self.assertEqual(called, [])
+
+    def test_tampered_manifest_and_wrong_database_are_rejected(self) -> None:
+        """A capability alone cannot authorize altered manifest bytes or database identity."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import (
+            require_exp451_evaluation_ready_antigravity,
+        )
+        verification = _verification_antigravity()
+        altered = {key: dict(value) for key, value in verification.condition_manifests.items()}
+        altered["A"]["origin_counts"] = dict(altered["A"]["origin_counts"])
+        altered["A"]["origin_counts"]["imported_exp450_mps"] = 1116
+        with self.assertRaisesRegex(ValueError, "manifest"):
+            require_exp451_evaluation_ready_antigravity(
+                replace(verification, condition_manifests=MappingProxyType(altered))
+            )
+        with self.assertRaisesRegex(ValueError, "database"):
+            require_exp451_evaluation_ready_antigravity(
+                replace(verification, database_sha256="f" * 64)
+            )
+
+    def test_economical_fixture_represents_all_4468_checkpoint_hashes_and_195900_test_rows(self) -> None:
+        """The private fixture is full-population evidence, not a reduced production rule."""
+        verification = _verification_antigravity()
+        manifests = verification.condition_manifests
+        self.assertEqual(sum(len(manifests[condition]["checkpoint_hashes"]) for condition in manifests), 4468)
+        self.assertEqual(sum(item["count"] for item in manifests["A"]["test_identities"]), 195900)

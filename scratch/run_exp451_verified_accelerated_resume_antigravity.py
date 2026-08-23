@@ -160,9 +160,76 @@ def _status_antigravity() -> dict[str, object]:
     }
 
 
-def _delegate_later_stage_antigravity(command: str) -> dict[str, object]:
-    """Reserve Task 6's verified evaluation/report implementation without duplicating it."""
-    raise ValueError(f"Exp451 {command} is unavailable until Task 6 verification/evaluation is implemented")
+def _verify_antigravity() -> dict[str, object]:
+    """Freeze four condition manifests only after complete checkpoint verification."""
+    from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
+        provenance_summary_antigravity,
+        verify_exp451_completion_antigravity,
+        write_exp451_condition_manifests_antigravity,
+    )
+
+    context, catalog, manifest = _verify_migration_antigravity()
+    verification = verify_exp451_completion_antigravity(
+        context.run_root, context=context, catalog=catalog, migration_manifest=manifest,
+    )
+    paths = write_exp451_condition_manifests_antigravity(context.run_root, verification)
+    return {
+        "experiment": "Exp451", "command": "verify",
+        **provenance_summary_antigravity(verification),
+        "condition_manifests": {condition: str(path) for condition, path in paths.items()},
+    }
+
+
+def _evaluate_result_antigravity():
+    """Build label-free score manifests before entering the one frozen label boundary."""
+    from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import EVALUATION_ROOT
+    from experiments.exp451_verified_accelerated_resume_antigravity.evaluation_antigravity import (
+        evaluate_exp451_antigravity,
+    )
+    from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
+        build_exp451_score_manifests_antigravity,
+        verify_exp451_completion_antigravity,
+    )
+
+    context, catalog, manifest = _verify_migration_antigravity()
+    # Verify all result envelopes before even the label-free raw-data reopen.
+    # ``build_exp451_score_manifests_antigravity`` repeats this binding while
+    # reconstructing typed score inputs, so there is no unchecked hand-off.
+    verify_exp451_completion_antigravity(
+        context.run_root, context=context, catalog=catalog, migration_manifest=manifest,
+    )
+    raw = _load_raw_antigravity(catalog)
+    verification, score_manifests = build_exp451_score_manifests_antigravity(
+        context.run_root, context=context, catalog=catalog,
+        migration_manifest=manifest, raw_datasets=raw,
+    )
+    return verification, evaluate_exp451_antigravity(
+        EVALUATION_ROOT, verification=verification, score_manifests=score_manifests,
+    )
+
+
+def _evaluate_antigravity() -> dict[str, object]:
+    verification, evaluation = _evaluate_result_antigravity()
+    return {
+        "experiment": "Exp451", "command": "evaluate",
+        "method_order": list(evaluation.frozen_evaluation.metric_tables.method_order),
+        "inventory_sha256": verification.inventory_sha256,
+    }
+
+
+def _report_antigravity() -> dict[str, object]:
+    from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravity import REPORT_ROOT
+    from experiments.exp451_verified_accelerated_resume_antigravity.reporting_antigravity import (
+        write_exp451_report_antigravity,
+    )
+
+    verification, evaluation = _evaluate_result_antigravity()
+    artifact = write_exp451_report_antigravity(evaluation, REPORT_ROOT, verification=verification)
+    return {
+        "experiment": "Exp451", "command": "report",
+        "report_root": str(artifact.frozen_report.root),
+        "provenance": str(artifact.provenance_path),
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -186,8 +253,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             value = _run_antigravity()
         elif arguments.command == "status":
             value = _status_antigravity()
+        elif arguments.command == "verify":
+            value = _verify_antigravity()
+        elif arguments.command == "evaluate":
+            value = _evaluate_antigravity()
         else:
-            value = _delegate_later_stage_antigravity(arguments.command)
+            value = _report_antigravity()
         _emit_antigravity(value)
         return 0
     except Exception as error:
