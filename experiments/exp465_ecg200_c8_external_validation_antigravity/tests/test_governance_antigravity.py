@@ -219,7 +219,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         builder = load_builder_antigravity()
         source_parent = subprocess.check_output([
-            "git", "rev-parse", "HEAD",
+            "git", "rev-parse", "HEAD^",
         ], cwd=ROOT_ANTIGRAVITY, text=True).strip()
         builder.build_triplet_antigravity(source_parent, validate_only=True)
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
