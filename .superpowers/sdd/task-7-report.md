@@ -8,6 +8,9 @@
   - `docs/codemap/codemap_exp451_antigravity.{html,json,lock}`
   - `experiments/exp451_verified_accelerated_resume_antigravity/tests/test_codemap_antigravity.py`
   - this report
+- Launch-blocker review fixes additionally cover Exp451 backend/contracts,
+  migration/verifier, reporting, their focused tests, and the Korean provenance
+  document.
 - No Dataset root, TEST label, official command, running process, remote, or
   external publication was accessed or changed.
 
@@ -25,7 +28,7 @@
 ## Code-map closure
 
 - Exact node count: 42.
-- Exact AST-import edge count at this commit: 340.
+- Exact AST-import edge count at this commit: 344.
 - Composition:
   - 12 Exp451 production modules;
   - 7 Exp451 tests, including the code-map contract test;
@@ -69,6 +72,33 @@
   not a frozen code-fingerprint failure, so the Exp450 triplet was not
   regenerated under the controller ruling.
 
+## Launch-blocker fix round
+
+- Imported checkpoint verification now obtains its expected backend only from
+  migration's canonical frozen Exp450 backend record. Migration writes that
+  same record into every imported target envelope. Native verification remains
+  bound to the current Exp451 backend artifact. Production-path regressions
+  proved that migration output previously failed imported verification while a
+  wrongly substituted current backend passed; both directions are now closed.
+- Report publication no longer creates the destination before its completion
+  marker. It builds a complete marker-bearing sibling, fsyncs it, and publishes
+  it through Darwin `RENAME_EXCL` while holding the kernel-released `fcntl`
+  lock. Faults immediately before rename leave no destination; faults
+  immediately after rename leave a complete reusable destination. Markerless
+  foreign destinations, including the former progress-marker shape, are never
+  deleted or adopted.
+- The backend artifact now contains a complete `mlx_assessment`. The reviewed
+  environment reports MLX 0.32.0, mlx-metal 0.32.0, metal available, and
+  `Device(gpu, 0)`. Only tensor sub-stages are eligible. The frozen SciPy,
+  scikit-learn, aeon, and PyTorch score path has no validated exact MLX
+  expression, so gate one fails and transfer/compile measurement, parity, and
+  the 1.1x speed benchmark are truthfully recorded as not run. The unchanged
+  CPU/MPS path is the explicit canonical fallback.
+- Focused RED evidence covered the imported/current backend mismatch, unsafe
+  legacy directory reclamation, both atomic-publication crash windows, absent
+  MLX assessment fields, and acceptance of an incomplete assessment. Nine
+  focused review tests now pass.
+
 ## Verification
 
 - `python3 scratch/generate_exp451_codemap_antigravity.py --check`
@@ -76,7 +106,7 @@
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_codemap_antigravity`
   - passed: 7 tests.
 - `python3 -m unittest discover -s experiments/exp451_verified_accelerated_resume_antigravity/tests -p 'test_*_antigravity.py'`
-  - passed: 99 tests after the final synchronization contract was added.
+  - passed: 105 tests after the launch-blocker regressions were added.
 - `python3 -m unittest experiments.exp450_resampling_image_ablation_antigravity.tests.test_transforms_backend_antigravity experiments.exp450_resampling_image_ablation_antigravity.tests.test_imaging_antigravity`
   - passed: 17 tests.
 - Independent lock/source fingerprint validation:

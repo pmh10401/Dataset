@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import importlib.util
 import io
+import os
 from dataclasses import replace
 from hashlib import sha256
 import json
@@ -45,6 +46,9 @@ def _live_verification_fixture_antigravity():
         _NATIVE_SCHEMA_ANTIGRAVITY,
         _native_relative_path_antigravity,
     )
+    from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
+        frozen_exp450_backend_record_antigravity,
+    )
 
     temporary = TemporaryDirectory(prefix="exp451_full_fixture_antigravity_")
     root = Path(temporary.name).resolve()
@@ -74,6 +78,7 @@ def _live_verification_fixture_antigravity():
     )
     payload = {"sources": {}, "route": {}}
     payload_sha256 = sha256(canonical_json_bytes(payload)).hexdigest()
+    imported_backend = frozen_exp450_backend_record_antigravity()
     migration_rows = []
     for condition, count in (("A", 1117), ("B", 1117), ("C", 1000), ("D", 1000)):
         for entry in entries[:count]:
@@ -87,7 +92,7 @@ def _live_verification_fixture_antigravity():
                 "condition_id": condition,
                 "dataset": dataset,
                 "raw_identity": entry,
-                "backend": context.backend.artifact_record(),
+                "backend": imported_backend,
                 "execution_origin": "imported_exp450_mps",
                 "payload": payload,
                 "payload_sha256": payload_sha256,
@@ -495,8 +500,8 @@ class VerificationGateTests(unittest.TestCase):
             finally:
                 checkpoint.write_bytes(original)
 
-    def test_report_directory_publication_is_create_only_and_recovers_interruption(self) -> None:
-        """A report marker is the only finalization step; no-clobber retries are stable."""
+    def test_report_directory_publication_never_reclaims_markerless_destination(self) -> None:
+        """A foreign markerless directory remains untouched, including legacy reservations."""
         from experiments.exp451_verified_accelerated_resume_antigravity.reporting_antigravity import (
             _publish_report_directory_antigravity,
         )
@@ -522,7 +527,94 @@ class VerificationGateTests(unittest.TestCase):
             (interrupted / ".exp451_report_in_progress_antigravity.json").write_bytes(
                 b'{"destination":"interrupted_target_antigravity","schema":"exp451-report-publication-in-progress-antigravity.v1"}\n'
             )
-            self.assertEqual(_publish_report_directory_antigravity(recovery, interrupted), interrupted)
+            before = {
+                path.name: path.read_bytes() for path in interrupted.iterdir()
+            }
+            with self.assertRaisesRegex(ValueError, "differs"):
+                _publish_report_directory_antigravity(recovery, interrupted)
+            self.assertEqual(
+                {path.name: path.read_bytes() for path in interrupted.iterdir()}, before
+            )
+
+    def test_report_publication_retries_after_fault_before_atomic_rename(self) -> None:
+        """A failure before RENAME_EXCL leaves no destination that can strand retry."""
+        from experiments.exp451_verified_accelerated_resume_antigravity import (
+            reporting_antigravity,
+        )
+
+        with TemporaryDirectory(prefix="exp451_report_before_rename_antigravity_") as temporary:
+            parent = Path(temporary).resolve()
+            stage = parent / "before_stage_antigravity"
+            stage.mkdir()
+            (stage / "one_antigravity.txt").write_bytes(b"one")
+            target = parent / "before_target_antigravity"
+            with patch.object(
+                reporting_antigravity,
+                "_rename_report_directory_no_replace_antigravity",
+                side_effect=RuntimeError("before publication antigravity"),
+                create=True,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "before publication"):
+                    reporting_antigravity._publish_report_directory_antigravity(
+                        stage, target
+                    )
+            self.assertFalse(target.exists())
+
+            retry = parent / "before_retry_antigravity"
+            retry.mkdir()
+            (retry / "one_antigravity.txt").write_bytes(b"one")
+            self.assertEqual(
+                reporting_antigravity._publish_report_directory_antigravity(
+                    retry, target
+                ),
+                target,
+            )
+
+    def test_report_publication_retries_after_fault_after_atomic_rename(self) -> None:
+        """A post-rename crash leaves a complete destination reusable by exact retry."""
+        from experiments.exp451_verified_accelerated_resume_antigravity import (
+            reporting_antigravity,
+        )
+
+        with TemporaryDirectory(prefix="exp451_report_after_rename_antigravity_") as temporary:
+            parent = Path(temporary).resolve()
+            stage = parent / "after_stage_antigravity"
+            stage.mkdir()
+            (stage / "one_antigravity.txt").write_bytes(b"one")
+            target = parent / "after_target_antigravity"
+            real_rename = getattr(
+                reporting_antigravity,
+                "_rename_report_directory_no_replace_antigravity",
+                os.rename,
+            )
+
+            def publish_then_fail(source: Path, destination: Path) -> None:
+                real_rename(source, destination)
+                raise RuntimeError("after publication antigravity")
+
+            with patch.object(
+                reporting_antigravity,
+                "_rename_report_directory_no_replace_antigravity",
+                side_effect=publish_then_fail,
+                create=True,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "after publication"):
+                    reporting_antigravity._publish_report_directory_antigravity(
+                        stage, target
+                    )
+            self.assertTrue(
+                (target / ".exp451_report_complete_antigravity.json").is_file()
+            )
+
+            retry = parent / "after_retry_antigravity"
+            retry.mkdir()
+            (retry / "one_antigravity.txt").write_bytes(b"one")
+            self.assertEqual(
+                reporting_antigravity._publish_report_directory_antigravity(
+                    retry, target
+                ),
+                target,
+            )
 
     def test_report_publication_rejects_an_active_lock_owner(self) -> None:
         """A second publisher cannot remove or pass another live process reservation."""

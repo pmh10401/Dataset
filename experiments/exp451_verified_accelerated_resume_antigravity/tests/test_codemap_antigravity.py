@@ -128,6 +128,7 @@ class Exp451CodeMapTestsAntigravity(unittest.TestCase):
             (f"{namespace}/verifier_antigravity.py", "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py"),
             (f"{namespace}/verifier_antigravity.py", "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py"),
             (f"{namespace}/verifier_antigravity.py", "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py"),
+            (f"{namespace}/verifier_antigravity.py", f"{namespace}/migration_antigravity.py"),
             (f"{namespace}/scoring_antigravity.py", "paper/equipment_anomaly_detection/calibration_paper.py"),
             (f"{namespace}/scoring_antigravity.py", "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py"),
             (f"{namespace}/scoring_antigravity.py", "paper/equipment_anomaly_detection/sources_paper/rocket_paper.py"),

@@ -277,8 +277,10 @@ class Exp451ContractsTests(unittest.TestCase):
             canonical_cpu_fallback="pytorch_cpu_native_adaptive_avg_pool",
             benchmark_requirement="mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
         )
+        record = decision.artifact_record()
+        mlx_assessment = record.pop("mlx_assessment")
         self.assertEqual(
-            decision.artifact_record(),
+            record,
             {
                 "tensor_backend": "mps",
                 "torch_version": "2.13.0",
@@ -294,6 +296,11 @@ class Exp451ContractsTests(unittest.TestCase):
                 "benchmark_requirement": "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
             },
         )
+        self.assertFalse(mlx_assessment["mlx_available"])
+        self.assertEqual(mlx_assessment["mlx_version"], "unavailable")
+        self.assertEqual(mlx_assessment["parity_result"], "not_run_without_exact_mlx_expression")
+        with self.assertRaises(TypeError):
+            decision.mlx_assessment["mlx_available"] = True  # type: ignore[index]
         self.assertTrue(decision.tensor_eligibility)
         self.assertEqual(
             decision.parity_numerical_requirements,
@@ -314,6 +321,19 @@ class Exp451ContractsTests(unittest.TestCase):
                 mlx_available=False,
                 logical_cpu_count=12,
                 cpu_workers=11,
+            )
+
+    def test_backend_decision_rejects_incomplete_mlx_assessment(self) -> None:
+        """A launch context cannot persist a partial MLX policy record."""
+        with self.assertRaisesRegex(ValueError, "MLX assessment"):
+            Exp451BackendDecision(
+                tensor_backend="mps",
+                torch_version="2.13.0",
+                mps_available=True,
+                mlx_available=True,
+                logical_cpu_count=12,
+                cpu_workers=11,
+                mlx_assessment={},
             )
 
     def test_run_context_requires_absolute_root_valid_digests_and_closure(self) -> None:

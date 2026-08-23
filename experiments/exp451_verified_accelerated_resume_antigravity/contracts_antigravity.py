@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -31,6 +31,55 @@ _PRODUCTION_EXPECTED_MIGRATION_COUNTS = {
     "C": 1000,
     "D": 1000,
 }
+
+_MLX_ASSESSMENT_KEYS_ANTIGRAVITY = {
+    "schema",
+    "tensor_eligibility",
+    "exact_frozen_algorithm_expressible",
+    "exact_expression_status",
+    "exact_expression_reason",
+    "mlx_available",
+    "mlx_version",
+    "mlx_metal_available",
+    "mlx_metal_version",
+    "mlx_device",
+    "transfer_compilation_overhead_status",
+    "transfer_compilation_overhead_result",
+    "parity_requirement",
+    "parity_status",
+    "parity_result",
+    "speed_benchmark_requirement",
+    "speed_benchmark_status",
+    "speed_benchmark_result",
+    "canonical_cpu_mps_fallback",
+    "fallback_reason",
+}
+
+
+def _unavailable_mlx_assessment_antigravity() -> dict[str, object]:
+    """Return a complete fixture/default assessment with no invented results."""
+    return {
+        "schema": "exp451-mlx-assessment-antigravity.v1",
+        "tensor_eligibility": "partial_tensor_substages_only",
+        "exact_frozen_algorithm_expressible": False,
+        "exact_expression_status": "gate_failed",
+        "exact_expression_reason": "frozen_scipy_sklearn_aeon_and_pytorch_score_path_has_no_validated_exact_mlx_expression",
+        "mlx_available": False,
+        "mlx_version": "unavailable",
+        "mlx_metal_available": False,
+        "mlx_metal_version": "unavailable",
+        "mlx_device": "unavailable",
+        "transfer_compilation_overhead_status": "not_run_gate_1_failed",
+        "transfer_compilation_overhead_result": "not_run_without_exact_mlx_expression",
+        "parity_requirement": "same_input_and_seed_finite_outputs_identical_candidates_at_every_preregistered_alpha_scores_within_tolerance",
+        "parity_status": "not_run_gate_1_failed",
+        "parity_result": "not_run_without_exact_mlx_expression",
+        "speed_benchmark_requirement": "mlx_at_least_1.1x_faster_including_transfer_compilation_and_synchronization",
+        "speed_benchmark_status": "not_run_gate_1_failed",
+        "speed_benchmark_result": "not_run_without_exact_mlx_expression",
+        "canonical_cpu_mps_fallback": "frozen_scipy_sklearn_aeon_cpu_plus_pytorch_mps_with_native_cpu_pool_fallback",
+        "fallback_reason": "mlx_gate_1_failed_exact_frozen_algorithm_not_expressible_and_validated",
+    }
 
 
 def _sha256_digest(value: object) -> bool:
@@ -93,6 +142,9 @@ class Exp451BackendDecision:
     )
     canonical_cpu_fallback: str = "pytorch_cpu_native_adaptive_avg_pool"
     benchmark_requirement: str = "mlx_or_mps_speedup_ge_1_1x_with_device_transfer"
+    mlx_assessment: Mapping[str, object] = field(
+        default_factory=_unavailable_mlx_assessment_antigravity
+    )
 
     def __post_init__(self) -> None:
         if self.tensor_backend != ("mps" if self.mps_available else "cpu"):
@@ -117,6 +169,43 @@ class Exp451BackendDecision:
             raise ValueError("Exp451 canonical CPU fallback must be a non-empty string")
         if not self.benchmark_requirement or type(self.benchmark_requirement) is not str:
             raise ValueError("Exp451 benchmark requirement must be a non-empty string")
+        assessment = dict(self.mlx_assessment)
+        if set(assessment) != _MLX_ASSESSMENT_KEYS_ANTIGRAVITY:
+            raise ValueError("Exp451 MLX assessment is incomplete")
+        if (
+            assessment["schema"] != "exp451-mlx-assessment-antigravity.v1"
+            or assessment["tensor_eligibility"] != "partial_tensor_substages_only"
+            or assessment["exact_frozen_algorithm_expressible"] is not False
+            or assessment["exact_expression_status"] != "gate_failed"
+            or assessment["mlx_available"] is not self.mlx_available
+            or type(assessment["mlx_metal_available"]) is not bool
+            or assessment["transfer_compilation_overhead_status"] != "not_run_gate_1_failed"
+            or assessment["transfer_compilation_overhead_result"] != "not_run_without_exact_mlx_expression"
+            or assessment["parity_status"] != "not_run_gate_1_failed"
+            or assessment["parity_result"] != "not_run_without_exact_mlx_expression"
+            or assessment["speed_benchmark_status"] != "not_run_gate_1_failed"
+            or assessment["speed_benchmark_result"] != "not_run_without_exact_mlx_expression"
+        ):
+            raise ValueError("Exp451 MLX assessment gate result differs")
+        string_fields = _MLX_ASSESSMENT_KEYS_ANTIGRAVITY - {
+            "exact_frozen_algorithm_expressible", "mlx_available", "mlx_metal_available"
+        }
+        if any(
+            type(assessment[name]) is not str or not assessment[name]
+            for name in string_fields
+        ):
+            raise ValueError("Exp451 MLX assessment text is incomplete")
+        if self.mlx_available and (
+            assessment["mlx_version"] == "unavailable"
+            or assessment["mlx_device"] == "unavailable"
+        ):
+            raise ValueError("Exp451 available MLX assessment lacks version or device")
+        if assessment["mlx_metal_available"] and (
+            assessment["mlx_metal_version"] == "unavailable"
+            or assessment["mlx_device"] == "unavailable"
+        ):
+            raise ValueError("Exp451 available mlx-metal assessment lacks version or device")
+        object.__setattr__(self, "mlx_assessment", MappingProxyType(assessment))
 
     @property
     def tensor_eligibility(self) -> bool:
@@ -144,6 +233,7 @@ class Exp451BackendDecision:
             "deterministic_numerical_parity": self.deterministic_numerical_parity,
             "canonical_cpu_fallback": self.canonical_cpu_fallback,
             "benchmark_requirement": self.benchmark_requirement,
+            "mlx_assessment": dict(self.mlx_assessment),
         }
 
 

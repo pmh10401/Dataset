@@ -956,6 +956,16 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "paper/equipment_anomaly_detection/hard_route_paper.py",
       "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
       "kind": "ast_import"
@@ -1071,6 +1081,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp451_verified_accelerated_resume_antigravity/migration_antigravity.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp451_verified_accelerated_resume_antigravity/reporting_antigravity.py",
       "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py",
       "kind": "ast_import"
@@ -1117,6 +1132,11 @@
     },
     {
       "callee": "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp451_verified_accelerated_resume_antigravity/migration_antigravity.py",
       "caller": "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
       "kind": "ast_import"
     },
@@ -1870,7 +1890,7 @@
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_transforms_backend_antigravity.py",
         "scratch/run_exp451_verified_accelerated_resume_antigravity.py"
       ],
-      "effects": "MPS-first Exp451 tensor-backend readiness assessment.\n\nThe returned decision is the provenance record for the frozen selection: when\nMPS is available, adaptive pooling and recurrence distances use MPS; SciPy\npolyphase/PCHIP and sklearn/aeon stages remain CPU-only. MLX availability is\nobserved for provenance only and never becomes an execution option.",
+      "effects": "MPS-first Exp451 tensor-backend readiness assessment.\n\nThe returned decision is the provenance record for the frozen selection: when\nMPS is available, adaptive pooling and recurrence distances use MPS; SciPy\npolyphase/PCHIP and sklearn/aeon stages remain CPU-only. MLX package, metal and\ndevice availability are recorded with an explicit gate-one failure: the full\nfrozen score path has no validated exact MLX expression, so parity and speed\nclaims remain truthfully unrun.",
       "module": "experiments.exp451_verified_accelerated_resume_antigravity.backend_antigravity",
       "path": "experiments/exp451_verified_accelerated_resume_antigravity/backend_antigravity.py",
       "tests": [
@@ -1955,13 +1975,16 @@
     {
       "callers": [
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
         "scratch/run_exp451_verified_accelerated_resume_antigravity.py"
       ],
       "effects": "Historical Exp450 authority reconstruction and create-only Exp451 migration.",
       "module": "experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity",
       "path": "experiments/exp451_verified_accelerated_resume_antigravity/migration_antigravity.py",
       "tests": [
-        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py"
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py"
       ]
     },
     {
@@ -1978,6 +2001,7 @@
     },
     {
       "callers": [
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_runner_cli_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
@@ -1987,6 +2011,7 @@
       "module": "experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity",
       "path": "experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py",
       "tests": [
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_runner_cli_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py"
       ]
@@ -2071,6 +2096,7 @@
       "callers": [
         "experiments/exp451_verified_accelerated_resume_antigravity/evaluation_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/reporting_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py",
         "scratch/run_exp451_verified_accelerated_resume_antigravity.py"
       ],
@@ -2078,6 +2104,7 @@
       "module": "experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity",
       "path": "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
       "tests": [
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_migration_artifacts_antigravity.py",
         "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_verification_reporting_antigravity.py"
       ]
     },

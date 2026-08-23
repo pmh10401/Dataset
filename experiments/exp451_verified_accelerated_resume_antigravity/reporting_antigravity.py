@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ctypes
 from dataclasses import dataclass
+import errno
 import fcntl
 import os
 from pathlib import Path
@@ -96,34 +98,51 @@ def _release_report_publication_lock_antigravity(descriptor: int) -> None:
         os.close(descriptor)
 
 
-def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Path:
-    """Publish staged leaves under a process-owned lock and completion marker.
+def _rename_report_directory_no_replace_antigravity(
+    source: Path, destination: Path,
+) -> None:
+    """Atomically publish one sibling directory without replacing any entry."""
+    source = Path(source)
+    destination = Path(destination)
+    if source.parent != destination.parent:
+        raise ValueError("Exp451 report publication stage is not a sibling")
+    try:
+        renamex_np = ctypes.CDLL(None, use_errno=True).renamex_np
+    except AttributeError as error:
+        raise OSError(
+            errno.ENOTSUP, "Exp451 atomic no-replace rename is unavailable"
+        ) from error
+    renamex_np.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    renamex_np.restype = ctypes.c_int
+    if renamex_np(
+        os.fsencode(source), os.fsencode(destination), ctypes.c_uint(0x00000004)
+    ) == 0:
+        return
+    code = ctypes.get_errno()
+    if code in {errno.EEXIST, errno.ENOTEMPTY}:
+        raise FileExistsError(code, "Exp451 report destination already exists")
+    raise OSError(code, "Exp451 atomic no-replace report publication failed")
 
-    Portable ``rename`` can replace an existing directory, so it is not a
-    create-only primitive.  A nonblocking kernel lock serializes publishers and
-    is released automatically after process death.  Individual leaves use
-    hard-link create-only publication and the marker is written last.  A
-    directory lacking that marker is an interrupted staging attempt, never a
-    valid final report, and is removed only by its lock owner before a retry.
-    """
+
+def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Path:
+    """Publish a complete sibling through one locked, atomic no-replace rename."""
     parent = destination.parent
     _checked_target_path_antigravity(parent, "report_guard_antigravity.json", create=True)
     if stage.is_symlink() or not stage.is_dir():
         raise ValueError("Exp451 report stage is unsafe")
-    expected = {path.name: path.read_bytes() for path in stage.iterdir() if path.is_file()}
-    if len(expected) != len(list(stage.iterdir())):
-        raise ValueError("Exp451 report stage contains an unsafe leaf")
     marker_name = ".exp451_report_complete_antigravity.json"
-    progress_name = ".exp451_report_in_progress_antigravity.json"
+    entries = list(stage.iterdir())
+    expected: dict[str, bytes] = {}
+    for path in entries:
+        details = path.lstat()
+        if path.name == marker_name or path.is_symlink() or not stat.S_ISREG(details.st_mode):
+            raise ValueError("Exp451 report stage contains an unsafe leaf")
+        expected[path.name] = path.read_bytes()
     marker_data = canonical_json_bytes({
         "schema": "exp451-report-publication-antigravity.v1",
         "leaves_sha256": sha256(canonical_json_bytes({
             name: sha256(data).hexdigest() for name, data in sorted(expected.items())
         })).hexdigest(),
-    })
-    progress_data = canonical_json_bytes({
-        "schema": "exp451-report-publication-in-progress-antigravity.v1",
-        "destination": destination.name,
     })
     lock_descriptor = _acquire_report_publication_lock_antigravity(destination)
     try:
@@ -133,31 +152,45 @@ def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Pat
                 raise ValueError("Exp451 report destination is unsafe")
             marker = destination / marker_name
             if marker.exists() and marker.is_file() and marker.read_bytes() == marker_data:
-                actual = {path.name: path.read_bytes() for path in destination.iterdir() if path.is_file() and path.name not in {marker_name, progress_name}}
+                destination_entries = list(destination.iterdir())
+                if any(
+                    path.is_symlink() or not stat.S_ISREG(path.lstat().st_mode)
+                    for path in destination_entries
+                ):
+                    raise ValueError("Exp451 report destination already differs")
+                actual = {
+                    path.name: path.read_bytes()
+                    for path in destination_entries
+                    if path.name != marker_name
+                }
                 if (
-                    expected != actual or (destination / progress_name).read_bytes() != progress_data
-                    or len(actual) + 2 != len(list(destination.iterdir()))
+                    expected != actual or len(actual) + 1 != len(destination_entries)
                 ):
                     raise ValueError("Exp451 report destination already differs")
                 return destination
-            # Only an incomplete directory made by this protocol can be cleaned.
-            progress = destination / progress_name
-            if (
-                marker.exists() or not progress.is_file() or progress.read_bytes() != progress_data
-                or any(path.is_symlink() or not path.is_file() for path in destination.iterdir())
-            ):
-                raise ValueError("Exp451 report destination already differs")
-            shutil.rmtree(destination)
+            # A markerless or differently marked destination may be foreign.
+            # It is never deleted or adopted by this publication protocol.
+            raise ValueError("Exp451 report destination already differs")
+
+        candidate = Path(tempfile.mkdtemp(
+            prefix=f".{destination.name}.publish_stage_antigravity_", dir=parent
+        ))
+        published = False
+        try:
+            for name, data in expected.items():
+                _publish_create_only_antigravity(candidate / name, data)
+            _publish_create_only_antigravity(candidate / marker_name, marker_data)
+            _dir_fsync_antigravity(candidate)
+            try:
+                _rename_report_directory_no_replace_antigravity(candidate, destination)
+            except FileExistsError as error:
+                raise ValueError("Exp451 report destination already differs") from error
+            published = True
             _dir_fsync_antigravity(parent)
-        destination.mkdir()
-        _publish_create_only_antigravity(destination / progress_name, progress_data)
-        for name, data in expected.items():
-            _publish_create_only_antigravity(destination / name, data)
-        _dir_fsync_antigravity(destination)
-        _publish_create_only_antigravity(destination / marker_name, marker_data)
-        _dir_fsync_antigravity(destination)
-        _dir_fsync_antigravity(parent)
-        return destination
+            return destination
+        finally:
+            if not published and candidate.exists():
+                shutil.rmtree(candidate)
     finally:
         _release_report_publication_lock_antigravity(lock_descriptor)
 

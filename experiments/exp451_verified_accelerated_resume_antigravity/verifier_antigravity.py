@@ -49,6 +49,7 @@ from .contracts_antigravity import (
     Exp451RunContext,
     canonical_json_bytes,
 )
+from .migration_antigravity import frozen_exp450_backend_record_antigravity
 from .runner_antigravity import (
     _NATIVE_ORIGIN_ANTIGRAVITY,
     _NATIVE_SCHEMA_ANTIGRAVITY,
@@ -185,7 +186,8 @@ def _check_imported_envelope_antigravity(
         or value.get("source_context_sha256") != EXP450_SOURCE_CONTEXT_SHA256
         or value.get("catalog_sha256") != context.catalog_sha256
         or value.get("dataset") != entry.get("dataset") or value.get("condition_id") != condition
-        or value.get("raw_identity") != entry or value.get("backend") != context.backend.artifact_record()
+        or value.get("raw_identity") != entry
+        or value.get("backend") != frozen_exp450_backend_record_antigravity()
         or value.get("execution_origin") != _IMPORTED_ORIGIN_ANTIGRAVITY
         or not _sha256_antigravity(value.get("payload_sha256"))
         or sha256(canonical_json_bytes(value.get("payload"))).hexdigest() != value.get("payload_sha256")

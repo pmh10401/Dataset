@@ -51,6 +51,142 @@ class MigrationAuthorityTests(unittest.TestCase):
                 self.repository, {"catalog_sha256": "0" * 64}
             )
 
+    def test_migration_target_envelope_is_accepted_by_imported_verifier(self) -> None:
+        """The verifier must accept the historical backend emitted by migration."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.contracts_antigravity import (
+            Exp451BackendDecision,
+            Exp451MigrationEntry,
+            Exp451RunContext,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
+            _target_envelope_antigravity,
+            reconstruct_exp450_source_context_antigravity,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
+            _check_imported_envelope_antigravity,
+        )
+
+        source_context = reconstruct_exp450_source_context_antigravity(
+            self.repository, self.catalog
+        )
+        raw_identity = {
+            "dataset": "fixture_antigravity",
+            "train": {"count": 5},
+            "test": {"count": 2},
+        }
+        payload = _typed_payload_fixture()
+        payload_sha256 = sha256(canonical_json_bytes(payload)).hexdigest()
+        source = {
+            "condition_id": "A",
+            "dataset": raw_identity["dataset"],
+            "raw_identity": raw_identity,
+            "backend": dict(source_context.backend),
+            "payload": payload,
+            "payload_sha256": payload_sha256,
+        }
+        current_backend = Exp451BackendDecision(
+            "cpu", "fixture", False, False, 12, 11
+        )
+        context = Exp451RunContext(
+            "full", self.root.resolve() / "run_antigravity", "d" * 64,
+            source_context.catalog_sha256, {"fixture_antigravity.py": "e" * 64},
+            current_backend, "f" * 64,
+        )
+        source_envelope_sha256 = "a" * 64
+        target = _target_envelope_antigravity(
+            source, source_context, context.sha256, source_envelope_sha256
+        )
+        migration_entry = Exp451MigrationEntry(
+            raw_identity["dataset"], "A", "source_antigravity/result_antigravity.json",
+            source_envelope_sha256, payload_sha256,
+            "target_antigravity/result_antigravity.json", "b" * 64,
+        )
+
+        _check_imported_envelope_antigravity(
+            target, entry=raw_identity, condition="A", context=context,
+            migration_entry=migration_entry,
+        )
+
+    def test_verifier_rejects_backend_from_the_other_execution_origin(self) -> None:
+        """Imported and native envelopes cannot exchange historical/current backends."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.contracts_antigravity import (
+            Exp451BackendDecision,
+            Exp451MigrationEntry,
+            Exp451RunContext,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.migration_antigravity import (
+            _target_envelope_antigravity,
+            reconstruct_exp450_source_context_antigravity,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import (
+            _NATIVE_ORIGIN_ANTIGRAVITY,
+            _NATIVE_SCHEMA_ANTIGRAVITY,
+        )
+        from experiments.exp451_verified_accelerated_resume_antigravity.verifier_antigravity import (
+            _check_imported_envelope_antigravity,
+            _check_native_envelope_antigravity,
+        )
+
+        source_context = reconstruct_exp450_source_context_antigravity(
+            self.repository, self.catalog
+        )
+        raw_identity = {
+            "dataset": "fixture_antigravity",
+            "train": {"count": 5},
+            "test": {"count": 2},
+        }
+        payload = _typed_payload_fixture()
+        payload_sha256 = sha256(canonical_json_bytes(payload)).hexdigest()
+        current_backend = Exp451BackendDecision(
+            "cpu", "fixture", False, False, 12, 11
+        )
+        context = Exp451RunContext(
+            "full", self.root.resolve() / "run_antigravity", "d" * 64,
+            source_context.catalog_sha256, {"fixture_antigravity.py": "e" * 64},
+            current_backend, "f" * 64,
+        )
+        source_envelope_sha256 = "a" * 64
+        imported = _target_envelope_antigravity(
+            {
+                "condition_id": "A", "dataset": raw_identity["dataset"],
+                "raw_identity": raw_identity, "backend": dict(source_context.backend),
+                "payload": payload, "payload_sha256": payload_sha256,
+            },
+            source_context, context.sha256, source_envelope_sha256,
+        )
+        migration_entry = Exp451MigrationEntry(
+            raw_identity["dataset"], "A", "source_antigravity/result_antigravity.json",
+            source_envelope_sha256, payload_sha256,
+            "target_antigravity/result_antigravity.json", "b" * 64,
+        )
+        with self.assertRaisesRegex(ValueError, "imported checkpoint binding"):
+            _check_imported_envelope_antigravity(
+                {**imported, "backend": context.backend.artifact_record()},
+                entry=raw_identity, condition="A", context=context,
+                migration_entry=migration_entry,
+            )
+
+        native = {
+            "schema": _NATIVE_SCHEMA_ANTIGRAVITY,
+            "context_sha256": context.sha256,
+            "catalog_sha256": context.catalog_sha256,
+            "condition_id": "C",
+            "dataset": raw_identity["dataset"],
+            "raw_identity": raw_identity,
+            "backend": context.backend.artifact_record(),
+            "execution_origin": _NATIVE_ORIGIN_ANTIGRAVITY,
+            "payload": payload,
+            "payload_sha256": payload_sha256,
+        }
+        _check_native_envelope_antigravity(
+            native, entry=raw_identity, condition="C", context=context
+        )
+        with self.assertRaisesRegex(ValueError, "native checkpoint binding"):
+            _check_native_envelope_antigravity(
+                {**native, "backend": dict(source_context.backend)},
+                entry=raw_identity, condition="C", context=context,
+            )
+
     def test_create_only_envelope_reuses_only_exact_bytes(self) -> None:
         """Changing an existing target artifact must never be silently overwritten."""
         from experiments.exp451_verified_accelerated_resume_antigravity.artifacts_antigravity import (

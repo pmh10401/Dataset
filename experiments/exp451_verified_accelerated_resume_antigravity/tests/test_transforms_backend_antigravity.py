@@ -106,6 +106,10 @@ class Exp451TransformsBackendTests(unittest.TestCase):
                 "torch_version": "2.13.0",
                 "mps_available": True,
                 "mlx_available": True,
+                "mlx_version": "0.32.0",
+                "mlx_metal_available": True,
+                "mlx_metal_version": "0.32.0",
+                "mlx_device": "Device(gpu, 0)",
                 "logical_cpu_count": 12,
             },
         ):
@@ -287,8 +291,10 @@ class Exp451TransformsBackendTests(unittest.TestCase):
             decision.benchmark_required,
             "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
         )
+        record = decision.artifact_record()
+        mlx_assessment = record.pop("mlx_assessment")
         self.assertEqual(
-            decision.artifact_record(),
+            record,
             {
                 "tensor_backend": "mps",
                 "torch_version": "2.13.0",
@@ -302,6 +308,56 @@ class Exp451TransformsBackendTests(unittest.TestCase):
                 "deterministic_numerical_parity": "finite_scores_identical_candidate_indices_within_tolerance",
                 "canonical_cpu_fallback": "pytorch_cpu_native_adaptive_avg_pool",
                 "benchmark_requirement": "mlx_or_mps_speedup_ge_1_1x_with_device_transfer",
+            },
+        )
+        self.assertFalse(mlx_assessment["mlx_available"])
+        self.assertEqual(mlx_assessment["mlx_version"], "unavailable")
+        self.assertEqual(mlx_assessment["parity_status"], "not_run_gate_1_failed")
+        self.assertEqual(
+            mlx_assessment["speed_benchmark_status"], "not_run_gate_1_failed"
+        )
+
+    def test_mlx_assessment_records_factual_gate_one_failure(self) -> None:
+        """Unavailable exact MLX science records no invented parity or speed result."""
+        with patch.object(
+            backend_antigravity,
+            "_probe_antigravity",
+            return_value={
+                "torch_version": "2.13.0",
+                "mps_available": True,
+                "mlx_available": True,
+                "mlx_version": "0.32.0",
+                "mlx_metal_available": True,
+                "mlx_metal_version": "0.32.0",
+                "mlx_device": "Device(gpu, 0)",
+                "logical_cpu_count": 12,
+            },
+        ):
+            decision = assess_exp451_backend_antigravity()
+
+        self.assertEqual(
+            decision.artifact_record().get("mlx_assessment"),
+            {
+                "schema": "exp451-mlx-assessment-antigravity.v1",
+                "tensor_eligibility": "partial_tensor_substages_only",
+                "exact_frozen_algorithm_expressible": False,
+                "exact_expression_status": "gate_failed",
+                "exact_expression_reason": "frozen_scipy_sklearn_aeon_and_pytorch_score_path_has_no_validated_exact_mlx_expression",
+                "mlx_available": True,
+                "mlx_version": "0.32.0",
+                "mlx_metal_available": True,
+                "mlx_metal_version": "0.32.0",
+                "mlx_device": "Device(gpu, 0)",
+                "transfer_compilation_overhead_status": "not_run_gate_1_failed",
+                "transfer_compilation_overhead_result": "not_run_without_exact_mlx_expression",
+                "parity_requirement": "same_input_and_seed_finite_outputs_identical_candidates_at_every_preregistered_alpha_scores_within_tolerance",
+                "parity_status": "not_run_gate_1_failed",
+                "parity_result": "not_run_without_exact_mlx_expression",
+                "speed_benchmark_requirement": "mlx_at_least_1.1x_faster_including_transfer_compilation_and_synchronization",
+                "speed_benchmark_status": "not_run_gate_1_failed",
+                "speed_benchmark_result": "not_run_without_exact_mlx_expression",
+                "canonical_cpu_mps_fallback": "frozen_scipy_sklearn_aeon_cpu_plus_pytorch_mps_with_native_cpu_pool_fallback",
+                "fallback_reason": "mlx_gate_1_failed_exact_frozen_algorithm_not_expressible_and_validated",
             },
         )
 

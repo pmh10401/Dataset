@@ -64,6 +64,11 @@ def _digest_antigravity(value: object) -> bool:
     return type(value) is str and len(value) == 64 and all(character in "0123456789abcdef" for character in value)
 
 
+def frozen_exp450_backend_record_antigravity() -> dict[str, object]:
+    """Return the one historical backend record accepted for imported results."""
+    return dict(_EXP450_BACKEND_RECORD_ANTIGRAVITY)
+
+
 @dataclass(frozen=True, slots=True)
 class Exp450SourceContextAntigravity:
     """The historical Exp450 context shape, kept separate from Exp451 contracts."""
@@ -372,7 +377,8 @@ def _target_envelope_antigravity(
         "source_context_sha256": source_context.sha256,
         "catalog_sha256": source_context.catalog_sha256,
         "condition_id": source["condition_id"], "dataset": source["dataset"],
-        "raw_identity": source["raw_identity"], "backend": source["backend"],
+        "raw_identity": source["raw_identity"],
+        "backend": frozen_exp450_backend_record_antigravity(),
         "execution_origin": "imported_exp450_mps", "payload": source["payload"],
         "payload_sha256": source["payload_sha256"], "source_envelope_sha256": source_envelope_sha256,
     }
@@ -536,6 +542,7 @@ def _verify_fixture_migration_antigravity(
 
 __all__ = [
     "Exp450SourceContextAntigravity", "TRANSFORMS_PATH_ANTIGRAVITY",
+    "frozen_exp450_backend_record_antigravity",
     "migrate_verified_exp450_results_antigravity", "reconstruct_exp450_source_context_antigravity",
     "verify_migration_manifest_antigravity",
 ]
