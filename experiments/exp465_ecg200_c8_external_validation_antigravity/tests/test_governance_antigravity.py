@@ -175,7 +175,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp465")
                 self.assertEqual(record["kind"], "ecg200_c8_external_train_qualification")
                 self.assertEqual(record["status"], "implementation_plan_written_awaiting_user_review")
-                self.assertEqual(record["implementation_status"], "task_2_sources_interpolation_awaiting_independent_review")
+                self.assertEqual(record["implementation_status"], "task_2_review_pass_complete")
                 self.assertEqual(record["run_identity"], "exp465-ecg200-c8-external-validation-antigravity-20260822")
                 self.assertEqual(record["run_root"], OFFICIAL_ROOT_TEXT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -210,16 +210,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, 42)
-        self.assertEqual(checkbox_parser.checked_count, 12)
+        self.assertEqual(checkbox_parser.checked_count, 14)
         task1_marker = '<h2><label><input type="checkbox" checked disabled> Task 1 —'
-        task2_marker = '<h2><label><input type="checkbox" disabled> Task 2 —'
+        task2_marker = '<h2><label><input type="checkbox" checked disabled> Task 2 —'
         task1_section = plan_text[plan_text.index(task1_marker):plan_text.index(task2_marker)]
         self.assertEqual(task1_section.count('type="checkbox" checked disabled'), 7)
         self.assertEqual(task1_section.count('type="checkbox" disabled'), 0)
         task3_marker = '<h2><label><input type="checkbox" disabled> Task 3 —'
         task2_section = plan_text[plan_text.index(task2_marker):plan_text.index(task3_marker)]
-        self.assertEqual(task2_section.count('type="checkbox" checked disabled'), 5)
-        self.assertEqual(task2_section.count('type="checkbox" disabled'), 2)
+        self.assertEqual(task2_section.count('type="checkbox" checked disabled'), 7)
+        self.assertEqual(task2_section.count('type="checkbox" disabled'), 0)
 
         builder = load_builder_antigravity()
         source_parent = subprocess.check_output([
