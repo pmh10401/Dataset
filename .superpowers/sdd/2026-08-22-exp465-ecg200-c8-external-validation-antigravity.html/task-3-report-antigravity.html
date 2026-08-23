@@ -2,7 +2,7 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 Task 3 report — Exp464-bound C0/C6/C8 점수</h1>
-<p>상태: <code>task_3_implementation_complete_awaiting_independent_review</code>. Implementation은 GREEN이지만, 계획의 Task 3 heading과 Step 6은 독립 검토 전까지 unchecked로 유지된다. 이 보고서는 independent approval 또는 qualification result를 주장하지 않는다.</p>
+<p>상태: <code>task_3_review_pass_complete</code>. 새 Ox Alpha Ultra 독립 검토 결과는 <code>SPEC PASS / QUALITY APPROVED</code>이며 지적 사항이 없다. 계획의 Task 3 heading과 Step 6을 checked로 바꿨다. 이는 qualification result가 아니다.</p>
 <h2>구현 결과</h2>
 <ul>
 <li><code>scoring_antigravity.py</code>: local frozen/slots <code>FoldMethodScoresAntigravity</code>는 정확히 13필드를 가진다. entrypoint는 imported Exp464 scorer를 직접 한 번 호출하고, 그 결과에서 C0,C6,C8만 frozen order로 projection한다. C0, synthetic generator, C6, C8 수학을 복사하거나 다시 쓰지 않는다.</li>

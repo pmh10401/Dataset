@@ -2943,7 +2943,7 @@
       "experiment": "Exp465",
       "kind": "ecg200_c8_external_train_qualification",
       "status": "implementation_plan_written_awaiting_user_review",
-      "implementation_status": "task_3_implementation_complete_awaiting_independent_review",
+      "implementation_status": "task_3_review_pass_complete",
       "documents": {
         "dashboard": "docs/EXP465_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP465_PREREGISTRATION_antigravity.html",
@@ -3000,7 +3000,7 @@
       "scientific_winner_selected": false,
       "official_root_present": false,
       "review_only": false,
-      "notes": "Task 3 implements the Exp464-bound C0/C6/C8 projection with exact parity and scorer-call spy coverage; no qualification decisions or executions occurred."
+      "notes": "Task 3 Exp464-bound C0/C6/C8 projection passed independent review (SPEC PASS / QUALITY APPROVED); no qualification decisions or executions occurred."
     }
   ]
 }
