@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp466 진행 대시보드</title>
+<style>
+body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;margin:1rem 0;background:#f5f7fa;border-left:6px solid #2457a6}.ok{border-left-color:#16794b}.stop{background:#fff4f2;border-left-color:#b42318}input{width:1.05rem;height:1.05rem;vertical-align:-.15rem}
+</style>
+</head>
+<body><main>
+<h1>Exp466 진행 대시보드</h1>
+<div class="box ok"><strong>현재 상태:</strong> 설계와 다중 에이전트 교차 검토가 완료됐다. 아직 구현이나 성능 실행은 시작하지 않았다.</div>
+<table>
+<tr><th>목표</th><td>ECG200 period-change AUC를 고정 phase-registration margin으로 개선</td></tr>
+<tr><th>주 후보</th><td><code>C9 = confirmed max(C0, P9 rank)</code></td></tr>
+<tr><th>고정 warp</th><td>기존 period generator의 <code>1.25</code> 한 개만 사용</td></tr>
+<tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, period가 매 fold C0보다 높음, 정상 confirmation 0</td></tr>
+<tr><th>현재 결과</th><td>아직 없음</td></tr>
+</table>
+
+<h2>진행 단계</h2>
+<ul>
+<li><label><input type="checkbox" checked disabled> Exp465 실패 원인과 retained evidence 확인</label></li>
+<li><label><input type="checkbox" checked disabled> Terra·Luna·Ox Alpha Ultra·Sol 아이디어 공유 및 교차 검토</label></li>
+<li><label><input type="checkbox" checked disabled> Exp466 설계 승인 및 HTML 설계서 작성</label></li>
+<li><label><input type="checkbox" disabled> 구현 계획 작성 및 승인</label></li>
+<li><label><input type="checkbox" disabled> TDD 구현과 MLX 적합성 확인</label></li>
+<li><label><input type="checkbox" disabled> private 실행 1</label></li>
+<li><label><input type="checkbox" disabled> private 실행 2와 재현성 비교</label></li>
+<li><label><input type="checkbox" disabled> 결과 독립 검토와 종료 판단</label></li>
+</ul>
+
+<div class="box stop"><strong>현재 금지:</strong> ECG200 TEST 접근, 공식 실행, C8 임계값 조정, warp grid 탐색, 라우팅, champion·pending·promotion 변경.</div>
+<p>설계서: <a href="superpowers/specs/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html">Exp466 설계 보기</a>.</p>
+</main></body></html>
