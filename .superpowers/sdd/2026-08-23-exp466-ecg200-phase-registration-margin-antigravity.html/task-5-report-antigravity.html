@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp466 Task 5 구현·검토 보고서</title>
+</head>
+<body>
+  <main>
+    <h1>Exp466 Task 5 구현·검토 보고서</h1>
+    <p><strong>상태:</strong> DONE — nonzero normal confirmation을 실행 예외가 아닌 publishable failed result로 보존하고, publisher와 inspector의 blocked-fold identity를 고정했다.</p>
+
+    <h2>합성 fixture 경계</h2>
+    <p>기존 deterministic 69×140 Task 4 fixture를 복제한 뒤 row 0을 같은 코드베이스의 period-change 합성 행으로 교체하고, frozen 2 seeds × 5 blocked folds를 다시 계산했다. 이 fixture는 단위 테스트 전용이며 실제 ECG200, TEST label, private/official 결과 또는 성능 주장을 포함하지 않는다.</p>
+    <ul>
+      <li>seed별 정상 confirmation: <code>{20260721: 1, 20261721: 1}</code></li>
+      <li><code>normal_confirmation_present</code> fold: <code>20260721:0</code>, <code>20261721:0</code></li>
+      <li>decision: ineligible failed result이며 per-fold 및 per-seed 실패 이유를 그대로 publication→inspection round-trip한다.</li>
+    </ul>
+
+    <h2>TDD RED</h2>
+    <pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_qualification_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity</code></pre>
+    <p><code>Ran 17 tests in 87.078s</code> — <code>FAILED (failures=2, errors=5)</code>.</p>
+    <ul>
+      <li>2 contract subtests: 정상 confirmation 1 및 69를 기존 zero-only contract가 거부했다.</li>
+      <li>3 errors: qualification 및 두 publication/replay 경로가 <code>ValueError: normal_confirmation_present</code>로 중단됐다.</li>
+      <li>2 failures: publisher와 inspector가 OOF coverage만 유지한 fold 0/1 index 교환을 허용했다.</li>
+    </ul>
+
+    <h2>GREEN 및 회귀</h2>
+    <ul>
+      <li>같은 focused command: <code>Ran 17 tests in 90.049s — OK</code>.</li>
+      <li>Task 5 exact artifacts/replay/dashboard command: <code>Ran 10 tests in 65.096s — OK</code>.</li>
+      <li>Task 1 contracts: <code>Ran 4 tests in 0.004s — OK</code>.</li>
+      <li>Task 4 qualification/evaluation: <code>Ran 7 tests in 47.717s — OK</code>.</li>
+    </ul>
+
+    <h2>고정된 의미 경계</h2>
+    <ul>
+      <li>normal trial count는 seed별 정확히 69이며, normal confirmation count는 ordered immutable integer 0..69를 허용한다.</li>
+      <li>publisher와 inspector는 query index가 정확한 <code>np.array_split(np.arange(69), 5)[fold]</code>이고 fit index가 그 ordered complement인지 독립적으로 확인한다.</li>
+      <li>inspector는 re-canonicalized/rehashed context gate/count, method summary, nonempty failed-fold leaf mutation을 각각 거부한다.</li>
+      <li>runtime forbidden-call patch로 inspection이 loader 또는 Task 2/3/4 계산 경로를 호출하지 않음을 유지한다.</li>
+    </ul>
+
+    <h2>Controller 독립 검증</h2>
+    <ul>
+      <li>Task 5 exact suite 1차: <code>10/10</code>, <code>60.970s</code>.</li>
+      <li>Task 5 exact suite 2차: <code>10/10</code>, <code>60.886s</code>.</li>
+      <li>전체 Exp466: <code>39/39</code>, <code>124.598s</code>.</li>
+      <li>Exp465 lower regression: <code>7/7</code>, <code>30.359s</code>.</li>
+      <li><code>compileall</code>, HTML parse, <code>git diff --check</code>, forbidden loader/scorer scan을 모두 통과했다.</li>
+      <li>임시 경로의 explicit publish→inspect에서 정확히 seven leaves와 qualification·decision·artifact-map equality를 확인했다.</li>
+    </ul>
+
+    <h2>Fresh Sol review</h2>
+    <p><strong>최종 판정:</strong> <code>SHIP</code>. Critical <code>0</code>건, Important <code>0</code>건이다.</p>
+    <p>replay가 publisher와 dashboard의 일부 파생 계산을 다시 구현하는 점은 nonblocking minor로 기록했다. 이 중복은 저장된 파생값을 그대로 믿지 않고 retained evidence만으로 수식·qualification·decision·dashboard를 독립 검증하기 위한 의도된 경계이므로 허용한다.</p>
+    <p>판정 근거는 Task 5 <code>10/10</code> 두 번(<code>60.970s</code>, <code>60.886s</code>), 전체 Exp466 <code>39/39</code>(<code>124.598s</code>), Exp465 하위 회귀 <code>7/7</code>(<code>30.359s</code>), compileall, HTML parse, diff 검사, 금지 loader/scorer scan, 임시 publish→inspect의 정확한 7개 파일 및 qualification·decision·artifact-map equality다.</p>
+
+    <h2>자체 검토</h2>
+    <ul>
+      <li>publication은 새 root만 허용하고 canonical UTF-8 JSON/JSONL 및 self-excluding SHA-256 map을 고정한다.</li>
+      <li>inspection은 seven leaves만으로 rank, strict confirmation, C9, AUC, qualification, decision과 dashboard를 독립 재구성한다.</li>
+      <li>normal confirmation 실패와 exact blocked-fold identity가 publication 및 replay 양쪽에서 보존·검증된다.</li>
+      <li>기능상 미해결 사항은 발견하지 못했다. 다만 모든 수치는 합성 테스트 증거이며 실제 private/official 성능 결과가 아니다.</li>
+    </ul>
+  </main>
+</body>
+</html>

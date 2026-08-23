@@ -550,7 +550,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "map_builder",
             BUILDER_ANTIGRAVITY,
-            "Caller: Task 1-4 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-4 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
+            "Caller: Task 1-5 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-5 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
             "build_triplet_antigravity",
             map_test,
         ),
@@ -564,7 +564,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task4_qualification",
             QUALIFICATION_ANTIGRAVITY,
-            "Caller: focused Task 4 qualification tests and future explicitly authorized orchestration/publication. Effect: accepts only the exact frozen seed-major ten FoldMethodScores records, proves 69 unique OOF normals per seed, independently replays C0 plus raw P9 margins/ranks/confirmations and C9, computes fixed Mann-Whitney AUC gates, and emits exactly ten unchanged Task 1 scalar fold rows with deterministic reasons and zero normal confirmation.",
+            "Caller: focused Task 4 qualification tests and future explicitly authorized orchestration/publication. Effect: accepts only the exact frozen seed-major ten FoldMethodScores records, proves 69 unique OOF normals per seed, independently replays C0 plus raw P9 margins/ranks/confirmations and C9, computes fixed Mann-Whitney AUC gates, emits exactly ten unchanged Task 1 scalar fold rows with deterministic reasons, preserves ordered immutable per-seed normal confirmation counts 0..69 as failure evidence, and permits the pass gate only when every seed count is zero.",
             "qualify_antigravity",
             qualification_test,
         ),
