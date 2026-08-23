@@ -10,7 +10,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp466 진행 대시보드</h1>
-<div class="box ok"><strong>현재 상태:</strong> Task 5까지 구현·테스트·fresh Sol 검토를 마쳤다. 결과는 정확히 7개 파일로만 만들고, 저장된 증거만 읽는 독립 replay가 수식·합격 판정·대시보드를 다시 확인한다. 다음 단계는 Task 6의 닫힌 CLI와 승인된 private 실행이다. 실험 결과 상태는 <code>planned_implementation_not_started</code>이며 실제 성능, private, official 결과는 아직 없다.</div>
+<div class="box ok"><strong>현재 상태:</strong> Task 5까지의 실험 파이프라인과 Task 6의 닫힌 CLI·고정 launcher 사전검증을 마쳤다. CLI는 두 명령만 받고 launcher는 run1→inspect→run2→inspect 순서를 한 commit에 고정한다. 다음 단계는 이 구현을 깨끗한 reviewed commit으로 고정하는 것이다. 실험 결과 상태는 여전히 <code>planned_implementation_not_started</code>이며 실제 성능, private, official 결과는 아직 없다.</div>
 <table>
 <tr><th>목표</th><td>ECG200 period-change AUC를 고정 phase-registration margin으로 개선</td></tr>
 <tr><th>주 후보</th><td><code>C9 = confirmed max(C0, P9 rank)</code></td></tr>
@@ -25,7 +25,9 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><th>Task 4 결과</th><td>점수와 합격 판정 코드는 준비됐지만 실제 10개 fold 성능은 아직 실행하지 않았다. 현재 결과는 계속 “없음”이다.</td></tr>
 <tr><th>Task 5 검증</th><td>집중 검사 10개를 두 번(<code>60.970초</code>, <code>60.886초</code>), 전체 Exp466 검사 39개(<code>124.598초</code>), 이전 Exp465 검사 7개(<code>30.359초</code>) 통과를 확인했다. 임시 경로에서 정확히 7개 파일과 publish→inspect의 qualification·decision·artifact-map 일치도 확인했다.</td></tr>
 <tr><th>Task 5 독립 검토</th><td>fresh Sol 판정은 <code>SHIP</code>이며 Critical 0건, Important 0건이다. publisher와 replay의 일부 계산 중복은 저장 결과를 믿지 않고 독립 검증하기 위한 의도된 경계라서 막지 않는 minor로 남겼다.</td></tr>
-<tr><th>다음 단계</th><td>Task 6의 닫힌 CLI와 승인된 private run 1·2다. 아직 실제 ECG200 성능, private 결과, official 결과를 만들거나 주장하지 않는다.</td></tr>
+<tr><th>Task 6 사전검증</th><td>CLI·launcher 부재를 잡는 RED를 먼저 확인했다. 집중 검사 <code>17/17</code>을 두 번, 전체 Exp466 <code>56/56</code>, 이전 Exp465 <code>7/7</code>, compile/diff 검사를 통과했다. fresh Sol 판정은 <code>SHIP</code>이다.</td></tr>
+<tr><th>Task 6 실행 경계</th><td><code>evaluate --reviewed-commit LOWER40HEX</code>와 인수 없는 <code>inspect</code>만 허용한다. run1/run2는 두 고정 root만 선택하며, 별도 순서 상태 파일이 네 명령의 순서와 동일 commit을 확인한다.</td></tr>
+<tr><th>다음 단계</th><td>Task 6 Step 3에서 하나의 깨끗한 reviewed commit을 고정한 뒤 private run 1·2를 순서대로 실행한다. 아직 실제 ECG200 성능, private 결과, official 결과를 만들거나 주장하지 않는다.</td></tr>
 <tr><th>실행 경계</th><td>official evaluate/inspect <code>0/0</code>, private run <code>0</code>, label query <code>0</code>, official result와 모든 result hash <code>null</code></td></tr>
 </table>
 
@@ -41,6 +43,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li><label><input type="checkbox" checked disabled> Task 3 P9 고정 위상 정렬·0 경계·CPU 선택·독립 검토</label></li>
 <li><label><input type="checkbox" checked disabled> Task 4 C0/P9/C9 점수·10-record qualification·독립 검토</label></li>
 <li><label><input type="checkbox" checked disabled> Task 5 결과 파일 7개·독립 replay·HTML snapshot</label></li>
+<li><label><input type="checkbox" checked disabled> Task 6 닫힌 CLI·고정 launcher RED와 사전검증</label></li>
 <li><label><input type="checkbox" disabled> private 실행 1</label></li>
 <li><label><input type="checkbox" disabled> private 실행 2와 재현성 비교</label></li>
 <li><label><input type="checkbox" disabled> 결과 독립 검토와 종료 판단</label></li>

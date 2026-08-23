@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp466 Task 1-5 code-map triplet."""
+"""Build and validate the bounded Exp466 Task 1-6 code-map triplet."""
 
 from __future__ import annotations
 
@@ -162,8 +162,23 @@ TASK5_REPORT_ANTIGRAVITY = (
     "2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/"
     "task-5-report-antigravity.html"
 )
-TASK5_SOURCE_COMMIT_ANTIGRAVITY = (
-    "367ce41e17c20b601a771f3d4fb6761bf28ad523"
+CLI_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "cli_antigravity.py"
+)
+CLI_TEST_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "tests/test_cli_antigravity.py"
+)
+GOVERNANCE_TEST_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "tests/test_governance_antigravity.py"
+)
+LAUNCHER_ANTIGRAVITY = (
+    "scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py"
+)
+TASK6_SOURCE_BASE_COMMIT_ANTIGRAVITY = (
+    "530991d0219594ea2af802da6fe5325772c55656"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -206,13 +221,17 @@ TRACKED_PATHS_ANTIGRAVITY = (
     REPLAY_TEST_ANTIGRAVITY,
     DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
     TASK5_REPORT_ANTIGRAVITY,
+    CLI_ANTIGRAVITY,
+    LAUNCHER_ANTIGRAVITY,
+    CLI_TEST_ANTIGRAVITY,
+    GOVERNANCE_TEST_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     "docs/codemap/codemap_exp465_antigravity.html",
     "docs/codemap/codemap_exp465_antigravity.json",
     "docs/codemap/codemap_exp465_antigravity.lock",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task5_canonical_replay_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp466_task5_canonical_replay_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task6_closed_cli_preflight_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp466_task6_closed_cli_preflight_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-23T00:00:00+09:00"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
@@ -341,8 +360,8 @@ def _tracked_fingerprints_antigravity() -> list[dict[str, str]]:
 def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     if re.fullmatch(r"[0-9a-f]{40}", source_parent) is None:
         raise ValueError("source_parent must be a lowercase 40-hex commit")
-    if source_parent != TASK5_SOURCE_COMMIT_ANTIGRAVITY:
-        raise ValueError("source_parent must be the accepted Task 5 commit")
+    if source_parent != TASK6_SOURCE_BASE_COMMIT_ANTIGRAVITY:
+        raise ValueError("source_parent must be the accepted Task 6 source base")
     map_test = (BUILDER_ANTIGRAVITY,)
     config_test = (CONFIG_TEST_ANTIGRAVITY,)
     contracts_test = (CONTRACTS_TEST_ANTIGRAVITY,)
@@ -357,6 +376,8 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     artifacts_test = (ARTIFACTS_TEST_ANTIGRAVITY,)
     replay_test = (REPLAY_TEST_ANTIGRAVITY,)
     dashboard_export_test = (DASHBOARD_EXPORT_TEST_ANTIGRAVITY,)
+    cli_test = (CLI_TEST_ANTIGRAVITY, GOVERNANCE_TEST_ANTIGRAVITY)
+    launcher_test = (CLI_TEST_ANTIGRAVITY, GOVERNANCE_TEST_ANTIGRAVITY)
     nodes = [
         _node_antigravity(
             "task1_brief",
@@ -494,21 +515,21 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "runbook",
             "docs/EXP466_RUNBOOK_antigravity.html",
-            "Caller: future operators. Effect: keeps official root absent, lists focused read-only verification, preserves TEST prohibition and zero/null counts, and defers all score/private/official commands.",
+            "Caller: Task 6 preflight reviewers and a future operator after Step 3 approval. Effect: keeps the official root absent, records focused/full/lower/compile/diff evidence, explains the fixed run1/run2 environment selectors and separate canonical sequence-state boundary, preserves TEST prohibition and zero/null counts, and clearly leaves all four private commands unexecuted.",
             "Task 1 focused verification",
             map_test,
         ),
         _node_antigravity(
             "implementation_report",
             "docs/EXP466_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 1 closeout and future audit. Effect: records exact RED, two GREEN runs, map/diff verification, no-workload MLX decision, planned status, and preserved boundaries without qualification claims.",
+            "Caller: Task 1-6 implementation audit. Effect: records each completed implementation stage and the Task 6 missing-boundary RED, focused 17 twice, full 56, lower 7, compile/diff, and fresh Sol SHIP preflight while preserving zero private/official/label counts, null results/hashes, and unchecked clean-commit/private/final steps.",
             "TDD 증거",
             map_test,
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP466_DASHBOARD_antigravity.html",
-            "Caller: user-facing progress review. Effect: preserves prior approval checks, marks only Task 1 scaffold complete, reports planned status, zero/null execution truth, and unchanged prohibitions.",
+            "Caller: user-facing progress review. Effect: marks Task 1-5 and only the Task 6 RED/preflight work complete, shows focused 17 twice, full 56, lower 7, compile/diff and fresh Sol SHIP, leaves private run1/run2/final boxes unchecked, and reports zero/null execution truth plus unchanged prohibitions.",
             "planned_implementation_not_started",
             map_test,
         ),
@@ -550,7 +571,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "map_builder",
             BUILDER_ANTIGRAVITY,
-            "Caller: Task 1-5 closeout verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-5 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
+            "Caller: Task 1-6 closeout and preflight verification. Effect: generates canonical HTML/JSON/lock or validates evidence, HTML structure, Task 1-6 graph relations, embedded JSON, Exp465 baseline fingerprints, and all tracked fingerprints without writing in validate-only mode.",
             "build_triplet_antigravity",
             map_test,
         ),
@@ -656,6 +677,34 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "Exp466 Task 5",
             map_test,
         ),
+        _node_antigravity(
+            "task6_cli",
+            CLI_ANTIGRAVITY,
+            "Caller: the fixed Task 6 launcher, focused CLI/governance tests, and only the later separately authorized private run1/run2 sequence. Effect: accepts only evaluate with one exact lowercase reviewed commit or bare inspect; evaluate checks a new fixed private root, clean matching commit, absent official root, and no duplicate process before loading ECG200 TRAIN once, interpolating once, capturing Exp465 authority once, scoring the frozen seed-major two-by-five folds, qualifying, deciding, publishing exactly seven leaves, and source-free inspecting; inspect calls only replay after the official-root absence guard; both emit the same canonical label-free payload without TEST, tuning, retry, routing, promotion, or official controls.",
+            "main_antigravity",
+            cli_test,
+        ),
+        _node_antigravity(
+            "task6_launcher",
+            LAUNCHER_ANTIGRAVITY,
+            "Caller: an operator only after a clean implementation commit receives scientific approval. Effect: re-executes the frozen interpreter outside the current working directory, maps only run1/run2 selectors to the two fixed private roots, validates the exact evaluate-then-inspect sequence at one reviewed commit, records successful stage transitions in a separate canonical sequence-state file, and installs the private capability before calling the closed CLI; it creates no result leaf itself and does not permit parallel, repeated, skipped, custom-root, or official execution.",
+            "_run_antigravity",
+            launcher_test,
+        ),
+        _node_antigravity(
+            "task6_cli_test",
+            CLI_TEST_ANTIGRAVITY,
+            "Caller: focused Task 6 RED/GREEN and full Exp466 regression. Effect: detects extra parser controls, eager science imports, forged private capabilities, roots outside the two fixed paths, current-working-directory dependence, broken run order, noncanonical decision projection, and any evaluate/inspect stdout difference across six tests without executing ECG200 or creating either private root.",
+            "CliAntigravityTest",
+            (CLI_TEST_ANTIGRAVITY,),
+        ),
+        _node_antigravity(
+            "task6_governance_test",
+            GOVERNANCE_TEST_ANTIGRAVITY,
+            "Caller: focused Task 6 RED/GREEN and full Exp466 regression. Effect: detects extra commands, existing/symlink/official destinations, dirty or wrong commits, duplicate processes, late official guards, changed runtime/roots/order, skipped or repeated stages, commit drift, premature sequence advancement, noncanonical sequence state, non-seed-major scoring, repeated stage calls, inspect data/scorer access, and TEST/routing controls across eleven tests without a private or official run.",
+            "CliGovernanceAntigravityTest",
+            (GOVERNANCE_TEST_ANTIGRAVITY,),
+        ),
     ]
     edges = [
         _edge_antigravity("task1_brief", "governs", "task1_config", BRIEF_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
@@ -726,6 +775,22 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("task5_report", "verifies", "task5_replay", TASK5_REPORT_ANTIGRAVITY, "Fresh Sol review"),
         _edge_antigravity("task5_report", "verifies", "task5_dashboard_export", TASK5_REPORT_ANTIGRAVITY, "Fresh Sol review"),
         _edge_antigravity("map_builder", "verifies", "task5_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
+        _edge_antigravity("approved_design", "governs", "task6_cli", DESIGN_ANTIGRAVITY, "canonical 7 leaves"),
+        _edge_antigravity("approved_design", "governs", "task6_launcher", DESIGN_ANTIGRAVITY, "서로 다른 private root"),
+        _edge_antigravity("task1_config", "governs", "task6_cli", CLI_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
+        _edge_antigravity("task2_sources", "governs", "task6_cli", CLI_ANTIGRAVITY, "load_ecg200_normal_train_antigravity"),
+        _edge_antigravity("task2_interpolation", "governs", "task6_cli", CLI_ANTIGRAVITY, "interpolate_to_140_antigravity"),
+        _edge_antigravity("task2_predecessor", "governs", "task6_cli", CLI_ANTIGRAVITY, "capture_exp465_authority_antigravity"),
+        _edge_antigravity("task4_scoring", "governs", "task6_cli", CLI_ANTIGRAVITY, "score_fold_methods_antigravity"),
+        _edge_antigravity("task4_qualification", "governs", "task6_cli", CLI_ANTIGRAVITY, "qualify_antigravity"),
+        _edge_antigravity("task4_evaluation", "governs", "task6_cli", CLI_ANTIGRAVITY, "evaluate_qualification_antigravity"),
+        _edge_antigravity("task5_artifacts", "governs", "task6_cli", CLI_ANTIGRAVITY, "publish_result_antigravity"),
+        _edge_antigravity("task5_replay", "governs", "task6_cli", CLI_ANTIGRAVITY, "inspect_result_antigravity"),
+        _edge_antigravity("task6_launcher", "governs", "task6_cli", LAUNCHER_ANTIGRAVITY, "_load_main_antigravity"),
+        _edge_antigravity("task6_cli_test", "tests", "task6_cli", CLI_TEST_ANTIGRAVITY, "test_exact_surface_accepts_only_reviewed_commands_antigravity"),
+        _edge_antigravity("task6_cli_test", "tests", "task6_launcher", CLI_TEST_ANTIGRAVITY, "test_launcher_is_cwd_independent_and_enforces_run_order_antigravity"),
+        _edge_antigravity("task6_governance_test", "tests", "task6_cli", GOVERNANCE_TEST_ANTIGRAVITY, "test_evaluate_pipeline_is_seed_major_and_calls_each_stage_once_antigravity"),
+        _edge_antigravity("task6_governance_test", "tests", "task6_launcher", GOVERNANCE_TEST_ANTIGRAVITY, "test_launcher_rejects_skipped_repeated_and_commit_drift_phases_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -761,9 +826,14 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "tests": "the two scoring tests cover exact C0/P9/C9 assembly, false-confirm C0 byte identity, and non-aliased immutable evidence; the three qualification tests cover exact ten-record order, 69 unique OOF coverage, raw replay, and every fixed negative gate; the three evaluation tests cover pure acceptance, deterministic failure, and forged eligible 9-of-10 rejection; focused 8, full Exp466 28, Exp465 lower 7, map validation, HTML/JSON parsing, and independent fingerprint recomputation cover the closeout.",
         },
         "task5_answers": {
-            "callers": "test_artifacts_antigravity calls publish_result_antigravity with deterministic Task 4 records, qualification, and decision; test_replay_antigravity calls inspect_result_antigravity over temporary seven-leaf roots; test_dashboard_export_antigravity calls export_dashboard_antigravity directly; only a future separately authorized Task 6 evaluate/inspect boundary may call these production interfaces.",
+            "callers": "test_artifacts_antigravity calls publish_result_antigravity with deterministic Task 4 records, qualification, and decision; test_replay_antigravity calls inspect_result_antigravity over temporary seven-leaf roots; test_dashboard_export_antigravity calls export_dashboard_antigravity directly; the closed Task 6 evaluate/inspect boundary calls publisher and inspector only through its fixed private capability.",
             "effects": "publication validates exact blocked-fold identities and creates a new root containing exactly seven canonical leaves plus a self-excluding hash map; replay reads only those leaves and independently reconstructs every stored and derived scientific value; dashboard export embeds deterministic easy-Korean HTML without an eighth leaf; no loader, Task 2/3/4 scorer or qualifier, TEST/label, real data, private/official, CLI, routing, or governance state is accessed.",
             "tests": "the three artifact tests cover exact leaves, canonical bytes, hash-map self-exclusion, create-only behavior, record order, and blocked-fold identity; the six replay tests cover stable scorer/data-free inspection, publishable normal-confirmation failure, rehashed semantic mutations, stale hashes, exact indices, context/summary/failed-leaf mutations, and equality; the dashboard test covers easy Korean, deterministic embedded/returned HTML, no eighth leaf, and no private/official claim; controller focused 10 twice, full Exp466 39, Exp465 lower 7, temporary publish-inspect equality, fresh Sol SHIP, map validation, HTML/JSON parsing, and fingerprint recomputation cover closeout.",
+        },
+        "task6_answers": {
+            "callers": "the fixed outside-CWD launcher is the production caller of main_antigravity and injects only the run1 or run2 capability; the six CLI tests and eleven governance tests call parser, capability, preflight, pipeline, replay projection, and sequence boundaries directly; a later operator may run the four preregistered private commands only after Step 3 fixes one clean reviewed implementation commit.",
+            "effects": "the launcher fixes the interpreter, two roots, one reviewed commit, and evaluate→inspect→evaluate→inspect order in a canonical external sequence-state file; evaluate then loads TRAIN once, interpolates once, captures Exp465 authority once, scores exactly ten seed-major blocked folds, qualifies, decides, publishes seven leaves, and source-free inspects; inspect only replays the selected seven-leaf root; canonical stdout excludes root-specific fields so evaluate and inspect agree; neither path exposes TEST, labels, tunable science, retry, routing, promotion, or official controls.",
+            "tests": "Task 6 first recorded RED while CLI and launcher were absent; focused 17/17 then passed twice, the full Exp466 suite passed 56/56, the Exp465 lower regression passed 7/7, compileall and diff checks passed, and fresh Sol returned SHIP. These are implementation/preflight results only: Step 3 clean reviewed commit and both private runs remain pending, so private/official/label counts stay zero and result/hash fields stay null.",
         },
         "flows": [
             "task1 brief + approved design -> frozen config -> immutable contracts -> future Tasks 2-6",
@@ -783,6 +853,9 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "exact seven leaves -> canonical byte and hash validation -> retained train/index/margin evidence -> independent P9/C9/AUC/qualification/decision replay without dataset or scorer access",
             "frozen qualification + decision -> deterministic easy-Korean dashboard and embedded HTML -> existing dashboard snapshot leaf without an eighth file or performance claim",
             "ten focused Task 5 tests + temporary publish-inspect equality + fresh Sol SHIP + Task 5 report -> map builder -> Task 5 caller/effect/test boundaries and exact fingerprints",
+            "fixed run1/run2 environment selector -> outside-CWD frozen-runtime launcher -> canonical external sequence-state guard -> one private capability -> closed CLI",
+            "evaluate + exact clean reviewed commit + absent official/new private roots -> TRAIN load once -> 96-to-140 interpolation once -> Exp465 authority once -> seed-major two-seed by five-fold scoring -> qualification -> frozen decision -> seven-leaf publication -> source-free inspection -> canonical stdout",
+            "bare inspect + absent official root -> selected fixed private seven-leaf root -> source-free semantic replay -> canonical stdout equal to evaluate; no dataset, scorer, qualifier, publisher, TEST, labels, routing, promotion, or official result access",
         ],
     }
 
@@ -802,8 +875,8 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp466 Task 1-5 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp466 Task 1-5 코드맵</h1><p>이 map은 Exp465 triplet을 구조 기준으로 삼아 Exp466의 caller, effect, test 관계를 고정한다. Task 1의 권한·불변 계약·planned zero/null truth, Task 2의 exact TRAIN source/interpolation·frozen synthetic changes·Exp465 C0 authority projection, Task 3의 fixed P9 phase-registration margin·LOO/full-fit calibration·exact rank·strict confirmation 경계를 그대로 보존한다. Task 4는 이 입력에서 고정 C0/P9/C9 raw evidence를 소유·동결하고, seed-major 10개 record와 seed별 69 unique OOF를 독립 replay한 scalar qualification 및 순수 decision을 추가한다. Task 5는 명시적인 Task 4 기록·qualification·decision에서 새 root의 canonical 7개 leaves만 만들고, 저장된 train/index/margin evidence로 blocked-fold identity, P9/C9, AUC, qualification, decision과 쉬운 한국어 dashboard를 dataset/scorer-free로 독립 검증한다. 정상 confirmation 0..69는 유효한 실패 증거이며 모든 seed가 0일 때만 pass gate를 만족한다. 실제 dataset, TEST/labels, private/official 실행, CLI, routing, champion/pending/promotion은 포함하지 않는다.</p>'
+        '<title>Exp466 Task 1-6 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp466 Task 1-6 코드맵</h1><p>이 map은 Exp465 triplet을 구조 기준으로 삼아 Exp466의 caller, effect, test 관계를 고정한다. Task 1의 권한·불변 계약·planned zero/null truth, Task 2의 exact TRAIN source/interpolation·frozen synthetic changes·Exp465 C0 authority projection, Task 3의 fixed P9 phase-registration margin·LOO/full-fit calibration·exact rank·strict confirmation 경계를 그대로 보존한다. Task 4는 이 입력에서 고정 C0/P9/C9 raw evidence를 소유·동결하고, seed-major 10개 record와 seed별 69 unique OOF를 독립 replay한 scalar qualification 및 순수 decision을 추가한다. Task 5는 명시적인 Task 4 기록·qualification·decision에서 새 root의 canonical 7개 leaves만 만들고, 저장된 train/index/margin evidence로 blocked-fold identity, P9/C9, AUC, qualification, decision과 쉬운 한국어 dashboard를 dataset/scorer-free로 독립 검증한다. Task 6은 정확히 두 명령만 받는 CLI와 run1/run2 고정 launcher를 추가한다. Launcher는 고정 interpreter, 깨끗한 동일 reviewed commit, 두 private root, evaluate→inspect 순서를 별도 canonical sequence-state로 잠그고, CLI evaluate는 Task 2→5의 고정 흐름을 정확히 한 번 연결하며 inspect는 source-free replay만 부른다. 정상 confirmation 0..69는 유효한 실패 증거이며 모든 seed가 0일 때만 pass gate를 만족한다. Task 6 RED, focused 17/17 두 번, full Exp466 56/56, Exp465 7/7, compile/diff와 fresh Sol SHIP은 구현 사전검증일 뿐이다. 실제 ECG200 private/official 실행과 TEST/labels, routing, champion/pending/promotion은 포함하지 않으며 모든 실행 count는 0, result/hash는 null이다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2>'
         f'<pre id="codemap-json-antigravity">{payload}</pre>'
         '</main></body></html>'
@@ -829,11 +902,11 @@ def validate_map_antigravity(
     rendered: str,
 ) -> None:
     if graph.get("schema") != GRAPH_SCHEMA_ANTIGRAVITY:
-        raise ValueError("graph schema differs from Task 5 authority")
+        raise ValueError("graph schema differs from Task 6 preflight authority")
     if lock.get("schema") != LOCK_SCHEMA_ANTIGRAVITY:
-        raise ValueError("lock schema differs from Task 5 authority")
-    if graph.get("source_parent_commit") != TASK5_SOURCE_COMMIT_ANTIGRAVITY:
-        raise ValueError("graph source must be the accepted Task 5 commit")
+        raise ValueError("lock schema differs from Task 6 preflight authority")
+    if graph.get("source_parent_commit") != TASK6_SOURCE_BASE_COMMIT_ANTIGRAVITY:
+        raise ValueError("graph source must be the accepted Task 6 source base")
     if graph.get("unknown_relationships") != []:
         raise ValueError("unknown relationships must stay empty")
     if graph.get("baseline_triplet") != [
@@ -937,6 +1010,34 @@ def validate_map_antigravity(
     }
     if not required_task5_edges.issubset(edge_keys):
         raise ValueError("Task 5 caller/effect/test edges are incomplete")
+    required_task6_nodes = {
+        "task6_cli",
+        "task6_launcher",
+        "task6_cli_test",
+        "task6_governance_test",
+    }
+    if not required_task6_nodes.issubset(ids):
+        raise ValueError("Task 6 nodes are incomplete")
+    required_task6_edges = {
+        ("approved_design", "governs", "task6_cli"),
+        ("approved_design", "governs", "task6_launcher"),
+        ("task1_config", "governs", "task6_cli"),
+        ("task2_sources", "governs", "task6_cli"),
+        ("task2_interpolation", "governs", "task6_cli"),
+        ("task2_predecessor", "governs", "task6_cli"),
+        ("task4_scoring", "governs", "task6_cli"),
+        ("task4_qualification", "governs", "task6_cli"),
+        ("task4_evaluation", "governs", "task6_cli"),
+        ("task5_artifacts", "governs", "task6_cli"),
+        ("task5_replay", "governs", "task6_cli"),
+        ("task6_launcher", "governs", "task6_cli"),
+        ("task6_cli_test", "tests", "task6_cli"),
+        ("task6_cli_test", "tests", "task6_launcher"),
+        ("task6_governance_test", "tests", "task6_cli"),
+        ("task6_governance_test", "tests", "task6_launcher"),
+    }
+    if not required_task6_edges.issubset(edge_keys):
+        raise ValueError("Task 6 caller/effect/test edges are incomplete")
     if set(graph.get("task1_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 1 caller/effect/test answers are incomplete")
     if set(graph.get("task2_answers", {})) != {"callers", "effects", "tests"}:
@@ -947,12 +1048,14 @@ def validate_map_antigravity(
         raise ValueError("Task 4 caller/effect/test answers are incomplete")
     if set(graph.get("task5_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 5 caller/effect/test answers are incomplete")
-    if len(graph.get("nodes", ())) != 42:
-        raise ValueError("Task 1-5 node count differs")
-    if len(graph.get("edges", ())) != 68:
-        raise ValueError("Task 1-5 edge count differs")
-    if len(graph.get("flows", ())) != 17:
-        raise ValueError("Task 1-5 flow count differs")
+    if set(graph.get("task6_answers", {})) != {"callers", "effects", "tests"}:
+        raise ValueError("Task 6 caller/effect/test answers are incomplete")
+    if len(graph.get("nodes", ())) != 46:
+        raise ValueError("Task 1-6 node count differs")
+    if len(graph.get("edges", ())) != 84:
+        raise ValueError("Task 1-6 edge count differs")
+    if len(graph.get("flows", ())) != 20:
+        raise ValueError("Task 1-6 flow count differs")
     if lock.get("source_parent_commit") != graph.get("source_parent_commit"):
         raise ValueError("graph/lock source mismatch")
     if lock.get("represented_paths") != sorted(TRIPLET_ANTIGRAVITY):
@@ -988,6 +1091,14 @@ def validate_map_antigravity(
     }
     if not required_task5_fingerprints.issubset(fingerprint_paths):
         raise ValueError("Task 5 fingerprints are incomplete")
+    required_task6_fingerprints = {
+        CLI_ANTIGRAVITY,
+        LAUNCHER_ANTIGRAVITY,
+        CLI_TEST_ANTIGRAVITY,
+        GOVERNANCE_TEST_ANTIGRAVITY,
+    }
+    if not required_task6_fingerprints.issubset(fingerprint_paths):
+        raise ValueError("Task 6 fingerprints are incomplete")
     if lock.get("tracked_fingerprints") != _tracked_fingerprints_antigravity():
         raise ValueError("tracked fingerprint drift")
     parser = _StrictHtmlAntigravity()

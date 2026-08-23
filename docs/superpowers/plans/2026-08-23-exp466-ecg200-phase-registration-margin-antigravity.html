@@ -171,11 +171,12 @@ git commit -m "feat: publish and replay Exp466 qualification"</code></pre></li>
 <h2><label><input type="checkbox" disabled> Task 6 — 닫힌 CLI·private 2회·최종 판정</label></h2>
 <p><strong>Files:</strong> Create CLI, launcher and CLI/governance tests. Modify all Exp466 HTML truth docs, three ledgers and code map after result.</p>
 <p><strong>Interfaces:</strong> Parser accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>. Launcher maps exactly run1/run2 capabilities to fixed private roots.</p>
+<div class="box"><strong>사전검증 결과:</strong> CLI와 launcher가 없을 때 새 경계 검사가 실패하는 RED를 먼저 확인했다. 최소 구현 뒤 집중 검사 <code>17/17</code>을 두 번, 전체 Exp466 검사 <code>56/56</code>, 이전 Exp465 검사 <code>7/7</code>을 통과했다. <code>compileall</code>과 <code>git diff --check</code>도 통과했고 fresh Sol은 <code>SHIP</code>으로 판정했다. 이 증거는 코드 준비가 끝났다는 뜻일 뿐이며, Step 3의 깨끗한 검토 커밋 고정과 private 실행은 아직 완료하지 않았다.</div>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED CLI boundary.</strong></label><pre><code>self.assertEqual(parse_args_antigravity(["inspect"]).command, "inspect")
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED CLI boundary.</strong></label><pre><code>self.assertEqual(parse_args_antigravity(["inspect"]).command, "inspect")
 for forbidden in (["evaluate","--root","/tmp/x"], ["evaluate","--warp","1.1"], ["inspect","--retry"]):
     with self.assertRaises(SystemExit): parse_args_antigravity(forbidden)</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — GREEN twice·full preflight.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_cli_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_governance_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — GREEN twice·full preflight.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_cli_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_governance_antigravity
 python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_cli_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_governance_antigravity
 python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
 python3 scratch/build_codemap_exp466_antigravity.py --validate-only
@@ -196,5 +197,5 @@ git diff --check</code></pre><p>결과에 맞춰 HTML checkbox, dashboard, ledge
 <h2>실행 선택</h2>
 <p><strong>1. Task별 서브에이전트:</strong> Task마다 fresh implementer를 배정하고 제가 diff·테스트·결과를 검증한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task별 checkpoint를 거쳐 진행한다.</p>
-<div class="box"><strong>현재 상태:</strong> Task 1~5의 TDD, C0 byte parity, P9·C9 경계, canonical 7개 결과 파일, 독립 replay, 쉬운 HTML snapshot과 fresh Sol 검토를 마쳤다. 다음 단계는 Task 6의 닫힌 CLI와 승인된 private 2회 실행이며, 실제 성능·private·official 실행은 아직 0회다.</div>
+<div class="box"><strong>현재 상태:</strong> Task 1~5와 Task 6 Step 1~2를 마쳤다. 닫힌 CLI·고정 launcher는 사전검증과 fresh Sol <code>SHIP</code>까지 통과했다. 다음 단계는 Step 3에서 하나의 깨끗한 reviewed commit을 고정한 뒤 승인된 private run 1·2를 순서대로 실행하는 것이다. 실제 성능·private·official 실행은 아직 0회이며 result/hash는 <code>null</code>이다.</div>
 </main></body></html>
