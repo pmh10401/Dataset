@@ -24,6 +24,7 @@ from .verifier_antigravity import (
     Exp451VerificationAntigravity,
     _score_manifest_authority_is_issued_antigravity,
     _score_manifests_digest_antigravity,
+    _validate_persisted_verification_authority_antigravity,
     _validate_verification_authority_antigravity,
     provenance_summary_antigravity,
 )
@@ -137,7 +138,7 @@ def require_exp451_evaluation_ready_antigravity(
     verification: Exp451VerificationAntigravity,
 ) -> None:
     """Close the TEST-label boundary until all results and four manifests verify."""
-    verification = _validate_verification_authority_antigravity(verification)
+    verification = _validate_persisted_verification_authority_antigravity(verification)
     if verification.total_successes != EXP451_TOTAL_COORDINATES:
         raise ValueError("Exp451 evaluation requires exactly 4468 verified successes")
     if tuple(verification.condition_manifests) != ("A", "B", "C", "D"):

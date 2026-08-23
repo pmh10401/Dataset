@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import fcntl
 import os
 from pathlib import Path
+import secrets
 import shutil
+import stat
 import tempfile
 from hashlib import sha256
 
@@ -37,15 +40,71 @@ def _dir_fsync_antigravity(path: Path) -> None:
         os.close(descriptor)
 
 
+def _acquire_report_publication_lock_antigravity(destination: Path) -> int:
+    """Take a process-owned lock that the kernel releases after any process death."""
+    parent = destination.parent
+    relative = f".{destination.name}.publish_lock_antigravity"
+    lock = _checked_target_path_antigravity(parent, relative, create=True)
+    flags = os.O_CREAT | os.O_RDWR
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(lock, flags, 0o600)
+    except OSError as error:
+        raise ValueError("Exp451 report publication lock is unsafe") from error
+    try:
+        opened = os.fstat(descriptor)
+        linked = lock.lstat()
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or not stat.S_ISREG(linked.st_mode)
+            or opened.st_dev != linked.st_dev
+            or opened.st_ino != linked.st_ino
+            or opened.st_nlink != 1
+        ):
+            raise ValueError("Exp451 report publication lock is unsafe")
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError("Exp451 report publication is already in progress") from None
+        owner = canonical_json_bytes({
+            "schema": "exp451-report-publication-lock-antigravity.v1",
+            "destination": destination.name,
+            "pid": os.getpid(),
+            "nonce": secrets.token_hex(16),
+        })
+        os.ftruncate(descriptor, 0)
+        offset = 0
+        while offset < len(owner):
+            written = os.write(descriptor, owner[offset:])
+            if written <= 0:
+                raise OSError("Exp451 report publication lock write made no progress")
+            offset += written
+        os.fsync(descriptor)
+        _dir_fsync_antigravity(parent)
+        return descriptor
+    except Exception:
+        os.close(descriptor)
+        raise
+
+
+def _release_report_publication_lock_antigravity(descriptor: int) -> None:
+    """Release without unlinking a path that another process may already have opened."""
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+    finally:
+        os.close(descriptor)
+
+
 def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Path:
-    """Publish staged leaves under a mkdir reservation and completion marker.
+    """Publish staged leaves under a process-owned lock and completion marker.
 
     Portable ``rename`` can replace an existing directory, so it is not a
-    create-only primitive.  The sibling mkdir reservation serializes publishers;
-    individual leaves use hard-link create-only publication and the marker is
-    written last.  A directory lacking that marker is an interrupted staging
-    attempt, never a valid final report, and is removed only while holding its
-    own reservation before a retry.
+    create-only primitive.  A nonblocking kernel lock serializes publishers and
+    is released automatically after process death.  Individual leaves use
+    hard-link create-only publication and the marker is written last.  A
+    directory lacking that marker is an interrupted staging attempt, never a
+    valid final report, and is removed only by its lock owner before a retry.
     """
     parent = destination.parent
     _checked_target_path_antigravity(parent, "report_guard_antigravity.json", create=True)
@@ -62,15 +121,11 @@ def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Pat
             name: sha256(data).hexdigest() for name, data in sorted(expected.items())
         })).hexdigest(),
     })
-    lock = parent / f".{destination.name}.publish_lock_antigravity"
     progress_data = canonical_json_bytes({
         "schema": "exp451-report-publication-in-progress-antigravity.v1",
         "destination": destination.name,
     })
-    try:
-        lock.mkdir()
-    except FileExistsError:
-        raise ValueError("Exp451 report publication is already in progress") from None
+    lock_descriptor = _acquire_report_publication_lock_antigravity(destination)
     try:
         current = destination.lstat() if destination.exists() or destination.is_symlink() else None
         if current is not None:
@@ -104,11 +159,7 @@ def _publish_report_directory_antigravity(stage: Path, destination: Path) -> Pat
         _dir_fsync_antigravity(parent)
         return destination
     finally:
-        try:
-            lock.rmdir()
-            _dir_fsync_antigravity(parent)
-        except FileNotFoundError:
-            pass
+        _release_report_publication_lock_antigravity(lock_descriptor)
 
 
 def write_exp451_report_antigravity(

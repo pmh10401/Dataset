@@ -411,6 +411,39 @@ verify_exp451_completion_antigravity, _verification_authority_is_issued_antigrav
 del _make_verifier_api_antigravity
 
 
+def _make_persisted_manifest_api_antigravity():
+    """Expose no issuer that can bypass the fixed-root four-leaf reopen."""
+    persisted: WeakSet[object] = WeakSet()
+
+    def is_persisted(value: object) -> bool:
+        return value in persisted
+
+    def read(
+        root: Path, verification: Exp451VerificationAntigravity,
+    ) -> Mapping[str, Mapping[str, object]]:
+        opened = _read_persisted_exp451_condition_manifests_impl_antigravity(
+            root, verification,
+        )
+        persisted.add(verification)
+        return opened
+
+    return read, is_persisted
+
+
+read_persisted_exp451_condition_manifests_antigravity, _verification_has_persisted_manifests_antigravity = _make_persisted_manifest_api_antigravity()
+del _make_persisted_manifest_api_antigravity
+
+
+def _validate_persisted_verification_authority_antigravity(
+    verification: object,
+) -> Exp451VerificationAntigravity:
+    """Require the same opaque verifier object whose four leaves reopened."""
+    checked = _validate_verification_authority_antigravity(verification)
+    if not _verification_has_persisted_manifests_antigravity(checked):
+        raise ValueError("Exp451 requires four reopened persisted manifests")
+    return checked
+
+
 def provenance_summary_antigravity(verification: Exp451VerificationAntigravity) -> dict[str, object]:
     """Return origin-separated counts for reports without reopening any checkpoints."""
     verification = _validate_verification_authority_antigravity(verification)
@@ -455,7 +488,7 @@ def write_exp451_condition_manifests_antigravity(
     return MappingProxyType(results)
 
 
-def read_persisted_exp451_condition_manifests_antigravity(
+def _read_persisted_exp451_condition_manifests_impl_antigravity(
     root: Path, verification: Exp451VerificationAntigravity,
 ) -> Mapping[str, Mapping[str, object]]:
     """Reopen the four create-only leaves and bind their exact bytes to authority."""
@@ -493,7 +526,7 @@ def _build_exp451_score_manifests_impl_antigravity(
     checkpoint verification must finish before values-only global composition,
     and neither operation obtains TEST labels.
     """
-    verification = _validate_verification_authority_antigravity(verification)
+    verification = _validate_persisted_verification_authority_antigravity(verification)
     if (
         Path(root) != OFFICIAL_ROOT or Path(root) != context.run_root
         or migration_manifest.target_context_sha256 != verification.context_sha256
@@ -504,6 +537,13 @@ def _build_exp451_score_manifests_impl_antigravity(
     if tuple(raw_datasets) != tuple(entry["dataset"] for entry in entries):
         raise ValueError("Exp451 raw dataset inventory differs")
     migration = migration_manifest.entry_map
+    expected_checkpoint_hashes = {
+        condition: {
+            item["dataset"]: item["sha256"]
+            for item in verification.condition_manifests[condition]["checkpoint_hashes"]
+        }
+        for condition in _CONDITIONS_ANTIGRAVITY
+    }
     results: dict[tuple[str, str], Exp450DatasetConditionResult] = {}
     for condition in _CONDITIONS_ANTIGRAVITY:
         for entry in entries:
@@ -512,7 +552,18 @@ def _build_exp451_score_manifests_impl_antigravity(
                 path = Path(root) / success_relative_path_antigravity(dataset, condition)
             else:
                 path = Path(root) / _native_relative_path_antigravity(dataset, condition)
-            value, _raw = _canonical_object_antigravity(path)
+            value, raw = _canonical_object_antigravity(path)
+            if sha256(raw).hexdigest() != expected_checkpoint_hashes[condition].get(dataset):
+                raise ValueError("Exp451 score checkpoint differs from verified inventory")
+            if (dataset, condition) in migration:
+                _check_imported_envelope_antigravity(
+                    value, entry=entry, condition=condition, context=context,
+                    migration_entry=migration[(dataset, condition)],
+                )
+            else:
+                _check_native_envelope_antigravity(
+                    value, entry=entry, condition=condition, context=context,
+                )
             payload = value["payload"]
             train, test = entry["train"], entry["test"]
             try:
