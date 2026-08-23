@@ -21,6 +21,14 @@
 - `status` returns completed, failed, remaining, total, elapsed time, ETA, and
   the latest coordinate/event. CLI accepts the planned `--mode full` and
   rejects unsupported modes.
+- The runner reconciles a durable native checkpoint that lacks its JSONL event
+  after a crash. It emits a `reconciled` event before scheduling any new work,
+  never recomputes the recovered coordinate, and preserves the missing timing
+  as unknown rather than zero. ETA is `null` until two measured native attempts
+  exist; only then it is `native_elapsed_seconds / native_attempts × remaining`.
+- `status` first runs the full migration authority verifier and then validates
+  the native/failure inventory. A present, malformed, or tampered manifest is
+  not treated as a completed migration.
 - Added the `migrate`, `verify-migration`, `run`, `status`, `verify`,
   `evaluate`, and `report` CLI surface. The final three commands intentionally
   stop with a clear Task 6 dependency rather than duplicate verification,
@@ -29,9 +37,9 @@
 ## Verification
 
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_contracts_config_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_transforms_backend_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_scoring_imaging_antigravity experiments.exp451_verified_accelerated_resume_antigravity.tests.test_runner_cli_antigravity`
-  passed: 61 tests.
+  passed: 65 tests.
 - `python3 -m unittest experiments.exp451_verified_accelerated_resume_antigravity.tests.test_migration_artifacts_antigravity`
-  passed: 7 tests. Total Exp451 tests: 68.
+  passed: 7 tests. Total Exp451 tests: 72.
 - `python3 -m py_compile experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py scratch/run_exp451_verified_accelerated_resume_antigravity.py`
   passed.
 - No official source or result checkpoint was read, written, moved, or deleted

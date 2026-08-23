@@ -121,6 +121,16 @@ class Exp451ExecutionScheduleAntigravity:
     mps_conditions: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class Exp451ProgressStateAntigravity:
+    completed: int
+    failed: int
+    native_attempts: int
+    native_elapsed_seconds: float
+    eta_seconds: float | None
+    reconciled: bool = False
+
+
 def _catalog_datasets_antigravity(catalog: Mapping[str, object]) -> tuple[str, ...]:
     entries = catalog.get("datasets") if isinstance(catalog, Mapping) else None
     datasets = tuple(
@@ -244,7 +254,7 @@ def progress_event_antigravity(
     """Return one complete event; ETA is native elapsed / native attempts × remaining."""
     if (
         type(dataset) is not str or not dataset or condition not in _CONDITIONS_ANTIGRAVITY
-        or status not in {"success", "failure"} or type(completed) is not int
+        or status not in {"success", "failure", "reconciled"} or type(completed) is not int
         or type(failed) is not int or type(total) is not int or completed < 0
         or failed < 0 or total != EXP451_TOTAL_COORDINATES or completed > total
         or type(elapsed_seconds) not in {int, float} or elapsed_seconds < 0
@@ -253,14 +263,15 @@ def progress_event_antigravity(
     ):
         raise ValueError("Exp451 progress event is invalid")
     remaining = total - completed
-    eta = 0.0 if native_attempts == 0 else max(
+    # One timing observation is too noisy to responsibly predict a 234-coordinate tail.
+    eta = None if native_attempts < 2 else max(
         0.0, float(native_elapsed_seconds) / native_attempts * remaining
     )
     return {
         "experiment": "Exp451", "dataset": dataset, "condition": condition,
         "status": status, "completed": completed, "failed": failed,
         "remaining": remaining, "total": total,
-        "elapsed_seconds": float(elapsed_seconds), "eta_seconds": float(eta),
+        "elapsed_seconds": float(elapsed_seconds), "eta_seconds": None if eta is None else float(eta),
         "native_attempts": native_attempts,
         "native_elapsed_seconds": float(native_elapsed_seconds),
     }
@@ -478,6 +489,20 @@ def _read_failure_records_antigravity(
     return tuple(records)
 
 
+def read_resume_inventory_antigravity(
+    root: Path, context: Exp451RunContext, catalog: Mapping[str, object],
+    manifest: Exp451MigrationManifest,
+) -> Exp451ResumeInventoryAntigravity:
+    """Read all durable Exp451 success/failure evidence after manifest authority is verified."""
+    if Path(root) != context.run_root or manifest.target_context_sha256 != context.sha256:
+        raise ValueError("Exp451 resume inventory context differs")
+    return build_resume_inventory_antigravity(
+        manifest, catalog,
+        native=_read_native_coordinates_antigravity(Path(root), context, catalog),
+        failures=_read_failure_records_antigravity(Path(root), context, catalog),
+    )
+
+
 def append_progress_event_antigravity(root: Path, event: Mapping[str, object]) -> Path:
     """Append one fsynced canonical event only after its result/failure is durable."""
     if not Path(root).is_absolute():
@@ -552,28 +577,84 @@ def _read_progress_events_antigravity(root: Path) -> tuple[dict[str, object], ..
     return tuple(records)
 
 
-def status_snapshot_antigravity(root: Path, *, imported_completed: int) -> dict[str, object]:
-    """Return the latest durable live counters; no event means no native rate yet."""
+def status_snapshot_antigravity(
+    root: Path, *, imported_completed: int, durable_completed: int | None = None,
+    durable_failed: int | None = None,
+) -> dict[str, object]:
+    """Return durable live counters; unlogged checkpoints deliberately suppress ETA."""
     if type(imported_completed) is not int or not 0 <= imported_completed <= EXP451_TOTAL_COORDINATES:
         raise ValueError("Exp451 imported progress count is invalid")
+    if durable_completed is not None and (
+        type(durable_completed) is not int or not imported_completed <= durable_completed <= EXP451_TOTAL_COORDINATES
+    ):
+        raise ValueError("Exp451 durable progress count is invalid")
+    if durable_failed is not None and (type(durable_failed) is not int or durable_failed < 0):
+        raise ValueError("Exp451 durable failure count is invalid")
     events = _read_progress_events_antigravity(Path(root))
     if not events:
         return {
-            "completed": imported_completed, "failed": 0,
-            "remaining": EXP451_TOTAL_COORDINATES - imported_completed,
+            "completed": imported_completed if durable_completed is None else durable_completed,
+            "failed": 0 if durable_failed is None else durable_failed,
+            "remaining": EXP451_TOTAL_COORDINATES - (imported_completed if durable_completed is None else durable_completed),
             "total": EXP451_TOTAL_COORDINATES, "elapsed_seconds": 0.0,
-            "eta_seconds": 0.0, "latest_coordinate": None, "latest_event": None,
+            "eta_seconds": None, "latest_coordinate": None, "latest_event": None,
             "native_attempts": 0, "native_elapsed_seconds": 0.0,
         }
     latest = events[-1]
+    differs = (
+        durable_completed is not None and latest["completed"] != durable_completed
+    ) or (
+        durable_failed is not None and latest["failed"] != durable_failed
+    )
+    completed = latest["completed"] if durable_completed is None else durable_completed
+    failed = latest["failed"] if durable_failed is None else durable_failed
     return {
-        "completed": latest["completed"], "failed": latest["failed"],
-        "remaining": latest["remaining"], "total": latest["total"],
-        "elapsed_seconds": latest["elapsed_seconds"], "eta_seconds": latest["eta_seconds"],
+        "completed": completed, "failed": failed,
+        "remaining": EXP451_TOTAL_COORDINATES - completed, "total": latest["total"],
+        "elapsed_seconds": latest["elapsed_seconds"], "eta_seconds": None if differs else latest["eta_seconds"],
         "latest_coordinate": [latest["dataset"], latest["condition"]],
         "latest_event": latest, "native_attempts": latest["native_attempts"],
         "native_elapsed_seconds": latest["native_elapsed_seconds"],
     }
+
+
+def reconcile_resume_progress_antigravity(
+    root: Path, inventory: Exp451ResumeInventoryAntigravity,
+    *, progress: Callable[[dict[str, object]], None] | None = None,
+) -> Exp451ProgressStateAntigravity:
+    """Record a checkpoint/log crash boundary without inventing missing run duration."""
+    if not isinstance(inventory, Exp451ResumeInventoryAntigravity):
+        raise ValueError("Exp451 reconciliation inventory is invalid")
+    events = _read_progress_events_antigravity(Path(root))
+    latest = events[-1] if events else None
+    logged_successes = {
+        (event["dataset"], event["condition"])
+        for event in events if event["status"] == "success"
+    }
+    unlogged_native = tuple(coordinate for coordinate in inventory.native if coordinate not in logged_successes)
+    completed = inventory.completed_count
+    failed = len(inventory.failures)
+    latest_completed = 0 if latest is None else latest["completed"]
+    latest_failed = 0 if latest is None else latest["failed"]
+    attempts = 0 if latest is None else latest["native_attempts"]
+    elapsed = 0.0 if latest is None else latest["native_elapsed_seconds"]
+    if unlogged_native or completed != latest_completed or failed != latest_failed:
+        dataset, condition = unlogged_native[-1] if unlogged_native else (
+            inventory.pending[0] if inventory.pending else ("reconciliation_antigravity", "C")
+        )
+        event = progress_event_antigravity(
+            dataset=dataset, condition=condition, status="reconciled", completed=completed,
+            failed=failed, total=EXP451_TOTAL_COORDINATES, elapsed_seconds=elapsed,
+            native_attempts=attempts, native_elapsed_seconds=elapsed,
+        )
+        append_progress_event_antigravity(Path(root), event)
+        if progress is not None:
+            progress(event)
+        return Exp451ProgressStateAntigravity(completed, failed, attempts, elapsed, None, True)
+    return Exp451ProgressStateAntigravity(
+        completed, failed, attempts, elapsed,
+        None if latest is None else latest["eta_seconds"], False,
+    )
 
 
 @contextmanager
@@ -688,11 +769,7 @@ def _execute_exp451_resume_locked_antigravity(
         raise ValueError("Exp451 MPS serialization differs")
 
     def live_inventory() -> Exp451ResumeInventoryAntigravity:
-        return build_resume_inventory_antigravity(
-            manifest, catalog,
-            native=_read_native_coordinates_antigravity(root, context, catalog),
-            failures=_read_failure_records_antigravity(root, context, catalog),
-        )
+        return read_resume_inventory_antigravity(root, context, catalog, manifest)
 
     def persist(dataset: str, condition: str, result: object) -> None:
         if not isinstance(result, Exp451DatasetConditionResult):
@@ -712,14 +789,14 @@ def _execute_exp451_resume_locked_antigravity(
             progress(event)
 
     inventory = live_inventory()
-    persisted = status_snapshot_antigravity(root, imported_completed=len(inventory.imported))
+    reconciliation = reconcile_resume_progress_antigravity(root, inventory, progress=progress)
     first_wave = wave_one_coordinates_antigravity(inventory)
     completed, failed, native_attempts, native_elapsed = execute_resume_coordinates_antigravity(
         first_wave, scorer=scorer, persist_success=persist, progress=emit,
         completed=inventory.completed_count, failed=len(inventory.failures),
         total=EXP451_TOTAL_COORDINATES, wave=1, append_failure=record_failure,
-        native_attempts=max(int(persisted["native_attempts"]), len(inventory.native)),
-        native_elapsed_seconds=float(persisted["native_elapsed_seconds"]),
+        native_attempts=reconciliation.native_attempts,
+        native_elapsed_seconds=reconciliation.native_elapsed_seconds,
     )
     inventory = live_inventory()
     if inventory.wave_two:
@@ -746,12 +823,14 @@ def context_conditions_antigravity() -> tuple[Exp451Condition, ...]:
 
 __all__ = [
     "Exp451ExecutionScheduleAntigravity", "Exp451IncompleteAntigravity",
-    "Exp451ResumeInventoryAntigravity", "FailureRecordAntigravity",
+    "Exp451ProgressStateAntigravity", "Exp451ResumeInventoryAntigravity",
+    "FailureRecordAntigravity",
     "append_failure_antigravity", "append_progress_event_antigravity",
     "build_execution_schedule_antigravity", "build_resume_inventory_antigravity",
     "context_conditions_antigravity", "execute_exp451_resume_antigravity",
     "execute_resume_coordinates_antigravity", "exclusive_run_lock_antigravity",
-    "progress_event_antigravity", "status_snapshot_antigravity",
+    "progress_event_antigravity", "read_resume_inventory_antigravity",
+    "reconcile_resume_progress_antigravity", "status_snapshot_antigravity",
     "validate_failure_records_antigravity", "wave_one_coordinates_antigravity",
     "write_native_success_antigravity",
 ]

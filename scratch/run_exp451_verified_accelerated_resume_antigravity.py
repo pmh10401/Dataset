@@ -139,19 +139,24 @@ def _run_antigravity() -> dict[str, object]:
 
 def _status_antigravity() -> dict[str, object]:
     from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import (
-        status_snapshot_antigravity,
+        read_resume_inventory_antigravity, status_snapshot_antigravity,
     )
 
     roots = _roots_antigravity()
     official = roots["official"]
-    manifest = official / "migration_manifest_antigravity.json"
-    migrated = 4234 if manifest.is_file() and not manifest.is_symlink() else 0
+    # A status claim is authoritative only after the full source-to-target
+    # verifier accepts the manifest; file existence is never sufficient.
+    context, catalog, manifest = _verify_migration_antigravity()
+    inventory = read_resume_inventory_antigravity(official, context, catalog, manifest)
     return {
         "experiment": "Exp451", "command": "status",
         "roots": {name: {"path": str(root), "exists": root.exists()} for name, root in roots.items()},
-        "migration_manifest_exists": migrated == 4234,
+        "migration_manifest_exists": True,
         "progress_log": str(official / "progress_antigravity.jsonl"),
-        **status_snapshot_antigravity(official, imported_completed=migrated),
+        **status_snapshot_antigravity(
+            official, imported_completed=len(inventory.imported),
+            durable_completed=inventory.completed_count, durable_failed=len(inventory.failures),
+        ),
     }
 
 

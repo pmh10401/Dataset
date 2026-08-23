@@ -108,7 +108,7 @@ class ResumeInventoryTests(unittest.TestCase):
                 },
             )
             self.assertEqual(event["remaining"], 234)
-            self.assertEqual(event["eta_seconds"], 12.5 * 234)
+            self.assertIsNone(event["eta_seconds"])
 
     def test_failure_ledger_is_unique_and_never_allows_wave_one_after_wave_two(self) -> None:
         """A retry is appended only after all first-wave work was recorded."""
@@ -273,7 +273,7 @@ class ResumeInventoryTests(unittest.TestCase):
             status = status_snapshot_antigravity(root, imported_completed=4234)
             self.assertEqual(status["completed"], 4235)
             self.assertEqual(status["latest_coordinate"], ["dataset_1000_antigravity", "C"])
-            self.assertEqual(status["eta_seconds"], 5.0 * 233)
+            self.assertIsNone(status["eta_seconds"])
 
     def test_cli_accepts_mode_full_and_rejects_other_modes(self) -> None:
         """All planned Task8 commands receive --mode full without changing roots."""
@@ -289,3 +289,114 @@ class ResumeInventoryTests(unittest.TestCase):
         with patch("sys.stderr", io.StringIO()):
             with self.assertRaises(SystemExit):
                 module.main(["status", "--mode", "smoke"])
+
+    def test_reconciliation_logs_checkpoint_without_recomputing_it_and_keeps_eta_unknown(self) -> None:
+        """A crash after native persistence emits recovery progress without a zero-time ETA."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import (
+            build_resume_inventory_antigravity,
+            reconcile_resume_progress_antigravity,
+            status_snapshot_antigravity,
+            wave_one_coordinates_antigravity,
+        )
+
+        coordinate = ("dataset_1000_antigravity", "C")
+        inventory = build_resume_inventory_antigravity(
+            self.manifest, self.catalog, native=(coordinate,)
+        )
+        with TemporaryDirectory(prefix="exp451_reconcile_fixture_antigravity_") as temporary:
+            root = Path(temporary).resolve()
+            state = reconcile_resume_progress_antigravity(root, inventory)
+            status = status_snapshot_antigravity(
+                root, imported_completed=4234, durable_completed=inventory.completed_count,
+                durable_failed=len(inventory.failures),
+            )
+        self.assertTrue(state.reconciled)
+        self.assertEqual(state.completed, 4235)
+        self.assertIsNone(state.eta_seconds)
+        self.assertEqual(status["latest_event"]["status"], "reconciled")
+        self.assertNotIn(coordinate, wave_one_coordinates_antigravity(inventory))
+
+    def test_clean_resume_accumulates_native_timing_before_exposing_eta(self) -> None:
+        """Two measured native attempts produce an ETA; imported results never enter its rate."""
+        from experiments.exp451_verified_accelerated_resume_antigravity.runner_antigravity import (
+            append_progress_event_antigravity,
+            progress_event_antigravity,
+            status_snapshot_antigravity,
+        )
+
+        with TemporaryDirectory(prefix="exp451_eta_fixture_antigravity_") as temporary:
+            root = Path(temporary).resolve()
+            for attempts, elapsed, completed in ((1, 5.0, 4235), (2, 12.0, 4236)):
+                append_progress_event_antigravity(root, progress_event_antigravity(
+                    dataset=f"dataset_{999 + attempts:04d}_antigravity", condition="C",
+                    status="success", completed=completed, failed=0, total=4468,
+                    elapsed_seconds=elapsed, native_attempts=attempts,
+                    native_elapsed_seconds=elapsed,
+                ))
+            status = status_snapshot_antigravity(root, imported_completed=4234)
+        self.assertEqual(status["eta_seconds"], 6.0 * (4468 - 4236))
+
+    def test_status_fails_closed_when_authority_verifier_rejects_manifest(self) -> None:
+        """A regular-looking manifest never substitutes for authority verification."""
+        script_path = Path(__file__).resolve().parents[3] / "scratch" / "run_exp451_verified_accelerated_resume_antigravity.py"
+        specification = importlib.util.spec_from_file_location("exp451_cli_manifest_antigravity", script_path)
+        assert specification is not None and specification.loader is not None
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        with TemporaryDirectory(prefix="exp451_status_fixture_antigravity_") as temporary:
+            root = Path(temporary).resolve()
+            (root / "migration_manifest_antigravity.json").write_text("{}\n", encoding="utf-8")
+            roots = {"smoke": root, "official": root, "evaluation": root, "report": root}
+            with patch.object(module, "_roots_antigravity", return_value=roots), patch.object(
+                module, "_verify_migration_antigravity", side_effect=ValueError("manifest differs")
+            ), patch("sys.stderr", io.StringIO()):
+                self.assertEqual(module.main(["status", "--mode", "full"]), 2)
+
+    def test_runner_integrates_full_wave_one_then_retry_without_recomputing_success(self) -> None:
+        """The public runner completes both waves and calls each successful coordinate once."""
+        from experiments.exp451_verified_accelerated_resume_antigravity import runner_antigravity
+        from experiments.exp451_verified_accelerated_resume_antigravity.contracts_antigravity import (
+            Exp451BackendDecision, Exp451DatasetConditionResult, Exp451RunContext,
+        )
+        from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+
+        with TemporaryDirectory(prefix="exp451_runner_integration_antigravity_") as temporary:
+            root = Path(temporary).resolve()
+            backend = Exp451BackendDecision("cpu", "fixture", False, False, 1, 1)
+            context = Exp451RunContext(
+                "full", root, "d" * 64, "c" * 64, {"fixture_antigravity.py": "e" * 64}, backend, "f" * 64,
+            )
+            manifest = Exp451MigrationManifest("a" * 64, self.manifest.entries, context.sha256)
+            imported = tuple((entry.dataset, entry.condition_id) for entry in manifest.entries)
+            one = ("dataset_1000_antigravity", "C")
+            two = ("dataset_1001_antigravity", "C")
+            first_failure = runner_antigravity.FailureRecordAntigravity(*one, 1, "RuntimeError", "mps")
+            inventories = iter((
+                runner_antigravity.Exp451ResumeInventoryAntigravity(imported, imported, (), (), (one, two)),
+                runner_antigravity.Exp451ResumeInventoryAntigravity(imported + (two,), imported, (two,), (first_failure,), (one,)),
+                runner_antigravity.Exp451ResumeInventoryAntigravity(imported + (two, one), imported, (two, one), (first_failure,), ()),
+            ))
+            raw = {
+                item["dataset"]: RawDataset(item["dataset"], 1, (), (), (), (), (), ())
+                for item in self.catalog["datasets"]
+            }
+            calls: list[tuple[str, str]] = []
+
+            def score(values, condition, backend):
+                del backend
+                coordinate = (values.dataset, condition.condition_id)
+                calls.append(coordinate)
+                if coordinate == one and calls.count(one) == 1:
+                    raise RuntimeError("mps")
+                return Exp451DatasetConditionResult(*coordinate, None, None)
+
+            with patch.object(runner_antigravity, "read_resume_inventory_antigravity", side_effect=lambda *args: next(inventories)), patch.object(
+                runner_antigravity, "score_dataset_condition_exp451_antigravity", side_effect=score
+            ), patch.object(runner_antigravity, "write_native_success_antigravity"), patch.object(
+                runner_antigravity, "append_failure_antigravity"
+            ):
+                result = runner_antigravity.execute_exp451_resume_antigravity(
+                    root, context, self.catalog, manifest, raw,
+            )
+            self.assertEqual(calls, [one, two, one])
+            self.assertEqual(result.pending, ())
