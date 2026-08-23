@@ -50,17 +50,17 @@ $PY scratch/build_codemap_exp465_antigravity.py --validate-only</code></pre></li
 <h2><label><input type="checkbox" disabled> Task 2 — ECG200 TRAIN과 96→140 보간</label></h2>
 <p><strong>Files:</strong> Create sources/interpolation modules and tests. Modify docs, ledgers, map.</p>
 <p><strong>Interfaces:</strong> <code>load_ecg200_normal_train_antigravity(path)-&gt;(69,96)</code>, <code>interpolate_to_140_antigravity(values)-&gt;(n,140)</code>; owned C-contiguous read-only float64.</p><ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED source.</strong></label><pre><code>normal = load_ecg200_normal_train_antigravity(fixture)
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED source.</strong></label><pre><code>normal = load_ecg200_normal_train_antigravity(fixture)
 self.assertEqual(normal.shape, (69, 96))
 self.assertEqual(normal.dtype, np.float64)
 self.assertTrue(normal.flags.owndata and not normal.flags.writeable)</code></pre><p>Reject wrong MD5/shape/labels/normal count/nonfinite and TEST-named paths.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — Parser.</strong></label><pre><code>values_text, label_text = data_line.rsplit(":", 1)
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Parser.</strong></label><pre><code>values_text, label_text = data_line.rsplit(":", 1)
 values = np.asarray([float(x) for x in values_text.split(",")], dtype=np.float64)
 label = int(label_text)</code></pre><p>Require MD5 <code>808875aeac1c358a90c630fe369327c4</code>, width 96, label ±1.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED interpolation.</strong></label><pre><code>expected = np.vstack([np.interp(np.linspace(0,1,140), np.linspace(0,1,96), row) for row in x96])
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED interpolation.</strong></label><pre><code>expected = np.vstack([np.interp(np.linspace(0,1,140), np.linspace(0,1,96), row) for row in x96])
 np.testing.assert_array_equal(interpolate_to_140_antigravity(x96), expected)</code></pre><p>Test endpoints, nonlinear/constant rows, flags and immutability.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — Minimal interpolation.</strong></label><p>Use only the design formula; no smoothing, normalization, onset choice or alternative resampling.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — Real TRAIN smoke.</strong></label><p>Fetch only official TRAIN to an external <code>antigravity</code>-named path, record URL/MD5/SHA-256, verify 100×96, 69/31 and output 69×140. TEST remains unopened.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Minimal interpolation.</strong></label><p>Use only the design formula; no smoothing, normalization, onset choice or alternative resampling.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — Real TRAIN smoke.</strong></label><p>Fetch only official TRAIN to an external <code>antigravity</code>-named path, record URL/MD5/SHA-256, verify 100×96, 69/31 and output 69×140. TEST remains unopened.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_sources_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_interpolation_antigravity
 $PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_sources_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_interpolation_antigravity</code></pre><p>Run Exp464 source regression, map/diff checks, commit and review.</p></li></ol>
 

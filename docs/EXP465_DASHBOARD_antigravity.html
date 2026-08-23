@@ -10,7 +10,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp465 진행 대시보드</h1>
-<div class="box"><strong>현재 상태:</strong> Task 1 계약·문서·코드맵 구현과 focused verification 완료. Ox Alpha Ultra 독립 재검토도 PASS했다. 다음 단계는 Task 2 ECG200 TRAIN 입력과 96→140 보간 구현이다.</div>
+<div class="box"><strong>현재 상태:</strong> Task 1 계약·문서·코드맵 구현과 독립 재검토도 PASS. Task 2 ECG200 TRAIN 입력·96→140 보간 구현은 독립 검토를 기다린다. 다음 진입은 그 검토 결과 확인이다.</div>
 <table>
 <tr><th>목표</th><td>ECG200 정상 TRAIN에서 Exp464 C8의 외부 재현성 확인</td></tr>
 <tr><th>자료</th><td>ECG200 TRAIN 100×96 중 정상 +1 라벨 69개</td></tr>
@@ -18,6 +18,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, finite, C0 gradual·period 비열화 0건, 각 seed 정상 69개 confirmation 0건</td></tr>
 <tr><th>현재 공식 성능</th><td>변경 없음: 전체 F1 0.624185, recall 0.488770, FN 2,003</td></tr>
 <tr><th>Task 1 검증</th><td>8 tests GREEN × 2회; code-map <code>--validate-only</code> 통과; <code>git diff --check</code> 통과</td></tr>
+<tr><th>Task 2 입력</th><td>공식 Zenodo TRAIN만 외부 경로에 저장, MD5 일치, 실제 smoke 출력 <code>69×140</code>, TEST 미접근</td></tr>
 <tr><th>실행 경계</th><td>official evaluate / inspect <code>0 / 0</code>, private run <code>0</code>, label query <code>0</code>, 모든 결과 hash <code>null</code></td></tr>
 </table>
 
@@ -29,6 +30,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
 <li><label><input type="checkbox" disabled> 구현 계획 승인</label></li>
 <li><label><input type="checkbox" checked disabled> Task 1 구현(계약·문서·코드맵)</label></li>
+<li><label><input type="checkbox" disabled> Task 2 구현(TRAIN 입력과 보간)</label></li>
 <li><label><input type="checkbox" disabled> private 실행 1</label></li>
 <li><label><input type="checkbox" disabled> private 실행 2 및 재현성 확인</label></li>
 <li><label><input type="checkbox" disabled> 독립 검토</label></li>

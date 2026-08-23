@@ -175,7 +175,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
                 self.assertEqual(record["experiment"], "Exp465")
                 self.assertEqual(record["kind"], "ecg200_c8_external_train_qualification")
                 self.assertEqual(record["status"], "implementation_plan_written_awaiting_user_review")
-                self.assertEqual(record["implementation_status"], "task_1_contract_documents_and_codemap_complete")
+                self.assertEqual(record["implementation_status"], "task_2_sources_interpolation_awaiting_independent_review")
                 self.assertEqual(record["run_identity"], "exp465-ecg200-c8-external-validation-antigravity-20260822")
                 self.assertEqual(record["run_root"], OFFICIAL_ROOT_TEXT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -210,12 +210,16 @@ class GovernanceAntigravityTest(unittest.TestCase):
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, 42)
-        self.assertEqual(checkbox_parser.checked_count, 7)
+        self.assertEqual(checkbox_parser.checked_count, 12)
         task1_marker = '<h2><label><input type="checkbox" checked disabled> Task 1 —'
         task2_marker = '<h2><label><input type="checkbox" disabled> Task 2 —'
         task1_section = plan_text[plan_text.index(task1_marker):plan_text.index(task2_marker)]
         self.assertEqual(task1_section.count('type="checkbox" checked disabled'), 7)
         self.assertEqual(task1_section.count('type="checkbox" disabled'), 0)
+        task3_marker = '<h2><label><input type="checkbox" disabled> Task 3 —'
+        task2_section = plan_text[plan_text.index(task2_marker):plan_text.index(task3_marker)]
+        self.assertEqual(task2_section.count('type="checkbox" checked disabled'), 5)
+        self.assertEqual(task2_section.count('type="checkbox" disabled'), 2)
 
         builder = load_builder_antigravity()
         source_parent = subprocess.check_output([
@@ -225,8 +229,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
         graph = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[1])
         lock = strict_json_antigravity(ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[2])
         rendered = (ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY[0]).read_text(encoding="utf-8")
-        self.assertEqual(graph["schema"], "exp465_task1_contract_codemap_v1")
-        self.assertEqual(lock["schema"], "exp465_task1_contract_codemap_lock_v1")
+        self.assertEqual(graph["schema"], "exp465_task2_sources_interpolation_codemap_v1")
+        self.assertEqual(lock["schema"], "exp465_task2_sources_interpolation_codemap_lock_v1")
         self.assertEqual(graph["source_parent_commit"], source_parent)
         self.assertEqual(lock["source_parent_commit"], source_parent)
         self.assertEqual(graph["unknown_relationships"], [])
@@ -235,6 +239,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "approved_design",
             "implementation_plan",
             "task1_report",
+            "task2_report",
             "dashboard",
             "preregistration",
             "runbook",
@@ -247,6 +252,10 @@ class GovernanceAntigravityTest(unittest.TestCase):
             "task1_config_test",
             "task1_contracts_test",
             "task1_governance_test",
+            "task2_sources",
+            "task2_interpolation",
+            "task2_sources_test",
+            "task2_interpolation_test",
             "map_builder",
         }
         self.assertEqual(node_ids, expected_nodes)

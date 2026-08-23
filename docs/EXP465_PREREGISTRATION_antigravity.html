@@ -4,7 +4,7 @@
 <style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 사전등록</h1>
-<p>이 문서는 승인된 과학 계약을 고정한다. 현재 상태는 <code>implementation_plan_written_awaiting_user_review</code>이며 Task 1은 계약·문서·코드맵만 완료했다. 자료 로딩과 점수 계산은 아직 구현하지 않았다.</p>
+<p>이 문서는 승인된 과학 계약을 고정한다. 현재 상태는 <code>implementation_plan_written_awaiting_user_review</code>이며 Task 1과 Task 2까지 완료했다. 점수 계산은 아직 구현하지 않았다.</p>
 <table>
 <tr><th>experiment / kind</th><td><code>Exp465</code> / <code>ecg200_c8_external_train_qualification</code></td></tr>
 <tr><th>run identity</th><td><code>exp465-ecg200-c8-external-validation-antigravity-20260822</code></td></tr>
@@ -18,6 +18,7 @@
 <li>방법 검증에는 정상 69개만 쓴다. <code>ECG200_TEST.ts</code>와 TEST 라벨은 열거나 조회하지 않는다.</li>
 <li>각 정상 행을 한 번만 <code>np.interp</code> 선형 보간으로 <code>96→140</code>으로 바꾸고 첫점과 끝점을 보존한다.</li>
 </ul>
+<p>Task 2 실제 TRAIN smoke은 공식 Zenodo 보관본의 <code>ECG200_TRAIN.ts</code>만 외부 경로에 저장해 확인했다. MD5는 고정값과 일치했고 출력은 <code>69×96</code → <code>69×140</code> float64 read-only였다. TEST 파일은 열거나 내려받지 않았다.</p>
 <h2>고정된 방법과 기록 단위</h2>
 <table><thead><tr><th>ID</th><th>정의</th><th>역할</th></tr></thead><tbody>
 <tr><td><code>C0</code></td><td>Exp464 C0 exact replay control</td><td>기준선</td></tr>
@@ -35,5 +36,5 @@
 </ul>
 <div class="stop"><strong>중단 규칙:</strong> 하나라도 실패하면 공식 실행과 routing 연구로 가지 않는다. 실패 뒤에 onset, cosine, 보간법, seed, fold, AUC 기준을 바꾸지 않는다. C6나 새 변형을 사후 승격하지 않는다. 이 실험은 실제 FN·FP·F1, routing, champion, promotion을 바꾸지 않는다.</div>
 <h2>가속화 사전평가와 현재 handoff</h2>
-<div class="box"><p>PyTorch·MLX·MPS 가능성은 설계 단계에서 이미 등록했다. 점수 구현 전에는 canonical CPU fallback을 유지하고, MLX는 동일 입력·seed에서 candidate index 일치, 수치 허용 범위 충족, transfer/sync 포함 1.1배 이상 속도가 모두 확인될 때만 검토한다. Task 1 시점에는 tensor 연산이 구현돼 있지 않으므로 accelerated path를 채택하지 않았다. official evaluate/inspect는 0, label query count는 0이고 모든 결과 hash는 <code>null</code>이다.</p></div>
+<div class="box"><p>PyTorch·MLX·MPS 가능성은 설계 단계에서 이미 등록했다. Task 2 source/interpolation은 작은 CPU parsing과 행별 <code>np.interp</code>이며 알고리즘 변경 없는 MLX 1.1× gate 근거가 없으므로 canonical CPU fallback을 유지한다. MLX는 동일 입력·seed에서 candidate index 일치, 수치 허용 범위 충족, transfer/sync 포함 1.1배 이상 속도가 모두 확인될 때만 검토한다. official evaluate/inspect는 0, label query count는 0이고 모든 결과 hash는 <code>null</code>이다.</p></div>
 </main></body></html>
