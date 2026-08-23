@@ -101,8 +101,8 @@ broken = count(correct_c0 and (not correct_c8))
 <h2><label><input type="checkbox" disabled> Task 5 — 닫힌 CLI와 private 재현 2회</label></h2>
 <p><strong>Files:</strong> Create CLI, launcher, CLI tests. Modify all truth docs, ledgers, plan, map.</p>
 <p><strong>Interfaces:</strong> Public CLI accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>; root/seed/fold/gate/retry/resume forbidden.</p><ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED CLI.</strong></label><p>Test parser, fixed interpreter, outside-CWD launcher, lazy imports, official-root absence, private seam and label0.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — CLI GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_cli_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED CLI.</strong></label><p>Test parser, fixed interpreter, outside-CWD launcher, lazy imports, official-root absence, private seam and label0.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — CLI GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_cli_antigravity
 $PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_cli_antigravity</code></pre><p>Commit/review before heavy run.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 3 — Private run 1.</strong></label><p>Clean reviewed commit에서 <code>/private/tmp/exp465_task5_private_run1_antigravity</code> evaluate→inspect once.</p></li>
 <li><label><input type="checkbox" disabled> <strong>Step 4 — Private run 2.</strong></label><p>Run 1 종료 뒤 run2에서 stdout, leaves/hashes, rows, summaries, decision, dashboard exact equality 확인.</p></li>

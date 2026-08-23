@@ -42,3 +42,15 @@ Task 3: complete (implementation 8eea61c8..64f08515, closeout 98cee2e8..43368dc7
 Ruling: Task 4는 CPU 집계 경로를 유지한다 — 새 score-source 수학이 아니라 69-row AUC·비교·canonical JSON의 작은 결정론적 집계이며 MLX용 재작성은 알고리즘 경계와 1.1배 속도 조건을 정당화하지 못한다 — 잘못되면 Task 5 전 동일 입력 parity/speed gate를 추가한다.
 
 Task 4: complete (b76c04a3, 317050c0, dbea6a1f; final fresh review SPEC PASS / QUALITY APPROVED; exact 69 OOF, seed Wilson, C0 input replay, C6/C8 raw replay verified).
+
+## Task 5 preflight interface scan
+<table><thead><tr><th>Producer</th><th>Consumer</th><th>Shared interface</th><th>Finding</th></tr></thead><tbody>
+<tr><td>Task 2 source/interpolation</td><td>Task 5 evaluate</td><td>fixed ECG200 TRAIN path → read-only 69×140</td><td>CLI에 공개 path 옵션 없이 내부 고정 경로를 사용한다.</td></tr>
+<tr><td>Task 3 scorer</td><td>Task 5 fold loop</td><td>2 seeds×5 folds, exact C0/C6/C8 + input evidence</td><td>blocked fold는 69 index를 5개 연속 OOF로 한 번씩 덮는다.</td></tr>
+<tr><td>Task 4 qualification/evaluation</td><td>Task 5 publication</td><td>qualification result + C8 decision</td><td>저장 전 score-derived 값을 재검산한다.</td></tr>
+<tr><td>Task 4 artifacts/replay</td><td>Task 5 inspect/stdout</td><td>canonical seven leaves and one canonical payload</td><td>evaluate stdout과 inspect stdout은 정확히 같아야 한다.</td></tr>
+<tr><td>Task 5 CLI</td><td>Task 6 lifecycle</td><td>official root internal authority</td><td>Task 5는 private root seam만 사용하고 official root를 생성하지 않는다.</td></tr>
+</tbody></table>
+<p>Ruling: private root는 공개 인자가 아니라 predecessor와 같은 capability module seam으로만 주입한다 — public surface를 두 명령으로 고정하기 위해서다 — 잘못되면 private harness와 CLI 테스트를 다시 작성해야 한다.</p>
+<p>Task 5 CLI: complete and reviewed (e6791d61, 2868724a, 87cd20c3, 4b8f342d; fresh review <code>SPEC PASS / QUALITY APPROVED</code>). CLI tests 8/8 twice, lower-layer regression 22/22 once, compile/diff passed. The first review correctly blocked execution because the launcher could not supply its capability and inspect reran scoring; both defects are now covered by tests. Private/official runs and ECG200 TEST access remain zero.</p>
+<p>Task 5 private qualification: awaiting clean reviewed commit, then sequential run1 and run2.</p>
