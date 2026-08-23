@@ -33,11 +33,12 @@ def _verification_antigravity(*, total: int = 4468, manifests: tuple[str, ...] =
             imported=imported[condition], native=native[condition],
         ) for condition in manifests
     }
-    return verifier.Exp451VerificationAntigravity(
+    authority = verifier.Exp451VerificationAntigravity(
         total, MappingProxyType(imported), MappingProxyType(native), MappingProxyType(records),
         context.sha256, context.catalog_sha256, context.database_sha256,
-        verifier._inventory_sha256_antigravity(records), verifier._VERIFICATION_CAPABILITY_ANTIGRAVITY,
+        verifier._inventory_sha256_antigravity(records),
     )
+    return verifier._issue_verified_authority_antigravity(authority)
 
 
 class VerificationGateTests(unittest.TestCase):
@@ -166,11 +167,11 @@ class VerificationGateTests(unittest.TestCase):
         altered = {key: dict(value) for key, value in verification.condition_manifests.items()}
         altered["A"]["origin_counts"] = dict(altered["A"]["origin_counts"])
         altered["A"]["origin_counts"]["imported_exp450_mps"] = 1116
-        with self.assertRaisesRegex(ValueError, "manifest"):
+        with self.assertRaisesRegex(ValueError, "authority"):
             require_exp451_evaluation_ready_antigravity(
                 replace(verification, condition_manifests=MappingProxyType(altered))
             )
-        with self.assertRaisesRegex(ValueError, "database"):
+        with self.assertRaisesRegex(ValueError, "authority"):
             require_exp451_evaluation_ready_antigravity(
                 replace(verification, database_sha256="f" * 64)
             )

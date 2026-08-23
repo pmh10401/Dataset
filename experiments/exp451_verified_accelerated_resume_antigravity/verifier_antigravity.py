@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 import stat
 from types import MappingProxyType
+from weakref import WeakSet
 
 from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
     _route_from_payload,
@@ -63,10 +64,22 @@ _CONDITION_MODES_ANTIGRAVITY = {
 }
 _CONDITION_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-condition-manifest-antigravity.v1"
 _SCORE_MANIFEST_SCHEMA_ANTIGRAVITY = "exp451-verified-score-manifest-antigravity.v1"
-_VERIFICATION_CAPABILITY_ANTIGRAVITY = object()
+
+def _identity_registry_antigravity():
+    """Return closure-private issue/validate operations; the set is not a module value."""
+    issued: WeakSet[object] = WeakSet()
+    def issue(value: object) -> object:
+        issued.add(value)
+        return value
+    def validates(value: object) -> bool:
+        return value in issued
+    return issue, validates
 
 
-@dataclass(frozen=True, slots=True)
+_issue_verified_authority_antigravity, _is_verified_authority_antigravity = _identity_registry_antigravity()
+
+
+@dataclass(frozen=True, slots=True, eq=False, weakref_slot=True)
 class Exp451VerificationAntigravity:
     """The only completion authority accepted by Exp451 evaluation/reporting."""
 
@@ -78,7 +91,6 @@ class Exp451VerificationAntigravity:
     catalog_sha256: str = ""
     database_sha256: str = ""
     inventory_sha256: str = ""
-    _capability_antigravity: object | None = None
 
 
 def _sha256_antigravity(value: object) -> bool:
@@ -222,7 +234,7 @@ def _validate_verification_authority_antigravity(verification: object) -> Exp451
     """Validate the opaque issued capability and all frozen manifest contents."""
     if (
         not isinstance(verification, Exp451VerificationAntigravity)
-        or verification._capability_antigravity is not _VERIFICATION_CAPABILITY_ANTIGRAVITY
+        or not _is_verified_authority_antigravity(verification)
     ):
         raise ValueError("Exp451 verification authority is invalid")
     if verification.total_successes != EXP451_TOTAL_COORDINATES:
@@ -352,12 +364,12 @@ def verify_exp451_completion_antigravity(
     total = sum(imported_counts.values()) + sum(native_counts.values())
     if total != EXP451_TOTAL_COORDINATES:
         raise ValueError("Exp451 completion count differs")
-    return Exp451VerificationAntigravity(
+    authority = Exp451VerificationAntigravity(
         total, MappingProxyType(imported_counts), MappingProxyType(native_counts),
         MappingProxyType(manifests), context.sha256, context.catalog_sha256,
         context.database_sha256, _inventory_sha256_antigravity(manifests),
-        _VERIFICATION_CAPABILITY_ANTIGRAVITY,
     )
+    return _issue_verified_authority_antigravity(authority)
 
 
 def provenance_summary_antigravity(verification: Exp451VerificationAntigravity) -> dict[str, object]:
