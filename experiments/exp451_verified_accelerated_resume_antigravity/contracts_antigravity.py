@@ -23,10 +23,7 @@ _APPROVED_CONDITIONS = {
     "D": ("polyphase_pchip", "area"),
 }
 
-_APPROVED_EXECUTION_ORIGINS = {
-    "imported_exp450_mps",
-    "exp451_native_cpu_pool_fallback",
-}
+_APPROVED_MIGRATION_EXECUTION_ORIGIN = "imported_exp450_mps"
 
 _PRODUCTION_EXPECTED_MIGRATION_COUNTS = {
     "A": 1117,
@@ -42,6 +39,18 @@ def _sha256_digest(value: object) -> bool:
         and len(value) == 64
         and all(character in "0123456789abcdef" for character in value)
     )
+
+
+def _is_safe_relative_path(value: object) -> bool:
+    if type(value) is not str or not value.strip():
+        return False
+    if value.startswith(("/", "\\")):
+        return False
+    parts = value.replace("\\", "/").split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        return False
+    path = Path(value)
+    return not path.is_absolute()
 
 
 def canonical_json_bytes(value: object) -> bytes:
@@ -189,21 +198,24 @@ class Exp451MigrationEntry:
             raise ValueError("Exp451 migration entry dataset is invalid")
         if self.condition_id not in _APPROVED_CONDITIONS:
             raise ValueError("Exp451 migration entry condition_id is invalid")
-        if type(self.source_relative_path) is not str or not self.source_relative_path:
-            raise ValueError("Exp451 migration entry source_relative_path is invalid")
+        if not _is_safe_relative_path(self.source_relative_path):
+            raise ValueError(
+                "Exp451 migration entry source_relative_path must be a safe non-empty relative path without dot or traversal components"
+            )
         if not _sha256_digest(self.source_envelope_sha256):
             raise ValueError("Exp451 migration entry source_envelope_sha256 digest is invalid")
         if not _sha256_digest(self.payload_sha256):
             raise ValueError("Exp451 migration entry payload_sha256 digest is invalid")
-        if type(self.target_relative_path) is not str or not self.target_relative_path:
-            raise ValueError("Exp451 migration entry target_relative_path is invalid")
+        if not _is_safe_relative_path(self.target_relative_path):
+            raise ValueError(
+                "Exp451 migration entry target_relative_path must be a safe non-empty relative path without dot or traversal components"
+            )
         if not _sha256_digest(self.target_envelope_sha256):
             raise ValueError("Exp451 migration entry target_envelope_sha256 digest is invalid")
-        if (
-            type(self.execution_origin) is not str
-            or self.execution_origin not in _APPROVED_EXECUTION_ORIGINS
-        ):
-            raise ValueError("Exp451 migration entry execution_origin is invalid")
+        if self.execution_origin != _APPROVED_MIGRATION_EXECUTION_ORIGIN:
+            raise ValueError(
+                f"Exp451 migration entry execution_origin must be exactly {_APPROVED_MIGRATION_EXECUTION_ORIGIN!r}"
+            )
 
     def artifact_record(self) -> dict[str, object]:
         return {
@@ -223,7 +235,6 @@ class Exp451MigrationManifest:
     source_context_sha256: str
     entries: tuple[Exp451MigrationEntry, ...] = ()
     target_context_sha256: str = ""
-    _expected_counts: Mapping[str, int] | None = None
 
     def __post_init__(self) -> None:
         if not _sha256_digest(self.source_context_sha256):
@@ -242,14 +253,9 @@ class Exp451MigrationManifest:
             coordinates.add(coordinate)
             counts[entry.condition_id] += 1
 
-        expected = (
-            dict(self._expected_counts)
-            if self._expected_counts is not None
-            else _PRODUCTION_EXPECTED_MIGRATION_COUNTS
-        )
-        if counts != expected:
+        if counts != _PRODUCTION_EXPECTED_MIGRATION_COUNTS:
             raise ValueError(
-                f"Exp451 migration manifest counts {counts} do not match expected {expected}"
+                f"Exp451 migration manifest counts {counts} do not match required {_PRODUCTION_EXPECTED_MIGRATION_COUNTS}"
             )
 
         object.__setattr__(self, "entries", entries)

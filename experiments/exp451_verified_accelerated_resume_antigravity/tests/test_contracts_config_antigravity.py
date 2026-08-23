@@ -34,8 +34,6 @@ from experiments.exp451_verified_accelerated_resume_antigravity.config_antigravi
 from experiments.exp451_verified_accelerated_resume_antigravity.contracts_antigravity import (
     Exp451BackendDecision,
     Exp451Condition,
-    Exp451ConditionScore,
-    Exp451DatasetConditionResult,
     Exp451MigrationEntry,
     Exp451MigrationManifest,
     Exp451RunContext,
@@ -47,6 +45,71 @@ from paper.equipment_anomaly_detection.contracts_paper import FrozenPaperConfig
 DUMMY_DIGEST = "a" * 64
 DUMMY_DIGEST_2 = "b" * 64
 DUMMY_DIGEST_3 = "c" * 64
+
+
+def _build_valid_4234_entries() -> list[Exp451MigrationEntry]:
+    entries: list[Exp451MigrationEntry] = []
+    # A: 1117 datasets
+    for i in range(1117):
+        ds = f"ds_a_{i:04d}"
+        entries.append(
+            Exp451MigrationEntry(
+                dataset=ds,
+                condition_id="A",
+                source_relative_path=f"checkpoints/A/{ds}.json",
+                source_envelope_sha256=DUMMY_DIGEST,
+                payload_sha256=DUMMY_DIGEST_2,
+                target_relative_path=f"checkpoints/A/{ds}.json",
+                target_envelope_sha256=DUMMY_DIGEST_3,
+                execution_origin="imported_exp450_mps",
+            )
+        )
+    # B: 1117 datasets
+    for i in range(1117):
+        ds = f"ds_b_{i:04d}"
+        entries.append(
+            Exp451MigrationEntry(
+                dataset=ds,
+                condition_id="B",
+                source_relative_path=f"checkpoints/B/{ds}.json",
+                source_envelope_sha256=DUMMY_DIGEST,
+                payload_sha256=DUMMY_DIGEST_2,
+                target_relative_path=f"checkpoints/B/{ds}.json",
+                target_envelope_sha256=DUMMY_DIGEST_3,
+                execution_origin="imported_exp450_mps",
+            )
+        )
+    # C: 1000 datasets
+    for i in range(1000):
+        ds = f"ds_c_{i:04d}"
+        entries.append(
+            Exp451MigrationEntry(
+                dataset=ds,
+                condition_id="C",
+                source_relative_path=f"checkpoints/C/{ds}.json",
+                source_envelope_sha256=DUMMY_DIGEST,
+                payload_sha256=DUMMY_DIGEST_2,
+                target_relative_path=f"checkpoints/C/{ds}.json",
+                target_envelope_sha256=DUMMY_DIGEST_3,
+                execution_origin="imported_exp450_mps",
+            )
+        )
+    # D: 1000 datasets
+    for i in range(1000):
+        ds = f"ds_d_{i:04d}"
+        entries.append(
+            Exp451MigrationEntry(
+                dataset=ds,
+                condition_id="D",
+                source_relative_path=f"checkpoints/D/{ds}.json",
+                source_envelope_sha256=DUMMY_DIGEST,
+                payload_sha256=DUMMY_DIGEST_2,
+                target_relative_path=f"checkpoints/D/{ds}.json",
+                target_envelope_sha256=DUMMY_DIGEST_3,
+                execution_origin="imported_exp450_mps",
+            )
+        )
+    return entries
 
 
 class Exp451ConfigTests(unittest.TestCase):
@@ -329,67 +392,125 @@ class Exp451ContractsTests(unittest.TestCase):
                 execution_origin="imported_exp450_mps",
             )
 
+    def test_migration_entry_rejects_non_imported_origin(self) -> None:
+        with self.assertRaisesRegex(ValueError, "execution_origin"):
+            Exp451MigrationEntry(
+                dataset="dataset_001",
+                condition_id="A",
+                source_relative_path="checkpoints/A/dataset_001.json",
+                source_envelope_sha256=DUMMY_DIGEST,
+                payload_sha256=DUMMY_DIGEST_2,
+                target_relative_path="checkpoints/A/dataset_001.json",
+                target_envelope_sha256=DUMMY_DIGEST_3,
+                execution_origin="exp451_native_cpu_pool_fallback",
+            )
+
+        with self.assertRaisesRegex(ValueError, "execution_origin"):
+            Exp451MigrationEntry(
+                dataset="dataset_001",
+                condition_id="A",
+                source_relative_path="checkpoints/A/dataset_001.json",
+                source_envelope_sha256=DUMMY_DIGEST,
+                payload_sha256=DUMMY_DIGEST_2,
+                target_relative_path="checkpoints/A/dataset_001.json",
+                target_envelope_sha256=DUMMY_DIGEST_3,
+                execution_origin="other_origin",
+            )
+
+    def test_migration_entry_rejects_unsafe_relative_paths(self) -> None:
+        unsafe_paths = [
+            "/absolute/path/dataset.json",
+            "\\absolute\\path\\dataset.json",
+            "",
+            "   ",
+            ".",
+            "..",
+            "./dataset.json",
+            "../dataset.json",
+            "checkpoints/./dataset.json",
+            "checkpoints/../dataset.json",
+            "checkpoints/A/../../escape.json",
+        ]
+        for unsafe in unsafe_paths:
+            with self.subTest(source_path=unsafe):
+                with self.assertRaisesRegex(ValueError, "source_relative_path"):
+                    Exp451MigrationEntry(
+                        dataset="dataset_001",
+                        condition_id="A",
+                        source_relative_path=unsafe,
+                        source_envelope_sha256=DUMMY_DIGEST,
+                        payload_sha256=DUMMY_DIGEST_2,
+                        target_relative_path="checkpoints/A/dataset_001.json",
+                        target_envelope_sha256=DUMMY_DIGEST_3,
+                        execution_origin="imported_exp450_mps",
+                    )
+            with self.subTest(target_path=unsafe):
+                with self.assertRaisesRegex(ValueError, "target_relative_path"):
+                    Exp451MigrationEntry(
+                        dataset="dataset_001",
+                        condition_id="A",
+                        source_relative_path="checkpoints/A/dataset_001.json",
+                        source_envelope_sha256=DUMMY_DIGEST,
+                        payload_sha256=DUMMY_DIGEST_2,
+                        target_relative_path=unsafe,
+                        target_envelope_sha256=DUMMY_DIGEST_3,
+                        execution_origin="imported_exp450_mps",
+                    )
+
     def test_migration_manifest_requires_exact_unique_inventory(self) -> None:
         source_context = DUMMY_DIGEST
 
-        # Empty entries should fail production count requirement (4234)
+        # Empty entries must fail
         with self.assertRaises(ValueError):
             Exp451MigrationManifest(source_context_sha256=source_context, entries=())
 
-        # Duplicate coordinate must fail
-        entry_a1 = Exp451MigrationEntry(
-            dataset="dataset_001",
-            condition_id="A",
-            source_relative_path="checkpoints/A/dataset_001.json",
-            source_envelope_sha256=DUMMY_DIGEST,
-            payload_sha256=DUMMY_DIGEST_2,
-            target_relative_path="checkpoints/A/dataset_001.json",
-            target_envelope_sha256=DUMMY_DIGEST_3,
-            execution_origin="imported_exp450_mps",
+        # Construct full valid 4,234 entries
+        valid_entries = _build_valid_4234_entries()
+        self.assertEqual(len(valid_entries), 4234)
+
+        # Valid manifest creation must succeed
+        manifest = Exp451MigrationManifest(
+            source_context_sha256=source_context,
+            entries=tuple(valid_entries),
         )
-        entry_a1_dup = Exp451MigrationEntry(
-            dataset="dataset_001",
-            condition_id="A",
-            source_relative_path="checkpoints/A/dataset_001.json",
+        self.assertEqual(manifest.total_count, 4234)
+        self.assertEqual(
+            manifest.counts_by_condition,
+            {"A": 1117, "B": 1117, "C": 1000, "D": 1000},
+        )
+        self.assertEqual(len(manifest.sha256), 64)
+        self.assertEqual(len(manifest.entry_map), 4234)
+
+        record = manifest.artifact_record()
+        self.assertEqual(record["source_context_sha256"], source_context)
+        self.assertEqual(record["total_entries"], 4234)
+        self.assertEqual(len(record["entries"]), 4234)
+
+        # Duplicate coordinate must fail
+        dup_entries = list(valid_entries)
+        # Replace last entry with a duplicate of the first entry
+        dup_entries[-1] = Exp451MigrationEntry(
+            dataset=valid_entries[0].dataset,
+            condition_id=valid_entries[0].condition_id,
+            source_relative_path="checkpoints/A/ds_a_0000.json",
             source_envelope_sha256=DUMMY_DIGEST,
             payload_sha256=DUMMY_DIGEST_2,
-            target_relative_path="checkpoints/A/dataset_001.json",
+            target_relative_path="checkpoints/A/ds_a_0000.json",
             target_envelope_sha256=DUMMY_DIGEST_3,
             execution_origin="imported_exp450_mps",
         )
         with self.assertRaisesRegex(ValueError, "unique coordinates"):
             Exp451MigrationManifest(
                 source_context_sha256=source_context,
-                entries=(entry_a1, entry_a1_dup),
-                _expected_counts={"A": 2, "B": 0, "C": 0, "D": 0},
+                entries=tuple(dup_entries),
             )
 
-        # Fixture testing via validator boundary policy (_expected_counts)
-        entry_b1 = Exp451MigrationEntry(
-            dataset="dataset_001",
-            condition_id="B",
-            source_relative_path="checkpoints/B/dataset_001.json",
-            source_envelope_sha256=DUMMY_DIGEST,
-            payload_sha256=DUMMY_DIGEST_2,
-            target_relative_path="checkpoints/B/dataset_001.json",
-            target_envelope_sha256=DUMMY_DIGEST_3,
-            execution_origin="imported_exp450_mps",
-        )
-        manifest = Exp451MigrationManifest(
-            source_context_sha256=source_context,
-            entries=(entry_a1, entry_b1),
-            _expected_counts={"A": 1, "B": 1, "C": 0, "D": 0},
-        )
-        self.assertEqual(manifest.total_count, 2)
-        self.assertEqual(manifest.counts_by_condition, {"A": 1, "B": 1, "C": 0, "D": 0})
-        self.assertEqual(len(manifest.sha256), 64)
-        self.assertIn(("dataset_001", "A"), manifest.entry_map)
-        self.assertIn(("dataset_001", "B"), manifest.entry_map)
-
-        record = manifest.artifact_record()
-        self.assertEqual(record["source_context_sha256"], source_context)
-        self.assertEqual(record["total_entries"], 2)
-        self.assertEqual(len(record["entries"]), 2)
+        # Incomplete entries (4233 entries) must fail
+        with self.assertRaisesRegex(ValueError, "do not match required"):
+            Exp451MigrationManifest(
+                source_context_sha256=source_context,
+                entries=tuple(valid_entries[:-1]),
+            )
 
 
 if __name__ == "__main__":
