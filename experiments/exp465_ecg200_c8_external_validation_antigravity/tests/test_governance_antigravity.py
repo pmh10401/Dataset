@@ -151,7 +151,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "task_1_implementation_verified_fresh_review_pending",
+            "task_1_review_pass_complete",
             "RED",
             "두 번 모두 통과했다",
             "<code>git diff --check</code>",
