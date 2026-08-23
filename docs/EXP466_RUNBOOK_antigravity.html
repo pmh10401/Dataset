@@ -42,6 +42,7 @@ git diff --check</code></pre>
 </table>
 <h2>승인된 private 실행 순서</h2>
 <p>아래 네 명령은 Step 3에서 승인된 commit <code>0aed6d75…</code>로, 한 번에 하나씩 위에서 아래 순서로만 실행한다. 환경 선택자는 <code>run1</code> 또는 <code>run2</code>만 허용하며 각각 고정 private root 하나를 선택한다.</p>
+<p><strong>실행 위치:</strong> 네 명령은 일반 작업 폴더가 아니라 commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에 정확히 고정되고 변경 파일이 없는 별도 worktree에서 실행한다. 현재 승인된 실행 위치는 <code>/Users/mac/Documents/Time Series/.worktrees/exp466-task6-private-run-antigravity</code>다.</p>
 <pre><code>REVIEWED_COMMIT='0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a'
 
 EXP466_TASK6_PRIVATE_CAPABILITY_ANTIGRAVITY=run1 \
