@@ -3019,7 +3019,7 @@
       "experiment": "Exp466",
       "kind": "ecg200_phase_registration_margin_qualification",
       "status": "qualification_failed_blocked_before_fn_validation",
-      "implementation_status": "task_6_step_5_private_qualification_complete_final_review_pending",
+      "implementation_status": "task_6_step_6_verification_complete_final_reviews_pending",
       "documents": {
         "dashboard": "docs/EXP466_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP466_PREREGISTRATION_antigravity.html",
@@ -3141,6 +3141,45 @@
         "preserved_artifact_provenance_valid_for_downstream": false,
         "preserved_artifact_provenance_caveat": "The preserved canonical leaves contain obsolete Task5, actual=false, and synthetic-only wording. That wording must not be used as Task6 provenance. The scientific scores, failed decision, and byte reproducibility remain valid. Exp466 will not be rerun; clean provenance artifacts require a separately approved experiment and new roots."
       },
+      "step_6_verification": {
+        "status": "verification_complete_final_reviews_pending",
+        "initial_full_suite_after_private_results": {
+          "passed": false,
+          "failure_count": 1,
+          "cause": "one CLI unit test still assumed the two fixed private roots were absent, which was true only before the private lifecycle completed",
+          "science_or_result_code_failure": false
+        },
+        "lifecycle_fix_commit": "bf3a75e647c45a8311d89e5b2a3ad59d7735251f",
+        "lifecycle_fix": "the CLI unit test now exercises only current-working-directory and arbitrary-capability rejection; the existing governance test retains exact fixed-root and evaluate-inspect order coverage",
+        "post_fix_focused_passed": 17,
+        "post_fix_focused_required": 17,
+        "post_fix_direct_passed": 2,
+        "post_fix_direct_required": 2,
+        "full_exp466_runs": [
+          {
+            "passed": 56,
+            "required": 56,
+            "seconds": 123.424
+          },
+          {
+            "passed": 56,
+            "required": 56,
+            "seconds": 125.787
+          }
+        ],
+        "exp465_lower_passed": 7,
+        "exp465_lower_required": 7,
+        "exp465_lower_seconds": 29.391,
+        "compileall_passed": true,
+        "map_validate_passed": true,
+        "json_html_diff_static_exact_checks_passed": true,
+        "private_roots_stdout_leaves_sequence_decision_reverified": true,
+        "official_root_absence_reverified": true,
+        "final_reviews_pending": [
+          "terra_science_review",
+          "fresh_sol_final_review"
+        ]
+      },
       "result_root_created": false,
       "official_result": null,
       "prediction_sha256": null,
@@ -3157,7 +3196,8 @@
       "eligible_for_exp467_design": false,
       "official_root_present": false,
       "review_only": false,
-      "notes": "Task 6 private evaluate and source-free inspect completed twice at reviewed commit 0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a. The two stdout payloads and all seven preserved leaves are byte-equal, but C9 passed 0 of 10 folds, so Exp466 is blocked before FN validation. TEST/labels, official execution, routing, champion, pending, and promotion remain untouched. Preserved Task5/actual=false/synthetic wording is invalid provenance metadata for this Task6 run; do not rerun Exp466. Step 6 truth verification and final independent review remain."
+      "next_action": "task_6_terra_science_review_then_fresh_sol_final_review",
+      "notes": "Task 6 verification is complete after the lifecycle-safe CLI-test fix at bf3a75e647c45a8311d89e5b2a3ad59d7735251f. The initial post-private full run exposed only one pre-run-only fixed-root test assumption, not a science or result-code failure. Focused 17/17, direct 2/2, full Exp466 56/56 twice, Exp465 lower 7/7, compileall, map, JSON/HTML/diff/static exact evidence checks, and preserved-result rechecks passed. C9 remains reproducibly 0/10 and blocked before FN validation. TEST/labels, official execution, routing, champion, pending, and promotion remain untouched. Preserved provenance caveat and no-rerun rule remain. Terra science and fresh Sol final reviews are still pending."
     }
   ]
 }

@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp466 실행 runbook</h1>
-<div class="box"><p>현재 판정은 <code>qualification_failed_blocked_before_fn_validation</code>다. Task 6 Step 4·5에서 비공개 evaluate→inspect를 run1과 run2에 각각 한 번 수행했고 두 결과가 byte 단위로 같음을 확인했다. C9는 <code>0/10</code> fold만 합격해 FN 검증 전에 중단됐다. 공식 실행은 없었고, 다음 허용 작업은 Step 6 truth/full verify와 최종 독립 검토뿐이다.</p></div>
+<div class="box"><p>현재 판정은 <code>qualification_failed_blocked_before_fn_validation</code>다. Task 6 Step 4·5에서 비공개 evaluate→inspect를 run1과 run2에 각각 한 번 수행했고 두 결과가 byte 단위로 같음을 확인했다. C9는 <code>0/10</code> fold만 합격해 FN 검증 전에 중단됐다. Step 6 검증은 끝났으며 다음 허용 작업은 Terra 과학 검토와 fresh Sol 최종 검토뿐이다.</p></div>
 <table>
 <tr><th>공식 root</th><td><code>/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823</code>는 별도 승인 전까지 생성하지 않는다.</td></tr>
 <tr><th>TRAIN 경계</th><td>로더는 MD5 <code>808875aeac1c358a90c630fe369327c4</code>인 ECG200 TRAIN의 정상 69개만 허용한다. Task 5 replay는 loader나 scorer를 호출하지 않고 저장된 7개 파일만 읽는다.</td></tr>
@@ -70,6 +70,13 @@ python3 scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py inspe
 <tr><th>정상 confirmation</th><td>seed <code>20260721</code>과 <code>20261721</code> 모두 정상 69회 중 1회. 합격 조건은 각각 0회.</td></tr>
 </table>
 <div class="box stop"><p><strong>출처 주의:</strong> 보존된 canonical 파일 안의 Task 5, <code>actual=false</code>, “합성 단위 결과” 문구는 이번 Task 6 실행의 출처 설명으로 사용하지 않는다. 과학 점수, FAIL 판정, 두 번 실행의 byte 재현성은 유효하지만 이것은 official 또는 TEST 성능이 아니다. 보존 root는 수정하지 않고 Exp466도 재실행하지 않는다. 출처 문구까지 깨끗한 결과는 별도 승인된 새 실험과 새 root에서만 만든다.</p></div>
-<div class="box stop"><p><strong>현재 경계:</strong> private 명령을 다시 실행하지 않는다. 다음 작업은 Task 6 Step 6 truth/full verify와 최종 독립 검토다. official 평가, TEST/라벨 접근, warp·threshold·alpha 탐색, routing/champion/pending/promotion 변경은 계속 금지한다.</p></div>
+<h2>Step 6 검증 기록</h2>
+<table>
+<tr><th>처음 실패한 검사</th><td>private 결과가 생긴 뒤 첫 전체 56개 검사에서 1개가 실패했다. 고정 private root가 아직 없어야 한다는 실행 전 전용 가정 때문이며, 과학 수식·점수·결과 코드 실패는 아니었다.</td></tr>
+<tr><th>수명주기 수정</th><td>commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 CLI 단위 검사는 현재 폴더와 임의 capability 거부만 확인한다. 기존 governance 검사는 고정 root와 정확한 evaluate→inspect 순서를 계속 확인한다.</td></tr>
+<tr><th>수정 뒤 통과</th><td>집중 <code>17/17</code>, 직접 <code>2/2</code>, 전체 Exp466 <code>56/56</code> 두 번(<code>123.424초</code>, <code>125.787초</code>), Exp465 하위 <code>7/7</code>(<code>29.391초</code>).</td></tr>
+<tr><th>추가 확인</th><td>compileall, map validate, JSON/HTML/diff/static exact 검사와 두 root·stdout·7 leaves·sequence state·decision·official root 부재를 다시 확인했다. ECG와 private 명령은 다시 실행하지 않았다.</td></tr>
+</table>
+<div class="box stop"><p><strong>현재 경계:</strong> private 명령을 다시 실행하지 않는다. 다음 작업은 Terra 과학 검토와 fresh Sol 최종 검토다. Task 6 전체와 Step 6은 두 검토 전까지 완료로 표시하지 않는다. official 평가, TEST/라벨 접근, warp·threshold·alpha 탐색, routing/champion/pending/promotion 변경은 계속 금지한다.</p></div>
 </main></body>
 </html>

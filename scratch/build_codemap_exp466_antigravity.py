@@ -178,7 +178,7 @@ LAUNCHER_ANTIGRAVITY = (
     "scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py"
 )
 TASK6_SOURCE_BASE_COMMIT_ANTIGRAVITY = (
-    "8a0de5f37cf3b2b39c08fecf48ce4067f6e46d99"
+    "bf3a75e647c45a8311d89e5b2a3ad59d7735251f"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -230,8 +230,8 @@ TRACKED_PATHS_ANTIGRAVITY = (
     "docs/codemap/codemap_exp465_antigravity.json",
     "docs/codemap/codemap_exp465_antigravity.lock",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task6_private_failure_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp466_task6_private_failure_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task6_step6_verification_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp466_task6_step6_verification_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-23T00:00:00+09:00"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
@@ -515,42 +515,42 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "runbook",
             "docs/EXP466_RUNBOOK_antigravity.html",
-            "Caller: Task 6 Step 4-6 operators and reviewers. Effect: preserves the fixed run1/run2 commands as a no-rerun execution record, records private run/evaluate/inspect 2/2/2, four byte-equal stdout payloads, two byte-equal seven-leaf roots, final sequence stage run2_inspected, C9 0-of-10 deterministic failure, exact measured causes, obsolete embedded Task 5 provenance warning, zero official/label activity, and Step 6 as the only next action.",
+            "Caller: Task 6 Step 4-6 operators and final reviewers. Effect: preserves the no-rerun private evidence, explains the one pre-run-only post-root test assumption and lifecycle-safe fix at bf3a75e647c45a8311d89e5b2a3ad59d7735251f, records focused 17-of-17, direct 2-of-2, full 56-of-56 twice, lower 7-of-7 and static/exact rechecks, keeps the provenance caveat and zero official effects, and permits only Terra science plus fresh Sol final reviews next.",
             "Task 1 focused verification",
             map_test,
         ),
         _node_antigravity(
             "implementation_report",
             "docs/EXP466_IMPLEMENTATION_REPORT_antigravity.html",
-            "Caller: Task 1-6 implementation audit. Effect: records Task 6 Step 1-5 complete, private run/evaluate/inspect 2/2/2, stdout and seven-leaf byte equality, C9 0-of-10 failure and exact causes, official/label zero/null boundaries, preserved-artifact provenance caveat, and Step 6 final verification/review pending.",
+            "Caller: Task 1-6 implementation audit. Effect: records Step 6 verification complete but final reviews pending, distinguishes a lifecycle-only test assumption from science/result code, records fix commit and exact post-fix test counts/timings plus preserved-result rechecks, and retains C9 0-of-10, no-rerun, provenance, and official/label zero/null truth.",
             "TDD 증거",
             map_test,
         ),
         _node_antigravity(
             "dashboard",
             "docs/EXP466_DASHBOARD_antigravity.html",
-            "Caller: user-facing progress review. Effect: marks private run1 and run2/reproducibility complete, shows C9 0-of-10 and exact failure ranges in easy Korean, records private 2/2/2 with byte-equal stdout/leaves and private hashes, keeps official fields null and external effects false, warns that preserved Task 5/actual=false/synthetic wording is invalid Task 6 provenance, and leaves Step 6 final review unchecked.",
+            "Caller: user-facing progress review. Effect: adds easy-Korean Step 6 lifecycle-fix and post-fix verification evidence, keeps C9 0-of-10 and private reproducibility truth unchanged, and leaves the Terra science plus fresh Sol final-review checkbox unchecked.",
             "qualification_failed_blocked_before_fn_validation",
             map_test,
         ),
         _node_antigravity(
             "research_state",
             "RESEARCH_STATE.json",
-            "Caller: research-state audit. Effect: updates only the Exp466 block to the Step 5 private qualification failure, stores private roots/stdout/leaves/sequence hashes and measured causes, keeps official generic hashes null and TEST/label/routing/promotion/pending/champion effects zero or false, and points only to Step 6 final verification/review.",
+            "Caller: research-state audit. Effect: updates only Exp466 to task_6_step_6_verification_complete_final_reviews_pending, stores the lifecycle-only initial failure, fix commit, exact post-fix verification evidence and rechecks, preserves all private science evidence and official zero/null effects, and points only to Terra science then fresh Sol final review.",
             '"exp466"',
             map_test,
         ),
         _node_antigravity(
             "experiment_catalog",
             "EXPERIMENT_CATALOG.json",
-            "Caller: experiment inventory. Effect: records Exp466 private run/evaluate/inspect 2/2/2, reproducible C9 0-of-10 failure evidence and private hashes while preserving zero official/label use, null official hashes, and no routing/promotion/pending/champion change.",
+            "Caller: experiment inventory. Effect: adds structured Step 6 verification and final-review-pending truth to the unchanged reproducible C9 0-of-10 private failure, while keeping zero official/label use, null official hashes, and no routing/promotion/pending/champion change.",
             '"id": "Exp466"',
             map_test,
         ),
         _node_antigravity(
             "champion_ledger",
             "CHAMPION_LEDGER.json",
-            "Caller: champion-history audit. Effect: records the byte-reproduced Exp466 C9 0-of-10 private qualification failure while leaving champion and pending candidate unchanged, disallowing routing/promotion, and preserving zero official/label activity with null official hashes.",
+            "Caller: champion-history audit. Effect: records Step 6 verification complete and final reviews pending without changing the byte-reproduced C9 0-of-10 block, champion, pending candidate, routing, promotion, official/label activity, or official hashes.",
             '"experiment": "Exp466"',
             map_test,
         ),
@@ -694,7 +694,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _node_antigravity(
             "task6_cli_test",
             CLI_TEST_ANTIGRAVITY,
-            "Caller: focused Task 6 RED/GREEN and full Exp466 regression. Effect: detects extra parser controls, eager science imports, forged private capabilities, roots outside the two fixed paths, current-working-directory dependence, broken run order, noncanonical decision projection, and any evaluate/inspect stdout difference across six tests without executing ECG200 or creating either private root.",
+            "Caller: focused Task 6 RED/GREEN and full Exp466 regression before and after private roots exist. Effect: retains parser, import, current-working-directory, arbitrary-capability, canonical decision, and stdout coverage while avoiding the obsolete pre-run-only assumption that both fixed roots are absent; the governance test continues exact fixed-root lifecycle and order coverage.",
             "CliAntigravityTest",
             (CLI_TEST_ANTIGRAVITY,),
         ),
@@ -833,7 +833,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         "task6_answers": {
             "callers": "the fixed outside-CWD launcher called main_antigravity four times in the completed run1 evaluate→inspect then run2 evaluate→inspect sequence, injecting only the matching fixed private capability; the six CLI tests and eleven governance tests call parser, capability, preflight, pipeline, replay projection, and sequence boundaries directly; Step 6 reviewers now consume only the preserved roots, stdout, ledgers, truth HTML, and code map without rerunning ECG.",
             "effects": "the launcher fixed the interpreter, two roots, clean reviewed commit 0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a, and exact order in a canonical external sequence-state file that ended at run2_inspected; each evaluate ran the frozen TRAIN-only ten-fold pipeline and each inspect replayed only seven leaves; all four stdout payloads and all seven leaves across both roots are byte-equal, C9 passed 0 of 10, and official/TEST/label/routing/promotion/champion/pending effects remain zero or false.",
-            "tests": "Task 6 RED, focused 17/17 twice, full Exp466 56/56, Exp465 lower 7/7, compile/diff, fresh Sol SHIP, and clean/official/process preflight established the execution boundary. The completed private comparison verifies four identical stdout SHA-256 values, seven identical leaf SHA-256 values, final sequence stage run2_inspected, finite scores, deterministic qualification_failed_blocked_before_fn_validation, and no official/label/external mutation; Step 6 truth/full verification and final independent review remain pending.",
+            "tests": "After private roots existed, the first full run exposed one pre-run-only CLI-test assumption rather than a science or result-code failure. Commit bf3a75e647c45a8311d89e5b2a3ad59d7735251f made that unit test lifecycle-safe while governance retained exact root/order coverage. Focused 17/17 and direct 2/2 passed, full Exp466 56/56 passed twice in 123.424s and 125.787s, Exp465 lower 7/7 passed in 29.391s, and compileall, map, JSON/HTML/diff/static exact plus preserved roots/stdout/leaves/state/decision/official-absence rechecks passed. Terra science and fresh Sol final reviews remain pending.",
         },
         "flows": [
             "task1 brief + approved design -> frozen config -> immutable contracts -> future Tasks 2-6",
@@ -855,7 +855,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "ten focused Task 5 tests + temporary publish-inspect equality + fresh Sol SHIP + Task 5 report -> map builder -> Task 5 caller/effect/test boundaries and exact fingerprints",
             "fresh Sol SHIP-reviewed clean commit 0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a + clean/official/process preflight PASS -> fixed run1/run2 environment selector -> outside-CWD frozen-runtime launcher -> canonical external sequence-state run2_inspected -> completed private evaluate/inspect count 2/2",
             "two evaluate calls + exact clean reviewed commit + absent official/new private roots -> frozen TRAIN-only ten-fold pipeline -> C9 qualification 0-of-10 -> seven-leaf publication -> source-free inspection -> byte-equal canonical stdout",
-            "two fixed seven-leaf roots + four stdout captures -> exact byte and SHA-256 equality -> qualification_failed_blocked_before_fn_validation -> zero official/TEST/label/routing/promotion/champion/pending effects -> Step 6 truth/full verification and final independent review only",
+            "post-private full-suite lifecycle assumption -> CLI unit-test scope fixed at bf3a75e647c45a8311d89e5b2a3ad59d7735251f while governance retains exact order -> focused 17-of-17 + direct 2-of-2 + full 56-of-56 twice + lower 7-of-7 + static/exact preserved-result rechecks -> Terra science then fresh Sol final review only",
         ],
     }
 
@@ -876,7 +876,7 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp466 Task 1-6 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp466 Task 1-6 코드맵</h1><p>이 map은 Exp466에서 어떤 코드가 무엇을 부르고, 무엇을 바꾸며, 어떤 검사로 확인하는지를 기록한다. Task 1~5는 TRAIN 입력, C0/P9/C9 점수, 10개 fold 판정, 7개 결과 파일과 독립 replay 경계를 고정했다. Task 6은 run1과 run2만 허용하는 launcher와 evaluate·inspect 두 명령만 허용하는 CLI를 연결했다. reviewed commit 0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a에서 두 번의 private TRAIN-only 실행을 순서대로 마쳤고 외부 순서 상태는 run2_inspected로 끝났다. private run/evaluate/inspect는 2/2/2다. 네 stdout과 두 root의 7개 파일은 모두 byte 단위로 같았지만 C9 합격은 0/10이어서 판정은 qualification_failed_blocked_before_fn_validation이다. period AUC 0.85 미만 10개, 평균 AUC 0.90 미만 7개, C0보다 period 개선 0개, period confirmation 없음 8개, gradual 악화 2개, seed별 정상 confirmation 1개가 측정됐다. 보존 파일 안의 Task 5·actual=false·합성 단위 문구는 Task 6 출처 설명으로 쓰지 않지만 과학 점수, FAIL 판정, byte 재현성은 유효하다. official·TEST·label·routing·champion·pending·promotion은 모두 0 또는 false이며 공식 결과와 공식 hash는 null이다. Task 6 Step 6의 truth/full verify와 최종 독립 검토만 남았다.</p>'
+        '<h1>Exp466 Task 1-6 코드맵</h1><p>이 map은 Exp466에서 어떤 코드가 무엇을 부르고, 무엇을 바꾸며, 어떤 검사로 확인하는지를 기록한다. Task 1~5는 TRAIN 입력, C0/P9/C9 점수, 10개 fold 판정, 7개 결과 파일과 독립 replay 경계를 고정했다. Task 6은 run1과 run2만 허용하는 launcher와 evaluate·inspect 두 명령만 허용하는 CLI를 연결했다. reviewed commit 0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a에서 private run/evaluate/inspect 2/2/2를 마쳤고 네 stdout과 두 root의 7개 파일은 byte 단위로 같았다. C9 합격은 0/10이어서 판정은 qualification_failed_blocked_before_fn_validation이다. private root가 생긴 뒤 첫 전체 검사에서 실행 전 전용 가정을 가진 CLI 검사 1개가 실패했지만 과학 수식이나 결과 코드 문제는 아니었다. commit bf3a75e647c45a8311d89e5b2a3ad59d7735251f에서 CLI 단위 검사를 수명주기에 맞게 좁히고 기존 governance 검사의 고정 root·순서 보장을 유지했다. 이후 집중 17/17, 직접 2/2, 전체 Exp466 56/56 두 번, Exp465 7/7과 compileall·map·JSON/HTML/diff/static exact·보존 결과 재확인을 통과했다. 보존 파일의 Task 5·actual=false·합성 단위 문구는 Task 6 출처 설명으로 쓰지 않으며 Exp466을 재실행하지 않는다. official·TEST·label·routing·champion·pending·promotion은 0 또는 false이고 공식 결과·hash는 null이다. Step 6 검증은 끝났지만 Terra 과학 검토와 fresh Sol 최종 검토 전이므로 Task 6 전체 완료는 아직 아니다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2>'
         f'<pre id="codemap-json-antigravity">{payload}</pre>'
         '</main></body></html>'

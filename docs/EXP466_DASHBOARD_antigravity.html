@@ -10,15 +10,25 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 </head>
 <body><main>
 <h1>Exp466 진행 대시보드</h1>
-<div class="box stop"><strong>현재 판정:</strong> <code>qualification_failed_blocked_before_fn_validation</code>. C9는 고정 합격 기준을 10개 fold 중 하나도 통과하지 못했다. 두 번의 비공개 TRAIN-only 실행은 완전히 같았으므로 결과는 재현됐지만, 이 후보로 FN 검증을 진행할 수는 없다.</div>
+<div class="box stop"><strong>현재 판정:</strong> <code>qualification_failed_blocked_before_fn_validation</code>. C9는 고정 합격 기준을 10개 fold 중 하나도 통과하지 못했다. 두 번의 비공개 TRAIN-only 실행은 완전히 같았으므로 결과는 재현됐지만, 이 후보로 FN 검증을 진행할 수는 없다. Step 6 검증은 끝났고 Terra 과학 검토와 fresh Sol 최종 검토는 아직 남아 있다.</div>
 <table>
 <tr><th>목표</th><td>ECG200의 period 변화 탐지를 고정 위상 정렬 점수로 개선하는지 확인</td></tr>
 <tr><th>후보</th><td><code>C9 = confirmed max(C0, P9 rank)</code></td></tr>
 <tr><th>실행 기준</th><td>reviewed commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>, TRAIN-only, seed 2개 × fold 5개</td></tr>
 <tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 AUC ≥0.90, period가 모든 fold에서 C0보다 높음, 정상 confirmation 0</td></tr>
 <tr><th>실제 결과</th><td><strong>C9 합격 0/10 — 실패</strong>. 모든 점수는 유한한 값이었다.</td></tr>
-<tr><th>구현 상태</th><td><code>task_6_step_5_private_qualification_complete_final_review_pending</code></td></tr>
-<tr><th>다음 단계</th><td>새 실험을 시작하지 않고 Task 6 Step 6의 truth/full verify와 최종 독립 검토를 먼저 끝낸다.</td></tr>
+<tr><th>구현 상태</th><td><code>task_6_step_6_verification_complete_final_reviews_pending</code></td></tr>
+<tr><th>다음 단계</th><td>새 실험을 시작하지 않고 Terra 과학 검토와 fresh Sol 최종 검토를 차례로 받는다.</td></tr>
+</table>
+
+<h2>Step 6 검증 증거</h2>
+<table>
+<tr><th>처음 발견한 문제</th><td>private 결과가 생긴 뒤 전체 검사 56개를 돌리자 검사 1개가 실패했다. 고정 private root가 “아직 없어야 한다”는 실행 전 가정이 남아 있었기 때문이다. 과학 수식이나 결과 코드의 실패는 아니었다.</td></tr>
+<tr><th>수정</th><td>commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 CLI 단위 검사는 현재 폴더와 임의 capability 거부만 확인하도록 바꿨다. 정확한 고정 root와 evaluate→inspect 순서는 기존 governance 검사가 계속 맡는다.</td></tr>
+<tr><th>수정 뒤 집중 검사</th><td><code>17/17</code>, 직접 확인 <code>2/2</code> 통과</td></tr>
+<tr><th>전체 Exp466</th><td><code>56/56</code>을 두 번 통과: <code>123.424초</code>, <code>125.787초</code></td></tr>
+<tr><th>이전 Exp465</th><td><code>7/7</code>, <code>29.391초</code> 통과</td></tr>
+<tr><th>정적·보존 증거</th><td>compileall, 코드맵 검증, JSON/HTML/diff/static exact 검사를 통과했다. 두 root, 네 stdout, 7개 leaf, 순서 상태, FAIL decision, official root 부재도 다시 확인했다.</td></tr>
 </table>
 
 <h2>왜 실패했나</h2>
@@ -59,7 +69,7 @@ body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
 <li><label><input type="checkbox" checked disabled> reviewed clean commit <code>0aed6d75…</code>과 fresh Sol SHIP</label></li>
 <li><label><input type="checkbox" checked disabled> private 실행 1</label></li>
 <li><label><input type="checkbox" checked disabled> private 실행 2와 재현성 비교</label></li>
-<li><label><input type="checkbox" disabled> Step 6 truth/full verify와 최종 독립 검토</label></li>
+<li><label><input type="checkbox" disabled> Terra 과학 검토와 fresh Sol 최종 검토</label></li>
 </ul>
 
 <div class="box stop"><strong>계속 금지:</strong> ECG200 TEST·라벨 접근, 공식 실행, 임계값·warp 재조정, 라우팅, champion·pending·promotion 변경. 이 항목들은 모두 0 또는 false로 유지한다.</div>
