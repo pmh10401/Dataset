@@ -4,7 +4,15 @@
 <style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
 <body><main>
 <h1>Exp465 구현 보고서</h1>
-<p>이 문서는 Exp465 Task 1–4의 구현 범위와 검증 근거를 기록한다. Task 1–4는 독립 검토까지 완료됐다. 이전 상태는 <code>task_1_review_pass_complete</code>, <code>task_2_review_pass_complete</code>, <code>task_3_review_pass_complete</code>이며 현재 상태는 <code>task_4_review_pass_complete</code>다.</p>
+<p>이 문서는 Exp465 Task 1–5의 구현 범위와 검증 근거를 기록한다. 현재 상태는 <code>task_5_private_reproduction_complete_awaiting_final_review</code>다.</p>
+<h2>Task 5 private 결과</h2>
+<div class="note"><p>검토된 commit <code>fd997fcf…58693</code>에서 서로 다른 private 폴더로 두 번 순차 실행했다. 두 결과는 출력, 7개 파일, 해시, 행, 요약, 판정과 대시보드가 모두 정확히 같았다. 그러나 C8은 <code>0/10</code>으로 qualification에 실패했다.</p></div>
+<table>
+<tr><th>실패 지점</th><td>period-change 최저 AUC <code>0.6862244898 &lt; 0.85</code>, 최저 평균 AUC <code>0.8679846939 &lt; 0.90</code></td></tr>
+<tr><th>지킨 조건</th><td>모든 점수 finite, 두 seed 정상 confirmation 모두 0, gradual·period에서 C0보다 나빠진 기록 0</td></tr>
+<tr><th>재현 근거</th><td>stdout SHA-256 <code>0436fbbd727815daf2cecdac353b380d0624b923ff74f43a03197536f894f891</code>; artifact map SHA-256 <code>0532bf2d09adb4b2086d0ccf109a204c0e6e0fec4dc260889fb733072b29536f</code></td></tr>
+<tr><th>결정</th><td><code>qualification_failed_blocked_before_routing_research</code>. Task 6, 라우팅 연구, promotion과 공식 실행은 열지 않는다.</td></tr>
+</table>
 <h2>Task 4 구현 범위와 검증</h2>
 <ul>
 <li>저장된 합격 표시를 믿지 않고 normal 및 네 합성 변화의 원점수에서 AUC·평균·유한값 여부를 다시 계산한다.</li>

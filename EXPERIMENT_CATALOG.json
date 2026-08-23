@@ -2942,8 +2942,8 @@
       "id": "Exp465",
       "experiment": "Exp465",
       "kind": "ecg200_c8_external_train_qualification",
-      "status": "implementation_plan_written_awaiting_user_review",
-      "implementation_status": "task_4_review_pass_complete",
+      "status": "private_qualification_failed_blocked_before_routing_research",
+      "implementation_status": "task_5_private_reproduction_complete_awaiting_final_review",
       "documents": {
         "dashboard": "docs/EXP465_DASHBOARD_antigravity.html",
         "preregistration": "docs/EXP465_PREREGISTRATION_antigravity.html",
@@ -2984,7 +2984,19 @@
       "official_inspect_started": false,
       "official_evaluate_count": 0,
       "official_inspect_count": 0,
-      "private_run_count": 0,
+      "private_run_count": 2,
+      "private_qualification": {
+        "status": "qualification_failed_blocked_before_routing_research",
+        "reviewed_commit": "fd997fcfd077b1bb14b2a1e82842052c08258693",
+        "exact_reproduction": true,
+        "stdout_sha256": "0436fbbd727815daf2cecdac353b380d0624b923ff74f43a03197536f894f891",
+        "artifact_map_sha256": "0532bf2d09adb4b2086d0ccf109a204c0e6e0fec4dc260889fb733072b29536f",
+        "c8_passed_count": 0,
+        "c8_required_count": 10,
+        "c8_min_period_auc": 0.6862244897959183,
+        "c8_min_mean_auc": 0.8679846938775511,
+        "failure_reasons": ["c8_not_10_of_10"]
+      },
       "result_root_created": false,
       "official_result": null,
       "prediction_sha256": null,
@@ -3000,7 +3012,7 @@
       "scientific_winner_selected": false,
       "official_root_present": false,
       "review_only": false,
-      "notes": "Task 4 raw-score qualification, C8 decision, canonical seven-leaf publication, semantic replay, and dashboard export passed fresh review (SPEC PASS / QUALITY APPROVED); no qualification execution occurred."
+      "notes": "Task 5 private qualification reproduced exactly twice but C8 passed 0/10. Task 6 and routing research are blocked; official execution and TEST access remain zero."
     }
   ]
 }

@@ -151,8 +151,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
 
         report_text = (ROOT_ANTIGRAVITY / DOCUMENTS_ANTIGRAVITY[3]).read_text(encoding="utf-8")
         for phrase in (
-            "task_1_review_pass_complete",
-            "task_4_review_pass_complete",
+            "task_5_private_reproduction_complete_awaiting_final_review",
+            "qualification_failed_blocked_before_routing_research",
             "Task 3 구현 범위와 검증",
             "scorer-call spy",
             "RED",
@@ -177,8 +177,8 @@ class GovernanceAntigravityTest(unittest.TestCase):
             with self.subTest(record=record["experiment"]):
                 self.assertEqual(record["experiment"], "Exp465")
                 self.assertEqual(record["kind"], "ecg200_c8_external_train_qualification")
-                self.assertEqual(record["status"], "implementation_plan_written_awaiting_user_review")
-                self.assertEqual(record["implementation_status"], "task_4_review_pass_complete")
+                self.assertEqual(record["status"], "private_qualification_failed_blocked_before_routing_research")
+                self.assertEqual(record["implementation_status"], "task_5_private_reproduction_complete_awaiting_final_review")
                 self.assertEqual(record["run_identity"], "exp465-ecg200-c8-external-validation-antigravity-20260822")
                 self.assertEqual(record["run_root"], OFFICIAL_ROOT_TEXT_ANTIGRAVITY)
                 self.assertEqual(record["package"], PACKAGE_ANTIGRAVITY)
@@ -205,7 +205,11 @@ class GovernanceAntigravityTest(unittest.TestCase):
         self.assertEqual(scientific_contract["required_stability_records"], 10)
         self.assertEqual(exp465_state["official_evaluate_count"], 0)
         self.assertEqual(exp465_state["official_inspect_count"], 0)
-        self.assertEqual(exp465_state["private_run_count"], 0)
+        self.assertEqual(exp465_state["private_run_count"], 2)
+        private = exp465_state["private_qualification"]
+        self.assertEqual(private["status"], "qualification_failed_blocked_before_routing_research")
+        self.assertTrue(private["exact_reproduction"])
+        self.assertEqual((private["c8_passed_count"], private["c8_required_count"]), (0, 10))
         self.assertTrue(scientific_contract["seed_normal_confirmation_count_must_remain_zero"])
         self.assertTrue(scientific_contract["c0_gradual_and_period_non_degradation_required"])
 
@@ -213,7 +217,7 @@ class GovernanceAntigravityTest(unittest.TestCase):
         checkbox_parser = CheckboxParserAntigravity()
         checkbox_parser.feed(plan_text)
         self.assertEqual(checkbox_parser.checkbox_count, 42)
-        self.assertEqual(checkbox_parser.checked_count, 30)
+        self.assertEqual(checkbox_parser.checked_count, 33)
         task1_marker = '<h2><label><input type="checkbox" checked disabled> Task 1 —'
         task2_marker = '<h2><label><input type="checkbox" checked disabled> Task 2 —'
         task3_marker = '<h2><label><input type="checkbox" checked disabled> Task 3 —'
