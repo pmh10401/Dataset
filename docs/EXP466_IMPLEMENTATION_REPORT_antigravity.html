@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp466 구현 보고서</h1>
-<p>현재 판정은 <code>qualification_failed_blocked_before_fn_validation</code>다. Task 6에서 같은 reviewed commit으로 비공개 TRAIN-only 평가와 독립 검사를 두 번씩 마쳤고, 두 결과는 byte 단위로 같았다. 그러나 C9가 고정 기준을 통과한 fold는 <code>0/10</code>이었다. Step 6 검증까지 끝났지만 Terra 과학 검토와 fresh Sol 최종 검토 전이므로 Task 6 전체 완료는 아직 주장하지 않는다.</p>
+<p>Task 6은 <code>qualification_failed_blocked_before_fn_validation</code>로 완료됐다. 같은 reviewed commit에서 비공개 TRAIN-only 평가와 독립 검사를 두 번씩 마쳤고 두 결과는 byte 단위로 같았지만, C9 합격은 <code>0/10</code>이었다. 따라서 이것은 성능 합격이 아니라 재현된 자격 검증 실패이며 Exp466은 재실행하지 않는다.</p>
 <h2>Task 1 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only 입력, seed/fold, onset/suffix, warp/shared length, C0/P9/C9 순서, C9 단독 primary, AUC gate와 0-use governance를 exact-type frozen dataclass로 고정한다.</li>
@@ -75,9 +75,12 @@
 <tr><th>수명주기 수정</th><td>commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 CLI 단위 검사를 현재 폴더와 임의 capability 거부 범위로 제한했다. 정확한 고정 root와 evaluate→inspect 순서는 기존 governance 검사가 계속 확인하므로 과학·실행 경계가 약해지지 않았다.</td></tr>
 <tr><th>수정 뒤 검사</th><td>집중 <code>17/17</code>, 직접 확인 <code>2/2</code>, 전체 Exp466 <code>56/56</code> 두 번(<code>123.424초</code>, <code>125.787초</code>), Exp465 하위 회귀 <code>7/7</code>(<code>29.391초</code>)를 통과했다.</td></tr>
 <tr><th>정적·보존 증거</th><td>compileall, map validate, JSON/HTML/diff/static exact 검사를 통과했다. 두 private root, 네 stdout, 7개 leaf, 순서 상태 <code>run2_inspected</code>, FAIL decision과 official root 부재도 다시 확인했다. ECG를 다시 실행하지 않았다.</td></tr>
-<tr><th>남은 단계</th><td>Terra 과학 검토와 fresh Sol 최종 검토가 남았다. 새 실험 설계는 두 검토와 Task 6 종료 뒤에 판단한다.</td></tr>
+<tr><th>Terra 최종 검토</th><td><code>SPEC PASS</code>, <code>SCIENCE APPROVED</code>, terminal failed qualification 승인. Critical 0, Important 0, Minor 1이며, 유일한 minor는 보존 canonical 파일의 Task 5/<code>actual=false</code>/합성 전용 출처 문구다. 이 문구는 완전히 공개했고 downstream 사용 금지로 고정했다.</td></tr>
+<tr><th>fresh Sol 최종 검토</th><td><code>SHIP</code>, 새 Critical 0, Important 0, Minor 0. Task 6 제목, Step 6, 대시보드 최종 검토 체크를 명시적으로 승인했다.</td></tr>
+<tr><th>종료 상태</th><td><code>task_6_complete_qualification_failed_no_rerun</code>. 공식·TEST·라벨·FN 검증·라우팅·champion·pending·promotion 작업은 없고 현재 Exp467 FN 검증 자격도 없다.</td></tr>
+<tr><th>다음 연구</th><td>별도의 local STFT 또는 wavelet change-score 실험 하나를 새로 설계하고 사전등록한다. 별도 설계가 승인되기 전에는 정확한 실행 명령이 없다.</td></tr>
 </table>
 <div class="box"><p><strong>출처 주의:</strong> 보존된 canonical 파일 안에는 Task 5용 schema, <code>actual_private_official_result=false</code>, “합성 단위 결과”라는 오래된 설명이 남아 있다. 이 문구는 이번 Task 6 실행의 출처 설명으로 쓰면 안 된다. 이번 값은 실제 Exp466 Task 6 비공개 TRAIN-only 합성 변화 자격 검증 결과이며 official 또는 TEST 성능은 아니다. 과학 점수, FAIL 판정, 두 번 실행의 byte 재현성은 유효하다. 보존 root는 고치지 않고 Exp466도 다시 실행하지 않는다. 출처 문구까지 깨끗한 결과가 필요하면 별도 승인된 새 실험과 새 root를 사용한다.</p></div>
-<p>구현 상태는 <code>task_6_step_6_verification_complete_final_reviews_pending</code>다. 검증은 끝났지만 최종 검토 전까지 Task 6 제목과 Step 6 체크박스는 열어 두고 전체 완료를 주장하지 않는다.</p>
+<p>구현 상태는 <code>task_6_complete_qualification_failed_no_rerun</code>다. Task 6은 실패 자격 검증으로 완전히 닫혔으며 성능 통과로 해석하지 않는다.</p>
 </main></body>
 </html>

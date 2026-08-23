@@ -168,10 +168,10 @@ python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigrav
 git commit -m "feat: publish and replay Exp466 qualification"</code></pre></li>
 </ol>
 
-<h2><label><input type="checkbox" disabled> Task 6 — 닫힌 CLI·private 2회·최종 판정</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 6 — 닫힌 CLI·private 2회·최종 판정</label></h2>
 <p><strong>Files:</strong> Create CLI, launcher and CLI/governance tests. Modify all Exp466 HTML truth docs, three ledgers and code map after result.</p>
 <p><strong>Interfaces:</strong> Parser accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>. Launcher maps exactly run1/run2 capabilities to fixed private roots.</p>
-<div class="box"><strong>Step 1~5와 Step 6 검증 결과:</strong> CLI와 launcher가 없을 때 RED를 먼저 확인했고 최소 구현 뒤 집중 검사 <code>17/17</code>을 두 번 통과했다. Step 3에서는 깨끗한 commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>와 fresh Sol <code>SHIP</code>을 고정했다. Step 4·5의 run1/run2 결과는 byte-equal이지만 C9는 <code>0/10</code>이라 <code>qualification_failed_blocked_before_fn_validation</code>다. Step 6에서는 수명주기 검사 가정을 commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 고친 뒤 집중 <code>17/17</code>, 직접 <code>2/2</code>, 전체 <code>56/56</code> 두 번, 이전 Exp465 <code>7/7</code>과 정적·보존 증거 검사를 통과했다. Terra·Sol 최종 검토는 아직 남아 있으므로 Task 6 제목과 Step 6은 체크하지 않는다.</div>
+<div class="box"><strong>Task 6 최종 결과:</strong> CLI·launcher RED부터 private run1/run2와 Step 6 검증까지 완료했다. 두 실행은 byte-equal이지만 C9는 <code>0/10</code>이라 <code>qualification_failed_blocked_before_fn_validation</code>다. Terra는 terminal failed qualification에 <code>SPEC PASS</code>·<code>SCIENCE APPROVED</code>·C0/I0/M1을 주었고, 유일한 minor인 보존 Task 5/<code>actual=false</code> 출처 문구는 완전히 공개해 downstream 사용 금지로 처리했다. fresh Sol은 <code>SHIP</code>·새 C0/I0/M0으로 Task 6 제목과 Step 6 체크를 승인했다. 이 완료는 성능 합격이 아니라 실패 자격 검증의 종료다.</div>
 <ol>
 <li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED CLI boundary.</strong></label><pre><code>self.assertEqual(parse_args_antigravity(["inspect"]).command, "inspect")
 for forbidden in (["evaluate","--root","/tmp/x"], ["evaluate","--warp","1.1"], ["inspect","--retry"]):
@@ -187,11 +187,11 @@ git diff --check</code></pre></li>
 python3 scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py inspect
 # run1 종료 뒤 고정 run2 capability로 같은 두 명령을 정확히 한 번 실행</code></pre><p>roots: <code>/private/tmp/exp466_task6_private_run1_antigravity</code>, <code>/private/tmp/exp466_task6_private_run2_antigravity</code>. private run/evaluate/inspect는 <code>2/2/2</code>이며 외부 순서 상태는 <code>run2_inspected</code>로 끝났다.</p></li>
 <li><label><input type="checkbox" checked disabled> <strong>Step 5 — exact compare와 frozen decision.</strong></label><p>네 stdout과 두 root의 7개 파일이 모두 byte-equal이었다. stdout SHA-256은 <code>7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1</code>이다. C9는 0/10이므로 <code>qualification_failed_blocked_before_fn_validation</code>로 끝났다. period AUC 0.85 미만 10개, 평균 AUC 0.90 미만 7개, C0보다 period 개선 0개, period confirmation 없음 8개, gradual 악화 2개, seed별 정상 confirmation 1개가 측정됐다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — truth update·full verify·final independent review.</strong></label><pre><code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — truth update·full verify·final independent review.</strong></label><pre><code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
 python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
 python3 -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_scoring_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity
 python3 scratch/build_codemap_exp466_antigravity.py --validate-only
-git diff --check</code></pre><p><strong>검증 부분 완료:</strong> private root가 생긴 뒤 첫 전체 검사에서 실행 전 전용 가정을 가진 CLI 검사 1개가 실패했다. 과학·결과 코드 실패는 아니었다. commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 CLI 단위 검사는 CWD·임의 capability 거부만 맡고 기존 governance 검사는 고정 root·정확한 순서를 계속 맡도록 했다. 이후 집중 <code>17/17</code>, 직접 <code>2/2</code>, 전체 Exp466 <code>56/56</code> 두 번(<code>123.424초</code>, <code>125.787초</code>), Exp465 <code>7/7</code>(<code>29.391초</code>), compileall·map·JSON/HTML/diff/static exact·보존 결과 재확인을 통과했다. 이제 Terra 과학 검토와 fresh Sol 최종 검토를 받은 뒤에만 이 Step과 Task 6을 체크한다.</p></li>
+git diff --check</code></pre><p><strong>완료:</strong> private root가 생긴 뒤 첫 전체 검사에서 실행 전 전용 가정을 가진 CLI 검사 1개가 실패했지만 과학·결과 코드 실패는 아니었다. commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 수명주기 가정을 고친 뒤 집중 <code>17/17</code>, 직접 <code>2/2</code>, 전체 Exp466 <code>56/56</code> 두 번(<code>123.424초</code>, <code>125.787초</code>), Exp465 <code>7/7</code>(<code>29.391초</code>)과 정적·보존 결과 검사를 통과했다. Terra는 <code>SPEC PASS</code>·<code>SCIENCE APPROVED</code>·C0/I0/M1, fresh Sol은 <code>SHIP</code>·새 C0/I0/M0으로 최종 종료와 체크를 승인했다.</p></li>
 </ol>
 
 <div class="box stop"><strong>출처 주의:</strong> 보존된 canonical 파일의 Task 5, <code>actual=false</code>, “합성 단위 결과” 문구는 Task 6 출처 설명으로 사용하지 않는다. 과학 점수, FAIL 판정, 두 번 실행의 byte 재현성은 유효하지만 official 또는 TEST 성능은 아니다. Exp466은 재실행하지 않는다. 출처 문구까지 깨끗한 결과가 필요하면 별도 승인된 새 실험과 새 root를 사용한다.</div>
@@ -199,5 +199,5 @@ git diff --check</code></pre><p><strong>검증 부분 완료:</strong> private r
 <h2>실행 선택</h2>
 <p><strong>1. Task별 서브에이전트:</strong> Task마다 fresh implementer를 배정하고 제가 diff·테스트·결과를 검증한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task별 checkpoint를 거쳐 진행한다.</p>
-<div class="box"><strong>현재 상태:</strong> Task 1~5와 Task 6 Step 1~5, Step 6의 검증 부분을 마쳤다. private 실행 두 번은 byte-equal이었고 C9는 <code>0/10</code>으로 실패했다. Task 6 제목과 Step 6은 Terra·Sol 최종 검토 전이므로 아직 체크하지 않는다. official evaluate/inspect는 <code>0/0</code>, 공식 root 없음, 공식 result/hash는 <code>null</code>, label/TEST/routing/champion/pending/promotion은 모두 0 또는 false다. 다음 단계는 새 실험이 아니라 Terra 과학 검토와 fresh Sol 최종 검토다.</div>
+<div class="box"><strong>최종 상태:</strong> <code>task_6_complete_qualification_failed_no_rerun</code>. private 실행 두 번은 byte-equal이었고 C9는 <code>0/10</code>으로 실패했다. official evaluate/inspect는 <code>0/0</code>, 공식 root 없음, 공식 result/hash는 <code>null</code>, label/TEST/routing/champion/pending/promotion은 모두 0 또는 false다. Exp466을 재실행하지 않고 현재 Exp467 FN 검증으로 넘기지 않는다. 다음 작업은 별도의 local STFT 또는 wavelet change-score 실험 하나를 설계·사전등록하는 것이며, 승인 전에는 정확한 실행 명령이 없다.</div>
 </main></body></html>

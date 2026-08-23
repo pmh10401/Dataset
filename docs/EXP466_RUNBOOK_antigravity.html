@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp466 실행 runbook</h1>
-<div class="box"><p>현재 판정은 <code>qualification_failed_blocked_before_fn_validation</code>다. Task 6 Step 4·5에서 비공개 evaluate→inspect를 run1과 run2에 각각 한 번 수행했고 두 결과가 byte 단위로 같음을 확인했다. C9는 <code>0/10</code> fold만 합격해 FN 검증 전에 중단됐다. Step 6 검증은 끝났으며 다음 허용 작업은 Terra 과학 검토와 fresh Sol 최종 검토뿐이다.</p></div>
+<div class="box"><p>Task 6은 <code>qualification_failed_blocked_before_fn_validation</code>로 완료됐다. run1과 run2는 byte-equal이지만 C9 합격은 <code>0/10</code>이므로 성능 통과가 아니다. Terra와 fresh Sol 최종 검토까지 끝났고, Exp466 재실행·공식 평가·FN 검증·라우팅은 허용되지 않는다.</p></div>
 <table>
 <tr><th>공식 root</th><td><code>/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823</code>는 별도 승인 전까지 생성하지 않는다.</td></tr>
 <tr><th>TRAIN 경계</th><td>로더는 MD5 <code>808875aeac1c358a90c630fe369327c4</code>인 ECG200 TRAIN의 정상 69개만 허용한다. Task 5 replay는 loader나 scorer를 호출하지 않고 저장된 7개 파일만 읽는다.</td></tr>
@@ -76,7 +76,9 @@ python3 scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py inspe
 <tr><th>수명주기 수정</th><td>commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 CLI 단위 검사는 현재 폴더와 임의 capability 거부만 확인한다. 기존 governance 검사는 고정 root와 정확한 evaluate→inspect 순서를 계속 확인한다.</td></tr>
 <tr><th>수정 뒤 통과</th><td>집중 <code>17/17</code>, 직접 <code>2/2</code>, 전체 Exp466 <code>56/56</code> 두 번(<code>123.424초</code>, <code>125.787초</code>), Exp465 하위 <code>7/7</code>(<code>29.391초</code>).</td></tr>
 <tr><th>추가 확인</th><td>compileall, map validate, JSON/HTML/diff/static exact 검사와 두 root·stdout·7 leaves·sequence state·decision·official root 부재를 다시 확인했다. ECG와 private 명령은 다시 실행하지 않았다.</td></tr>
+<tr><th>Terra</th><td><code>SPEC PASS</code>, <code>SCIENCE APPROVED</code>, terminal failed qualification 승인. C0/I0/M1이며 유일한 minor는 보존 Task 5/<code>actual=false</code> 출처 문구다. 이미 완전히 공개했고 downstream 사용을 금지한다.</td></tr>
+<tr><th>fresh Sol</th><td><code>SHIP</code>, 새 C0/I0/M0. Task 6 제목, Step 6, 대시보드 최종 검토 체크를 승인했다.</td></tr>
 </table>
-<div class="box stop"><p><strong>현재 경계:</strong> private 명령을 다시 실행하지 않는다. 다음 작업은 Terra 과학 검토와 fresh Sol 최종 검토다. Task 6 전체와 Step 6은 두 검토 전까지 완료로 표시하지 않는다. official 평가, TEST/라벨 접근, warp·threshold·alpha 탐색, routing/champion/pending/promotion 변경은 계속 금지한다.</p></div>
+<div class="box stop"><p><strong>최종 경계:</strong> Exp466 private/official 명령을 다시 실행하지 않는다. official 평가, TEST/라벨 접근, FN 검증, warp·threshold·alpha 탐색, routing/champion/pending/promotion 변경은 계속 금지한다. 현재 Exp467 FN 검증 자격도 없다. 다음 작업은 별도의 local STFT 또는 wavelet change-score 실험 하나를 설계하고 사전등록하는 것뿐이며, 별도 설계 승인 전에는 정확한 실행 명령이 없다.</p></div>
 </main></body>
 </html>

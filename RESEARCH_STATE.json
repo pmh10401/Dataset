@@ -1,21 +1,21 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-22T00:00:00+09:00",
+  "updated_at": "2026-08-23T00:00:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
-  "branch": "codex/exp464-ecg-residual-centered-ramp-confirmation-antigravity",
+  "branch": "codex/exp466-ecg200-phase-registration-margin-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity",
-  "last_verified_commit": "b8646d0fa9bd57dcb1f6ab5e251064d34911a41c",
-  "active_experiment": "Exp464",
-  "active_phase": "task_5_review_ship_qualification_failed_task_6_forbidden",
-  "status": "stopped_before_official_evaluation_qualification_failed",
+  "last_verified_commit": "2f8fc1fa8dd4fdb2b8a021f420b59b9b6d59d4cf",
+  "active_experiment": "Exp466",
+  "active_phase": "task_6_complete_qualification_failed_no_rerun",
+  "status": "qualification_failed_blocked_before_fn_validation",
   "dataset_count": 48,
   "active_documents": {
-    "design": "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
-    "plan": "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
-    "preregistration": "docs/EXP464_PREREGISTRATION_antigravity.html",
-    "runbook": "docs/EXP464_RUNBOOK_antigravity.html",
-    "implementation_report": "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html",
-    "dashboard": "docs/EXP464_DASHBOARD_antigravity.html"
+    "design": "docs/superpowers/specs/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html",
+    "plan": "docs/superpowers/plans/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html",
+    "preregistration": "docs/EXP466_PREREGISTRATION_antigravity.html",
+    "runbook": "docs/EXP466_RUNBOOK_antigravity.html",
+    "implementation_report": "docs/EXP466_IMPLEMENTATION_REPORT_antigravity.html",
+    "dashboard": "docs/EXP466_DASHBOARD_antigravity.html"
   },
   "pending_candidate": {
     "experiment": null,
@@ -2039,10 +2039,10 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "none_exp464_task5_review_ship_terminal_qualification_failed",
-  "exact_next_command": "none_exp464_task5_review_ship_terminal_qualification_failed",
-  "exact_next_command_if_interrupted": "none_exp464_task5_review_complete_no_interrupted_run",
-  "official_readiness_command_after_fresh_sol_ship": "none_exp464_task6_permanently_forbidden_after_task5_review_ship",
+  "next_action": "design_separate_local_stft_or_wavelet_change_score_experiment",
+  "exact_next_command": "none_until_separate_design_is_preregistered_and_approved",
+  "exact_next_command_if_interrupted": "none_exp466_task6_complete_no_interrupted_run",
+  "official_readiness_command_after_fresh_sol_ship": "none_exp466_qualification_failed_no_official_action",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
@@ -2050,7 +2050,7 @@
   "test_labels_opened": true,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "Exp454_official_evaluation_completed_once",
-  "pause_reason": "Exp464 Task 5 final review is SHIP (spec PASS, quality APPROVED, C/I/M0). The explicit private roots were removed after review into the recoverable directory /private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821. Task 5 is complete, Task 6 is permanently forbidden, and there is no next official action. Do not run official evaluate/inspect, TEST labels, routing, champion/pending mutation, or promotion.",
+  "pause_reason": "Exp466 Task 6 is complete as a twice-reproduced failed qualification: C9 passed 0 of 10 folds. Exp466 must not be rerun and has no official, TEST, label, FN-validation, routing, champion, pending, or promotion action. The only next work is to design and preregister one separate local STFT or wavelet change-score experiment; there is no exact run command until that design is approved.",
   "exp440_implementation": {
     "implementation_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
     "status": "official_completed_evaluated_not_promoted",
@@ -3233,7 +3233,7 @@
     "experiment": "Exp466",
     "kind": "ecg200_phase_registration_margin_qualification",
     "status": "qualification_failed_blocked_before_fn_validation",
-    "implementation_status": "task_6_step_6_verification_complete_final_reviews_pending",
+    "implementation_status": "task_6_complete_qualification_failed_no_rerun",
     "run_identity": "exp466-ecg200-phase-registration-margin-antigravity-20260823",
     "run_root": "/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823",
     "package": "experiments/exp466_ecg200_phase_registration_margin_antigravity",
@@ -3358,7 +3358,7 @@
       "preserved_artifact_provenance_caveat": "The preserved canonical leaves contain obsolete Task5, actual=false, and synthetic-only wording. That wording must not be used as Task6 provenance. The scientific scores, failed decision, and byte reproducibility remain valid. Exp466 will not be rerun; clean provenance artifacts require a separately approved experiment and new roots."
     },
     "step_6_verification": {
-      "status": "verification_complete_final_reviews_pending",
+      "status": "complete",
       "initial_full_suite_after_private_results": {
         "passed": false,
         "failure_count": 1,
@@ -3391,10 +3391,35 @@
       "json_html_diff_static_exact_checks_passed": true,
       "private_roots_stdout_leaves_sequence_decision_reverified": true,
       "official_root_absence_reverified": true,
-      "final_reviews_pending": [
-        "terra_science_review",
-        "fresh_sol_final_review"
-      ]
+      "final_reviews_pending": [],
+      "final_reviews": {
+        "terra": {
+          "spec_verdict": "PASS",
+          "science_verdict": "APPROVED",
+          "qualification_disposition": "terminal_failed_qualification",
+          "critical": 0,
+          "important": 0,
+          "minor": 1,
+          "minor_finding": "preserved canonical Task5, actual=false, and synthetic-only provenance wording",
+          "minor_disposition": "fully_disclosed_invalid_for_downstream_use_no_rerun"
+        },
+        "fresh_sol": {
+          "verdict": "SHIP",
+          "critical_new": 0,
+          "important_new": 0,
+          "minor_new": 0,
+          "authorized_checkboxes": [
+            "task_6_heading",
+            "task_6_step_6",
+            "dashboard_final_review"
+          ]
+        }
+      },
+      "final_reviewed_parent_commit": "2f8fc1fa8dd4fdb2b8a021f420b59b9b6d59d4cf",
+      "task_6_complete": true,
+      "qualification_passed": false,
+      "performance_passed": false,
+      "terminal_failed_qualification": true
     },
     "result_root_created": false,
     "official_result": null,
@@ -3411,9 +3436,11 @@
     "pending_candidate_changed": false,
     "scientific_winner_selected": false,
     "eligible_for_exp467_design": false,
+    "eligible_for_exp467_fn_validation": false,
     "official_root_present": false,
     "review_only": false,
-    "next_action": "task_6_terra_science_review_then_fresh_sol_final_review",
-    "notes": "Task 6 verification is complete after the lifecycle-safe CLI-test fix at bf3a75e647c45a8311d89e5b2a3ad59d7735251f. The initial post-private full run exposed only one pre-run-only fixed-root test assumption, not a science or result-code failure. Focused 17/17, direct 2/2, full Exp466 56/56 twice, Exp465 lower 7/7, compileall, map, JSON/HTML/diff/static exact evidence checks, and preserved-result rechecks passed. C9 remains reproducibly 0/10 and blocked before FN validation. TEST/labels, official execution, routing, champion, pending, and promotion remain untouched. Preserved provenance caveat and no-rerun rule remain. Terra science and fresh Sol final reviews are still pending."
+    "next_action": "design_separate_local_stft_or_wavelet_change_score_experiment",
+    "exact_next_command": "none_until_separate_design_is_preregistered_and_approved",
+    "notes": "Task 6 is complete as a terminal failed qualification, never a performance pass. Terra returned SPEC PASS and SCIENCE APPROVED with C0/I0/M1; the only minor is the fully disclosed preserved Task5/actual=false/synthetic provenance wording, which is invalid downstream. Fresh Sol returned SHIP with C0/I0/M0 new and authorized the Task 6, Step 6, and dashboard final-review checkboxes. C9 remains reproducibly 0/10 and blocked before FN validation. Exp466 must not be rerun and is not eligible for current Exp467 FN validation. TEST/labels, official execution, routing, champion, pending, and promotion remain untouched. The only next work is to separately preregister one local STFT or wavelet change-score experiment; no exact run command exists before approval."
   }
 }
