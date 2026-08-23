@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 ECG200 국소 STFT 구현 계획</title>
+<style>
+body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033;background:#fff}h1,h2,h3{line-height:1.35}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}pre{padding:1rem;white-space:pre-wrap}.box{padding:1rem;margin:1rem 0;background:#f5f7fa;border-left:6px solid #2457a6}.ok{border-left-color:#16794b}.warn{background:#fff9ed;border-left-color:#b7791f}.stop{background:#fff4f2;border-left-color:#b42318}input{width:1.05rem;height:1.05rem;vertical-align:-.15rem}li{margin:.48rem 0}.task{margin-top:2.4rem;border-top:3px solid #d6dce5;padding-top:1rem}
+</style>
+</head>
+<body><main>
+<h1>Exp468 — ECG200 국소 STFT 주파수 재분배 구현 계획</h1>
+
+<div class="box"><strong>Agent 작업자 필수 지침:</strong> 이 계획은 Task별로 실행한다. 권장 방식은 <code>superpowers:subagent-driven-development</code>이며, 현재 세션에서 순차 실행할 때는 <code>superpowers:executing-plans</code>를 사용한다. 각 Task는 RED 테스트, 최소 구현, GREEN 검증, 독립 검토, 커밋을 하나의 단위로 끝낸다. 완료한 Task와 Step의 HTML checkbox는 즉시 체크한다.</div>
+
+<table>
+<tr><th>목표</th><td>ECG200 TRAIN-only에서 5개 국소 STFT 창의 주파수 재분배 점수 S10을 만들고, 신호가 확실할 때만 C0를 보완하는 C10이 period change를 안정적으로 개선하는지 검증한다.</td></tr>
+<tr><th>구조</th><td>Exp466의 ECG200 loader, 96→140 보간, 네 합성 변화, 2×5 fold와 C0 점수를 그대로 재사용한다. 새 모듈은 suffix 84개를 5개 창으로 나눠 STFT 분포와 Jensen–Shannon 발산을 계산한다. C10은 원시 JS가 정상 fit 최댓값을 엄격히 넘을 때만 <code>max(C0, S10_rank)</code>를 사용한다.</td></tr>
+<tr><th>기술</th><td>Python 3, NumPy, 표준 라이브러리 dataclass/JSON/SHA-256/unittest, 선택적 MLX parity·speed smoke, 자체 포함 HTML 대시보드</td></tr>
+<tr><th>승인 설계</th><td><a href="../specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html">Exp468 승인 설계서</a> · SHA-256 <code>fa799dd628028163b6bc2dee5af6fd3f507b555849a00b194e32ecdc3f7078b7</code></td></tr>
+<tr><th>기준 코드</th><td>Exp466 종료 commit <code>8b5e1fcfcb9049b1d3f36938efd68f59bc363cc8</code>. Exp466은 다시 실행하거나 수정하지 않는다.</td></tr>
+</table>
+
+<h2>준비 상태</h2>
+<ul>
+<li><label><input type="checkbox" checked disabled> 작성된 HTML 설계서 최종 승인</label></li>
+<li><label><input type="checkbox" checked disabled> 구현 파일 구조와 6개 Task 확정</label></li>
+<li><label><input type="checkbox" checked disabled> Exp466 코드맵에서 호출자·영향·테스트 위치 확인</label></li>
+<li><label><input type="checkbox" checked disabled> OpenRouter Gemini 2.5 Pro 구현 계획 독립 검토 PASS</label></li>
+<li><label><input type="checkbox" disabled> 구현 방식 선택과 Task 1 시작</label></li>
+</ul>
+
+<h2>전체 고정 조건</h2>
+<ul>
+<li>모든 새 파일명에는 <code>antigravity</code>를 포함한다. 모든 사용자 문서는 HTML로 작성한다.</li>
+<li>ECG200 TRAIN <code>100×96</code> 중 정상 69개만 사용한다. TRAIN MD5는 <code>808875aeac1c358a90c630fe369327c4</code>다. TEST 파일·TEST 라벨·실제 FN은 열지 않는다.</li>
+<li>보간 폭 <code>140</code>, seed <code>(20260721, 20261721)</code>, seed당 5 fold, onset <code>56</code>, suffix <code>[56:140]</code>를 바꾸지 않는다.</li>
+<li>창 시작점은 <code>(0,14,28,42,56)</code>, 길이 <code>28</code>, hop <code>14</code>, padding 없음, 대칭 Hann <code>np.hanning(28)</code>, RFFT 길이 <code>28</code>, DC 제외 후 14 bin, epsilon <code>1e-12</code>, 자연로그 JS, 5창 중앙값이다.</li>
+<li>method order는 <code>(C0,S10,C10)</code>이며 유일한 주 후보는 C10이다. C10은 strict raw-JS confirmation에서만 C0와 S10 rank의 max를 사용한다.</li>
+<li>합격은 10개 모두 finite, period AUC <code>≥0.85</code>, period AUC <code>&gt; C0</code>, period confirmation 1개 이상, level/gradual/amplitude AUC <code>≥ C0</code>, seed별 OOF normal confirmation 0, private 두 실행 byte equality를 모두 요구한다. 평균 AUC gate는 없다.</li>
+<li>실패 뒤 같은 실험에서 창·hop·window·FFT·epsilon·JS 집계·문턱·seed·fold·합격선을 바꾸지 않는다. CWT나 wavelet packet은 Exp468에 추가하지 않는다.</li>
+<li>전체 실행 전에 CPU/MLX 동일 입력·seed smoke를 실행한다. finite, 점수 허용오차 <code>1e-12</code>, confirmation index exact equality, 전체 단계 속도 <code>1.1×</code> 이상을 모두 만족할 때만 MLX를 사용한다.</li>
+<li>각 코드 Task 시작 전 <code>docs/codemap/codemap_exp468_antigravity.lock</code>을 확인하고 JSON에서 호출자·영향·테스트를 읽는다. 경계가 바뀌면 HTML/JSON/lock 세 파일을 같은 commit에서 갱신한다.</li>
+</ul>
+
+<h2>파일 구조</h2>
+<table>
+<thead><tr><th>파일 묶음</th><th>책임</th></tr></thead>
+<tbody>
+<tr><td><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code></td><td>고정 숫자, 승인 설계 해시, 점수·fold·자격 결과의 불변 형식</td></tr>
+<tr><td><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code></td><td>Exp466 loader·보간·합성 변화·C0 함수 객체를 그대로 연결</td></tr>
+<tr><td><code>local_stft_antigravity.py</code></td><td>5×28 STFT 분포, fit 중앙값 기준, 자연로그 JS, LOO 원시 점수, rank와 strict confirmation</td></tr>
+<tr><td><code>acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_mlx_antigravity.py</code></td><td>동일 입력 CPU/MLX 점수·confirmation·속도 비교와 CPU fallback 기록</td></tr>
+<tr><td><code>scoring_antigravity.py</code>, <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code></td><td>C0/S10/C10 조립, 네 변화 AUC, 10-fold 고정 판정</td></tr>
+<tr><td><code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td><td>결과 파일, 입력 근거 재계산, 쉬운 한국어 HTML 대시보드</td></tr>
+<tr><td><code>cli_antigravity.py</code>, <code>scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py</code></td><td>고정 evaluate/inspect 실행과 두 private 결과 root 생성</td></tr>
+<tr><td><code>scratch/build_codemap_exp468_antigravity.py</code>, <code>docs/codemap/codemap_exp468_antigravity.{html,json,lock}</code></td><td>호출자·영향·테스트와 파일 지문</td></tr>
+</tbody>
+</table>
+
+<section class="task">
+<h2><label><input type="checkbox" disabled> Task 1 — 고정 설정·결과 계약·문서 골격</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/config_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/contracts_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_config_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_contracts_antigravity.py</code>, <code>docs/EXP468_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP468_RUNBOOK_antigravity.html</code>, <code>docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>scratch/build_codemap_exp468_antigravity.py</code>, <code>docs/codemap/codemap_exp468_antigravity.html</code>, <code>docs/codemap/codemap_exp468_antigravity.json</code>, <code>docs/codemap/codemap_exp468_antigravity.lock</code>. Modify <code>scratch/exp468_dashboard_artifact_antigravity.json</code> and <code>docs/EXP468_DASHBOARD_antigravity.html</code>.</p>
+<p><strong>Interfaces:</strong> Produce <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>Exp468FoldResultAntigravity</code>, <code>Exp468QualificationAntigravity</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED 설정 검사 작성.</strong></label><pre><code>def test_frozen_config_antigravity(self):
+    c = FROZEN_CONFIG_ANTIGRAVITY
+    self.assertEqual((c.experiment, c.method_order, c.primary_candidate),
+                     ("Exp468", ("C0", "S10", "C10"), "C10"))
+    self.assertEqual(c.window_starts, (0, 14, 28, 42, 56))
+    self.assertEqual((c.window_length, c.hop_length, c.non_dc_bins), (28, 14, 14))
+    self.assertEqual((c.power_epsilon, c.period_auc_min), (1e-12, 0.85))
+    self.assertFalse(hasattr(c, "mean_auc_min"))</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — RED 계약 검사 작성.</strong></label><p><code>c0_per_type_auc</code>와 <code>c10_per_type_auc</code>는 change order <code>(level_shift, gradual_drift, amplitude_scaling, period_change)</code>의 정확한 4-float tuple이어야 한다. seed/fold 순서, finite 값, confirmation count와 failure reason의 일치도 검사한다.</p><pre><code>row = valid_fold_result_antigravity()
+self.assertEqual(len(row.c0_per_type_auc), 4)
+self.assertEqual(len(row.c10_per_type_auc), 4)
+with self.assertRaisesRegex(ValueError, "four-value"):
+    dataclasses.replace(row, c10_per_type_auc=(0.9, 0.9, 0.9))</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity</code></pre><p>Expected: Exp468 package 또는 정의 부재로 FAIL.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 GREEN 설정·계약 구현.</strong></label><pre><code>_FROZEN_VALUES_ANTIGRAVITY = MappingProxyType({
+    "experiment": "Exp468", "dataset": "ECG200", "data_split": "TRAIN_only",
+    "train_rows": 100, "width": 96, "normal_rows": 69,
+    "train_md5": "808875aeac1c358a90c630fe369327c4",
+    "interpolated_width": 140, "seeds": (20260721, 20261721), "folds": 5,
+    "onset": 56, "suffix_length": 84,
+    "window_starts": (0, 14, 28, 42, 56), "window_length": 28,
+    "hop_length": 14, "rfft_length": 28, "non_dc_bins": 14,
+    "power_epsilon": 1e-12, "hann_definition": "numpy_hanning_symmetric",
+    "js_log_base": "e", "method_order": ("C0", "S10", "C10"),
+    "primary_candidate": "C10", "period_auc_min": 0.85,
+    "required_fold_results": 10, "normal_trials_per_seed": 69,
+    "approved_design_sha256": "fa799dd628028163b6bc2dee5af6fd3f507b555849a00b194e32ecdc3f7078b7",
+})</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — 문서·코드맵 생성.</strong></label><p>세 사용자 HTML은 <code>implementation_task_1</code>, result/hash null, official run 0을 표시한다. Exp466 map의 Task 1 answers를 Exp468 경계에 맞게 옮기고 새 triplet을 생성한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity
+python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+git diff --check
+git commit -m "feat: freeze Exp468 STFT authority and contracts"</code></pre></li>
+</ol>
+</section>
+
+<section class="task">
+<h2><label><input type="checkbox" disabled> Task 2 — ECG200 입력·합성 변화·C0 재사용</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/sources_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/interpolation_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/synthetic_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/predecessor_antigravity.py</code> and matching <code>tests/test_sources_antigravity.py</code>, <code>tests/test_interpolation_antigravity.py</code>, <code>tests/test_synthetic_antigravity.py</code>, <code>tests/test_predecessor_antigravity.py</code> under the same Exp468 package. Modify the Exp468 code-map HTML/JSON/lock triplet.</p>
+<p><strong>Interfaces:</strong> Re-export exact Exp466 <code>load_ecg200_normal_train_antigravity</code>, <code>interpolate_to_140_antigravity</code>, <code>primary_rows_antigravity</code>, <code>capture_exp465_authority_antigravity</code>, <code>score_c0_fold_antigravity</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED 함수 객체 동일성 검사.</strong></label><pre><code>self.assertIs(exp468_load, exp466_load)
+self.assertIs(exp468_interpolate, exp466_interpolate)
+self.assertIs(exp468_primary_rows, exp466_primary_rows)
+self.assertIs(exp468_score_c0, exp466_score_c0)</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — RED 데이터 경계·C0 parity 검사.</strong></label><p>loader는 TRAIN MD5와 <code>69×96</code> 정상 행을 확인하고 TEST 이름을 열기 전에 거부한다. 같은 train140/fit/query에서 Exp468 C0 normal 및 네 변화 score가 Exp466 C0와 byte-equal이어야 한다.</p><pre><code>np.testing.assert_array_equal(exp468.normal_scores, exp466.normal_scores)
+for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change"):
+    self.assertEqual(exp468.primary_scores[name].tobytes(),
+                     exp466.primary_scores[name].tobytes())</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_sources_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_interpolation_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_synthetic_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_predecessor_antigravity</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 GREEN exact import.</strong></label><pre><code>from experiments.exp466_ecg200_phase_registration_margin_antigravity.sources_antigravity import load_ecg200_normal_train_antigravity
+from experiments.exp466_ecg200_phase_registration_margin_antigravity.interpolation_antigravity import interpolate_to_140_antigravity
+from experiments.exp466_ecg200_phase_registration_margin_antigravity.synthetic_antigravity import primary_rows_antigravity
+from experiments.exp466_ecg200_phase_registration_margin_antigravity.predecessor_antigravity import capture_exp465_authority_antigravity, score_c0_fold_antigravity</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — GREEN 두 번·lower regression·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_sources_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_interpolation_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_synthetic_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_predecessor_antigravity
+python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_sources_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_interpolation_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_synthetic_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_predecessor_antigravity
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+git commit -m "feat: bind Exp468 ECG200 inputs and C0"</code></pre></li>
+</ol>
+</section>
+
+<section class="task">
+<h2><label><input type="checkbox" disabled> Task 3 — S10 국소 STFT·JS 점수와 MLX 판단</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/acceleration_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_local_stft_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_acceleration_antigravity.py</code>, <code>scratch/benchmark_exp468_local_stft_mlx_antigravity.py</code>, <code>scratch/exp468_mlx_benchmark_antigravity.json</code>. Modify the Exp468 code-map triplet.</p>
+<p><strong>Interfaces:</strong> <code>window_power_distributions_antigravity(row: ndarray) → ndarray[5,14]</code>, <code>jensen_shannon_antigravity(p, q) → float</code>, <code>strict_confirmation_antigravity(query_raw_js, fit_normal_max_raw_js) → ndarray[bool]</code>, <code>score_local_stft_antigravity(fit_rows, query_rows) → SpectralScoresAntigravity</code>, <code>assess_mlx_acceleration_antigravity(fit_rows, query_rows) → MlxAssessmentAntigravity</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED 창·분포·JS 검사.</strong></label><pre><code>power = window_power_distributions_antigravity(row)
+self.assertEqual(power.shape, (5, 14))
+np.testing.assert_allclose(power.sum(axis=1), np.ones(5), rtol=0, atol=1e-15)
+self.assertEqual(jensen_shannon_antigravity(power[0], power[0]), 0.0)
+self.assertTrue(np.allclose(window_power_distributions_antigravity(row + 7.0), power, rtol=0, atol=1e-12))
+self.assertTrue(np.isfinite(power).all())</code></pre><p>별도 fixture로 시작점 0/14/28/42/56, 28개 완전 창, padding 없음, DC 제거와 Nyquist 포함을 직접 검사한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — RED LOO·rank·strict confirmation 검사.</strong></label><pre><code>scores = score_local_stft_antigravity(fit_rows, query_rows)
+expected_rank = (1 + np.count_nonzero(scores.fit_raw_js &lt;= scores.query_raw_js[0])) / (len(fit_rows) + 1)
+self.assertEqual(scores.ranks[0], expected_rank)
+boundary = np.array([scores.fit_normal_max_raw_js], dtype=np.float64)
+self.assertFalse(bool(strict_confirmation_antigravity(boundary, scores.fit_normal_max_raw_js)[0]))</code></pre><p>fit 각 행은 자신을 뺀 중앙값 reference를 사용하고 query는 전체 fit reference만 사용한다. query를 fit에 섞었을 때 결과가 달라지는 leakage fixture도 포함한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 CPU 구현.</strong></label><pre><code>frames = np.stack(tuple(suffix[start:start + 28] for start in (0, 14, 28, 42, 56)))
+centered = frames - frames.mean(axis=1, keepdims=True)
+spectrum = np.fft.rfft(centered * np.hanning(28), n=28, axis=1)
+power = np.abs(spectrum[:, 1:]) ** 2
+power = power + 1e-12
+power = power / power.sum(axis=1, keepdims=True)
+
+m = (p + q) / 2.0
+js = 0.5 * np.sum(p * np.log(p / m)) + 0.5 * np.sum(q * np.log(q / m))</code></pre><p>reference는 frame별 fit 분포의 성분별 중앙값을 구한 뒤 frame별 합이 1이 되도록 다시 나눈다. 한 행의 raw S10은 다섯 JS의 중앙값이다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — CPU/MLX 동일성·속도 smoke.</strong></label><p>동일한 고정 train140, fit/query index, seed를 사용한다. 두 경로의 output은 finite, raw score <code>atol=1e-12, rtol=0</code>, confirmation index exact equality여야 한다. 전송·동기화 포함 속도가 CPU 대비 <code>1.1×</code> 미만이거나 어떤 parity라도 실패하면 CPU를 선택한다.</p><pre><code>python3 scratch/benchmark_exp468_local_stft_mlx_antigravity.py \
+  --output scratch/exp468_mlx_benchmark_antigravity.json</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·benchmark parse·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
+python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_local_stft_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_acceleration_antigravity
+python3 -m json.tool scratch/exp468_mlx_benchmark_antigravity.json &gt;/dev/null
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+git commit -m "feat: add Exp468 local STFT spectral evidence"</code></pre></li>
+</ol>
+</section>
+
+<section class="task">
+<h2><label><input type="checkbox" disabled> Task 4 — C0/S10/C10 점수와 10-fold 자격 판정</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/scoring_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/qualification_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/evaluation_antigravity.py</code> and matching <code>tests/test_scoring_antigravity.py</code>, <code>tests/test_qualification_antigravity.py</code>, <code>tests/test_evaluation_antigravity.py</code> under the same Exp468 package. Modify the Exp468 code-map triplet.</p>
+<p><strong>Interfaces:</strong> <code>score_fold_methods_antigravity(train140, fit_indices, query_indices, *, seed, fold_index, authority) → FoldMethodScoresAntigravity</code>, <code>qualify_antigravity(records) → Exp468QualificationAntigravity</code>, <code>evaluate_qualification_antigravity(q) → QualificationDecisionAntigravity</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED C10 fallback 검사.</strong></label><pre><code>result = score_fold_methods_antigravity(train, fit, query, seed=20260721, fold_index=0, authority=authority)
+self.assertEqual(result.methods, ("C0", "S10", "C10"))
+for scope in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change"):
+    c0 = result.original["C0"] if scope == "normal" else result.primary["C0"][scope]
+    c10 = result.original["C10"] if scope == "normal" else result.primary["C10"][scope]
+    np.testing.assert_array_equal(c10[~result.confirmed[scope]], c0[~result.confirmed[scope]])</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — RED 모든 합격·실패 경계 검사.</strong></label><p>각 fixture는 하나의 이유만 바꾼다: period <code>0.849999</code>, period <code>==C0</code>, period confirmation 0, level/gradual/amplitude 중 하나 <code>&lt;C0</code>, normal confirmation 1, nonfinite. 평균 AUC는 판정에 사용되지 않음을 별도 검사한다.</p><pre><code>self.assertIn("period_auc_below_0.85", failed.failure_reasons)
+self.assertIn("period_auc_not_strictly_above_c0", tied.failure_reasons)
+self.assertIn("amplitude_scaling_auc_below_c0", regressed.failure_reasons)
+self.assertNotIn("mean_auc_below_0.90", low_mean.failure_reasons)</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_scoring_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_qualification_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_evaluation_antigravity</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 C10 조립과 판정.</strong></label><pre><code>c10 = np.where(confirmed, np.maximum(c0, s10_rank), c0)
+passed = (
+    finite
+    and c10_auc[3] &gt;= 0.85
+    and c10_auc[3] &gt; c0_auc[3]
+    and period_confirmations &gt;= 1
+    and all(c10_auc[i] &gt;= c0_auc[i] for i in (0, 1, 2))
+    and normal_confirmations == 0
+)</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — raw-input 독립 재계산.</strong></label><p>qualification은 10개 record의 train140/fit/query에서 C0, S10 raw/rank/confirmation, C10, 네 AUC를 다시 계산한다. seed별 OOF query index가 69개를 중복 없이 정확히 한 번 덮는지도 검사한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·Exp466 regression·map·commit.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_scoring_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_qualification_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_evaluation_antigravity
+python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_scoring_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_qualification_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_evaluation_antigravity
+python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+git commit -m "feat: qualify Exp468 conservative STFT scores"</code></pre></li>
+</ol>
+</section>
+
+<section class="task">
+<h2><label><input type="checkbox" disabled> Task 5 — 결과 파일·독립 replay·HTML 대시보드</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/artifacts_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/replay_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/dashboard_export_antigravity.py</code> and matching <code>tests/test_artifacts_antigravity.py</code>, <code>tests/test_replay_antigravity.py</code>, <code>tests/test_dashboard_export_antigravity.py</code> under the same Exp468 package. Modify <code>docs/EXP468_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP468_RUNBOOK_antigravity.html</code>, <code>docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>scratch/exp468_dashboard_artifact_antigravity.json</code>, <code>docs/EXP468_DASHBOARD_antigravity.html</code> and the Exp468 code-map triplet.</p>
+<p><strong>Interfaces:</strong> <code>publish_result_antigravity(root, records, qualification, decision) → PublishedResultAntigravity</code> creates exactly seven leaves; <code>inspect_result_antigravity(root) → InspectedResultAntigravity</code> reads only those leaves; <code>export_dashboard_antigravity(inspected) → str</code> returns deterministic HTML.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED seven-leaf·canonical bytes 검사.</strong></label><pre><code>self.assertEqual(tuple(sorted(p.name for p in root.iterdir())), (
+ "artifact_sha256_antigravity.json", "context_antigravity.json",
+ "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
+ "failed_folds_antigravity.jsonl", "method_fold_metrics_antigravity.jsonl",
+ "method_summary_antigravity.jsonl"))</code></pre><p>UTF-8, key sort, compact JSON, 마지막 newline 하나, seed-major JSONL 순서와 self-excluding hash map을 고정한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — RED 의미 변조 replay 검사.</strong></label><p>raw JS, fit max, rank, confirmation, C10 score, AUC, C0 delta, normal confirmation, decision 또는 hash를 하나씩 바꾼 뒤 hash를 다시 맞춰도 inspect가 원시 입력 재계산으로 거부해야 한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 대시보드 검사.</strong></label><pre><code>html = export_dashboard_antigravity(inspected)
+self.assertIn("period 변화", html)
+self.assertIn("C0보다 개선한 fold", html)
+self.assertIn("정상 확인 오류", html)
+self.assertIn('type="checkbox" checked disabled', html)</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — 최소 publication·replay·dashboard 구현.</strong></label><p>dashboard는 10개 fold의 C0/C10 period AUC, 차이, confirmation 수, 세 보호 변화의 최악 delta, seed별 normal confirmation, 두 실행 동일성, 최종 PASS/FAIL을 고등학생도 이해할 수 있는 한국어로 보여준다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — GREEN 두 번·portable HTML 검증.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_artifacts_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_replay_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_dashboard_export_antigravity
+python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_artifacts_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_replay_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_dashboard_export_antigravity
+node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs --input scratch/exp468_dashboard_artifact_antigravity.json --output docs/EXP468_DASHBOARD_antigravity.html
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+git commit -m "feat: publish and replay Exp468 qualification"</code></pre></li>
+</ol>
+</section>
+
+<section class="task">
+<h2><label><input type="checkbox" disabled> Task 6 — 전체 검증·두 번 실행·최종 결과</label></h2>
+<p><strong>Files:</strong> Create <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/cli_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_cli_antigravity.py</code>, <code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_pipeline_antigravity.py</code>, <code>scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py</code>. Modify <code>docs/EXP468_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP468_RUNBOOK_antigravity.html</code>, <code>docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>scratch/exp468_dashboard_artifact_antigravity.json</code>, <code>docs/EXP468_DASHBOARD_antigravity.html</code> and the Exp468 code-map triplet after execution. Do not modify routing, champion, pending or promotion files.</p>
+<p><strong>Interfaces:</strong> <code>evaluate --output PATH --reviewed-commit LOWER40HEX</code> runs the frozen TRAIN-only 10-fold experiment once into a new root. <code>inspect --root PATH</code> replays a completed root without loading ECG200.</p>
+<ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — RED CLI·blocked-fold·pipeline 검사.</strong></label><pre><code>args = parser_antigravity().parse_args(["evaluate", "--output", "/private/tmp/exp468_task6_private_run1_antigravity", "--reviewed-commit", "a" * 40])
+self.assertEqual(args.command, "evaluate")
+self.assertEqual(tuple(len(q) for _fit, q in blocked_fold_indices_antigravity()), (14, 14, 14, 14, 13))</code></pre><p>두 seed는 같은 blocked query 구간을 사용하되 record identity에는 seed를 보존한다. runner는 config에 없는 창·문턱·모델 선택 인자를 받지 않는다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — GREEN 두 번·전체 preflight.</strong></label><pre><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_cli_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_pipeline_antigravity
+python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_cli_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_pipeline_antigravity
+python3 -m unittest discover -s experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests -p 'test_*_antigravity.py'
+python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+python3 -m compileall -q experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py
+git diff --check</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — OpenRouter 독립 과학 검토·Codex 최종 판단.</strong></label><p>Ox Alpha Ultra가 가능하면 설계 일치, JS/LOO 누수, C0 fallback, gate 누락만 독립 검토한다. unavailable 또는 429면 Sol reviewer를 사용한다. Codex가 diff를 통합하고 모든 수정 뒤 Step 2 전체 검증을 다시 실행한다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — 깨끗한 reviewed commit에서 private run 1·2 순차 실행.</strong></label><pre><code>REVIEWED_COMMIT=$(git rev-parse HEAD)
+python3 scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py evaluate --output /private/tmp/exp468_task6_private_run1_antigravity --reviewed-commit "$REVIEWED_COMMIT"
+python3 scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py inspect --root /private/tmp/exp468_task6_private_run1_antigravity
+python3 scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py evaluate --output /private/tmp/exp468_task6_private_run2_antigravity --reviewed-commit "$REVIEWED_COMMIT"
+python3 scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py inspect --root /private/tmp/exp468_task6_private_run2_antigravity</code></pre><p>각 root는 실행 전에 존재하지 않아야 하며, 두 evaluate를 동시에 실행하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — byte equality·고정 판정.</strong></label><pre><code>diff -qr /private/tmp/exp468_task6_private_run1_antigravity /private/tmp/exp468_task6_private_run2_antigravity</code></pre><p>차이가 하나라도 있으면 재실행이나 튜닝 없이 재현성 실패로 기록한다. 두 root가 같아도 10개 gate 중 하나가 실패하면 C10은 qualification 실패다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — 결과 HTML·체크박스·최종 검증·commit.</strong></label><p>대시보드와 구현 보고서에 각 fold 수치, 최악 delta, 실패 이유와 다음 한 단계만 기록한다. PASS여도 TEST/FN 검증은 실행하지 않고 사용자 승인을 기다린다.</p><pre><code>python3 -m unittest discover -s experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests -p 'test_*_antigravity.py'
+python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'
+python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+git diff --check
+git commit -m "exp: record Exp468 local STFT qualification result"</code></pre></li>
+</ol>
+</section>
+
+<div class="box stop"><strong>중단 규칙:</strong> Task 1~5는 구현과 검증만 수행한다. Task 6의 두 private 실행은 사용자가 실행 방식을 선택한 뒤 Task별 checkpoint로 진행한다. 결과가 FAIL이면 Exp468 안에서 설정을 바꾸지 않는다. PASS이면 실제 잔여 FN 검증을 별도 설계·승인한다.</div>
+
+<h2>실행 선택</h2>
+<p><strong>1. Task별 에이전트 실행 — 권장:</strong> Task마다 fresh 구현자를 사용한다. OpenRouter Ox Alpha Ultra가 가능하면 구현·독립 의견에 적극 사용하고, 사용할 수 없으면 Sol 구현자로 전환한다. Codex가 매 Task의 diff, 테스트와 결과를 최종 승인한다.</p>
+<p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task 1부터 순서대로 실행하고 각 Task 종료 때 사용자에게 checkpoint를 보여준다.</p>
+
+<div class="box ok"><strong>현재 상태:</strong> <code>implementation_plan_ready_no_code_run</code>. 계획 작성과 설계 승인은 완료됐고, Task 1~6은 아직 모두 미완료다.</div>
+</main></body></html>

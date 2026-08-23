@@ -4,7 +4,7 @@
     "version": 1,
     "surface": "dashboard",
     "title": "Exp468 ECG200 국소 STFT 설계 대시보드",
-    "description": "Exp466 실패 근거와 Exp468의 승인된 단일 후보, 합격 기준 및 진행 상태를 보여주는 설계 단계 스냅샷.",
+    "description": "Exp466 실패 근거와 Exp468의 승인된 단일 후보, 합격 기준, 구현 계획 및 진행 상태를 보여주는 스냅샷.",
     "generatedAt": "2026-08-23T00:00:00Z",
     "cards": [
       {
@@ -37,7 +37,7 @@
       },
       {
         "id": "official_runs",
-        "description": "작성된 설계서가 최종 승인되기 전까지 유지해야 하는 공식 실행 횟수.",
+        "description": "구현과 별도 실행 지시 전까지 유지해야 하는 공식 실행 횟수.",
         "dataset": "design_summary",
         "sourceId": "exp468_design",
         "metrics": [
@@ -140,7 +140,7 @@
       {
         "id": "status_note",
         "type": "markdown",
-        "body": "## 현재 판정\n\n**개념 설계 승인 · 작성된 HTML 설계서 검토 대기**\n\nExp468은 아직 실행되지 않았습니다. 다음 행동은 설계서 최종 승인뿐이며, 그 전에는 구현 계획·공식 실행·TEST/FN 평가가 없습니다."
+        "body": "## 현재 판정\n\n**작성된 설계서 승인 · HTML 구현 계획 완료 · Task 1 대기**\n\nExp468은 아직 구현되거나 실행되지 않았습니다. 다음 행동은 Task별 에이전트 실행 또는 현재 세션 순차 실행 중 하나를 선택하는 것입니다. TEST/FN 평가는 없습니다."
       },
       {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs"]},
       {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
@@ -149,12 +149,12 @@
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" disabled> 구현 계획과 구현</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" disabled> Task 1~5 구현·검증</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\n작성된 HTML 설계서를 검토하고 승인합니다. 승인 후에만 구현 계획을 별도 HTML로 작성합니다."
+        "body": "## 다음 한 단계\n\n[Exp468 HTML 구현 계획](superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html)을 확인하고 실행 방식을 선택합니다. 1번은 Task별 에이전트 실행, 2번은 현재 세션 순차 실행입니다."
       }
     ]
   },
@@ -187,8 +187,11 @@
         {"order": 2, "checked": "☑", "task": "OpenRouter 독립 검토", "status": "완료"},
         {"order": 3, "checked": "☑", "task": "단일 STFT 후보와 범위 승인", "status": "완료"},
         {"order": 4, "checked": "☑", "task": "Exp468 HTML 설계서·대시보드 작성", "status": "완료"},
-        {"order": 5, "checked": "☐", "task": "작성된 HTML 설계서 최종 승인", "status": "대기"},
-        {"order": 6, "checked": "☐", "task": "구현 계획과 구현", "status": "대기"}
+        {"order": 5, "checked": "☑", "task": "작성된 HTML 설계서 최종 승인", "status": "완료"},
+        {"order": 6, "checked": "☑", "task": "6개 Task HTML 구현 계획 작성", "status": "완료"},
+        {"order": 7, "checked": "☑", "task": "OpenRouter 구현 계획 독립 검토", "status": "PASS"},
+        {"order": 8, "checked": "☐", "task": "Task 1~5 구현·검증", "status": "대기"},
+        {"order": 9, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "대기"}
       ]
     }
   },

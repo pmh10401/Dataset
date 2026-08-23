@@ -11,7 +11,7 @@ body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.72 system-ui;c
 <body><main>
 <h1>Exp468 — ECG200 국소 STFT 주파수 재분배 자격 검증</h1>
 <div class="box ok"><strong>한 줄 목표:</strong> ECG200 한 박동의 뒷부분에서 주파수 구성이 달라지는지를 찾고, 신호가 확실할 때만 기존 C0 점수를 보완한다.</div>
-<div class="box"><strong>현재 상태:</strong> 대화에서 개념 설계와 “ECG200 주기 변화만 주목표로 검증”하는 범위를 승인했다. 이 HTML은 구현 전 최종 문서 검토본이며, 아직 점수 계산이나 공식 실험을 실행하지 않았다.</div>
+<div class="box"><strong>현재 상태:</strong> 사용자가 작성된 HTML 설계서를 최종 승인했다. 구현 계획은 준비됐지만, 아직 코드 구현·점수 계산·공식 실험은 실행하지 않았다.</div>
 
 <h2>1. 왜 새 실험이 필요한가</h2>
 <table>
@@ -48,14 +48,14 @@ body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.72 system-ui;c
 <p>한 행의 suffix 84개를 시작점 <code>0, 14, 28, 42, 56</code>에서 길이 28로 자른다. 따라서 완전한 창 다섯 개만 사용하고 경계 padding은 하지 않는다.</p>
 <ol>
 <li>각 창에서 평균을 빼 level 차이를 제거한다.</li>
-<li>길이 28의 Hann 창을 곱하고, 길이 28의 one-sided real FFT를 계산한다.</li>
+<li>길이 28의 대칭 Hann 창 <code>np.hanning(28)</code>을 곱하고, 길이 28의 one-sided real FFT를 계산한다.</li>
 <li>전력을 제곱 크기로 만들고 DC bin을 버린다. 남은 14개 값에는 Nyquist bin이 포함된다. 각 값에 <code>1e-12</code>를 더한 뒤 합이 1이 되도록 나눈다. amplitude 배율은 이 정규화에서 사라진다.</li>
 <li>각 시간 창마다 정상 fit 행들의 주파수 분포를 성분별 중앙값으로 합친 뒤 다시 합이 1이 되게 만든다.</li>
 <li>한 행의 각 창 분포와 정상 중앙값 분포 사이 Jensen–Shannon divergence를 계산한다.</li>
 <li>다섯 divergence의 <strong>중앙값</strong>을 그 행의 원시 <code>S10</code> 점수로 사용한다. 한 창의 우연한 변화가 전체 확인 신호가 되는 것을 막는다.</li>
 </ol>
 <pre>m = (p + q) / 2
-JS(p, q) = 0.5 * KL(p || m) + 0.5 * KL(q || m)
+JS(p, q) = 0.5 * KL(p || m) + 0.5 * KL(q || m)  # 자연로그 사용
 S10(row) = median(JS(window_0), ..., JS(window_4))</pre>
 <p>fit 정상 점수는 각 행을 제외한 leave-one-out 중앙값 분포로 계산한다. query 정상과 네 합성 변화는 전체 fit 정상만으로 만든 중앙값 분포와 비교한다.</p>
 
@@ -122,10 +122,10 @@ S10(row) = median(JS(window_0), ..., JS(window_4))</pre>
 <li><label><input type="checkbox" checked disabled> STFT·CWT·wavelet packet 비교와 단일 후보 선택</label></li>
 <li><label><input type="checkbox" checked disabled> ECG200 period-only 범위 승인</label></li>
 <li><label><input type="checkbox" checked disabled> Exp468 HTML 설계서와 합격·중단 규칙 작성</label></li>
-<li><label><input type="checkbox" disabled> 사용자의 작성된 HTML 설계서 최종 승인</label></li>
-<li><label><input type="checkbox" disabled> 구현 계획 작성</label></li>
+<li><label><input type="checkbox" checked disabled> 사용자의 작성된 HTML 설계서 최종 승인</label></li>
+<li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
 <li><label><input type="checkbox" disabled> 구현 및 실험 실행</label></li>
 </ul>
 
-<p><strong>설계 상태:</strong> <code>written_design_ready_for_user_review</code>. 이 문서가 승인되기 전에는 구현 계획이나 실행 명령을 만들지 않는다.</p>
+<p><strong>설계 상태:</strong> <code>written_design_approved_implementation_plan_ready</code>. 다음 단계는 구현 방식 선택이며, 별도 진행 지시 전에는 코드나 공식 실험을 실행하지 않는다.</p>
 </main></body></html>
