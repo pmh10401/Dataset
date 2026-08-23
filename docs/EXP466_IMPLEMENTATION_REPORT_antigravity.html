@@ -8,12 +8,12 @@
 </head>
 <body><main>
 <h1>Exp466 구현 보고서</h1>
-<p>현재 실험 상태는 <code>planned_implementation_not_started</code>다. Task 1~4의 권한, 입력 연결, P9 고정 위상 정렬, C9 점수와 qualification 계약까지 기록하며 실제 성능 결과를 주장하지 않는다.</p>
+<p>현재 실험 상태는 <code>planned_implementation_not_started</code>다. Task 1~5의 권한, 입력 연결, P9 고정 위상 정렬, C9 qualification, canonical 결과 파일과 독립 replay까지 구현했다. 실제 성능, private 또는 official 결과는 아직 만들거나 주장하지 않는다.</p>
 <h2>Task 1 범위</h2>
 <ul>
 <li><code>config_antigravity.py</code>는 TRAIN-only 입력, seed/fold, onset/suffix, warp/shared length, C0/P9/C9 순서, C9 단독 primary, AUC gate와 0-use governance를 exact-type frozen dataclass로 고정한다.</li>
 <li><code>contracts_antigravity.py</code>는 <code>Exp466PhaseEvidenceAntigravity</code>, <code>Exp466FoldResultAntigravity</code>, <code>Exp466QualificationAntigravity</code>를 불변 contract로 제공한다.</li>
-<li>계약은 mutable/reordered seed mapping, non-finite margin, 잘못된 정상 69개 집계, 잘못된 SHA-256, nonzero official/label count를 거부한다.</li>
+<li>계약은 seed별 정상 confirmation <code>0..69</code>를 유효한 실패 증거로 보존한다. 모든 seed가 0일 때만 pass gate를 만족하며, mutable/reordered mapping, 범위 밖 count, 불변성 위반, non-finite margin, 잘못된 정상 69개 집계, 잘못된 SHA-256, nonzero official/label count는 거부한다.</li>
 <li>사전등록·runbook·구현 보고서, 기존 dashboard의 Task 1 필드, 세 ledger의 additive planned entry, Exp466 코드맵 triplet을 작성한다.</li>
 </ul>
 <h2>TDD 증거</h2>
@@ -47,6 +47,14 @@
 <tr><th>독립 검토</th><td>Terra High 최종 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 남은 지적 0건. 코드맵 누락과 Task 5 원시 기록 입력 누락은 각각 map 확장과 명시적 <code>records</code> 인자로 해결했다.</td></tr>
 <tr><th>결과 상태</th><td>이 단계는 합성 fixture 단위 검사만 수행했다. 실제 ECG200 TRAIN qualification 성능과 private 결과는 아직 없다.</td></tr>
 </table>
-<p>ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. Tasks 5–6, routing, champion, pending, promotion은 아직 변경하지 않았다.</p>
+<h2>Task 5 완료</h2>
+<p>publisher는 검증된 Task 4 기록·qualification·decision을 새 경로에만 쓰며, canonical JSON/JSONL과 자기 자신을 제외한 SHA-256 map을 포함해 정확히 7개 파일을 만든다. inspector는 이 7개 파일만 읽고 저장된 TRAIN·index·margin 증거에서 P9 rank, 엄격한 confirmation, C9, AUC, 평균, C0 차이, qualification, decision과 쉬운 한국어 대시보드를 독립적으로 다시 계산한다.</p>
+<table>
+<tr><th>실패 결과 보존</th><td>seed별 정상 confirmation <code>1</code>인 결정적 합성 fixture는 예외가 아니라 failed qualification으로 publish→inspect된다. 정확한 blocked-fold query index와 ordered fit complement도 publisher와 inspector 양쪽에서 확인한다.</td></tr>
+<tr><th>검증</th><td>Task 5 집중 검사 <code>10/10</code>을 두 번(<code>60.970초</code>, <code>60.886초</code>), 전체 Exp466 <code>39/39</code>(<code>124.598초</code>), Exp465 하위 회귀 <code>7/7</code>(<code>30.359초</code>) 통과했다. compileall, HTML parse, diff 검사, 금지된 loader/scorer scan, 임시 publish→inspect의 7개 파일 및 qualification·decision·artifact-map equality도 통과했다.</td></tr>
+<tr><th>독립 검토</th><td>fresh Sol은 <code>SHIP</code>, Critical 0건, Important 0건으로 판정했다. replay의 일부 계산 중복은 publisher의 파생값을 믿지 않고 독립 검증하기 위한 의도된 nonblocking minor다.</td></tr>
+<tr><th>결과 상태</th><td>모든 수치는 결정적 합성 단위 fixture 검증이다. 실제 ECG200 성능, private 결과, official 결과는 없다.</td></tr>
+</table>
+<p>Task 1~5는 완료했고 다음 단계는 Task 6이다. ECG200 TEST와 라벨은 접근하지 않았고 private/official 평가는 실행하지 않았다. official/private/label count는 0이고 official result 및 모든 result hash는 <code>null</code>이다. routing, champion, pending, promotion은 변경하지 않았다.</p>
 </main></body>
 </html>

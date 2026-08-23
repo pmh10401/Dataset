@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp466 Task 1-4 code-map triplet."""
+"""Build and validate the bounded Exp466 Task 1-5 code-map triplet."""
 
 from __future__ import annotations
 
@@ -133,8 +133,37 @@ TASK4_REPORT_ANTIGRAVITY = (
     "2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/"
     "task-4-report-antigravity.html"
 )
-TASK4_SOURCE_COMMIT_ANTIGRAVITY = (
-    "aa04dfe7a03e32d5e87f200fee55c88368cbd085"
+ARTIFACTS_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "artifacts_antigravity.py"
+)
+REPLAY_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "replay_antigravity.py"
+)
+DASHBOARD_EXPORT_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "dashboard_export_antigravity.py"
+)
+ARTIFACTS_TEST_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "tests/test_artifacts_antigravity.py"
+)
+REPLAY_TEST_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "tests/test_replay_antigravity.py"
+)
+DASHBOARD_EXPORT_TEST_ANTIGRAVITY = (
+    "experiments/exp466_ecg200_phase_registration_margin_antigravity/"
+    "tests/test_dashboard_export_antigravity.py"
+)
+TASK5_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/"
+    "task-5-report-antigravity.html"
+)
+TASK5_SOURCE_COMMIT_ANTIGRAVITY = (
+    "367ce41e17c20b601a771f3d4fb6761bf28ad523"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -170,13 +199,20 @@ TRACKED_PATHS_ANTIGRAVITY = (
     QUALIFICATION_TEST_ANTIGRAVITY,
     EVALUATION_TEST_ANTIGRAVITY,
     TASK4_REPORT_ANTIGRAVITY,
+    ARTIFACTS_ANTIGRAVITY,
+    REPLAY_ANTIGRAVITY,
+    DASHBOARD_EXPORT_ANTIGRAVITY,
+    ARTIFACTS_TEST_ANTIGRAVITY,
+    REPLAY_TEST_ANTIGRAVITY,
+    DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+    TASK5_REPORT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     "docs/codemap/codemap_exp465_antigravity.html",
     "docs/codemap/codemap_exp465_antigravity.json",
     "docs/codemap/codemap_exp465_antigravity.lock",
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task4_c9_qualification_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp466_task4_c9_qualification_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp466_task5_canonical_replay_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp466_task5_canonical_replay_codemap_lock_v1"
 GENERATED_AT_ANTIGRAVITY = "2026-08-23T00:00:00+09:00"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
@@ -305,8 +341,8 @@ def _tracked_fingerprints_antigravity() -> list[dict[str, str]]:
 def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     if re.fullmatch(r"[0-9a-f]{40}", source_parent) is None:
         raise ValueError("source_parent must be a lowercase 40-hex commit")
-    if source_parent != TASK4_SOURCE_COMMIT_ANTIGRAVITY:
-        raise ValueError("source_parent must be the accepted Task 4 commit")
+    if source_parent != TASK5_SOURCE_COMMIT_ANTIGRAVITY:
+        raise ValueError("source_parent must be the accepted Task 5 commit")
     map_test = (BUILDER_ANTIGRAVITY,)
     config_test = (CONFIG_TEST_ANTIGRAVITY,)
     contracts_test = (CONTRACTS_TEST_ANTIGRAVITY,)
@@ -318,6 +354,9 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
     scoring_test = (SCORING_TEST_ANTIGRAVITY,)
     qualification_test = (QUALIFICATION_TEST_ANTIGRAVITY,)
     evaluation_test = (EVALUATION_TEST_ANTIGRAVITY,)
+    artifacts_test = (ARTIFACTS_TEST_ANTIGRAVITY,)
+    replay_test = (REPLAY_TEST_ANTIGRAVITY,)
+    dashboard_export_test = (DASHBOARD_EXPORT_TEST_ANTIGRAVITY,)
     nodes = [
         _node_antigravity(
             "task1_brief",
@@ -564,6 +603,59 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "Exp466 Task 4",
             map_test,
         ),
+        _node_antigravity(
+            "task5_artifacts",
+            ARTIFACTS_ANTIGRAVITY,
+            "Caller: Task 5 unit tests and future separately authorized Task 6 evaluate path. Effect: validates explicit frozen Task 4 records, qualification, and decision; requires exact blocked-fold indices; creates only a new root with exactly seven canonical JSON/JSONL leaves; hashes the other six leaves while excluding the hash map itself; and retains complete replay evidence without data, TEST, private, official, CLI, routing, or governance access.",
+            "publish_result_antigravity",
+            (ARTIFACTS_TEST_ANTIGRAVITY, REPLAY_TEST_ANTIGRAVITY),
+        ),
+        _node_antigravity(
+            "task5_replay",
+            REPLAY_ANTIGRAVITY,
+            "Caller: Task 5 replay tests and future separately authorized Task 6 inspect path. Effect: reads only the exact seven leaves, validates canonical bytes and self-excluding hashes, independently reconstructs blocked-fold identity, P9 ranks, strict confirmations, C9, AUC, summaries, failed rows, qualification, decision, and dashboard, and returns equality-stable evidence without loaders or Task 2/3/4 scorers/qualifier.",
+            "inspect_result_antigravity",
+            replay_test,
+        ),
+        _node_antigravity(
+            "task5_dashboard_export",
+            DASHBOARD_EXPORT_ANTIGRAVITY,
+            "Caller: canonical Task 5 publisher and focused dashboard tests. Effect: validates frozen qualification/decision agreement and returns a deterministic easy-Korean snapshot with embedded HTML inside an existing leaf, without an eighth file or any private/official performance claim.",
+            "export_dashboard_antigravity",
+            (
+                DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+                ARTIFACTS_TEST_ANTIGRAVITY,
+                REPLAY_TEST_ANTIGRAVITY,
+            ),
+        ),
+        _node_antigravity(
+            "task5_artifacts_test",
+            ARTIFACTS_TEST_ANTIGRAVITY,
+            "Caller: focused Task 5 RED/GREEN and full Exp466 regression. Effect: detects any leaf-count, canonical-byte, hash self-exclusion, create-only, record-order, retained-evidence, or exact blocked-fold-index drift across three tests.",
+            "ArtifactsAntigravityTest",
+            artifacts_test,
+        ),
+        _node_antigravity(
+            "task5_replay_test",
+            REPLAY_TEST_ANTIGRAVITY,
+            "Caller: focused Task 5 RED/GREEN, mutation tests, and full Exp466 regression. Effect: proves dataset/scorer-free stable inspection, publishable nonzero-confirmation failure, exact index identity, stale-map rejection, and semantic rejection of re-canonicalized/rehashed mutations across six tests.",
+            "ReplayAntigravityTest",
+            replay_test,
+        ),
+        _node_antigravity(
+            "task5_dashboard_export_test",
+            DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+            "Caller: focused Task 5 RED/GREEN and full Exp466 regression. Effect: detects hard-to-read Korean, nondeterministic embedded/returned HTML, an eighth leaf, and private/official result claims in one test.",
+            "DashboardExportAntigravityTest",
+            dashboard_export_test,
+        ),
+        _node_antigravity(
+            "task5_report",
+            TASK5_REPORT_ANTIGRAVITY,
+            "Caller: Task 5 implementation, prerequisite-fix, controller verification, fresh Sol review, and map closeout audit. Effect: records TDD RED/GREEN, exact focused/full/lower evidence, publish-inspect equality, normal-confirmation failure preservation, blocked-fold identity, SHIP with Critical 0 and Important 0, the accepted nonblocking independent-replay duplication minor, no-result boundaries, and concerns.",
+            "Exp466 Task 5",
+            map_test,
+        ),
     ]
     edges = [
         _edge_antigravity("task1_brief", "governs", "task1_config", BRIEF_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
@@ -571,7 +663,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("exp465_baseline", "informs_structure", "map_builder", "docs/codemap/codemap_exp465_antigravity.json", '"map_builder"'),
         _edge_antigravity("task1_config", "governs", "task1_contracts", CONFIG_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
         _edge_antigravity("task1_config_test", "tests", "task1_config", CONFIG_TEST_ANTIGRAVITY, "test_frozen_config_antigravity"),
-        _edge_antigravity("task1_contracts_test", "tests", "task1_contracts", CONTRACTS_TEST_ANTIGRAVITY, "test_qualification_rejects_mutable_reordered_and_wrong_69_counts_antigravity"),
+        _edge_antigravity("task1_contracts_test", "tests", "task1_contracts", CONTRACTS_TEST_ANTIGRAVITY, "test_qualification_accepts_bounded_failure_counts_and_rejects_bad_count_shapes_antigravity"),
         _edge_antigravity("approved_design", "governs", "task2_sources", DESIGN_ANTIGRAVITY, "ECG200 TRAIN의 정상"),
         _edge_antigravity("approved_design", "governs", "task2_interpolation", DESIGN_ANTIGRAVITY, "96→140"),
         _edge_antigravity("approved_design", "governs", "task2_synthetic", DESIGN_ANTIGRAVITY, "level shift, gradual drift, amplitude scaling, period change"),
@@ -621,6 +713,19 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("task4_report", "verifies", "task4_qualification", TASK4_REPORT_ANTIGRAVITY, "고정 수식과 불변 조건"),
         _edge_antigravity("task4_report", "verifies", "task4_evaluation", TASK4_REPORT_ANTIGRAVITY, "Decision"),
         _edge_antigravity("map_builder", "verifies", "task4_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
+        _edge_antigravity("approved_design", "governs", "task5_artifacts", DESIGN_ANTIGRAVITY, "canonical 7 leaves"),
+        _edge_antigravity("task4_scoring", "governs", "task5_artifacts", ARTIFACTS_ANTIGRAVITY, "FoldMethodScoresAntigravity"),
+        _edge_antigravity("task4_qualification", "governs", "task5_artifacts", ARTIFACTS_ANTIGRAVITY, "Exp466QualificationAntigravity"),
+        _edge_antigravity("task4_evaluation", "governs", "task5_artifacts", ARTIFACTS_ANTIGRAVITY, "QualificationDecisionAntigravity"),
+        _edge_antigravity("task5_dashboard_export", "governs", "task5_artifacts", ARTIFACTS_ANTIGRAVITY, "export_dashboard_antigravity"),
+        _edge_antigravity("task5_artifacts", "governs", "task5_replay", REPLAY_ANTIGRAVITY, "_LEAVES_ANTIGRAVITY"),
+        _edge_antigravity("task5_artifacts_test", "tests", "task5_artifacts", ARTIFACTS_TEST_ANTIGRAVITY, "test_publish_creates_exact_canonical_self_excluding_seven_leaves_antigravity"),
+        _edge_antigravity("task5_replay_test", "tests", "task5_replay", REPLAY_TEST_ANTIGRAVITY, "test_temporary_publish_inspect_is_stable_and_scorer_data_free_antigravity"),
+        _edge_antigravity("task5_dashboard_export_test", "tests", "task5_dashboard_export", DASHBOARD_EXPORT_TEST_ANTIGRAVITY, "test_easy_korean_snapshot_embeds_deterministic_html_without_eighth_leaf_antigravity"),
+        _edge_antigravity("task5_report", "verifies", "task5_artifacts", TASK5_REPORT_ANTIGRAVITY, "Fresh Sol review"),
+        _edge_antigravity("task5_report", "verifies", "task5_replay", TASK5_REPORT_ANTIGRAVITY, "Fresh Sol review"),
+        _edge_antigravity("task5_report", "verifies", "task5_dashboard_export", TASK5_REPORT_ANTIGRAVITY, "Fresh Sol review"),
+        _edge_antigravity("map_builder", "verifies", "task5_report", BUILDER_ANTIGRAVITY, "validate_map_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -655,6 +760,11 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "effects": "scoring reads the reviewed Task 2 C0/synthetic and Task 3 P9 interfaces to emit owned immutable C0/P9/C9 raw evidence; qualification verifies 69 unique OOF normals per seed and independently replays C0/P9/C9 before emitting exactly ten Task 1 scalar rows; evaluation makes only a frozen 10-of-10 decision with all routing/champion/pending/promotion/TEST-label effects false or zero; no real data, private, official, MLX, publication, or governance state is touched.",
             "tests": "the two scoring tests cover exact C0/P9/C9 assembly, false-confirm C0 byte identity, and non-aliased immutable evidence; the three qualification tests cover exact ten-record order, 69 unique OOF coverage, raw replay, and every fixed negative gate; the three evaluation tests cover pure acceptance, deterministic failure, and forged eligible 9-of-10 rejection; focused 8, full Exp466 28, Exp465 lower 7, map validation, HTML/JSON parsing, and independent fingerprint recomputation cover the closeout.",
         },
+        "task5_answers": {
+            "callers": "test_artifacts_antigravity calls publish_result_antigravity with deterministic Task 4 records, qualification, and decision; test_replay_antigravity calls inspect_result_antigravity over temporary seven-leaf roots; test_dashboard_export_antigravity calls export_dashboard_antigravity directly; only a future separately authorized Task 6 evaluate/inspect boundary may call these production interfaces.",
+            "effects": "publication validates exact blocked-fold identities and creates a new root containing exactly seven canonical leaves plus a self-excluding hash map; replay reads only those leaves and independently reconstructs every stored and derived scientific value; dashboard export embeds deterministic easy-Korean HTML without an eighth leaf; no loader, Task 2/3/4 scorer or qualifier, TEST/label, real data, private/official, CLI, routing, or governance state is accessed.",
+            "tests": "the three artifact tests cover exact leaves, canonical bytes, hash-map self-exclusion, create-only behavior, record order, and blocked-fold identity; the six replay tests cover stable scorer/data-free inspection, publishable normal-confirmation failure, rehashed semantic mutations, stale hashes, exact indices, context/summary/failed-leaf mutations, and equality; the dashboard test covers easy Korean, deterministic embedded/returned HTML, no eighth leaf, and no private/official claim; controller focused 10 twice, full Exp466 39, Exp465 lower 7, temporary publish-inspect equality, fresh Sol SHIP, map validation, HTML/JSON parsing, and fingerprint recomputation cover closeout.",
+        },
         "flows": [
             "task1 brief + approved design -> frozen config -> immutable contracts -> future Tasks 2-6",
             "focused config/contracts RED-GREEN tests -> executable Task 1 authority verification",
@@ -669,6 +779,10 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "exact seed-major two-seed x five-fold records -> 69 unique OOF normals per seed -> independent C0/P9/C9 replay -> exactly ten scalar qualification rows",
             "frozen scalar qualification -> pure C9 10-of-10 decision -> Exp467-design eligibility or deterministic block with no external state mutation",
             "eight focused Task 4 tests + Terra SPEC PASS/QUALITY P1 disposition + Task 4 report -> map builder -> Task 4 caller/effect/test boundaries and fingerprints",
+            "explicit frozen Task 4 records + qualification + decision -> exact blocked-fold validation -> create-only canonical publisher -> exactly seven leaves with a self-excluding hash map",
+            "exact seven leaves -> canonical byte and hash validation -> retained train/index/margin evidence -> independent P9/C9/AUC/qualification/decision replay without dataset or scorer access",
+            "frozen qualification + decision -> deterministic easy-Korean dashboard and embedded HTML -> existing dashboard snapshot leaf without an eighth file or performance claim",
+            "ten focused Task 5 tests + temporary publish-inspect equality + fresh Sol SHIP + Task 5 report -> map builder -> Task 5 caller/effect/test boundaries and exact fingerprints",
         ],
     }
 
@@ -688,8 +802,8 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>Exp466 Task 1-4 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp466 Task 1-4 코드맵</h1><p>이 map은 Exp465 triplet을 구조 기준으로 삼아 Exp466의 caller, effect, test 관계를 고정한다. Task 1의 권한·불변 계약·planned zero/null truth, Task 2의 exact TRAIN source/interpolation·frozen synthetic changes·Exp465 C0 authority projection, Task 3의 fixed P9 phase-registration margin·LOO/full-fit calibration·exact rank·strict confirmation 경계를 그대로 보존한다. Task 4는 이 입력에서 고정 C0/P9/C9 raw evidence를 소유·동결하고, seed-major 10개 record와 seed별 69 unique OOF를 독립 replay한 scalar qualification 및 순수 10/10 decision까지만 추가한다. 실제 dataset, TEST/labels, private/official 실행, publication, routing, champion/pending/promotion은 포함하지 않는다.</p>'
+        '<title>Exp466 Task 1-5 코드맵</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
+        '<h1>Exp466 Task 1-5 코드맵</h1><p>이 map은 Exp465 triplet을 구조 기준으로 삼아 Exp466의 caller, effect, test 관계를 고정한다. Task 1의 권한·불변 계약·planned zero/null truth, Task 2의 exact TRAIN source/interpolation·frozen synthetic changes·Exp465 C0 authority projection, Task 3의 fixed P9 phase-registration margin·LOO/full-fit calibration·exact rank·strict confirmation 경계를 그대로 보존한다. Task 4는 이 입력에서 고정 C0/P9/C9 raw evidence를 소유·동결하고, seed-major 10개 record와 seed별 69 unique OOF를 독립 replay한 scalar qualification 및 순수 decision을 추가한다. Task 5는 명시적인 Task 4 기록·qualification·decision에서 새 root의 canonical 7개 leaves만 만들고, 저장된 train/index/margin evidence로 blocked-fold identity, P9/C9, AUC, qualification, decision과 쉬운 한국어 dashboard를 dataset/scorer-free로 독립 검증한다. 정상 confirmation 0..69는 유효한 실패 증거이며 모든 seed가 0일 때만 pass gate를 만족한다. 실제 dataset, TEST/labels, private/official 실행, CLI, routing, champion/pending/promotion은 포함하지 않는다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2>'
         f'<pre id="codemap-json-antigravity">{payload}</pre>'
         '</main></body></html>'
@@ -714,8 +828,12 @@ def validate_map_antigravity(
     lock: dict[str, Any],
     rendered: str,
 ) -> None:
-    if graph.get("source_parent_commit") != TASK4_SOURCE_COMMIT_ANTIGRAVITY:
-        raise ValueError("graph source must be the accepted Task 4 commit")
+    if graph.get("schema") != GRAPH_SCHEMA_ANTIGRAVITY:
+        raise ValueError("graph schema differs from Task 5 authority")
+    if lock.get("schema") != LOCK_SCHEMA_ANTIGRAVITY:
+        raise ValueError("lock schema differs from Task 5 authority")
+    if graph.get("source_parent_commit") != TASK5_SOURCE_COMMIT_ANTIGRAVITY:
+        raise ValueError("graph source must be the accepted Task 5 commit")
     if graph.get("unknown_relationships") != []:
         raise ValueError("unknown relationships must stay empty")
     if graph.get("baseline_triplet") != [
@@ -791,6 +909,34 @@ def validate_map_antigravity(
     }
     if not required_task4_edges.issubset(edge_keys):
         raise ValueError("Task 4 caller/effect/test edges are incomplete")
+    required_task5_nodes = {
+        "task5_artifacts",
+        "task5_replay",
+        "task5_dashboard_export",
+        "task5_artifacts_test",
+        "task5_replay_test",
+        "task5_dashboard_export_test",
+        "task5_report",
+    }
+    if not required_task5_nodes.issubset(ids):
+        raise ValueError("Task 5 nodes are incomplete")
+    required_task5_edges = {
+        ("approved_design", "governs", "task5_artifacts"),
+        ("task4_scoring", "governs", "task5_artifacts"),
+        ("task4_qualification", "governs", "task5_artifacts"),
+        ("task4_evaluation", "governs", "task5_artifacts"),
+        ("task5_dashboard_export", "governs", "task5_artifacts"),
+        ("task5_artifacts", "governs", "task5_replay"),
+        ("task5_artifacts_test", "tests", "task5_artifacts"),
+        ("task5_replay_test", "tests", "task5_replay"),
+        ("task5_dashboard_export_test", "tests", "task5_dashboard_export"),
+        ("task5_report", "verifies", "task5_artifacts"),
+        ("task5_report", "verifies", "task5_replay"),
+        ("task5_report", "verifies", "task5_dashboard_export"),
+        ("map_builder", "verifies", "task5_report"),
+    }
+    if not required_task5_edges.issubset(edge_keys):
+        raise ValueError("Task 5 caller/effect/test edges are incomplete")
     if set(graph.get("task1_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 1 caller/effect/test answers are incomplete")
     if set(graph.get("task2_answers", {})) != {"callers", "effects", "tests"}:
@@ -799,12 +945,14 @@ def validate_map_antigravity(
         raise ValueError("Task 3 caller/effect/test answers are incomplete")
     if set(graph.get("task4_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 4 caller/effect/test answers are incomplete")
-    if len(graph.get("nodes", ())) != 35:
-        raise ValueError("Task 1-4 node count differs")
-    if len(graph.get("edges", ())) != 55:
-        raise ValueError("Task 1-4 edge count differs")
-    if len(graph.get("flows", ())) != 13:
-        raise ValueError("Task 1-4 flow count differs")
+    if set(graph.get("task5_answers", {})) != {"callers", "effects", "tests"}:
+        raise ValueError("Task 5 caller/effect/test answers are incomplete")
+    if len(graph.get("nodes", ())) != 42:
+        raise ValueError("Task 1-5 node count differs")
+    if len(graph.get("edges", ())) != 68:
+        raise ValueError("Task 1-5 edge count differs")
+    if len(graph.get("flows", ())) != 17:
+        raise ValueError("Task 1-5 flow count differs")
     if lock.get("source_parent_commit") != graph.get("source_parent_commit"):
         raise ValueError("graph/lock source mismatch")
     if lock.get("represented_paths") != sorted(TRIPLET_ANTIGRAVITY):
@@ -829,6 +977,17 @@ def validate_map_antigravity(
     }
     if not required_task4_fingerprints.issubset(fingerprint_paths):
         raise ValueError("Task 4 fingerprints are incomplete")
+    required_task5_fingerprints = {
+        ARTIFACTS_ANTIGRAVITY,
+        REPLAY_ANTIGRAVITY,
+        DASHBOARD_EXPORT_ANTIGRAVITY,
+        ARTIFACTS_TEST_ANTIGRAVITY,
+        REPLAY_TEST_ANTIGRAVITY,
+        DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+        TASK5_REPORT_ANTIGRAVITY,
+    }
+    if not required_task5_fingerprints.issubset(fingerprint_paths):
+        raise ValueError("Task 5 fingerprints are incomplete")
     if lock.get("tracked_fingerprints") != _tracked_fingerprints_antigravity():
         raise ValueError("tracked fingerprint drift")
     parser = _StrictHtmlAntigravity()
@@ -855,6 +1014,7 @@ def validate_map_antigravity(
         TASK2_REPORT_ANTIGRAVITY,
         TASK3_REPORT_ANTIGRAVITY,
         TASK4_REPORT_ANTIGRAVITY,
+        TASK5_REPORT_ANTIGRAVITY,
     ):
         _validated_html_text_antigravity(ROOT_ANTIGRAVITY / relative)
     for relative in ("CHAMPION_LEDGER.json", "EXPERIMENT_CATALOG.json", "RESEARCH_STATE.json"):

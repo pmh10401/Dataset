@@ -8,10 +8,10 @@
 </head>
 <body><main>
 <h1>Exp466 실행 runbook</h1>
-<div class="box"><p>현재 상태는 <code>planned_implementation_not_started</code>다. Task 1 계약 검증만 허용되며 score-source, private campaign, 공식 명령은 아직 실행하지 않는다.</p></div>
+<div class="box"><p>현재 상태는 <code>planned_implementation_not_started</code>다. Task 1~5의 계약, TRAIN-only 입력, P9/C9, qualification, canonical 7개 결과 파일과 독립 replay 구현·검증은 끝났다. 다음 단계는 Task 6이며, private run과 공식 명령은 아직 실행하지 않았다.</p></div>
 <table>
 <tr><th>공식 root</th><td><code>/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823</code>는 별도 승인 전까지 생성하지 않는다.</td></tr>
-<tr><th>TRAIN 경계</th><td>향후 로더는 MD5 <code>808875aeac1c358a90c630fe369327c4</code>인 ECG200 TRAIN의 정상 69개만 허용한다.</td></tr>
+<tr><th>TRAIN 경계</th><td>로더는 MD5 <code>808875aeac1c358a90c630fe369327c4</code>인 ECG200 TRAIN의 정상 69개만 허용한다. Task 5 replay는 loader나 scorer를 호출하지 않고 저장된 7개 파일만 읽는다.</td></tr>
 <tr><th>TEST 경계</th><td><code>ECG200_TEST.ts</code>와 TEST 라벨을 열거나 조회하지 않는다.</td></tr>
 <tr><th>현재 횟수</th><td>official evaluate <code>0</code>, official inspect <code>0</code>, private run <code>0</code>, label query <code>0</code>.</td></tr>
 <tr><th>현재 결과</th><td>official result와 모든 result hash는 <code>null</code>.</td></tr>
@@ -23,12 +23,22 @@
 python3 scratch/build_codemap_exp466_antigravity.py --validate-only
 git diff --check</code></pre>
 <p>unittest 명령은 같은 상태에서 두 번 실행한다. 코드맵 <code>--validate-only</code>는 triplet과 fingerprint를 읽기 전용으로 검증해야 한다.</p>
+<h2>Task 5 결과 파일·독립 replay 확인</h2>
+<pre><code>python3 -m unittest \
+  experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity \
+  experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity
+python3 scratch/build_codemap_exp466_antigravity.py --validate-only
+git diff --check</code></pre>
+<p>검증된 기준은 집중 검사 <code>10/10</code> 두 번, 전체 Exp466 <code>39/39</code>, Exp465 하위 회귀 <code>7/7</code>다. 임시 publish→inspect는 새 임시 경로에서만 수행하고, 정확히 7개 파일, qualification·decision·artifact-map equality, loader/scorer 비호출을 확인한다. 이 절차는 합성 fixture 검증이며 실제 성능 실행이 아니다.</p>
+<h2>Task 6 전 상태</h2>
+<p>private run은 아직 <code>0회</code>다. Task 6 승인 전에는 공식 root를 만들거나 private run 1·2, official evaluate/inspect, 결과 hash 기록을 시작하지 않는다.</p>
 <h2>후속 실행 전 필수 gate</h2>
 <ol>
 <li>동일 입력·seed에서 CPU/MLX 결과가 finite이고 모든 사전등록 alpha에서 candidate index가 같아야 한다.</li>
 <li>수치 차이가 사전등록 허용 범위 안이고 transfer/synchronization을 포함한 해당 단계 전체 시간이 MLX에서 1.1배 이상 빨라야 한다.</li>
 <li>조건 하나라도 실패하면 CPU 구현과 가능한 범위의 최대 7개 dataset worker를 유지한다. MLX/MPS-heavy process는 한 번에 하나만 실행한다.</li>
 </ol>
-<div class="box stop"><p><strong>실행 금지:</strong> Tasks 2–6 구현, TEST/라벨 접근, private/official 평가, warp·threshold·alpha 탐색, 결과·hash 작성, routing/champion/pending/promotion 변경.</p></div>
+<div class="box stop"><p><strong>실행 금지:</strong> Task 6 승인 전 private/official 평가, TEST/라벨 접근, warp·threshold·alpha 탐색, 실제 성능 결과·hash 작성, routing/champion/pending/promotion 변경.</p></div>
 </main></body>
 </html>

@@ -53,9 +53,14 @@ body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;co
                      ("Exp466", ("C0", "P9", "C9"), "C9"))
     self.assertEqual((c.warp_factor, c.shared_length), (1.25, 67))
     self.assertEqual((c.per_type_auc_min, c.mean_auc_min), (0.85, 0.90))</code></pre></li>
-<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED contract test.</strong></label><p>Mutable/reordered mapping, non-finite margin, wrong 69-count, wrong SHA와 0이 아닌 official/label count를 각각 거부한다.</p><pre><code>valid = valid_qualification_antigravity()
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED contract test.</strong></label><p>정상 confirmation은 seed 순서를 지킨 불변 정수 mapping에서 <code>0..69</code>를 유효한 실패 증거로 허용한다. mutable/reordered mapping, 범위 밖 count, non-finite margin, wrong 69-count, wrong SHA와 0이 아닌 official/label count만 거부하며, 모든 seed가 0일 때만 pass gate를 만족한다.</p><pre><code>valid = valid_qualification_antigravity()
+failed = dataclasses.replace(
+    valid,
+    normal_confirmations=MappingProxyType({20260721: 1, 20261721: 0}),
+)
+self.assertEqual(failed.normal_confirmations[20260721], 1)
 with self.assertRaisesRegex(ValueError, "normal confirmation"):
-    dataclasses.replace(valid, normal_confirmations=MappingProxyType({20260721: 1, 20261721: 0}))</code></pre></li>
+    dataclasses.replace(valid, normal_confirmations=MappingProxyType({20260721: 70, 20261721: 0}))</code></pre></li>
 <li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest \
   experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_config_antigravity \
   experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity</code></pre><p>Expected: import 또는 정의 부재로 FAIL.</p></li>
@@ -144,21 +149,21 @@ python3 -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity
 git commit -m "feat: qualify Exp466 C9 phase scores"</code></pre></li>
 </ol>
 
-<h2><label><input type="checkbox" disabled> Task 5 — canonical 결과·replay·HTML snapshot</label></h2>
+<h2><label><input type="checkbox" checked disabled> Task 5 — canonical 결과·replay·HTML snapshot</label></h2>
 <p><strong>Files:</strong> Create artifacts/replay/dashboard_export modules and three tests. Update implementation report/runbook/dashboard/map.</p>
 <p><strong>Interfaces:</strong> <code>publish_result_antigravity(root, records, qualification, decision)</code> creates exactly seven leaves; <code>inspect_result_antigravity(root)</code> is scorer-free and dataset-free.</p>
 <p><strong>Publication input:</strong> <code>records</code>는 <code>FoldMethodScoresAntigravity</code>의 정확한 frozen seed-major mapping이다. Qualification은 scalar-only이고 hidden state는 금지되므로 publisher가 이 입력을 명시적으로 받아야 한다.</p>
 <ol>
-<li><label><input type="checkbox" disabled> <strong>Step 1 — RED seven-leaf test.</strong></label><pre><code>self.assertEqual(tuple(sorted(p.name for p in root.iterdir())), (
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED seven-leaf test.</strong></label><pre><code>self.assertEqual(tuple(sorted(p.name for p in root.iterdir())), (
  "artifact_sha256_antigravity.json", "context_antigravity.json",
  "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
  "failed_folds_antigravity.jsonl", "method_fold_metrics_antigravity.jsonl",
  "method_summary_antigravity.jsonl"))</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 2 — RED semantic mutation tests.</strong></label><p>margin, fit max, confirmation, P9 rank, C9 score, AUC, mean, C0 delta, decision, dashboard와 artifact map 중 하나를 바꾼 fixture를 inspect가 거부해야 한다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity</code></pre></li>
-<li><label><input type="checkbox" disabled> <strong>Step 4 — canonical publication 구현.</strong></label><p>UTF-8, sorted compact JSON, newline 하나, deterministic JSONL order, SHA-256 map self-exclusion을 고정하고 기존 root가 있으면 쓰지 않는다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 5 — source-free replay와 쉬운 HTML.</strong></label><p>저장된 train140/index/margin evidence만으로 P9/C9와 qualification을 재계산한다. HTML은 C9 period 개선 fold와 정상 오탐을 쉬운 한국어로 보여준다.</p></li>
-<li><label><input type="checkbox" disabled> <strong>Step 6 — GREEN 두 번·temporary publish→inspect·commit·review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED semantic mutation tests.</strong></label><p>margin, fit max, confirmation, P9 rank, C9 score, AUC, mean, C0 delta, decision, dashboard와 artifact map 중 하나를 바꾼 fixture를 inspect가 거부해야 한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED 확인.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity</code></pre></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — canonical publication 구현.</strong></label><p>UTF-8, sorted compact JSON, newline 하나, deterministic JSONL order, SHA-256 map self-exclusion을 고정하고 기존 root가 있으면 쓰지 않는다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — source-free replay와 쉬운 HTML.</strong></label><p>저장된 train140/index/margin evidence만으로 P9/C9와 qualification을 재계산한다. HTML은 C9 period 개선 fold와 정상 오탐을 쉬운 한국어로 보여준다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN 두 번·temporary publish→inspect·commit·review.</strong></label><pre><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity
 python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_artifacts_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_replay_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_dashboard_export_antigravity
 git commit -m "feat: publish and replay Exp466 qualification"</code></pre></li>
 </ol>
@@ -191,5 +196,5 @@ git diff --check</code></pre><p>결과에 맞춰 HTML checkbox, dashboard, ledge
 <h2>실행 선택</h2>
 <p><strong>1. Task별 서브에이전트:</strong> Task마다 fresh implementer를 배정하고 제가 diff·테스트·결과를 검증한다.</p>
 <p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task별 checkpoint를 거쳐 진행한다.</p>
-<div class="box"><strong>현재 상태:</strong> Task 2까지 TDD·C0 byte parity·TEST 비접근·Luna 독립 검토·코드맵 동기화를 통과했다. Task 3의 P9 고정 위상 정렬 evidence와 CPU/MLX 평가를 시작한다. 성능 실행은 아직 시작하지 않았다.</div>
+<div class="box"><strong>현재 상태:</strong> Task 1~5의 TDD, C0 byte parity, P9·C9 경계, canonical 7개 결과 파일, 독립 replay, 쉬운 HTML snapshot과 fresh Sol 검토를 마쳤다. 다음 단계는 Task 6의 닫힌 CLI와 승인된 private 2회 실행이며, 실제 성능·private·official 실행은 아직 0회다.</div>
 </main></body></html>
