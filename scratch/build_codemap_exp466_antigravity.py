@@ -178,7 +178,7 @@ LAUNCHER_ANTIGRAVITY = (
     "scratch/run_exp466_ecg200_phase_registration_margin_antigravity.py"
 )
 TASK6_SOURCE_BASE_COMMIT_ANTIGRAVITY = (
-    "285b33f6307293c65087d4625284dd397d932a9f"
+    "8a0de5f37cf3b2b39c08fecf48ce4067f6e46d99"
 )
 TRACKED_PATHS_ANTIGRAVITY = (
     "CHAMPION_LEDGER.json",
@@ -788,7 +788,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
         _edge_antigravity("task5_replay", "governs", "task6_cli", CLI_ANTIGRAVITY, "inspect_result_antigravity"),
         _edge_antigravity("task6_launcher", "governs", "task6_cli", LAUNCHER_ANTIGRAVITY, "_load_main_antigravity"),
         _edge_antigravity("task6_cli_test", "tests", "task6_cli", CLI_TEST_ANTIGRAVITY, "test_exact_surface_accepts_only_reviewed_commands_antigravity"),
-        _edge_antigravity("task6_cli_test", "tests", "task6_launcher", CLI_TEST_ANTIGRAVITY, "test_launcher_is_cwd_independent_and_enforces_run_order_antigravity"),
+        _edge_antigravity("task6_cli_test", "tests", "task6_launcher", CLI_TEST_ANTIGRAVITY, "test_launcher_is_cwd_independent_and_rejects_arbitrary_capability_antigravity"),
         _edge_antigravity("task6_governance_test", "tests", "task6_cli", GOVERNANCE_TEST_ANTIGRAVITY, "test_evaluate_pipeline_is_seed_major_and_calls_each_stage_once_antigravity"),
         _edge_antigravity("task6_governance_test", "tests", "task6_launcher", GOVERNANCE_TEST_ANTIGRAVITY, "test_launcher_rejects_skipped_repeated_and_commit_drift_phases_antigravity"),
     ]

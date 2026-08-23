@@ -183,8 +183,8 @@ class CliAntigravityTest(unittest.TestCase):
             with patch.dict(sys.modules, {private.__name__: private}):
                 self.assertIs(cli._private_test_root_antigravity(), allowed)
 
-    def test_launcher_is_cwd_independent_and_enforces_run_order_antigravity(self) -> None:
-        """Break caught: launcher accepts arbitrary roots or run2 before run1."""
+    def test_launcher_is_cwd_independent_and_rejects_arbitrary_capability_antigravity(self) -> None:
+        """Break caught: launcher depends on CWD or accepts an arbitrary root."""
         with tempfile.TemporaryDirectory(prefix="exp466_launcher_antigravity_") as temporary:
             missing = subprocess.run(
                 [sys.executable, str(_LAUNCHER_ANTIGRAVITY), "inspect"],
@@ -207,19 +207,6 @@ class CliAntigravityTest(unittest.TestCase):
                 check=False,
             )
             self.assertIn("private capability is not preregistered", arbitrary.stderr)
-
-            environment["EXP466_TASK6_PRIVATE_CAPABILITY_ANTIGRAVITY"] = "run2"
-            out_of_order = subprocess.run(
-                [sys.executable, str(_LAUNCHER_ANTIGRAVITY), "inspect"],
-                cwd=temporary,
-                env=environment,
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-            self.assertIn("run1 inspect must complete before run2", out_of_order.stderr)
-        self.assertFalse(_RUN1_ROOT_ANTIGRAVITY.exists())
-        self.assertFalse(_RUN2_ROOT_ANTIGRAVITY.exists())
 
     def test_slots_decision_projects_to_canonical_label_free_payload_antigravity(self) -> None:
         """Break caught: slots decision cannot be serialized after publication."""
