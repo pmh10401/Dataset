@@ -306,7 +306,7 @@ def build_graph_antigravity(source_parent: str) -> dict[str, Any]:
             "Task2 source RED/GREEN + interpolation RED/GREEN -> real TRAIN smoke and document truth",
             "Task3 entrypoint -> imported Exp464 scorer once -> C0/C6/C8 exact projection",
             "Task3 input evidence + raw scores -> 69-OOF/C0/C6/C8 semantic qualification -> C8-only decision -> seven canonical leaves -> semantic replay/dashboard snapshot",
-            "Task5 closed CLI -> fixed TRAIN and 2x5 fold assembly -> Task3/Task4 publication -> scorer-free persisted-leaf inspection; real private reproduction remains pending",
+            "Task5 closed CLI -> fixed TRAIN and 2x5 fold assembly -> Task3/Task4 publication -> scorer-free persisted-leaf inspection -> byte-identical private2 C8 0/10 failure -> Task6 and routing research blocked",
             "config/contracts/scoring tests + governance regression -> documents, ledgers, dashboard, plan truth",
             "map_builder --validate-only -> read-only triplet/evidence/fingerprint verification",
         ],
@@ -326,7 +326,7 @@ def _html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Exp465 Task 5 코드맵</title><style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}pre{padding:1rem}</style></head><body><main>'
-        '<h1>Exp465 Task 5 코드맵</h1><p>이 map은 frozen ECG200 C8 contract, TRAIN-only loader, 96→140 interpolation, Exp464-bound C0/C6/C8 projection, Task 4 qualification/publication, 그리고 Task 5의 닫힌 evaluate/inspect CLI를 설명한다. launcher는 fixed runtime과 run1/run2 private capability만 연결하고 임의 root 인자를 허용하지 않는다. inspect는 저장된 leaves를 scorer 없이 재검산한다. CLI 검토는 완료됐지만 실제 private 재현과 공식 실행 결과는 아직 없다.</p>'
+        '<h1>Exp465 Task 5 코드맵</h1><p>이 map은 frozen ECG200 C8 contract, TRAIN-only loader, 96→140 interpolation, Exp464-bound C0/C6/C8 projection, Task 4 qualification/publication, 그리고 Task 5의 닫힌 evaluate/inspect CLI를 설명한다. launcher는 fixed runtime과 run1/run2 private capability만 연결하고 임의 root 인자를 허용하지 않는다. inspect는 저장된 leaves를 scorer 없이 재검산한다. 두 private 실행은 byte-for-byte 일치했지만 C8이 0/10으로 실패했으므로 Task 6과 라우팅 연구는 차단됐다. 공식 실행 결과는 없다.</p>'
         f'<h2>노드</h2><ul>{nodes}</ul><h2>Machine-readable graph</h2><pre id="codemap-json-antigravity" type="application/json">{payload}</pre>'
         "</main></body></html>"
     )
