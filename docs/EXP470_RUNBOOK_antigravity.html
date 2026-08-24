@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><title>Exp470 실행 안내</title></head><body><main>
 <h1>Exp470 실행 안내</h1>
-<p><strong>현재 상태:</strong> 구현과 사전검증만 끝났다. private 실행 0회, official 실행 0회, TEST/FN 접근 0회다.</p>
+<p><strong>현재 상태:</strong> 구현·사전검증과 private 실행 2회를 마쳤다. 두 결과는 byte 단위로 같았지만 성능 기준은 FAIL이다. official 실행 0회, TEST/FN 접근 0회다.</p>
 <h2>완료 상태</h2>
 <label><input type="checkbox" checked disabled> Task 1: 고정 규칙</label>
 <label><input type="checkbox" checked disabled> Task 2: Numba 점수</label>
@@ -9,14 +9,14 @@
 <label><input type="checkbox" checked disabled> Task 4: C11과 자격 판단</label>
 <label><input type="checkbox" checked disabled> Task 5: 7개 결과 파일과 재검사</label>
 <label><input type="checkbox" checked disabled> Task 6: 실행 전 경계</label>
-<label><input type="checkbox" disabled> private run 1</label>
-<label><input type="checkbox" disabled> private run 2</label>
+<label><input type="checkbox" checked disabled> private run 1</label>
+<label><input type="checkbox" checked disabled> private run 2</label>
 <label><input type="checkbox" disabled> official 실행</label>
 <label><input type="checkbox" disabled> TEST/FN 확인</label>
 <label><input type="checkbox" disabled> routing 변경</label>
-<h2>다음 승인</h2>
-<p>다음 단계는 사용자가 정확히 <code>Task 6 private run 1·2 순차 실행 승인</code>이라고 승인하고, token <code>TASK_6_PRIVATE_RUN_1_2_APPROVED</code>를 사용할 때만 시작한다.</p>
-<h2>실행 순서</h2>
+<h2>실행 결과</h2>
+<p>두 실행의 7개 파일이 모두 같아 재현성은 확인됐다. 그러나 두 seed 모두 period fixed가 0이므로 Exp470은 여기서 종료한다. 이 runbook으로 official 실행, TEST/FN 확인 또는 routing 변경을 시작하지 않는다.</p>
+<h2>완료한 실행 순서</h2>
 <ol><li>현재 commit이 검토한 40자리 소문자 hash와 같고 작업 폴더가 깨끗한지 확인한다.</li><li>첫 private 경로에서 <code>evaluate</code>, 이어서 <code>inspect</code>를 한 번씩 실행한다.</li><li>commit과 작업 폴더를 다시 확인한다.</li><li>둘째 private 경로에서 같은 순서를 한 번 실행한다.</li><li>두 경로의 아래 7개 파일을 원시 byte 단위로 비교한다.</li></ol>
 <h2>기대하는 7개 파일</h2>
 <ul><li><code>artifact_sha256_antigravity.json</code></li><li><code>context_antigravity.json</code></li><li><code>dashboard_snapshot_antigravity.json</code></li><li><code>decision_antigravity.json</code></li><li><code>failed_folds_antigravity.jsonl</code></li><li><code>method_fold_metrics_antigravity.jsonl</code></li><li><code>method_summary_antigravity.jsonl</code></li></ul>
