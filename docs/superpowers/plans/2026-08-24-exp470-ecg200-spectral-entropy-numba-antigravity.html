@@ -116,7 +116,7 @@ git commit -m "feat: freeze Exp470 authority and contracts"</code></pre>
   <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/spectral_entropy_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/python_reference_antigravity.py</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_spectral_entropy_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_python_reference_antigravity.py</code>.</p>
   <p><strong>Produces:</strong> <code>EntropyScoresAntigravity</code>; <code>score_spectral_entropy_numba_antigravity(fit_rows, query_rows)</code>; 검사용 <code>score_entropy_python_antigravity(fit_rows, query_rows)</code>. Python 기준 함수는 production scorer에서 호출하지 않는다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>2.1</strong> constant·single-tone·고정 ramp와 strict 경계 RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.1</strong> constant·single-tone·고정 ramp와 strict 경계 RED 테스트를 작성한다.</label>
     <pre><code>def fixed_rows_antigravity():
     x = np.arange(140, dtype=np.float64)
     return np.stack((
@@ -143,11 +143,11 @@ def test_strict_confirmation_does_not_accept_tie_antigravity(self):
     query = np.array([0.2, 0.20000000000000004], dtype=np.float64)
     actual = strict_confirmation_numba_antigravity(query, 0.2)
     np.testing.assert_array_equal(actual, [False, True])</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_python_reference_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_spectral_entropy_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.3</strong> Python 기준은 <code>math</code>, <code>statistics</code>, list만으로 구현하고 전체 pipeline API로 노출하지 않는다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.3</strong> Python 기준은 <code>math</code>, <code>statistics</code>, list만으로 구현하고 전체 pipeline API로 노출하지 않는다.</label>
     <pre><code>@dataclass(frozen=True, slots=True)
 class PythonReferenceScoresAntigravity:
     fit_raw_entropy: tuple[float, ...]
@@ -186,7 +186,7 @@ def score_entropy_python_antigravity(fit_rows, query_rows) -&gt; PythonReference
     ranks = tuple((1 + sum(value &lt;= raw for value in fit_raw)) / (len(fit_raw) + 1) for raw in query_raw)
     confirmed = tuple(raw &gt; 0.0 and raw &gt; maximum for raw in query_raw)
     return PythonReferenceScoresAntigravity(tuple(fit_raw), tuple(query_raw), ranks, confirmed, maximum)</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.4</strong> Numba direct DFT와 LOO/rank/confirmation을 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.4</strong> Numba direct DFT와 LOO/rank/confirmation을 구현한다.</label>
     <pre><code>@dataclass(frozen=True, slots=True)
 class EntropyScoresAntigravity:
     fit_raw_entropy: np.ndarray
@@ -275,7 +275,7 @@ def score_spectral_entropy_numba_antigravity(fit_rows, query_rows) -&gt; Entropy
     arrays = _score_entropy_arrays_numba_antigravity(fit, query)
     return EntropyScoresAntigravity(*arrays, backend="numba")</code></pre>
     <p class="muted">배열 유효성 확인과 immutable dataclass 포장만 Python에서 수행한다. DFT부터 confirmation까지의 수치 계산은 모두 Numba compiled 함수 안에서 수행한다. <code>njit</code> 함수 안의 <code>np.median</code>은 Numba가 native code로 컴파일하며 별도 NumPy backend 호출이 아니다.</p>
-    <label><input type="checkbox" disabled> <strong>2.5</strong> 두 테스트 모듈을 두 번 통과시키고 commit한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.5</strong> 두 테스트 모듈을 두 번 통과시키고 commit한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_python_reference_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_spectral_entropy_antigravity
@@ -635,7 +635,7 @@ git status --short</code></pre>
   </div>
   <section aria-label="계획 진행 체크박스">
     <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
-    <label><input type="checkbox" disabled> Task 2 Numba spectral entropy 단일 scorer</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba spectral entropy 단일 scorer</label>
     <label><input type="checkbox" disabled> Task 3 Numba 근거·MLX smoke</label>
     <label><input type="checkbox" disabled> Task 4 C0/E11/C11·pair repair qualification</label>
     <label><input type="checkbox" disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
