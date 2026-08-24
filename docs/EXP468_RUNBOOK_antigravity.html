@@ -8,10 +8,10 @@
 </head>
 <body><main>
 <h1>Exp468 실행 runbook</h1>
-<div class="box"><p>현재 상태는 <code>implementation_task_6_preflight_step_3_complete_no_private_run</code>다. Task 1~5의 고정 loader/scorer/qualification 계약과 Task 5의 seven-leaf publication, retained-input replay, portable dashboard, Task 6 exact CLI/pipeline/순차 launcher가 synthetic/temp 경계에서 검증됐다. Task 6 focused <code>9/9</code> 두 번, 전체 Exp468 <code>75/75</code>, Exp466 회귀 <code>56/56</code>가 통과했고 OpenRouter Ox Alpha Ultra와 로컬 Sol 독립 검토도 모두 <code>CLEAN</code>이다. private 실행은 아직 시작하지 않았다.</p></div>
+<div class="box"><p>현재 상태는 <code>task_6_complete_qualification_failed_reproducible</code>다. private 실행 1·2를 고정 순서로 마쳤고 두 root의 파일 7개가 모두 같다. 성능은 C10 <code>0/10</code> FAIL로 보존한다.</p></div>
 <table>
-<tr><th>현재 횟수</th><td>Task 5 fixture publication/replay만 검증했고, private run <code>0</code>, official run <code>0</code>, label query <code>0</code>이다. private 실행 1·2는 모두 <code>아직 실행하지 않음</code>이다.</td></tr>
-<tr><th>현재 결과</th><td>Task 5 publication root는 테스트 임시 경로에서만 만들었다. official/private result와 공식 result hash는 <code>null</code>이며 routing·promotion은 실행하지 않았다.</td></tr>
+<tr><th>현재 횟수</th><td>private run <code>2</code>, official run <code>0</code>, label query <code>0</code>이다.</td></tr>
+<tr><th>현재 결과</th><td>두 private root는 7/7 byte-identical이다. C10은 <code>0/10</code> FAIL이며 routing·promotion은 실행하지 않았다.</td></tr>
 <tr><th>TRAIN 경계</th><td>Task 1은 TRAIN을 열지 않는다. Task 2가 승인된 MD5와 정상 69개 경계를 exact import로 연결하기 전에는 데이터 명령을 실행하지 않는다.</td></tr>
 <tr><th>TEST 경계</th><td>ECG200 TEST 파일, TEST 라벨, 실제 FN·FP·F1을 열거나 조회하지 않는다.</td></tr>
 </table>
@@ -35,6 +35,7 @@ git diff --check</code></pre>
 <p>사용자 checkpoint 승인 뒤에는 아래 helper 한 경로만 사용한다. 네 개의 <code>evaluate/inspect</code> 명령을 따로 입력하면 sequence-state 검사를 우회하므로 공식 실행으로 사용하지 않는다.</p>
 <pre><code>python3 -c 'import subprocess; from scratch.run_exp468_ecg200_local_stft_spectral_redistribution_antigravity import run_private_sequence_antigravity; run_private_sequence_antigravity(subprocess.check_output(("git","rev-parse","HEAD"), text=True).strip())'</code></pre>
 <p>helper는 고정 interpreter와 저장소 경로를 사용해 run1 evaluate→inspect→run2 evaluate→inspect를 순차 실행한다. 각 단계 직전에 같은 clean reviewed commit을 확인하고 성공한 단계만 외부 canonical state에 기록한다.</p>
-<div class="box stop"><p><strong>금지:</strong> Task 4 수학·임계값 변경, 기존 root 덮어쓰기, backend 선결정, ECG TEST/FN 접근, private/official 실행, TEST/FN 검증, 설정 변경, routing·champion·pending·promotion 변경.</p></div>
+<div class="box stop"><p><strong>완료 뒤 금지:</strong> Task 4 수학·임계값 변경, 기존 root 덮어쓰기, Exp468 재실행·튜닝, ECG TEST/FN 접근, official 실행, routing·champion·pending·promotion 변경.</p></div>
+<h2>다음 새 실험</h2><p>현재 raw-JS 확인은 8개 fold에서 전혀 켜지지 않았고, 켜진 2개 fold에서는 정상도 함께 잘못 잡았다. 다음은 period 변화에서만 켜지고 정상에서는 꺼지는 새 확인 신호를 TRAIN-only로 사전등록한다.</p>
 </main></body>
 </html>

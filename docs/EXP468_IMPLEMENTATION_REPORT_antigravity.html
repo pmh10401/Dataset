@@ -8,14 +8,22 @@
 </head>
 <body><main>
 <h1>Exp468 구현 보고서</h1>
-<div class="box ok"><h2>기술 요약</h2><p>현재 구현 상태는 <code>implementation_task_6_preflight_step_3_complete_no_private_run</code>이다. Task 3의 승인 SHA-256 <code>6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9</code>와 <code>gate_passed=false</code>, <code>fallback_authorized=true</code>, <code>selected_backend=numpy</code>를 보존한 채 Task 4 C0/S10/C10 exact replay 계약과 Task 5 publication을 Task 6 exact CLI/pipeline에 연결했다. 정확히 일곱 leaf, self-excluding six-leaf SHA-256 map, raw evidence/context, provenance가 직접 포함된 30 metric rows, 3 method summary rows, tamper rejection, deterministic Korean HTML dashboard를 유지한다. Task 6 focused <code>9/9</code>를 같은 수정 상태에서 두 번, 전체 Exp468 <code>75/75</code>, Exp466 lower regression <code>56/56</code>를 통과했고 compileall·code-map·portable HTML·JSON·diff 검증도 통과했다. OpenRouter Ox Alpha Ultra와 로컬 Sol의 독립 검토는 모두 <code>CLEAN</code>이다. 공식·private qualification은 <code>0/0</code>회이고 private 실행 1·2는 <code>아직 실행하지 않음</code>이며 snapshot 비교 상태는 <code>not_yet_compared</code>다.</p></div>
+<div class="box stop"><h2>기술 요약</h2><p>현재 상태는 <code>task_6_complete_qualification_failed_reproducible</code>이다. 승인된 helper로 reviewed commit <code>49717a2c97be41db9762afcfe3a1c5c153f8f027</code>에서 private 실행 1·2를 순차 수행했다. 두 root의 파일 7개는 이름, SHA-256, 실제 바이트가 모두 같아 재현성은 통과했다. 그러나 C10의 고정 자격 기준은 <code>0/10</code>으로 실패했다. official 실행은 0회이고 TEST/FN, routing, champion, pending, promotion은 건드리지 않았다.</p></div>
+
+<h2>Task 6 실제 TRAIN-only 결과</h2>
+<p>쉽게 말하면 계산은 매번 똑같았지만 방법의 성능이 부족했다. 10개 fold 모두 period AUC 합격선 <code>0.85</code>보다 낮았다. 8개 fold에서는 C10이 C0와 같아 개선이 없었고 period 확인도 0개였다. 두 seed의 fold 1에서만 각각 <code>+0.005102</code>, <code>+0.007653</code> 개선됐지만, 같은 seed에서 정상 데이터도 1번씩 잘못 확인했다. 최고 C10 period AUC는 <code>0.826531</code>이다. level shift, gradual drift, amplitude scaling의 최소 차이는 모두 <code>0</code>이라 보호 성능은 나빠지지 않았다.</p>
+<table><thead><tr><th>seed</th><th>fold</th><th>C0 period AUC</th><th>C10 period AUC</th><th>차이</th><th>period 확인</th><th>판정</th></tr></thead><tbody>
+<tr><td>20260721</td><td>0</td><td>0.688776</td><td>0.688776</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20260721</td><td>1</td><td>0.778061</td><td>0.783163</td><td>+0.005102</td><td>1</td><td>FAIL</td></tr><tr><td>20260721</td><td>2</td><td>0.823980</td><td>0.823980</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20260721</td><td>3</td><td>0.813776</td><td>0.813776</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20260721</td><td>4</td><td>0.801775</td><td>0.801775</td><td>0</td><td>0</td><td>FAIL</td></tr>
+<tr><td>20261721</td><td>0</td><td>0.686224</td><td>0.686224</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20261721</td><td>1</td><td>0.788265</td><td>0.795918</td><td>+0.007653</td><td>1</td><td>FAIL</td></tr><tr><td>20261721</td><td>2</td><td>0.826531</td><td>0.826531</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20261721</td><td>3</td><td>0.826531</td><td>0.826531</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20261721</td><td>4</td><td>0.784024</td><td>0.784024</td><td>0</td><td>0</td><td>FAIL</td></tr>
+</tbody></table>
+<p>두 실행의 artifact map SHA-256은 모두 <code>ba919b1df145376f1db027ae71bf38d523c530b1c2b129cddca0cab8375c15aa</code>다. <code>diff -qr</code>도 차이 없이 종료했다. 실패 뒤 재실행이나 임계값 조정은 하지 않았다.</p>
 
 <h2>Task 5 publication·replay·dashboard 완료 범위</h2>
 <ul>
 <li><code>artifacts_antigravity.py</code>는 publish 전에 <code>qualify_antigravity(records)</code>와 <code>evaluate_qualification_antigravity(...)</code>를 다시 호출해 전달된 qualification/decision과 exact equality를 확인한다. 새 root는 기존 경로를 덮지 않으며 <code>artifact_sha256_antigravity.json</code>은 자기 자신을 제외한 정확한 여섯 leaf digest만 기록한다.</li>
 <li>context는 seed-major 열 개 record의 동일한 <code>69×140</code> little-endian float64 C-order input, fit/query exact indices, C0/S10/C10 scores, per-scope raw JS/rank/strict confirmation, fit LOO raw JS, fit normal max, AUC와 failure reasons를 보존한다. backend는 <code>numpy</code>이고 승인 문서 SHA <code>6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9</code>, pre-approval benchmark SHA <code>938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b</code>를 고정한다.</li>
 <li><code>replay_antigravity.py</code>는 정확한 seven-leaf/canonical bytes/hash를 먼저 확인하고 ECG200 loader를 호출하지 않는다. 저장 raw/fit max/rank/confirmation/C10/AUC/delta/normal confirmation/decision/context/summary/dashboard와 metric provenance를 바꾼 뒤 outer hash를 다시 맞춰도 Task 4 raw replay와 결정적 projection 비교에서 거부한다.</li>
-<li><code>dashboard_export_antigravity.py</code>는 10개 fold의 period C0/C10 AUC와 차이, C0보다 개선한 fold, level/gradual/amplitude 최소 delta, seed별 정상 확인 오류, qualification PASS/FAIL 및 private 재현성 대기를 외부 asset 없이 렌더링한다. Task 6 preflight checkbox는 체크하고, private 실행 checkbox는 미체크로 둔다. snapshot에는 기존 private 판정과 별도로 <code>comparison_status=not_yet_compared</code>를 둔다.</li>
+<li><code>dashboard_export_antigravity.py</code>가 root 안에 쓰는 snapshot은 실행 경로·run 번호를 넣지 않는 중립 결과라 <code>comparison_status=not_yet_compared</code>를 유지한다. 사용자용 최종 대시보드는 두 root를 외부에서 비교한 뒤 private 실행과 byte equality 체크박스를 모두 체크한다.</li>
 </ul>
 <h2>Task 1 완료 범위</h2>
 <ul>
@@ -90,12 +98,12 @@
 <ul>
 <li>Task 3과 Step 5는 승인 fallback 예외의 감사 연결을 완료했기 때문에 체크한다. 가속 gate 자체는 계속 실패 상태다.</li>
 <li>선택 backend는 <code>numpy</code>이며 이는 gate 합격이 아니라 사용자가 명시적으로 승인한 CPU fallback이다.</li>
-<li>Task 4의 10-fold fixture는 테스트 전용 합성 입력이라 실제 C10 성능을 뜻하지 않는다. 실제 과학 결과는 아직 없고 result/hash는 계속 <code>null</code>이다.</li>
-<li>다음 단계는 threshold나 fold를 바꾸는 것이 아니라 사용자 checkpoint 뒤 Task 6의 두 private reproducibility 실행이다.</li>
+<li>Task 4의 10-fold fixture와 달리 위 Task 6 표는 실제 ECG200 TRAIN-only qualification 결과다.</li>
+<li>Exp468 안에서는 threshold, fold, confirmation을 바꾸거나 다시 실행하지 않는다. 다음 새 실험은 period 변화에서만 켜지고 정상 데이터에서는 꺼지는 확인 신호에 집중한다.</li>
 <li>열린 질문은 cold-start gate를 유지한 별도 사전등록 실험에서 AOT 또는 이미 컴파일된 dense transform이 정당화될 수 있는지다. Exp468의 고정 기준은 바꾸지 않는다.</li>
 </ul>
 <h2>Self-review와 commit</h2>
 <p>Task 4 brief의 파일 소유권, immutable evidence, exact blocked-fold·replay·gate·evaluation 경계를 코드와 테스트에 대조했다. Task 5 시작점이자 Task 4 완료 커밋의 기준 SHA는 <code>d027cced7893a256a51978ce67dcd9590bfcbd35</code>이고, 이 보고서를 포함하는 enclosing commit은 self-referential SHA를 파일 안에 고정할 수 없으므로 <code>git rev-parse HEAD</code>로 식별한다. 구체적인 우려는 scorer import가 checked benchmark JSON과 승인 HTML의 존재·bytes에 의존한다는 점이다. 이는 승인 drift를 즉시 차단하지만 Task 5 packaging도 두 근거 파일을 보존해야 한다.</p>
-<div class="box ok"><p><strong>실행 truth:</strong> <code>implementation_task_6_preflight_step_3_complete_no_private_run</code>. <code>gate_passed=false</code>, <code>fallback_authorized=true</code>, <code>selected_backend=numpy</code>다. Task 6 검증은 bounded TRAIN-only fixture와 임시 root에서만 수행했고 private/official qualification 실행은 <code>0/0</code>회, label query는 <code>0</code>회다. private 실행 1·2는 <code>아직 실행하지 않음</code>, 비교 상태는 <code>not_yet_compared</code>이며 official/private result와 공식 결과 hash는 <code>null</code>이다. 다음 단계는 사용자 checkpoint 뒤 Task 6의 두 private 실행이다.</p></div>
+<div class="box stop"><p><strong>실행 truth:</strong> <code>task_6_complete_qualification_failed_reproducible</code>. private 실행 <code>2</code>회, official 실행 <code>0</code>회, 비교 파일 <code>7/7</code> byte-identical, C10 통과 <code>0/10</code>, label query <code>0</code>회다. TEST/FN과 routing은 열지 않았다.</p></div>
 </main></body>
 </html>

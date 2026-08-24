@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the bounded Exp468 Task 5 publication code-map triplet."""
+"""Build and validate the bounded Exp468 Task 6 result code-map triplet."""
 
 from __future__ import annotations
 
@@ -213,10 +213,10 @@ TRACKED_PATHS_ANTIGRAVITY = (
     DASHBOARD_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp468_task6_preflight_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp468_task6_preflight_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp468_task6_result_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp468_task6_result_codemap_lock_v1"
 SOURCE_PARENT_COMMIT_ANTIGRAVITY = "e583672d1924fb580c96ccdf246bfee4fadd651d"
-GENERATED_AT_ANTIGRAVITY = "2026-08-24T12:00:00+09:00"
+GENERATED_AT_ANTIGRAVITY = "2026-08-24T15:00:00+09:00"
 PRE_APPROVAL_BENCHMARK_SHA256_ANTIGRAVITY = (
     "938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b"
 )
@@ -363,8 +363,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             PLAN_ANTIGRAVITY,
-            "Caller: Task-by-Task controller and later implementers. Effect: records Task 1-5 completion, the unchanged failed 1.1x gate, approved NumPy fallback, exact scoring/replay/publication/gate definitions, Task 6 preflight completion, zero/null execution truth, and private execution as the remaining approval boundary.",
-            "implementation_task_6_preflight_step_3_complete_no_private_run",
+            "Caller: Task-by-Task controller and later implementers. Effect: records Task 1-6 completion, the unchanged failed 1.1x gate, approved NumPy fallback, exact scoring/replay/publication/gate definitions, two byte-identical private runs, and the final 0/10 FAIL result.",
+            "task_6_complete_qualification_failed_reproducible",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
@@ -671,8 +671,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "task6_report",
             TASK6_REPORT_ANTIGRAVITY,
-            "Caller: controller and final reviewer. Effect: records Task 6 RED/GREEN evidence, focused/full verification, direct-stage versus Task 5 replay counts, neutral comparison status, checked preflight items, zero private/official runs, and remaining approval boundary.",
-            "Task 6 — CLI·pipeline 사전검증 보고서",
+            "Caller: controller and final reviewer. Effect: records Task 6 RED/GREEN evidence, two sequential private runs, seven-file byte equality, final 0/10 qualification failure, and no TEST/FN/routing boundary.",
+            "Task 6 — private 실행 최종 보고서",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
@@ -713,42 +713,42 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "preregistration",
             PREREGISTRATION_ANTIGRAVITY,
-            "Caller: governance and scientific reviewers. Effect: preserves the historical Task 1 freeze while recording Task 5's frozen seven-leaf publication/replay contract, backend-neutral science, and zero score/private/official/label activity plus null results and hashes.",
-            "implementation_task_6_preflight_step_3_complete_no_private_run",
+            "Caller: governance and scientific reviewers. Effect: preserves the frozen science while recording two byte-identical private roots, final 0/10 FAIL, official run 0, and no label/TEST/FN/routing activity.",
+            "task_6_complete_qualification_failed_reproducible",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "runbook",
             RUNBOOK_ANTIGRAVITY,
-            "Caller: Task 5 final verifier and Task 6 operator. Effect: provides focused/full/lower, code-map, portable-HTML, JSON, and diff verification for the completed publication boundary, states that private/official execution is not run, and limits the next step to the Task 6 checkpoint.",
-            "Task 5",
+            "Caller: Task 6 final verifier and next-experiment operator. Effect: records two completed private runs, 7/7 byte equality, 0/10 FAIL, and the prohibition on Exp468 rerun or tuning.",
+            "task_6_complete_qualification_failed_reproducible",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "implementation_report",
             IMPLEMENTATION_REPORT_ANTIGRAVITY,
-            "Caller: Task 1-5 closeout and later audit. Effect: records the frozen scientific/parity evidence, immutable NumPy decision, exact fold/replay/AUC/gate/publication implementation, focused/full/lower verification, Task 5 completion, Task 6 checkpoint, and zero/null official pre-run truth.",
-            "Task 5",
+            "Caller: Task 1-6 closeout and later audit. Effect: records frozen science, exact ten-fold results, two byte-identical private roots, 0/10 FAIL, and official/TEST/FN/routing inactivity.",
+            "Task 6 실제 TRAIN-only 결과",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "dashboard_artifact",
             DASHBOARD_ARTIFACT_ANTIGRAVITY,
-            "Caller: portable dashboard generator. Effect: stores source-backed Task 5 publication/replay/dashboard completion truth, unchanged failed acceleration gate, approved NumPy fallback, exact verification counts, PASS/FAIL qualification and private-awaiting/blocked status, zero official/private runs, null results, and checklist state.",
+            "Caller: portable dashboard generator. Effect: stores source-backed Task 6 ten-fold values, 0/10 FAIL, 7/7 byte equality, two private runs, official run 0, and checked completion state.",
             "implementation_summary",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "dashboard",
             DASHBOARD_ANTIGRAVITY,
-            "Caller: user-facing progress review. Effect: renders Task 5 scoring/replay/publication/gate completion, the approved NumPy fallback and still-failed acceleration gate, exact verification counts, checked Task 5, the Task 6 checkpoint, and zero/null/no-TEST truth.",
-            "Task 5",
+            "Caller: user-facing result review. Effect: renders the Task 6 0/10 FAIL, all ten fold values, two small improvements, normal confirmation errors, 7/7 byte equality, and no TEST/FN/routing truth.",
+            "Task 6 결과",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "map_builder",
             BUILDER_ANTIGRAVITY,
-            "Caller: every later Exp468 code-changing task preflight and final reviewer. Effect: generates the canonical HTML/JSON/lock triplet or validates Task 1-5 structure, exact scoring/qualification/evaluation/publication/replay/dashboard dependencies, immutable approval evidence, exact benchmark preservation, embedded JSON, dashboard truth, and all tracked fingerprints without writing in validate-only mode.",
+            "Caller: every later Exp468 code-changing task preflight and final reviewer. Effect: generates the canonical result HTML/JSON/lock triplet and validates frozen dependencies, exact benchmark preservation, final dashboard truth, embedded JSON, and tracked fingerprints.",
             "build_triplet_antigravity",
             [BUILDER_ANTIGRAVITY],
         ),
@@ -862,8 +862,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("task6_pipeline", "consumes", "task5_artifacts", CLI_ANTIGRAVITY, "publish_result_antigravity"),
         _edge_antigravity("task6_pipeline", "consumes", "task5_replay", CLI_ANTIGRAVITY, "inspect_result_antigravity"),
         _edge_antigravity("task6_launcher", "calls", "task6_cli", LAUNCHER_ANTIGRAVITY, "_command_antigravity"),
-        _edge_antigravity("task6_report", "informs", "implementation_report", TASK6_REPORT_ANTIGRAVITY, "Task 6 — CLI·pipeline 사전검증 보고서"),
-        _edge_antigravity("task6_report", "informs", "dashboard_artifact", TASK6_REPORT_ANTIGRAVITY, "implementation_task_6_preflight_step_3_complete_no_private_run"),
+        _edge_antigravity("task6_report", "informs", "implementation_report", TASK6_REPORT_ANTIGRAVITY, "Task 6 — private 실행 최종 보고서"),
+        _edge_antigravity("task6_report", "informs", "dashboard_artifact", TASK6_REPORT_ANTIGRAVITY, "task_6_complete_qualification_failed_reproducible"),
         _edge_antigravity("task1_config", "documents", "preregistration", PREREGISTRATION_ANTIGRAVITY, "고정한 과학 정의"),
         _edge_antigravity("task1_contracts", "documents", "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "qualification은 seed-major 10개 fold"),
         _edge_antigravity("implementation_plan", "documents", "runbook", RUNBOOK_ANTIGRAVITY, "Task 6 승인 뒤 단일 실행 경로"),
@@ -959,8 +959,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         },
         "task6_answers": {
             "callers": "The Task 6 brief and checked plan govern cli_antigravity.py, its CLI/pipeline tests, and the fixed-interpreter sequence launcher. evaluate calls the exact Task 2 loader/interpolator, Exp465 authority, Task 4 scorer/qualification/evaluation, and Task 5 publisher/replay; inspect enters only the retained-input replay seam. The launcher calls the CLI in run1 evaluate→inspect→run2 evaluate→inspect order after validating the same clean reviewed commit before every stage.",
-            "effects": "Freezes the two-command public surface, exact two private roots, create-only and symlink rejection, 69×96→69×140 TRAIN-only direct-stage counts, seed-major 2×5 records, exact seven-leaf publication, and a neutral dashboard comparison_status=not_yet_compared while preserving the existing private_reproducibility.status decision. No root path, run index, or time metadata is written to result leaves; no TEST/FN, routing, champion, pending, promotion, official or private result is created during preflight.",
-            "tests": "test_cli_antigravity covers exact parser/root/commit boundaries, source-free parser and delayed inspect/main, canonical output, wrong HEAD/dirty porcelain, fixed interpreter and CWD-independent sequence, same commit on all stages, success-only state transitions, and fail-stop. test_pipeline_antigravity covers exact blocked folds, seed-major identity, one direct loader/interpolator/authority call, ten scores, qualification/evaluation/publication/inspect orchestration, neutral comparison state, seven leaves and metadata-free bytes. The map validator covers Task 6 brief/report, dashboard truth, HTML/JSON/lock structure, and fingerprints.",
+            "effects": "Freezes the two-command surface and exact two private roots, then records that both sequential runs produced the same seven files byte-for-byte while C10 failed all ten frozen fold gates. No TEST/FN, routing, champion, pending, promotion, or official run was performed.",
+            "tests": "test_cli_antigravity and test_pipeline_antigravity cover the exact execution boundary. The completed helper state, diff -qr, seven SHA-256 comparisons, retained-input inspect, dashboard reconciliation, full Exp468/Exp466 suites, and code-map validator cover the final result.",
         },
         "unknown_relationships": [],
     }
@@ -1004,10 +1004,10 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         json.dumps(graph, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
     return f"""<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 6 preflight 코드맵</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 6 결과 코드맵</title>
 <style>body{{max-width:1240px;margin:2rem auto;padding:0 1rem;font:15px/1.65 system-ui;color:#172033}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.48rem;text-align:left;vertical-align:top}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow:auto}}.box{{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}}</style></head>
-<body><main><h1>Exp468 Task 6 preflight 코드맵</h1>
-<div class="box"><p><strong>상태:</strong> <code>implementation_task_6_preflight_step_3_complete_no_private_run</code>. 이 지도는 Task 1-5 경계와 Task 6 exact CLI·pipeline·순차 launcher의 호출자·영향·검사 및 OpenRouter Ox Alpha Ultra·로컬 Sol CLEAN 검토를 기록한다. private 실행과 TEST/FN 접근은 아직 없다.</p></div>
+<body><main><h1>Exp468 Task 6 결과 코드맵</h1>
+<div class="box"><p><strong>상태:</strong> <code>task_6_complete_qualification_failed_reproducible</code>. 두 private root의 7개 파일은 byte-identical이고 C10은 0/10 FAIL이다. TEST/FN과 routing은 접근하지 않았다.</p></div>
 <h2>Task 5 세 질문</h2><table><tr><th>무엇이 호출하는가?</th><td>{html_module.escape(answers['callers'])}</td></tr><tr><th>무엇에 영향을 주는가?</th><td>{html_module.escape(answers['effects'])}</td></tr><tr><th>어떤 검사가 덮는가?</th><td>{html_module.escape(answers['tests'])}</td></tr></table>
 <h2>Task 6 세 질문</h2><table><tr><th>무엇이 호출하는가?</th><td>{html_module.escape(task6_answers['callers'])}</td></tr><tr><th>무엇에 영향을 주는가?</th><td>{html_module.escape(task6_answers['effects'])}</td></tr><tr><th>어떤 검사가 덮는가?</th><td>{html_module.escape(task6_answers['tests'])}</td></tr></table>
 <h2>노드</h2><table><thead><tr><th>ID</th><th>파일</th><th>호출자와 영향</th><th>검사</th></tr></thead><tbody>{node_rows}</tbody></table>
@@ -1134,23 +1134,98 @@ def _validate_dashboard_antigravity() -> None:
     source_ids = {item.get("id") for item in artifact["sources"]}
     if "exp468_task5_truth" not in source_ids:
         raise ValueError("dashboard Task 5 source is missing")
-    if "exp468_task6_preflight_truth" not in source_ids:
-        raise ValueError("dashboard Task 6 preflight source is missing")
-    task6_summary = artifact.get("snapshot", {}).get("datasets", {}).get("task6_preflight_summary")
-    if task6_summary != [{
-        "status": "implementation_task_6_preflight_step_3_complete_no_private_run",
-        "comparison_status": "not_yet_compared",
-        "focused_tests": 9,
-        "focused_runs": 2,
-        "exp468_tests": 75,
-        "exp466_regression_tests": 56,
-        "clean_reviews": 2,
-        "private_runs": 0,
+    if "exp468_task6_result_truth" not in source_ids:
+        raise ValueError("dashboard Task 6 result source is missing")
+    task6_summary = artifact.get("snapshot", {}).get("datasets", {}).get("task6_result_summary")
+    if not isinstance(task6_summary, list) or len(task6_summary) != 1:
+        raise ValueError("dashboard Task 6 result summary differs")
+    task6_truth = task6_summary[0]
+    expected_task6 = {
+        "status": "task_6_complete_qualification_failed_reproducible",
+        "comparison_status": "byte_identical",
+        "passed_folds": 0,
+        "required_folds": 10,
+        "improved_folds": 2,
+        "max_period_auc": 0.826530612244898,
+        "period_auc_min": 0.85,
+        "level_shift_min_delta": 0.0,
+        "gradual_drift_min_delta": 0.0,
+        "amplitude_scaling_min_delta": 0.0,
+        "private_runs": 2,
+        "compared_files": 7,
+        "byte_equal_count": 7,
         "official_runs": 0,
-        "private_result": None,
-        "result_hash": None,
-    }]:
-        raise ValueError("dashboard Task 6 preflight truth differs")
+        "qualification_passed": False,
+        "routing_applied": False,
+        "label_query_count": 0,
+        "test_labels_opened": False,
+        "gate_passed": False,
+        "fallback_authorized": True,
+        "selected_backend": "numpy",
+        "artifact_map_sha256": "ba919b1df145376f1db027ae71bf38d523c530b1c2b129cddca0cab8375c15aa",
+    }
+    for key, expected_value in expected_task6.items():
+        if task6_truth.get(key) != expected_value:
+            raise ValueError(f"dashboard Task 6 result truth differs: {key}")
+    fold_rows = artifact["snapshot"]["datasets"].get("task6_fold_results", [])
+    period_rows = artifact["snapshot"]["datasets"].get("task6_period_auc", [])
+    if len(fold_rows) != 10 or len(period_rows) != 20:
+        raise ValueError("dashboard Task 6 fold grain differs")
+    expected_fold_values = (
+        (1, 20260721, 0, 0.6887755102040817, 0.6887755102040817, 0.0, 0, 0),
+        (2, 20260721, 1, 0.7780612244897959, 0.7831632653061225, 0.005102040816326592, 1, 1),
+        (3, 20260721, 2, 0.8239795918367347, 0.8239795918367347, 0.0, 0, 0),
+        (4, 20260721, 3, 0.8137755102040817, 0.8137755102040817, 0.0, 0, 0),
+        (5, 20260721, 4, 0.8017751479289941, 0.8017751479289941, 0.0, 0, 0),
+        (6, 20261721, 0, 0.6862244897959183, 0.6862244897959183, 0.0, 0, 0),
+        (7, 20261721, 1, 0.7882653061224489, 0.7959183673469388, 0.007653061224489832, 1, 1),
+        (8, 20261721, 2, 0.826530612244898, 0.826530612244898, 0.0, 0, 0),
+        (9, 20261721, 3, 0.826530612244898, 0.826530612244898, 0.0, 0, 0),
+        (10, 20261721, 4, 0.7840236686390533, 0.7840236686390533, 0.0, 0, 0),
+    )
+    for row, expected_values in zip(fold_rows, expected_fold_values, strict=True):
+        observed = (
+            row.get("order"), row.get("seed"), row.get("fold"),
+            row.get("c0_period_auc"), row.get("c10_period_auc"), row.get("delta"),
+            row.get("period_confirmations"), row.get("normal_confirmations"),
+        )
+        if observed != expected_values or row.get("result") != "FAIL":
+            raise ValueError("dashboard Task 6 exact fold result differs")
+        if not row["c10_period_auc"] < task6_truth["period_auc_min"]:
+            raise ValueError("dashboard Task 6 period threshold truth differs")
+    if sum(row["delta"] > 0.0 for row in fold_rows) != task6_truth["improved_folds"]:
+        raise ValueError("dashboard Task 6 improved-fold count differs")
+    for seed in (20260721, 20261721):
+        if sum(row["normal_confirmations"] for row in fold_rows if row["seed"] == seed) != 1:
+            raise ValueError("dashboard Task 6 normal-confirmation truth differs")
+    expected_period_rows = []
+    for row in fold_rows:
+        seed_fold = f"{row['seed']}·{row['fold']}"
+        expected_period_rows.extend((
+            {"seed_fold": seed_fold, "method": "C0", "period_auc": row["c0_period_auc"], "delta": row["delta"]},
+            {"seed_fold": seed_fold, "method": "C10", "period_auc": row["c10_period_auc"], "delta": row["delta"]},
+        ))
+    if period_rows != expected_period_rows:
+        raise ValueError("dashboard Task 6 C0/C10 chart pairing differs")
+    result_source = next(item for item in artifact["sources"] if item.get("id") == "exp468_task6_result_truth")
+    source_sql = result_source.get("query", {}).get("sql", "")
+    for required_sql in (
+        "label_query_count", "test_labels_opened", "artifact_map_sha256",
+        "level_shift_min_delta", "gradual_drift_min_delta", "amplitude_scaling_min_delta",
+        "gate_passed", "fallback_authorized", "selected_backend", "FROM folds ORDER BY fold_order",
+    ):
+        if required_sql not in source_sql:
+            raise ValueError(f"dashboard Task 6 source SQL is missing {required_sql}")
+    report = _validated_html_text_antigravity(ROOT_ANTIGRAVITY / IMPLEMENTATION_REPORT_ANTIGRAVITY)
+    for seed, fold, _c0, c10 in (
+        (20260721, 0, 0.688776, 0.688776), (20260721, 1, 0.778061, 0.783163),
+        (20260721, 2, 0.823980, 0.823980), (20260721, 3, 0.813776, 0.813776),
+        (20260721, 4, 0.801775, 0.801775), (20261721, 0, 0.686224, 0.686224),
+        (20261721, 1, 0.788265, 0.795918), (20261721, 2, 0.826531, 0.826531),
+        (20261721, 3, 0.826531, 0.826531), (20261721, 4, 0.784024, 0.784024),
+    ):
+        if f"<tr><td>{seed}</td><td>{fold}</td>" not in report or f"<td>{c10:.6f}</td>" not in report:
+            raise ValueError("implementation report Task 6 fold table differs")
     rows = artifact["snapshot"]["datasets"].get("progress_checklist", [])
     if artifact.get("snapshot", {}).get("status") != "ready":
         raise ValueError("dashboard snapshot status differs")
@@ -1162,12 +1237,12 @@ def _validate_dashboard_antigravity() -> None:
     ):
         raise ValueError("dashboard Task 4 completion checklist truth differs")
     if not any(
-        row.get("task") == "Task 6 CLI·pipeline 사전검증"
+        row.get("task") == "Task 6 private 실행 1·2"
         and row.get("checked") == "☑"
-        and row.get("status") == "완료 — private 실행 없음"
+        and row.get("status") == "완료 — 7/7 바이트 일치"
         for row in rows
     ):
-        raise ValueError("dashboard Task 6 preflight checklist truth differs")
+        raise ValueError("dashboard Task 6 private checklist truth differs")
     if not any(
         row.get("task") == "Task 6 OpenRouter·Sol 독립 검토"
         and row.get("checked") == "☑"
@@ -1178,29 +1253,41 @@ def _validate_dashboard_antigravity() -> None:
     rendered = _validated_html_text_antigravity(ROOT_ANTIGRAVITY / DASHBOARD_ANTIGRAVITY)
     for required in (
         "implementation_task_5_complete_no_private_run",
-        "implementation_task_6_preflight_step_3_complete_no_private_run",
+        "task_6_complete_qualification_failed_reproducible",
         "exp468_task5_truth",
-        "exp468_task6_preflight_truth",
+        "exp468_task6_result_truth",
         "Task 4 C0/S10/C10·exact 10-fold gate",
         "Task 5 publication·artifact replay·dashboard",
-        "focused 12/12",
-        "focused 9/9",
-        "전체 Exp468 75/75",
-        "Exp466 lower regression 56/56",
-        "OpenRouter Ox Alpha Ultra",
-        "로컬 Sol",
         "period 변화",
-        "C0보다 개선한 fold",
-        "정상 확인 오류",
-        "private 재현성 확인 대기",
-        "아직 실행하지 않음",
-        "fallback_authorized=true",
+        "0/10",
+        "7/7 바이트 일치",
+        "Task 6 private 실행 1·2",
+        "Task 6 실패 결과 보존",
+        "byte_identical",
+        "0.826530612244898",
         "gate_passed=false",
-        "not_yet_compared",
-        "Task 6 CLI·pipeline 사전검증",
+        "fallback_authorized=true",
+        "selected_backend=numpy",
     ):
         if required not in rendered:
             raise ValueError(f"dashboard HTML is missing {required}")
+
+
+def _validate_final_plan_truth_antigravity() -> None:
+    plan = _validated_html_text_antigravity(ROOT_ANTIGRAVITY / PLAN_ANTIGRAVITY)
+    stale = "implementation_task_6_preflight_step_3_complete_no_private_run"
+    if stale in plan:
+        raise ValueError("final plan still contains the pre-private Task 6 state")
+    for required in (
+        "task_6_complete_qualification_failed_reproducible",
+        "private 실행은 <code>2</code>회",
+        "official 실행은 <code>0</code>회",
+        "<code>7/7</code>이 byte-identical",
+        "<code>0/10</code> FAIL",
+        "Task 6과 Step 1~6은 모두 완료로 체크",
+    ):
+        if required not in plan:
+            raise ValueError(f"final plan truth is missing {required}")
 
 
 def validate_map_antigravity(
@@ -1455,6 +1542,7 @@ def validate_map_antigravity(
         _validated_html_text_antigravity(ROOT_ANTIGRAVITY / relative)
     _validate_fallback_evidence_antigravity()
     _validate_dashboard_antigravity()
+    _validate_final_plan_truth_antigravity()
     if compare_files:
         if JSON_PATH_ANTIGRAVITY.read_bytes() != _canonical_bytes_antigravity(graph):
             raise ValueError("code-map JSON is not canonical")

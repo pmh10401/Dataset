@@ -3,9 +3,9 @@
   "manifest": {
     "version": 1,
     "surface": "dashboard",
-    "title": "Exp468 ECG200 국소 STFT Task 6 사전검증 대시보드",
-    "description": "Task 4의 frozen C0/S10/C10 계약과 Task 5 publication을 보존한 채 Task 6 exact CLI·pipeline·순차 launcher 사전검증 상태를 표시하는 source-backed 스냅샷.",
-    "generatedAt": "2026-08-24T09:00:00+09:00",
+    "title": "Exp468 ECG200 국소 STFT Task 6 결과 대시보드",
+    "description": "승인된 private 실행 1·2의 실제 TRAIN-only 성능과 바이트 재현성을 보여 주는 source-backed 최종 스냅샷.",
+    "generatedAt": "2026-08-24T15:00:00+09:00",
     "cards": [
       {
         "id": "exp466_pass_folds",
@@ -54,13 +54,33 @@
         ]
       },
       {
-        "id": "task6_preflight_status",
-        "description": "Task 6 CLI·pipeline 사전검증 상태. private 두 실행 전이므로 비교 상태는 아직 비교하지 않음이다.",
-        "dataset": "task6_preflight_summary",
-        "sourceId": "exp468_task6_preflight_truth",
+        "id": "task6_result_status",
+        "description": "고정 기준을 통과한 fold 수. 10개 모두 통과해야 후보를 채택한다.",
+        "dataset": "task6_result_summary",
+        "sourceId": "exp468_task6_result_truth",
         "metrics": [
-          {"label": "focused 검사", "field": "focused_tests", "format": "number"},
-          {"label": "private 실행", "field": "private_runs", "format": "number"}
+          {"label": "통과 fold", "field": "passed_folds", "format": "number"},
+          {"label": "필요 fold", "field": "required_folds", "format": "number"}
+        ]
+      },
+      {
+        "id": "task6_reproducibility",
+        "description": "같은 조건으로 만든 두 결과 폴더가 파일 7개 모두 바이트 단위로 같은지 나타낸다.",
+        "dataset": "task6_result_summary",
+        "sourceId": "exp468_task6_result_truth",
+        "metrics": [
+          {"label": "바이트 일치", "field": "byte_equal_count", "format": "number"},
+          {"label": "비교 파일", "field": "compared_files", "format": "number"}
+        ]
+      },
+      {
+        "id": "task6_period_peak",
+        "description": "C10 period AUC의 최고값. 고정 합격선은 0.85다.",
+        "dataset": "task6_result_summary",
+        "sourceId": "exp468_task6_result_truth",
+        "metrics": [
+          {"label": "최고 period AUC", "field": "max_period_auc", "format": "number"},
+          {"label": "합격선", "field": "period_auc_min", "format": "number"}
         ]
       }
     ],
@@ -80,6 +100,24 @@
           "color": {"field": "series", "type": "nominal", "label": "구분"},
           "tooltip": [
             {"field": "count_text", "type": "nominal", "label": "개수"}
+          ]
+        }
+      },
+      {
+        "id": "task6_period_auc",
+        "title": "fold별 period AUC",
+        "subtitle": "C10은 두 fold에서만 조금 올랐고, 모든 값이 합격선 0.85보다 낮았습니다.",
+        "headerMarkdown": "가로축은 seed와 fold이며, C0와 C10을 직접 비교합니다.",
+        "type": "bar",
+        "dataset": "task6_period_auc",
+        "sourceId": "exp468_task6_result_truth",
+        "valueFormat": "number",
+        "encodings": {
+          "x": {"field": "seed_fold", "type": "nominal", "label": "seed·fold"},
+          "y": {"field": "period_auc", "type": "quantitative", "label": "period AUC", "format": "number"},
+          "color": {"field": "method", "type": "nominal", "label": "방법"},
+          "tooltip": [
+            {"field": "delta", "type": "quantitative", "label": "C10-C0"}
           ]
         }
       }
@@ -136,15 +174,35 @@
       {
         "id": "progress_checklist",
         "title": "진행 체크",
-        "subtitle": "실패한 cold 1.1x gate와 승인 예외를 보존한 채 Task 6 CLI·pipeline 사전검증까지 완료했으며 private 실행은 다음 checkpoint다.",
+        "subtitle": "Task 6 private 실행과 재현성 비교까지 완료했습니다. 성능 실패 결과는 조정 없이 보존합니다.",
         "dataset": "progress_checklist",
-        "sourceId": "exp468_task6_preflight_truth",
+        "sourceId": "exp468_task6_result_truth",
         "defaultSort": {"field": "order", "direction": "asc"},
         "columns": [
           {"field": "order", "label": "단계", "format": "number"},
           {"field": "checked", "label": "체크", "type": "text"},
           {"field": "task", "label": "작업", "type": "text"},
           {"field": "status", "label": "상태", "type": "text"}
+        ]
+      },
+      {
+        "id": "task6_fold_results",
+        "title": "실제 10-fold 결과",
+        "subtitle": "PASS는 10개 기준을 모두 만족할 때만 표시됩니다.",
+        "dataset": "task6_fold_results",
+        "sourceId": "exp468_task6_result_truth",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "순서", "format": "number"},
+          {"field": "seed", "label": "seed", "format": "number"},
+          {"field": "fold", "label": "fold", "format": "number"},
+          {"field": "c0_period_auc", "label": "C0 period AUC", "format": "number"},
+          {"field": "c10_period_auc", "label": "C10 period AUC", "format": "number"},
+          {"field": "delta", "label": "차이", "format": "number"},
+          {"field": "period_confirmations", "label": "period 확인", "format": "number"},
+          {"field": "normal_confirmations", "label": "정상 오류", "format": "number"},
+          {"field": "result", "label": "판정", "type": "text"},
+          {"field": "easy_reason", "label": "쉬운 설명", "type": "text"}
         ]
       }
     ],
@@ -202,14 +260,14 @@
         }
       },
       {
-        "id": "exp468_task6_preflight_truth",
-        "label": "Exp468 Task 6 사전검증 truth",
+        "id": "exp468_task6_result_truth",
+        "label": "Exp468 Task 6 private 결과 truth",
         "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
         "query": {
           "engine": "duckdb",
           "language": "sql",
-          "description": "Task 6 보고서·brief·CLI·pipeline test·순차 launcher·OpenRouter Ox Alpha Ultra CLEAN·로컬 Sol CLEAN과 계획에서 exact CLI, retained-input inspect 경계, clean reviewed commit 확인, 성공 후 state 전이와 fail-stop, private 실행 0회를 재현한다.",
-          "sql": "SELECT 'implementation_task_6_preflight_step_3_complete_no_private_run' AS status, 'not_yet_compared' AS comparison_status, 9 AS focused_tests, 2 AS focused_runs, 75 AS exp468_tests, 56 AS exp466_regression_tests, 2 AS clean_reviews, 0 AS private_runs, 0 AS official_runs, NULL AS private_result, NULL AS result_hash",
+          "description": "Task 6 보고서와 보존된 두 private root에서 0/10 성능 실패, 7/7 바이트 일치, official 0회와 TEST/FN 미접근을 재현한다.",
+          "sql": "WITH folds AS (SELECT * FROM (VALUES (1,20260721,0,0.6887755102040817,0.6887755102040817,0.0,0,0,FALSE),(2,20260721,1,0.7780612244897959,0.7831632653061225,0.005102040816326592,1,1,FALSE),(3,20260721,2,0.8239795918367347,0.8239795918367347,0.0,0,0,FALSE),(4,20260721,3,0.8137755102040817,0.8137755102040817,0.0,0,0,FALSE),(5,20260721,4,0.8017751479289941,0.8017751479289941,0.0,0,0,FALSE),(6,20261721,0,0.6862244897959183,0.6862244897959183,0.0,0,0,FALSE),(7,20261721,1,0.7882653061224489,0.7959183673469388,0.007653061224489832,1,1,FALSE),(8,20261721,2,0.826530612244898,0.826530612244898,0.0,0,0,FALSE),(9,20261721,3,0.826530612244898,0.826530612244898,0.0,0,0,FALSE),(10,20261721,4,0.7840236686390533,0.7840236686390533,0.0,0,0,FALSE)) AS t(fold_order,seed,fold_index,c0_period_auc,c10_period_auc,delta,period_confirmations,normal_confirmations,passed)) SELECT folds.*, 'task_6_complete_qualification_failed_reproducible' AS status, 'byte_identical' AS comparison_status, 0 AS passed_folds, 10 AS required_folds, 2 AS improved_folds, 0.826530612244898 AS max_period_auc, 0.85 AS period_auc_min, 0.0 AS level_shift_min_delta, 0.0 AS gradual_drift_min_delta, 0.0 AS amplitude_scaling_min_delta, 2 AS private_runs, 7 AS compared_files, 7 AS byte_equal_count, 0 AS official_runs, 0 AS label_query_count, FALSE AS test_labels_opened, FALSE AS qualification_passed, FALSE AS routing_applied, FALSE AS gate_passed, TRUE AS fallback_authorized, 'numpy' AS selected_backend, 'ba919b1df145376f1db027ae71bf38d523c530b1c2b129cddca0cab8375c15aa' AS artifact_map_sha256 FROM folds ORDER BY fold_order",
           "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-brief-antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-report-antigravity.html", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_pipeline_antigravity.py", "scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
           "executed_at": "2026-08-24T00:00:00Z"
         }
@@ -219,10 +277,12 @@
       {
         "id": "status_note",
         "type": "markdown",
-        "sourceId": "exp468_task6_preflight_truth",
-        "body": "## Task 6 CLI·pipeline 사전검증과 독립 검토를 완료했고 private 실행 전입니다\n\n**implementation_task_6_preflight_step_3_complete_no_private_run**\n\nTask 3의 gate_passed=false, fallback_authorized=true, selected_backend=numpy와 Task 5 focused 12/12 및 정확히 일곱 leaf·raw-input 독립 replay 계약을 보존한 채 exact CLI, direct TRAIN-stage sequence, retained-input inspect, clean reviewed commit 확인, 공식 순차 helper state와 fail-stop을 구현했습니다. Task 6 focused 9/9를 같은 수정 상태에서 두 번, 전체 Exp468 75/75, Exp466 lower regression 56/56을 통과했습니다. OpenRouter Ox Alpha Ultra와 로컬 Sol 독립 검토도 모두 CLEAN입니다. portable dashboard, code-map, JSON과 diff 검증을 통과했으며 period 변화, C0보다 개선한 fold, 정상 확인 오류, qualification PASS/FAIL과 private 재현성 확인 대기를 계속 표시합니다. private 실행 1·2의 상태는 '아직 실행하지 않음'이며 snapshot 비교 상태는 'not_yet_compared'입니다. official/private result와 result hash는 null이며 TEST/FN 평가는 없습니다."
+        "sourceId": "exp468_task6_result_truth",
+        "body": "## Task 6 결과: 두 번 똑같이 실패했습니다\n\n**task_6_complete_qualification_failed_reproducible**\n\n같은 TRAIN-only 실험을 두 번 순서대로 실행했고, 두 결과 폴더의 파일 7개가 모두 바이트 단위로 같았습니다. 따라서 계산은 안정적으로 반복됐습니다. 그러나 C10은 10개 fold 중 0개만 통과했습니다. 모든 period AUC가 0.85보다 낮았고, 8개 fold에서는 C10이 C0와 같았습니다. 나머지 2개 fold는 각각 0.0051과 0.0077만큼 올랐지만 정상 데이터도 한 번씩 잘못 확인했습니다. 세 보호 변화의 최악 차이는 모두 0이라 나빠지지는 않았습니다. 가속 근거는 gate_passed=false, fallback_authorized=true, selected_backend=numpy 그대로입니다. official 실행, TEST/FN 확인, routing과 promotion은 하지 않았습니다."
       },
-      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs", "score_calculations", "task6_preflight_status"]},
+      {"id": "metrics", "type": "metric-strip", "cardIds": ["task6_result_status", "task6_reproducibility", "task6_period_peak", "official_runs"]},
+      {"id": "task6_auc", "type": "chart", "chartId": "task6_period_auc", "layout": "full"},
+      {"id": "task6_folds", "type": "table", "tableId": "task6_fold_results", "layout": "full"},
       {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
       {"id": "methods", "type": "table", "tableId": "method_comparison", "layout": "full"},
       {"id": "acceleration", "type": "table", "tableId": "acceleration_benchmark", "layout": "full"},
@@ -231,12 +291,12 @@
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 입력·합성 변화·C0 exact import와 parity</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 S10·가속 gate 실패와 승인 NumPy fallback</label></p><p><label><input type=\"checkbox\" checked disabled> Task 4 C0/S10/C10·exact 10-fold gate</label></p><p><label><input type=\"checkbox\" checked disabled> Task 5 publication·artifact replay·dashboard</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 CLI·pipeline 사전검증</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 OpenRouter·Sol 독립 검토 CLEAN</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 입력·합성 변화·C0 exact import와 parity</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 S10·가속 gate 실패와 승인 NumPy fallback</label></p><p><label><input type=\"checkbox\" checked disabled> Task 4 C0/S10/C10·exact 10-fold gate</label></p><p><label><input type=\"checkbox\" checked disabled> Task 5 publication·artifact replay·dashboard</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 CLI·pipeline 사전검증</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 OpenRouter·Sol 독립 검토 CLEAN</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 private 실행 1·2</label></p><p><label><input type=\"checkbox\" checked disabled> 7개 결과 파일 바이트 비교</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 실패 결과 보존</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\nTask 6 exact CLI·pipeline 사전검증과 OpenRouter·Sol 독립 검토를 닫았습니다. 다음은 **사용자 checkpoint 뒤 private 실행 1·2를 순차 실행**하는 것이며, 현재 공식·private qualification은 0회이고 result/hash는 null, 비교 상태는 not_yet_compared로 유지합니다."
+        "body": "## 다음 한 단계\n\nExp468 안에서는 다시 돌리거나 기준을 바꾸지 않습니다. 다음 새 실험은 **period 변화에서만 켜지고 정상 데이터에서는 꺼지는 확인 신호**를 TRAIN-only로 사전등록해 비교합니다."
       }
     ]
   },
@@ -254,8 +314,32 @@
       "implementation_summary": [
         {"status": "implementation_task_5_complete_no_private_run", "acceleration_gate_passed": false, "fallback_authorized": true, "selected_backend": "numpy", "focused_tests": 12, "exp468_tests": 66, "exp466_regression_tests": 56, "score_calculations": 2, "score_calculation_scope": "acceleration_benchmark_full_workload_initial_and_improved", "publication_leaves": 7, "metric_rows": 30, "summary_rows": 3, "official_runs": 0, "private_runs": 0, "official_result": null, "private_result": null, "result_hash": null}
       ],
-      "task6_preflight_summary": [
-        {"status": "implementation_task_6_preflight_step_3_complete_no_private_run", "comparison_status": "not_yet_compared", "focused_tests": 9, "focused_runs": 2, "exp468_tests": 75, "exp466_regression_tests": 56, "clean_reviews": 2, "private_runs": 0, "official_runs": 0, "private_result": null, "result_hash": null}
+      "task6_result_summary": [
+        {"status": "task_6_complete_qualification_failed_reproducible", "comparison_status": "byte_identical", "passed_folds": 0, "required_folds": 10, "improved_folds": 2, "max_period_auc": 0.826530612244898, "period_auc_min": 0.85, "level_shift_min_delta": 0.0, "gradual_drift_min_delta": 0.0, "amplitude_scaling_min_delta": 0.0, "focused_tests": 9, "exp468_tests": 75, "exp466_regression_tests": 56, "private_runs": 2, "compared_files": 7, "byte_equal_count": 7, "official_runs": 0, "qualification_passed": false, "routing_applied": false, "label_query_count": 0, "test_labels_opened": false, "gate_passed": false, "fallback_authorized": true, "selected_backend": "numpy", "artifact_map_sha256": "ba919b1df145376f1db027ae71bf38d523c530b1c2b129cddca0cab8375c15aa"}
+      ],
+      "task6_period_auc": [
+        {"seed_fold":"20260721·0","method":"C0","period_auc":0.6887755102040817,"delta":0.0},{"seed_fold":"20260721·0","method":"C10","period_auc":0.6887755102040817,"delta":0.0},
+        {"seed_fold":"20260721·1","method":"C0","period_auc":0.7780612244897959,"delta":0.005102040816326592},{"seed_fold":"20260721·1","method":"C10","period_auc":0.7831632653061225,"delta":0.005102040816326592},
+        {"seed_fold":"20260721·2","method":"C0","period_auc":0.8239795918367347,"delta":0.0},{"seed_fold":"20260721·2","method":"C10","period_auc":0.8239795918367347,"delta":0.0},
+        {"seed_fold":"20260721·3","method":"C0","period_auc":0.8137755102040817,"delta":0.0},{"seed_fold":"20260721·3","method":"C10","period_auc":0.8137755102040817,"delta":0.0},
+        {"seed_fold":"20260721·4","method":"C0","period_auc":0.8017751479289941,"delta":0.0},{"seed_fold":"20260721·4","method":"C10","period_auc":0.8017751479289941,"delta":0.0},
+        {"seed_fold":"20261721·0","method":"C0","period_auc":0.6862244897959183,"delta":0.0},{"seed_fold":"20261721·0","method":"C10","period_auc":0.6862244897959183,"delta":0.0},
+        {"seed_fold":"20261721·1","method":"C0","period_auc":0.7882653061224489,"delta":0.007653061224489832},{"seed_fold":"20261721·1","method":"C10","period_auc":0.7959183673469388,"delta":0.007653061224489832},
+        {"seed_fold":"20261721·2","method":"C0","period_auc":0.826530612244898,"delta":0.0},{"seed_fold":"20261721·2","method":"C10","period_auc":0.826530612244898,"delta":0.0},
+        {"seed_fold":"20261721·3","method":"C0","period_auc":0.826530612244898,"delta":0.0},{"seed_fold":"20261721·3","method":"C10","period_auc":0.826530612244898,"delta":0.0},
+        {"seed_fold":"20261721·4","method":"C0","period_auc":0.7840236686390533,"delta":0.0},{"seed_fold":"20261721·4","method":"C10","period_auc":0.7840236686390533,"delta":0.0}
+      ],
+      "task6_fold_results": [
+        {"order":1,"seed":20260721,"fold":0,"c0_period_auc":0.6887755102040817,"c10_period_auc":0.6887755102040817,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":2,"seed":20260721,"fold":1,"c0_period_auc":0.7780612244897959,"c10_period_auc":0.7831632653061225,"delta":0.005102040816326592,"period_confirmations":1,"normal_confirmations":1,"result":"FAIL","easy_reason":"조금 개선됐지만 0.85 미만이고 정상도 잘못 확인"},
+        {"order":3,"seed":20260721,"fold":2,"c0_period_auc":0.8239795918367347,"c10_period_auc":0.8239795918367347,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":4,"seed":20260721,"fold":3,"c0_period_auc":0.8137755102040817,"c10_period_auc":0.8137755102040817,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":5,"seed":20260721,"fold":4,"c0_period_auc":0.8017751479289941,"c10_period_auc":0.8017751479289941,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":6,"seed":20261721,"fold":0,"c0_period_auc":0.6862244897959183,"c10_period_auc":0.6862244897959183,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":7,"seed":20261721,"fold":1,"c0_period_auc":0.7882653061224489,"c10_period_auc":0.7959183673469388,"delta":0.007653061224489832,"period_confirmations":1,"normal_confirmations":1,"result":"FAIL","easy_reason":"조금 개선됐지만 0.85 미만이고 정상도 잘못 확인"},
+        {"order":8,"seed":20261721,"fold":2,"c0_period_auc":0.826530612244898,"c10_period_auc":0.826530612244898,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":9,"seed":20261721,"fold":3,"c0_period_auc":0.826530612244898,"c10_period_auc":0.826530612244898,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"},
+        {"order":10,"seed":20261721,"fold":4,"c0_period_auc":0.7840236686390533,"c10_period_auc":0.7840236686390533,"delta":0.0,"period_confirmations":0,"normal_confirmations":0,"result":"FAIL","easy_reason":"0.85 미만, 개선·확인 없음"}
       ],
       "qualification_gap": [
         {"condition": "period AUC ≥ 0.85", "series": "Exp466 관측", "share": 0.0, "count_text": "0/10"},
@@ -297,7 +381,8 @@
         {"order": 12, "checked": "☑", "task": "Task 5 publication·artifact replay·dashboard", "status": "완료 — private 실행 없음"},
         {"order": 13, "checked": "☑", "task": "Task 6 CLI·pipeline 사전검증", "status": "완료 — private 실행 없음"},
         {"order": 14, "checked": "☑", "task": "Task 6 OpenRouter·Sol 독립 검토", "status": "CLEAN"},
-        {"order": 15, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "미실행"}
+        {"order": 15, "checked": "☑", "task": "Task 6 private 실행 1·2", "status": "완료 — 7/7 바이트 일치"},
+        {"order": 16, "checked": "☑", "task": "Task 6 성능 판정", "status": "완료 — 0/10 FAIL 보존"}
       ]
     }
   },
@@ -355,14 +440,14 @@
       }
     },
     {
-      "id": "exp468_task6_preflight_truth",
-      "label": "Exp468 Task 6 사전검증 truth",
+      "id": "exp468_task6_result_truth",
+      "label": "Exp468 Task 6 private 결과 truth",
       "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
       "query": {
         "engine": "duckdb",
         "language": "sql",
-        "description": "Task 6 보고서·brief·CLI·pipeline test·순차 launcher·OpenRouter Ox Alpha Ultra CLEAN·로컬 Sol CLEAN과 계획에서 exact CLI, retained-input inspect 경계, clean reviewed commit 확인, 성공 후 state 전이와 fail-stop, private 실행 0회를 재현한다.",
-        "sql": "SELECT 'implementation_task_6_preflight_step_3_complete_no_private_run' AS status, 'not_yet_compared' AS comparison_status, 9 AS focused_tests, 2 AS focused_runs, 75 AS exp468_tests, 56 AS exp466_regression_tests, 2 AS clean_reviews, 0 AS private_runs, 0 AS official_runs, NULL AS private_result, NULL AS result_hash",
+        "description": "Task 6 보고서와 보존된 두 private root에서 0/10 성능 실패, 7/7 바이트 일치, official 0회와 TEST/FN 미접근을 재현한다.",
+        "sql": "WITH folds AS (SELECT * FROM (VALUES (1,20260721,0,0.6887755102040817,0.6887755102040817,0.0,0,0,FALSE),(2,20260721,1,0.7780612244897959,0.7831632653061225,0.005102040816326592,1,1,FALSE),(3,20260721,2,0.8239795918367347,0.8239795918367347,0.0,0,0,FALSE),(4,20260721,3,0.8137755102040817,0.8137755102040817,0.0,0,0,FALSE),(5,20260721,4,0.8017751479289941,0.8017751479289941,0.0,0,0,FALSE),(6,20261721,0,0.6862244897959183,0.6862244897959183,0.0,0,0,FALSE),(7,20261721,1,0.7882653061224489,0.7959183673469388,0.007653061224489832,1,1,FALSE),(8,20261721,2,0.826530612244898,0.826530612244898,0.0,0,0,FALSE),(9,20261721,3,0.826530612244898,0.826530612244898,0.0,0,0,FALSE),(10,20261721,4,0.7840236686390533,0.7840236686390533,0.0,0,0,FALSE)) AS t(fold_order,seed,fold_index,c0_period_auc,c10_period_auc,delta,period_confirmations,normal_confirmations,passed)) SELECT folds.*, 'task_6_complete_qualification_failed_reproducible' AS status, 'byte_identical' AS comparison_status, 0 AS passed_folds, 10 AS required_folds, 2 AS improved_folds, 0.826530612244898 AS max_period_auc, 0.85 AS period_auc_min, 0.0 AS level_shift_min_delta, 0.0 AS gradual_drift_min_delta, 0.0 AS amplitude_scaling_min_delta, 2 AS private_runs, 7 AS compared_files, 7 AS byte_equal_count, 0 AS official_runs, 0 AS label_query_count, FALSE AS test_labels_opened, FALSE AS qualification_passed, FALSE AS routing_applied, FALSE AS gate_passed, TRUE AS fallback_authorized, 'numpy' AS selected_backend, 'ba919b1df145376f1db027ae71bf38d523c530b1c2b129cddca0cab8375c15aa' AS artifact_map_sha256 FROM folds ORDER BY fold_order",
         "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-brief-antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-report-antigravity.html", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_pipeline_antigravity.py", "scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
         "executed_at": "2026-08-24T00:00:00Z"
       }

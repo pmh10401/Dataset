@@ -8,7 +8,7 @@
 </head>
 <body><main>
 <h1>Exp468 사전등록</h1>
-<p>현재 상태는 <code>implementation_task_6_preflight_step_3_complete_no_private_run</code>다. Task 1~5의 과학·점수·자격 판정·publication 계약을 그대로 사용해 Task 6 exact CLI, retained-input inspect 경계와 순차 launcher 상태 전이를 고정했다. OpenRouter Ox Alpha Ultra와 로컬 Sol의 독립 검토는 모두 <code>CLEAN</code>이며, 실제 private/official 실행은 아직 하지 않았다. dashboard의 <code>comparison_status</code>는 <code>not_yet_compared</code>로 별도 보존한다.</p>
+<p>현재 상태는 <code>task_6_complete_qualification_failed_reproducible</code>다. 고정 계약을 바꾸지 않고 private 실행 1·2를 순차 수행했다. 두 결과의 파일 7개는 바이트 단위로 같았지만 C10은 <code>0/10</code>으로 자격 기준에 실패했다.</p>
 <table>
 <tr><th>실험</th><td><code>Exp468</code> — ECG200 국소 STFT 주파수 재분배 자격 검증</td></tr>
 <tr><th>승인 설계</th><td><code>docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html</code><br>SHA-256 <code>fa799dd628028163b6bc2dee5af6fd3f507b555849a00b194e32ecdc3f7078b7</code></td></tr>
@@ -24,7 +24,7 @@
 <li>method order는 <code>(C0,S10,C10)</code>, 유일한 주 후보는 <code>C10</code>, period AUC 하한은 <code>0.85</code>다. 평균 AUC 기준은 없다.</li>
 </ul>
 <div class="box"><p>Task 1에는 가속할 점수 연산이 없다. Numba/MLX 선택은 Task 3에서 같은 입력과 seed의 결정성, 수치 일치, 후보 index 일치, 전송·동기화 포함 1.1배 속도 기준을 확인한 뒤에만 한다.</p></div>
-<div class="box stop"><p><strong>현재 실행 truth:</strong> Task 5 publication/replay 검증은 테스트 전용 결정론적 TRAIN-only fixture에서만 수행했다. private run <code>0</code>회, official run <code>0</code>회, label query <code>0</code>회이며 두 private 실행은 모두 <code>아직 실행하지 않음</code>이다. official/private result와 공식 result hash는 <code>null</code>이다. ECG200 TEST, 실제 FN, routing, champion, pending, promotion은 범위 밖이다.</p></div>
+<div class="box stop"><p><strong>현재 실행 truth:</strong> private run <code>2</code>회, official run <code>0</code>회, label query <code>0</code>회다. 7/7 파일은 byte-identical이지만 모든 period AUC가 <code>0.85</code> 미만이고 최종 판정은 FAIL이다. ECG200 TEST, 실제 FN, routing, champion, pending, promotion은 범위 밖이며 접근하지 않았다.</p></div>
 
 <h2>Task 5 publication 계약</h2>
 <ul>

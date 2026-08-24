@@ -103,19 +103,17 @@ class CliAntigravityTest(unittest.TestCase):
             cli_antigravity as cli,
         )
 
-        for root in (_RUN1_ROOT_ANTIGRAVITY, _RUN2_ROOT_ANTIGRAVITY):
-            with self.subTest(root=root):
-                with patch.object(cli, "_PRIVATE_ROOTS_ANTIGRAVITY", (root,)):
+        with tempfile.TemporaryDirectory(prefix="exp468-task6-cli-") as directory:
+            root = Path(directory) / "new-root"
+            with patch.object(cli, "_PRIVATE_ROOTS_ANTIGRAVITY", (root,)):
+                cli._validate_output_root_antigravity(root)
+                root.mkdir()
+                with self.assertRaisesRegex(ValueError, "new create-only path"):
                     cli._validate_output_root_antigravity(root)
-                    with tempfile.TemporaryDirectory(prefix="exp468-task6-cli-") as directory:
-                        existing = Path(directory) / "existing"
-                        existing.mkdir()
-                        with self.assertRaisesRegex(ValueError, "fixed Task 6 private root"):
-                            cli._validate_output_root_antigravity(existing)
-                        link = Path(directory) / "link"
-                        link.symlink_to(existing, target_is_directory=True)
-                        with self.assertRaisesRegex(ValueError, "symlink"):
-                            cli._validate_output_root_antigravity(link)
+                link = Path(directory) / "link"
+                link.symlink_to(root, target_is_directory=True)
+                with self.assertRaisesRegex(ValueError, "symlink"):
+                    cli._validate_output_root_antigravity(link)
 
         with self.assertRaisesRegex(ValueError, "fixed Task 6 private root"):
             cli._validate_output_root_antigravity(Path("/private/tmp/other"))
