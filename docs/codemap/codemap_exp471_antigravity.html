@@ -20,6 +20,31 @@
     },
     {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
       "kind": "ast_import"
     },
@@ -76,6 +101,31 @@
     {
       "callee": "scratch/generate_exp471_codemap_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -138,24 +188,29 @@
   "nodes": [
     {
       "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py"
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"
       ],
       "effects": "Descriptor-bound create-only persistence for Exp471 score-cache artifacts.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.cache_artifacts_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
       "tests": [
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py"
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"
       ]
     },
     {
       "callers": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
       ],
       "effects": "Frozen Exp471 source identity, roots, ordering, and backend policy.",
@@ -164,16 +219,19 @@
       "tests": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
       ]
     },
     {
       "callers": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
       ],
@@ -183,12 +241,25 @@
       "tests": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
       ]
     },
     {
       "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"
+      ],
+      "effects": "Label-gated, create-only persistence for the frozen Exp471 evaluation.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
       ],
       "effects": "Label-free, resumable preparation of deterministic Exp471 score shards.",
@@ -200,7 +271,9 @@
     },
     {
       "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
       ],
@@ -208,6 +281,7 @@
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.source_authority_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
       "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
       ]
@@ -224,6 +298,13 @@
       "effects": "Behavior tests for the frozen Exp471 configuration and strict contracts.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_config_contracts_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Public-literal tests for Exp471 durable continuous-score evaluation.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_evaluation_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
       "tests": []
     },
     {
@@ -267,9 +348,9 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 10,
-    "production_node_count": 5,
-    "test_node_count": 4
+    "node_count": 12,
+    "production_node_count": 6,
+    "test_node_count": 5
   },
   "unknowns": []
 }
