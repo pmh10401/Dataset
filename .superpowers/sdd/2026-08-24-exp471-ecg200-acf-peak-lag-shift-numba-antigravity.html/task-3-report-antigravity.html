@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Exp471 Task 3 보고</title>
+</head>
+<body><main>
+  <h1>Exp471 Task 3 보고 — Python 기준·결정성·MLX 적격성 smoke</h1>
+  <p>이 보고서는 2026-08-25에 전용 worktree에서 실행한 Task 3 증거만 기록합니다.</p>
+
+  <h2>1. 범위</h2>
+  <p>Task 3는 공개 고정 fixture에서 Python reference parity, Numba cold/warm timing과 전체 결과 bytes 결정성, MLX parity·속도 적격성만 측정했습니다. 실제 ECG200 데이터 평가, qualification, artifact publication, CLI, private/official 실행, TEST/FN 접근, routing은 포함하지 않았습니다.</p>
+
+  <h2>2. RED 증거</h2>
+  <p>production 파일보다 테스트를 먼저 만든 뒤 같은 명령으로 import failure를 확인했습니다.</p>
+  <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acceleration_antigravity</code></pre>
+  <pre><code>E
+Ran 1 test in 0.000s
+FAILED (errors=1)</code></pre>
+  <pre><code>ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acceleration_antigravity'</code></pre>
+
+  <h2>3. GREEN 증거</h2>
+  <p>최종 보완 테스트를 포함한 Task 3 집중 스위트를 연속 두 번 실행했고 12개 테스트가 모두 통과했습니다.</p>
+  <pre class="pass"><code>Ran 12 tests in 1.708s
+OK</code></pre>
+  <pre class="pass"><code>Ran 12 tests in 1.651s
+OK</code></pre>
+  <p>Task 1–3 전체 테스트도 34개가 통과했습니다.</p>
+
+  <h2>4. 측정 결과와 경계</h2>
+  <ul>
+    <li>Numba selected backend: <code>numba</code>; Python reference passed; raw max error <code>0.0</code>; exact discrete indices passed.</li>
+    <li>Numba determinism: repeated full result bytes equal.</li>
+    <li>MLX GPU: available, but float64 median 계산 미지원 → <code>eligible=false</code>, <code>float64_unsupported_on_gpu, 0</code> 기록.</li>
+    <li>MLX CPU 검증: lag 1..25, peak 2..24, 양쪽 실제 이웃, 작은 lag 동점, LOO raw, rank, confirmation 전체가 Numba와 일치하고 반복 bytes가 같았습니다.</li>
+    <li>Numba 측정 예: cold <code>1.2503812080s</code>, warm median <code>0.0000389577s</code>, warm IQR <code>0.0000011246s</code>.</li>
+    <li>Manifest는 Python/NumPy/Numba/llvmlite/MLX/mlx-metal 버전, 장치, timing, parity, raw 오차와 1.1× gate를 기록합니다.</li>
+  </ul>
+
+  <h2>5. 금지 실행 경계</h2>
+  <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing은 0회였습니다.</p>
+
+  <h2>6. 진행 체크</h2>
+  <section aria-label="Task 3 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
+  </section>
+</main></body></html>

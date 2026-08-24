@@ -18,7 +18,7 @@
   <p>이 보고서는 2026-08-24~25에 전용 worktree에서 확인한 Task 1–3 증거를 기록합니다.</p>
 
   <h2>1. 범위</h2>
-  <p>Task 1은 고정 config, Exp470 authority의 direct re-export, immutable 계약 세 개와 버전 있는 코드 맵을 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. runtime assessment, fold scoring, qualification 계산, artifact publication, CLI와 실제 실험 실행은 아직 포함하지 않습니다.</p>
+  <p>Task 1은 고정 config와 Exp470 authority 경계를 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. Task 3는 공개 fixture에서 Python/Numba 일치와 MLX 적격성만 측정했습니다. fold scoring, qualification 계산, artifact publication과 실제 데이터 실험 실행은 아직 포함하지 않습니다.</p>
 
   <h2>2. RED 증거</h2>
   <p>명령:</p>
@@ -98,6 +98,20 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     </tbody>
   </table>
   <p class="pass">Task 2 집중 테스트 14개를 연속 두 번 통과했습니다.</p>
+
+  <h2>6.2 Task 3 결과</h2>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>선택 backend</td><td>Numba 유지</td></tr>
+      <tr><td>Python 기준 오차</td><td>raw/max 최대 절대 오차 0.0, discrete 결과 정확히 일치</td></tr>
+      <tr><td>Numba 결정성</td><td>모든 배열·scalar·backend를 포함한 bytes 반복 일치</td></tr>
+      <tr><td>MLX GPU</td><td>float64 계산 미지원으로 부적격; 자동 대체 없음</td></tr>
+      <tr><td>MLX 수식 검증</td><td>CPU MLX에서 전체 peak·LOO·rank·confirmation이 Numba와 일치</td></tr>
+      <tr><td>실행 경계</td><td>공개 고정 fixture만 사용, 실제 데이터·private·official·TEST/FN·routing 0회</td></tr>
+    </tbody>
+  </table>
+  <p class="pass">Task 3 집중 테스트 12개를 연속 두 번, Task 1–3 전체 테스트 34개를 통과했습니다.</p>
 
   <h2>7. 금지 실행 경계</h2>
   <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing 실행은 0회였습니다. 수행한 작업은 소스 작성·검토, unit test, 코드 맵 생성·검증, 대시보드 갱신뿐입니다.</p>

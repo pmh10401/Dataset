@@ -106,6 +106,22 @@
           {"field": "task", "label": "작업", "type": "text"},
           {"field": "status", "label": "상태", "type": "text"}
         ]
+      },
+      {
+        "id": "runtime_assessment",
+        "title": "Task 3 계산 경로 검증 결과",
+        "subtitle": "공개 고정 fixture만 사용했다. MLX가 부적격이어도 선택 backend는 Numba다.",
+        "dataset": "runtime_assessment",
+        "sourceId": "exp471_acceleration",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "순서", "format": "number"},
+          {"field": "backend", "label": "계산 경로", "type": "text"},
+          {"field": "parity", "label": "기준 일치", "type": "text"},
+          {"field": "deterministic", "label": "반복 일치", "type": "text"},
+          {"field": "eligible", "label": "사용 적격", "type": "text"},
+          {"field": "reason", "label": "판정 이유", "type": "text"}
+        ]
       }
     ],
     "sources": [
@@ -147,18 +163,32 @@
           "tables_used": ["docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html"],
           "executed_at": "2026-08-24T11:30:00Z"
         }
+      },
+      {
+        "id": "exp471_acceleration",
+        "label": "Exp471 공개 fixture 계산 경로 검증",
+        "path": "scratch/exp471_acceleration_assessment_antigravity.json",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Task 3 JSON에서 Numba parity와 MLX GPU float64 부적격 이유를 재현한다.",
+          "sql": "SELECT 'numba' AS backend, TRUE AS parity, TRUE AS deterministic, TRUE AS eligible, NULL AS reason UNION ALL SELECT 'mlx', FALSE, FALSE, FALSE, 'float64_unsupported_on_gpu, 0'",
+          "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json"],
+          "executed_at": "2026-08-24T16:30:00Z"
+        }
       }
     ],
     "blocks": [
       {
         "id": "status_note",
         "type": "markdown",
-        "body": "## 현재 상태: Task 3 완료, Task 4가 다음 단계\n\nPython reference parity, Numba cold/warm 결정성, MLX float64 GPU 부적격 근거를 고정 fixture로 기록했습니다. 실제 데이터 평가와 private/official 실행, TEST/FN 접근, routing은 여전히 0회입니다."
+        "body": "## 현재 상태: Task 3 완료, Task 4가 다음 단계\n\n공개 고정 fixture에서 Python/Numba 오차 0.0과 전체 bytes 결정성을 확인했습니다. MLX 전체 수식은 CPU에서 같은 답을 냈지만 GPU는 float64를 지원하지 않아 부적격입니다. 실제 데이터 평가와 private/official 실행, TEST/FN 접근, routing은 여전히 0회입니다."
       },
       {"id": "metrics", "type": "metric-strip", "cardIds": ["exp470_fixed", "candidate_count", "planned_records", "private_runs", "restricted_runs"]},
       {"id": "evidence", "type": "chart", "chartId": "exp470_gate_evidence", "layout": "full"},
       {"id": "candidate", "type": "table", "tableId": "frozen_candidate", "layout": "full"},
       {"id": "gates", "type": "table", "tableId": "qualification_gates", "layout": "full"},
+      {"id": "runtime", "type": "table", "tableId": "runtime_assessment", "layout": "full"},
       {"id": "checklist", "type": "table", "tableId": "progress_checklist", "layout": "full"},
       {
         "id": "checkboxes",
@@ -200,6 +230,11 @@
         {"order": 4, "gate": "정상 confirmation", "required": "seed마다 0개", "current": "미실행"},
         {"order": 5, "gate": "fallback", "required": "C12=C0 bytes", "current": "미실행"},
         {"order": 6, "gate": "재현성", "required": "private 결과 7개 byte-identical", "current": "미실행"}
+      ],
+      "runtime_assessment": [
+        {"order": 1, "backend": "Numba", "parity": "통과 (오차 0.0)", "deterministic": "통과", "eligible": "선택", "reason": "Python 기준과 전체 bytes 일치"},
+        {"order": 2, "backend": "MLX GPU", "parity": "미측정", "deterministic": "미측정", "eligible": "부적격", "reason": "float64_unsupported_on_gpu, 0"},
+        {"order": 3, "backend": "MLX CPU 검증", "parity": "통과", "deterministic": "통과", "eligible": "선택 안 함", "reason": "수식 검증용; GPU 1.1× gate 미충족"}
       ],
       "progress_checklist": [
         {"order": 1, "checked": "☑", "task": "Exp470 실패 원인 확인", "status": "완료"},
@@ -258,6 +293,19 @@
         "sql": "SELECT 6 AS planned_tasks, 3 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task3_complete_task4_next' AS status",
         "tables_used": ["docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html"],
         "executed_at": "2026-08-24T11:30:00Z"
+      }
+    },
+    {
+      "id": "exp471_acceleration",
+      "label": "Exp471 공개 fixture 계산 경로 검증",
+      "path": "scratch/exp471_acceleration_assessment_antigravity.json",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Task 3 JSON에서 Numba parity와 MLX GPU float64 부적격 이유를 재현한다.",
+        "sql": "SELECT 'numba' AS backend, TRUE AS parity, TRUE AS deterministic, TRUE AS eligible, NULL AS reason UNION ALL SELECT 'mlx', FALSE, FALSE, FALSE, 'float64_unsupported_on_gpu, 0'",
+        "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json"],
+        "executed_at": "2026-08-24T16:30:00Z"
       }
     }
   ],

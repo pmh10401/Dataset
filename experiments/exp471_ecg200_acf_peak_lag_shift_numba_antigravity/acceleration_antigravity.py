@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib import metadata
 import math
 import platform
 import statistics
+import struct
 import time
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
@@ -13,7 +15,6 @@ from types import MappingProxyType
 import llvmlite
 import mlx.core as mx
 import numba
-import numpy as np
 import numpy as np
 
 from .acf_peak_lag_antigravity import (
@@ -141,7 +142,7 @@ class RuntimeAssessmentAntigravity:
         reference_passed,
         mlx_assessment,
         required_mlx_speedup,
-        input_shape,
+        fixture_shape,
     ):
         finite = bool(
             np.all(np.isfinite(first_result.fit_raw_shift))
@@ -169,7 +170,7 @@ class RuntimeAssessmentAntigravity:
         return cls(
             "numba",
             MappingProxyType(backends),
-            tuple(int(value) for value in input_shape),
+            tuple(int(value) for value in fixture_shape),
             float(required_mlx_speedup),
         )
 
@@ -213,44 +214,112 @@ def _mlx_device_name_antigravity() -> str:
     return rendered or str(device)
 
 
+def _package_version_antigravity(name):
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return None
+
+
+def _dominant_peaks_from_acf_mlx_antigravity(acf):
+    candidate_values = mx.where(
+        (acf[:, 1:24] > 0.0)
+        & (acf[:, 1:24] > acf[:, 0:23])
+        & (acf[:, 1:24] >= acf[:, 2:25]),
+        acf[:, 1:24],
+        mx.full((acf.shape[0], 23), -mx.inf),
+    )
+    best_zero_based = mx.argmax(candidate_values, axis=1)
+    best_value = mx.max(candidate_values, axis=1)
+    present = mx.isfinite(best_value)
+    return mx.where(present, best_zero_based + 2, 0), present
+
+
 def _peak_windows_antigravity(batch):
-    outputs = []
+    peak_columns = []
+    presence_columns = []
     for start in (0, 84):
         window = batch[:, start : start + 56]
         center = mx.median(window, axis=1, keepdims=True)
-        deviations = mx.abs(window - center)
-        mad = mx.median(deviations, axis=1, keepdims=True)
-        scale = 1.4826 * mad
-        z = (window - center) / scale
+        mad = mx.median(mx.abs(window - center), axis=1, keepdims=True)
+        z = (window - center) / (1.4826 * mad)
         denominator = mx.sum(z * z, axis=1)
-        candidate_values = []
-        for lag in range(2, 25):
-            numerator = mx.sum(z[:, :56 - lag] * z[:, lag:56], axis=1)
-            candidate_values.append((numerator / denominator).reshape((batch.shape[0], 1)))
-        acfs = mx.concatenate(candidate_values, axis=1)
-        previous = mx.concatenate(
-            (
-                mx.full((batch.shape[0], 1), -mx.inf),
-                acfs[:, :-1],
-            ),
-            axis=1,
-        )
-        following = mx.roll(acfs, -1, axis=1)
-        candidates = mx.where(
-            (acfs > 0.0) & (acfs > previous) & (acfs >= following),
-            acfs,
-            mx.full(acfs.shape, -mx.inf),
-        )
-        best_zero_based = mx.argmax(candidates, axis=1)
-        best_value = mx.max(candidates, axis=1)
-        outputs.append(mx.where(best_value > 0.0, best_zero_based + 2, 0).reshape((batch.shape[0], 1)))
-    return mx.concatenate(outputs, axis=1)
+        acf_columns = []
+        for lag in range(1, 26):
+            numerator = mx.sum(z[:, : 56 - lag] * z[:, lag:56], axis=1)
+            acf_columns.append((numerator / denominator).reshape((batch.shape[0], 1)))
+        acf = mx.concatenate(acf_columns, axis=1)
+        peaks, present = _dominant_peaks_from_acf_mlx_antigravity(acf)
+        peak_columns.append(peaks.reshape((batch.shape[0], 1)))
+        presence_columns.append(present.reshape((batch.shape[0], 1)))
+    return (
+        mx.concatenate(peak_columns, axis=1),
+        mx.concatenate(presence_columns, axis=1),
+    )
 
 
-def _ineligible_mlx_assessment_antigravity(reason):
+def _complete_mlx_outputs_antigravity(fit_rows, query_rows):
+    fit = mx.array(np.ascontiguousarray(fit_rows), dtype=mx.float64)
+    query = mx.array(np.ascontiguousarray(query_rows), dtype=mx.float64)
+    fit_peaks, fit_presence = _peak_windows_antigravity(fit)
+    query_peaks, query_presence = _peak_windows_antigravity(query)
+    fit_shifts = fit_peaks[:, 1].astype(mx.int32) - fit_peaks[:, 0].astype(mx.int32)
+    query_shifts = query_peaks[:, 1].astype(mx.int32) - query_peaks[:, 0].astype(mx.int32)
+    fit_shift_float = fit_shifts.astype(mx.float64)
+    query_shift_float = query_shifts.astype(mx.float64)
+
+    fit_raw_parts = []
+    for excluded in range(int(fit_rows.shape[0])):
+        others = mx.concatenate(
+            (fit_shift_float[:excluded], fit_shift_float[excluded + 1 :]), axis=0
+        )
+        fit_raw_parts.append(
+            mx.abs(fit_shift_float[excluded] - mx.median(others)).reshape((1,))
+        )
+    fit_raw = mx.concatenate(fit_raw_parts, axis=0)
+    fit_center = mx.median(fit_shift_float)
+    fit_maximum = mx.max(fit_raw)
+    query_raw = mx.abs(query_shift_float - fit_center)
+    counts = mx.sum(
+        fit_raw.reshape((1, -1)) <= query_raw.reshape((-1, 1)), axis=1
+    ).astype(mx.float64)
+    ranks = (1.0 + counts) / (float(fit_rows.shape[0]) + 1.0)
+    confirmed = (query_raw > 0.0) & (query_raw > fit_maximum)
+    return (
+        fit_peaks,
+        fit_presence,
+        query_peaks,
+        query_presence,
+        fit_shifts,
+        query_shifts,
+        fit_raw,
+        query_raw,
+        ranks,
+        confirmed,
+        fit_maximum,
+    )
+
+
+def _host_mlx_outputs_antigravity(outputs):
+    mx.eval(*outputs)
+    return tuple(np.asarray(value) for value in outputs)
+
+
+def _mlx_output_bytes_antigravity(host_outputs):
+    chunks = []
+    for value in host_outputs:
+        array = np.ascontiguousarray(np.asarray(value))
+        metadata_bytes = (array.dtype.str + ":" + repr(array.shape)).encode("ascii")
+        data = array.tobytes(order="C")
+        chunks.append(struct.pack("<Q", len(metadata_bytes)) + metadata_bytes)
+        chunks.append(struct.pack("<Q", len(data)) + data)
+    return b"".join(chunks)
+
+
+def _ineligible_mlx_assessment_antigravity(reason, *, available):
     return BackendAssessmentAntigravity(
         backend="mlx",
-        available=False,
+        available=available,
         finite=False,
         python_reference_passed=None,
         parity_passed=False,
@@ -275,82 +344,106 @@ def assess_mlx_smoke_antigravity(
     repetitions,
 ):
     if not _mlx_available_antigravity():
-        return _ineligible_mlx_assessment_antigravity("mlx_unavailable")
+        return _ineligible_mlx_assessment_antigravity(
+            "mlx_unavailable", available=False
+        )
 
-    started = time.perf_counter()
     try:
-        mlx_fit64 = mx.array(np.ascontiguousarray(fit_rows), dtype=mx.float64)
-        mlx_query64 = mx.array(np.ascontiguousarray(query_rows), dtype=mx.float64)
-        mx.eval(mlx_fit64, mlx_query64)
-        transfer_seconds = time.perf_counter() - started
-
-        def shifts_for(batch):
-            peaks = _peak_windows_antigravity(batch)
-            return peaks[:, 1:] - peaks[:, :1]
-
-        fit_shifts_mx = shifts_for(mlx_fit64)
-        query_shifts_mx = shifts_for(mlx_query64)
-        mx.eval(fit_shifts_mx, query_shifts_mx)
-        fit_shifts = np.asarray(fit_shifts_mx, dtype=np.int64).reshape(-1)
-        query_shifts = np.asarray(query_shifts_mx, dtype=np.int64).reshape(-1)
-    except (ValueError, RuntimeError) as error:
+        cold_started = time.perf_counter()
+        first_host = _host_mlx_outputs_antigravity(
+            _complete_mlx_outputs_antigravity(fit_rows, query_rows)
+        )
+        cold_seconds = time.perf_counter() - cold_started
+    except Exception as error:
         reason = str(error)
         if "float64" in reason:
             reason = "float64_unsupported_on_" + _mlx_device_name_antigravity()
-        return _ineligible_mlx_assessment_antigravity(reason)
+        return _ineligible_mlx_assessment_antigravity(reason, available=True)
 
-    fit_shift_values = fit_shifts.astype(np.float64)
-    query_shift_values = query_shifts.astype(np.float64)
-    fit_raw = np.empty(fit_shift_values.size, dtype=np.float64)
-    for excluded in range(fit_shift_values.size):
-        others = np.delete(fit_shift_values, excluded, axis=0)
-        fit_raw[excluded] = abs(float(fit_shift_values[excluded]) - float(np.median(others)))
-    fit_center = float(np.median(fit_shift_values))
-    maximum = float(np.max(fit_raw))
-    query_raw = np.abs(query_shift_values - fit_center)
-    ranks = (1.0 + np.sum(fit_raw[None, :] <= query_raw[:, None], axis=1).astype(np.float64)) / (float(fit_raw.size) + 1.0)
-    confirmed = (query_raw > 0.0) & (query_raw > maximum)
-
+    (
+        fit_peaks,
+        fit_presence,
+        query_peaks,
+        query_presence,
+        fit_shifts,
+        query_shifts,
+        fit_raw,
+        query_raw,
+        ranks,
+        confirmed,
+        maximum,
+    ) = first_host
+    fit_raw = np.asarray(fit_raw, dtype=np.float64).reshape(-1)
+    query_raw = np.asarray(query_raw, dtype=np.float64).reshape(-1)
+    ranks = np.asarray(ranks, dtype=np.float64).reshape(-1)
+    confirmed = np.asarray(confirmed, dtype=np.bool_).reshape(-1)
+    maximum_value = float(np.asarray(maximum, dtype=np.float64).reshape(()))
     finite = bool(
         np.all(np.isfinite(fit_raw))
         and np.all(np.isfinite(query_raw))
         and np.all(np.isfinite(ranks))
+        and math.isfinite(maximum_value)
     )
     exact_indices = bool(
-        tuple(fit_shifts.tolist()) == tuple(numba_result.fit_shifts)
-        and tuple(query_shifts.tolist()) == tuple(numba_result.query_shifts)
-        and tuple(ranks.tolist()) == tuple(numba_result.query_ranks)
+        np.asarray(fit_peaks[:, 0]).tolist()
+        == numba_result.fit_early_peak_lags.tolist()
+        and np.asarray(fit_peaks[:, 1]).tolist()
+        == numba_result.fit_late_peak_lags.tolist()
+        and np.asarray(fit_presence, dtype=np.bool_).tolist()
+        == numba_result.fit_peak_presence.tolist()
+        and np.asarray(query_peaks[:, 0]).tolist()
+        == numba_result.query_early_peak_lags.tolist()
+        and np.asarray(query_peaks[:, 1]).tolist()
+        == numba_result.query_late_peak_lags.tolist()
+        and np.asarray(query_presence, dtype=np.bool_).tolist()
+        == numba_result.query_peak_presence.tolist()
+        and np.asarray(fit_shifts).reshape(-1).tolist()
+        == numba_result.fit_shifts.tolist()
+        and np.asarray(query_shifts).reshape(-1).tolist()
+        == numba_result.query_shifts.tolist()
+        and ranks.tolist() == numba_result.query_ranks.tolist()
         and confirmed.tolist() == numba_result.confirmation_mask.tolist()
     )
     raw_error = float(
         max(
-            float(np.max(np.abs(fit_raw - np.asarray(numba_result.fit_raw_shift, dtype=np.float64)))) if fit_raw.size else 0.0,
-            float(np.max(np.abs(query_raw - np.asarray(numba_result.query_raw_shift, dtype=np.float64)))) if query_raw.size else 0.0,
-            abs(maximum - float(numba_result.fit_normal_max_raw_shift)),
+            float(np.max(np.abs(fit_raw - numba_result.fit_raw_shift)))
+            if fit_raw.size
+            else 0.0,
+            float(np.max(np.abs(query_raw - numba_result.query_raw_shift)))
+            if query_raw.size
+            else 0.0,
+            abs(maximum_value - float(numba_result.fit_normal_max_raw_shift)),
         )
     )
 
     timing_samples = []
+    deterministic = True
+    first_bytes = _mlx_output_bytes_antigravity(first_host)
     for _ in range(repetitions):
         repetition_started = time.perf_counter()
-        repeated_shifts = shifts_for(mlx_fit64)
-        mx.eval(repeated_shifts)
+        repeated_host = _host_mlx_outputs_antigravity(
+            _complete_mlx_outputs_antigravity(fit_rows, query_rows)
+        )
         timing_samples.append(time.perf_counter() - repetition_started)
+        deterministic = deterministic and (
+            _mlx_output_bytes_antigravity(repeated_host) == first_bytes
+        )
     warm_median, warm_iqr = _timing_summary_antigravity(timing_samples)
-    total_elapsed = transfer_seconds + warm_median
-    speedup = float(numba_warm_median_seconds / total_elapsed) if total_elapsed > 0.0 else math.inf
+    speedup = (
+        float(numba_warm_median_seconds / warm_median)
+        if warm_median > 0.0
+        else math.inf
+    )
 
     reasons = []
-    if not _mlx_available_antigravity():
-        reasons.append("mlx_unavailable")
-    if mlx_fit64.dtype != mx.float64:
-        reasons.append("float64_unsupported")
     if not finite:
         reasons.append("nonfinite_output")
     if raw_error > 1e-12:
         reasons.append("raw_parity_tolerance_exceeded")
     if not exact_indices:
         reasons.append("candidate_index_mismatch")
+    if not deterministic:
+        reasons.append("nondeterministic_output")
     if speedup < required_speedup:
         reasons.append(f"speedup_below_{required_speedup:.1f}x")
     eligible = not reasons
@@ -362,8 +455,8 @@ def assess_mlx_smoke_antigravity(
         parity_passed=raw_error <= 1e-12 and exact_indices,
         exact_candidate_indices=exact_indices,
         max_raw_abs_error=raw_error,
-        deterministic=True,
-        cold_seconds=None,
+        deterministic=deterministic,
+        cold_seconds=cold_seconds,
         warm_median_seconds=warm_median,
         warm_iqr_seconds=warm_iqr,
         speedup=speedup if math.isfinite(speedup) else 1e300,
@@ -382,7 +475,6 @@ def assess_runtime_antigravity(
     _require_strict_runtime_arguments_antigravity(
         repetitions, reference_tolerance, required_mlx_speedup
     )
-    input_shape = tuple(np.asarray(fit_rows).shape)
     started = time.perf_counter()
     first = score_acf_peak_lag_numba_antigravity(fit_rows, query_rows)
     cold_seconds = time.perf_counter() - started
@@ -423,23 +515,41 @@ def assess_runtime_antigravity(
         reference_passed=reference_passed,
         mlx_assessment=mlx_assessment,
         required_mlx_speedup=float(required_mlx_speedup),
-        input_shape=input_shape,
+        fixture_shape=fixture.shape,
     )
 
 
 def score_bytes_antigravity(result):
-    fields = (
+    arrays = (
         result.fit_early_peak_lags, result.fit_late_peak_lags, result.fit_peak_presence,
         result.query_early_peak_lags, result.query_late_peak_lags, result.query_peak_presence,
         result.fit_shifts, result.query_shifts, result.fit_raw_shift,
         result.query_raw_shift, result.query_ranks, result.confirmation_mask,
-        result.backend.encode("ascii"),
-        np.asarray(result.fit_normal_max_raw_shift, dtype=np.float64).tobytes(order="C"),
     )
-    return b"".join(
-        field if isinstance(field, bytes) else np.asarray(field, order="C").tobytes()
-        for field in fields
+    chunks = []
+    for value in arrays:
+        array = np.ascontiguousarray(np.asarray(value))
+        description = (array.dtype.str + ":" + repr(array.shape)).encode("ascii")
+        data = array.tobytes(order="C")
+        chunks.extend(
+            (
+                struct.pack("<Q", len(description)),
+                description,
+                struct.pack("<Q", len(data)),
+                data,
+            )
+        )
+    backend = result.backend.encode("utf-8")
+    scalar = struct.pack("<d", float(result.fit_normal_max_raw_shift))
+    chunks.extend(
+        (
+            struct.pack("<Q", len(backend)),
+            backend,
+            struct.pack("<Q", len(scalar)),
+            scalar,
+        )
     )
+    return b"".join(chunks)
 
 
 def _require_strict_runtime_arguments_antigravity(
@@ -470,6 +580,7 @@ def manifest_payload_antigravity(result):
             "numpy_version": np.__version__,
             "llvmlite_version": llvmlite.__version__,
             "mlx_version": mx.__version__,
+            "mlx_metal_version": _package_version_antigravity("mlx-metal"),
             "device": _mlx_device_name_antigravity(),
             "platform": platform.platform(),
             "python_version": platform.python_version(),
@@ -487,6 +598,7 @@ def manifest_payload_antigravity(result):
         },
         "parity": {
             name: {
+                "available": backend.available,
                 "finite": backend.finite,
                 "python_reference_passed": backend.python_reference_passed,
                 "parity_passed": backend.parity_passed,
@@ -494,6 +606,7 @@ def manifest_payload_antigravity(result):
                 "deterministic": backend.deterministic,
                 "eligible": backend.eligible,
                 "fallback_reason": backend.fallback_reason,
+                "max_raw_abs_error": backend.max_raw_abs_error,
             }
             for name, backend in result.backends.items()
         },

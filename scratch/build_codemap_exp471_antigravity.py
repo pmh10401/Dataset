@@ -51,6 +51,9 @@ ACCELERATION_ANTIGRAVITY = _package_file_antigravity("acceleration_antigravity.p
 ACCELERATION_TEST_ANTIGRAVITY = _package_test_antigravity(
     "test_acceleration_antigravity.py"
 )
+ACCELERATION_ASSESSMENT_ANTIGRAVITY = (
+    "scratch/exp471_acceleration_assessment_antigravity.json"
+)
 BUILDER_ANTIGRAVITY = "scratch/build_codemap_exp471_antigravity.py"
 IMPLEMENTATION_REPORT_ANTIGRAVITY = "docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html"
 TASK_BRIEF_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-1-brief-antigravity.html"
@@ -111,6 +114,7 @@ EXISTING_REPRESENTED_PATHS_ANTIGRAVITY = (
     ACF_TEST_ANTIGRAVITY,
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
     ACCELERATION_TEST_ANTIGRAVITY,
+    ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     IMPLEMENTATION_REPORT_ANTIGRAVITY,
 ) + TRIPLET_ANTIGRAVITY
@@ -138,6 +142,7 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     ACF_TEST_ANTIGRAVITY,
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
     ACCELERATION_TEST_ANTIGRAVITY,
+    ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     _predecessor_file_antigravity("sources_antigravity.py"),
     _predecessor_file_antigravity("interpolation_antigravity.py"),
@@ -278,6 +283,11 @@ def build_graph_antigravity() -> dict[str, Any]:
             (ACCELERATION_TEST_ANTIGRAVITY,), "assess_runtime_antigravity",
         ),
         _node_antigravity(
+            "acceleration_assessment", ACCELERATION_ASSESSMENT_ANTIGRAVITY, "Task 3 evidence readers",
+            "Records the public fixture shape, environment versions, Numba timings/parity, MLX eligibility reason, selected backend, and zero restricted-run counters.",
+            (), "selected_backend",
+        ),
+        _node_antigravity(
             "config_test", CONFIG_TEST_ANTIGRAVITY, "focused unittest command",
             "Covers frozen values, exact runtime types, tuple order, mutation rejection, and type/order drift rejection.",
             (), "Exp471ConfigTestAntigravity",
@@ -304,17 +314,17 @@ def build_graph_antigravity() -> dict[str, Any]:
         ),
         _node_antigravity(
             "acceleration_test", ACCELERATION_TEST_ANTIGRAVITY, "focused unittest command",
-            "Covers frozen fixture authority, Numba/MLX-only backend keys, Python STOP, invalid arguments, repeated assessment gates, manifest fields, and empty-query validity.",
+            "Covers frozen fixture authority, full MLX CPU parity, exact lag boundaries, full-output determinism bytes, strict arguments, manifest fields, and GPU fallback.",
             (), "Exp471AccelerationTestAntigravity",
         ),
         _node_antigravity(
-            "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1–2 closeout",
-            "Records Task 1–2 scope, RED/GREEN, code-map relations, changed files, dashboard checks, and pending boundaries.",
+            "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1–3 closeout",
+            "Records Task 1–3 scope, parity evidence, code-map relations, changed files, dashboard checks, and pending boundaries.",
             (), "Exp471 구현 보고",
         ),
         _node_antigravity(
             "task3_report", TASK3_REPORT_ANTIGRAVITY, "Task 3 parent handoff",
-            "Preserves Task 3 RED import failure, two-pass six-test GREEN evidence, Numba/MLX eligibility outcome, and execution boundary.",
+            "Preserves Task 3 RED import failure, two-pass 12-test GREEN evidence, Numba/MLX eligibility outcome, and execution boundary.",
             (), "Task 3",
         ),
         _node_antigravity(
@@ -375,6 +385,7 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("python_reference", "calls", "acf_peak_lag", PYTHON_REFERENCE_ANTIGRAVITY, "ACFPeakLagScoresAntigravity"),
         _edge_antigravity("task3_brief", "documents", "acceleration", TASK3_BRIEF_ANTIGRAVITY, "assess_runtime_antigravity"),
         _edge_antigravity("acceleration", "calls", "python_reference", ACCELERATION_ANTIGRAVITY, "score_acf_peak_lag_python_reference_antigravity"),
+        _edge_antigravity("acceleration", "writes", "acceleration_assessment", ACCELERATION_ANTIGRAVITY, "manifest_payload_antigravity"),
         _edge_antigravity("acceleration_test", "tests", "acceleration", ACCELERATION_TEST_ANTIGRAVITY, "assess_runtime_antigravity"),
         _edge_antigravity("python_reference_test", "tests", "python_reference", PYTHON_REFERENCE_TEST_ANTIGRAVITY, "score_acf_peak_lag_python_reference_antigravity"),
         _edge_antigravity("python_reference_test", "tests", "acf_peak_lag", PYTHON_REFERENCE_TEST_ANTIGRAVITY, "score_acf_peak_lag_numba_antigravity"),
@@ -399,6 +410,7 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("map_builder", "documents", "acf_peak_lag", BUILDER_ANTIGRAVITY, "ACFPeakLagScoresAntigravity"),
         _edge_antigravity("map_builder", "documents", "python_reference", BUILDER_ANTIGRAVITY, "score_acf_peak_lag_python_reference_antigravity"),
         _edge_antigravity("map_builder", "documents", "acceleration", BUILDER_ANTIGRAVITY, "assess_runtime_antigravity"),
+        _edge_antigravity("map_builder", "documents", "acceleration_assessment", BUILDER_ANTIGRAVITY, "ACCELERATION_ASSESSMENT_ANTIGRAVITY"),
         _edge_antigravity("map_builder", "reviews", "exp470_config_contract", BUILDER_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
         _edge_antigravity("map_builder", "reviews", "exp470_contracts_pattern", BUILDER_ANTIGRAVITY, "Exp470QualificationAntigravity"),
     ]
@@ -423,7 +435,7 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         "<title>Exp471 code map</title></head><body><main>"
         "<h1>Exp471 Task 2 Code Map</h1>"
-        "<p>Versioned authority, contract, and ACF scorer map; future Task 3–6 files are explicitly pending.</p>"
+        "<p>Versioned authority, ACF scorer, and runtime-assessment map; future Task 4–6 files are explicitly pending.</p>"
         "<table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>"
         + rows + "</tbody></table>"
         '<script id="exp471-codemap-json-antigravity" type="application/json">'

@@ -3,12 +3,17 @@ import json
 import math
 import unittest
 
+import mlx.core as mx
 import numpy as np
 
 from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acceleration_antigravity import (
     BackendAssessmentAntigravity,
     RuntimeAssessmentAntigravity,
     assess_runtime_antigravity,
+    _complete_mlx_outputs_antigravity,
+    _dominant_peaks_from_acf_mlx_antigravity,
+    _host_mlx_outputs_antigravity,
+    _mlx_output_bytes_antigravity,
     fixed_reference_rows_antigravity,
     manifest_payload_antigravity,
 )
@@ -26,16 +31,6 @@ from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_a
     periodic_row_antigravity,
     peak_shift_row_numba_antigravity,
 )
-
-FROZEN_CONFIG_REQUIRED_SPEEDUP_ANTIGRAVITY = 1.1
-
-
-class _FrozenConfigProxyAntigravity:
-    required_speedup = FROZEN_CONFIG_REQUIRED_SPEEDUP_ANTIGRAVITY
-
-
-FROZEN_CONFIG = _FrozenConfigProxyAntigravity()
-
 
 def valid_fit_query_antigravity():
     fit_rows = np.stack(
@@ -191,15 +186,49 @@ class Exp471AccelerationTestAntigravity(unittest.TestCase):
         result = assess_runtime_antigravity(self.fit_rows, empty_query, repetitions=1)
         self.assertTrue(result.backends["numba"].eligible)
 
-    def test_peak_boundary_neighbors_are_exact_frozen_lags(self):
-        """Break caught: roll wraps lag 25 into lag 2 and can invent a boundary peak."""
-        acf = np.zeros(25, dtype=np.float64)
-        acf[0] = 0.5
-        observed = dominant_peak_from_acf_numba_antigravity(acf)
-        self.assertEqual(observed, (0, False))
+    def test_mlx_peak_boundary_uses_real_lag1_and_lag25_neighbors(self):
+        acf = np.zeros((2, 25), dtype=np.float64)
+        acf[0, 1:4] = (0.1, 0.7, 0.1)
+        acf[0, 22:25] = (0.1, 0.8, 0.9)
+        acf[1, 1:4] = (0.1, 0.8, 0.1)
+        acf[1, 7:10] = (0.1, 0.8, 0.1)
+        with mx.stream(mx.cpu):
+            peaks, presence = _dominant_peaks_from_acf_mlx_antigravity(
+                mx.array(acf, dtype=mx.float64)
+            )
+            mx.eval(peaks, presence)
+        self.assertEqual(np.asarray(peaks).tolist(), [3, 3])
+        self.assertEqual(np.asarray(presence).tolist(), [True, True])
+        for row, peak in zip(acf, peaks, strict=True):
+            self.assertEqual(
+                dominant_peak_from_acf_numba_antigravity(row), (int(peak), True)
+            )
 
-        positive = np.linspace(1.0, 0.1, 25, dtype=np.float64)
-        self.assertEqual(dominant_peak_from_acf_numba_antigravity(positive), (0, False))
+    def test_complete_mlx_cpu_path_matches_numba_and_is_deterministic(self):
+        rows = fixed_reference_rows_antigravity()
+        expected = score_acf_peak_lag_numba_antigravity(rows[:3], rows[3:])
+        with mx.stream(mx.cpu):
+            first = _host_mlx_outputs_antigravity(
+                _complete_mlx_outputs_antigravity(rows[:3], rows[3:])
+            )
+            second = _host_mlx_outputs_antigravity(
+                _complete_mlx_outputs_antigravity(rows[:3], rows[3:])
+            )
+        self.assertEqual(_mlx_output_bytes_antigravity(first), _mlx_output_bytes_antigravity(second))
+        self.assertEqual(first[0][:, 0].tolist(), expected.fit_early_peak_lags.tolist())
+        self.assertEqual(first[0][:, 1].tolist(), expected.fit_late_peak_lags.tolist())
+        self.assertEqual(first[1].tolist(), expected.fit_peak_presence.tolist())
+        self.assertEqual(first[2][:, 0].tolist(), expected.query_early_peak_lags.tolist())
+        self.assertEqual(first[2][:, 1].tolist(), expected.query_late_peak_lags.tolist())
+        self.assertEqual(first[3].tolist(), expected.query_peak_presence.tolist())
+        self.assertEqual(first[4].tolist(), expected.fit_shifts.tolist())
+        self.assertEqual(first[5].tolist(), expected.query_shifts.tolist())
+        np.testing.assert_allclose(first[6], expected.fit_raw_shift, rtol=0.0, atol=1e-12)
+        np.testing.assert_allclose(first[7], expected.query_raw_shift, rtol=0.0, atol=1e-12)
+        self.assertEqual(first[8].dtype, np.dtype(np.float64))
+        np.testing.assert_array_equal(first[8], expected.query_ranks)
+        np.testing.assert_array_equal(first[9], expected.confirmation_mask)
+        self.assertEqual(float(first[10]), expected.fit_normal_max_raw_shift)
 
     def test_numba_determinism_covers_every_score_field(self):
         """Break caught: backend or scalar drift escapes array-only byte comparison."""
@@ -210,6 +239,16 @@ class Exp471AccelerationTestAntigravity(unittest.TestCase):
             self.assertEqual(
                 score_bytes_antigravity(first),
                 score_bytes_antigravity(replace(first, backend="different")),
+            )
+        with self.assertRaises(AssertionError):
+            self.assertEqual(
+                score_bytes_antigravity(first),
+                score_bytes_antigravity(
+                    replace(
+                        first,
+                        fit_normal_max_raw_shift=first.fit_normal_max_raw_shift + 1.0,
+                    )
+                ),
             )
 
     def test_runtime_arguments_are_strict_before_scoring(self):
@@ -227,11 +266,10 @@ class Exp471AccelerationTestAntigravity(unittest.TestCase):
             with self.subTest(case=index), self.assertRaisesRegex(ValueError, "must be"):
                 bad_call()
 
-    def test_runtime_fixture_shape_reflects_actual_input_not_query_count(self):
-        """Break caught: shape reports query width and hides caller input dimensions."""
+    def test_runtime_fixture_shape_records_public_reference_fixture(self):
         one_query = self.query_rows[:1]
         result = assess_runtime_antigravity(self.fit_rows, one_query, repetitions=1)
-        self.assertEqual(result.fixture_shape, tuple(self.fit_rows.shape))
+        self.assertEqual(result.fixture_shape, (6, 140))
 
     def test_manifest_records_python_numpy_and_required_speed_gate(self):
         """Break caught: manifest omits Python/NumPy versions and preregistered gate value."""
@@ -240,9 +278,13 @@ class Exp471AccelerationTestAntigravity(unittest.TestCase):
         environment = payload["environment"]
         self.assertIn("python_version", environment)
         self.assertIn("numpy_version", environment)
+        self.assertIn("mlx_metal_version", environment)
         self.assertEqual(environment["numpy_version"], np.__version__)
         self.assertIn("required_mlx_speedup", payload)
         self.assertEqual(payload["required_mlx_speedup"], 1.1)
+        for backend in ("numba", "mlx"):
+            self.assertIn("available", payload["parity"][backend])
+            self.assertIn("max_raw_abs_error", payload["parity"][backend])
 
 
 if __name__ == "__main__":
