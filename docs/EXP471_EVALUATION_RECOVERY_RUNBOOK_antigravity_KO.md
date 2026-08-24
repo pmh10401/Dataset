@@ -24,9 +24,11 @@ create-only이며, 이미 있는 바이트가 정확히 같을 때만 재사용�
 삭제하거나 덮어쓰거나 이름을 바꾸지 않는다. symlink, 예상과 다른 파일
 종류, 예상 밖의 기존 destination도 임의로 고치지 말고 보존한 채 조사한다.
 
-한 시점에 공식 Exp471 명령은 하나만 실행한다. 특히 보고서 실행 중에
-별도의 `prepare`, `status` 또는 다른 Exp471 프로세스를 동시에 시작하지
-않는다.
+한 시점에 상태를 바꾸는 공식 Exp471 명령은 하나만 실행한다. Task 9에서는
+그 명령이 `report` 하나다. 단, `report` 실행을 관찰하기 위한 read-only
+`status`는 별도 터미널에서 동시에 실행할 수 있다. `status`는 공식 작업을
+시작·중단·변경하지 않는다. `report` 실행 중에는 `verify-source`,
+`benchmark-prepare`, `prepare`, 또 다른 `report` 같은 명령을 시작하지 않는다.
 
 ## 2. 공식 명령
 
@@ -43,7 +45,8 @@ cd '/Users/mac/Documents/Time Series/.worktrees/exp471-exp467-evaluation-recover
   scratch/run_exp471_exp467_evaluation_recovery_antigravity.py --help
 ```
 
-읽기 전용 상태 확인은 다른 Exp471 명령이 실행 중이지 않을 때 수행한다.
+읽기 전용 상태 확인은 실행 전·후뿐 아니라 `report` 실행 중에도 별도
+터미널에서 수행할 수 있다.
 
 ```sh
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python \
@@ -80,6 +83,25 @@ Task 9에서는 아래의 재개 가능한 `report` 명령을 한 번만 시작�
 별도의 `evaluate` 명령은 공개 CLI에 없으며 운영자는 이를 만들거나 실행하지
 않는다. 특히 `report`와 동시에 별도 `evaluate` 프로세스를 시작해서는 안
 된다.
+
+### 별도 터미널의 실시간 read-only 모니터링
+
+터미널 1에서는 위의 `report` 명령 하나를 계속 실행한다. 터미널 2에서는
+같은 고정 worktree로 이동한 뒤 다음 `status` 명령만 필요할 때 반복한다.
+
+```sh
+cd '/Users/mac/Documents/Time Series/.worktrees/exp471-exp467-evaluation-recovery-antigravity'
+
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python \
+  scratch/run_exp471_exp467_evaluation_recovery_antigravity.py status
+```
+
+`status`는 cache, evaluation, report, progress를 관찰할 뿐 새 작업을
+예약하거나 공식 프로세스를 시작·중단·재시작하지 않는다. progress writer는
+exclusive lock으로 append하고 `status`는 shared lock으로 완전한 최신 기록을
+읽는다. 따라서 실행 중 진행률, 실패 수, ETA는 이 명령의 stdout JSON으로만
+확인한다. 실행 중인 `progress_antigravity.jsonl`을 `cat`, `tail` 또는 다른
+도구로 직접 읽어 잠깐 보이는 미완성 tail을 권위로 해석해서는 안 된다.
 
 ## 3. 표준 출력과 오류 출력
 
@@ -204,8 +226,10 @@ stage별 고정 total과 의미는 다음과 같다.
 | `report` | 11 | 보고서 파일 집합과 complete marker가 durable함 |
 
 로그를 직접 편집, 잘라내기, 교체, 삭제하거나 실패 수를 0으로 고치지 않는다.
-읽어야 한다면 공식 프로세스가 완전히 종료된 뒤 read-only로 확인하고,
-마지막 줄이 불완전하거나 schema/path/count 관계가 맞지 않으면 즉시 중단한다.
+직접 읽어야 한다면 공식 프로세스가 완전히 종료된 뒤 forensic 목적으로만
+read-only 확인하고, 마지막 줄이 불완전하거나 schema/path/count 관계가
+맞지 않으면 즉시 중단한다. 실행 중에는 직접 JSONL을 읽지 않고 공식
+`status`의 locked snapshot만 사용한다.
 `status`가 progress 파일을 malformed, noncanonical, truncated, unsafe로
 판정하면 파일을 복구하려고 쓰지 말고 원본을 보존해 조사 담당자에게 넘긴다.
 
@@ -225,7 +249,8 @@ JSON도 별도 운영 증거로 보존한다.
 ## 6. 안전한 중단과 재개
 
 1. 가능한 경우 실행 중인 공식 명령에 `Ctrl-C`를 한 번 보내 정상 중단을
-   요청한다. 새 Exp471 명령을 동시에 시작하지 않는다.
+   요청한다. 새 mutating Exp471 명령을 동시에 시작하지 않는다. 중단 상태를
+   관찰하는 read-only `status`만 별도 터미널에서 허용한다.
 2. 기존 프로세스가 완전히 끝났음을 확인한다. 강제 종료는 정상 중단이
    불가능할 때만 사용하며, 종료 직후 파일을 정리하지 않는다.
 3. 공식 `status` 명령을 단독으로 실행해 durable count, latest progress,
@@ -266,7 +291,9 @@ canonical report destination이 이미 있지만 complete marker가 없거나,
   `exp471-command-result-antigravity.v1` JSON 레코드가 있다.
 - JSON의 `command`가 `report`이며 네 digest 필드가 64자리 SHA-256이다.
 - `report_root`가 고정 Exp471 report 경로다.
-- 별도 동시 `evaluate` 또는 `prepare` 프로세스를 시작하지 않았다.
+- 별도 동시 `verify-source`, `benchmark-prepare`, `prepare`, `evaluate` 또는
+  또 다른 `report` 프로세스를 시작하지 않았다. 별도 터미널의 read-only
+  `status`만 실시간 관찰자로 사용했다.
 - Exp467 루트와 파일을 변경하지 않았다.
 - 알 수 없는 산출물과 retained quarantine을 삭제하거나 덮어쓰지 않았다.
 - 실패가 있었다면 stderr JSON, 마지막 유효 progress 레코드, 재개 결과를
