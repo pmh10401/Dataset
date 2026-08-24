@@ -527,6 +527,7 @@ def _dashboard_snapshot_payload_antigravity(
             for seed in FROZEN_CONFIG_ANTIGRAVITY.seeds
         ],
         "private_reproducibility": {
+            "comparison_status": "not_yet_compared",
             "run_1": "not_run",
             "run_2": "not_run",
             "status": (

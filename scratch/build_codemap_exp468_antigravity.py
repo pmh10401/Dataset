@@ -108,6 +108,20 @@ TASK5_REPORT_ANTIGRAVITY = (
     "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
     "task-5-report-antigravity.html"
 )
+TASK6_BRIEF_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
+    "task-6-brief-antigravity.html"
+)
+TASK6_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/"
+    "2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/"
+    "task-6-report-antigravity.html"
+)
+CLI_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/cli_antigravity.py"
+CLI_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_cli_antigravity.py"
+PIPELINE_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_pipeline_antigravity.py"
+LAUNCHER_ANTIGRAVITY = "scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py"
 SCORING_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/scoring_antigravity.py"
 QUALIFICATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/qualification_antigravity.py"
 EVALUATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/evaluation_antigravity.py"
@@ -168,6 +182,12 @@ TRACKED_PATHS_ANTIGRAVITY = (
     TASK3_FALLBACK_REPORT_ANTIGRAVITY,
     TASK4_REPORT_ANTIGRAVITY,
     TASK5_REPORT_ANTIGRAVITY,
+    TASK6_BRIEF_ANTIGRAVITY,
+    TASK6_REPORT_ANTIGRAVITY,
+    CLI_ANTIGRAVITY,
+    CLI_TEST_ANTIGRAVITY,
+    PIPELINE_TEST_ANTIGRAVITY,
+    LAUNCHER_ANTIGRAVITY,
     SCORING_ANTIGRAVITY,
     QUALIFICATION_ANTIGRAVITY,
     EVALUATION_ANTIGRAVITY,
@@ -193,10 +213,10 @@ TRACKED_PATHS_ANTIGRAVITY = (
     DASHBOARD_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp468_task5_publication_codemap_v4"
-LOCK_SCHEMA_ANTIGRAVITY = "exp468_task5_publication_codemap_lock_v4"
-SOURCE_PARENT_COMMIT_ANTIGRAVITY = "d027cced7893a256a51978ce67dcd9590bfcbd35"
-GENERATED_AT_ANTIGRAVITY = "2026-08-24T09:00:00+09:00"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp468_task6_preflight_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp468_task6_preflight_codemap_lock_v1"
+SOURCE_PARENT_COMMIT_ANTIGRAVITY = "e583672d1924fb580c96ccdf246bfee4fadd651d"
+GENERATED_AT_ANTIGRAVITY = "2026-08-24T12:00:00+09:00"
 PRE_APPROVAL_BENCHMARK_SHA256_ANTIGRAVITY = (
     "938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b"
 )
@@ -343,8 +363,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity(
             "implementation_plan",
             PLAN_ANTIGRAVITY,
-            "Caller: Task-by-Task controller and later implementers. Effect: records Task 1-5 completion, the unchanged failed 1.1x gate, approved NumPy fallback, exact scoring/replay/publication/gate definitions, zero/null execution truth, and Task 6 as the next implementation boundary.",
-            "implementation_task_5_complete_no_private_run",
+            "Caller: Task-by-Task controller and later implementers. Effect: records Task 1-5 completion, the unchanged failed 1.1x gate, approved NumPy fallback, exact scoring/replay/publication/gate definitions, Task 6 preflight completion, zero/null execution truth, and private execution as the remaining approval boundary.",
+            "implementation_task_6_preflight_step_3_complete_no_private_run",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
@@ -608,17 +628,52 @@ def build_graph_antigravity() -> dict[str, Any]:
         ),
         _node_antigravity(
             "task6_cli",
-            PLAN_ANTIGRAVITY,
-            "Caller: future Task 6 CLI evaluate/inspect boundary. Effect: consumes the Task 5 publication and replay contracts without changing frozen science or exposing configuration selectors.",
-            "cli_antigravity.py",
-            [PLAN_ANTIGRAVITY],
+            CLI_ANTIGRAVITY,
+            "Caller: Task 6 CLI tests and the fixed-interpreter launcher. Effect: enforces the exact evaluate/inspect surface, fixed private roots, clean reviewed commit, lazy retained-input inspect, and canonical result payload without exposing tuning selectors or private data before approval.",
+            "main_antigravity",
+            [CLI_TEST_ANTIGRAVITY],
         ),
         _node_antigravity(
             "task6_pipeline",
-            PLAN_ANTIGRAVITY,
-            "Caller: future Task 6 pipeline runner. Effect: consumes the Task 5 seven-leaf publication and independent inspect result as the only result boundary before a user-approved private run.",
-            "pipeline",
-            [PLAN_ANTIGRAVITY],
+            CLI_ANTIGRAVITY,
+            "Caller: Task 6 pipeline tests and evaluate command. Effect: runs the fixed TRAIN-only loader/interpolation/authority/direct scorer/qualification/evaluation/publication sequence once, then invokes retained-input inspect while preserving neutral comparison status and seven-leaf root bytes.",
+            "_evaluate_at_root_antigravity",
+            [PIPELINE_TEST_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task6_cli_test",
+            CLI_TEST_ANTIGRAVITY,
+            "Caller: Task 6 RED/GREEN verifier. Effect: detects parser/root/commit cleanliness drift, source imports on inspect, canonical payload leakage, and fixed launcher sequence/fail-stop drift without creating private roots.",
+            "CliAntigravityTest",
+            [CLI_TEST_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task6_pipeline_test",
+            PIPELINE_TEST_ANTIGRAVITY,
+            "Caller: Task 6 pipeline verifier. Effect: detects blocked-fold, seed-major identity, direct-stage count, seven-leaf publication, neutral comparison, and path/run/time metadata drift using synthetic inputs and temporary roots.",
+            "PipelineAntigravityTest",
+            [PIPELINE_TEST_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task6_launcher",
+            LAUNCHER_ANTIGRAVITY,
+            "Caller: the approved private-run checkpoint only. Effect: uses the fixed interpreter and absolute repository path, validates the same clean reviewed commit before all four stages, advances canonical external state only after success, and stops without marking a failed stage complete.",
+            "run_private_sequence_antigravity",
+            [CLI_TEST_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task6_brief",
+            TASK6_BRIEF_ANTIGRAVITY,
+            "Caller: Task 6 implementation authority and user checkpoint. Effect: fixes the exact CLI, TRAIN-only pipeline, retained-input inspect semantics, launcher state contract, private-root boundary, verification commands, and no-TEST/FN rule.",
+            "Task 6",
+            [BUILDER_ANTIGRAVITY],
+        ),
+        _node_antigravity(
+            "task6_report",
+            TASK6_REPORT_ANTIGRAVITY,
+            "Caller: controller and final reviewer. Effect: records Task 6 RED/GREEN evidence, focused/full verification, direct-stage versus Task 5 replay counts, neutral comparison status, checked preflight items, zero private/official runs, and remaining approval boundary.",
+            "Task 6 — CLI·pipeline 사전검증 보고서",
+            [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
             "rank_auc",
@@ -659,7 +714,7 @@ def build_graph_antigravity() -> dict[str, Any]:
             "preregistration",
             PREREGISTRATION_ANTIGRAVITY,
             "Caller: governance and scientific reviewers. Effect: preserves the historical Task 1 freeze while recording Task 5's frozen seven-leaf publication/replay contract, backend-neutral science, and zero score/private/official/label activity plus null results and hashes.",
-            "implementation_task_5_complete_no_private_run",
+            "implementation_task_6_preflight_step_3_complete_no_private_run",
             [BUILDER_ANTIGRAVITY],
         ),
         _node_antigravity(
@@ -788,14 +843,30 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("task5_replay", "calls", "task4_evaluation", REPLAY_ANTIGRAVITY, "evaluate_qualification_antigravity"),
         _edge_antigravity("task5_dashboard_export", "consumes", "task5_replay", DASHBOARD_EXPORT_ANTIGRAVITY, "InspectedResultAntigravity"),
         _edge_antigravity("task5_report", "informs", "implementation_report", TASK5_REPORT_ANTIGRAVITY, "Task 5 구현 보고서"),
-        _edge_antigravity("task5_report", "informs", "dashboard_artifact", TASK5_REPORT_ANTIGRAVITY, "implementation_task_5_complete_no_private_run"),
+        _edge_antigravity("task5_report", "informs", "dashboard_artifact", TASK5_REPORT_ANTIGRAVITY, "GREEN"),
         _edge_antigravity("task5_artifacts", "consumed_by", "task6_cli", PLAN_ANTIGRAVITY, "cli_antigravity.py"),
         _edge_antigravity("task5_replay", "consumed_by", "task6_cli", PLAN_ANTIGRAVITY, "inspect --root PATH"),
         _edge_antigravity("task5_artifacts", "consumed_by", "task6_pipeline", PLAN_ANTIGRAVITY, "pipeline"),
         _edge_antigravity("task5_replay", "consumed_by", "task6_pipeline", PLAN_ANTIGRAVITY, "pipeline"),
+        _edge_antigravity("implementation_plan", "governs", "task6_brief", PLAN_ANTIGRAVITY, "Task 6 — 전체 검증·두 번 실행·최종 결과"),
+        _edge_antigravity("task6_brief", "governs", "task6_cli", TASK6_BRIEF_ANTIGRAVITY, "고정 명령"),
+        _edge_antigravity("task6_brief", "governs", "task6_pipeline", TASK6_BRIEF_ANTIGRAVITY, "evaluate 순서"),
+        _edge_antigravity("task6_brief", "governs", "task6_launcher", TASK6_BRIEF_ANTIGRAVITY, "고정 명령"),
+        _edge_antigravity("task6_brief", "governs", "task6_cli_test", TASK6_BRIEF_ANTIGRAVITY, "Step 1~2 완료 조건"),
+        _edge_antigravity("task6_brief", "governs", "task6_pipeline_test", TASK6_BRIEF_ANTIGRAVITY, "evaluate 순서"),
+        _edge_antigravity("task6_brief", "governs", "task6_report", TASK6_BRIEF_ANTIGRAVITY, "Step 1~2 완료 조건"),
+        _edge_antigravity("task6_cli_test", "tests", "task6_cli", CLI_TEST_ANTIGRAVITY, "CliAntigravityTest"),
+        _edge_antigravity("task6_pipeline_test", "tests", "task6_pipeline", PIPELINE_TEST_ANTIGRAVITY, "PipelineAntigravityTest"),
+        _edge_antigravity("task6_cli", "consumes", "task5_artifacts", CLI_ANTIGRAVITY, "publish_result_antigravity"),
+        _edge_antigravity("task6_cli", "consumes", "task5_replay", CLI_ANTIGRAVITY, "_load_replay_inspector_antigravity"),
+        _edge_antigravity("task6_pipeline", "consumes", "task5_artifacts", CLI_ANTIGRAVITY, "publish_result_antigravity"),
+        _edge_antigravity("task6_pipeline", "consumes", "task5_replay", CLI_ANTIGRAVITY, "inspect_result_antigravity"),
+        _edge_antigravity("task6_launcher", "calls", "task6_cli", LAUNCHER_ANTIGRAVITY, "_command_antigravity"),
+        _edge_antigravity("task6_report", "informs", "implementation_report", TASK6_REPORT_ANTIGRAVITY, "Task 6 — CLI·pipeline 사전검증 보고서"),
+        _edge_antigravity("task6_report", "informs", "dashboard_artifact", TASK6_REPORT_ANTIGRAVITY, "implementation_task_6_preflight_step_3_complete_no_private_run"),
         _edge_antigravity("task1_config", "documents", "preregistration", PREREGISTRATION_ANTIGRAVITY, "고정한 과학 정의"),
         _edge_antigravity("task1_contracts", "documents", "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "qualification은 seed-major 10개 fold"),
-        _edge_antigravity("implementation_plan", "documents", "runbook", RUNBOOK_ANTIGRAVITY, "다음 허용 작업"),
+        _edge_antigravity("implementation_plan", "documents", "runbook", RUNBOOK_ANTIGRAVITY, "Task 6 승인 뒤 단일 실행 경로"),
         _edge_antigravity("implementation_plan", "documents", "dashboard_artifact", DASHBOARD_ARTIFACT_ANTIGRAVITY, "progress_checklist"),
         _edge_antigravity("implementation_report", "informs", "dashboard_artifact", DASHBOARD_ARTIFACT_ANTIGRAVITY, "exp468_task5_truth"),
         _edge_antigravity("dashboard_artifact", "generates", "dashboard", DASHBOARD_ARTIFACT_ANTIGRAVITY, '"surface": "dashboard"'),
@@ -807,6 +878,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("map_builder", "verifies", "task4_brief", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
         _edge_antigravity("map_builder", "verifies", "task4_report", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
         _edge_antigravity("map_builder", "verifies", "task5_report", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
+        _edge_antigravity("map_builder", "verifies", "task6_brief", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
+        _edge_antigravity("map_builder", "verifies", "task6_report", BUILDER_ANTIGRAVITY, "_validated_html_text_antigravity"),
         _edge_antigravity("map_builder", "verifies", "dashboard_artifact", BUILDER_ANTIGRAVITY, "_validate_dashboard_antigravity"),
         _edge_antigravity("map_builder", "verifies", "dashboard", BUILDER_ANTIGRAVITY, "_validate_dashboard_antigravity"),
     ]
@@ -853,6 +926,10 @@ def build_graph_antigravity() -> dict[str, Any]:
             ["task5_artifacts", "task4_qualification", "task4_evaluation", "task5_replay"],
             ["task5_replay", "task5_dashboard_export", "dashboard"],
             ["task5_artifacts", "task6_cli", "task6_pipeline"],
+            ["task6_brief", "task6_cli_test", "task6_cli", "task6_launcher", "task6_report"],
+            ["task6_brief", "task6_pipeline_test", "task6_pipeline", "task6_report"],
+            ["task6_cli", "task5_artifacts", "task5_replay"],
+            ["task6_pipeline", "task5_artifacts", "task5_replay"],
             ["map_builder", "task4_brief", "task4_report", "implementation_report", "dashboard"],
         ],
         "task1_answers": {
@@ -879,6 +956,11 @@ def build_graph_antigravity() -> dict[str, Any]:
             "callers": "Task 5 publication tests call publish_result_antigravity, replay tests call inspect_result_antigravity, and the dashboard suite calls export_dashboard_antigravity. Publication and replay consume only the Task 4 FoldMethodScoresAntigravity, Exp468QualificationAntigravity, and QualificationDecisionAntigravity contracts; future Task 6 CLI/pipeline consumes the seven-leaf root and source-free inspect boundary.",
             "effects": "Writes exactly seven canonical leaves: one raw-evidence context, one dashboard snapshot, one scalar decision, three deterministic JSONL projections, and a self-excluding six-leaf SHA-256 map. It preserves 69x140 little-endian float64 C-order inputs, fit/query indices, raw JS/rank/confirmation/C10/AUC evidence, backend numpy, approval and pre-approval benchmark SHA values, and zero private/official execution truth. Replay recomputes Task 4 from retained inputs and rejects semantic tampering even after outer hashes are repaired; HTML remains deterministic and self-contained.",
             "tests": "test_artifacts_antigravity covers exact seven-leaf/self-excluding hash contents, canonical JSON/newline bytes, empty failed-fold output, seed-to-fold-to-method 30-row order, C0/S10/C10 summary order, provenance fields, and pre-write rejection of missing/additional/reordered records, fold swaps, wrong blocked splits, and forged qualification/decision without creating a root. test_replay_antigravity covers loader-free exact replay, every retained raw/metric/provenance/dashboard/decision/context/summary/failed-fold mutation, stale/repaired hash rejection, duplicate keys, malformed base64/shape/digest/NaN, and extra leaves. test_dashboard_export_antigravity covers deterministic Korean HTML with per-fold period evidence, C0 improvement, normal confirmation errors, qualification PASS/FAIL private status, both private runs not_run, and checked Task 5 items. The map validator covers Task 5 nodes, Task 6 consumer flows, HTML/dashboard truth, and new fingerprints.",
+        },
+        "task6_answers": {
+            "callers": "The Task 6 brief and checked plan govern cli_antigravity.py, its CLI/pipeline tests, and the fixed-interpreter sequence launcher. evaluate calls the exact Task 2 loader/interpolator, Exp465 authority, Task 4 scorer/qualification/evaluation, and Task 5 publisher/replay; inspect enters only the retained-input replay seam. The launcher calls the CLI in run1 evaluate→inspect→run2 evaluate→inspect order after validating the same clean reviewed commit before every stage.",
+            "effects": "Freezes the two-command public surface, exact two private roots, create-only and symlink rejection, 69×96→69×140 TRAIN-only direct-stage counts, seed-major 2×5 records, exact seven-leaf publication, and a neutral dashboard comparison_status=not_yet_compared while preserving the existing private_reproducibility.status decision. No root path, run index, or time metadata is written to result leaves; no TEST/FN, routing, champion, pending, promotion, official or private result is created during preflight.",
+            "tests": "test_cli_antigravity covers exact parser/root/commit boundaries, source-free parser and delayed inspect/main, canonical output, wrong HEAD/dirty porcelain, fixed interpreter and CWD-independent sequence, same commit on all stages, success-only state transitions, and fail-stop. test_pipeline_antigravity covers exact blocked folds, seed-major identity, one direct loader/interpolator/authority call, ten scores, qualification/evaluation/publication/inspect orchestration, neutral comparison state, seven leaves and metadata-free bytes. The map validator covers Task 6 brief/report, dashboard truth, HTML/JSON/lock structure, and fingerprints.",
         },
         "unknown_relationships": [],
     }
@@ -917,15 +999,17 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         for edge in graph["edges"]
     )
     answers = graph["task5_answers"]
+    task6_answers = graph["task6_answers"]
     embedded = html_module.escape(
         json.dumps(graph, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
     return f"""<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 5 publication 코드맵</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 6 preflight 코드맵</title>
 <style>body{{max-width:1240px;margin:2rem auto;padding:0 1rem;font:15px/1.65 system-ui;color:#172033}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.48rem;text-align:left;vertical-align:top}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow:auto}}.box{{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}}</style></head>
-<body><main><h1>Exp468 Task 5 publication 코드맵</h1>
-<div class="box"><p><strong>상태:</strong> <code>implementation_task_5_complete_no_private_run</code>. 이 지도는 Task 1-5 경계, 정확한 일곱 leaf publication, raw-input 독립 replay, 결정적 HTML dashboard, Task 6 CLI/pipeline 소비 edge와 호출자·영향·검사를 기록한다.</p></div>
-<h2>세 질문</h2><table><tr><th>무엇이 호출하는가?</th><td>{html_module.escape(answers['callers'])}</td></tr><tr><th>무엇에 영향을 주는가?</th><td>{html_module.escape(answers['effects'])}</td></tr><tr><th>어떤 검사가 덮는가?</th><td>{html_module.escape(answers['tests'])}</td></tr></table>
+<body><main><h1>Exp468 Task 6 preflight 코드맵</h1>
+<div class="box"><p><strong>상태:</strong> <code>implementation_task_6_preflight_step_3_complete_no_private_run</code>. 이 지도는 Task 1-5 경계와 Task 6 exact CLI·pipeline·순차 launcher의 호출자·영향·검사 및 OpenRouter Ox Alpha Ultra·로컬 Sol CLEAN 검토를 기록한다. private 실행과 TEST/FN 접근은 아직 없다.</p></div>
+<h2>Task 5 세 질문</h2><table><tr><th>무엇이 호출하는가?</th><td>{html_module.escape(answers['callers'])}</td></tr><tr><th>무엇에 영향을 주는가?</th><td>{html_module.escape(answers['effects'])}</td></tr><tr><th>어떤 검사가 덮는가?</th><td>{html_module.escape(answers['tests'])}</td></tr></table>
+<h2>Task 6 세 질문</h2><table><tr><th>무엇이 호출하는가?</th><td>{html_module.escape(task6_answers['callers'])}</td></tr><tr><th>무엇에 영향을 주는가?</th><td>{html_module.escape(task6_answers['effects'])}</td></tr><tr><th>어떤 검사가 덮는가?</th><td>{html_module.escape(task6_answers['tests'])}</td></tr></table>
 <h2>노드</h2><table><thead><tr><th>ID</th><th>파일</th><th>호출자와 영향</th><th>검사</th></tr></thead><tbody>{node_rows}</tbody></table>
 <h2>관계</h2><table><thead><tr><th>시작</th><th>관계</th><th>도착</th><th>근거</th></tr></thead><tbody>{edge_rows}</tbody></table>
 <h2>기계 판독 JSON</h2><pre id="codemap-json-antigravity">{embedded}</pre>
@@ -1050,6 +1134,23 @@ def _validate_dashboard_antigravity() -> None:
     source_ids = {item.get("id") for item in artifact["sources"]}
     if "exp468_task5_truth" not in source_ids:
         raise ValueError("dashboard Task 5 source is missing")
+    if "exp468_task6_preflight_truth" not in source_ids:
+        raise ValueError("dashboard Task 6 preflight source is missing")
+    task6_summary = artifact.get("snapshot", {}).get("datasets", {}).get("task6_preflight_summary")
+    if task6_summary != [{
+        "status": "implementation_task_6_preflight_step_3_complete_no_private_run",
+        "comparison_status": "not_yet_compared",
+        "focused_tests": 9,
+        "focused_runs": 2,
+        "exp468_tests": 75,
+        "exp466_regression_tests": 56,
+        "clean_reviews": 2,
+        "private_runs": 0,
+        "official_runs": 0,
+        "private_result": None,
+        "result_hash": None,
+    }]:
+        raise ValueError("dashboard Task 6 preflight truth differs")
     rows = artifact["snapshot"]["datasets"].get("progress_checklist", [])
     if artifact.get("snapshot", {}).get("status") != "ready":
         raise ValueError("dashboard snapshot status differs")
@@ -1060,13 +1161,34 @@ def _validate_dashboard_antigravity() -> None:
         for row in rows
     ):
         raise ValueError("dashboard Task 4 completion checklist truth differs")
+    if not any(
+        row.get("task") == "Task 6 CLI·pipeline 사전검증"
+        and row.get("checked") == "☑"
+        and row.get("status") == "완료 — private 실행 없음"
+        for row in rows
+    ):
+        raise ValueError("dashboard Task 6 preflight checklist truth differs")
+    if not any(
+        row.get("task") == "Task 6 OpenRouter·Sol 독립 검토"
+        and row.get("checked") == "☑"
+        and row.get("status") == "CLEAN"
+        for row in rows
+    ):
+        raise ValueError("dashboard Task 6 review checklist truth differs")
     rendered = _validated_html_text_antigravity(ROOT_ANTIGRAVITY / DASHBOARD_ANTIGRAVITY)
     for required in (
         "implementation_task_5_complete_no_private_run",
+        "implementation_task_6_preflight_step_3_complete_no_private_run",
         "exp468_task5_truth",
+        "exp468_task6_preflight_truth",
         "Task 4 C0/S10/C10·exact 10-fold gate",
         "Task 5 publication·artifact replay·dashboard",
         "focused 12/12",
+        "focused 9/9",
+        "전체 Exp468 75/75",
+        "Exp466 lower regression 56/56",
+        "OpenRouter Ox Alpha Ultra",
+        "로컬 Sol",
         "period 변화",
         "C0보다 개선한 fold",
         "정상 확인 오류",
@@ -1074,6 +1196,8 @@ def _validate_dashboard_antigravity() -> None:
         "아직 실행하지 않음",
         "fallback_authorized=true",
         "gate_passed=false",
+        "not_yet_compared",
+        "Task 6 CLI·pipeline 사전검증",
     ):
         if required not in rendered:
             raise ValueError(f"dashboard HTML is missing {required}")
@@ -1106,6 +1230,8 @@ def validate_map_antigravity(
         raise ValueError("Task 4 caller/effect/test answers are incomplete")
     if set(graph.get("task5_answers", {})) != {"callers", "effects", "tests"}:
         raise ValueError("Task 5 caller/effect/test answers are incomplete")
+    if set(graph.get("task6_answers", {})) != {"callers", "effects", "tests"}:
+        raise ValueError("Task 6 caller/effect/test answers are incomplete")
     ids: set[str] = set()
     for node in graph.get("nodes", []):
         if not isinstance(node, dict) or not node.get("id") or not node.get("path") or not node.get("role"):
@@ -1134,10 +1260,12 @@ def validate_map_antigravity(
         "task4_scoring", "task4_qualification", "task4_evaluation", "task4_report",
         "task5_artifacts", "task5_replay", "task5_dashboard_export",
         "task5_artifacts_test", "task5_replay_test", "task5_dashboard_export_test",
-        "task5_report", "task6_cli", "task6_pipeline", "rank_auc",
+        "task5_report", "task6_brief", "task6_cli", "task6_pipeline",
+        "task6_cli_test", "task6_pipeline_test", "task6_launcher", "task6_report",
+        "rank_auc",
     }
     if ids != required_nodes:
-        raise ValueError("Task 1-5 nodes differ")
+        raise ValueError("Task 1-6 nodes differ")
     allowed_types = {"governs", "tests", "imports_exact", "documents", "informs", "generates", "verifies", "calls", "binds", "authorizes", "consumes", "consumed_by"}
     edge_keys: set[tuple[str, str, str]] = set()
     for edge in graph.get("edges", []):
@@ -1244,6 +1372,22 @@ def validate_map_antigravity(
         ("task5_replay", "consumed_by", "task6_cli"),
         ("task5_artifacts", "consumed_by", "task6_pipeline"),
         ("task5_replay", "consumed_by", "task6_pipeline"),
+        ("implementation_plan", "governs", "task6_brief"),
+        ("task6_brief", "governs", "task6_cli"),
+        ("task6_brief", "governs", "task6_pipeline"),
+        ("task6_brief", "governs", "task6_launcher"),
+        ("task6_brief", "governs", "task6_cli_test"),
+        ("task6_brief", "governs", "task6_pipeline_test"),
+        ("task6_brief", "governs", "task6_report"),
+        ("task6_cli_test", "tests", "task6_cli"),
+        ("task6_pipeline_test", "tests", "task6_pipeline"),
+        ("task6_cli", "consumes", "task5_artifacts"),
+        ("task6_cli", "consumes", "task5_replay"),
+        ("task6_pipeline", "consumes", "task5_artifacts"),
+        ("task6_pipeline", "consumes", "task5_replay"),
+        ("task6_launcher", "calls", "task6_cli"),
+        ("task6_report", "informs", "implementation_report"),
+        ("task6_report", "informs", "dashboard_artifact"),
         ("implementation_plan", "documents", "dashboard_artifact"),
         ("implementation_report", "informs", "dashboard_artifact"),
         ("dashboard_artifact", "generates", "dashboard"),
@@ -1254,11 +1398,13 @@ def validate_map_antigravity(
         ("map_builder", "verifies", "task3_fallback_report"),
         ("map_builder", "verifies", "task4_brief"),
         ("map_builder", "verifies", "task4_report"),
+        ("map_builder", "verifies", "task6_brief"),
+        ("map_builder", "verifies", "task6_report"),
         ("map_builder", "verifies", "dashboard_artifact"),
         ("map_builder", "verifies", "dashboard"),
     }
     if not required_edges.issubset(edge_keys):
-        raise ValueError("Task 1-5 required edges are incomplete")
+        raise ValueError("Task 1-6 required edges are incomplete")
     if lock.get("schema") != LOCK_SCHEMA_ANTIGRAVITY:
         raise ValueError("lock schema differs")
     if lock.get("source_parent_commit") != graph.get("source_parent_commit"):
@@ -1299,6 +1445,8 @@ def validate_map_antigravity(
         TASK3_FALLBACK_REPORT_ANTIGRAVITY,
         TASK4_REPORT_ANTIGRAVITY,
         TASK5_REPORT_ANTIGRAVITY,
+        TASK6_BRIEF_ANTIGRAVITY,
+        TASK6_REPORT_ANTIGRAVITY,
         FALLBACK_AMENDMENT_ANTIGRAVITY,
         PREREGISTRATION_ANTIGRAVITY,
         RUNBOOK_ANTIGRAVITY,

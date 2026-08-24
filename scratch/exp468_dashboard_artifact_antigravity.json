@@ -3,8 +3,8 @@
   "manifest": {
     "version": 1,
     "surface": "dashboard",
-    "title": "Exp468 ECG200 국소 STFT Task 5 publication 대시보드",
-    "description": "Task 4의 frozen C0/S10/C10 계약을 일곱 leaf publication, 독립 raw-input replay, deterministic HTML dashboard로 보존한 Task 5 source-backed 스냅샷.",
+    "title": "Exp468 ECG200 국소 STFT Task 6 사전검증 대시보드",
+    "description": "Task 4의 frozen C0/S10/C10 계약과 Task 5 publication을 보존한 채 Task 6 exact CLI·pipeline·순차 launcher 사전검증 상태를 표시하는 source-backed 스냅샷.",
     "generatedAt": "2026-08-24T09:00:00+09:00",
     "cards": [
       {
@@ -51,6 +51,16 @@
         "sourceId": "exp468_task5_truth",
         "metrics": [
           {"label": "점수 계산", "field": "score_calculations", "format": "number"}
+        ]
+      },
+      {
+        "id": "task6_preflight_status",
+        "description": "Task 6 CLI·pipeline 사전검증 상태. private 두 실행 전이므로 비교 상태는 아직 비교하지 않음이다.",
+        "dataset": "task6_preflight_summary",
+        "sourceId": "exp468_task6_preflight_truth",
+        "metrics": [
+          {"label": "focused 검사", "field": "focused_tests", "format": "number"},
+          {"label": "private 실행", "field": "private_runs", "format": "number"}
         ]
       }
     ],
@@ -126,9 +136,9 @@
       {
         "id": "progress_checklist",
         "title": "진행 체크",
-        "subtitle": "실패한 cold 1.1x gate와 승인 예외를 보존한 채 Task 5 publication·replay·dashboard를 완료했으며 Task 6이 다음이다.",
+        "subtitle": "실패한 cold 1.1x gate와 승인 예외를 보존한 채 Task 6 CLI·pipeline 사전검증까지 완료했으며 private 실행은 다음 checkpoint다.",
         "dataset": "progress_checklist",
-        "sourceId": "exp468_task5_truth",
+        "sourceId": "exp468_task6_preflight_truth",
         "defaultSort": {"field": "order", "direction": "asc"},
         "columns": [
           {"field": "order", "label": "단계", "format": "number"},
@@ -190,16 +200,29 @@
           "tables_used": ["docs/EXP466_DASHBOARD_antigravity.html", "docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
           "executed_at": "2026-08-23T00:00:00Z"
         }
+      },
+      {
+        "id": "exp468_task6_preflight_truth",
+        "label": "Exp468 Task 6 사전검증 truth",
+        "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Task 6 보고서·brief·CLI·pipeline test·순차 launcher·OpenRouter Ox Alpha Ultra CLEAN·로컬 Sol CLEAN과 계획에서 exact CLI, retained-input inspect 경계, clean reviewed commit 확인, 성공 후 state 전이와 fail-stop, private 실행 0회를 재현한다.",
+          "sql": "SELECT 'implementation_task_6_preflight_step_3_complete_no_private_run' AS status, 'not_yet_compared' AS comparison_status, 9 AS focused_tests, 2 AS focused_runs, 75 AS exp468_tests, 56 AS exp466_regression_tests, 2 AS clean_reviews, 0 AS private_runs, 0 AS official_runs, NULL AS private_result, NULL AS result_hash",
+          "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-brief-antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-report-antigravity.html", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_pipeline_antigravity.py", "scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
+          "executed_at": "2026-08-24T00:00:00Z"
+        }
       }
     ],
     "blocks": [
       {
         "id": "status_note",
         "type": "markdown",
-        "sourceId": "exp468_task5_truth",
-        "body": "## Task 5 publication과 independent replay를 완료했고 private 실행 전입니다\n\n**implementation_task_5_complete_no_private_run**\n\n승인 SHA-256 6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9와 gate_passed=false, fallback_authorized=true, selected_backend=numpy를 보존한 채 정확히 일곱 leaf, raw-input 독립 replay, deterministic dashboard를 구현했습니다. focused 12/12, 전체 Exp468 66/66, Exp466 lower regression 56/56가 통과했고 private 실행 1·2의 상태는 '아직 실행하지 않음'입니다. period 변화의 10개 fold C0/C10 AUC와 차이, C0보다 개선한 fold 목록, level/gradual/amplitude 최소 delta, seed별 정상 확인 오류, qualification PASS/FAIL과 private 재현성 확인 대기를 표시합니다. official/private result와 result hash는 null이며 TEST/FN 평가는 없습니다."
+        "sourceId": "exp468_task6_preflight_truth",
+        "body": "## Task 6 CLI·pipeline 사전검증과 독립 검토를 완료했고 private 실행 전입니다\n\n**implementation_task_6_preflight_step_3_complete_no_private_run**\n\nTask 3의 gate_passed=false, fallback_authorized=true, selected_backend=numpy와 Task 5 focused 12/12 및 정확히 일곱 leaf·raw-input 독립 replay 계약을 보존한 채 exact CLI, direct TRAIN-stage sequence, retained-input inspect, clean reviewed commit 확인, 공식 순차 helper state와 fail-stop을 구현했습니다. Task 6 focused 9/9를 같은 수정 상태에서 두 번, 전체 Exp468 75/75, Exp466 lower regression 56/56을 통과했습니다. OpenRouter Ox Alpha Ultra와 로컬 Sol 독립 검토도 모두 CLEAN입니다. portable dashboard, code-map, JSON과 diff 검증을 통과했으며 period 변화, C0보다 개선한 fold, 정상 확인 오류, qualification PASS/FAIL과 private 재현성 확인 대기를 계속 표시합니다. private 실행 1·2의 상태는 '아직 실행하지 않음'이며 snapshot 비교 상태는 'not_yet_compared'입니다. official/private result와 result hash는 null이며 TEST/FN 평가는 없습니다."
       },
-      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs", "score_calculations"]},
+      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp466_pass_folds", "candidate_count", "planned_folds", "official_runs", "score_calculations", "task6_preflight_status"]},
       {"id": "gap", "type": "chart", "chartId": "qualification_gap", "layout": "full"},
       {"id": "methods", "type": "table", "tableId": "method_comparison", "layout": "full"},
       {"id": "acceleration", "type": "table", "tableId": "acceleration_benchmark", "layout": "full"},
@@ -208,12 +231,12 @@
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 입력·합성 변화·C0 exact import와 parity</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 S10·가속 gate 실패와 승인 NumPy fallback</label></p><p><label><input type=\"checkbox\" checked disabled> Task 4 C0/S10/C10·exact 10-fold gate</label></p><p><label><input type=\"checkbox\" checked disabled> Task 5 publication·artifact replay·dashboard</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp466 실패 근거 확인</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 후보 방법 독립 검토</label></p><p><label><input type=\"checkbox\" checked disabled> 단일 STFT 후보와 범위 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp468 HTML 설계서·대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 최종 승인</label></p><p><label><input type=\"checkbox\" checked disabled> 6개 Task HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> OpenRouter 구현 계획 독립 검토 PASS</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 설정·결과 계약·문서 골격</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 입력·합성 변화·C0 exact import와 parity</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 S10·가속 gate 실패와 승인 NumPy fallback</label></p><p><label><input type=\"checkbox\" checked disabled> Task 4 C0/S10/C10·exact 10-fold gate</label></p><p><label><input type=\"checkbox\" checked disabled> Task 5 publication·artifact replay·dashboard</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 CLI·pipeline 사전검증</label></p><p><label><input type=\"checkbox\" checked disabled> Task 6 OpenRouter·Sol 독립 검토 CLEAN</label></p><p><label><input type=\"checkbox\" disabled> Task 6 private 자격 실행</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\nTask 5의 seven-leaf publication·독립 artifact replay·portable HTML dashboard를 닫았습니다. 다음은 **Task 6 사전검증과 사용자 checkpoint**이며, 공식·private qualification은 계속 실행하지 않고 result/hash는 null로 유지합니다."
+        "body": "## 다음 한 단계\n\nTask 6 exact CLI·pipeline 사전검증과 OpenRouter·Sol 독립 검토를 닫았습니다. 다음은 **사용자 checkpoint 뒤 private 실행 1·2를 순차 실행**하는 것이며, 현재 공식·private qualification은 0회이고 result/hash는 null, 비교 상태는 not_yet_compared로 유지합니다."
       }
     ]
   },
@@ -230,6 +253,9 @@
       ],
       "implementation_summary": [
         {"status": "implementation_task_5_complete_no_private_run", "acceleration_gate_passed": false, "fallback_authorized": true, "selected_backend": "numpy", "focused_tests": 12, "exp468_tests": 66, "exp466_regression_tests": 56, "score_calculations": 2, "score_calculation_scope": "acceleration_benchmark_full_workload_initial_and_improved", "publication_leaves": 7, "metric_rows": 30, "summary_rows": 3, "official_runs": 0, "private_runs": 0, "official_result": null, "private_result": null, "result_hash": null}
+      ],
+      "task6_preflight_summary": [
+        {"status": "implementation_task_6_preflight_step_3_complete_no_private_run", "comparison_status": "not_yet_compared", "focused_tests": 9, "focused_runs": 2, "exp468_tests": 75, "exp466_regression_tests": 56, "clean_reviews": 2, "private_runs": 0, "official_runs": 0, "private_result": null, "result_hash": null}
       ],
       "qualification_gap": [
         {"condition": "period AUC ≥ 0.85", "series": "Exp466 관측", "share": 0.0, "count_text": "0/10"},
@@ -269,7 +295,9 @@
         {"order": 10, "checked": "☑", "task": "Task 3 S10 국소 STFT·가속 gate", "status": "완료 — 승인된 NumPy fallback"},
         {"order": 11, "checked": "☑", "task": "Task 4 C0/S10/C10·exact 10-fold gate", "status": "완료 — private 실행 없음"},
         {"order": 12, "checked": "☑", "task": "Task 5 publication·artifact replay·dashboard", "status": "완료 — private 실행 없음"},
-        {"order": 13, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "미실행"}
+        {"order": 13, "checked": "☑", "task": "Task 6 CLI·pipeline 사전검증", "status": "완료 — private 실행 없음"},
+        {"order": 14, "checked": "☑", "task": "Task 6 OpenRouter·Sol 독립 검토", "status": "CLEAN"},
+        {"order": 15, "checked": "☐", "task": "Task 6 private 자격 실행", "status": "미실행"}
       ]
     }
   },
@@ -324,6 +352,19 @@
         "sql": "SELECT * FROM (VALUES ('period AUC ≥ 0.85','Exp466 관측',0.0,'0/10'),('period AUC ≥ 0.85','Exp468 필수',1.0,'10/10'),('period > C0','Exp466 관측',0.0,'0/10'),('period > C0','Exp468 필수',1.0,'10/10'),('period 확인 존재','Exp466 관측',0.2,'2/10'),('period 확인 존재','Exp468 필수',1.0,'10/10')) AS t(condition, series, share, count_text)",
         "tables_used": ["docs/EXP466_DASHBOARD_antigravity.html", "docs/superpowers/specs/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity-design.html"],
         "executed_at": "2026-08-23T00:00:00Z"
+      }
+    },
+    {
+      "id": "exp468_task6_preflight_truth",
+      "label": "Exp468 Task 6 사전검증 truth",
+      "path": "docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Task 6 보고서·brief·CLI·pipeline test·순차 launcher·OpenRouter Ox Alpha Ultra CLEAN·로컬 Sol CLEAN과 계획에서 exact CLI, retained-input inspect 경계, clean reviewed commit 확인, 성공 후 state 전이와 fail-stop, private 실행 0회를 재현한다.",
+        "sql": "SELECT 'implementation_task_6_preflight_step_3_complete_no_private_run' AS status, 'not_yet_compared' AS comparison_status, 9 AS focused_tests, 2 AS focused_runs, 75 AS exp468_tests, 56 AS exp466_regression_tests, 2 AS clean_reviews, 0 AS private_runs, 0 AS official_runs, NULL AS private_result, NULL AS result_hash",
+        "tables_used": ["docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-brief-antigravity.html", ".superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-6-report-antigravity.html", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_cli_antigravity.py", "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_pipeline_antigravity.py", "scratch/run_exp468_ecg200_local_stft_spectral_redistribution_antigravity.py", "docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html"],
+        "executed_at": "2026-08-24T00:00:00Z"
       }
     }
   ],
