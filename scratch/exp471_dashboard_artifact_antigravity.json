@@ -1,0 +1,237 @@
+{
+  "surface": "dashboard",
+  "manifest": {
+    "version": 1,
+    "surface": "dashboard",
+    "title": "Exp471 ECG200 ACF peak-lag 이동 Numba 대시보드",
+    "description": "Exp470의 잔여 period 실패 근거와 Exp471 단일 ACF 후보의 설계·검토 진행 상태를 보여 주는 source-backed 대시보드.",
+    "generatedAt": "2026-08-24T20:00:00+09:00",
+    "cards": [
+      {
+        "id": "exp470_fixed",
+        "description": "Exp470 두 seed를 합친 period 순서 수정 수. 두 seed 모두 0이었다.",
+        "dataset": "status_summary",
+        "sourceId": "exp470_result",
+        "metrics": [{"label": "Exp470 period fixed", "field": "exp470_period_fixed", "format": "number"}]
+      },
+      {
+        "id": "candidate_count",
+        "description": "Exp471에서 시험할 새 점수 수. 선택편향을 막기 위해 하나로 고정했다.",
+        "dataset": "status_summary",
+        "sourceId": "exp471_design",
+        "metrics": [{"label": "새 후보", "field": "candidate_count", "format": "number"}]
+      },
+      {
+        "id": "planned_records",
+        "description": "두 seed와 blocked fold 5개로 만들 계획인 qualification 기록 수.",
+        "dataset": "status_summary",
+        "sourceId": "exp471_design",
+        "metrics": [{"label": "계획 기록", "field": "planned_records", "format": "number"}]
+      },
+      {
+        "id": "private_runs",
+        "description": "현재 Exp471 private 실행 수. 작성된 설계서 검토와 구현 전이므로 0이다.",
+        "dataset": "status_summary",
+        "sourceId": "exp471_design",
+        "metrics": [{"label": "Exp471 private 실행", "field": "private_runs", "format": "number"}]
+      },
+      {
+        "id": "restricted_runs",
+        "description": "Exp471 official 실행 및 TEST/FN 접근 수. 모두 아직 0이다.",
+        "dataset": "status_summary",
+        "sourceId": "exp471_design",
+        "metrics": [
+          {"label": "official 실행", "field": "official_runs", "format": "number"},
+          {"label": "TEST/FN 접근", "field": "test_fn_access", "format": "number"}
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "exp470_gate_evidence",
+        "title": "Exp470에서 실제 수정으로 이어지지 않은 이유",
+        "subtitle": "entropy 순위가 높아도 period를 고친 행은 없었고, 정상에도 높은 순위가 많았다.",
+        "headerMarkdown": "Exp470 private 결과에서 직접 센 행 수입니다. 이 근거 때문에 confirmation 임계값만 낮추지 않습니다.",
+        "type": "bar",
+        "dataset": "exp470_gate_evidence",
+        "sourceId": "exp470_result",
+        "valueFormat": "number",
+        "encodings": {
+          "x": {"field": "evidence", "type": "nominal", "label": "근거"},
+          "y": {"field": "count", "type": "quantitative", "label": "행 수", "format": "number"},
+          "color": {"field": "group", "type": "nominal", "label": "구분"},
+          "tooltip": [{"field": "meaning", "type": "nominal", "label": "뜻"}]
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "frozen_candidate",
+        "title": "Exp471에 고정한 한 가지 방법",
+        "subtitle": "결과를 본 뒤 다른 창이나 lag로 바꾸지 않는다.",
+        "dataset": "frozen_candidate",
+        "sourceId": "exp471_design",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "순서", "format": "number"},
+          {"field": "part", "label": "항목", "type": "text"},
+          {"field": "frozen", "label": "고정 값", "type": "text"},
+          {"field": "reason", "label": "이유", "type": "text"}
+        ]
+      },
+      {
+        "id": "qualification_gates",
+        "title": "잔여 구조 개선 합격 조건",
+        "subtitle": "절대 AUC 0.85 대신 C0의 잘못된 순서가 실제로 고쳐졌는지 본다.",
+        "dataset": "qualification_gates",
+        "sourceId": "exp471_design",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "순서", "format": "number"},
+          {"field": "gate", "label": "조건", "type": "text"},
+          {"field": "required", "label": "필수 값", "type": "text"},
+          {"field": "current", "label": "현재", "type": "text"}
+        ]
+      },
+      {
+        "id": "progress_checklist",
+        "title": "진행 체크",
+        "subtitle": "완료한 단계만 체크했다. 실행 결과는 아직 없다.",
+        "dataset": "progress_checklist",
+        "sourceId": "exp471_design",
+        "defaultSort": {"field": "order", "direction": "asc"},
+        "columns": [
+          {"field": "order", "label": "단계", "format": "number"},
+          {"field": "checked", "label": "체크", "type": "text"},
+          {"field": "task", "label": "작업", "type": "text"},
+          {"field": "status", "label": "상태", "type": "text"}
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "exp470_result",
+        "label": "Exp470 private 결과 분석",
+        "path": "docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Exp470 보존 보고서에서 두 private 실행, period fixed와 gate 동작을 재현한다.",
+          "sql": "SELECT 2 AS private_runs, 0 AS period_fixed, 0 AS period_broken, 2 AS period_confirmations, 0 AS effective_period_changes, 16 AS period_unconfirmed_rank_gt_c0, 49 AS normal_rank_gt_c0",
+          "tables_used": ["docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP470_DASHBOARD_antigravity.html"],
+          "executed_at": "2026-08-24T11:00:00Z"
+        }
+      },
+      {
+        "id": "exp471_design",
+        "label": "Exp471 작성된 설계서",
+        "path": "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Exp471 설계서에서 단일 후보, Numba backend, 10개 계획 기록과 실행 경계를 재현한다.",
+          "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_records, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 'design_written_awaiting_user_review' AS status",
+          "tables_used": ["docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html"],
+          "executed_at": "2026-08-24T11:00:00Z"
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "status_note",
+        "type": "markdown",
+        "sourceId": "exp471_design",
+        "body": "## 현재 상태: Exp471 설계와 Ox Alpha 검토 GO, 사용자 검토 전\n\nExp470의 실패 원인을 바탕으로 ACF peak-lag 이동 한 가지만 선택했습니다. 앞 구간 [0:56]과 뒤 구간 [84:140]의 대표 반복 간격 차이를 Numba로 계산합니다. Ox Alpha Ultra의 읽기 전용 검토에서 요청한 median, warp, fit/query 분리와 sentinel 설명을 반영했고 재검토는 GO였습니다. 아직 구현, private 실행, official 실행, TEST/FN 접근과 routing은 하지 않았습니다."
+      },
+      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp470_fixed", "candidate_count", "planned_records", "private_runs", "restricted_runs"]},
+      {"id": "evidence", "type": "chart", "chartId": "exp470_gate_evidence", "layout": "full"},
+      {"id": "candidate", "type": "table", "tableId": "frozen_candidate", "layout": "full"},
+      {"id": "gates", "type": "table", "tableId": "qualification_gates", "layout": "full"},
+      {"id": "checklist", "type": "table", "tableId": "progress_checklist", "layout": "full"},
+      {
+        "id": "checkboxes",
+        "type": "html",
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp470 성능 실패와 원인 확인</label></p><p><label><input type=\"checkbox\" checked disabled> ACF peak-lag 단일 후보 방향 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp471 HTML 고정 설계서 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 읽기 전용 설계 검토와 모호성 수정</label></p><p><label><input type=\"checkbox\" disabled> 작성된 HTML 설계서 사용자 검토</label></p><p><label><input type=\"checkbox\" disabled> HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" disabled> Task 1 고정 계약·authority·code map</label></p><p><label><input type=\"checkbox\" disabled> Task 2 Numba ACF peak-lag scorer</label></p><p><label><input type=\"checkbox\" disabled> Task 3 Python 기준·결정성·MLX smoke</label></p><p><label><input type=\"checkbox\" disabled> Task 4 C0/E12/C12·pair repair</label></p><p><label><input type=\"checkbox\" disabled> Task 5 canonical 저장·replay·HTML export</label></p><p><label><input type=\"checkbox\" disabled> Task 6 closed CLI·최종 사전검증</label></p><p><label><input type=\"checkbox\" disabled> private 실행 1·2와 결과 분석</label></p><p><label><input type=\"checkbox\" disabled> official 실행·TEST/FN·routing</label></p></section>"
+      },
+      {
+        "id": "next_step",
+        "type": "markdown",
+        "body": "## 다음 한 단계\n\n사용자가 작성된 설계서를 검토합니다. 그 승인이 끝나야 HTML 구현 계획을 작성합니다."
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-24T11:00:00Z",
+    "status": "ready",
+    "datasets": {
+      "status_summary": [
+        {"exp470_period_fixed": 0, "candidate_count": 1, "planned_records": 10, "private_runs": 0, "official_runs": 0, "test_fn_access": 0}
+      ],
+      "exp470_gate_evidence": [
+        {"evidence": "period confirmation", "count": 2, "group": "확인", "meaning": "두 seed에서 한 건씩 확인됨"},
+        {"evidence": "실제 period 변경", "count": 0, "group": "수정", "meaning": "확인된 행은 이미 C0=1.0"},
+        {"evidence": "미확인 period E11>C0", "count": 16, "group": "후보", "meaning": "임계값 아래 period 후보"},
+        {"evidence": "정상 E11>C0", "count": 49, "group": "위험", "meaning": "임계값 완화 시 정상 위험"}
+      ],
+      "frozen_candidate": [
+        {"order": 1, "part": "앞 구간", "frozen": "[0:56]", "reason": "period 변화 시작 전"},
+        {"order": 2, "part": "뒤 구간", "frozen": "[84:140]", "reason": "같은 길이의 완전한 post-onset 구간"},
+        {"order": 3, "part": "ACF", "frozen": "lag 1..25 계산, 2..24 peak", "reason": "양쪽 이웃이 있는 양수 local peak"},
+        {"order": 4, "part": "row 특징", "frozen": "late_peak - early_peak", "reason": "반복 간격 이동 한 개만 측정"},
+        {"order": 5, "part": "결합", "frozen": "strict-confirmed max(C0,E12)", "reason": "확신이 낮으면 byte-exact C0"}
+      ],
+      "qualification_gates": [
+        {"order": 1, "gate": "period fixed", "required": "seed마다 1개 이상", "current": "미실행"},
+        {"order": 2, "gate": "period broken", "required": "seed마다 0개", "current": "미실행"},
+        {"order": 3, "gate": "보호 변화 broken", "required": "세 변화 모두 0개", "current": "미실행"},
+        {"order": 4, "gate": "정상 confirmation", "required": "seed마다 0개", "current": "미실행"},
+        {"order": 5, "gate": "fallback", "required": "C12=C0 bytes", "current": "미실행"},
+        {"order": 6, "gate": "재현성", "required": "private 결과 7개 byte-identical", "current": "미실행"}
+      ],
+      "progress_checklist": [
+        {"order": 1, "checked": "☑", "task": "Exp470 실패 원인 확인", "status": "완료"},
+        {"order": 2, "checked": "☑", "task": "ACF 단일 후보 방향 승인", "status": "완료"},
+        {"order": 3, "checked": "☑", "task": "Exp471 HTML 설계서", "status": "완료"},
+        {"order": 4, "checked": "☑", "task": "Ox Alpha Ultra 설계 검토와 모호성 수정", "status": "완료"},
+        {"order": 5, "checked": "☐", "task": "작성된 설계서 사용자 검토", "status": "대기"},
+        {"order": 6, "checked": "☐", "task": "HTML 구현 계획", "status": "미시작"},
+        {"order": 7, "checked": "☐", "task": "Task 1~6 구현·검증", "status": "미시작"},
+        {"order": 8, "checked": "☐", "task": "private 실행 1·2", "status": "미승인"},
+        {"order": 9, "checked": "☐", "task": "official·TEST/FN·routing", "status": "범위 밖"}
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "exp470_result",
+      "label": "Exp470 private 결과 분석",
+      "path": "docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Exp470 보존 보고서에서 두 private 실행, period fixed와 gate 동작을 재현한다.",
+        "sql": "SELECT 2 AS private_runs, 0 AS period_fixed, 0 AS period_broken, 2 AS period_confirmations, 0 AS effective_period_changes, 16 AS period_unconfirmed_rank_gt_c0, 49 AS normal_rank_gt_c0",
+        "tables_used": ["docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP470_DASHBOARD_antigravity.html"],
+        "executed_at": "2026-08-24T11:00:00Z"
+      }
+    },
+    {
+      "id": "exp471_design",
+      "label": "Exp471 작성된 설계서",
+      "path": "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Exp471 설계서에서 단일 후보, Numba backend, 10개 계획 기록과 실행 경계를 재현한다.",
+        "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_records, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 'design_written_awaiting_user_review' AS status",
+        "tables_used": ["docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html"],
+        "executed_at": "2026-08-24T11:00:00Z"
+      }
+    }
+  ],
+  "package_info": {
+    "originUrl": "artifact://exp471-ecg200-acf-peak-lag-shift-numba-design-antigravity",
+    "controls": {"edit": false, "refresh": false}
+  }
+}
