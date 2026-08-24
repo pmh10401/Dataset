@@ -5,7 +5,7 @@
     "surface": "dashboard",
     "title": "Exp471 ECG200 ACF peak-lag 이동 Numba 대시보드",
     "description": "Exp470의 잔여 period 실패 근거와 Exp471 단일 ACF 후보의 설계·구현 계획 진행 상태를 보여 주는 source-backed 대시보드.",
-    "generatedAt": "2026-08-25T01:35:00+09:00",
+    "generatedAt": "2026-08-25T03:10:00+09:00",
     "cards": [
       {
         "id": "exp470_fixed",
@@ -30,7 +30,7 @@
       },
       {
         "id": "private_runs",
-        "description": "현재 Exp471 private 실행 수. 설계와 구현 계획만 완료했으므로 0이다.",
+        "description": "현재 Exp471 private 실행 수. Task 1~4 코드와 공개·합성 검증만 완료했으므로 0이다.",
         "dataset": "status_summary",
         "sourceId": "exp471_plan",
         "metrics": [{"label": "Exp471 private 실행", "field": "private_runs", "format": "number"}]
@@ -159,7 +159,7 @@
           "engine": "duckdb",
           "language": "sql",
           "description": "Exp471 구현 계획에서 Task 1~6, 현재 완료 수, private/official 실행 경계를 재현한다.",
-          "sql": "SELECT 6 AS planned_tasks, 3 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task3_complete_task4_next' AS status",
+          "sql": "SELECT 6 AS planned_tasks, 4 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task4_complete_task5_next' AS status",
           "tables_used": ["docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html"],
           "executed_at": "2026-08-24T11:30:00Z"
         }
@@ -182,7 +182,7 @@
       {
         "id": "status_note",
         "type": "markdown",
-        "body": "## 현재 상태: Task 3 완료, Task 4가 다음 단계\n\n공개 고정 fixture에서 Python/Numba 오차 0.0과 전체 bytes 결정성을 확인했습니다. MLX 전체 수식은 CPU에서 같은 답을 냈지만 GPU는 float64를 지원하지 않아 부적격입니다. 실제 데이터 평가와 private/official 실행, TEST/FN 접근, routing은 여전히 0회입니다."
+        "body": "## 현재 상태: Task 4 완료, Task 5가 다음 단계\n\nC0/E12/C12 합성 fold 평가와 pair-repair 판정 코드를 구현했습니다. 확인되지 않거나 C0보다 크지 않은 E12는 C0 bytes를 그대로 유지합니다. Task 4 집중 테스트 9개를 두 번, 전체 Exp471 43개를 통과했습니다. 실제 데이터 평가와 private/official 실행, TEST/FN 접근, routing은 여전히 0회입니다."
       },
       {"id": "metrics", "type": "metric-strip", "cardIds": ["exp470_fixed", "candidate_count", "planned_records", "private_runs", "restricted_runs"]},
       {"id": "evidence", "type": "chart", "chartId": "exp470_gate_evidence", "layout": "full"},
@@ -193,22 +193,22 @@
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp470 성능 실패와 원인 확인</label></p><p><label><input type=\"checkbox\" checked disabled> ACF peak-lag 단일 후보 방향 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp471 HTML 고정 설계서 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 읽기 전용 설계 검토와 모호성 수정</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 사용자 검토·승인</label></p><p><label><input type=\"checkbox\" checked disabled> HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 구현 계획 읽기 전용 검토 GO</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 계약·authority·code map</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 Numba ACF peak-lag scorer</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 Python 기준·결정성·MLX smoke</label></p><p><label><input type=\"checkbox\" disabled> Task 4 C0/E12/C12·pair repair</label></p><p><label><input type=\"checkbox\" disabled> Task 5 canonical 저장·replay·HTML export</label></p><p><label><input type=\"checkbox\" disabled> Task 6 closed CLI·최종 사전검증</label></p><p><label><input type=\"checkbox\" disabled> private 실행 1·2와 결과 분석</label></p><p><label><input type=\"checkbox\" disabled> official 실행·TEST/FN·routing</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp470 성능 실패와 원인 확인</label></p><p><label><input type=\"checkbox\" checked disabled> ACF peak-lag 단일 후보 방향 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp471 HTML 고정 설계서 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 읽기 전용 설계 검토와 모호성 수정</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 사용자 검토·승인</label></p><p><label><input type=\"checkbox\" checked disabled> HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 구현 계획 읽기 전용 검토 GO</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 계약·authority·code map</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 Numba ACF peak-lag scorer</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 Python 기준·결정성·MLX smoke</label></p><p><label><input type=\"checkbox\" checked disabled> Task 4 C0/E12/C12·pair repair</label></p><p><label><input type=\"checkbox\" disabled> Task 5 canonical 저장·replay·HTML export</label></p><p><label><input type=\"checkbox\" disabled> Task 6 closed CLI·최종 사전검증</label></p><p><label><input type=\"checkbox\" disabled> private 실행 1·2와 결과 분석</label></p><p><label><input type=\"checkbox\" disabled> official 실행·TEST/FN·routing</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\nTask 4에서 C0/E12/C12 fold scoring과 pair-repair qualification을 구현합니다."
+        "body": "## 다음 한 단계\n\nTask 5에서 canonical 결과 저장, semantic replay, HTML 결과 내보내기를 구현합니다."
       }
     ]
   },
   "snapshot": {
     "version": 1,
-    "generatedAt": "2026-08-24T16:35:00Z",
+    "generatedAt": "2026-08-24T18:10:00Z",
     "status": "ready",
     "datasets": {
       "status_summary": [
-        {"exp470_period_fixed": 0, "candidate_count": 1, "planned_records": 10, "planned_tasks": 6, "completed_tasks": 3, "plan_written": 1, "ox_plan_review_go": 1, "private_runs": 0, "official_runs": 0, "test_fn_access": 0, "routing_runs": 0}
+        {"exp470_period_fixed": 0, "candidate_count": 1, "planned_records": 10, "planned_tasks": 6, "completed_tasks": 4, "plan_written": 1, "ox_plan_review_go": 1, "private_runs": 0, "official_runs": 0, "test_fn_access": 0, "routing_runs": 0}
       ],
       "exp470_gate_evidence": [
         {"evidence": "period confirmation", "count": 2, "group": "확인", "meaning": "두 seed에서 한 건씩 확인됨"},
@@ -247,8 +247,8 @@
         {"order": 8, "checked": "☑", "task": "Task 1 고정 계약·authority·code map", "status": "완료"},
         {"order": 9, "checked": "☑", "task": "Task 2 Numba ACF peak-lag scorer", "status": "완료"},
         {"order": 10, "checked": "☑", "task": "Task 3 Python 기준·결정성·MLX smoke", "status": "완료"},
-        {"order": 11, "checked": "☐", "task": "Task 4 C0/E12/C12·pair repair", "status": "다음"},
-        {"order": 12, "checked": "☐", "task": "Task 5 canonical 저장·replay·HTML export", "status": "대기"},
+        {"order": 11, "checked": "☑", "task": "Task 4 C0/E12/C12·pair repair", "status": "완료"},
+        {"order": 12, "checked": "☐", "task": "Task 5 canonical 저장·replay·HTML export", "status": "다음"},
         {"order": 13, "checked": "☐", "task": "Task 6 closed CLI·최종 사전검증", "status": "대기"},
         {"order": 14, "checked": "☐", "task": "private 실행 1·2", "status": "미승인"},
         {"order": 15, "checked": "☐", "task": "official·TEST/FN·routing", "status": "범위 밖"}
@@ -290,7 +290,7 @@
         "engine": "duckdb",
         "language": "sql",
         "description": "Exp471 구현 계획에서 Task 1~6, 현재 완료 수, private/official 실행 경계를 재현한다.",
-        "sql": "SELECT 6 AS planned_tasks, 3 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task3_complete_task4_next' AS status",
+        "sql": "SELECT 6 AS planned_tasks, 4 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task4_complete_task5_next' AS status",
         "tables_used": ["docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html"],
         "executed_at": "2026-08-24T11:30:00Z"
       }

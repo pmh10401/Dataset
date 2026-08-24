@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the versioned Exp471 Task 3 code-map triplet."""
+"""Build and validate the versioned Exp471 Task 4 code-map triplet."""
 
 from __future__ import annotations
 
@@ -62,21 +62,22 @@ TASK2_BRIEF_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-2-brief-antigravity.html"
 TASK2_REPORT_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-2-report-antigravity.html"
 TASK3_BRIEF_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-3-brief-antigravity.html"
 TASK3_REPORT_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-3-report-antigravity.html"
+TASK4_REPORT_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-4-report-antigravity.html"
+SCORING_ANTIGRAVITY = _package_file_antigravity("scoring_antigravity.py")
+QUALIFICATION_ANTIGRAVITY = _package_file_antigravity("qualification_antigravity.py")
+EVALUATION_ANTIGRAVITY = _package_file_antigravity("evaluation_antigravity.py")
+SCORING_TEST_ANTIGRAVITY = _package_test_antigravity("test_scoring_antigravity.py")
+QUALIFICATION_TEST_ANTIGRAVITY = _package_test_antigravity("test_qualification_antigravity.py")
+EVALUATION_TEST_ANTIGRAVITY = _package_test_antigravity("test_evaluation_antigravity.py")
 
 FUTURE_DECLARED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html",
     "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
     "scratch/exp471_dashboard_artifact_antigravity.json",
     "docs/EXP471_DASHBOARD_antigravity.html",
-    _package_file_antigravity("scoring_antigravity.py"),
-    _package_file_antigravity("qualification_antigravity.py"),
-    _package_file_antigravity("evaluation_antigravity.py"),
     _package_file_antigravity("artifacts_antigravity.py"),
     _package_file_antigravity("replay_antigravity.py"),
     _package_file_antigravity("dashboard_export_antigravity.py"),
-    _package_test_antigravity("test_scoring_antigravity.py"),
-    _package_test_antigravity("test_qualification_antigravity.py"),
-    _package_test_antigravity("test_evaluation_antigravity.py"),
     _package_test_antigravity("test_artifacts_antigravity.py"),
     _package_test_antigravity("test_replay_antigravity.py"),
     _package_test_antigravity("test_dashboard_export_antigravity.py"),
@@ -99,6 +100,7 @@ EXISTING_REPRESENTED_PATHS_ANTIGRAVITY = (
     TASK2_REPORT_ANTIGRAVITY,
     TASK3_BRIEF_ANTIGRAVITY,
     TASK3_REPORT_ANTIGRAVITY,
+    TASK4_REPORT_ANTIGRAVITY,
     CONFIG_ANTIGRAVITY,
     SOURCES_ANTIGRAVITY,
     INTERPOLATION_ANTIGRAVITY,
@@ -108,12 +110,18 @@ EXISTING_REPRESENTED_PATHS_ANTIGRAVITY = (
     ACF_PEAK_LAG_ANTIGRAVITY,
     PYTHON_REFERENCE_ANTIGRAVITY,
     ACCELERATION_ANTIGRAVITY,
+    SCORING_ANTIGRAVITY,
+    QUALIFICATION_ANTIGRAVITY,
+    EVALUATION_ANTIGRAVITY,
     CONFIG_TEST_ANTIGRAVITY,
     CONTRACTS_TEST_ANTIGRAVITY,
     AUTHORITY_TEST_ANTIGRAVITY,
     ACF_TEST_ANTIGRAVITY,
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
     ACCELERATION_TEST_ANTIGRAVITY,
+    SCORING_TEST_ANTIGRAVITY,
+    QUALIFICATION_TEST_ANTIGRAVITY,
+    EVALUATION_TEST_ANTIGRAVITY,
     ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     IMPLEMENTATION_REPORT_ANTIGRAVITY,
@@ -127,6 +135,7 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     TASK2_REPORT_ANTIGRAVITY,
     TASK3_BRIEF_ANTIGRAVITY,
     TASK3_REPORT_ANTIGRAVITY,
+    TASK4_REPORT_ANTIGRAVITY,
     CONFIG_ANTIGRAVITY,
     SOURCES_ANTIGRAVITY,
     INTERPOLATION_ANTIGRAVITY,
@@ -136,12 +145,18 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     ACF_PEAK_LAG_ANTIGRAVITY,
     PYTHON_REFERENCE_ANTIGRAVITY,
     ACCELERATION_ANTIGRAVITY,
+    SCORING_ANTIGRAVITY,
+    QUALIFICATION_ANTIGRAVITY,
+    EVALUATION_ANTIGRAVITY,
     CONFIG_TEST_ANTIGRAVITY,
     CONTRACTS_TEST_ANTIGRAVITY,
     AUTHORITY_TEST_ANTIGRAVITY,
     ACF_TEST_ANTIGRAVITY,
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
     ACCELERATION_TEST_ANTIGRAVITY,
+    SCORING_TEST_ANTIGRAVITY,
+    QUALIFICATION_TEST_ANTIGRAVITY,
+    EVALUATION_TEST_ANTIGRAVITY,
     ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     _predecessor_file_antigravity("sources_antigravity.py"),
@@ -150,8 +165,8 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     _predecessor_file_antigravity("predecessor_antigravity.py"),
     _predecessor_file_antigravity("contracts_antigravity.py"),
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp471_task3_runtime_assessment_codemap_v3"
-LOCK_SCHEMA_ANTIGRAVITY = "exp471_task3_runtime_assessment_lock_v3"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp471_task4_pair_repair_codemap_v4"
+LOCK_SCHEMA_ANTIGRAVITY = "exp471_task4_pair_repair_lock_v4"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -288,6 +303,41 @@ def build_graph_antigravity() -> dict[str, Any]:
             (), "selected_backend",
         ),
         _node_antigravity(
+            "scoring", SCORING_ANTIGRAVITY, "Task 4 qualification and later artifact publication",
+            "Builds C0/E12/C12 synthetic fold records without fit/query mixing and retains peak, presence, shift, raw, rank, and confirmation evidence.",
+            (SCORING_TEST_ANTIGRAVITY,), "FoldMethodScoresAntigravity",
+        ),
+        _node_antigravity(
+            "qualification", QUALIFICATION_ANTIGRAVITY, "Task 4 evaluation and later artifact publication",
+            "Counts Numba pair-credit repairs, checks byte-exact fallback and finite scores, and aggregates ten seed-major blocked-fold records.",
+            (QUALIFICATION_TEST_ANTIGRAVITY,), "qualify_records_antigravity",
+        ),
+        _node_antigravity(
+            "evaluation", EVALUATION_ANTIGRAVITY, "Task 4 decision and later closed pipeline",
+            "Applies only seedwise period repair, protected-break, normal-confirmation, exact-fallback, and finite gates; AUC is not a threshold.",
+            (EVALUATION_TEST_ANTIGRAVITY,), "QualificationDecisionAntigravity",
+        ),
+        _node_antigravity(
+            "scoring_test", SCORING_TEST_ANTIGRAVITY, "Task 4 focused unittest command",
+            "Covers compiled byte-exact C12 fallback, fixed signature, synthetic fold separation, retained ACF evidence, and semantic shift rejection.",
+            (), "Exp471ScoringTestAntigravity",
+        ),
+        _node_antigravity(
+            "qualification_test", QUALIFICATION_TEST_ANTIGRAVITY, "Task 4 focused unittest command",
+            "Covers tie-aware pair repair direction, immutable blocked-fold coverage, and exact ten-record aggregation without an AUC gate.",
+            (), "Exp471QualificationTestAntigravity",
+        ),
+        _node_antigravity(
+            "evaluation_test", EVALUATION_TEST_ANTIGRAVITY, "Task 4 focused unittest command",
+            "Covers passing seedwise repair evidence, every stable failure reason, and immutable decision consistency.",
+            (), "Exp471EvaluationTestAntigravity",
+        ),
+        _node_antigravity(
+            "task4_report", TASK4_REPORT_ANTIGRAVITY, "Task 4 parent handoff",
+            "Preserves Task 4 RED evidence, two-pass focused GREEN evidence, full regression counts, decision rules, and restricted execution boundary.",
+            (), "Exp471 Task 4",
+        ),
+        _node_antigravity(
             "config_test", CONFIG_TEST_ANTIGRAVITY, "focused unittest command",
             "Covers frozen values, exact runtime types, tuple order, mutation rejection, and type/order drift rejection.",
             (), "Exp471ConfigTestAntigravity",
@@ -318,8 +368,8 @@ def build_graph_antigravity() -> dict[str, Any]:
             (), "Exp471AccelerationTestAntigravity",
         ),
         _node_antigravity(
-            "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1–3 closeout",
-            "Records Task 1–3 scope, parity evidence, code-map relations, changed files, dashboard checks, and pending boundaries.",
+            "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1–4 closeout",
+            "Records Task 1–4 scope, parity and pair-repair evidence, code-map relations, dashboard checks, and pending boundaries.",
             (), "Exp471 구현 보고",
         ),
         _node_antigravity(
@@ -387,6 +437,14 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("acceleration", "calls", "python_reference", ACCELERATION_ANTIGRAVITY, "score_acf_peak_lag_python_reference_antigravity"),
         _edge_antigravity("acceleration", "writes", "acceleration_assessment", ACCELERATION_ANTIGRAVITY, "manifest_payload_antigravity"),
         _edge_antigravity("acceleration_test", "tests", "acceleration", ACCELERATION_TEST_ANTIGRAVITY, "assess_runtime_antigravity"),
+        _edge_antigravity("scoring", "calls", "c0_authority", SCORING_ANTIGRAVITY, "score_c0_fold_antigravity"),
+        _edge_antigravity("scoring", "calls", "synthetic", SCORING_ANTIGRAVITY, "primary_rows_antigravity"),
+        _edge_antigravity("scoring", "calls", "acf_peak_lag", SCORING_ANTIGRAVITY, "score_acf_peak_lag_numba_antigravity"),
+        _edge_antigravity("qualification", "calls", "scoring", QUALIFICATION_ANTIGRAVITY, "FoldMethodScoresAntigravity"),
+        _edge_antigravity("qualification", "writes", "contracts", QUALIFICATION_ANTIGRAVITY, "Exp471QualificationAntigravity"),
+        _edge_antigravity("scoring_test", "tests", "scoring", SCORING_TEST_ANTIGRAVITY, "score_fold_methods_antigravity"),
+        _edge_antigravity("qualification_test", "tests", "qualification", QUALIFICATION_TEST_ANTIGRAVITY, "qualify_records_antigravity"),
+        _edge_antigravity("evaluation_test", "tests", "evaluation", EVALUATION_TEST_ANTIGRAVITY, "evaluate_repair_gates_antigravity"),
         _edge_antigravity("python_reference_test", "tests", "python_reference", PYTHON_REFERENCE_TEST_ANTIGRAVITY, "score_acf_peak_lag_python_reference_antigravity"),
         _edge_antigravity("python_reference_test", "tests", "acf_peak_lag", PYTHON_REFERENCE_TEST_ANTIGRAVITY, "score_acf_peak_lag_numba_antigravity"),
         _edge_antigravity("acf_test", "tests", "acf_peak_lag", ACF_TEST_ANTIGRAVITY, "ACFPeakLagScoresAntigravity"),
@@ -411,6 +469,9 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("map_builder", "documents", "python_reference", BUILDER_ANTIGRAVITY, "score_acf_peak_lag_python_reference_antigravity"),
         _edge_antigravity("map_builder", "documents", "acceleration", BUILDER_ANTIGRAVITY, "assess_runtime_antigravity"),
         _edge_antigravity("map_builder", "documents", "acceleration_assessment", BUILDER_ANTIGRAVITY, "ACCELERATION_ASSESSMENT_ANTIGRAVITY"),
+        _edge_antigravity("map_builder", "documents", "scoring", BUILDER_ANTIGRAVITY, "SCORING_ANTIGRAVITY"),
+        _edge_antigravity("map_builder", "documents", "qualification", BUILDER_ANTIGRAVITY, "QUALIFICATION_ANTIGRAVITY"),
+        _edge_antigravity("map_builder", "documents", "evaluation", BUILDER_ANTIGRAVITY, "EVALUATION_ANTIGRAVITY"),
         _edge_antigravity("map_builder", "reviews", "exp470_config_contract", BUILDER_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
         _edge_antigravity("map_builder", "reviews", "exp470_contracts_pattern", BUILDER_ANTIGRAVITY, "Exp470QualificationAntigravity"),
     ]
@@ -434,8 +495,8 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         "<title>Exp471 code map</title></head><body><main>"
-        "<h1>Exp471 Task 3 Code Map</h1>"
-        "<p>Versioned authority, ACF scorer, and runtime-assessment map; future Task 4–6 files are explicitly pending.</p>"
+        "<h1>Exp471 Task 4 Code Map</h1>"
+        "<p>Versioned authority, ACF scorer, runtime assessment, fold scoring, pair qualification, and evaluation map; future Task 5–6 files are explicitly pending.</p>"
         "<table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>"
         + rows + "</tbody></table>"
         '<script id="exp471-codemap-json-antigravity" type="application/json">'

@@ -14,11 +14,11 @@
   </style>
 </head>
 <body><main>
-  <h1>Exp471 구현 보고 — Task 1–3</h1>
-  <p>이 보고서는 2026-08-24~25에 전용 worktree에서 확인한 Task 1–3 증거를 기록합니다.</p>
+  <h1>Exp471 구현 보고 — Task 1–4</h1>
+  <p>이 보고서는 2026-08-24~25에 전용 worktree에서 확인한 Task 1–4 증거를 기록합니다.</p>
 
   <h2>1. 범위</h2>
-  <p>Task 1은 고정 config와 Exp470 authority 경계를 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. Task 3는 공개 fixture에서 Python/Numba 일치와 MLX 적격성만 측정했습니다. fold scoring, qualification 계산, artifact publication과 실제 데이터 실험 실행은 아직 포함하지 않습니다.</p>
+  <p>Task 1은 고정 config와 Exp470 authority 경계를 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. Task 3는 공개 fixture에서 Python/Numba 일치와 MLX 적격성만 측정했습니다. Task 4는 합성 fold scoring과 pair-repair qualification을 구현했습니다. artifact publication과 실제 데이터 실험 실행은 아직 포함하지 않습니다.</p>
 
   <h2>2. RED 증거</h2>
   <p>명령:</p>
@@ -113,6 +113,27 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
   </table>
   <p class="pass">Task 3 집중 테스트 12개를 연속 두 번, Task 1–3 전체 테스트 34개를 통과했습니다.</p>
 
+  <h2>6.3 Task 4 결과</h2>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>C12 결합</td><td>확인된 E12가 C0보다 클 때만 교체, 그 외 C0 bytes 보존</td></tr>
+      <tr><td>fold 분리</td><td>fit으로만 정상 기준을 만들고 query normal+네 합성 변화는 평가에만 사용</td></tr>
+      <tr><td>보존 증거</td><td>early/late peak, presence, shift, raw, rank, confirmation을 다시 계산해 검증</td></tr>
+      <tr><td>pair repair</td><td>Numba에서 승=1, 동점=0.5, 패=0 credit 변화로 fixed/broken 계산</td></tr>
+      <tr><td>합격 기준</td><td>seed별 period repair와 손상 0건, 정상 confirmation 0건, exact fallback, finite</td></tr>
+      <tr><td>AUC</td><td>기록만 하며 0.85 기준을 사용하지 않음</td></tr>
+    </tbody>
+  </table>
+  <p class="pass">Task 4 집중 테스트 9개를 연속 두 번, Task 1–4 전체 테스트 43개를 통과했습니다.</p>
+  <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity</code></pre>
+  <p class="pass">Task 4가 의존하는 Exp470 다섯 모듈 회귀 테스트 19개를 통과했습니다.</p>
+
   <h2>7. 금지 실행 경계</h2>
   <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing 실행은 0회였습니다. 수행한 작업은 소스 작성·검토, unit test, 코드 맵 생성·검증, 대시보드 갱신뿐입니다.</p>
 
@@ -120,7 +141,10 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
   <ul>
     <li>Exp471 집중 테스트: <span class="pass">8개 통과</span>를 연속 두 번 확인했습니다.</li>
     <li>Task 2 집중 테스트: <span class="pass">14개 통과</span>를 연속 두 번 확인했습니다.</li>
-    <li>Exp470 회귀 테스트: <span class="pass">9개 통과</span>를 확인했습니다.</li>
+    <li>Task 3 집중 테스트: <span class="pass">12개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 4 집중 테스트: <span class="pass">9개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 1–4 전체 테스트: <span class="pass">43개 통과</span>를 확인했습니다.</li>
+    <li>Exp470 Task 4 의존 모듈 회귀 테스트: <span class="pass">19개 통과</span>를 확인했습니다.</li>
     <li>Exp471 코드 맵 생성·재검증과 JSON·lock 문법 검사가 모두 통과했습니다.</li>
     <li>휴대형 HTML 대시보드는 1440px와 390px 화면 검증, 출처 대화상자, 키보드 접근 검사를 포함해 <span class="pass">verification passed</span>였습니다.</li>
     <li><code>git diff --check</code>를 통과했습니다.</li>
@@ -131,7 +155,7 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
     <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag scorer</label>
     <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
-    <label><input type="checkbox" disabled> Task 4 C0/E12/C12·pair repair 판정</label>
+    <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair repair 판정</label>
     <label><input type="checkbox" disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
     <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>

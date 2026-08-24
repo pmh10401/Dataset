@@ -377,7 +377,7 @@ git commit -m "test: qualify Exp471 Numba runtime"</code></pre>
   <p><strong>Files:</strong> Create <code>scoring_antigravity.py</code>, <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>; Test <code>tests/test_scoring_antigravity.py</code>, <code>test_qualification_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>.</p>
   <p><strong>Consumes:</strong> Task 1 C0 authority, Task 2 ACF scorer. <strong>Produces:</strong> <code>FoldMethodScoresAntigravity</code>, <code>PairRepairCountsAntigravity</code>, <code>Exp471QualificationAntigravity</code>, <code>QualificationDecisionAntigravity</code>.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>4.1</strong> exact fallback, pair fixed/broken과 gate RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.1</strong> exact fallback, pair fixed/broken과 gate RED 테스트를 작성한다.</label>
     <pre><code>def test_c12_fallback_is_byte_exact_c0_antigravity(self):
     record = score_fold_methods_antigravity(self.train, self.fit, self.query, seed=20260721, fold_index=0, authority=self.authority)
     for scope in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change"):
@@ -396,12 +396,12 @@ def test_decision_requires_seedwise_period_repairs_antigravity(self):
         fallback_exact=True, finite=True,
     )
     self.assertTrue(decision.eligible_for_private_reproducibility)</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_scoring_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_qualification_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_evaluation_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.3</strong> C12 결합과 pair credit/count를 Numba로 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.3</strong> C12 결합과 pair credit/count를 Numba로 구현한다.</label>
     <pre><code>@numba.njit(cache=False, fastmath=False)
 def _combine_c12_numba_antigravity(c0, ranks, confirmed):
     output = np.empty_like(c0)
@@ -422,7 +422,7 @@ def _count_pair_repairs_numba_antigravity(c0_normal, c0_changed, c12_normal, c12
             elif after &lt; before:
                 broken += 1
     return fixed, broken</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.4</strong> fold scorer는 query와 fit을 섞지 않고 normal+네 변화에 E12/C12를 조립한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.4</strong> fold scorer는 query와 fit을 섞지 않고 normal+네 변화에 E12/C12를 조립한다.</label>
     <pre><code>c0 = score_c0_fold_antigravity(train, fit, query, seed=seed, fold_index=fold_index, authority=authority)
 scopes = {"normal": train[query], **generated_primary_scopes_antigravity(train[query])}
 combined = np.concatenate(tuple(scopes[name] for name in SCOPES_ANTIGRAVITY), axis=0)
@@ -430,7 +430,7 @@ acf = score_acf_peak_lag_numba_antigravity(train[fit], combined)
 for scope, section in scope_slices_antigravity(query.size).items():
     e12[scope] = acf.query_ranks[section]
     c12[scope] = _combine_c12_numba_antigravity(c0_by_scope[scope], e12[scope], acf.confirmation_mask[section])</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.5</strong> 10개 record 집계는 AUC를 기록하되 gate에 0.85를 넣지 않는다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.5</strong> 10개 record 집계는 AUC를 기록하되 gate에 0.85를 넣지 않는다.</label>
     <pre><code>def evaluate_repair_gates_antigravity(*, period_fixed, period_broken, protected_broken, normal_confirmations, fallback_exact, finite):
     reasons = []
     for seed in (20260721, 20261721):
@@ -448,7 +448,7 @@ for scope, section in scope_slices_antigravity(query.size).items():
     if not finite:
         reasons.append("nonfinite")
     return QualificationDecisionAntigravity(not reasons, not reasons, tuple(reasons))</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.6</strong> 테스트를 두 번 통과시키고 code map 갱신 후 commit한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.6</strong> 테스트를 두 번 통과시키고 code map 갱신 후 commit한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_scoring_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_qualification_antigravity \
