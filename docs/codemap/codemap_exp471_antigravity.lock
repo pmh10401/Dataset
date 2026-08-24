@@ -1,0 +1,25 @@
+{
+  "artifact_sha256": {
+    "docs/codemap/codemap_exp471_antigravity.html": "e2b1c13444ece199ec91bae47dc09738bdb69e1c3ddf720d270700aea5797614",
+    "docs/codemap/codemap_exp471_antigravity.json": "a0df81f02507b79670c598c017cab321499f1d57995a3c70668c97142c2bb6a3"
+  },
+  "fingerprint_algorithm": "sha256",
+  "governance_fingerprint_evidence": {
+    "design_path": "docs/superpowers/specs/2026-08-24-exp471-exp467-evaluation-recovery-antigravity-design.md",
+    "design_sha256": "3d7f22953fd8010fd512124e7c1448db6ba0ca390533cd2d2b7476d69cb513fd",
+    "exp471_production_modules_exist": false,
+    "frozen_exp467_source_commit": "1e616731a88da9bc0268823e1d2cef2a53c1054f",
+    "frozen_exp467_source_context_sha256": "31341d8e14cf58a486cf7418276c432ac2dbda1af139699ff2afbd85969442af",
+    "plan_path": "docs/superpowers/plans/2026-08-24-exp471-exp467-evaluation-recovery-antigravity.md",
+    "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
+  },
+  "module_fingerprints": {
+    "scratch/generate_exp471_codemap_antigravity.py": "1c34277c0a6d48a43ad5f523b366f8644776f0f0b73807db47a6e0d9c1e8b5b0",
+    "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py": "1dd22ac09e6ee3c4148b40db631cf2f58b0ceb0f50623f31f9b6a37346c947a4"
+  },
+  "scanned_scope": [
+    "scratch/generate_exp471_codemap_antigravity.py",
+    "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py"
+  ],
+  "schema": "exp471-codemap-lock.v1"
+}

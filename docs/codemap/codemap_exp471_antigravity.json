@@ -1,0 +1,65 @@
+{
+  "edges": [],
+  "flows": [
+    {
+      "from": "fixed-commit Exp467 source authority",
+      "name": "exp471_source_verification_flow",
+      "through": "reconstructed Git bytes and context digest",
+      "to": "verified 4,468 source envelopes"
+    },
+    {
+      "from": "verified source authority",
+      "name": "exp471_resumable_score_cache_flow",
+      "through": "label-free raw/micro score shards with create-only publication",
+      "to": "complete score-cache manifest"
+    },
+    {
+      "from": "complete score-cache manifest",
+      "name": "exp471_evaluation_flow",
+      "through": "frozen Exp450 metrics with JSON null normalization",
+      "to": "durable evaluation artifact"
+    },
+    {
+      "from": "durable evaluation artifact",
+      "name": "exp471_report_flow",
+      "through": "atomic canonical JSON/CSV/figure publication",
+      "to": "paper report manifest"
+    }
+  ],
+  "nodes": [
+    {
+      "callers": [],
+      "effects": "Generate and verify the factual, synchronized Exp471 code-map triplet.",
+      "module": "scratch.generate_exp471_codemap_antigravity",
+      "path": "scratch/generate_exp471_codemap_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Closed operator entry point for Exp471 evaluation recovery.",
+      "module": "scratch.run_exp471_exp467_evaluation_recovery_antigravity",
+      "path": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "tests": []
+    }
+  ],
+  "schema": "exp471-codemap.v1",
+  "scope": {
+    "derived_from_index_tracked_paths_only": true,
+    "experiment": "Exp471",
+    "external_closure_policy": "no_production_modules_yet",
+    "governance_fingerprint_evidence": {
+      "design_path": "docs/superpowers/specs/2026-08-24-exp471-exp467-evaluation-recovery-antigravity-design.md",
+      "design_sha256": "3d7f22953fd8010fd512124e7c1448db6ba0ca390533cd2d2b7476d69cb513fd",
+      "exp471_production_modules_exist": false,
+      "frozen_exp467_source_commit": "1e616731a88da9bc0268823e1d2cef2a53c1054f",
+      "frozen_exp467_source_context_sha256": "31341d8e14cf58a486cf7418276c432ac2dbda1af139699ff2afbd85969442af",
+      "plan_path": "docs/superpowers/plans/2026-08-24-exp471-exp467-evaluation-recovery-antigravity.md",
+      "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
+    },
+    "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
+    "node_count": 2,
+    "production_node_count": 0,
+    "test_node_count": 0
+  },
+  "unknowns": []
+}
