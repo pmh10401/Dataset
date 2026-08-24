@@ -22,6 +22,7 @@ from .sources_antigravity import load_ecg200_normal_train_antigravity
 
 
 _COMMIT_RE_ANTIGRAVITY = re.compile(r"[0-9a-f]{40}\Z")
+_REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[2]
 _TRAIN_PATH_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp465_ecg200_train_antigravity/ECG200_TRAIN_antigravity.ts"
 )
@@ -54,12 +55,14 @@ def _require_clean_reviewed_commit_antigravity(reviewed_commit: str) -> None:
     if _COMMIT_RE_ANTIGRAVITY.fullmatch(reviewed_commit) is None:
         raise ValueError("reviewed commit must be exactly 40 lowercase hexadecimal characters")
     head = subprocess.run(
-        ("git", "rev-parse", "HEAD"), check=True, capture_output=True, text=True
+        ("git", "rev-parse", "HEAD"), cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
     ).stdout.strip()
     if head != reviewed_commit:
         raise ValueError("reviewed commit is not the current HEAD")
     status = subprocess.run(
-        ("git", "status", "--porcelain"), check=True, capture_output=True, text=True
+        ("git", "status", "--porcelain"), cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
     ).stdout
     if status:
         raise ValueError("reviewed commit requires a clean worktree")

@@ -9,6 +9,11 @@ import re
 import subprocess
 import sys
 
+
+_REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[1]
+if str(_REPOSITORY_ROOT_ANTIGRAVITY) not in sys.path:
+    sys.path.insert(0, str(_REPOSITORY_ROOT_ANTIGRAVITY))
+
 from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.artifacts_antigravity import LEAF_NAMES_ANTIGRAVITY
 from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.cli_antigravity import main_antigravity
 
@@ -23,10 +28,16 @@ _ENTRYPOINT_ANTIGRAVITY = Path(__file__).resolve()
 def _require_clean_reviewed_commit_antigravity(reviewed_commit: str) -> None:
     if _COMMIT_RE_ANTIGRAVITY.fullmatch(reviewed_commit) is None:
         raise ValueError("reviewed commit must be exactly 40 lowercase hexadecimal characters")
-    head = subprocess.run(("git", "rev-parse", "HEAD"), check=True, capture_output=True, text=True).stdout.strip()
+    head = subprocess.run(
+        ("git", "rev-parse", "HEAD"), cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
     if head != reviewed_commit:
         raise ValueError("reviewed commit is not the current HEAD")
-    status = subprocess.run(("git", "status", "--porcelain"), check=True, capture_output=True, text=True).stdout
+    status = subprocess.run(
+        ("git", "status", "--porcelain"), cwd=_REPOSITORY_ROOT_ANTIGRAVITY,
+        check=True, capture_output=True, text=True,
+    ).stdout
     if status:
         raise ValueError("reviewed commit requires a clean worktree")
 
@@ -55,7 +66,9 @@ def _run_cli_antigravity(command: str, root: Path, reviewed_commit: str | None =
     args = [sys.executable, str(_ENTRYPOINT_ANTIGRAVITY), command, "--root", str(root)]
     if reviewed_commit is not None:
         args.extend(("--commit", reviewed_commit))
-    completed = subprocess.run(args, check=False, capture_output=True)
+    completed = subprocess.run(
+        args, cwd=_REPOSITORY_ROOT_ANTIGRAVITY, check=False, capture_output=True,
+    )
     if completed.returncode != 0:
         raise RuntimeError(f"{command} failed with exit code {completed.returncode}")
     return _strict_json_object_antigravity(completed.stdout)

@@ -4,12 +4,28 @@ import contextlib
 import io
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
 
 class Exp470CliTestAntigravity(unittest.TestCase):
+    def test_launcher_help_from_outside_repo_exposes_only_closed_commands_antigravity(self) -> None:
+        """Break caught: direct scratch execution cannot import the project from another working directory."""
+        launcher = Path(__file__).resolve().parents[3] / "scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py"
+        with tempfile.TemporaryDirectory() as directory:
+            completed = subprocess.run(
+                (sys.executable, str(launcher), "--help"), cwd=directory,
+                check=False, capture_output=True, text=True,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("evaluate", completed.stdout)
+        self.assertIn("inspect", completed.stdout)
+        for forbidden in ("official", "route", "promote", "benchmark"):
+            self.assertNotIn(forbidden, completed.stdout)
+
     def test_parser_has_only_required_closed_subcommands_antigravity(self) -> None:
         """Break caught: an unreviewed command, alias, optional argument, or unknown flag reaches the CLI."""
         from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.cli_antigravity import parser_antigravity
@@ -64,6 +80,20 @@ class Exp470CliTestAntigravity(unittest.TestCase):
             self.assertEqual(json.loads(stdout.getvalue())["root"], str(root))
             inspect_result.assert_called_once_with(root)
             evaluate.assert_not_called()
+
+    def test_cli_git_checks_use_its_exact_repository_root_antigravity(self) -> None:
+        """Break caught: git provenance changes when a caller starts the CLI from another worktree."""
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity import cli_antigravity
+
+        root = Path(cli_antigravity.__file__).resolve().parents[2]
+        responses = (
+            subprocess.CompletedProcess(("git",), 0, stdout="a" * 40 + "\n", stderr=""),
+            subprocess.CompletedProcess(("git",), 0, stdout="", stderr=""),
+        )
+        with mock.patch.object(cli_antigravity.subprocess, "run", side_effect=responses) as run:
+            cli_antigravity._require_clean_reviewed_commit_antigravity("a" * 40)
+        self.assertEqual(run.call_count, 2)
+        self.assertTrue(all(call.kwargs["cwd"] == root for call in run.call_args_list))
 
 
 if __name__ == "__main__":

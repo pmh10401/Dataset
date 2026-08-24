@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -18,6 +19,17 @@ class _DecisionAntigravity:
 
 
 class Exp470PipelineTestAntigravity(unittest.TestCase):
+    def test_real_private_constants_stay_absent_before_and_after_no_run_logic_antigravity(self) -> None:
+        """Break caught: a Task 6 test creates either real private root even without evaluation permission."""
+        from scratch import run_exp470_ecg200_spectral_entropy_numba_antigravity as launcher
+
+        before = tuple(root.exists() for root in (launcher.PRIVATE_RUN1_ANTIGRAVITY, launcher.PRIVATE_RUN2_ANTIGRAVITY))
+        self.assertEqual(before, (False, False))
+        with self.assertRaisesRegex(PermissionError, "private checkpoint approval is required"):
+            launcher.run_private_sequence_antigravity("a" * 40, "not-approved")
+        after = tuple(root.exists() for root in (launcher.PRIVATE_RUN1_ANTIGRAVITY, launcher.PRIVATE_RUN2_ANTIGRAVITY))
+        self.assertEqual(after, (False, False))
+
     def test_evaluate_pipeline_rejects_existing_unrelated_root_before_loader_antigravity(self) -> None:
         """Break caught: a later evaluation can overwrite or consume an unrelated destination."""
         from experiments.exp470_ecg200_spectral_entropy_numba_antigravity import cli_antigravity
@@ -153,6 +165,24 @@ class Exp470PipelineTestAntigravity(unittest.TestCase):
             (second / LEAF_NAMES_ANTIGRAVITY[-1]).unlink()
             with self.assertRaisesRegex(ValueError, "leaf"):
                 launcher._require_byte_identical_antigravity(first, second)
+
+    def test_launcher_git_and_child_cli_commands_use_exact_repository_root_antigravity(self) -> None:
+        """Break caught: launcher git or child CLI commands inherit an arbitrary caller working directory."""
+        from scratch import run_exp470_ecg200_spectral_entropy_numba_antigravity as launcher
+
+        root = Path(launcher.__file__).resolve().parents[1]
+        git_responses = (
+            subprocess.CompletedProcess(("git",), 0, stdout="a" * 40 + "\n", stderr=""),
+            subprocess.CompletedProcess(("git",), 0, stdout="", stderr=""),
+        )
+        with mock.patch.object(launcher.subprocess, "run", side_effect=git_responses) as run:
+            launcher._require_clean_reviewed_commit_antigravity("a" * 40)
+        self.assertTrue(all(call.kwargs["cwd"] == root for call in run.call_args_list))
+        payload = b'{"decision":{},"hashes":{},"root":"temporary"}\n'
+        completed = subprocess.CompletedProcess(("python",), 0, stdout=payload, stderr=b"")
+        with mock.patch.object(launcher.subprocess, "run", return_value=completed) as run:
+            launcher._run_cli_antigravity("inspect", Path("temporary_antigravity"))
+        self.assertEqual(run.call_args.kwargs["cwd"], root)
 
 
 if __name__ == "__main__":
