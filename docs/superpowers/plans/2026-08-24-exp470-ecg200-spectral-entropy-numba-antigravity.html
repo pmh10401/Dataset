@@ -567,7 +567,7 @@ git commit -m "feat: publish replayable Exp470 evidence"</code></pre>
   <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/cli_antigravity.py</code>, <code>scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py</code>, <code>docs/EXP470_RUNBOOK_antigravity.html</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_cli_antigravity.py</code>, <code>test_pipeline_antigravity.py</code>; Modify <code>docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP470_DASHBOARD_antigravity.html</code>, this plan, and Exp470 code map triplet.</p>
   <p><strong>Produces:</strong> <code>evaluate</code>와 <code>inspect</code>만 있는 closed CLI, 그리고 사용자 승인 뒤 <code>/private/tmp/exp470_task6_private_run1_antigravity</code> evaluate→inspect 후 <code>/private/tmp/exp470_task6_private_run2_antigravity</code> evaluate→inspect 순서만 허용하는 helper. <code>_evaluate_then_inspect_antigravity(root, commit)</code>는 subprocess 두 호출의 JSON을 반환하고, <code>_require_byte_identical_antigravity(first, second)</code>는 7개 leaf bytes를 비교한다. Task 6은 helper를 실행하지 않는다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>6.1</strong> 승인 전 실행 차단과 unknown option RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.1</strong> 승인 전 실행 차단과 unknown option RED 테스트를 작성한다.</label>
     <pre><code>def test_cli_rejects_unknown_surface_antigravity(self):
     with self.assertRaises(SystemExit):
         parser_antigravity().parse_args(["official"])
@@ -579,11 +579,11 @@ def test_private_helper_requires_explicit_checkpoint_token_antigravity(self):
 def test_task6_preflight_does_not_create_private_roots_antigravity(self):
     self.assertFalse(PRIVATE_RUN1_ANTIGRAVITY.exists())
     self.assertFalse(PRIVATE_RUN2_ANTIGRAVITY.exists())</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_cli_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_pipeline_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.3</strong> CLI와 helper를 구현하되 private root는 만들거나 실행하지 않는다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.3</strong> CLI와 helper를 구현하되 private root는 만들거나 실행하지 않는다.</label>
     <pre><code>def run_private_sequence_antigravity(reviewed_commit: str, approval_token: str | None) -&gt; tuple[dict, dict]:
     if approval_token != "TASK_6_PRIVATE_RUN_1_2_APPROVED":
         raise PermissionError("private checkpoint approval is required")
@@ -593,18 +593,18 @@ def test_task6_preflight_does_not_create_private_roots_antigravity(self):
     second = _evaluate_then_inspect_antigravity(PRIVATE_RUN2_ANTIGRAVITY, reviewed_commit)
     _require_byte_identical_antigravity(first, second)
     return first, second</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.4</strong> Exp470 전체 테스트와 Exp468 핵심 회귀 테스트를 실행한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.4</strong> Exp470 전체 테스트와 Exp468 핵심 회귀 테스트를 실행한다.</label>
     <pre><code>python3 -m unittest discover -s experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests -p 'test_*_antigravity.py'
 python3 -m unittest \
   experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity \
   experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity \
   experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_predecessor_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.5</strong> fresh read-only reviewer가 설계 위반, NumPy score backend, TEST/FN 접근, 잘못된 checkbox를 검사한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.5</strong> fresh read-only reviewer가 설계 위반, NumPy score backend, TEST/FN 접근, 잘못된 checkbox를 검사한다.</label>
     <pre><code>rg -n "backend=.numpy.|np\.fft|ECG200_TEST|TEST_LABEL|false_negative|routing|champion|promotion" \
   experiments/exp470_ecg200_spectral_entropy_numba_antigravity scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py
 python3 scratch/build_codemap_exp470_antigravity.py --validate-only
 git diff --check</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.6</strong> 실제 완료 항목만 HTML 체크하고 구현 보고서·runbook·dashboard를 검증한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.6</strong> 실제 완료 항목만 HTML 체크하고 구현 보고서·runbook·dashboard를 검증한다.</label>
     <pre><code>python3 -m json.tool scratch/exp470_dashboard_artifact_antigravity.json &gt;/dev/null
 node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs \
   --input scratch/exp470_dashboard_artifact_antigravity.json \
@@ -613,7 +613,7 @@ python3 scratch/build_codemap_exp470_antigravity.py
 python3 scratch/build_codemap_exp470_antigravity.py --validate-only
 git status --short
 git diff --check</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.7</strong> 구현 완료를 commit하고 private 실행 checkpoint에서 멈춘다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.7</strong> 구현 완료를 commit하고 private 실행 checkpoint에서 멈춘다.</label>
     <pre><code>git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity \
   scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py \
   scratch/exp470_acceleration_assessment_antigravity.json \
@@ -639,7 +639,7 @@ git status --short</code></pre>
     <label><input type="checkbox" checked disabled> Task 3 Numba 근거·MLX smoke</label>
     <label><input type="checkbox" checked disabled> Task 4 C0/E11/C11·pair repair qualification</label>
     <label><input type="checkbox" checked disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
-    <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" checked disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2 — 별도 승인 대기</label>
   </section>
   <p class="muted">작성일: 2026-08-24 · 구현 계획 단계에서는 새 점수 계산, private/official 실행, TEST/FN 접근을 하지 않았다.</p>
