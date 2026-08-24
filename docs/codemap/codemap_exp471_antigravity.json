@@ -142,6 +142,16 @@
     },
     {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "scratch/generate_exp471_codemap_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
       "kind": "ast_import"
     },
@@ -327,6 +337,7 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
@@ -337,6 +348,7 @@
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
       "tests": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
@@ -440,6 +452,13 @@
     },
     {
       "callers": [],
+      "effects": "Final publication invariants for the synchronized Exp471 code map.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_codemap_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
       "effects": "Behavior tests for the frozen Exp471 configuration and strict contracts.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_config_contracts_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
@@ -479,12 +498,14 @@
     },
     {
       "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "effects": "Generate and verify the factual, synchronized Exp471 code-map triplet.",
       "module": "scratch.generate_exp471_codemap_antigravity",
       "path": "scratch/generate_exp471_codemap_antigravity.py",
       "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py"
       ]
     },
@@ -515,9 +536,9 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 16,
+    "node_count": 17,
     "production_node_count": 8,
-    "test_node_count": 6
+    "test_node_count": 7
   },
   "unknowns": []
 }

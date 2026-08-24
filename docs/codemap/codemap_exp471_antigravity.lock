@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp471_antigravity.html": "7dbc61dd3b9a50dba2aef25678882c74629516ee99d3302df0a2d6cee14ce80b",
-    "docs/codemap/codemap_exp471_antigravity.json": "1b152a3529bef6931e9dbe2e21b6df38d030deb964fdd5c56f53e5e2f9bde049"
+    "docs/codemap/codemap_exp471_antigravity.html": "321a749cc92a99fb14031705c4014b4b1c43c6726c484ebd3040117ffad7c613",
+    "docs/codemap/codemap_exp471_antigravity.json": "a65ba013777595d71734de8232bc27e264bd4d25197fa95111b22e6bfd18d168"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -23,6 +23,7 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py": "740fc9e60acd2442a5e2dda6c0b1dc8cc973fc0fe67e7359283bb869368d77cb",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "7c17ec8113f49ba900f9a9994e02dab3a9afa3f4917808f904ce55ca9fd3b8dc",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py": "6859e9d7e88db8e546cbbf97c2c92b3aae5477dfb2eb43d55e35f18529faf25a",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "39dba2c4f17419fb2e17069ae4231d362f1e447c05f4c01c59656732f80f97de",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py": "4d00c917a1480ebe5cad1c0cba3e4b083d4c21128f6de84a7043fb9aa8612b09",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "462d1358223d64976913c5997bab6ec8ba329a6637feb476ff6611bd1ee0394b",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "49c15b736b4d42fdbf43943a28597c5d3a924d07688b497a2d7ea551e53b1123",
@@ -41,6 +42,7 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
