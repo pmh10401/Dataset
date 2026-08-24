@@ -154,6 +154,25 @@ def _freeze_array_antigravity(values: np.ndarray) -> np.ndarray:
     return owned
 
 
+def _require_finite_outputs_antigravity(
+    fit_entropy: np.ndarray,
+    query_entropy: np.ndarray,
+    fit_raw: np.ndarray,
+    query_raw: np.ndarray,
+    query_ranks: np.ndarray,
+    fit_maximum: float,
+) -> None:
+    if not (
+        np.isfinite(fit_entropy).all()
+        and np.isfinite(query_entropy).all()
+        and np.isfinite(fit_raw).all()
+        and np.isfinite(query_raw).all()
+        and np.isfinite(query_ranks).all()
+        and math.isfinite(fit_maximum)
+    ):
+        raise ValueError("non-finite numerical output from compiled spectral entropy scorer")
+
+
 def score_spectral_entropy_numba_antigravity(
     fit_rows: object, query_rows: object
 ) -> EntropyScoresAntigravity:
@@ -164,6 +183,14 @@ def score_spectral_entropy_numba_antigravity(
     query_entropy = entropy_rows_numba_antigravity(validated_query)
     fit_raw, query_raw, query_ranks, fit_maximum = assemble_raw_rank_numba_antigravity(
         fit_entropy, query_entropy
+    )
+    _require_finite_outputs_antigravity(
+        fit_entropy,
+        query_entropy,
+        fit_raw,
+        query_raw,
+        query_ranks,
+        fit_maximum,
     )
     confirmation = strict_confirmation_numba_antigravity(query_raw, fit_maximum)
     return EntropyScoresAntigravity(

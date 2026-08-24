@@ -109,6 +109,14 @@ class SpectralEntropyNumbaTestAntigravity(unittest.TestCase):
                 with self.assertRaises((TypeError, ValueError)):
                     score_spectral_entropy_numba_antigravity(fit_rows, query_rows)
 
+    def test_finite_inputs_with_overflowing_outputs_are_rejected_antigravity(self) -> None:
+        """Break caught: finite extreme rows yield NaN scores that are silently packaged as valid results."""
+        enormous_fit = np.full((2, 140), 1e308, dtype=np.float64)
+        enormous_query = np.full((1, 140), 1e308, dtype=np.float64)
+
+        with self.assertRaisesRegex(ValueError, "non-finite numerical output"):
+            score_spectral_entropy_numba_antigravity(enormous_fit, enormous_query)
+
     def test_compiled_kernels_and_prohibited_score_backends_are_absent_antigravity(self) -> None:
         """Break caught: scoring leaves njit kernels or reintroduces an FFT/backend selector/NumPy scorer."""
         rows = _fixed_rows_antigravity()
