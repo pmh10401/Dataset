@@ -28,6 +28,58 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity.source_authority_
 _DIGEST_A_ANTIGRAVITY = "a" * 64
 _DIGEST_B_ANTIGRAVITY = "b" * 64
 _DATASETS_ANTIGRAVITY = ("dataset_alpha", "dataset_beta", "dataset_gamma")
+_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY = {
+    "knn_distance": "classical",
+    "lof_novelty": "classical",
+    "ocsvm_rbf": "classical",
+    "isolation_forest": "classical",
+    "deep_svdd_1d": "deep_svdd",
+    "drocc_1d": "drocc",
+}
+_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY = {
+    root: {
+        "manifest_sha256": sha256(
+            f"synthetic manifest:{root}".encode("utf-8")
+        ).hexdigest(),
+        "run_config_sha256": sha256(
+            f"synthetic run config:{root}".encode("utf-8")
+        ).hexdigest(),
+    }
+    for root in ("classical", "deep_svdd", "drocc")
+}
+
+
+def _test_coordinates_antigravity() -> dict[str, object]:
+    return {
+        dataset: {
+            "count": 2,
+            "indices": [0, 1],
+            "coordinates_sha256": sha256(
+                canonical_json_bytes_exp471_antigravity(
+                    {"dataset": dataset, "count": 2, "indices": [0, 1]}
+                )
+            ).hexdigest(),
+        }
+        for dataset in _DATASETS_ANTIGRAVITY
+    }
+
+
+def _coordinate_inventory_sha256_antigravity(
+    coordinates: dict[str, object],
+) -> str:
+    record = {
+        "schema": "exp471-test-coordinate-inventory-antigravity.v1",
+        "dataset_count": len(coordinates),
+        "datasets": [
+            {
+                "dataset": dataset,
+                "test_count": coordinates[dataset]["count"],
+                "test_indices": list(coordinates[dataset]["indices"]),
+            }
+            for dataset in coordinates
+        ],
+    }
+    return sha256(canonical_json_bytes_exp471_antigravity(record)).hexdigest()
 
 
 def _authority_antigravity() -> Exp471SourceAuthorityAntigravity:
@@ -54,26 +106,12 @@ def _authority_antigravity() -> Exp471SourceAuthorityAntigravity:
 
 def _source_bundle_antigravity() -> dict[str, object]:
     authority = _authority_antigravity()
-    coordinates = {
-        dataset: {
-            "count": 2,
-            "indices": [0, 1],
-            "coordinates_sha256": sha256(
-                canonical_json_bytes_exp471_antigravity(
-                    {"dataset": dataset, "count": 2, "indices": [0, 1]}
-                )
-            ).hexdigest(),
-        }
-        for dataset in _DATASETS_ANTIGRAVITY
-    }
-    coordinates_sha256 = sha256(
-        canonical_json_bytes_exp471_antigravity(coordinates)
-    ).hexdigest()
+    coordinates = _test_coordinates_antigravity()
+    coordinates_sha256 = _coordinate_inventory_sha256_antigravity(coordinates)
     conditions: dict[str, object] = {}
     baselines: dict[str, object] = {}
     baseline_authority_sha256: dict[str, str] = {}
     for method_index, method in enumerate(METHOD_ORDER_ANTIGRAVITY):
-        source_sha256 = sha256(f"source:{method}".encode("utf-8")).hexdigest()
         if method_index < 4:
             conditions[method] = {
                 "source_manifest_sha256": authority.condition_manifest_sha256[
@@ -91,13 +129,16 @@ def _source_bundle_antigravity() -> dict[str, object]:
                 },
             }
         else:
+            root = _BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method]
+            root_authority = _BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root]
             baseline_bare = {
                 "schema": "exp471-verified-baseline-authority-antigravity.v1",
                 "method": method,
                 "database_sha256": authority.database_sha256,
                 "dataset_order": list(_DATASETS_ANTIGRAVITY),
                 "test_coordinates_sha256": coordinates_sha256,
-                "source_manifest_sha256": source_sha256,
+                "source_manifest_sha256": root_authority["manifest_sha256"],
+                "run_config_sha256": root_authority["run_config_sha256"],
             }
             baseline_digest = sha256(
                 canonical_json_bytes_exp471_antigravity(baseline_bare)
@@ -168,6 +209,46 @@ def _cache_bytes_antigravity(root: Path) -> dict[str, bytes]:
 
 
 class ScoreCacheTestsAntigravity(unittest.TestCase):
+    def setUp(self) -> None:
+        coordinates_sha256 = _coordinate_inventory_sha256_antigravity(
+            _test_coordinates_antigravity()
+        )
+        patches = (
+            mock.patch.object(
+                score_cache,
+                "EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY",
+                _DIGEST_A_ANTIGRAVITY,
+                create=True,
+            ),
+            mock.patch.object(
+                score_cache,
+                "EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY",
+                len(_DATASETS_ANTIGRAVITY),
+                create=True,
+            ),
+            mock.patch.object(
+                score_cache,
+                "EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY",
+                coordinates_sha256,
+                create=True,
+            ),
+            mock.patch.object(
+                score_cache,
+                "EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY",
+                _BASELINE_ROOT_BY_METHOD_ANTIGRAVITY,
+                create=True,
+            ),
+            mock.patch.object(
+                score_cache,
+                "EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY",
+                _BASELINE_ROOT_AUTHORITY_ANTIGRAVITY,
+                create=True,
+            ),
+        )
+        for patcher in patches:
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def _issued_patches_antigravity(self, root: Path):
         return (
             mock.patch.object(
@@ -382,6 +463,153 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
             self.assertEqual(source_calls, [])
             self.assertEqual(calibration_calls, [])
 
+    def test_last_shard_interruption_preserves_measured_and_actual_provenance(
+        self,
+    ) -> None:
+        """Resume must reuse pre-shard decisions without invented measurements."""
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_last_shard_interrupt_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache,
+                "_monotonic_antigravity",
+                side_effect=(10.0, 12.2, 20.0, 21.0),
+            ), self.assertRaisesRegex(RuntimeError, "last shard interruption"):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=2,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(
+                            RuntimeError("last shard interruption")
+                        )
+                        if event["status"] == "durable"
+                        and event["durable_completed"] == 30
+                        else None
+                    ),
+                )
+
+            benchmark_path = root / "score_preparation_benchmark_antigravity.json"
+            self.assertTrue(benchmark_path.is_file())
+            execution_paths = tuple(
+                sorted(root.glob("score_preparation_execution_event_*_antigravity.json"))
+            )
+            self.assertTrue(execution_paths)
+            provenance_bytes = {
+                path.name: path.read_bytes()
+                for path in (benchmark_path, *execution_paths)
+            }
+            interrupted = score_cache.status_score_cache_antigravity(root)
+            self.assertFalse(interrupted["complete"])
+            self.assertEqual(interrupted["durable_completed"], 30)
+            self.assertTrue(
+                interrupted["benchmark_decision"]["parallel_accepted"]
+            )
+            self.assertEqual(
+                interrupted["benchmark_decision"]["selected_workers"], 2
+            )
+            self.assertEqual(
+                interrupted["execution_decision"]["selected_workers"], 2
+            )
+
+            source_calls: list[object] = []
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache,
+                "benchmark_score_preparation_antigravity",
+                side_effect=AssertionError("resume must not remeasure"),
+            ), mock.patch.object(
+                score_cache,
+                "_prepare_score_identity_antigravity",
+                side_effect=lambda *args: source_calls.append(args),
+            ):
+                manifest = score_cache.prepare_score_cache_antigravity(
+                    session, workers=1
+                )
+            self.assertEqual(manifest.total_shards, 30)
+            self.assertEqual(source_calls, [])
+            self.assertEqual(
+                {
+                    path.name: path.read_bytes()
+                    for path in (benchmark_path, *execution_paths)
+                },
+                provenance_bytes,
+            )
+            resumed = score_cache.status_score_cache_antigravity(root)
+            self.assertTrue(resumed["complete"])
+            self.assertEqual(
+                resumed["benchmark_decision"], interrupted["benchmark_decision"]
+            )
+            self.assertEqual(
+                resumed["execution_decision"], interrupted["execution_decision"]
+            )
+
+    def test_partial_shards_without_measured_provenance_fail_closed(self) -> None:
+        """Legacy shards must not cause fabricated zero-time benchmark evidence."""
+        label_calls: list[object] = []
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_missing_provenance_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(
+                _source_bundle_antigravity,
+                label_callback=lambda: label_calls.append(object()),
+            )
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, self.assertRaisesRegex(
+                RuntimeError, "partial interruption"
+            ):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=1,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(RuntimeError("partial interruption"))
+                        if event["status"] == "durable"
+                        and event["durable_completed"] == 1
+                        else None
+                    ),
+                )
+            benchmark_path = root / "score_preparation_benchmark_antigravity.json"
+            if benchmark_path.exists():
+                benchmark_path.chmod(0o600)
+                benchmark_path.unlink()
+
+            source_calls: list[object] = []
+            calibration_calls: list[object] = []
+            original_source = score_cache._prepare_score_identity_antigravity
+            original_calibration = score_cache.upper_tail_pvalues_numba_antigravity
+
+            def record_source(*args):
+                source_calls.append(args)
+                return original_source(*args)
+
+            def record_calibration(reference, query):
+                calibration_calls.append((reference, query))
+                return original_calibration(reference, query)
+
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache,
+                "_prepare_score_identity_antigravity",
+                record_source,
+            ), mock.patch.object(
+                score_cache,
+                "upper_tail_pvalues_numba_antigravity",
+                record_calibration,
+            ), self.assertRaisesRegex(
+                ValueError, "measured benchmark decision is missing"
+            ):
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            self.assertEqual(source_calls, [])
+            self.assertEqual(calibration_calls, [])
+            self.assertEqual(label_calls, [])
+            with self.assertRaisesRegex(
+                ValueError, "measured benchmark decision is missing"
+            ):
+                score_cache.status_score_cache_antigravity(root)
+
     def test_score_bundle_authority_database_and_coordinates_fail_closed(self) -> None:
         """Unbound source identities or TEST coordinates must never reach compute."""
         wrong_condition = _source_bundle_antigravity()
@@ -427,6 +655,69 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
         ] = [1, 0]
         self._assert_input_rejected_before_compute_antigravity(
             wrong_condition_order, "TEST coordinates"
+        )
+
+    def test_self_consistent_wrong_baseline_and_global_coordinates_fail_pins(self) -> None:
+        """Rehashed payload-local authority must not displace independent pins."""
+
+        wrong_baseline = _source_bundle_antigravity()
+        baseline_authority = wrong_baseline["baselines"]["knn_distance"][
+            "authority"
+        ]
+        baseline_authority["source_manifest_sha256"] = "f" * 64
+        bare = {
+            key: value
+            for key, value in baseline_authority.items()
+            if key != "authority_sha256"
+        }
+        changed_digest = sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest()
+        baseline_authority["authority_sha256"] = changed_digest
+        wrong_baseline["baseline_authority_sha256"][
+            "knn_distance"
+        ] = changed_digest
+        self._assert_input_rejected_before_compute_antigravity(
+            wrong_baseline, "pinned baseline authority"
+        )
+
+        wrong_coordinates = _source_bundle_antigravity()
+        coordinates = wrong_coordinates["test_coordinates"]
+        coordinates["dataset_alpha"]["indices"] = [1, 0]
+        coordinates["dataset_alpha"]["coordinates_sha256"] = sha256(
+            canonical_json_bytes_exp471_antigravity(
+                {
+                    "dataset": "dataset_alpha",
+                    "count": 2,
+                    "indices": [1, 0],
+                }
+            )
+        ).hexdigest()
+        for method in METHOD_ORDER_ANTIGRAVITY[:4]:
+            wrong_coordinates["conditions"][method]["scores"][
+                "dataset_alpha"
+            ]["test_indices"] = [1, 0]
+        changed_coordinates_sha256 = _coordinate_inventory_sha256_antigravity(
+            coordinates
+        )
+        for method in METHOD_ORDER_ANTIGRAVITY[4:]:
+            source = wrong_coordinates["baselines"][method]
+            source["scores"]["dataset_alpha"]["test_indices"] = [1, 0]
+            source["authority"][
+                "test_coordinates_sha256"
+            ] = changed_coordinates_sha256
+            bare = {
+                key: value
+                for key, value in source["authority"].items()
+                if key != "authority_sha256"
+            }
+            changed_digest = sha256(
+                canonical_json_bytes_exp471_antigravity(bare)
+            ).hexdigest()
+            source["authority"]["authority_sha256"] = changed_digest
+            wrong_coordinates["baseline_authority_sha256"][method] = changed_digest
+        self._assert_input_rejected_before_compute_antigravity(
+            wrong_coordinates, "pinned TEST coordinate inventory"
         )
 
     def test_wrong_shape_and_unequal_test_count_fail_before_compute(self) -> None:
@@ -605,7 +896,7 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                     score_cache.open_complete_score_cache_antigravity(changed)
 
     def test_open_complete_reconstructs_expected_cache_context(self) -> None:
-        """A self-consistent but different baseline authority must not reopen cache."""
+        """A self-consistent unauthorized baseline must not reopen a cache."""
         with tempfile.TemporaryDirectory(
             prefix="exp471_open_context_antigravity_"
         ) as temporary:
@@ -634,7 +925,9 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
             ] = changed_digest
             changed_session = _session_antigravity(lambda: changed_bundle)
             issued, cache_root = self._issued_patches_antigravity(root)
-            with issued, cache_root, self.assertRaisesRegex(ValueError, "context"):
+            with issued, cache_root, self.assertRaisesRegex(
+                ValueError, "pinned baseline authority"
+            ):
                 score_cache.open_complete_score_cache_antigravity(changed_session)
 
     def test_benchmark_uses_measured_clock_and_requires_parity_and_speed_gate(self) -> None:
@@ -823,13 +1116,18 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                 ],
             )
             self.assertTrue(all(event["status"] == "durable" for event in events))
-            decision = score_cache.status_score_cache_antigravity(root)[
-                "benchmark_decision"
-            ]
-            self.assertEqual(decision["selected_workers"], 1)
-            self.assertFalse(decision["parallel_accepted"])
-            self.assertEqual(decision["parallel_error_type"], "RuntimeError")
-            self.assertIn("actual first wave", decision["fallback_reason"])
+            status = score_cache.status_score_cache_antigravity(root)
+            measured = status["benchmark_decision"]
+            self.assertEqual(measured["selected_workers"], 2)
+            self.assertTrue(measured["parallel_accepted"])
+            self.assertIsNone(measured["parallel_error_type"])
+            execution = status["execution_decision"]
+            self.assertEqual(execution["selected_workers"], 1)
+            self.assertTrue(execution["fallback_occurred"])
+            fallback = execution["events"][-1]
+            self.assertEqual(fallback["wave"], "first")
+            self.assertEqual(fallback["error_type"], "RuntimeError")
+            self.assertIn("synthetic actual pool failure", fallback["error_message"])
 
     def test_retry_parallel_infrastructure_failure_uses_same_cpu_fallback(self) -> None:
         """A retry pool failure must not become a second score-task failure."""
@@ -881,11 +1179,14 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                 [(event["method"], event["dataset"]) for event in failures],
                 [("A", "dataset_alpha")],
             )
-            decision = score_cache.status_score_cache_antigravity(root)[
-                "benchmark_decision"
-            ]
-            self.assertEqual(decision["selected_workers"], 1)
-            self.assertIn("actual retry wave", decision["fallback_reason"])
+            status = score_cache.status_score_cache_antigravity(root)
+            self.assertEqual(status["benchmark_decision"]["selected_workers"], 2)
+            self.assertTrue(status["benchmark_decision"]["parallel_accepted"])
+            execution = status["execution_decision"]
+            self.assertEqual(execution["selected_workers"], 1)
+            fallback = execution["events"][-1]
+            self.assertEqual(fallback["wave"], "retry")
+            self.assertIn("synthetic retry pool failure", fallback["error_message"])
 
     def test_complete_status_requires_context_bound_create_only_decision(self) -> None:
         """Complete status must fail when its decision is missing or replaceable."""

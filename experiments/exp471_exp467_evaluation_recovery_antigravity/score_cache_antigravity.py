@@ -34,7 +34,12 @@ from .config_antigravity import (
     EXP467_SOURCE_COMMIT_ANTIGRAVITY,
     EXP467_SOURCE_CONTEXT_SHA256_ANTIGRAVITY,
     EXP467_TOTAL_SUCCESSES_ANTIGRAVITY,
+    EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY,
+    EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY,
+    EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY,
+    EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY,
     EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY,
+    EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY,
     INNER_NUMERICAL_THREADS_ANTIGRAVITY,
     LOGICAL_CPU_COUNT_ANTIGRAVITY,
     METHOD_ORDER_ANTIGRAVITY,
@@ -58,6 +63,12 @@ _BASELINE_AUTHORITY_SCHEMA_ANTIGRAVITY = (
     "exp471-verified-baseline-authority-antigravity.v1"
 )
 _BENCHMARK_NAME_ANTIGRAVITY = "score_preparation_benchmark_antigravity.json"
+_EXECUTION_SCHEMA_ANTIGRAVITY = "exp471-score-preparation-execution-event-antigravity.v1"
+_EXECUTION_STATUS_SCHEMA_ANTIGRAVITY = (
+    "exp471-score-preparation-execution-antigravity.v1"
+)
+_EXECUTION_PREFIX_ANTIGRAVITY = "score_preparation_execution_event_"
+_EXECUTION_SUFFIX_ANTIGRAVITY = "_antigravity.json"
 _SPEEDUP_THRESHOLD_ANTIGRAVITY = 1.1
 _monotonic_antigravity = time.perf_counter
 
@@ -195,6 +206,27 @@ def _test_coordinates_antigravity(
     return _TestCoordinatesAntigravity(count, indices, digest)
 
 
+def _coordinate_inventory_sha256_antigravity(
+    datasets: tuple[str, ...],
+    coordinates: Mapping[str, _TestCoordinatesAntigravity],
+) -> str:
+    """Hash the frozen ordered `{dataset, test_count, test_indices}` inventory."""
+
+    record = {
+        "schema": "exp471-test-coordinate-inventory-antigravity.v1",
+        "dataset_count": len(datasets),
+        "datasets": [
+            {
+                "dataset": dataset,
+                "test_count": coordinates[dataset].count,
+                "test_indices": list(coordinates[dataset].indices),
+            }
+            for dataset in datasets
+        ],
+    }
+    return sha256(canonical_json_bytes_exp471_antigravity(record)).hexdigest()
+
+
 def _validate_row_coordinates_antigravity(
     row: Mapping[str, object],
     expected: _TestCoordinatesAntigravity,
@@ -238,6 +270,8 @@ def _validate_verified_input_metadata_antigravity(
     )
     if database_sha256 != authority.database_sha256:
         raise ValueError("Exp471 score input database identity differs")
+    if database_sha256 != EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY:
+        raise ValueError("Exp471 score input pinned database authority differs")
     dataset_value = bundle["dataset_order"]
     if not isinstance(dataset_value, (tuple, list)) or not dataset_value:
         raise ValueError("Exp471 dataset order must be a non-empty sequence")
@@ -257,17 +291,15 @@ def _validate_verified_input_metadata_antigravity(
         dataset: _test_coordinates_antigravity(coordinate_rows[dataset], dataset)
         for dataset in datasets
     }
-    normalized_coordinates = {
-        dataset: {
-            "count": coordinates[dataset].count,
-            "indices": list(coordinates[dataset].indices),
-            "coordinates_sha256": coordinates[dataset].coordinates_sha256,
-        }
-        for dataset in datasets
-    }
-    coordinates_sha256 = sha256(
-        canonical_json_bytes_exp471_antigravity(normalized_coordinates)
-    ).hexdigest()
+    coordinates_sha256 = _coordinate_inventory_sha256_antigravity(
+        datasets, coordinates
+    )
+    if (
+        len(datasets) != EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY
+        or coordinates_sha256
+        != EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY
+    ):
+        raise ValueError("Exp471 pinned TEST coordinate inventory differs")
 
     conditions = _mapping_antigravity(bundle["conditions"], "Exp471 conditions")
     baselines = _mapping_antigravity(bundle["baselines"], "Exp471 baselines")
@@ -339,6 +371,7 @@ def _validate_verified_input_metadata_antigravity(
             "dataset_order",
             "test_coordinates_sha256",
             "source_manifest_sha256",
+            "run_config_sha256",
             "authority_sha256",
         }
         if set(baseline_authority) != required_authority:
@@ -362,6 +395,17 @@ def _validate_verified_input_metadata_antigravity(
             baseline_authority["source_manifest_sha256"],
             f"Exp471 {method} baseline source_manifest_sha256",
         )
+        run_config_digest = _digest_antigravity(
+            baseline_authority["run_config_sha256"],
+            f"Exp471 {method} baseline run_config_sha256",
+        )
+        root_name = EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method]
+        pinned_root = EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root_name]
+        if (
+            source_digest != pinned_root["manifest_sha256"]
+            or run_config_digest != pinned_root["run_config_sha256"]
+        ):
+            raise ValueError(f"Exp471 {method} pinned baseline authority differs")
         authority_digest = _digest_antigravity(
             baseline_authority["authority_sha256"],
             f"Exp471 {method} baseline authority_sha256",
@@ -834,23 +878,268 @@ def _read_benchmark_decision_antigravity(
         anchor.close()
 
 
-def _actual_wave_fallback_decision_antigravity(
-    decision: Mapping[str, object],
+def _execution_event_name_antigravity(sequence: int) -> str:
+    return (
+        f"{_EXECUTION_PREFIX_ANTIGRAVITY}{sequence:06d}"
+        f"{_EXECUTION_SUFFIX_ANTIGRAVITY}"
+    )
+
+
+def _finalize_execution_event_antigravity(
+    record: Mapping[str, object],
+) -> dict[str, object]:
+    bare = dict(record)
+    bare.pop("execution_sha256", None)
+    execution_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(bare)
+    ).hexdigest()
+    return {**bare, "execution_sha256": execution_sha256}
+
+
+def _validated_execution_event_antigravity(
+    value: object,
+    benchmark: Mapping[str, object],
+    *,
+    expected_sequence: int,
+    expected_prior_sha256: str | None,
+) -> dict[str, object]:
+    event = _mapping_antigravity(value, "Exp471 execution event")
+    required = {
+        "schema",
+        "cache_context_sha256",
+        "benchmark_decision_sha256",
+        "sequence",
+        "prior_execution_sha256",
+        "event_type",
+        "wave",
+        "selected_workers",
+        "error_type",
+        "error_message",
+        "fallback_reason",
+        "execution_sha256",
+    }
+    if set(event) != required or event["schema"] != _EXECUTION_SCHEMA_ANTIGRAVITY:
+        raise ValueError("Exp471 execution event schema differs")
+    checked_benchmark = _validated_benchmark_decision_antigravity(benchmark)
+    if event["cache_context_sha256"] != checked_benchmark["cache_context_sha256"]:
+        raise ValueError("Exp471 execution event cache context differs")
+    if event["benchmark_decision_sha256"] != checked_benchmark["decision_sha256"]:
+        raise ValueError("Exp471 execution event benchmark binding differs")
+    if event["sequence"] != expected_sequence:
+        raise ValueError("Exp471 execution event sequence differs")
+    if event["prior_execution_sha256"] != expected_prior_sha256:
+        raise ValueError("Exp471 execution event hash chain differs")
+    selected_workers = event["selected_workers"]
+    if (
+        type(selected_workers) is not int
+        or selected_workers < 1
+        or selected_workers > CPU_WORKERS_ANTIGRAVITY
+        or selected_workers
+        not in (1, checked_benchmark["requested_parallel_workers"])
+    ):
+        raise ValueError("Exp471 execution event worker provenance differs")
+    event_type = event["event_type"]
+    wave = event["wave"]
+    error_type = event["error_type"]
+    error_message = event["error_message"]
+    fallback_reason = event["fallback_reason"]
+    if type(fallback_reason) is not str:
+        raise ValueError("Exp471 execution event fallback reason is invalid")
+    if expected_sequence == 0:
+        if (
+            event_type != "selection"
+            or wave != "initial"
+            or selected_workers != checked_benchmark["selected_workers"]
+            or error_type is not None
+            or error_message is not None
+            or fallback_reason
+        ):
+            raise ValueError("Exp471 initial execution selection differs")
+    elif (
+        event_type != "fallback"
+        or wave not in ("first", "retry")
+        or selected_workers != 1
+        or type(error_type) is not str
+        or not error_type
+        or type(error_message) is not str
+        or not fallback_reason
+    ):
+        raise ValueError("Exp471 execution fallback event differs")
+    digest = _digest_antigravity(
+        event["execution_sha256"], "Exp471 execution_sha256"
+    )
+    bare = {key: event[key] for key in event if key != "execution_sha256"}
+    if digest != sha256(canonical_json_bytes_exp471_antigravity(bare)).hexdigest():
+        raise ValueError("Exp471 execution event digest differs")
+    return dict(event)
+
+
+def _canonical_execution_event_bytes_antigravity(
+    event: Mapping[str, object], benchmark: Mapping[str, object]
+) -> bytes:
+    sequence = event.get("sequence")
+    prior = event.get("prior_execution_sha256")
+    if type(sequence) is not int or (prior is not None and type(prior) is not str):
+        raise ValueError("Exp471 execution event sequence is invalid")
+    checked = _validated_execution_event_antigravity(
+        event,
+        benchmark,
+        expected_sequence=sequence,
+        expected_prior_sha256=prior,
+    )
+    return canonical_json_bytes_exp471_antigravity(checked)
+
+
+def _read_execution_events_antigravity(
+    root: Path, benchmark: Mapping[str, object]
+) -> tuple[dict[str, object], ...]:
+    if not os.path.lexists(root):
+        return ()
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    try:
+        names = sorted(
+            name
+            for name in os.listdir(anchor.descriptor)
+            if name.startswith(_EXECUTION_PREFIX_ANTIGRAVITY)
+        )
+        expected_names = [
+            _execution_event_name_antigravity(sequence)
+            for sequence in range(len(names))
+        ]
+        if names != expected_names:
+            raise ValueError("Exp471 execution event inventory differs")
+        events: list[dict[str, object]] = []
+        prior: str | None = None
+        for sequence, name in enumerate(names):
+            raw = _artifacts_antigravity._read_leaf_at_antigravity(
+                anchor.descriptor, name
+            )
+            if raw is None:
+                raise ValueError("Exp471 execution event disappeared")
+            try:
+                value = json.loads(
+                    raw.decode("utf-8"),
+                    parse_constant=lambda constant: (_ for _ in ()).throw(
+                        ValueError(f"non-finite JSON constant: {constant}")
+                    ),
+                )
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+                raise ValueError("Exp471 execution event JSON is malformed") from error
+            event = _validated_execution_event_antigravity(
+                value,
+                benchmark,
+                expected_sequence=sequence,
+                expected_prior_sha256=prior,
+            )
+            if raw != canonical_json_bytes_exp471_antigravity(event):
+                raise ValueError("Exp471 execution event bytes are noncanonical")
+            events.append(event)
+            prior = str(event["execution_sha256"])
+        anchor.validate()
+        return tuple(events)
+    finally:
+        anchor.close()
+
+
+def _publish_execution_event_antigravity(
+    root: Path,
+    benchmark: Mapping[str, object],
+    event: Mapping[str, object],
+) -> tuple[dict[str, object], ...]:
+    existing = _read_execution_events_antigravity(root, benchmark)
+    if event.get("sequence") != len(existing):
+        raise ValueError("Exp471 execution event append sequence differs")
+    expected_prior = (
+        existing[-1]["execution_sha256"] if existing else None
+    )
+    if event.get("prior_execution_sha256") != expected_prior:
+        raise ValueError("Exp471 execution event append hash chain differs")
+    payload = _canonical_execution_event_bytes_antigravity(event, benchmark)
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=True
+    )
+    try:
+        _artifacts_antigravity._publish_bytes_at_antigravity(
+            anchor.descriptor,
+            _execution_event_name_antigravity(len(existing)),
+            payload,
+            temporary_scope="score_preparation_execution_event",
+        )
+        anchor.validate()
+    finally:
+        anchor.close()
+    reopened = _read_execution_events_antigravity(root, benchmark)
+    if reopened != (*existing, dict(event)):
+        raise ValueError("Exp471 execution event differs after publication")
+    return reopened
+
+
+def _initial_execution_event_antigravity(
+    benchmark: Mapping[str, object],
+) -> dict[str, object]:
+    return _finalize_execution_event_antigravity(
+        {
+            "schema": _EXECUTION_SCHEMA_ANTIGRAVITY,
+            "cache_context_sha256": benchmark["cache_context_sha256"],
+            "benchmark_decision_sha256": benchmark["decision_sha256"],
+            "sequence": 0,
+            "prior_execution_sha256": None,
+            "event_type": "selection",
+            "wave": "initial",
+            "selected_workers": benchmark["selected_workers"],
+            "error_type": None,
+            "error_message": None,
+            "fallback_reason": "",
+        }
+    )
+
+
+def _fallback_execution_event_antigravity(
+    benchmark: Mapping[str, object],
+    events: Sequence[Mapping[str, object]],
     error: Exception,
     *,
     wave: str,
 ) -> dict[str, object]:
-    record = dict(decision)
-    record.pop("decision_sha256", None)
-    record["selected_workers"] = 1
-    record["parallel_accepted"] = False
-    record["parallel_error_type"] = type(error).__name__
-    record["parallel_error_message"] = str(error)
-    record["fallback_reason"] = (
-        f"actual {wave} wave failed with {type(error).__name__}: {error}; "
-        "canonical CPU single-worker selected"
+    prior = events[-1]["execution_sha256"]
+    return _finalize_execution_event_antigravity(
+        {
+            "schema": _EXECUTION_SCHEMA_ANTIGRAVITY,
+            "cache_context_sha256": benchmark["cache_context_sha256"],
+            "benchmark_decision_sha256": benchmark["decision_sha256"],
+            "sequence": len(events),
+            "prior_execution_sha256": prior,
+            "event_type": "fallback",
+            "wave": wave,
+            "selected_workers": 1,
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+            "fallback_reason": (
+                f"actual {wave} wave failed with {type(error).__name__}: {error}; "
+                "canonical CPU single-worker selected"
+            ),
+        }
     )
-    return _finalize_benchmark_decision_antigravity(record)
+
+
+def _execution_summary_antigravity(
+    benchmark: Mapping[str, object],
+    events: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    if not events:
+        raise ValueError("Exp471 execution decision is missing")
+    return {
+        "schema": _EXECUTION_STATUS_SCHEMA_ANTIGRAVITY,
+        "cache_context_sha256": benchmark["cache_context_sha256"],
+        "benchmark_decision_sha256": benchmark["decision_sha256"],
+        "selected_workers": events[-1]["selected_workers"],
+        "fallback_occurred": any(
+            event["event_type"] == "fallback" for event in events
+        ),
+        "events": tuple(dict(event) for event in events),
+    }
 
 
 def _require_issued_session_antigravity(
@@ -950,19 +1239,29 @@ def _validate_manifest_metadata_antigravity(
 def _run_actual_wave_antigravity(
     tasks: Sequence[_ScoreTaskAntigravity],
     workers: int,
-    decision: Mapping[str, object],
+    root: Path,
+    benchmark: Mapping[str, object],
+    events: Sequence[Mapping[str, object]],
     *,
     wave: str,
-) -> tuple[tuple[_TaskOutcomeAntigravity, ...], dict[str, object]]:
+) -> tuple[
+    tuple[_TaskOutcomeAntigravity, ...],
+    tuple[dict[str, object], ...],
+]:
     try:
-        return _run_tasks_antigravity(tasks, workers), dict(decision)
+        return _run_tasks_antigravity(tasks, workers), tuple(
+            dict(event) for event in events
+        )
     except Exception as error:
         if workers == 1:
             raise
-        fallback = _actual_wave_fallback_decision_antigravity(
-            decision, error, wave=wave
+        fallback = _fallback_execution_event_antigravity(
+            benchmark, events, error, wave=wave
         )
-        return _run_tasks_antigravity(tasks, 1), fallback
+        reopened_events = _publish_execution_event_antigravity(
+            root, benchmark, fallback
+        )
+        return _run_tasks_antigravity(tasks, 1), reopened_events
 
 
 def _progress_antigravity(
@@ -1020,9 +1319,11 @@ def prepare_score_cache_antigravity(
     if os.path.lexists(manifest_path):
         manifest = read_cache_manifest_antigravity(root)
         _validate_manifest_metadata_antigravity(manifest, metadata)
-        _read_benchmark_decision_antigravity(
+        benchmark = _read_benchmark_decision_antigravity(
             root, expected_context_sha256=metadata.cache_context_sha256
         )
+        events = _read_execution_events_antigravity(root, benchmark)
+        _execution_summary_antigravity(benchmark, events)
         return manifest
 
     shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
@@ -1037,25 +1338,22 @@ def prepare_score_cache_antigravity(
             else:
                 shards[(method, dataset)] = existing
 
-    if os.path.lexists(benchmark_path) and missing:
-        raise ValueError(
-            "Exp471 benchmark decision exists before complete shard coverage"
+    benchmark: dict[str, object] | None = None
+    events: tuple[dict[str, object], ...] = ()
+    if os.path.lexists(benchmark_path):
+        benchmark = _read_benchmark_decision_antigravity(
+            root, expected_context_sha256=metadata.cache_context_sha256
         )
+        events = _read_execution_events_antigravity(root, benchmark)
+    elif shards:
+        raise ValueError("Exp471 measured benchmark decision is missing")
+    if shards and not events:
+        raise ValueError("Exp471 execution decision is missing")
+
     if not missing:
-        if os.path.lexists(benchmark_path):
-            decision = _read_benchmark_decision_antigravity(
-                root, expected_context_sha256=metadata.cache_context_sha256
-            )
-        else:
-            decision = _single_worker_decision_antigravity(
-                metadata.cache_context_sha256,
-                requested_workers=selected_request,
-                fallback_reason=(
-                    "resumed complete shards have no pending benchmark tasks; "
-                    "canonical CPU single-worker selected"
-                ),
-            )
-            _publish_benchmark_decision_antigravity(root, decision)
+        if benchmark is None:
+            raise ValueError("Exp471 measured benchmark decision is missing")
+        _execution_summary_antigravity(benchmark, events)
         manifest = _manifest_from_shards_antigravity(metadata, shards)
         publish_cache_manifest_antigravity(root, manifest)
         return read_cache_manifest_antigravity(root)
@@ -1064,38 +1362,61 @@ def prepare_score_cache_antigravity(
         _prepare_score_identity_antigravity(metadata, method, dataset)
         for method, dataset in missing
     )
-    if selected_request > 1 and len(tasks) > 1:
-        decision = dict(
-            benchmark_score_preparation_antigravity(
-                tasks, parallel_workers=selected_request
+    if benchmark is None:
+        if selected_request > 1 and len(tasks) > 1:
+            benchmark = dict(
+                benchmark_score_preparation_antigravity(
+                    tasks, parallel_workers=selected_request
+                )
             )
+        else:
+            benchmark = _single_worker_decision_antigravity(
+                metadata.cache_context_sha256,
+                requested_workers=selected_request,
+                fallback_reason=(
+                    "parallel worker request is one; canonical CPU single-worker retained"
+                    if selected_request == 1
+                    else "fewer than two pending tasks; canonical CPU single-worker retained"
+                ),
+            )
+        benchmark = _validated_benchmark_decision_antigravity(
+            benchmark, expected_context_sha256=metadata.cache_context_sha256
         )
-    else:
-        decision = _single_worker_decision_antigravity(
-            metadata.cache_context_sha256,
-            requested_workers=selected_request,
-            fallback_reason=(
-                "parallel worker request is one; canonical CPU single-worker retained"
-                if selected_request == 1
-                else "fewer than two pending tasks; canonical CPU single-worker retained"
-            ),
+        _publish_benchmark_decision_antigravity(root, benchmark)
+        reopened_benchmark = _read_benchmark_decision_antigravity(
+            root, expected_context_sha256=metadata.cache_context_sha256
         )
-    decision = _validated_benchmark_decision_antigravity(
-        decision, expected_context_sha256=metadata.cache_context_sha256
+        if reopened_benchmark != benchmark:
+            raise ValueError("Exp471 measured benchmark differs after publication")
+        benchmark = reopened_benchmark
+    if not events:
+        events = _publish_execution_event_antigravity(
+            root, benchmark, _initial_execution_event_antigravity(benchmark)
+        )
+
+    actual_workers = int(events[-1]["selected_workers"])
+    first_outcomes, events = _run_actual_wave_antigravity(
+        tasks,
+        actual_workers,
+        root,
+        benchmark,
+        events,
+        wave="first",
     )
-    actual_workers = int(decision["selected_workers"])
-    first_outcomes, decision = _run_actual_wave_antigravity(
-        tasks, actual_workers, decision, wave="first"
-    )
-    actual_workers = int(decision["selected_workers"])
+    actual_workers = int(events[-1]["selected_workers"])
     failures = tuple(
         outcome for outcome in first_outcomes if outcome.shard is None
     )
     retry_outcomes: tuple[_TaskOutcomeAntigravity, ...] = ()
     if failures:
         retry_tasks = tuple(outcome.task for outcome in failures)
-        retry_outcomes, decision = _run_actual_wave_antigravity(
-            retry_tasks, actual_workers, decision, wave="retry"
+        retry_outcomes, events = _run_actual_wave_antigravity(
+            retry_tasks,
+            actual_workers,
+            root,
+            benchmark,
+            events,
+            wave="retry",
         )
 
     for outcome in first_outcomes:
@@ -1160,15 +1481,7 @@ def prepare_score_cache_antigravity(
             or "Exp471 score task failed twice"
         )
 
-    decision = _validated_benchmark_decision_antigravity(
-        decision, expected_context_sha256=metadata.cache_context_sha256
-    )
-    _publish_benchmark_decision_antigravity(root, decision)
-    reopened_decision = _read_benchmark_decision_antigravity(
-        root, expected_context_sha256=metadata.cache_context_sha256
-    )
-    if reopened_decision != decision:
-        raise ValueError("Exp471 benchmark decision differs after publication")
+    _execution_summary_antigravity(benchmark, events)
     manifest = _manifest_from_shards_antigravity(metadata, shards)
     publish_cache_manifest_antigravity(root, manifest)
     reopened_manifest = read_cache_manifest_antigravity(root)
@@ -1255,13 +1568,23 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
             next(iter(shard_contexts)) if shard_contexts else None
         )
     benchmark_path = root / _BENCHMARK_NAME_ANTIGRAVITY
-    if complete and not os.path.lexists(benchmark_path):
-        raise ValueError("Exp471 benchmark decision is missing")
+    if durable_completed and not os.path.lexists(benchmark_path):
+        raise ValueError("Exp471 measured benchmark decision is missing")
     benchmark_decision = None
+    execution_decision = None
     if os.path.lexists(benchmark_path):
         benchmark_decision = _read_benchmark_decision_antigravity(
             root, expected_context_sha256=expected_benchmark_context
         )
+        execution_events = _read_execution_events_antigravity(
+            root, benchmark_decision
+        )
+        if durable_completed and not execution_events:
+            raise ValueError("Exp471 execution decision is missing")
+        if execution_events:
+            execution_decision = _execution_summary_antigravity(
+                benchmark_decision, execution_events
+            )
     return {
         "schema": _STATUS_SCHEMA_ANTIGRAVITY,
         "root": str(root),
@@ -1272,6 +1595,7 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         "dataset_order": dataset_order,
         "manifest_sha256": manifest_sha256,
         "benchmark_decision": benchmark_decision,
+        "execution_decision": execution_decision,
         "detected_logical_cpus": LOGICAL_CPU_COUNT_ANTIGRAVITY,
         "default_cpu_workers": CPU_WORKERS_ANTIGRAVITY,
         "inner_numerical_threads": INNER_NUMERICAL_THREADS_ANTIGRAVITY,
@@ -1293,9 +1617,11 @@ def open_complete_score_cache_antigravity(
     root = Path(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
     manifest = read_cache_manifest_antigravity(root)
     _validate_manifest_metadata_antigravity(manifest, metadata)
-    _read_benchmark_decision_antigravity(
+    benchmark = _read_benchmark_decision_antigravity(
         root, expected_context_sha256=metadata.cache_context_sha256
     )
+    events = _read_execution_events_antigravity(root, benchmark)
+    _execution_summary_antigravity(benchmark, events)
     return manifest
 
 

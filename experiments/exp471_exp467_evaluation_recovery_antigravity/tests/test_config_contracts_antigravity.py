@@ -9,6 +9,9 @@ from pathlib import Path
 from types import MappingProxyType
 import unittest
 
+from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+    config_antigravity as config,
+)
 from experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravity import (
     ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     CPU_WORKERS_ANTIGRAVITY,
@@ -133,6 +136,59 @@ def cache_manifest_antigravity(
 
 
 class Exp471ConfigTestsAntigravity(unittest.TestCase):
+    def test_frozen_baseline_authority_pins_are_exact_and_immutable(self) -> None:
+        """Payload-local hashes must not replace controller-verified authority."""
+        self.assertEqual(
+            getattr(config, "EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY", None),
+            "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+        )
+        self.assertEqual(
+            getattr(
+                config,
+                "EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY",
+                None,
+            ),
+            "f7999eb329668cfa2bcee6db69e65a0d542d1960dced27f28bc39751756acee6",
+        )
+        self.assertEqual(
+            getattr(config, "EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY", None),
+            1117,
+        )
+        expected_roots = {
+            "classical": {
+                "manifest_sha256": "c546c841c86c8f488e22d0b0b844a81bc17cdd36b1bfcec3b41869d04a774355",
+                "run_config_sha256": "315f39cc078f4e9db40c4745a8964a5b5e8037df38c6f12627d301f2b815f69d",
+            },
+            "deep_svdd": {
+                "manifest_sha256": "b1c86dfab4287adb68dae4af05b17279897229138ad3137df8ef418d1ab2f06d",
+                "run_config_sha256": "b5c60586db2057a9c05d27332fe47a384ad1b3a95361b039870a3e2329be6aa5",
+            },
+            "drocc": {
+                "manifest_sha256": "999932ee7e41781fd8398bf8c0d386e05a95b29d9b51d10838046f507e256481",
+                "run_config_sha256": "8ee0d805667abf7889f9149dfdb52ae0977be9194a5583b170f78e2dffd97367",
+            },
+        }
+        roots = getattr(config, "EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY", {})
+        self.assertEqual(
+            {name: dict(value) for name, value in roots.items()}, expected_roots
+        )
+        methods = getattr(config, "EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY", {})
+        self.assertEqual(
+            dict(methods),
+            {
+                "knn_distance": "classical",
+                "lof_novelty": "classical",
+                "ocsvm_rbf": "classical",
+                "isolation_forest": "classical",
+                "deep_svdd_1d": "deep_svdd",
+                "drocc_1d": "drocc",
+            },
+        )
+        with self.assertRaises(TypeError):
+            methods["knn_distance"] = "drocc"
+        with self.assertRaises(TypeError):
+            roots["classical"]["manifest_sha256"] = "0" * 64
+
     def test_fixed_source_identity_roots_and_method_order_are_exact(self) -> None:
         """A changed source or method identity must fail the frozen recovery boundary."""
         self.assertEqual(
