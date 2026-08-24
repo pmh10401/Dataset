@@ -11,4 +11,11 @@ focused run 2: Ran 9 tests in 3.479s — OK
 full Exp470 suite: Ran 49 tests in 6.526s — OK</code></pre>
 <h2>범위</h2>
 <p>실제 결과 root나 live dashboard는 만들거나 수정하지 않았다. controller의 검토 뒤에만 live dashboard 진행 상태를 바꿀 수 있다.</p>
+<h2>Fix round 1 — RED</h2>
+<p>새 회귀 테스트를 먼저 추가했다. 기존 구현은 context record의 extra key, float 자리에 들어간 int/bool, <code>False</code>를 <code>0</code>으로 바꾼 decision, <code>1.0</code>을 <code>1</code>로 바꾼 지표를 다시 hash한 경우를 거부하지 못했다. HTML도 완료되지 않은 항목을 disabled 상태로 명시하지 못했다.</p>
+<h2>Fix round 1 — GREEN</h2>
+<ul><li>context record는 정확히 6개 key만 받고, TRAIN과 C0의 모든 중첩 값은 JSON <code>float</code>만 허용한다. int/bool 및 잘못된 중첩 구조를 거부한다.</li><li>재계산 결과는 Python의 값 비교가 아니라 canonical JSON/JSONL raw bytes로 비교한다. 따라서 <code>-0.0/+0.0</code>, <code>1.0/1</code>, <code>False/0</code> 차이도 거부한다.</li><li>HTML은 replay만 checked·disabled이며 private, official, TEST, FN, routing은 모두 unchecked·disabled다.</li></ul>
+<pre><code>fix focused run 1: Ran 13 tests in 3.988s — OK
+fix full Exp470 suite: Ran 53 tests in 7.791s — OK
+fix focused run 2: Ran 13 tests in 4.199s — OK</code></pre>
 </main></body></html>

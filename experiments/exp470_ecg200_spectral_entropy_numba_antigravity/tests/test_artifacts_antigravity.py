@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 
 
-def _records_antigravity():
+def _records_antigravity(*, signed_zero: bool = False):
     """Build ten in-memory synthetic records; this never opens ECG200 files."""
     from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.config_antigravity import (
         FROZEN_CONFIG_ANTIGRAVITY,
@@ -39,8 +39,9 @@ def _records_antigravity():
             raw = {name: e11.query_raw_entropy[index * width:(index + 1) * width] for index, name in enumerate(scopes)}
             rank = {name: e11.query_ranks[index * width:(index + 1) * width] for index, name in enumerate(scopes)}
             confirmed = {name: e11.confirmation_mask[index * width:(index + 1) * width] for index, name in enumerate(scopes)}
-            c0_normal = np.full(width, 0.5, dtype=np.float64)
-            c0_primary = {name: np.full(width, 0.5, dtype=np.float64) for name in config.change_types}
+            baseline = -0.0 if signed_zero else 1.0
+            c0_normal = np.full(width, baseline, dtype=np.float64)
+            c0_primary = {name: np.full(width, baseline, dtype=np.float64) for name in config.change_types}
             c11_normal = _combine_c11_numba_antigravity(c0_normal, rank["normal"], confirmed["normal"])
             c11_primary = {
                 name: _combine_c11_numba_antigravity(c0_primary[name], rank[name], confirmed[name])
@@ -64,7 +65,7 @@ def _records_antigravity():
     return records
 
 
-def _published_inputs_antigravity():
+def _published_inputs_antigravity(*, signed_zero: bool = False):
     from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.evaluation_antigravity import (
         evaluate_repair_gates_antigravity,
     )
@@ -72,7 +73,7 @@ def _published_inputs_antigravity():
         qualify_records_antigravity,
     )
 
-    records = _records_antigravity()
+    records = _records_antigravity(signed_zero=signed_zero)
     qualification = qualify_records_antigravity(records)
     return records, qualification, evaluate_repair_gates_antigravity(qualification)
 

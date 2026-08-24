@@ -109,6 +109,49 @@ class ResultReplayTestAntigravity(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         inspect_result_antigravity(root)
 
+    def test_inspect_rejects_rehashed_context_schema_and_exact_numeric_type_drift_antigravity(self) -> None:
+        """Break caught: context accepts extra keys or lets JSON int/bool impersonate float inputs."""
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.replay_antigravity import inspect_result_antigravity
+
+        cases = (
+            lambda value: value["records"][0].__setitem__("extra", "forged"),
+            lambda value: value["records"][0]["c0_primary"].__setitem__("extra", [1.0] * 14),
+            lambda value: value["records"][0]["c0_normal"].__setitem__(0, 1),
+            lambda value: value["records"][0]["c0_normal"].__setitem__(0, True),
+            lambda value: value["shared_train140"][0].__setitem__(0, True),
+            lambda value: value["records"][0]["fit_indices"].__setitem__(0, True),
+        )
+        for mutate in cases:
+            with self.subTest(mutate=mutate):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = self._published_antigravity(directory)
+                    tamper_and_rehash_antigravity(root, "context_antigravity.json", mutate)
+                    with self.assertRaises(ValueError):
+                        inspect_result_antigravity(root)
+
+    def test_inspect_rejects_rehashed_json_type_and_signed_zero_semantic_drift_antigravity(self) -> None:
+        """Break caught: Python equality hides False/0, 1.0/1, or -0.0/+0.0 evidence changes."""
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.artifacts_antigravity import publish_result_antigravity
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.replay_antigravity import inspect_result_antigravity
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._published_antigravity(directory)
+            tamper_and_rehash_antigravity(root, "decision_antigravity.json", lambda value: value.__setitem__("passed", 0))
+            with self.assertRaises(ValueError):
+                inspect_result_antigravity(root)
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._published_antigravity(directory)
+            tamper_and_rehash_antigravity(root, "method_fold_metrics_antigravity.jsonl", lambda rows: rows[0]["original"]["C0"].__setitem__(0, 1))
+            with self.assertRaises(ValueError):
+                inspect_result_antigravity(root)
+        with tempfile.TemporaryDirectory() as directory:
+            records, qualification, decision = _published_inputs_antigravity(signed_zero=True)
+            root = Path(directory) / "signed_zero_antigravity"
+            publish_result_antigravity(root, records, qualification, decision)
+            tamper_and_rehash_antigravity(root, "context_antigravity.json", lambda value: value["records"][0]["c0_normal"].__setitem__(0, 0.0))
+            with self.assertRaises(ValueError):
+                inspect_result_antigravity(root)
+
 
 if __name__ == "__main__":
     unittest.main()

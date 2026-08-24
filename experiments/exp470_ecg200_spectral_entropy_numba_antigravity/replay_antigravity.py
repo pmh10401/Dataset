@@ -30,6 +30,7 @@ from .spectral_entropy_antigravity import score_spectral_entropy_numba_antigravi
 
 
 _SCOPES_ANTIGRAVITY = ("normal",) + FROZEN_CONFIG_ANTIGRAVITY.change_types
+_CONTEXT_RECORD_KEYS_ANTIGRAVITY = frozenset(("c0_normal", "c0_primary", "fit_indices", "fold_index", "query_indices", "seed"))
 
 
 def _read_canonical_json_antigravity(path: Path) -> Any:
@@ -91,6 +92,17 @@ def _validate_leaf_set_and_hashes_antigravity(root: Path) -> tuple[dict[str, Any
 
 
 def _float_array_antigravity(value: object, shape: tuple[int, ...], name: str) -> np.ndarray:
+    def validate_tree(item: object, depth: int) -> None:
+        if depth == len(shape):
+            if type(item) is not float:
+                raise ValueError(f"{name} must contain exact float JSON values")
+            return
+        if type(item) is not list or len(item) != shape[depth]:
+            raise ValueError(f"{name} has invalid nested list shape")
+        for child in item:
+            validate_tree(child, depth + 1)
+
+    validate_tree(value, 0)
     try:
         result = np.asarray(value, dtype=np.float64)
     except (TypeError, ValueError) as error:
@@ -135,7 +147,15 @@ def _rebuild_records_antigravity(context: object, metrics: tuple[object, ...]) -
     folds = blocked_fold_indices_antigravity()
     records: dict[tuple[int, int], FoldMethodScoresAntigravity] = {}
     for identity, item, stored_metric in zip(expected, context["records"], metrics, strict=True):
-        if type(item) is not dict or type(stored_metric) is not dict or (item.get("seed"), item.get("fold_index")) != identity or (stored_metric.get("seed"), stored_metric.get("fold_index")) != identity:
+        if (
+            type(item) is not dict
+            or set(item) != _CONTEXT_RECORD_KEYS_ANTIGRAVITY
+            or type(item["seed"]) is not int
+            or type(item["fold_index"]) is not int
+            or type(stored_metric) is not dict
+            or (item["seed"], item["fold_index"]) != identity
+            or (stored_metric.get("seed"), stored_metric.get("fold_index")) != identity
+        ):
             raise ValueError("context/metric identity or order drifted")
         fit_expected, query_expected = folds[identity[1]]
         fit = _int_array_antigravity(item.get("fit_indices"), (fit_expected.size,), "fit_indices")
@@ -144,8 +164,12 @@ def _rebuild_records_antigravity(context: object, metrics: tuple[object, ...]) -
             raise ValueError("stored blocked fold indices drifted")
         width = query.size
         c0_normal = _float_array_antigravity(item.get("c0_normal"), (width,), "c0_normal")
-        c0_primary_source = item.get("c0_primary")
-        if type(c0_primary_source) is not dict or set(c0_primary_source) != set(config.change_types):
+        c0_primary_source = item["c0_primary"]
+        if (
+            type(c0_primary_source) is not dict
+            or tuple(c0_primary_source) != tuple(sorted(config.change_types))
+            or set(c0_primary_source) != set(config.change_types)
+        ):
             raise ValueError("context C0 primary order drifted")
         c0_primary = {change: _float_array_antigravity(c0_primary_source[change], (width,), f"c0_primary[{change}]") for change in config.change_types}
         generated = _scope_rows_antigravity(train, query)
@@ -191,17 +215,27 @@ def inspect_result_antigravity(root: object) -> InspectedResultAntigravity:
     qualification = qualify_records_antigravity(records)
     decision = evaluate_repair_gates_antigravity(qualification)
     expected_metrics = tuple(_metric_row_antigravity(record, result) for record, result in zip(records.values(), qualification.fold_results, strict=True))
-    if tuple(payloads["metrics"]) != expected_metrics:
+    if (root / "method_fold_metrics_antigravity.jsonl").read_bytes() != b"".join(
+        _canonical_json_bytes_antigravity(row) for row in expected_metrics
+    ):
         raise ValueError("stored fold metrics disagree with regenerated evidence")
     expected_summary = _method_summary_rows_antigravity(expected_metrics)
-    if tuple(payloads["summary"]) != expected_summary:
+    if (root / "method_summary_antigravity.jsonl").read_bytes() != b"".join(
+        _canonical_json_bytes_antigravity(row) for row in expected_summary
+    ):
         raise ValueError("stored method summary is not derived from fold metrics")
     expected_failed = tuple({"failure_reasons": list(row.failure_reasons), "fold_index": row.fold_index, "seed": row.seed} for row in qualification.fold_results if not row.passed)
-    if tuple(payloads["failed"]) != expected_failed:
+    if (root / "failed_folds_antigravity.jsonl").read_bytes() != b"".join(
+        _canonical_json_bytes_antigravity(row) for row in expected_failed
+    ):
         raise ValueError("stored failed-fold rows disagree with qualification")
-    if payloads["decision"] != _decision_payload_antigravity(qualification, decision):
+    if (root / "decision_antigravity.json").read_bytes() != _canonical_json_bytes_antigravity(
+        _decision_payload_antigravity(qualification, decision)
+    ):
         raise ValueError("stored decision disagrees with recomputed gates")
-    if payloads["dashboard"] != _dashboard_snapshot_payload_antigravity(qualification, decision, expected_summary):
+    if (root / "dashboard_snapshot_antigravity.json").read_bytes() != _canonical_json_bytes_antigravity(
+        _dashboard_snapshot_payload_antigravity(qualification, decision, expected_summary)
+    ):
         raise ValueError("stored dashboard snapshot is not derived evidence")
     return InspectedResultAntigravity(root=root, records=records, qualification=qualification, decision=decision, hashes=hashes)
 
