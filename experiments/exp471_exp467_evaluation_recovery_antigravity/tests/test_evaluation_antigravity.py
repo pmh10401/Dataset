@@ -28,6 +28,7 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravit
     METHOD_ORDER_ANTIGRAVITY,
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity import (
+    Exp471EvaluationArtifactAntigravity,
     Exp471ScoreCacheManifestAntigravity,
     Exp471ScoreShardAntigravity,
     Exp471SourceAuthorityAntigravity,
@@ -240,7 +241,260 @@ def _pr_coordinates_antigravity(curves: object) -> tuple[tuple[object, ...], ...
     )
 
 
+def _digest_recomputed_artifact_antigravity(
+    artifact: Exp471EvaluationArtifactAntigravity,
+    mutate,
+) -> Exp471EvaluationArtifactAntigravity:
+    payload = json.loads(
+        canonical_json_bytes_exp471_antigravity(artifact.payload).decode("utf-8")
+    )
+    mutate(payload)
+    bare = {
+        "source_authority_sha256": artifact.source_authority_sha256,
+        "cache_manifest_sha256": artifact.cache_manifest_sha256,
+        "code_closure_sha256": artifact.code_closure_sha256,
+        "method_order": list(artifact.method_order),
+        "dataset_order": list(artifact.dataset_order),
+        "payload": payload,
+    }
+    return Exp471EvaluationArtifactAntigravity(
+        **bare,
+        evaluation_sha256=sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest(),
+    )
+
+
 class EvaluationTestsAntigravity(unittest.TestCase):
+    def test_explicit_code_closure_is_complete_versioned_and_content_bound(self) -> None:
+        """Omitting or changing an Exp471 authority member must change closure."""
+
+        required = {
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+            "evaluation_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+            "config_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+            "contracts_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+            "source_authority_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+            "cache_artifacts_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+            "score_cache_antigravity.py",
+            "experiments/exp450_resampling_image_ablation_antigravity/"
+            "evaluation_antigravity.py",
+        }
+        current = evaluation._code_closure_record_antigravity()
+        self.assertEqual(
+            current["schema"],
+            "exp471-evaluation-code-closure-antigravity.v1",
+        )
+        self.assertEqual(set(current["file_sha256"]), required)
+        self.assertRegex(current["closure_sha256"], r"^[0-9a-f]{64}$")
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_closure_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve()
+            for index, relative in enumerate(sorted(required)):
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(f"public closure member {index}\n".encode("ascii"))
+            first = evaluation._code_closure_record_antigravity(root)
+            changed_path = root / sorted(required)[0]
+            changed_path.write_bytes(b"changed public closure member\n")
+            second = evaluation._code_closure_record_antigravity(root)
+            self.assertNotEqual(
+                first["file_sha256"][sorted(required)[0]],
+                second["file_sha256"][sorted(required)[0]],
+            )
+            self.assertNotEqual(first["closure_sha256"], second["closure_sha256"])
+
+    def test_code_closure_missing_and_symlink_members_fail_closed(self) -> None:
+        """Closure traversal must require every regular member without following links."""
+
+        required = tuple(evaluation._CODE_CLOSURE_PATHS_ANTIGRAVITY)
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_closure_paths_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve()
+            for relative in required:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"public closure member\n")
+            missing = root / required[0]
+            missing.unlink()
+            with self.assertRaises(ValueError):
+                evaluation._code_closure_record_antigravity(root)
+            missing.write_bytes(b"public closure member\n")
+            target = root / required[1]
+            target.unlink()
+            target.symlink_to(root / required[0])
+            with self.assertRaises(ValueError):
+                evaluation._code_closure_record_antigravity(root)
+
+            directory_root = root / "directory_case_antigravity"
+            foreign_root = root / "foreign_case_antigravity"
+            directory_root.mkdir()
+            for relative in required:
+                path = foreign_root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"foreign public closure member\n")
+            (directory_root / "experiments").symlink_to(
+                foreign_root / "experiments",
+                target_is_directory=True,
+            )
+            with self.assertRaises(ValueError):
+                evaluation._code_closure_record_antigravity(directory_root)
+
+    def test_prior_artifact_rejects_changed_current_closure_member(self) -> None:
+        """A durable artifact must not reopen under a different Exp471 closure map."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_closure_reopen_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = (
+                _evaluation_patches_antigravity(cache_root, evaluation_root)
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                )
+
+        changed = json.loads(
+            canonical_json_bytes_exp471_antigravity(
+                evaluation._code_closure_record_antigravity()
+            ).decode("utf-8")
+        )
+        member = sorted(changed["file_sha256"])[0]
+        changed["file_sha256"][member] = "f" * 64
+        bare = {
+            "schema": changed["schema"],
+            "file_sha256": changed["file_sha256"],
+        }
+        changed["closure_sha256"] = sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest()
+        with mock.patch.object(
+            evaluation,
+            "_code_closure_record_antigravity",
+            return_value=changed,
+        ), self.assertRaises(ValueError):
+            evaluation.reconstruct_frozen_evaluation_exp471_antigravity(artifact)
+
+    def test_digest_recomputed_scientific_tampering_fails_reconstruction(self) -> None:
+        """Rehashing malformed metrics or curve geometry must not issue authority."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_semantic_tamper_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = (
+                _evaluation_patches_antigravity(cache_root, evaluation_root)
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                )
+
+        def swap_dataset_rows(payload):
+            rows = payload["metric_tables"]["per_dataset"]
+            rows[0], rows[1] = rows[1], rows[0]
+
+        def wrong_metric_string(payload):
+            payload["metric_tables"]["per_dataset"][0][
+                "average_precision"
+            ] = "forged"
+
+        def wrong_metric_bool(payload):
+            payload["metric_tables"]["per_dataset"][0]["auroc"] = True
+
+        def wrong_metric_range(payload):
+            payload["metric_tables"]["per_dataset"][0]["auroc"] = 1.01
+
+        def wrong_macro_relation(payload):
+            row = payload["metric_tables"]["macro"]["A"]
+            row["average_precision_denominator"] = 0
+            row["average_precision_excluded"] = 0
+
+        def reordered_paired_rows(payload):
+            rows = payload["metric_tables"]["paired_statistics"]
+            rows[0], rows[1] = rows[1], rows[0]
+
+        def malformed_paired_row(payload):
+            payload["metric_tables"]["paired_statistics"][0]["wins"] = True
+
+        def roc_out_of_range(payload):
+            payload["curve_tables"]["roc"]["rows"][0][
+                "false_positive_rate"
+            ] = 2.0
+
+        def roc_nonmonotonic(payload):
+            payload["curve_tables"]["roc"]["rows"][1][
+                "true_positive_rate"
+            ] = 1.0
+            payload["curve_tables"]["roc"]["rows"][2][
+                "true_positive_rate"
+            ] = 0.5
+
+        def roc_threshold_order(payload):
+            rows = payload["curve_tables"]["roc"]["rows"]
+            rows[2]["threshold"] = rows[1]["threshold"] + 1.0
+
+        def roc_second_null(payload):
+            payload["curve_tables"]["roc"]["rows"][1]["threshold"] = None
+
+        def pr_out_of_range(payload):
+            payload["curve_tables"]["precision_recall"]["rows"][0][
+                "recall"
+            ] = -1.0
+
+        def pr_nonmonotonic(payload):
+            rows = payload["curve_tables"]["precision_recall"]["rows"]
+            rows[1]["recall"] = 0.0
+            rows[2]["recall"] = 0.5
+
+        mutations = (
+            ("per-dataset row swap", swap_dataset_rows),
+            ("metric string", wrong_metric_string),
+            ("metric bool", wrong_metric_bool),
+            ("metric range", wrong_metric_range),
+            ("macro denominator relation", wrong_macro_relation),
+            ("paired row reorder", reordered_paired_rows),
+            ("paired bool", malformed_paired_row),
+            ("ROC range", roc_out_of_range),
+            ("ROC monotonicity", roc_nonmonotonic),
+            ("ROC threshold order", roc_threshold_order),
+            ("ROC second null", roc_second_null),
+            ("PR range", pr_out_of_range),
+            ("PR monotonicity", pr_nonmonotonic),
+        )
+        for name, mutation in mutations:
+            with self.subTest(name=name):
+                tampered = _digest_recomputed_artifact_antigravity(
+                    artifact, mutation
+                )
+                with self.assertRaises(ValueError):
+                    evaluation.reconstruct_frozen_evaluation_exp471_antigravity(
+                        tampered
+                    )
+
     def test_real_curves_persist_json_safe_thresholds_without_metric_or_coordinate_drift(
         self,
     ) -> None:

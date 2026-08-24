@@ -10,7 +10,10 @@ import math
 import os
 from pathlib import Path
 import platform
+import re
 from types import MappingProxyType
+
+import numpy as np
 
 from experiments.exp450_resampling_image_ablation_antigravity import (
     evaluation_antigravity as frozen_evaluation_antigravity,
@@ -42,6 +45,26 @@ from .source_authority_antigravity import Exp471SourceSessionAntigravity
 _EVALUATION_NAME_ANTIGRAVITY = "evaluation_antigravity.json"
 _EVALUATION_SCHEMA_ANTIGRAVITY = "exp471-evaluation-antigravity.v1"
 _SEMANTIC_NONE_SCHEMA_ANTIGRAVITY = "exp471-semantic-none-antigravity.v1"
+_SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
+_CODE_CLOSURE_SCHEMA_ANTIGRAVITY = (
+    "exp471-evaluation-code-closure-antigravity.v1"
+)
+_CODE_CLOSURE_PATHS_ANTIGRAVITY = (
+    "experiments/exp450_resampling_image_ablation_antigravity/"
+    "evaluation_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "cache_artifacts_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "config_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "contracts_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "evaluation_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "score_cache_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "source_authority_antigravity.py",
+)
 
 
 def artifact_view_exp471_antigravity(value: object) -> object:
@@ -59,9 +82,84 @@ def artifact_view_exp471_antigravity(value: object) -> object:
     return value
 
 
+def _repository_root_antigravity() -> Path:
+    module_path = Path(__file__)
+    if not module_path.is_absolute():
+        module_path = Path.cwd() / module_path
+    return module_path.parents[2]
+
+
+def _closure_member_bytes_antigravity(root: Path, relative: str) -> bytes:
+    parts = relative.split("/")
+    if (
+        not parts
+        or any(part in {"", ".", ".."} for part in parts)
+        or not relative.endswith("_antigravity.py")
+    ):
+        raise ValueError("Exp471 evaluation closure path is not contained")
+    anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    directories: list[tuple[int, str, os.stat_result, int]] = []
+    try:
+        parent = anchor.descriptor
+        for part in parts[:-1]:
+            descriptor, expected = (
+                cache_artifacts_antigravity._open_child_directory_antigravity(
+                    parent, part, create=False
+                )
+            )
+            directories.append((parent, part, expected, descriptor))
+            parent = descriptor
+        raw = cache_artifacts_antigravity._read_leaf_at_antigravity(
+            parent, parts[-1]
+        )
+        if raw is None:
+            raise ValueError("Exp471 evaluation closure member is missing")
+        for parent, name, expected, _descriptor in reversed(directories):
+            cache_artifacts_antigravity._validate_child_directory_antigravity(
+                parent, name, expected
+            )
+        anchor.validate()
+        return raw
+    except (OSError, ValueError) as error:
+        raise ValueError(
+            f"Exp471 evaluation closure member is unavailable: {relative}"
+        ) from error
+    finally:
+        for _parent, _name, _expected, descriptor in reversed(directories):
+            os.close(descriptor)
+        anchor.close()
+
+
+def _code_closure_record_antigravity(
+    repository: Path | None = None,
+) -> dict[str, object]:
+    root = _repository_root_antigravity() if repository is None else Path(repository)
+    file_sha256 = {
+        relative: sha256(
+            _closure_member_bytes_antigravity(root, relative)
+        ).hexdigest()
+        for relative in _CODE_CLOSURE_PATHS_ANTIGRAVITY
+    }
+    bare = {
+        "schema": _CODE_CLOSURE_SCHEMA_ANTIGRAVITY,
+        "file_sha256": file_sha256,
+    }
+    return {
+        **bare,
+        "closure_sha256": sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest(),
+    }
+
+
 def _code_closure_sha256_antigravity() -> str:
-    module_path = Path(frozen_evaluation_antigravity.__file__).resolve()
-    return sha256(module_path.read_bytes()).hexdigest()
+    record = _code_closure_record_antigravity()
+    digest = record.get("closure_sha256")
+    if type(digest) is not str or _SHA256_ANTIGRAVITY.fullmatch(digest) is None:
+        raise ValueError("Exp471 evaluation closure digest differs")
+    return digest
 
 
 def _dependency_version_antigravity(distribution: str) -> str:
@@ -72,6 +170,7 @@ def _dependency_version_antigravity(distribution: str) -> str:
 
 
 def _implementation_record_antigravity() -> dict[str, object]:
+    code_closure = _code_closure_record_antigravity()
     return {
         "module": (
             "experiments.exp450_resampling_image_ablation_antigravity."
@@ -79,7 +178,8 @@ def _implementation_record_antigravity() -> dict[str, object]:
         ),
         "metric_function": "metric_tables_exp450_antigravity",
         "curve_function": "curve_tables_exp450_antigravity",
-        "code_closure_sha256": _code_closure_sha256_antigravity(),
+        "code_closure_sha256": code_closure["closure_sha256"],
+        "code_closure": code_closure,
         "python_implementation": platform.python_implementation(),
         "python_version": platform.python_version(),
         "dependencies": {
@@ -261,24 +361,32 @@ def _source_record_antigravity(
 
 def _cache_record_antigravity(
     cache: Exp471ScoreCacheManifestAntigravity,
+    test_counts: Mapping[str, int],
 ) -> dict[str, object]:
+    if tuple(test_counts) != cache.dataset_order or any(
+        type(test_counts[dataset]) is not int or test_counts[dataset] < 1
+        for dataset in cache.dataset_order
+    ):
+        raise ValueError("Exp471 evaluation cache row-count authority differs")
     return {
         "cache_context_sha256": cache.cache_context_sha256,
         "manifest_sha256": cache.manifest_sha256,
         "total_shards": cache.total_shards,
+        "dataset_test_count": dict(test_counts),
     }
 
 
 def _payload_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
     cache: Exp471ScoreCacheManifestAntigravity,
+    test_counts: Mapping[str, int],
     metrics: MetricTablesExp450Antigravity,
     curves: Mapping[str, Mapping[str, object]],
 ) -> Mapping[str, object]:
     return {
         "schema": _EVALUATION_SCHEMA_ANTIGRAVITY,
         "source_authority": _source_record_antigravity(authority),
-        "score_cache": _cache_record_antigravity(cache),
+        "score_cache": _cache_record_antigravity(cache, test_counts),
         "implementation": _implementation_record_antigravity(),
         "metric_tables": _encode_semantic_none_antigravity(
             _metric_record_antigravity(metrics)
@@ -307,6 +415,7 @@ def _artifact_record_antigravity(
 def _new_artifact_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
     cache: Exp471ScoreCacheManifestAntigravity,
+    test_counts: Mapping[str, int],
     metrics: MetricTablesExp450Antigravity,
     curves: Mapping[str, Mapping[str, object]],
 ) -> Exp471EvaluationArtifactAntigravity:
@@ -316,7 +425,9 @@ def _new_artifact_antigravity(
         "code_closure_sha256": _code_closure_sha256_antigravity(),
         "method_order": list(cache.method_order),
         "dataset_order": list(cache.dataset_order),
-        "payload": _payload_antigravity(authority, cache, metrics, curves),
+        "payload": _payload_antigravity(
+            authority, cache, test_counts, metrics, curves
+        ),
     }
     bare = artifact_view_exp471_antigravity(raw_bare)
     if not isinstance(bare, Mapping):
@@ -359,6 +470,28 @@ def _finite_number_antigravity(value: object, scope: str) -> float:
     if type(value) not in (int, float) or not math.isfinite(float(value)):
         raise ValueError(f"Exp471 evaluation {scope} must be finite")
     return float(value)
+
+
+def _unit_number_antigravity(value: object, scope: str) -> float:
+    number = _finite_number_antigravity(value, scope)
+    if number < 0.0 or number > 1.0:
+        raise ValueError(f"Exp471 evaluation {scope} is outside [0, 1]")
+    return number
+
+
+def _bounded_number_antigravity(
+    value: object, lower: float, upper: float, scope: str
+) -> float:
+    number = _finite_number_antigravity(value, scope)
+    if number < lower or number > upper:
+        raise ValueError(f"Exp471 evaluation {scope} is outside its bounds")
+    return number
+
+
+def _nonnegative_integer_antigravity(value: object, scope: str) -> int:
+    if type(value) is not int or value < 0:
+        raise ValueError(f"Exp471 evaluation {scope} must be a nonnegative integer")
+    return value
 
 
 def _method_blocks_antigravity(
@@ -429,10 +562,10 @@ def _curve_tables_antigravity(
             MappingProxyType(
                 {
                     "method": method,
-                    "false_positive_rate": _finite_number_antigravity(
+                    "false_positive_rate": _unit_number_antigravity(
                         raw_row["false_positive_rate"], "ROC false-positive rate"
                     ),
-                    "true_positive_rate": _finite_number_antigravity(
+                    "true_positive_rate": _unit_number_antigravity(
                         raw_row["true_positive_rate"], "ROC true-positive rate"
                     ),
                     "threshold": threshold_value,
@@ -441,6 +574,24 @@ def _curve_tables_antigravity(
         )
     if _method_blocks_antigravity(roc_rows, "ROC") != METHOD_ORDER_ANTIGRAVITY:
         raise ValueError("Exp471 evaluation ROC method order differs")
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        block = tuple(row for row in roc_rows if row["method"] == method)
+        if (
+            len(block) < 2
+            or block[0]["false_positive_rate"] != 0.0
+            or block[0]["true_positive_rate"] != 0.0
+            or block[0]["threshold"] != math.inf
+            or block[-1]["false_positive_rate"] != 1.0
+            or block[-1]["true_positive_rate"] != 1.0
+        ):
+            raise ValueError("Exp471 evaluation ROC frozen endpoints differ")
+        for prior, current in zip(block, block[1:]):
+            if (
+                current["false_positive_rate"] < prior["false_positive_rate"]
+                or current["true_positive_rate"] < prior["true_positive_rate"]
+                or current["threshold"] > prior["threshold"]
+            ):
+                raise ValueError("Exp471 evaluation ROC ordering differs")
 
     pr_rows: list[Mapping[str, object]] = []
     for raw_row in precision_recall["rows"]:
@@ -457,10 +608,10 @@ def _curve_tables_antigravity(
             MappingProxyType(
                 {
                     "method": raw_row["method"],
-                    "recall": _finite_number_antigravity(
+                    "recall": _unit_number_antigravity(
                         raw_row["recall"], "precision-recall recall"
                     ),
-                    "precision": _finite_number_antigravity(
+                    "precision": _unit_number_antigravity(
                         raw_row["precision"], "precision-recall precision"
                     ),
                 }
@@ -470,6 +621,22 @@ def _curve_tables_antigravity(
         pr_rows, "precision-recall"
     ) != METHOD_ORDER_ANTIGRAVITY:
         raise ValueError("Exp471 evaluation precision-recall method order differs")
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        block = tuple(row for row in pr_rows if row["method"] == method)
+        if (
+            len(block) < 2
+            or block[0]["recall"] != 1.0
+            or block[-1]["recall"] != 0.0
+            or block[-1]["precision"] != 1.0
+        ):
+            raise ValueError(
+                "Exp471 evaluation precision-recall frozen endpoints differ"
+            )
+        if any(
+            current["recall"] > prior["recall"]
+            for prior, current in zip(block, block[1:])
+        ):
+            raise ValueError("Exp471 evaluation precision-recall ordering differs")
 
     return MappingProxyType(
         {
@@ -533,7 +700,342 @@ def _freeze_method_mapping_antigravity(
     return MappingProxyType(frozen)
 
 
-def _metric_tables_antigravity(value: object) -> MetricTablesExp450Antigravity:
+def _metric_value_pair_antigravity(
+    row: Mapping[str, object],
+    metric: str,
+    missing_reason: str,
+    scope: str,
+) -> float | None:
+    value = row[metric]
+    exclusion = row[f"{metric}_exclusion"]
+    if value is None:
+        if exclusion != missing_reason:
+            raise ValueError(f"Exp471 evaluation {scope} exclusion pairing differs")
+        return None
+    number = _unit_number_antigravity(value, scope)
+    if exclusion is not None:
+        raise ValueError(f"Exp471 evaluation {scope} exclusion pairing differs")
+    return number
+
+
+def _per_dataset_metrics_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+) -> tuple[
+    tuple[Mapping[str, object], ...],
+    dict[tuple[str, str, str], float | None],
+]:
+    rows = _freeze_mapping_rows_antigravity(value, "per-dataset metrics")
+    expected = tuple(
+        (method, dataset)
+        for method in METHOD_ORDER_ANTIGRAVITY
+        for dataset in datasets
+    )
+    if len(rows) != len(expected):
+        raise ValueError("Exp471 evaluation per-dataset metric coverage differs")
+    values: dict[tuple[str, str, str], float | None] = {}
+    required = {
+        "method",
+        "dataset",
+        "average_precision",
+        "average_precision_exclusion",
+        "auroc",
+        "auroc_exclusion",
+    }
+    for row, identity in zip(rows, expected, strict=True):
+        if set(row) != required or (row["method"], row["dataset"]) != identity:
+            raise ValueError("Exp471 evaluation per-dataset metric order differs")
+        method, dataset = identity
+        values[(method, dataset, "average_precision")] = (
+            _metric_value_pair_antigravity(
+                row,
+                "average_precision",
+                "no_positive_test_labels",
+                f"{method}/{dataset} average precision",
+            )
+        )
+        values[(method, dataset, "auroc")] = _metric_value_pair_antigravity(
+            row,
+            "auroc",
+            "single_class_test_labels",
+            f"{method}/{dataset} AUROC",
+        )
+    for dataset in datasets:
+        for metric in ("average_precision", "auroc"):
+            missing = {
+                values[(method, dataset, metric)] is None
+                for method in METHOD_ORDER_ANTIGRAVITY
+            }
+            if len(missing) != 1:
+                raise ValueError(
+                    "Exp471 evaluation per-dataset label exclusions differ by method"
+                )
+    return rows, values
+
+
+def _macro_metrics_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+    per_dataset: Mapping[tuple[str, str, str], float | None],
+) -> Mapping[str, Mapping[str, object]]:
+    rows = _freeze_method_mapping_antigravity(value, "macro metrics")
+    required = {
+        "average_precision",
+        "auroc",
+        "average_precision_denominator",
+        "average_precision_excluded",
+        "auroc_denominator",
+        "auroc_excluded",
+    }
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        row = rows[method]
+        if set(row) != required:
+            raise ValueError("Exp471 evaluation macro metric schema differs")
+        for metric in ("average_precision", "auroc"):
+            available = tuple(
+                per_dataset[(method, dataset, metric)]
+                for dataset in datasets
+                if per_dataset[(method, dataset, metric)] is not None
+            )
+            denominator = _nonnegative_integer_antigravity(
+                row[f"{metric}_denominator"], f"macro {metric} denominator"
+            )
+            excluded = _nonnegative_integer_antigravity(
+                row[f"{metric}_excluded"], f"macro {metric} excluded count"
+            )
+            if (
+                denominator != len(available)
+                or denominator + excluded != len(datasets)
+            ):
+                raise ValueError("Exp471 evaluation macro denominator relation differs")
+            observed = row[metric]
+            if not available:
+                if observed is not None:
+                    raise ValueError("Exp471 evaluation empty macro value differs")
+            else:
+                number = _unit_number_antigravity(observed, f"macro {metric}")
+                expected = float(np.mean(np.asarray(available, dtype=np.float64)))
+                if number != expected:
+                    raise ValueError("Exp471 evaluation macro value relation differs")
+    return rows
+
+
+def _micro_metrics_antigravity(
+    value: object,
+    test_counts: Mapping[str, int],
+) -> Mapping[str, Mapping[str, object]]:
+    rows = _freeze_method_mapping_antigravity(value, "micro metrics")
+    required = {
+        "average_precision",
+        "auroc",
+        "row_denominator",
+        "average_precision_exclusion",
+        "auroc_exclusion",
+    }
+    total_rows = sum(test_counts.values())
+    missing_patterns: dict[str, set[bool]] = {
+        "average_precision": set(),
+        "auroc": set(),
+    }
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        row = rows[method]
+        if set(row) != required:
+            raise ValueError("Exp471 evaluation micro metric schema differs")
+        denominator = _nonnegative_integer_antigravity(
+            row["row_denominator"], "micro row denominator"
+        )
+        if denominator != total_rows:
+            raise ValueError("Exp471 evaluation micro row denominator differs")
+        average_precision = _metric_value_pair_antigravity(
+            row,
+            "average_precision",
+            "no_positive_test_rows",
+            f"{method} micro average precision",
+        )
+        auroc = _metric_value_pair_antigravity(
+            row,
+            "auroc",
+            "single_class_pooled_test_rows",
+            f"{method} micro AUROC",
+        )
+        missing_patterns["average_precision"].add(average_precision is None)
+        missing_patterns["auroc"].add(auroc is None)
+    if any(len(pattern) != 1 for pattern in missing_patterns.values()):
+        raise ValueError("Exp471 evaluation pooled label exclusions differ by method")
+    return rows
+
+
+def _bootstrap_expectations_antigravity(
+    differences: Mapping[str, np.ndarray],
+    common_count: int,
+) -> tuple[str, Mapping[str, tuple[float, float]]]:
+    sample_count = frozen_evaluation_antigravity._BOOTSTRAP_SAMPLES
+    rng = np.random.default_rng(frozen_evaluation_antigravity._BOOTSTRAP_SEED)
+    digest = sha256()
+    estimates = {
+        variant: np.empty(sample_count, dtype=np.float64)
+        for variant in ("B", "C", "D")
+    }
+    offset = 0
+    while offset < sample_count:
+        batch = min(256, sample_count - offset)
+        draws = rng.integers(
+            0,
+            common_count,
+            size=(batch, common_count),
+            dtype=np.int64,
+        )
+        digest.update(draws.tobytes(order="C"))
+        for variant in ("B", "C", "D"):
+            estimates[variant][offset : offset + batch] = differences[variant][
+                draws
+            ].mean(axis=1)
+        offset += batch
+    bounds = {
+        variant: tuple(
+            float(item)
+            for item in np.quantile(estimates[variant], (0.025, 0.975))
+        )
+        for variant in ("B", "C", "D")
+    }
+    return digest.hexdigest(), bounds
+
+
+def _paired_statistics_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+    per_dataset: Mapping[tuple[str, str, str], float | None],
+) -> tuple[Mapping[str, object], ...]:
+    rows = _freeze_mapping_rows_antigravity(value, "paired statistics")
+    expected = tuple(
+        (f"{variant}-A", metric)
+        for metric in ("average_precision", "auroc")
+        for variant in ("B", "C", "D")
+    )
+    if len(rows) != len(expected):
+        raise ValueError("Exp471 evaluation paired-statistic coverage differs")
+    required = {
+        "comparison",
+        "metric",
+        "dataset_order",
+        "point_estimate",
+        "lower",
+        "upper",
+        "wins",
+        "ties",
+        "losses",
+        "seed",
+        "draw_count",
+        "draw_sha256",
+    }
+    by_identity: dict[tuple[str, str], Mapping[str, object]] = {}
+    for row, identity in zip(rows, expected, strict=True):
+        if (
+            set(row) != required
+            or (row["comparison"], row["metric"]) != identity
+        ):
+            raise ValueError("Exp471 evaluation paired-statistic order differs")
+        by_identity[identity] = row
+
+    for metric in ("average_precision", "auroc"):
+        common = tuple(
+            dataset
+            for dataset in datasets
+            if all(
+                per_dataset[(method, dataset, metric)] is not None
+                for method in METHOD_ORDER_ANTIGRAVITY[:4]
+            )
+        )
+        reference = np.asarray(
+            [per_dataset[("A", dataset, metric)] for dataset in common],
+            dtype=np.float64,
+        )
+        differences = {
+            variant: np.asarray(
+                [per_dataset[(variant, dataset, metric)] for dataset in common],
+                dtype=np.float64,
+            )
+            - reference
+            for variant in ("B", "C", "D")
+        }
+        draw_digest: str | None = None
+        bounds: Mapping[str, tuple[float, float]] = {}
+        if common:
+            draw_digest, bounds = _bootstrap_expectations_antigravity(
+                differences, len(common)
+            )
+        for variant in ("B", "C", "D"):
+            row = by_identity[(f"{variant}-A", metric)]
+            if tuple(row["dataset_order"]) != common:
+                raise ValueError("Exp471 evaluation paired dataset order differs")
+            if row["seed"] != frozen_evaluation_antigravity._BOOTSTRAP_SEED:
+                raise ValueError("Exp471 evaluation paired seed differs")
+            wins = _nonnegative_integer_antigravity(row["wins"], "paired wins")
+            ties = _nonnegative_integer_antigravity(row["ties"], "paired ties")
+            losses = _nonnegative_integer_antigravity(row["losses"], "paired losses")
+            draw_count = _nonnegative_integer_antigravity(
+                row["draw_count"], "paired draw count"
+            )
+            difference = differences[variant]
+            expected_wins = int(
+                np.count_nonzero(
+                    difference > frozen_evaluation_antigravity._TIE_TOLERANCE
+                )
+            )
+            expected_ties = int(
+                np.count_nonzero(
+                    np.abs(difference)
+                    <= frozen_evaluation_antigravity._TIE_TOLERANCE
+                )
+            )
+            expected_losses = int(
+                np.count_nonzero(
+                    difference < -frozen_evaluation_antigravity._TIE_TOLERANCE
+                )
+            )
+            if (wins, ties, losses) != (
+                expected_wins,
+                expected_ties,
+                expected_losses,
+            ) or wins + ties + losses != len(common):
+                raise ValueError("Exp471 evaluation paired counts differ")
+            if not common:
+                if (
+                    row["point_estimate"] is not None
+                    or row["lower"] is not None
+                    or row["upper"] is not None
+                    or draw_count != 0
+                    or row["draw_sha256"] is not None
+                ):
+                    raise ValueError("Exp471 evaluation empty paired relation differs")
+                continue
+            point = _bounded_number_antigravity(
+                row["point_estimate"], -1.0, 1.0, "paired point estimate"
+            )
+            lower = _bounded_number_antigravity(
+                row["lower"], -1.0, 1.0, "paired lower bound"
+            )
+            upper = _bounded_number_antigravity(
+                row["upper"], -1.0, 1.0, "paired upper bound"
+            )
+            if (
+                point != float(difference.mean())
+                or (lower, upper) != bounds[variant]
+                or lower > upper
+                or draw_count != frozen_evaluation_antigravity._BOOTSTRAP_SAMPLES
+                or type(row["draw_sha256"]) is not str
+                or _SHA256_ANTIGRAVITY.fullmatch(row["draw_sha256"]) is None
+                or row["draw_sha256"] != draw_digest
+            ):
+                raise ValueError("Exp471 evaluation paired bootstrap relation differs")
+    return rows
+
+
+def _metric_tables_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+    test_counts: Mapping[str, int],
+) -> MetricTablesExp450Antigravity:
     _assert_no_null_antigravity(value, "metric tables")
     decoded = _decode_semantic_none_antigravity(value)
     if not isinstance(decoded, Mapping) or set(decoded) != {
@@ -546,16 +1048,20 @@ def _metric_tables_antigravity(value: object) -> MetricTablesExp450Antigravity:
         raise ValueError("Exp471 evaluation metric-table schema differs")
     if tuple(decoded["method_order"]) != METHOD_ORDER_ANTIGRAVITY:
         raise ValueError("Exp471 evaluation metric method order differs")
+    per_dataset, values = _per_dataset_metrics_antigravity(
+        decoded["per_dataset"], datasets
+    )
+    macro = _macro_metrics_antigravity(decoded["macro"], datasets, values)
+    micro = _micro_metrics_antigravity(decoded["micro"], test_counts)
+    paired = _paired_statistics_antigravity(
+        decoded["paired_statistics"], datasets, values
+    )
     return MetricTablesExp450Antigravity(
         method_order=METHOD_ORDER_ANTIGRAVITY,
-        per_dataset=_freeze_mapping_rows_antigravity(
-            decoded["per_dataset"], "per-dataset metrics"
-        ),
-        macro=_freeze_method_mapping_antigravity(decoded["macro"], "macro metrics"),
-        micro=_freeze_method_mapping_antigravity(decoded["micro"], "micro metrics"),
-        paired_statistics=_freeze_mapping_rows_antigravity(
-            decoded["paired_statistics"], "paired statistics"
-        ),
+        per_dataset=per_dataset,
+        macro=macro,
+        micro=micro,
+        paired_statistics=paired,
     )
 
 
@@ -580,12 +1086,51 @@ def _validated_payload_antigravity(
     cache = payload["score_cache"]
     if (
         not isinstance(source, Mapping)
+        or set(source)
+        != {
+            "authority_sha256",
+            "source_commit",
+            "source_context_sha256",
+            "inventory_sha256",
+        }
         or source.get("authority_sha256") != artifact.source_authority_sha256
+        or type(source.get("source_commit")) is not str
+        or re.fullmatch(r"^[0-9a-f]{40}$", source["source_commit"]) is None
+        or type(source.get("source_context_sha256")) is not str
+        or _SHA256_ANTIGRAVITY.fullmatch(source["source_context_sha256"])
+        is None
+        or type(source.get("inventory_sha256")) is not str
+        or _SHA256_ANTIGRAVITY.fullmatch(source["inventory_sha256"]) is None
         or not isinstance(cache, Mapping)
         or cache.get("manifest_sha256") != artifact.cache_manifest_sha256
+        or set(cache)
+        != {
+            "cache_context_sha256",
+            "manifest_sha256",
+            "total_shards",
+            "dataset_test_count",
+        }
+        or not isinstance(cache.get("dataset_test_count"), Mapping)
+        or type(cache.get("cache_context_sha256")) is not str
+        or _SHA256_ANTIGRAVITY.fullmatch(cache["cache_context_sha256"]) is None
+        or type(cache.get("total_shards")) is not int
+        or cache["total_shards"]
+        != len(METHOD_ORDER_ANTIGRAVITY) * len(artifact.dataset_order)
     ):
         raise ValueError("Exp471 evaluation payload authority binding differs")
-    metrics = _metric_tables_antigravity(payload["metric_tables"])
+    raw_counts = cache["dataset_test_count"]
+    assert isinstance(raw_counts, Mapping)
+    if set(raw_counts) != set(artifact.dataset_order):
+        raise ValueError("Exp471 evaluation dataset row-count coverage differs")
+    test_counts: dict[str, int] = {}
+    for dataset in artifact.dataset_order:
+        count = raw_counts[dataset]
+        if type(count) is not int or count < 1:
+            raise ValueError("Exp471 evaluation dataset row count differs")
+        test_counts[dataset] = count
+    metrics = _metric_tables_antigravity(
+        payload["metric_tables"], artifact.dataset_order, test_counts
+    )
     curves = _curve_tables_antigravity(payload["curve_tables"])
     if canonical_json_bytes_exp471_antigravity(
         _encode_semantic_none_antigravity(_metric_record_antigravity(metrics))
@@ -614,6 +1159,7 @@ def _validate_artifact_authority_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
     session: Exp471SourceSessionAntigravity,
     cache: Exp471ScoreCacheManifestAntigravity,
+    test_counts: Mapping[str, int],
 ) -> None:
     _validate_artifact_integrity_antigravity(artifact)
     if (
@@ -623,7 +1169,8 @@ def _validate_artifact_authority_antigravity(
         or artifact.dataset_order != cache.dataset_order
         or artifact.payload["source_authority"]
         != _source_record_antigravity(session.authority)
-        or artifact.payload["score_cache"] != _cache_record_antigravity(cache)
+        or artifact.payload["score_cache"]
+        != _cache_record_antigravity(cache, test_counts)
     ):
         raise ValueError("Exp471 evaluation durable authority differs")
 
@@ -705,10 +1252,10 @@ def evaluate_exp471_antigravity(
     )
     curves = curve_tables_exp450_antigravity(labels, micro_scores)
     artifact = _new_artifact_antigravity(
-        session.authority, reopened, metrics, curves
+        session.authority, reopened, test_counts, metrics, curves
     )
     _validate_artifact_authority_antigravity(
-        artifact, session, reopened
+        artifact, session, reopened, test_counts
     )
     _publish_artifact_antigravity(root, artifact)
     return read_evaluation_exp471_antigravity(root, session, reopened)
@@ -721,7 +1268,7 @@ def read_evaluation_exp471_antigravity(
 ) -> Exp471EvaluationArtifactAntigravity:
     """Reopen and fully validate one durable evaluation without recomputation."""
 
-    reopened, _raw, _micro, _counts = _verified_cache_scores_antigravity(
+    reopened, _raw, _micro, counts = _verified_cache_scores_antigravity(
         session, cache
     )
     anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
@@ -737,7 +1284,9 @@ def read_evaluation_exp471_antigravity(
         anchor.validate()
     finally:
         anchor.close()
-    _validate_artifact_authority_antigravity(artifact, session, reopened)
+    _validate_artifact_authority_antigravity(
+        artifact, session, reopened, counts
+    )
     return artifact
 
 
