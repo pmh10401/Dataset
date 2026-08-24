@@ -1,0 +1,46 @@
+{
+  "backends": {
+    "mlx": {
+      "available": true,
+      "backend": "mlx",
+      "cold_seconds": null,
+      "deterministic": false,
+      "eligible": false,
+      "exact_candidate_indices": false,
+      "fallback_reason": "MLX smoke failed: ValueError: float64 is not supported on the GPU",
+      "finite": false,
+      "max_raw_abs_error": null,
+      "parity_passed": false,
+      "python_reference_passed": null,
+      "speedup": null,
+      "warm_iqr_seconds": null,
+      "warm_median_seconds": null
+    },
+    "numba": {
+      "available": true,
+      "backend": "numba",
+      "cold_seconds": 0.520997874904424,
+      "deterministic": true,
+      "eligible": true,
+      "exact_candidate_indices": true,
+      "fallback_reason": null,
+      "finite": true,
+      "max_raw_abs_error": 1.1102230246251565e-16,
+      "parity_passed": true,
+      "python_reference_passed": true,
+      "speedup": 1.0,
+      "warm_iqr_seconds": 6.668269634246826e-07,
+      "warm_median_seconds": 9.249988943338394e-05
+    }
+  },
+  "cpu": "arm",
+  "device": "Device(gpu, 0)",
+  "fixture_sha256": "054bfadb84cd5e4fb8e123207a25c089c6e4cd45366895e74c5e39707068187c",
+  "llvmlite_version": "0.46.0",
+  "mlx_metal_version": null,
+  "mlx_version": "0.32.0",
+  "numba_version": "0.63.1",
+  "python_version": "3.14.6",
+  "required_mlx_speedup": 1.1,
+  "selected_backend": "numba"
+}

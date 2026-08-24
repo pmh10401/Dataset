@@ -37,6 +37,9 @@ SPECTRAL_ENTROPY_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/spectral_entropy_antigrav
 PYTHON_REFERENCE_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/python_reference_antigravity.py"
 SPECTRAL_ENTROPY_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_spectral_entropy_antigravity.py"
 PYTHON_REFERENCE_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_python_reference_antigravity.py"
+ACCELERATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/acceleration_antigravity.py"
+ACCELERATION_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_acceleration_antigravity.py"
+ASSESSMENT_ANTIGRAVITY = "scratch/exp470_acceleration_assessment_antigravity.json"
 BUILDER_ANTIGRAVITY = "scratch/build_codemap_exp470_antigravity.py"
 TASK_BRIEF_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
@@ -46,6 +49,10 @@ TASK2_BRIEF_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
     "task-2-brief-antigravity.html"
 )
+TASK3_BRIEF_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
+    "task-3-brief-antigravity.html"
+)
 IMPLEMENTATION_REPORT_ANTIGRAVITY = "docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html"
 TASK_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
@@ -54,6 +61,10 @@ TASK_REPORT_ANTIGRAVITY = (
 TASK2_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
     "task-2-report-antigravity.html"
+)
+TASK3_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
+    "task-3-report-antigravity.html"
 )
 EXP468_PACKAGE_ANTIGRAVITY = "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity"
 EXP468_SOURCES_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/sources_antigravity.py"
@@ -75,11 +86,16 @@ REPRESENTED_PATHS_ANTIGRAVITY = (
     PYTHON_REFERENCE_ANTIGRAVITY,
     SPECTRAL_ENTROPY_TEST_ANTIGRAVITY,
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
+    ACCELERATION_ANTIGRAVITY,
+    ACCELERATION_TEST_ANTIGRAVITY,
+    ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     IMPLEMENTATION_REPORT_ANTIGRAVITY,
     TASK_REPORT_ANTIGRAVITY,
     TASK2_BRIEF_ANTIGRAVITY,
     TASK2_REPORT_ANTIGRAVITY,
+    TASK3_BRIEF_ANTIGRAVITY,
+    TASK3_REPORT_ANTIGRAVITY,
     EXP468_SOURCES_ANTIGRAVITY,
     EXP468_INTERPOLATION_ANTIGRAVITY,
     EXP468_SYNTHETIC_ANTIGRAVITY,
@@ -100,14 +116,16 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     PYTHON_REFERENCE_ANTIGRAVITY,
     SPECTRAL_ENTROPY_TEST_ANTIGRAVITY,
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
+    ACCELERATION_ANTIGRAVITY,
+    ACCELERATION_TEST_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     EXP468_SOURCES_ANTIGRAVITY,
     EXP468_INTERPOLATION_ANTIGRAVITY,
     EXP468_SYNTHETIC_ANTIGRAVITY,
     EXP468_PREDECESSOR_ANTIGRAVITY,
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task2_numba_spectral_entropy_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp470_task2_numba_spectral_entropy_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task3_numba_runtime_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp470_task3_numba_runtime_codemap_lock_v1"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -203,16 +221,21 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity("predecessor_test", PREDECESSOR_TEST_ANTIGRAVITY, "focused unittest command", "Covers identity equality for every direct Exp468 authority export.", (), "Exp470PredecessorTestAntigravity"),
         _node_antigravity("spectral_entropy_test", SPECTRAL_ENTROPY_TEST_ANTIGRAVITY, "focused unittest command", "Covers Numba E11 direct-DFT oracle parity, normalization, strict boundaries, deterministic immutable outputs, validation, and compiled-only constraints.", (), "SpectralEntropyNumbaTestAntigravity"),
         _node_antigravity("python_reference_test", PYTHON_REFERENCE_TEST_ANTIGRAVITY, "focused unittest command", "Covers the independent four-row tuple oracle and its Python-math-only implementation boundary.", (), "PythonReferenceTestAntigravity"),
+        _node_antigravity("acceleration", ACCELERATION_ANTIGRAVITY, "Task 3 runtime evidence and CLI manifest", "Measures Numba reference parity, byte determinism, cold/warm timings, and MLX capability only; selected backend remains Numba.", (ACCELERATION_TEST_ANTIGRAVITY,), "assess_runtime_antigravity"),
+        _node_antigravity("acceleration_test", ACCELERATION_TEST_ANTIGRAVITY, "focused unittest command", "Covers fixed fixture digest, strict JSON, validation stops, Numba evidence, and MLX record presence.", (), "AccelerationAssessmentTestAntigravity"),
+        _node_antigravity("assessment", ASSESSMENT_ANTIGRAVITY, "Task 3 runtime evidence CLI", "Records one finite JSON-only Numba/MLX assessment without qualification or dataset access.", (), "selected_backend"),
         _node_antigravity("implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1 closeout", "Records only Task 1 implementation and verification state; does not report scoring or execution.", (), "Exp470 Task 1"),
         _node_antigravity("task_report", TASK_REPORT_ANTIGRAVITY, "Task 1 parent handoff", "Preserves RED/GREEN, map validation, self-review, and concern evidence.", (), "Exp470 Task 1"),
         _node_antigravity("task2_brief", TASK2_BRIEF_ANTIGRAVITY, "Task 2 implementer", "Bounds work to the single Numba E11 scorer and Python oracle; prohibits qualification, runs, MLX work, and routing.", (), "Task 2"),
         _node_antigravity("task2_report", TASK2_REPORT_ANTIGRAVITY, "Task 2 parent handoff", "Preserves RED/GREEN, code-map checks, self-review, and scorer-only concerns.", (), "Task 2"),
+        _node_antigravity("task3_brief", TASK3_BRIEF_ANTIGRAVITY, "Task 3 implementer", "Bounds runtime evidence to the fixed smoke fixture; prohibits qualification, data access, and routing.", (), "Task 3"),
+        _node_antigravity("task3_report", TASK3_REPORT_ANTIGRAVITY, "Task 3 parent handoff", "Preserves RED/GREEN runtime evidence, manifest, map validation, and scope boundary.", (), "Task 3"),
         _node_antigravity("exp468_load_ecg200_normal_train", EXP468_SOURCES_ANTIGRAVITY, "Exp470 sources export", "Provides the exact reviewed Exp468 normal TRAIN loader object.", (), "load_ecg200_normal_train_antigravity"),
         _node_antigravity("exp468_interpolate_to_140", EXP468_INTERPOLATION_ANTIGRAVITY, "Exp470 interpolation export", "Provides the exact reviewed Exp468 96-to-140 interpolation object.", (), "interpolate_to_140_antigravity"),
         _node_antigravity("exp468_primary_rows", EXP468_SYNTHETIC_ANTIGRAVITY, "Exp470 synthetic export", "Provides the exact reviewed Exp468 primary synthetic-row object.", (), "primary_rows_antigravity"),
         _node_antigravity("exp468_capture_exp465_authority", EXP468_PREDECESSOR_ANTIGRAVITY, "Exp470 predecessor export", "Provides the exact reviewed Exp468 C0 authority-capture object.", (), "capture_exp465_authority_antigravity"),
         _node_antigravity("exp468_score_c0_fold", EXP468_PREDECESSOR_ANTIGRAVITY, "Exp470 predecessor export", "Provides the exact reviewed Exp468 C0 fold scorer object.", (), "score_c0_fold_antigravity"),
-        _node_antigravity("map_builder", BUILDER_ANTIGRAVITY, "Task 2 generation and validation", "Deterministically writes or validates only the versioned Exp470 HTML/JSON/lock triplet, represented paths, source hashes, and graph evidence.", (), "build_graph_antigravity"),
+        _node_antigravity("map_builder", BUILDER_ANTIGRAVITY, "Task 3 generation and validation", "Deterministically writes or validates only the versioned Exp470 HTML/JSON/lock triplet, represented paths, source hashes, and graph evidence.", (), "build_graph_antigravity"),
     ]
     edges = [
         _edge_antigravity("contracts", "calls", "config", CONTRACTS_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
@@ -222,6 +245,9 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("spectral_entropy_test", "tests", "spectral_entropy", SPECTRAL_ENTROPY_TEST_ANTIGRAVITY, "score_spectral_entropy_numba_antigravity"),
         _edge_antigravity("spectral_entropy_test", "tests", "python_reference", SPECTRAL_ENTROPY_TEST_ANTIGRAVITY, "score_spectral_entropy_python_reference_antigravity"),
         _edge_antigravity("python_reference_test", "tests", "python_reference", PYTHON_REFERENCE_TEST_ANTIGRAVITY, "score_spectral_entropy_python_reference_antigravity"),
+        _edge_antigravity("acceleration", "calls", "spectral_entropy", ACCELERATION_ANTIGRAVITY, "score_spectral_entropy_numba_antigravity"),
+        _edge_antigravity("acceleration", "calls", "python_reference", ACCELERATION_ANTIGRAVITY, "score_spectral_entropy_python_reference_antigravity"),
+        _edge_antigravity("acceleration_test", "tests", "acceleration", ACCELERATION_TEST_ANTIGRAVITY, "assess_runtime_antigravity"),
         _edge_antigravity("predecessor_test", "tests", "sources", PREDECESSOR_TEST_ANTIGRAVITY, "load_ecg200_normal_train_antigravity"),
         _edge_antigravity("predecessor_test", "tests", "interpolation", PREDECESSOR_TEST_ANTIGRAVITY, "interpolate_to_140_antigravity"),
         _edge_antigravity("predecessor_test", "tests", "synthetic", PREDECESSOR_TEST_ANTIGRAVITY, "primary_rows_antigravity"),
@@ -247,7 +273,7 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         for node in graph["nodes"]
     )
     embedded = _canonical_bytes_antigravity(graph).decode("utf-8").rstrip()
-    return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><title>Exp470 code map</title></head><body><main><h1>Exp470 Task 2 Code Map</h1><p>Versioned authority map; no generic alias is generated.</p><table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>" + rows + "</tbody></table><script id=\"exp470-codemap-json-antigravity\" type=\"application/json\">" + embedded + "</script></main></body></html>\n"
+    return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><title>Exp470 code map</title></head><body><main><h1>Exp470 Task 3 Code Map</h1><p>Versioned authority map; no generic alias is generated.</p><table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>" + rows + "</tbody></table><script id=\"exp470-codemap-json-antigravity\" type=\"application/json\">" + embedded + "</script></main></body></html>\n"
 
 
 def _lock_antigravity(graph: dict[str, Any]) -> dict[str, Any]:
