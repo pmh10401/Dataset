@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the versioned Exp471 Task 2 code-map triplet."""
+"""Build and validate the versioned Exp471 Task 3 code-map triplet."""
 
 from __future__ import annotations
 
@@ -434,7 +434,7 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         "<title>Exp471 code map</title></head><body><main>"
-        "<h1>Exp471 Task 2 Code Map</h1>"
+        "<h1>Exp471 Task 3 Code Map</h1>"
         "<p>Versioned authority, ACF scorer, and runtime-assessment map; future Task 4–6 files are explicitly pending.</p>"
         "<table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>"
         + rows + "</tbody></table>"

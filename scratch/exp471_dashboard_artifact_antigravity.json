@@ -5,7 +5,7 @@
     "surface": "dashboard",
     "title": "Exp471 ECG200 ACF peak-lag 이동 Numba 대시보드",
     "description": "Exp470의 잔여 period 실패 근거와 Exp471 단일 ACF 후보의 설계·구현 계획 진행 상태를 보여 주는 source-backed 대시보드.",
-    "generatedAt": "2026-08-25T00:35:00+09:00",
+    "generatedAt": "2026-08-25T01:35:00+09:00",
     "cards": [
       {
         "id": "exp470_fixed",
@@ -167,14 +167,14 @@
       {
         "id": "exp471_acceleration",
         "label": "Exp471 공개 fixture 계산 경로 검증",
-        "path": "scratch/exp471_acceleration_assessment_antigravity.json",
+        "path": ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html",
         "query": {
           "engine": "duckdb",
           "language": "sql",
           "description": "Task 3 JSON에서 Numba parity와 MLX GPU float64 부적격 이유를 재현한다.",
           "sql": "SELECT 'numba' AS backend, TRUE AS parity, TRUE AS deterministic, TRUE AS eligible, NULL AS reason UNION ALL SELECT 'mlx', FALSE, FALSE, FALSE, 'float64_unsupported_on_gpu, 0'",
-          "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json"],
-          "executed_at": "2026-08-24T16:30:00Z"
+          "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json", ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html"],
+          "executed_at": "2026-08-24T16:25:49Z"
         }
       }
     ],
@@ -204,7 +204,7 @@
   },
   "snapshot": {
     "version": 1,
-    "generatedAt": "2026-08-24T15:35:00Z",
+    "generatedAt": "2026-08-24T16:35:00Z",
     "status": "ready",
     "datasets": {
       "status_summary": [
@@ -298,14 +298,14 @@
     {
       "id": "exp471_acceleration",
       "label": "Exp471 공개 fixture 계산 경로 검증",
-      "path": "scratch/exp471_acceleration_assessment_antigravity.json",
+      "path": ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html",
       "query": {
         "engine": "duckdb",
         "language": "sql",
         "description": "Task 3 JSON에서 Numba parity와 MLX GPU float64 부적격 이유를 재현한다.",
         "sql": "SELECT 'numba' AS backend, TRUE AS parity, TRUE AS deterministic, TRUE AS eligible, NULL AS reason UNION ALL SELECT 'mlx', FALSE, FALSE, FALSE, 'float64_unsupported_on_gpu, 0'",
-        "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json"],
-        "executed_at": "2026-08-24T16:30:00Z"
+        "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json", ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html"],
+        "executed_at": "2026-08-24T16:25:49Z"
       }
     }
   ],
