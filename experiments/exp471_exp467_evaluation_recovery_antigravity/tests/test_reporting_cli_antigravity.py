@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 import io
 import json
+import multiprocessing
 import os
 from pathlib import Path
 import runpy
@@ -14,6 +16,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+import warnings
 from unittest import mock
 
 from scratch import (
@@ -128,6 +131,16 @@ def _artifact_antigravity(base: Path):
     authority = _authority_antigravity()
     session = _session_antigravity(authority)
     cache = _publish_cache_antigravity(cache_root, authority)
+    worker = _worker_provenance_antigravity()
+    (cache_root / "score_preparation_benchmark_antigravity.json").write_bytes(
+        canonical_json_bytes_exp471_antigravity(worker["benchmark_decision"])
+    )
+    for event in worker["execution_decision"]["events"]:
+        sequence = event["sequence"]
+        (
+            cache_root
+            / f"score_preparation_execution_event_{sequence:06d}_antigravity.json"
+        ).write_bytes(canonical_json_bytes_exp471_antigravity(event))
     with ExitStack() as stack:
         for patcher in _evaluation_patches_antigravity(
             cache_root, evaluation_root
@@ -159,16 +172,59 @@ def _rehash_report_leaf_antigravity(
     marker_path.write_bytes(canonical_json_bytes_exp471_antigravity(marker))
 
 
+def _independent_report_contender_antigravity(
+    artifact,
+    report_root: str,
+    task5_root: str,
+    worker: Mapping[str, object],
+    result_queue,
+    ready,
+    release,
+    hold_lock: bool,
+) -> None:
+    """Run one literal-fixture publisher in a distinct OS process."""
+
+    reporting._TASK5_SCORE_CACHE_ROOT_ANTIGRAVITY = Path(task5_root)
+
+    def renderer(frozen, root):
+        ready.set()
+        if not release.wait(timeout=10):
+            raise RuntimeError("public process release timeout antigravity")
+        return reporting.write_exp450_report_antigravity(frozen, root)
+
+    try:
+        authority = reporting.write_exp471_report_antigravity(
+            artifact,
+            Path(report_root),
+            worker_provenance=worker,
+            renderer=renderer if hold_lock else None,
+        )
+    except Exception as error:
+        result_queue.put(("error", type(error).__name__, str(error)))
+    else:
+        result_queue.put(("success", authority.report_manifest_sha256))
+
+
 class ReportingTestsAntigravity(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(
             prefix="exp471_reporting_cli_antigravity_"
         )
         self.base = Path(self.temporary.name).resolve()
-        self.artifact = _artifact_antigravity(self.base / "artifact_antigravity")
+        self.artifact_base = self.base / "artifact_antigravity"
+        self.artifact = _artifact_antigravity(self.artifact_base)
+        self.task5_root = self.artifact_base / "score_cache_antigravity"
+        self.task5_root_patch = mock.patch.object(
+            reporting,
+            "_TASK5_SCORE_CACHE_ROOT_ANTIGRAVITY",
+            self.task5_root,
+            create=True,
+        )
+        self.task5_root_patch.start()
         self.report_root = self.base / "report_antigravity"
 
     def tearDown(self) -> None:
+        self.task5_root_patch.stop()
         self.temporary.cleanup()
 
     def test_two_argument_public_interface_reads_durable_worker_provenance(self) -> None:
@@ -178,7 +234,12 @@ class ReportingTestsAntigravity(unittest.TestCase):
             score_cache_antigravity,
         )
 
-        status = _worker_provenance_antigravity()
+        status = {
+            **_worker_provenance_antigravity(),
+            "complete": True,
+            "manifest_sha256": self.artifact.cache_manifest_sha256,
+            "total_shards": self.artifact.payload["score_cache"]["total_shards"],
+        }
         with mock.patch.object(
             score_cache_antigravity,
             "status_score_cache_antigravity",
@@ -188,7 +249,7 @@ class ReportingTestsAntigravity(unittest.TestCase):
                 self.artifact, self.report_root
             )
         self.assertRegex(authority.report_manifest_sha256, r"^[0-9a-f]{64}$")
-        self.assertEqual(worker_status.call_count, 1)
+        self.assertEqual(worker_status.call_count, 3)
 
     def test_report_closes_all_ten_methods_axes_tables_and_artifact_map(self) -> None:
         """Missing methods, swapped curve axes, or an unbound leaf must fail."""
@@ -551,6 +612,173 @@ class ReportingTestsAntigravity(unittest.TestCase):
         self.assertEqual(quarantine.read_bytes(), foreign)
         self.assertTrue(owned.is_file())
 
+    def test_postcheck_stage_substitution_never_reaches_canonical_root(self) -> None:
+        """A stage substituted after the last check must remain non-authoritative."""
+
+        saved = self.base / "owned_postcheck_stage_saved_antigravity"
+        foreign = b"foreign-postcheck-stage-public-literal-antigravity\n"
+        swapped = False
+
+        def swap_after_last_check(scope, parent, name):
+            nonlocal swapped
+            if scope == "staging before rename" and not swapped:
+                swapped = True
+                stage = self.base / name
+                stage.rename(saved)
+                stage.mkdir()
+                (stage / "foreign_antigravity.txt").write_bytes(foreign)
+
+        with mock.patch.object(
+            reporting,
+            "_postcheck_namespace_hook_antigravity",
+            side_effect=swap_after_last_check,
+        ):
+            with self.assertRaisesRegex(ValueError, "staging|identity|claim"):
+                reporting.write_exp471_report_antigravity(
+                    self.artifact,
+                    self.report_root,
+                    worker_provenance=_worker_provenance_antigravity(),
+                )
+        self.assertFalse(os.path.lexists(self.report_root))
+        self.assertTrue(saved.is_dir())
+        self.assertTrue(
+            any(
+                path.is_file() and path.read_bytes() == foreign
+                for path in self.base.rglob("*")
+            )
+        )
+
+    def test_postcheck_lock_release_substitution_is_claimed_and_preserved(self) -> None:
+        """A foreign lock substituted after the last check must not be unlinked."""
+
+        token = reporting._acquire_report_lock_antigravity(self.report_root)
+        owned = self.base / "owned_postcheck_lock_saved_antigravity.json"
+        foreign = b"foreign-postcheck-lock-public-literal-antigravity\n"
+        swapped = False
+
+        def swap_after_last_check(scope, parent, name):
+            nonlocal swapped
+            if scope == "lock release" and not swapped:
+                swapped = True
+                token.path.rename(owned)
+                token.path.write_bytes(foreign)
+
+        with mock.patch.object(
+            reporting,
+            "_postcheck_namespace_hook_antigravity",
+            side_effect=swap_after_last_check,
+        ):
+            with self.assertRaisesRegex(ValueError, "lock.*identity|claim"):
+                reporting._release_report_lock_antigravity(token)
+        self.assertEqual(owned.read_bytes(), token.payload)
+        self.assertTrue(
+            any(
+                path.is_file() and path.read_bytes() == foreign
+                for path in self.base.rglob("*")
+            )
+        )
+
+    def test_postcheck_dead_quarantine_substitution_is_claimed_and_preserved(self) -> None:
+        """A foreign dead-lock quarantine replacement must not be unlinked."""
+
+        lock = reporting._report_lock_path_antigravity(self.report_root)
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_bytes(
+            canonical_json_bytes_exp471_antigravity(
+                reporting._lock_record_antigravity(
+                    99_999_999, "dead-postcheck-public-process-antigravity"
+                )
+            )
+        )
+        value, raw, opened = reporting._read_lock_antigravity(lock)
+        parent_descriptor, parent = reporting._open_directory_anchor_antigravity(
+            self.base
+        )
+        owned = self.base / "owned_postcheck_dead_saved_antigravity.json"
+        foreign = b"foreign-postcheck-dead-public-literal-antigravity\n"
+        swapped = False
+
+        def swap_after_last_check(scope, parent_fd, name):
+            nonlocal swapped
+            if scope == "dead lock quarantine" and not swapped:
+                swapped = True
+                quarantine = self.base / name
+                quarantine.rename(owned)
+                quarantine.write_bytes(foreign)
+
+        try:
+            with mock.patch.object(
+                reporting,
+                "_postcheck_namespace_hook_antigravity",
+                side_effect=swap_after_last_check,
+            ):
+                with self.assertRaisesRegex(ValueError, "dead lock.*identity|claim"):
+                    reporting._recover_dead_lock_antigravity(
+                        lock,
+                        value,
+                        raw,
+                        opened,
+                        parent_descriptor,
+                        parent.st_dev,
+                        parent.st_ino,
+                    )
+        finally:
+            os.close(parent_descriptor)
+        self.assertEqual(owned.read_bytes(), raw)
+        self.assertTrue(
+            any(
+                path.is_file() and path.read_bytes() == foreign
+                for path in self.base.rglob("*")
+            )
+        )
+
+    def test_poststat_recursive_leaf_substitution_is_claimed_and_preserved(self) -> None:
+        """Recursive cleanup must never unlink a leaf substituted after stat."""
+
+        token = reporting._acquire_report_lock_antigravity(self.report_root)
+        stage = reporting._create_stage_token_antigravity(self.report_root, token)
+        leaf = stage.path / "owned_leaf_antigravity.txt"
+        owned = self.base / "owned_poststat_leaf_saved_antigravity.txt"
+        original_payload = b"owned-poststat-leaf-public-literal-antigravity\n"
+        foreign = b"foreign-poststat-leaf-public-literal-antigravity\n"
+        leaf.write_bytes(original_payload)
+        swapped = False
+
+        def swap_after_stat(scope, parent_descriptor, name):
+            nonlocal swapped
+            if (
+                name == leaf.name
+                and parent_descriptor == stage.descriptor
+                and scope == "staging regular child"
+                and not swapped
+            ):
+                swapped = True
+                leaf.rename(owned)
+                leaf.write_bytes(foreign)
+
+        cleanup_error = None
+        try:
+            with mock.patch.object(
+                reporting,
+                "_postcheck_namespace_hook_antigravity",
+                side_effect=swap_after_stat,
+            ):
+                try:
+                    reporting._cleanup_stage_antigravity(stage, token)
+                except ValueError as error:
+                    cleanup_error = error
+        finally:
+            os.close(stage.descriptor)
+            reporting._release_report_lock_antigravity(token)
+        self.assertIsNotNone(cleanup_error)
+        self.assertEqual(owned.read_bytes(), original_payload)
+        self.assertTrue(
+            any(
+                path.is_file() and path.read_bytes() == foreign
+                for path in self.base.rglob("*")
+            )
+        )
+
     def test_parent_replacement_fails_before_publication_or_cleanup(self) -> None:
         """A replaced parent must strand owned objects instead of mutating the new parent."""
 
@@ -652,6 +880,59 @@ class ReportingTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "provenance"):
                 second.result(timeout=10)
         self.assertEqual(render_calls, ["render"])
+
+    def test_independent_process_lock_contention_has_one_safe_owner(self) -> None:
+        """Two OS processes must leave one valid report and no unsafe lock reuse."""
+
+        context = multiprocessing.get_context("fork")
+        results = context.Queue()
+        ready = context.Event()
+        release = context.Event()
+        arguments = (
+            self.artifact,
+            str(self.report_root),
+            str(self.task5_root),
+            _worker_provenance_antigravity(),
+            results,
+            ready,
+            release,
+        )
+        owner = context.Process(
+            target=_independent_report_contender_antigravity,
+            args=(*arguments, True),
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            owner.start()
+        self.assertTrue(ready.wait(timeout=10))
+        contender = context.Process(
+            target=_independent_report_contender_antigravity,
+            args=(*arguments, False),
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            contender.start()
+        contender.join(timeout=10)
+        self.assertFalse(contender.is_alive())
+        release.set()
+        owner.join(timeout=15)
+        self.assertFalse(owner.is_alive())
+        self.assertEqual((owner.exitcode, contender.exitcode), (0, 0))
+        observed = [results.get(timeout=5), results.get(timeout=5)]
+        self.assertEqual(sum(row[0] == "success" for row in observed), 1)
+        self.assertEqual(sum(row[:2] == ("error", "ValueError") for row in observed), 1)
+        self.assertTrue(
+            any("active owner" in row[-1] for row in observed if row[0] == "error")
+        )
+        self.assertFalse(
+            os.path.lexists(reporting._report_lock_path_antigravity(self.report_root))
+        )
+        self.assertRegex(
+            reporting.read_exp471_report_antigravity(
+                self.artifact, self.report_root
+            ).report_manifest_sha256,
+            r"^[0-9a-f]{64}$",
+        )
 
     def test_rehashed_scientific_leaf_tampering_is_rejected(self) -> None:
         """Every frozen format must remain the exact Task 6 representation."""
@@ -768,6 +1049,36 @@ class ReportingTestsAntigravity(unittest.TestCase):
                 )
                 with self.assertRaisesRegex(ValueError, "provenance"):
                     reporting.read_exp471_report_antigravity(self.artifact, root)
+
+    def test_rehashed_valid_worker_history_substitution_is_rejected(self) -> None:
+        """A second valid history cannot replace independently durable Task 5 bytes."""
+
+        reporting.write_exp471_report_antigravity(
+            self.artifact,
+            self.report_root,
+            worker_provenance=_worker_provenance_antigravity(),
+        )
+        relative = reporting._PROVENANCE_NAME_ANTIGRAVITY
+        provenance = json.loads(
+            (self.report_root / relative).read_text(encoding="utf-8")
+        )
+        substituted = _worker_provenance_antigravity(single_worker_seconds=0.125)
+        self.assertNotEqual(
+            substituted["benchmark_decision"]["decision_sha256"],
+            provenance["worker_provenance"]["benchmark_decision"][
+                "decision_sha256"
+            ],
+        )
+        provenance["worker_provenance"] = substituted
+        _rehash_report_leaf_antigravity(
+            self.report_root,
+            relative,
+            canonical_json_bytes_exp471_antigravity(provenance),
+        )
+        with self.assertRaisesRegex(ValueError, "durable.*worker|worker.*authority"):
+            reporting.read_exp471_report_antigravity(
+                self.artifact, self.report_root
+            )
 
     def test_rehashed_method_metric_and_coordinate_mutations_are_rejected(self) -> None:
         """Order, numeric metrics, and paired curve coordinates share one authority."""
@@ -923,6 +1234,185 @@ class _LifecycleRuntimeAntigravity:
 
 
 class CliTestsAntigravity(unittest.TestCase):
+    def test_progress_read_rejects_root_swap_after_descriptor_read(self) -> None:
+        """A read from a detached root descriptor must never return authority."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_progress_read_root_swap_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve() / "root_antigravity"
+            root.mkdir()
+            artifact = root / "cache_antigravity"
+            saved = root.with_name("saved_root_antigravity")
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
+                callback = cli._progress_callback_antigravity(
+                    "score-cache", artifact
+                )
+                callback(
+                    {
+                        "durable_completed": 1,
+                        "total": 11_170,
+                        "status": "durable",
+                    }
+                )
+                original_read = cli._read_all_descriptor_antigravity
+                swapped = False
+
+                def swap_after_read(descriptor):
+                    nonlocal swapped
+                    raw = original_read(descriptor)
+                    if not swapped:
+                        swapped = True
+                        root.rename(saved)
+                        root.mkdir()
+                    return raw
+
+                with mock.patch.object(
+                    cli,
+                    "_read_all_descriptor_antigravity",
+                    side_effect=swap_after_read,
+                ):
+                    with self.assertRaisesRegex(ValueError, "progress root changed"):
+                        cli._latest_progress_antigravity()
+            self.assertFalse((root / cli._PROGRESS_NAME_ANTIGRAVITY).exists())
+            self.assertTrue((saved / cli._PROGRESS_NAME_ANTIGRAVITY).is_file())
+
+    def test_progress_append_rejects_root_swap_after_last_log_check(self) -> None:
+        """Append must fail before writing through a detached root descriptor."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_progress_append_root_swap_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve() / "root_antigravity"
+            root.mkdir()
+            artifact = root / "cache_antigravity"
+            saved = root.with_name("saved_root_antigravity")
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
+                callback = cli._progress_callback_antigravity(
+                    "score-cache", artifact
+                )
+                callback(
+                    {
+                        "durable_completed": 1,
+                        "total": 11_170,
+                        "status": "durable",
+                    }
+                )
+                original_identity = cli._progress_log_identity_antigravity
+                checks = 0
+
+                def swap_after_last_prewrite_check(root_descriptor, descriptor):
+                    nonlocal checks
+                    result = original_identity(root_descriptor, descriptor)
+                    checks += 1
+                    if checks == 2:
+                        root.rename(saved)
+                        root.mkdir()
+                    return result
+
+                with mock.patch.object(
+                    cli,
+                    "_progress_log_identity_antigravity",
+                    side_effect=swap_after_last_prewrite_check,
+                ):
+                    with self.assertRaisesRegex(ValueError, "progress root changed"):
+                        callback(
+                            {
+                                "durable_completed": 2,
+                                "total": 11_170,
+                                "status": "durable",
+                            }
+                        )
+            self.assertFalse((root / cli._PROGRESS_NAME_ANTIGRAVITY).exists())
+            detached_records = (
+                saved / cli._PROGRESS_NAME_ANTIGRAVITY
+            ).read_bytes().splitlines()
+            self.assertEqual(len(detached_records), 1)
+
+    def test_progress_rejects_stage_false_totals_and_artifact_paths(self) -> None:
+        """Canonical syntax cannot self-assert a false stage or durable artifact."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_progress_stage_contract_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve()
+            path = root / cli._PROGRESS_NAME_ANTIGRAVITY
+            artifact = root / "cache_antigravity"
+            cases = (
+                ("report", 1, 2, root / "foreign_report_antigravity"),
+                ("score-cache", 1, 10, root / "foreign_cache_antigravity"),
+                ("evaluation", 10, 10, root / "foreign_eval_antigravity.json"),
+            )
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
+                for stage, completed, total, artifact in cases:
+                    with self.subTest(stage=stage, artifact=artifact.name):
+                        record = {
+                            "schema": "exp471-progress-antigravity.v1",
+                            "stage": stage,
+                            "durable_completed": completed,
+                            "total": total,
+                            "failures": 0,
+                            "attempts": 1,
+                            "remaining": total - completed,
+                            "elapsed_seconds": 0.0,
+                            "eta_seconds": 0.0 if completed == total else None,
+                            "timestamp_utc": "2026-08-25T00:00:00+00:00",
+                            "artifact_path": str(artifact),
+                            "root_path": str(root),
+                        }
+                        path.write_bytes(
+                            canonical_json_bytes_exp471_antigravity(record)
+                        )
+                        with self.assertRaisesRegex(
+                            ValueError, "progress (stage|path|total|terminal)"
+                        ):
+                            cli._latest_progress_antigravity()
+
+    def test_production_status_on_fresh_root_is_empty_and_observational(self) -> None:
+        """Production status before the first run must create no durable object."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_fresh_status_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve() / "absent_root_antigravity"
+            score = root / "score_cache_antigravity"
+            evaluation_root = root / "evaluation_antigravity"
+            report_root = root / "report_antigravity"
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with ExitStack() as stack:
+                for name, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", report_root),
+                ):
+                    stack.enter_context(mock.patch.object(cli, name, value))
+                result = main_antigravity(
+                    ["status"], stdout=stdout, stderr=stderr
+                )
+            self.assertEqual(result, 0)
+            self.assertEqual(stderr.getvalue(), "")
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["durable_completed"], 0)
+            self.assertEqual(payload["latest_progress"], None)
+            self.assertEqual(payload["failures"], 0)
+            self.assertFalse(os.path.lexists(root))
+            self.assertFalse(os.path.lexists(score))
+            self.assertFalse(os.path.lexists(evaluation_root))
+            self.assertFalse(os.path.lexists(report_root))
+
     def test_codemap_contains_every_tracked_exp471_operator_entrypoint(self) -> None:
         """A tracked Exp471 launcher must be fingerprinted, mapped, and linked to CLI."""
 
@@ -981,13 +1471,18 @@ class CliTestsAntigravity(unittest.TestCase):
         ) as directory:
             root = Path(directory).resolve()
             path = root / cli._PROGRESS_NAME_ANTIGRAVITY
+            artifact = root / "cache_antigravity"
             invalid = (
                 b'{ "schema": "foreign", "secret": "/public/literal" }\n',
                 b'{"schema":"foreign","secret":"public-literal-antigravity"}\n',
                 b'{"schema":"exp471-progress-antigravity.v1","eta_seconds":NaN}\n',
                 b'{"schema":"exp471-progress-antigravity.v1"',
             )
-            with mock.patch.object(cli, "EXP471_ROOT_ANTIGRAVITY", root):
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
                 for raw in invalid:
                     with self.subTest(raw=raw):
                         path.write_bytes(raw)
@@ -998,12 +1493,12 @@ class CliTestsAntigravity(unittest.TestCase):
                             cli._latest_progress_antigravity()
                 path.unlink()
                 callback = cli._progress_callback_antigravity(
-                    "score-cache", root / "cache_antigravity"
+                    "score-cache", artifact
                 )
                 callback(
                     {
                         "durable_completed": 1,
-                        "total": 10,
+                        "total": 11_170,
                         "status": "durable",
                     }
                 )
@@ -1022,19 +1517,24 @@ class CliTestsAntigravity(unittest.TestCase):
             root = Path(directory).resolve()
             path = root / cli._PROGRESS_NAME_ANTIGRAVITY
             target = root / "foreign_progress_target_antigravity.jsonl"
+            artifact = root / "cache_antigravity"
             target.write_bytes(b"foreign-public-literal-antigravity\n")
-            with mock.patch.object(cli, "EXP471_ROOT_ANTIGRAVITY", root):
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
                 os.link(target, path)
                 with self.assertRaisesRegex(ValueError, "progress log.*unsafe"):
                     cli._latest_progress_antigravity()
                 callback = cli._progress_callback_antigravity(
-                    "score-cache", root / "cache_antigravity"
+                    "score-cache", artifact
                 )
                 with self.assertRaisesRegex(ValueError, "progress log.*unsafe"):
                     callback(
                         {
                             "durable_completed": 1,
-                            "total": 10,
+                            "total": 11_170,
                             "status": "durable",
                         }
                     )
@@ -1045,7 +1545,7 @@ class CliTestsAntigravity(unittest.TestCase):
                 path.unlink()
 
                 callback = cli._progress_callback_antigravity(
-                    "score-cache", root / "cache_antigravity"
+                    "score-cache", artifact
                 )
                 original_flock = cli.fcntl.flock
                 saved = root / "owned_progress_saved_antigravity.jsonl"
@@ -1067,7 +1567,7 @@ class CliTestsAntigravity(unittest.TestCase):
                         callback(
                             {
                                 "durable_completed": 1,
-                                "total": 10,
+                                "total": 11_170,
                                 "status": "durable",
                             }
                         )
@@ -1083,12 +1583,16 @@ class CliTestsAntigravity(unittest.TestCase):
         ) as directory:
             root = Path(directory).resolve()
             artifact = root / "cache_antigravity"
-            with mock.patch.object(cli, "EXP471_ROOT_ANTIGRAVITY", root):
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
                 first = cli._progress_callback_antigravity("score-cache", artifact)
                 first(
                     {
                         "durable_completed": 0,
-                        "total": 10,
+                        "total": 11_170,
                         "status": "failed",
                     }
                 )
@@ -1101,14 +1605,14 @@ class CliTestsAntigravity(unittest.TestCase):
                 resumed(
                     {
                         "durable_completed": 1,
-                        "total": 10,
+                        "total": 11_170,
                         "status": "durable",
                     }
                 )
                 latest = cli._latest_progress_antigravity()
                 self.assertEqual(latest["attempts"], 2)
                 self.assertEqual(latest["failures"], 1)
-                self.assertEqual(latest["remaining"], 9)
+                self.assertEqual(latest["remaining"], 11_169)
                 self.assertNotIn("secret", latest)
 
     def test_concurrent_progress_appends_are_canonical_and_cumulative(self) -> None:
@@ -1119,7 +1623,11 @@ class CliTestsAntigravity(unittest.TestCase):
         ) as directory:
             root = Path(directory).resolve()
             artifact = root / "cache_antigravity"
-            with mock.patch.object(cli, "EXP471_ROOT_ANTIGRAVITY", root):
+            with mock.patch.object(
+                cli, "EXP471_ROOT_ANTIGRAVITY", root
+            ), mock.patch.object(
+                cli, "EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", artifact
+            ):
                 callbacks = [
                     cli._progress_callback_antigravity("score-cache", artifact)
                     for _ in range(8)
@@ -1130,7 +1638,7 @@ class CliTestsAntigravity(unittest.TestCase):
                             callback,
                             {
                                 "durable_completed": 1,
-                                "total": 10,
+                                "total": 11_170,
                                 "status": "durable",
                             },
                         )

@@ -29,7 +29,10 @@ from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigrav
     write_exp450_report_antigravity,
 )
 
-from .config_antigravity import METHOD_ORDER_ANTIGRAVITY
+from .config_antigravity import (
+    EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY,
+    METHOD_ORDER_ANTIGRAVITY,
+)
 from .contracts_antigravity import (
     Exp471EvaluationArtifactAntigravity,
     Exp471ReportAuthorityAntigravity,
@@ -99,6 +102,7 @@ class _StageTokenAntigravity:
 
 _LOCAL_PUBLICATION_CONDITION_ANTIGRAVITY = threading.Condition()
 _LOCAL_PUBLICATION_ROOTS_ANTIGRAVITY: set[Path] = set()
+_TASK5_SCORE_CACHE_ROOT_ANTIGRAVITY = Path(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
 
 
 def _repository_root_antigravity() -> Path:
@@ -370,6 +374,93 @@ def _atomic_rename_noreplace_antigravity(source: Path, destination: Path) -> Non
         os.close(descriptor)
 
 
+def _postcheck_namespace_hook_antigravity(
+    scope: str, parent_descriptor: int, name: str
+) -> None:
+    """Deterministic test seam at a checked-name/namespace-operation boundary."""
+
+    del scope, parent_descriptor, name
+
+
+def _claim_entry_antigravity(
+    parent_descriptor: int,
+    source_name: str,
+    expected_device: int,
+    expected_inode: int,
+    scope: str,
+) -> tuple[str, int, os.stat_result]:
+    """Move a mutable candidate to a unique non-authoritative name and reopen it."""
+
+    for _ in range(128):
+        claim_name = f".claim_{secrets.token_hex(12)}_antigravity"
+        try:
+            _atomic_rename_noreplace_at_antigravity(
+                parent_descriptor, source_name, claim_name
+            )
+        except FileExistsError:
+            continue
+        except FileNotFoundError as error:
+            raise ValueError(f"Exp471 report {scope} identity changed") from error
+        break
+    else:
+        raise FileExistsError("Exp471 report claim name space is exhausted")
+
+    try:
+        linked = _entry_stat_antigravity(parent_descriptor, claim_name)
+    except FileNotFoundError as error:
+        raise ValueError(f"Exp471 report {scope} claim disappeared") from error
+    if linked.st_dev != expected_device or linked.st_ino != expected_inode:
+        raise ValueError(f"Exp471 report {scope} claim identity changed")
+    if not (stat.S_ISREG(linked.st_mode) or stat.S_ISDIR(linked.st_mode)):
+        raise ValueError(f"Exp471 report {scope} claim is unsafe")
+    flags = os.O_RDONLY
+    if stat.S_ISDIR(linked.st_mode) and hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(claim_name, flags, dir_fd=parent_descriptor)
+    except OSError as error:
+        raise ValueError(f"Exp471 report {scope} claim is unsafe") from error
+    opened = os.fstat(descriptor)
+    if (
+        linked.st_dev != expected_device
+        or linked.st_ino != expected_inode
+        or opened.st_dev != expected_device
+        or opened.st_ino != expected_inode
+        or stat.S_IFMT(linked.st_mode) != stat.S_IFMT(opened.st_mode)
+    ):
+        os.close(descriptor)
+        raise ValueError(f"Exp471 report {scope} claim identity changed")
+    return claim_name, descriptor, opened
+
+
+def _delete_claimed_entry_antigravity(
+    parent_descriptor: int,
+    claim_name: str,
+    descriptor: int,
+    expected_device: int,
+    expected_inode: int,
+    scope: str,
+) -> None:
+    """Delete only an entry already moved, reopened, and bound to its descriptor."""
+
+    opened = os.fstat(descriptor)
+    linked = _require_entry_identity_antigravity(
+        parent_descriptor,
+        claim_name,
+        expected_device,
+        expected_inode,
+        f"{scope} owned claim",
+    )
+    if opened.st_dev != expected_device or opened.st_ino != expected_inode:
+        raise ValueError(f"Exp471 report {scope} owned claim identity changed")
+    if stat.S_ISDIR(linked.st_mode):
+        os.rmdir(claim_name, dir_fd=parent_descriptor)
+    else:
+        os.unlink(claim_name, dir_fd=parent_descriptor)
+
+
 def _recover_dead_lock_antigravity(
     path: Path,
     value: Mapping[str, object],
@@ -393,6 +484,9 @@ def _recover_dead_lock_antigravity(
         opened.st_dev,
         opened.st_ino,
         "lock during recovery",
+    )
+    _postcheck_namespace_hook_antigravity(
+        "dead lock initial claim", parent_descriptor, path.name
     )
     quarantine = path.with_name(
         f".{path.name}.{secrets.token_hex(12)}.dead_antigravity"
@@ -419,7 +513,36 @@ def _recover_dead_lock_antigravity(
             opened.st_ino,
             "dead lock quarantine",
         )
-        os.unlink(quarantine.name, dir_fd=parent_descriptor)
+        _postcheck_namespace_hook_antigravity(
+            "dead lock quarantine", parent_descriptor, quarantine.name
+        )
+        claim_name, claim_descriptor, claim_opened = _claim_entry_antigravity(
+            parent_descriptor,
+            quarantine.name,
+            opened.st_dev,
+            opened.st_ino,
+            "dead lock quarantine",
+        )
+        try:
+            claim_path = path.parent / claim_name
+            claimed_value, claimed_raw, claimed = _read_lock_antigravity(claim_path)
+            if (
+                claim_opened.st_dev != claimed.st_dev
+                or claim_opened.st_ino != claimed.st_ino
+                or claimed_raw != raw
+                or claimed_value != value
+            ):
+                raise ValueError("Exp471 report dead lock claim identity changed")
+            _delete_claimed_entry_antigravity(
+                parent_descriptor,
+                claim_name,
+                claim_descriptor,
+                opened.st_dev,
+                opened.st_ino,
+                "dead lock quarantine",
+            )
+        finally:
+            os.close(claim_descriptor)
         os.fsync(parent_descriptor)
     except Exception:
         # A record whose identity changed is preserved under quarantine.
@@ -476,16 +599,37 @@ def _acquire_report_lock_antigravity(root: Path) -> _LockTokenAntigravity:
             )
             os.fsync(parent_descriptor)
         except Exception:
+            retained = os.fstat(descriptor)
             os.close(descriptor)
             try:
                 _require_entry_identity_antigravity(
                     parent_descriptor,
                     path.name,
-                    opened.st_dev,
-                    opened.st_ino,
+                    retained.st_dev,
+                    retained.st_ino,
                     "failed lock",
                 )
-                os.unlink(path.name, dir_fd=parent_descriptor)
+                _postcheck_namespace_hook_antigravity(
+                    "failed lock", parent_descriptor, path.name
+                )
+                claim_name, claim_descriptor, _ = _claim_entry_antigravity(
+                    parent_descriptor,
+                    path.name,
+                    retained.st_dev,
+                    retained.st_ino,
+                    "failed lock",
+                )
+                try:
+                    _delete_claimed_entry_antigravity(
+                        parent_descriptor,
+                        claim_name,
+                        claim_descriptor,
+                        retained.st_dev,
+                        retained.st_ino,
+                        "failed lock",
+                    )
+                finally:
+                    os.close(claim_descriptor)
             except (NameError, OSError, ValueError):
                 pass
             raise
@@ -529,7 +673,36 @@ def _release_report_lock_antigravity(token: _LockTokenAntigravity) -> None:
             token.inode,
             "lock release",
         )
-        os.unlink(token.path.name, dir_fd=token.parent_descriptor)
+        _postcheck_namespace_hook_antigravity(
+            "lock release", token.parent_descriptor, token.path.name
+        )
+        claim_name, claim_descriptor, claim_opened = _claim_entry_antigravity(
+            token.parent_descriptor,
+            token.path.name,
+            token.device,
+            token.inode,
+            "lock release",
+        )
+        try:
+            claim_path = token.parent_path / claim_name
+            claimed_value, claimed_raw, claimed = _read_lock_antigravity(claim_path)
+            del claimed_value
+            if (
+                claim_opened.st_dev != claimed.st_dev
+                or claim_opened.st_ino != claimed.st_ino
+                or claimed_raw != token.payload
+            ):
+                raise ValueError("Exp471 report lock claim identity changed")
+            _delete_claimed_entry_antigravity(
+                token.parent_descriptor,
+                claim_name,
+                claim_descriptor,
+                token.device,
+                token.inode,
+                "lock release",
+            )
+        finally:
+            os.close(claim_descriptor)
         os.fsync(token.parent_descriptor)
     except FileNotFoundError:
         return
@@ -625,9 +798,39 @@ def _cleanup_stage_antigravity(
                 entry.name, dir_fd=descriptor, follow_symlinks=False
             )
             if stat.S_ISREG(details.st_mode):
-                os.unlink(entry.name, dir_fd=descriptor)
+                _postcheck_namespace_hook_antigravity(
+                    "staging regular child", descriptor, entry.name
+                )
+                claim_name, claim_descriptor, _ = _claim_entry_antigravity(
+                    descriptor,
+                    entry.name,
+                    details.st_dev,
+                    details.st_ino,
+                    "staging regular child",
+                )
+                try:
+                    _delete_claimed_entry_antigravity(
+                        descriptor,
+                        claim_name,
+                        claim_descriptor,
+                        details.st_dev,
+                        details.st_ino,
+                        "staging regular child",
+                    )
+                finally:
+                    os.close(claim_descriptor)
                 continue
             if not stat.S_ISDIR(details.st_mode):
+                _postcheck_namespace_hook_antigravity(
+                    "staging unsafe child", descriptor, entry.name
+                )
+                _claim_entry_antigravity(
+                    descriptor,
+                    entry.name,
+                    details.st_dev,
+                    details.st_ino,
+                    "staging unsafe child",
+                )
                 raise ValueError("Exp471 report staging cleanup found an unsafe entry")
             flags = os.O_RDONLY
             if hasattr(os, "O_DIRECTORY"):
@@ -643,14 +846,45 @@ def _cleanup_stage_antigravity(
                     )
                 clear_directory(child)
                 os.fsync(child)
+                _require_entry_identity_antigravity(
+                    descriptor,
+                    entry.name,
+                    details.st_dev,
+                    details.st_ino,
+                    "staging directory child",
+                )
+                _postcheck_namespace_hook_antigravity(
+                    "staging directory child", descriptor, entry.name
+                )
+                claim_name, claim_descriptor, _ = _claim_entry_antigravity(
+                    descriptor,
+                    entry.name,
+                    details.st_dev,
+                    details.st_ino,
+                    "staging directory child",
+                )
+                try:
+                    claimed = os.fstat(claim_descriptor)
+                    retained = os.fstat(child)
+                    if (
+                        claimed.st_dev != retained.st_dev
+                        or claimed.st_ino != retained.st_ino
+                    ):
+                        raise ValueError(
+                            "Exp471 report staging child identity changed"
+                        )
+                    _delete_claimed_entry_antigravity(
+                        descriptor,
+                        claim_name,
+                        claim_descriptor,
+                        details.st_dev,
+                        details.st_ino,
+                        "staging directory child",
+                    )
+                finally:
+                    os.close(claim_descriptor)
             finally:
                 os.close(child)
-            current = os.stat(
-                entry.name, dir_fd=descriptor, follow_symlinks=False
-            )
-            if current.st_dev != details.st_dev or current.st_ino != details.st_ino:
-                raise ValueError("Exp471 report staging child identity changed")
-            os.rmdir(entry.name, dir_fd=descriptor)
 
     clear_directory(stage.descriptor)
     os.fsync(stage.descriptor)
@@ -661,7 +895,31 @@ def _cleanup_stage_antigravity(
         stage.inode,
         "staging cleanup",
     )
-    os.rmdir(stage.path.name, dir_fd=token.parent_descriptor)
+    _postcheck_namespace_hook_antigravity(
+        "staging cleanup", token.parent_descriptor, stage.path.name
+    )
+    claim_name, claim_descriptor, _ = _claim_entry_antigravity(
+        token.parent_descriptor,
+        stage.path.name,
+        stage.device,
+        stage.inode,
+        "staging cleanup",
+    )
+    try:
+        claimed = os.fstat(claim_descriptor)
+        retained = os.fstat(stage.descriptor)
+        if claimed.st_dev != retained.st_dev or claimed.st_ino != retained.st_ino:
+            raise ValueError("Exp471 report staging cleanup identity changed")
+        _delete_claimed_entry_antigravity(
+            token.parent_descriptor,
+            claim_name,
+            claim_descriptor,
+            stage.device,
+            stage.inode,
+            "staging cleanup",
+        )
+    finally:
+        os.close(claim_descriptor)
     os.fsync(token.parent_descriptor)
 
 
@@ -962,6 +1220,40 @@ def _validate_worker_provenance_antigravity(
     return plain
 
 
+def _durable_worker_provenance_antigravity(
+    artifact: Exp471EvaluationArtifactAntigravity,
+) -> Mapping[str, object]:
+    """Reopen Task 5 benchmark/event authority independently of report bytes."""
+
+    from .score_cache_antigravity import status_score_cache_antigravity
+
+    status_value = status_score_cache_antigravity(
+        _TASK5_SCORE_CACHE_ROOT_ANTIGRAVITY
+    )
+    cache = artifact.payload.get("score_cache")
+    if not isinstance(cache, Mapping):
+        raise ValueError("Exp471 durable worker authority cache binding is missing")
+    if (
+        status_value.get("complete") is not True
+        or status_value.get("manifest_sha256") != artifact.cache_manifest_sha256
+        or status_value.get("manifest_sha256") != cache.get("manifest_sha256")
+        or status_value.get("total_shards") != cache.get("total_shards")
+        or status_value.get("benchmark_decision") is None
+        or status_value.get("execution_decision") is None
+    ):
+        raise ValueError("Exp471 durable worker authority differs")
+    worker = {
+        "schema": "exp471-worker-provenance-antigravity.v1",
+        "benchmark_decision": status_value["benchmark_decision"],
+        "execution_decision": status_value["execution_decision"],
+        "detected_logical_cpus": status_value["detected_logical_cpus"],
+        "default_cpu_workers": status_value["default_cpu_workers"],
+        "inner_numerical_threads": status_value["inner_numerical_threads"],
+        "acceleration": status_value["acceleration"],
+    }
+    return _validate_worker_provenance_antigravity(worker, artifact)
+
+
 def _expected_frozen_report_leaves_antigravity(frozen: object) -> dict[str, bytes]:
     """Derive exact deterministic Exp450 bytes without rendering or publication."""
 
@@ -1135,9 +1427,12 @@ def read_exp471_report_antigravity(
                 f"Exp471 frozen report leaf semantic bytes differ: {relative}"
             )
     provenance, _ = _read_json_leaf_antigravity(root, _PROVENANCE_NAME_ANTIGRAVITY)
-    worker = _validate_worker_provenance_antigravity(
+    stored_worker = _validate_worker_provenance_antigravity(
         provenance.get("worker_provenance"), artifact
     )
+    worker = _durable_worker_provenance_antigravity(artifact)
+    if stored_worker != worker:
+        raise ValueError("Exp471 report durable worker authority differs")
     expected_provenance = _provenance_antigravity(
         artifact,
         worker,
@@ -1187,23 +1482,18 @@ def write_exp471_report_antigravity(
     """Render once, verify all leaves, and atomically publish a complete report."""
 
     frozen = reconstruct_frozen_evaluation_exp471_antigravity(artifact)
+    durable_worker = _durable_worker_provenance_antigravity(artifact)
     if worker_provenance is None:
-        from .config_antigravity import EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY
-        from .score_cache_antigravity import status_score_cache_antigravity
-
-        status = status_score_cache_antigravity(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
-        worker_provenance = {
-            "schema": "exp471-worker-provenance-antigravity.v1",
-            "benchmark_decision": status["benchmark_decision"],
-            "execution_decision": status["execution_decision"],
-            "detected_logical_cpus": status["detected_logical_cpus"],
-            "default_cpu_workers": status["default_cpu_workers"],
-            "inner_numerical_threads": status["inner_numerical_threads"],
-            "acceleration": status["acceleration"],
-        }
-    worker = _validate_worker_provenance_antigravity(
-        worker_provenance, artifact
-    )
+        worker = durable_worker
+    else:
+        supplied_worker = _validate_worker_provenance_antigravity(
+            worker_provenance, artifact
+        )
+        if supplied_worker != durable_worker:
+            raise ValueError(
+                "Exp471 supplied worker provenance differs from durable authority"
+            )
+        worker = durable_worker
     root = Path(root)
     _require_safe_parent_antigravity(root)
     if os.path.lexists(root):
@@ -1306,9 +1596,34 @@ def write_exp471_report_antigravity(
             stage.inode,
             "staging before rename",
         )
+        _postcheck_namespace_hook_antigravity(
+            "staging before rename", token.parent_descriptor, stage.path.name
+        )
         try:
+            claim_name, claim_descriptor, claim_opened = _claim_entry_antigravity(
+                token.parent_descriptor,
+                stage.path.name,
+                stage.device,
+                stage.inode,
+                "staging before rename",
+            )
+            try:
+                retained = os.fstat(stage.descriptor)
+                if (
+                    claim_opened.st_dev != retained.st_dev
+                    or claim_opened.st_ino != retained.st_ino
+                ):
+                    raise ValueError("Exp471 report staging claim identity changed")
+            finally:
+                os.close(claim_descriptor)
+            stage = _StageTokenAntigravity(
+                token.parent_path / claim_name,
+                stage.descriptor,
+                stage.device,
+                stage.inode,
+            )
             _atomic_rename_noreplace_at_antigravity(
-                token.parent_descriptor, stage.path.name, root.name
+                token.parent_descriptor, claim_name, root.name
             )
             _require_entry_identity_antigravity(
                 token.parent_descriptor,
