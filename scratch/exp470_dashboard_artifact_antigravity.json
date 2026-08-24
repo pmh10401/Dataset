@@ -155,7 +155,7 @@
           "engine": "duckdb",
           "language": "sql",
           "description": "Exp470 설계서에서 단일 후보, Numba 필수, 10-fold 계획과 실행 전 상태를 재현한다.",
-          "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_folds, 0 AS private_runs, 0 AS official_runs, 'design_approved_waiting_written_spec_review' AS status",
+          "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_folds, 0 AS private_runs, 0 AS official_runs, 'implementation_plan_complete_waiting_execution_choice' AS status",
           "tables_used": ["docs/superpowers/specs/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity-design.html"],
           "executed_at": "2026-08-24T07:00:00Z"
         }
@@ -166,7 +166,7 @@
         "id": "status_note",
         "type": "markdown",
         "sourceId": "exp470_design",
-        "body": "## 현재 상태: 설계 승인, 작성된 설계서 검토 대기\n\nExp470은 Exp468의 작은 개선이 정상 오확인과 함께 나타난 문제를 다룹니다. 새 후보는 spectral entropy 하나뿐이며, 공식 계산은 Numba로 개발합니다. NumPy는 같은 답이 나오는지 확인하는 기준 계산에만 사용합니다. 구현, private 실행, official 실행은 아직 시작하지 않았습니다."
+        "body": "## 현재 상태: 작성된 설계서와 HTML 구현 계획 완료\n\nExp470은 Exp468의 작은 개선이 정상 오확인과 함께 나타난 문제를 다룹니다. 새 후보는 spectral entropy 하나뿐입니다. DFT·entropy·LOO·rank·confirmation·C11 결합·pair count는 Numba로 계산합니다. NumPy는 기존 C0 authority와 배열 입출력에만 남고 새 점수 backend나 fallback으로 사용하지 않습니다. 구현, private 실행, official 실행은 아직 시작하지 않았습니다."
       },
       {"id": "metrics", "type": "metric-strip", "cardIds": ["baseline_pass_folds", "baseline_peak_auc", "candidate_count", "numba_requirement", "run_counts"]},
       {"id": "baseline", "type": "chart", "chartId": "exp468_period_auc", "layout": "full"},
@@ -177,12 +177,12 @@
       {
         "id": "checkboxes",
         "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp468 실패 결과와 재현성 확인</label></p><p><label><input type=\"checkbox\" checked disabled> 여러 에이전트의 아이디어 비교</label></p><p><label><input type=\"checkbox\" checked disabled> spectral entropy 단일 후보 선택</label></p><p><label><input type=\"checkbox\" checked disabled> Numba 구현 방향 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp470 전용 브랜치 분기</label></p><p><label><input type=\"checkbox\" checked disabled> HTML 설계서와 초기 대시보드 작성</label></p><p><label><input type=\"checkbox\" disabled> 작성된 HTML 설계서 사용자 검토</label></p><p><label><input type=\"checkbox\" disabled> HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" disabled> Numba 구현·parity·결정성 검증</label></p><p><label><input type=\"checkbox\" disabled> MLX 적격성 smoke</label></p><p><label><input type=\"checkbox\" disabled> private 실행 1·2와 결과 분석</label></p><p><label><input type=\"checkbox\" disabled> official 실행·TEST/FN·routing 별도 판단</label></p></section>"
+        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp468 실패 결과와 재현성 확인</label></p><p><label><input type=\"checkbox\" checked disabled> 여러 에이전트의 아이디어 비교</label></p><p><label><input type=\"checkbox\" checked disabled> spectral entropy 단일 후보 선택</label></p><p><label><input type=\"checkbox\" checked disabled> Numba 구현 방향 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp470 전용 브랜치 분기</label></p><p><label><input type=\"checkbox\" checked disabled> HTML 설계서와 초기 대시보드 작성</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 사용자 검토</label></p><p><label><input type=\"checkbox\" checked disabled> HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" disabled> Numba 구현·Python 기준 검사·결정성 검증</label></p><p><label><input type=\"checkbox\" disabled> MLX 적격성 smoke</label></p><p><label><input type=\"checkbox\" disabled> private 실행 1·2와 결과 분석</label></p><p><label><input type=\"checkbox\" disabled> official 실행·TEST/FN·routing 별도 판단</label></p></section>"
       },
       {
         "id": "next_step",
         "type": "markdown",
-        "body": "## 다음 한 단계\n\n작성된 HTML 설계서를 사용자가 검토한다. 승인 후에만 Numba 구현을 Task별 HTML 계획으로 나눈다."
+        "body": "## 다음 한 단계\n\nTask별 구현 실행 방식을 선택한다. 권장 방식은 각 Task를 별도 하위 에이전트가 구현하고 Codex가 단계마다 검토·통합하는 방식이다."
       }
     ]
   },
@@ -195,7 +195,7 @@
         {"passed_folds": 0, "required_folds": 10, "max_period_auc": 0.826530612244898, "private_runs": 2, "compared_files": 7, "byte_equal_count": 7}
       ],
       "design_summary": [
-        {"status": "design_approved_waiting_written_spec_review", "candidate_count": 1, "numba_required": 1, "planned_folds": 10, "private_runs": 0, "official_runs": 0}
+        {"status": "implementation_plan_complete_waiting_execution_choice", "candidate_count": 1, "numba_required": 1, "planned_folds": 10, "private_runs": 0, "official_runs": 0}
       ],
       "exp468_period_auc": [
         {"seed_fold":"20260721·0","method":"C0","period_auc":0.6887755102040817,"delta":0.0},{"seed_fold":"20260721·0","method":"C10","period_auc":0.6887755102040817,"delta":0.0},
@@ -222,12 +222,12 @@
         {"order": 6, "gate": "재현성", "required": "두 private root byte-identical", "easy_meaning": "같은 실험을 두 번 하면 같은 결과가 나옴"}
       ],
       "numba_contract": [
-        {"order": 1, "check": "계산 방식", "required": "길이 28 direct DFT, float64", "failure_action": "STOP"},
-        {"order": 2, "check": "NumPy 기준과 raw 차이", "required": "최대 1e-12 이하", "failure_action": "STOP"},
+        {"order": 1, "check": "계산 방식", "required": "DFT부터 C11·pair count까지 Numba, float64", "failure_action": "STOP"},
+        {"order": 2, "check": "Python math 기준과 raw 차이", "required": "작은 고정 입력에서 최대 1e-12 이하", "failure_action": "STOP"},
         {"order": 3, "check": "rank·confirmation·fixed/broken", "required": "모두 정확히 같음", "failure_action": "STOP"},
         {"order": 4, "check": "반복 결정성", "required": "두 번 같은 결과", "failure_action": "STOP"},
         {"order": 5, "check": "성능 기록", "required": "cold·warm 시간과 버전·CPU 보존", "failure_action": "기록 누락 시 STOP"},
-        {"order": 6, "check": "NumPy fallback", "required": "자동 전환 금지", "failure_action": "사용자 재승인 전 중단"}
+        {"order": 6, "check": "다른 backend fallback", "required": "자동 전환 금지", "failure_action": "사용자 재승인 전 중단"}
       ],
       "progress_checklist": [
         {"order": 1, "checked": "☑", "task": "Exp468 실패 결과와 재현성 확인", "status": "완료"},
@@ -236,9 +236,9 @@
         {"order": 4, "checked": "☑", "task": "Numba 구현 방향 승인", "status": "완료"},
         {"order": 5, "checked": "☑", "task": "Exp470 전용 브랜치 분기", "status": "완료"},
         {"order": 6, "checked": "☑", "task": "HTML 설계서와 초기 대시보드 작성", "status": "완료"},
-        {"order": 7, "checked": "☐", "task": "작성된 HTML 설계서 사용자 검토", "status": "대기"},
-        {"order": 8, "checked": "☐", "task": "HTML 구현 계획 작성", "status": "대기"},
-        {"order": 9, "checked": "☐", "task": "Numba 구현·parity·결정성 검증", "status": "대기"},
+        {"order": 7, "checked": "☑", "task": "작성된 HTML 설계서 사용자 검토", "status": "완료"},
+        {"order": 8, "checked": "☑", "task": "HTML 구현 계획 작성", "status": "완료"},
+        {"order": 9, "checked": "☐", "task": "Numba 구현·Python 기준 검사·결정성 검증", "status": "대기"},
         {"order": 10, "checked": "☐", "task": "MLX 적격성 smoke", "status": "대기"},
         {"order": 11, "checked": "☐", "task": "private 실행 1·2와 결과 분석", "status": "별도 승인 필요"},
         {"order": 12, "checked": "☐", "task": "official 실행·TEST/FN·routing", "status": "범위 밖"}
@@ -267,7 +267,7 @@
         "engine": "duckdb",
         "language": "sql",
         "description": "Exp470 설계서에서 단일 후보, Numba 필수, 10-fold 계획과 실행 전 상태를 재현한다.",
-        "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_folds, 0 AS private_runs, 0 AS official_runs, 'design_approved_waiting_written_spec_review' AS status",
+        "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_folds, 0 AS private_runs, 0 AS official_runs, 'implementation_plan_complete_waiting_execution_choice' AS status",
         "tables_used": ["docs/superpowers/specs/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity-design.html"],
         "executed_at": "2026-08-24T07:00:00Z"
       }

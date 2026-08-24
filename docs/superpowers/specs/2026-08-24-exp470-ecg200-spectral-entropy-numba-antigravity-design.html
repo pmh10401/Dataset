@@ -13,8 +13,8 @@
 <body><main>
   <h1>Exp470 ECG200 spectral entropy Numba 설계서</h1>
   <div class="box ok">
-    <p><strong>설계 상태:</strong> 대화 설계 승인 완료. 작성된 HTML 설계서 검토 대기.</p>
-    <p>한 줄 요약: Exp468이 사용한 같은 STFT에서 <strong>주파수 에너지가 얼마나 퍼져 있는지</strong>만 한 가지 새 점수로 계산하고, Numba 결과가 NumPy 기준과 같을 때만 TRAIN-only 자격 검증을 진행한다.</p>
+    <p><strong>설계 상태:</strong> 작성된 HTML 설계서 사용자 승인 완료.</p>
+    <p>한 줄 요약: Exp468이 사용한 같은 STFT에서 <strong>주파수 에너지가 얼마나 퍼져 있는지</strong>만 한 가지 새 점수로 계산하고, Numba 결과가 작은 Python <code>math</code> 기준 검사와 결정성 검사를 통과할 때만 TRAIN-only 자격 검증을 진행한다.</p>
   </div>
 
   <h2>1. 왜 새 실험을 하는가</h2>
@@ -27,7 +27,7 @@
     <tr><td>실험</td><td><code>Exp470</code> / ECG200 TRAIN-only spectral entropy qualification</td></tr>
     <tr><td>기준선</td><td>검토 완료된 Exp468의 C0와 입력·fold·합성 변화 정의를 exact import한다.</td></tr>
     <tr><td>새 방법</td><td><code>E11</code> spectral entropy rank, <code>C11</code> strict-confirmed C0 fallback</td></tr>
-    <tr><td>backend</td><td>사용자 승인에 따라 Numba CPU가 필수다. NumPy는 독립 기준 계산에만 사용한다.</td></tr>
+    <tr><td>backend</td><td>사용자 승인에 따라 Numba CPU가 DFT·entropy·LOO·rank·confirmation·C11 결합·pair count를 계산한다. NumPy는 기존 C0 authority와 배열 입출력 형식에만 남고, 새 점수 backend나 fallback으로 사용하지 않는다.</td></tr>
     <tr><td>결과 기준</td><td>절대 AUC 0.85가 아니라 C0의 잘못된 정상–period 순서 쌍을 바로잡는지를 본다.</td></tr>
     <tr><td>금지</td><td>ECG200 TEST, 실제 FN/FP/F1, routing, champion, pending, promotion을 열거나 변경하지 않는다.</td></tr>
   </table>
@@ -81,19 +81,19 @@ broken = count(C11_credit &lt; C0_credit)</code></pre>
 
   <h2>6. Numba 구현 계약</h2>
   <ul>
-    <li>Numba의 <code>np.fft.rfft</code> 지원에 기대지 않는다. 길이 28의 고정 cosine/sine 표를 사용하는 float64 direct DFT를 <code>njit</code>로 구현한다.</li>
-    <li>NumPy 기준 경로는 같은 Hann, RFFT, epsilon, 자연로그, 중앙값, LOO, rank, confirmation을 계산한다.</li>
-    <li>Numba는 finite, raw 최대 오차 <code>≤1e-12</code>, exact rank, exact confirmation, exact fixed/broken count, 반복 결정성을 모두 만족해야 한다.</li>
-    <li>Numba parity가 실패하면 실험을 중단한다. 사용자 승인 없이 NumPy 공식 경로로 바꾸지 않는다.</li>
-    <li>cold compile 시간, warm 평가 시간, Numba·llvmlite·NumPy 버전과 CPU 정보를 manifest에 기록한다. 속도는 관측값이며 Exp470 성능 합격 기준은 아니다.</li>
-    <li>새 score-source 전체 실행 전 MLX smoke를 별도로 수행한다. 같은 입력·seed에서 raw <code>≤1e-12</code>, exact 후보 index, 결정성, 전송·동기화 포함 1.1배를 모두 통과할 때만 적격으로 기록한다. 사용자 승인 backend는 Numba이므로 MLX는 Exp470 공식 계산을 대신하지 않는다.</li>
+    <li>Numba의 <code>np.fft.rfft</code> 지원에 기대지 않는다. 길이 28의 고정 cosine/sine 표를 사용하는 float64 direct DFT부터 entropy, LOO 중앙값, raw, rank, confirmation, C11 결합, pair count까지 <code>njit</code>로 구현한다.</li>
+    <li>별도 NumPy scorer를 만들지 않는다. 작은 고정 입력만 Python <code>math.fsum</code>, <code>cos</code>, <code>sin</code>으로 같은 계산을 재현해 독립 기준값으로 사용한다. 이 기준 코드는 전체 데이터 scoring에 참여하지 않는다.</li>
+    <li>Numba는 finite, Python 기준 대비 raw 최대 오차 <code>≤1e-12</code>, exact rank, exact confirmation, exact fixed/broken count, 반복 결정성을 모두 만족해야 한다.</li>
+    <li>기준 검사나 결정성이 실패하면 실험을 중단한다. 다른 backend로 자동 전환하지 않는다.</li>
+    <li>cold compile 시간, warm 평가 시간, Python·Numba·llvmlite 버전과 CPU 정보를 manifest에 기록한다. 속도는 관측값이며 Exp470 성능 합격 기준은 아니다.</li>
+    <li>새 score-source 전체 실행 전 MLX smoke를 별도로 수행한다. Numba와 같은 입력·seed에서 raw <code>≤1e-12</code>, exact 후보 index, 결정성, 전송·동기화 포함 1.1배를 모두 통과할 때만 적격으로 기록한다. 사용자 승인 backend는 Numba이므로 MLX는 Exp470 공식 계산을 대신하지 않는다.</li>
     <li>MLX/MPS-heavy process는 한 번에 하나만 실행한다.</li>
   </ul>
 
   <h2>7. 실패와 중단</h2>
   <div class="box stop">
     <ul>
-      <li>Numba 설치·컴파일·parity·결정성 중 하나라도 실패하면 STOP한다.</li>
+      <li>Numba 설치·컴파일·Python 기준 검사·결정성 중 하나라도 실패하면 STOP한다.</li>
       <li>정상 confirmation이 한 건이라도 생기면 FAIL로 보존한다.</li>
       <li>period fixed가 어느 seed에서든 0이면 FAIL이다.</li>
       <li>period 또는 보호 변화에서 broken pair가 한 건이라도 생기면 FAIL이다.</li>
@@ -105,7 +105,7 @@ broken = count(C11_credit &lt; C0_credit)</code></pre>
   <h2>8. 검증과 결과물</h2>
   <ul>
     <li>수식, entropy 범위·유한성, LOO 분리, strict 경계, exact C0 fallback을 단위 테스트한다.</li>
-    <li>NumPy–Numba 동일 입력 parity와 두 번의 결정성 검사를 수행한다.</li>
+    <li>작은 고정 입력의 Python <code>math</code>–Numba 기준 검사와 두 번의 결정성 검사를 수행한다.</li>
     <li>C0/E11/C11 raw evidence, pair credit, fixed/broken, AUC와 판정을 source-free replay할 수 있게 보존한다.</li>
     <li>결과 문서와 대시보드는 항상 HTML로 작성하며, 완료 task의 체크박스는 항상 체크한다.</li>
     <li>공식 실행 전 private 실행 1·2는 사용자의 별도 checkpoint 승인을 받는다.</li>
@@ -119,10 +119,10 @@ broken = count(C11_credit &lt; C0_credit)</code></pre>
     <label><input type="checkbox" checked disabled> Numba 구현 방향 사용자 승인</label>
     <label><input type="checkbox" checked disabled> Exp470 전용 브랜치 분기</label>
     <label><input type="checkbox" checked disabled> HTML 설계서와 초기 대시보드 작성</label>
-    <label><input type="checkbox" disabled> 작성된 HTML 설계서 사용자 검토</label>
-    <label><input type="checkbox" disabled> HTML 구현 계획 작성</label>
+    <label><input type="checkbox" checked disabled> 작성된 HTML 설계서 사용자 검토</label>
+    <label><input type="checkbox" checked disabled> HTML 구현 계획 작성</label>
     <label><input type="checkbox" disabled> Numba spectral entropy 구현과 단위 테스트</label>
-    <label><input type="checkbox" disabled> NumPy–Numba parity·결정성·시간 검증</label>
+    <label><input type="checkbox" disabled> Python 기준–Numba 정확도·결정성·시간 검증</label>
     <label><input type="checkbox" disabled> MLX 적격성 smoke</label>
     <label><input type="checkbox" disabled> private 실행 1·2 checkpoint 승인</label>
     <label><input type="checkbox" disabled> private 실행과 결과 분석</label>
