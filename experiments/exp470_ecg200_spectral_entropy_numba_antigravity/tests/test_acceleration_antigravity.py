@@ -13,12 +13,14 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import numpy as np
 
 from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.acceleration_antigravity import (
+    BackendAssessmentAntigravity,
     _distribution_version_antigravity,
+    _manifest_payload_antigravity,
     assess_mlx_smoke_antigravity,
     assess_runtime_antigravity,
     fixed_reference_rows_antigravity,
@@ -73,6 +75,42 @@ class AccelerationAssessmentTestAntigravity(unittest.TestCase):
         with patch(lookup, side_effect=PackageNotFoundError("mlx-metal")) as absent:
             self.assertIsNone(_distribution_version_antigravity("mlx-metal"))
         absent.assert_called_once_with("mlx-metal")
+
+    def test_runtime_wires_mocked_mlx_metal_metadata_to_manifest_antigravity(self) -> None:
+        """Break caught: runtime ignores metadata fallback or drops mlx-metal before manifest serialization."""
+        unavailable_mlx = BackendAssessmentAntigravity(
+            backend="mlx", available=False, finite=False, python_reference_passed=None,
+            parity_passed=False, exact_candidate_indices=False, max_raw_abs_error=None,
+            deterministic=False, cold_seconds=None, warm_median_seconds=None,
+            warm_iqr_seconds=None, speedup=None, eligible=False,
+            fallback_reason="MLX unavailable: test double",
+        )
+        metadata_lookup = (
+            "experiments.exp470_ecg200_spectral_entropy_numba_antigravity."
+            "acceleration_antigravity.version"
+        )
+        with patch(
+            "experiments.exp470_ecg200_spectral_entropy_numba_antigravity."
+            "acceleration_antigravity.assess_mlx_smoke_antigravity",
+            return_value=unavailable_mlx,
+        ), patch(
+            metadata_lookup,
+            side_effect=lambda distribution: {"mlx": "mocked-mlx-1.2.3", "mlx-metal": "mocked-metal-1.2.3"}[distribution],
+        ) as installed:
+            installed_result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=1)
+        self.assertEqual(installed.call_args_list, [call("mlx"), call("mlx-metal")])
+        self.assertEqual(installed_result.mlx_metal_version, "mocked-metal-1.2.3")
+        self.assertEqual(_manifest_payload_antigravity(installed_result)["mlx_metal_version"], "mocked-metal-1.2.3")
+
+        with patch(
+            "experiments.exp470_ecg200_spectral_entropy_numba_antigravity."
+            "acceleration_antigravity.assess_mlx_smoke_antigravity",
+            return_value=unavailable_mlx,
+        ), patch(metadata_lookup, side_effect=PackageNotFoundError("missing distribution")) as absent:
+            absent_result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=1)
+        self.assertEqual(absent.call_args_list, [call("mlx"), call("mlx-metal")])
+        self.assertIsNone(absent_result.mlx_metal_version)
+        self.assertIsNone(_manifest_payload_antigravity(absent_result)["mlx_metal_version"])
 
     def test_reference_failure_stops_before_backend_selection_antigravity(self) -> None:
         """Break caught: a failed oracle check is silently accepted by the assessment."""

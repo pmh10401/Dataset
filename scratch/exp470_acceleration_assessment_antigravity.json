@@ -19,7 +19,7 @@
     "numba": {
       "available": true,
       "backend": "numba",
-      "cold_seconds": 0.5181732922792435,
+      "cold_seconds": 0.5073829996399581,
       "deterministic": true,
       "eligible": true,
       "exact_candidate_indices": true,
@@ -29,8 +29,8 @@
       "parity_passed": true,
       "python_reference_passed": true,
       "speedup": 1.0,
-      "warm_iqr_seconds": 6.00004568696022e-06,
-      "warm_median_seconds": 9.604217484593391e-05
+      "warm_iqr_seconds": 1.4998950064182281e-06,
+      "warm_median_seconds": 9.237509220838547e-05
     }
   },
   "cpu": "arm",
