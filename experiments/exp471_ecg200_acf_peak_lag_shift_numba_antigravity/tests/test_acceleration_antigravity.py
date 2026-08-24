@@ -1,3 +1,4 @@
+from dataclasses import replace
 import json
 import math
 import unittest
@@ -12,7 +13,11 @@ from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acceleration
     manifest_payload_antigravity,
 )
 from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acf_peak_lag_antigravity import (
+    dominant_peak_from_acf_numba_antigravity,
     score_acf_peak_lag_numba_antigravity,
+)
+from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acceleration_antigravity import (
+    score_bytes_antigravity,
 )
 from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.python_reference_antigravity import (
     score_acf_peak_lag_python_reference_antigravity,
@@ -185,6 +190,59 @@ class Exp471AccelerationTestAntigravity(unittest.TestCase):
         empty_query = np.empty((0, 140), dtype=np.float64)
         result = assess_runtime_antigravity(self.fit_rows, empty_query, repetitions=1)
         self.assertTrue(result.backends["numba"].eligible)
+
+    def test_peak_boundary_neighbors_are_exact_frozen_lags(self):
+        """Break caught: roll wraps lag 25 into lag 2 and can invent a boundary peak."""
+        acf = np.zeros(25, dtype=np.float64)
+        acf[0] = 0.5
+        observed = dominant_peak_from_acf_numba_antigravity(acf)
+        self.assertEqual(observed, (0, False))
+
+        positive = np.linspace(1.0, 0.1, 25, dtype=np.float64)
+        self.assertEqual(dominant_peak_from_acf_numba_antigravity(positive), (0, False))
+
+    def test_numba_determinism_covers_every_score_field(self):
+        """Break caught: backend or scalar drift escapes array-only byte comparison."""
+        first = score_acf_peak_lag_numba_antigravity(self.fit_rows, self.query_rows)
+        second = score_acf_peak_lag_numba_antigravity(self.fit_rows, self.query_rows)
+        self.assertEqual(score_bytes_antigravity(first), score_bytes_antigravity(second))
+        with self.assertRaises(AssertionError):
+            self.assertEqual(
+                score_bytes_antigravity(first),
+                score_bytes_antigravity(replace(first, backend="different")),
+            )
+
+    def test_runtime_arguments_are_strict_before_scoring(self):
+        """Break caught: bool repetitions, bool speedup, or nonfinite tolerance reach scoring."""
+        bad_calls = (
+            lambda: assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=True),
+            lambda: assess_runtime_antigravity(
+                self.fit_rows, self.query_rows, required_mlx_speedup=True
+            ),
+            lambda: assess_runtime_antigravity(
+                self.fit_rows, self.query_rows, reference_tolerance=float("nan")
+            ),
+        )
+        for index, bad_call in enumerate(bad_calls):
+            with self.subTest(case=index), self.assertRaisesRegex(ValueError, "must be"):
+                bad_call()
+
+    def test_runtime_fixture_shape_reflects_actual_input_not_query_count(self):
+        """Break caught: shape reports query width and hides caller input dimensions."""
+        one_query = self.query_rows[:1]
+        result = assess_runtime_antigravity(self.fit_rows, one_query, repetitions=1)
+        self.assertEqual(result.fixture_shape, tuple(self.fit_rows.shape))
+
+    def test_manifest_records_python_numpy_and_required_speed_gate(self):
+        """Break caught: manifest omits Python/NumPy versions and preregistered gate value."""
+        result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=1)
+        payload = manifest_payload_antigravity(result)
+        environment = payload["environment"]
+        self.assertIn("python_version", environment)
+        self.assertIn("numpy_version", environment)
+        self.assertEqual(environment["numpy_version"], np.__version__)
+        self.assertIn("required_mlx_speedup", payload)
+        self.assertEqual(payload["required_mlx_speedup"], 1.1)
 
 
 if __name__ == "__main__":

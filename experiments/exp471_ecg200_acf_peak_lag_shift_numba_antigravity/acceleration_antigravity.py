@@ -14,6 +14,7 @@ import llvmlite
 import mlx.core as mx
 import numba
 import numpy as np
+import numpy as np
 
 from .acf_peak_lag_antigravity import (
     score_acf_peak_lag_numba_antigravity,
@@ -125,6 +126,7 @@ class RuntimeAssessmentAntigravity:
     selected_backend: str
     backends: Mapping[str, BackendAssessmentAntigravity]
     fixture_shape: tuple[int, int]
+    required_mlx_speedup: float
 
     @classmethod
     def from_measurements(
@@ -138,6 +140,8 @@ class RuntimeAssessmentAntigravity:
         reference_exact,
         reference_passed,
         mlx_assessment,
+        required_mlx_speedup,
+        input_shape,
     ):
         finite = bool(
             np.all(np.isfinite(first_result.fit_raw_shift))
@@ -162,7 +166,12 @@ class RuntimeAssessmentAntigravity:
             fallback_reason=None if eligible else "reference_or_finite_gate_failed",
         )
         backends = {"numba": numba_backend, "mlx": mlx_assessment}
-        return cls("numba", MappingProxyType(backends), first_result.query_shifts.shape[:1] + (140,))
+        return cls(
+            "numba",
+            MappingProxyType(backends),
+            tuple(int(value) for value in input_shape),
+            float(required_mlx_speedup),
+        )
 
     def __post_init__(self) -> None:
         if self.selected_backend != "numba":
@@ -171,6 +180,10 @@ class RuntimeAssessmentAntigravity:
             raise ValueError("runtime assessment records exactly Numba and MLX")
         if type(self.fixture_shape) is not tuple or len(self.fixture_shape) != 2:
             raise ValueError("fixture_shape must be an input shape tuple")
+        if type(self.required_mlx_speedup) is not float or not math.isfinite(
+            self.required_mlx_speedup
+        ) or self.required_mlx_speedup <= 0.0:
+            raise ValueError("required_mlx_speedup must be finite and positive")
 
 
 def _timing_summary_antigravity(timings: Sequence[float]) -> tuple[float, float]:
@@ -215,7 +228,13 @@ def _peak_windows_antigravity(batch):
             numerator = mx.sum(z[:, :56 - lag] * z[:, lag:56], axis=1)
             candidate_values.append((numerator / denominator).reshape((batch.shape[0], 1)))
         acfs = mx.concatenate(candidate_values, axis=1)
-        previous = mx.roll(acfs, 1, axis=1)
+        previous = mx.concatenate(
+            (
+                mx.full((batch.shape[0], 1), -mx.inf),
+                acfs[:, :-1],
+            ),
+            axis=1,
+        )
         following = mx.roll(acfs, -1, axis=1)
         candidates = mx.where(
             (acfs > 0.0) & (acfs > previous) & (acfs >= following),
@@ -360,8 +379,10 @@ def assess_runtime_antigravity(
     reference_tolerance=1e-12,
     required_mlx_speedup=1.1,
 ):
-    if repetitions <= 0:
-        raise ValueError("repetitions must be positive")
+    _require_strict_runtime_arguments_antigravity(
+        repetitions, reference_tolerance, required_mlx_speedup
+    )
+    input_shape = tuple(np.asarray(fit_rows).shape)
     started = time.perf_counter()
     first = score_acf_peak_lag_numba_antigravity(fit_rows, query_rows)
     cold_seconds = time.perf_counter() - started
@@ -401,6 +422,8 @@ def assess_runtime_antigravity(
         reference_exact=discrete_equal,
         reference_passed=reference_passed,
         mlx_assessment=mlx_assessment,
+        required_mlx_speedup=float(required_mlx_speedup),
+        input_shape=input_shape,
     )
 
 
@@ -410,8 +433,30 @@ def score_bytes_antigravity(result):
         result.query_early_peak_lags, result.query_late_peak_lags, result.query_peak_presence,
         result.fit_shifts, result.query_shifts, result.fit_raw_shift,
         result.query_raw_shift, result.query_ranks, result.confirmation_mask,
+        result.backend.encode("ascii"),
+        np.asarray(result.fit_normal_max_raw_shift, dtype=np.float64).tobytes(order="C"),
     )
-    return b"".join(np.asarray(field, order="C").tobytes() for field in fields)
+    return b"".join(
+        field if isinstance(field, bytes) else np.asarray(field, order="C").tobytes()
+        for field in fields
+    )
+
+
+def _require_strict_runtime_arguments_antigravity(
+    repetitions,
+    reference_tolerance,
+    required_mlx_speedup,
+):
+    if type(repetitions) is not int or repetitions <= 0:
+        raise ValueError("repetitions must be a positive integer")
+    if type(reference_tolerance) not in (int, float) or not math.isfinite(
+        float(reference_tolerance)
+    ):
+        raise ValueError("reference_tolerance must be finite")
+    if type(required_mlx_speedup) not in (int, float) or not math.isfinite(
+        float(required_mlx_speedup)
+    ) or float(required_mlx_speedup) <= 0.0:
+        raise ValueError("required_mlx_speedup must be finite and positive")
 
 
 def manifest_payload_antigravity(result):
@@ -422,6 +467,7 @@ def manifest_payload_antigravity(result):
         },
         "environment": {
             "numba_version": numba.__version__,
+            "numpy_version": np.__version__,
             "llvmlite_version": llvmlite.__version__,
             "mlx_version": mx.__version__,
             "device": _mlx_device_name_antigravity(),
@@ -452,6 +498,7 @@ def manifest_payload_antigravity(result):
             for name, backend in result.backends.items()
         },
         "selected_backend": result.selected_backend,
+        "required_mlx_speedup": result.required_mlx_speedup,
         "private_runs": 0,
         "official_runs": 0,
         "test_fn_access": 0,
