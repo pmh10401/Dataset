@@ -504,7 +504,7 @@ git commit -m "feat: evaluate Exp470 pair repairs"</code></pre>
   <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code>; Modify <code>docs/EXP470_DASHBOARD_antigravity.html</code>, <code>scratch/exp470_dashboard_artifact_antigravity.json</code>.</p>
   <p><strong>Produces:</strong> 정확히 7개 leaf: <code>artifact_sha256</code>, <code>context</code>, <code>dashboard_snapshot</code>, <code>decision</code>, <code>failed_folds</code>, <code>method_fold_metrics</code>, <code>method_summary</code>. 테스트 helper <code>tamper_and_rehash_antigravity(root, leaf, field)</code>는 지정 scalar를 바꾸고 6개 leaf hash를 다시 만들어 semantic replay가 hash만 맞는 변조도 거부하는지 확인한다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>5.1</strong> leaf set, canonical bytes, semantic tamper, HTML checkbox RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.1</strong> leaf set, canonical bytes, semantic tamper, HTML checkbox RED 테스트를 작성한다.</label>
     <pre><code>def test_publication_has_exact_seven_leaves_antigravity(self):
     published = publish_result_antigravity(self.root, self.records, self.qualification, self.decision)
     self.assertEqual(set(path.name for path in self.root.iterdir()), set(LEAF_NAMES_ANTIGRAVITY))
@@ -519,12 +519,12 @@ def test_dashboard_checks_only_completed_steps_antigravity(self):
     html = export_dashboard_antigravity(self.inspected)
     self.assertIn('checked disabled&gt; 결과 replay 검증', html)
     self.assertNotIn('checked disabled&gt; official 실행', html)</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_artifacts_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_replay_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_dashboard_export_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.3</strong> canonical serializer와 7개 leaf publication을 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.3</strong> canonical serializer와 7개 leaf publication을 구현한다.</label>
     <pre><code>LEAF_NAMES_ANTIGRAVITY = (
     "artifact_sha256_antigravity.json", "context_antigravity.json",
     "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
@@ -534,7 +534,7 @@ def test_dashboard_checks_only_completed_steps_antigravity(self):
 
 def _canonical_json_bytes_antigravity(payload):
     return (json.dumps(payload, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.4</strong> replay는 저장된 input으로 Numba entropy→C11→pair counts→decision을 다시 계산하고 모든 scalar/array를 비교한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.4</strong> replay는 저장된 input으로 Numba entropy→C11→pair counts→decision을 다시 계산하고 모든 scalar/array를 비교한다.</label>
     <pre><code>def inspect_result_antigravity(root: str | Path) -&gt; InspectedResultAntigravity:
     hashes = _read_and_verify_hashes_antigravity(Path(root))
     records = _records_from_context_antigravity(Path(root))
@@ -543,8 +543,8 @@ def _canonical_json_bytes_antigravity(payload):
     decision = evaluate_qualification_antigravity(qualification)
     _reject_semantic_drift_antigravity(root, replayed, qualification, decision)
     return InspectedResultAntigravity(Path(root), replayed, qualification, decision, hashes)</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.5</strong> HTML에는 fold별 fixed/broken, seed 합계, 정상 오확인, protected broken, AUC, backend 근거, private 대기 상태를 표시한다.</label>
-    <label><input type="checkbox" disabled> <strong>5.6</strong> 테스트를 두 번 통과하고 portable dashboard 검증 후 commit한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.5</strong> HTML에는 fold별 fixed/broken, seed 합계, 정상 오확인, protected broken, AUC, backend 근거, private 대기 상태를 표시한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.6</strong> 테스트를 두 번 통과하고 portable dashboard 검증 후 commit한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_artifacts_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_replay_antigravity \
@@ -638,7 +638,7 @@ git status --short</code></pre>
     <label><input type="checkbox" checked disabled> Task 2 Numba spectral entropy 단일 scorer</label>
     <label><input type="checkbox" checked disabled> Task 3 Numba 근거·MLX smoke</label>
     <label><input type="checkbox" checked disabled> Task 4 C0/E11/C11·pair repair qualification</label>
-    <label><input type="checkbox" disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
+    <label><input type="checkbox" checked disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
     <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2 — 별도 승인 대기</label>
   </section>
