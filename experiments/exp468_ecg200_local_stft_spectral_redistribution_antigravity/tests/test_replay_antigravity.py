@@ -428,6 +428,20 @@ class ReplayAntigravityTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     inspect_result_antigravity(root)
 
+    def test_repaired_hash_metric_provenance_tamper_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp468-task5-metric-provenance-") as directory:
+            root = _materialize_publication_antigravity(Path(directory))
+            metrics_path = root / "method_fold_metrics_antigravity.jsonl"
+            rows = [json.loads(line) for line in metrics_path.read_text(encoding="utf-8").splitlines()]
+            self.assertIn("backend", rows[0])
+            rows[0]["backend"] = "mlx"
+            metrics_path.write_bytes(
+                b"".join(_canonical_json_bytes_antigravity(row) for row in rows),
+            )
+            _refresh_hashes_antigravity(root)
+            with self.assertRaisesRegex(ValueError, "metric|provenance|replay"):
+                inspect_result_antigravity(root)
+
 
 if __name__ == "__main__":
     unittest.main()

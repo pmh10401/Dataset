@@ -420,6 +420,8 @@ def _fold_metrics_payload_antigravity(
             rows.append(
                 {
                     "all_scores_finite": bool(all(np.isfinite(array).all() for array in arrays)),
+                    "approval_document_sha256": _APPROVAL_SHA256_ANTIGRAVITY,
+                    "backend": "numpy",
                     "c0_per_type_auc": list(qualification_row.c0_per_type_auc),
                     "c10_per_type_auc": list(qualification_row.c10_per_type_auc),
                     "delta_per_type_auc": [
@@ -433,6 +435,7 @@ def _fold_metrics_payload_antigravity(
                     "method": method,
                     "normal_confirmations": int(np.count_nonzero(record.confirmed["normal"])),
                     "per_type_auc": list(per_type),
+                    "pre_approval_benchmark_sha256": _PRE_APPROVAL_BENCHMARK_SHA256_ANTIGRAVITY,
                     "period_confirmations": int(np.count_nonzero(record.confirmed["period_change"])),
                     "seed": record.seed,
                     "source_fold_passed": qualification_row.passed,
@@ -526,7 +529,11 @@ def _dashboard_snapshot_payload_antigravity(
         "private_reproducibility": {
             "run_1": "not_run",
             "run_2": "not_run",
-            "status": "awaiting_private_reproducibility",
+            "status": (
+                "awaiting_private_reproducibility"
+                if decision.eligible_for_private_reproducibility
+                else "qualification_failed_blocked_before_private_run"
+            ),
         },
         "protected_min_deltas": protected_min_deltas,
         "qualification_passed": decision.eligible_for_private_reproducibility,
