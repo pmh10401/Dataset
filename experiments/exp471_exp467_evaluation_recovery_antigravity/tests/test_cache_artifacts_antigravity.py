@@ -276,6 +276,151 @@ class Exp471ScoreShardArtifactTestsAntigravity(unittest.TestCase):
             self.assertFalse(destination.exists())
             self.assertEqual(tuple(destination.parent.iterdir()), ())
 
+    def test_temporary_path_swap_cannot_publish_foreign_regular_or_symlink(self) -> None:
+        """Replacing the temporary pathname must not redirect the authoritative link."""
+        shard = _score_shard_antigravity()
+        original_link = os.link
+        for replacement_kind in ("regular", "symlink"):
+            with self.subTest(replacement_kind=replacement_kind), tempfile.TemporaryDirectory(
+                prefix=f"exp471_temp_swap_{replacement_kind}_antigravity_"
+            ) as temporary:
+                base = Path(temporary).resolve()
+                root = base / "cache_root_antigravity"
+                destination = (
+                    root
+                    / cache_artifacts.score_shard_relative_path_antigravity(
+                        shard.method, shard.dataset
+                    )
+                )
+                foreign_target = base / "foreign_target_antigravity.json"
+                foreign_bytes = b'{"foreign_antigravity":true}\n'
+                foreign_target.write_bytes(foreign_bytes)
+                observed: dict[str, str] = {}
+
+                def swap_then_link(
+                    source: str, final: str, **kwargs: object
+                ) -> None:
+                    source_directory = kwargs["src_dir_fd"]
+                    self.assertIsInstance(source_directory, int)
+                    saved = f"{source}_saved_antigravity"
+                    os.rename(
+                        source,
+                        saved,
+                        src_dir_fd=source_directory,
+                        dst_dir_fd=source_directory,
+                    )
+                    if replacement_kind == "regular":
+                        descriptor = os.open(
+                            source,
+                            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                            0o600,
+                            dir_fd=source_directory,
+                        )
+                        try:
+                            os.write(descriptor, foreign_bytes)
+                        finally:
+                            os.close(descriptor)
+                    else:
+                        os.symlink(
+                            foreign_target,
+                            source,
+                            dir_fd=source_directory,
+                        )
+                    observed["source"] = source
+                    observed["saved"] = saved
+                    original_link(source, final, **kwargs)  # type: ignore[arg-type]
+
+                with mock.patch.object(
+                    cache_artifacts.os, "link", side_effect=swap_then_link
+                ):
+                    with self.assertRaises(ValueError):
+                        cache_artifacts.publish_score_shard_antigravity(root, shard)
+
+                replacement = destination.parent / observed["source"]
+                saved = destination.parent / observed["saved"]
+                self.assertTrue(saved.is_file())
+                if replacement_kind == "regular":
+                    self.assertTrue(replacement.is_file())
+                    self.assertEqual(replacement.read_bytes(), foreign_bytes)
+                    self.assertTrue(destination.is_file())
+                    self.assertEqual(destination.read_bytes(), foreign_bytes)
+                else:
+                    self.assertTrue(replacement.is_symlink())
+                    self.assertTrue(destination.is_symlink())
+                    self.assertEqual(foreign_target.read_bytes(), foreign_bytes)
+
+    def test_link_failure_cleanup_preserves_foreign_temporary_replacement(self) -> None:
+        """Failure cleanup must unlink only the temporary inode created by the publisher."""
+        shard = _score_shard_antigravity()
+        for replacement_kind in ("regular", "symlink"):
+            with self.subTest(replacement_kind=replacement_kind), tempfile.TemporaryDirectory(
+                prefix=f"exp471_temp_cleanup_{replacement_kind}_antigravity_"
+            ) as temporary:
+                base = Path(temporary).resolve()
+                root = base / "cache_root_antigravity"
+                destination = (
+                    root
+                    / cache_artifacts.score_shard_relative_path_antigravity(
+                        shard.method, shard.dataset
+                    )
+                )
+                foreign_target = base / "cleanup_target_antigravity.json"
+                foreign_bytes = b'{"foreign_cleanup_antigravity":true}\n'
+                foreign_target.write_bytes(foreign_bytes)
+                observed: dict[str, str] = {}
+
+                def swap_then_fail(
+                    source: str, final: str, **kwargs: object
+                ) -> None:
+                    source_directory = kwargs["src_dir_fd"]
+                    self.assertIsInstance(source_directory, int)
+                    saved = f"{source}_saved_antigravity"
+                    os.rename(
+                        source,
+                        saved,
+                        src_dir_fd=source_directory,
+                        dst_dir_fd=source_directory,
+                    )
+                    if replacement_kind == "regular":
+                        descriptor = os.open(
+                            source,
+                            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                            0o600,
+                            dir_fd=source_directory,
+                        )
+                        try:
+                            os.write(descriptor, foreign_bytes)
+                        finally:
+                            os.close(descriptor)
+                    else:
+                        os.symlink(
+                            foreign_target,
+                            source,
+                            dir_fd=source_directory,
+                        )
+                    observed["source"] = source
+                    observed["saved"] = saved
+                    raise OSError("synthetic link failure antigravity")
+
+                with mock.patch.object(
+                    cache_artifacts.os, "link", side_effect=swap_then_fail
+                ):
+                    with self.assertRaises(OSError):
+                        cache_artifacts.publish_score_shard_antigravity(
+                            root, shard
+                        )
+
+                replacement = destination.parent / observed["source"]
+                saved = destination.parent / observed["saved"]
+                self.assertFalse(destination.exists())
+                self.assertTrue(saved.is_file())
+                if replacement_kind == "regular":
+                    self.assertTrue(replacement.is_file())
+                    self.assertEqual(replacement.read_bytes(), foreign_bytes)
+                else:
+                    self.assertTrue(replacement.is_symlink())
+                    self.assertEqual(foreign_target.read_bytes(), foreign_bytes)
+
     def test_partial_write_fsync_and_same_directory_hard_link_are_durable(self) -> None:
         """Short writes or omitted file/directory fsync must not publish partial data."""
         shard = _score_shard_antigravity()
@@ -492,6 +637,130 @@ class Exp471CacheManifestArtifactTestsAntigravity(unittest.TestCase):
             with self.assertRaises(ValueError):
                 cache_artifacts.publish_cache_manifest_antigravity(root, manifest)
             self.assertFalse((root / MANIFEST_NAME_ANTIGRAVITY).exists())
+
+    def test_coverage_directory_swap_rolls_back_new_terminal_manifest(self) -> None:
+        """Coverage replaced after verification must not leave terminal authority."""
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_manifest_coverage_swap_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "cache_root_antigravity"
+            shards = _publish_complete_shards_antigravity(root)
+            manifest = _manifest_antigravity(shards, ("dataset_1",))
+            original_link = os.link
+            swapped = False
+
+            def swap_coverage_then_link(
+                source: str, destination: str, **kwargs: object
+            ) -> None:
+                nonlocal swapped
+                destination_directory = kwargs["dst_dir_fd"]
+                self.assertIsInstance(destination_directory, int)
+                if destination == MANIFEST_NAME_ANTIGRAVITY:
+                    swapped = True
+                    os.rename(
+                        "score_shards_antigravity",
+                        "score_shards_saved_antigravity",
+                        src_dir_fd=destination_directory,
+                        dst_dir_fd=destination_directory,
+                    )
+                    os.mkdir(
+                        "score_shards_antigravity",
+                        0o755,
+                        dir_fd=destination_directory,
+                    )
+                original_link(source, destination, **kwargs)  # type: ignore[arg-type]
+
+            with mock.patch.object(
+                cache_artifacts.os, "link", side_effect=swap_coverage_then_link
+            ):
+                with self.assertRaises(ValueError):
+                    cache_artifacts.publish_cache_manifest_antigravity(root, manifest)
+
+            self.assertTrue(swapped)
+            self.assertFalse((root / MANIFEST_NAME_ANTIGRAVITY).exists())
+            self.assertTrue((root / "score_shards_antigravity").is_dir())
+            self.assertEqual(tuple((root / "score_shards_antigravity").iterdir()), ())
+            self.assertTrue((root / "score_shards_saved_antigravity").is_dir())
+
+    def test_identical_and_different_concurrent_manifest_writers_are_create_only(self) -> None:
+        """Concurrent terminal writers must converge exactly or reject the changed loser."""
+        datasets = ("dataset_1", "dataset_2")
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_manifest_concurrent_same_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "cache_root_antigravity"
+            shards = _publish_complete_shards_antigravity(root, datasets)
+            manifest = _manifest_antigravity(shards, datasets)
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                paths = tuple(
+                    executor.map(
+                        lambda _: cache_artifacts.publish_cache_manifest_antigravity(
+                            root, manifest
+                        ),
+                        range(2),
+                    )
+                )
+            expected_bytes = _canonical_bytes_antigravity(
+                _manifest_record_from_contract_antigravity(manifest)
+            )
+            self.assertEqual(paths[0], paths[1])
+            self.assertEqual(paths[0].read_bytes(), expected_bytes)
+            self.assertEqual(
+                tuple(root.glob(".*score_cache_manifest_temporary_antigravity*")),
+                (),
+            )
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_manifest_concurrent_diff_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "cache_root_antigravity"
+            shards = _publish_complete_shards_antigravity(root, datasets)
+            first = _manifest_antigravity(shards, datasets)
+            second = _manifest_antigravity(shards, tuple(reversed(datasets)))
+            barrier = threading.Barrier(2)
+            original_link = os.link
+
+            def synchronized_manifest_link(
+                source: str, destination: str, **kwargs: object
+            ) -> None:
+                if destination == MANIFEST_NAME_ANTIGRAVITY:
+                    barrier.wait(timeout=5)
+                original_link(source, destination, **kwargs)  # type: ignore[arg-type]
+
+            def publish(
+                candidate: Exp471ScoreCacheManifestAntigravity,
+            ) -> object:
+                try:
+                    return cache_artifacts.publish_cache_manifest_antigravity(
+                        root, candidate
+                    )
+                except ValueError as error:
+                    return error
+
+            with mock.patch.object(
+                cache_artifacts.os,
+                "link",
+                side_effect=synchronized_manifest_link,
+            ), ThreadPoolExecutor(max_workers=2) as executor:
+                results = tuple(executor.map(publish, (first, second)))
+
+            self.assertEqual(sum(isinstance(result, Path) for result in results), 1)
+            self.assertEqual(
+                sum(isinstance(result, ValueError) for result in results), 1
+            )
+            destination = root / MANIFEST_NAME_ANTIGRAVITY
+            winner = cache_artifacts.read_cache_manifest_antigravity(root)
+            self.assertIn(winner, (first, second))
+            self.assertEqual(
+                destination.read_bytes(),
+                _canonical_bytes_antigravity(
+                    _manifest_record_from_contract_antigravity(winner)
+                ),
+            )
+            self.assertEqual(
+                tuple(root.glob(".*score_cache_manifest_temporary_antigravity*")),
+                (),
+            )
 
     def test_manifest_rejects_wrong_shard_digest_identity_and_existing_bytes(self) -> None:
         """Coverage metadata must bind every exact method/dataset envelope."""

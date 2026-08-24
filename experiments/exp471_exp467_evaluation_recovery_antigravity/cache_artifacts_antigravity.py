@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from collections.abc import Callable
+from dataclasses import dataclass
 from hashlib import sha256
 import json
 import os
@@ -267,8 +268,72 @@ def _read_existing_after_link_race_antigravity(
     raise ValueError("Exp471 concurrent cache destination is unavailable")
 
 
+def _require_owned_regular_path_antigravity(
+    directory: int,
+    name: str,
+    expected: os.stat_result,
+    *,
+    scope: str,
+) -> os.stat_result:
+    try:
+        observed = os.stat(name, dir_fd=directory, follow_symlinks=False)
+    except OSError as error:
+        raise ValueError(f"Exp471 {scope} pathname is unavailable") from error
+    if not stat.S_ISREG(observed.st_mode) or not _same_identity_antigravity(
+        expected, observed
+    ):
+        raise ValueError(f"Exp471 {scope} pathname changed")
+    return observed
+
+
+def _unlink_owned_path_antigravity(
+    directory: int, name: str, expected: os.stat_result
+) -> bool:
+    try:
+        observed = os.stat(name, dir_fd=directory, follow_symlinks=False)
+    except OSError:
+        return False
+    if not _same_identity_antigravity(expected, observed):
+        return False
+    try:
+        os.unlink(name, dir_fd=directory)
+    except OSError:
+        return False
+    return True
+
+
+def _validate_linked_payload_antigravity(
+    directory: int,
+    destination: str,
+    temporary_identity: os.stat_result,
+    payload: bytes,
+    *,
+    temporary_scope: str,
+) -> None:
+    _require_owned_regular_path_antigravity(
+        directory,
+        destination,
+        temporary_identity,
+        scope=f"{temporary_scope} destination",
+    )
+    observed = _read_leaf_at_antigravity(directory, destination)
+    if observed != payload:
+        raise ValueError(f"Exp471 linked {temporary_scope} bytes differ")
+    _require_owned_regular_path_antigravity(
+        directory,
+        destination,
+        temporary_identity,
+        scope=f"{temporary_scope} destination",
+    )
+
+
 def _publish_bytes_at_antigravity(
-    directory: int, destination: str, payload: bytes, *, temporary_scope: str
+    directory: int,
+    destination: str,
+    payload: bytes,
+    *,
+    temporary_scope: str,
+    post_link_validate_antigravity: Callable[[], None] | None = None,
 ) -> None:
     existing = _read_existing_after_link_race_antigravity(
         directory, destination, missing_ok=True
@@ -276,6 +341,8 @@ def _publish_bytes_at_antigravity(
     if existing is not None:
         if existing != payload:
             raise ValueError(f"Exp471 existing {temporary_scope} bytes differ")
+        if post_link_validate_antigravity is not None:
+            post_link_validate_antigravity()
         return
 
     temporary = (
@@ -283,7 +350,6 @@ def _publish_bytes_at_antigravity(
     )
     temporary_descriptor: int | None = None
     temporary_identity: os.stat_result | None = None
-    temporary_exists = False
     linked = False
     try:
         temporary_descriptor = os.open(
@@ -292,7 +358,6 @@ def _publish_bytes_at_antigravity(
             0o600,
             dir_fd=directory,
         )
-        temporary_exists = True
         opened = os.fstat(temporary_descriptor)
         temporary_identity = opened
         if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
@@ -300,8 +365,21 @@ def _publish_bytes_at_antigravity(
         _write_all_antigravity(temporary_descriptor, payload)
         os.fchmod(temporary_descriptor, 0o444)
         os.fsync(temporary_descriptor)
-        os.close(temporary_descriptor)
-        temporary_descriptor = None
+        final_descriptor_identity = os.fstat(temporary_descriptor)
+        if (
+            not stat.S_ISREG(final_descriptor_identity.st_mode)
+            or not _same_identity_antigravity(
+                temporary_identity, final_descriptor_identity
+            )
+            or final_descriptor_identity.st_size != len(payload)
+        ):
+            raise ValueError("Exp471 cache temporary descriptor changed")
+        _require_owned_regular_path_antigravity(
+            directory,
+            temporary,
+            temporary_identity,
+            scope=f"{temporary_scope} temporary",
+        )
         try:
             os.link(
                 temporary,
@@ -312,6 +390,12 @@ def _publish_bytes_at_antigravity(
             )
             linked = True
         except FileExistsError:
+            _require_owned_regular_path_antigravity(
+                directory,
+                temporary,
+                temporary_identity,
+                scope=f"{temporary_scope} temporary",
+            )
             existing = _read_existing_after_link_race_antigravity(
                 directory, destination
             )
@@ -319,30 +403,58 @@ def _publish_bytes_at_antigravity(
                 raise ValueError(
                     f"Exp471 existing {temporary_scope} bytes differ"
                 )
-        os.unlink(temporary, dir_fd=directory)
-        temporary_exists = False
+        else:
+            _require_owned_regular_path_antigravity(
+                directory,
+                temporary,
+                temporary_identity,
+                scope=f"{temporary_scope} temporary",
+            )
+            _validate_linked_payload_antigravity(
+                directory,
+                destination,
+                temporary_identity,
+                payload,
+                temporary_scope=temporary_scope,
+            )
+        if post_link_validate_antigravity is not None:
+            post_link_validate_antigravity()
+        if not _unlink_owned_path_antigravity(
+            directory, temporary, temporary_identity
+        ):
+            raise ValueError(
+                f"Exp471 {temporary_scope} temporary pathname changed"
+            )
+        if linked:
+            _validate_linked_payload_antigravity(
+                directory,
+                destination,
+                temporary_identity,
+                payload,
+                temporary_scope=temporary_scope,
+            )
         os.fsync(directory)
     except Exception:
-        if linked:
+        changed = False
+        if linked and temporary_identity is not None:
+            changed = _unlink_owned_path_antigravity(
+                directory, destination, temporary_identity
+            )
+        if changed:
             try:
-                destination_details = os.stat(
-                    destination, dir_fd=directory, follow_symlinks=False
-                )
-                if temporary_identity is not None and _same_identity_antigravity(
-                    temporary_identity, destination_details
-                ):
-                    os.unlink(destination, dir_fd=directory)
-                    os.fsync(directory)
+                os.fsync(directory)
             except OSError:
                 pass
         raise
     finally:
         if temporary_descriptor is not None:
             os.close(temporary_descriptor)
-        if temporary_exists:
+        if temporary_identity is not None and _unlink_owned_path_antigravity(
+            directory, temporary, temporary_identity
+        ):
             try:
-                os.unlink(temporary, dir_fd=directory)
-            except FileNotFoundError:
+                os.fsync(directory)
+            except OSError:
                 pass
 
 
@@ -560,8 +672,8 @@ def read_score_shard_antigravity(
         anchor.close()
 
 
-def _verify_manifest_coverage_antigravity(
-    anchor: _DirectoryAnchorAntigravity,
+def _verify_manifest_coverage_in_directory_antigravity(
+    shard_directory: int,
     manifest: Exp471ScoreCacheManifestAntigravity,
 ) -> None:
     expected_keys = {
@@ -571,33 +683,59 @@ def _verify_manifest_coverage_antigravity(
     }
     if set(manifest.shard_sha256) != expected_keys:
         raise ValueError("Exp471 score-cache manifest coverage identities differ")
+    for method in manifest.method_order:
+        for dataset in manifest.dataset_order:
+            shard = _read_score_shard_from_directory_antigravity(
+                shard_directory, method, dataset
+            )
+            key = f"{method}:{dataset}"
+            if (
+                shard.source_authority_sha256
+                != manifest.source_authority_sha256
+                or shard.cache_context_sha256 != manifest.cache_context_sha256
+                or shard.envelope_sha256 != manifest.shard_sha256[key]
+            ):
+                raise ValueError(
+                    "Exp471 score-cache shard differs from manifest coverage"
+                )
+
+
+def _open_verified_manifest_coverage_antigravity(
+    anchor: _DirectoryAnchorAntigravity,
+    manifest: Exp471ScoreCacheManifestAntigravity,
+) -> tuple[int, os.stat_result]:
     shard_directory: int | None = None
     try:
         shard_directory, expected = _open_child_directory_antigravity(
             anchor.descriptor, _SCORE_SHARD_DIRECTORY_ANTIGRAVITY, create=False
         )
-        for method in manifest.method_order:
-            for dataset in manifest.dataset_order:
-                shard = _read_score_shard_from_directory_antigravity(
-                    shard_directory, method, dataset
-                )
-                key = f"{method}:{dataset}"
-                if (
-                    shard.source_authority_sha256
-                    != manifest.source_authority_sha256
-                    or shard.cache_context_sha256 != manifest.cache_context_sha256
-                    or shard.envelope_sha256 != manifest.shard_sha256[key]
-                ):
-                    raise ValueError(
-                        "Exp471 score-cache shard differs from manifest coverage"
-                    )
+        _verify_manifest_coverage_in_directory_antigravity(
+            shard_directory, manifest
+        )
         _validate_child_directory_antigravity(
             anchor.descriptor, _SCORE_SHARD_DIRECTORY_ANTIGRAVITY, expected
         )
         anchor.validate()
-    finally:
+        return shard_directory, expected
+    except Exception:
         if shard_directory is not None:
             os.close(shard_directory)
+        raise
+
+
+def _revalidate_manifest_coverage_antigravity(
+    anchor: _DirectoryAnchorAntigravity,
+    shard_directory: int,
+    expected: os.stat_result,
+    manifest: Exp471ScoreCacheManifestAntigravity,
+) -> None:
+    _verify_manifest_coverage_in_directory_antigravity(
+        shard_directory, manifest
+    )
+    _validate_child_directory_antigravity(
+        anchor.descriptor, _SCORE_SHARD_DIRECTORY_ANTIGRAVITY, expected
+    )
+    anchor.validate()
 
 
 def publish_cache_manifest_antigravity(
@@ -605,17 +743,32 @@ def publish_cache_manifest_antigravity(
 ) -> Path:
     payload = _canonical_manifest_bytes_antigravity(manifest)
     anchor = _open_absolute_directory_antigravity(Path(root), create=True)
+    shard_directory: int | None = None
     try:
-        _verify_manifest_coverage_antigravity(anchor, manifest)
+        shard_directory, expected = _open_verified_manifest_coverage_antigravity(
+            anchor, manifest
+        )
+
+        def revalidate_coverage_antigravity() -> None:
+            _revalidate_manifest_coverage_antigravity(
+                anchor,
+                shard_directory,
+                expected,
+                manifest,
+            )
+
         _publish_bytes_at_antigravity(
             anchor.descriptor,
             _CACHE_MANIFEST_NAME_ANTIGRAVITY,
             payload,
             temporary_scope="score_cache_manifest",
+            post_link_validate_antigravity=revalidate_coverage_antigravity,
         )
         anchor.validate()
         return Path(root) / _CACHE_MANIFEST_NAME_ANTIGRAVITY
     finally:
+        if shard_directory is not None:
+            os.close(shard_directory)
         anchor.close()
 
 
@@ -623,6 +776,7 @@ def read_cache_manifest_antigravity(
     root: Path,
 ) -> Exp471ScoreCacheManifestAntigravity:
     anchor = _open_absolute_directory_antigravity(Path(root), create=False)
+    shard_directory: int | None = None
     try:
         raw = _read_leaf_at_antigravity(
             anchor.descriptor, _CACHE_MANIFEST_NAME_ANTIGRAVITY
@@ -630,10 +784,17 @@ def read_cache_manifest_antigravity(
         if raw is None:
             raise ValueError("Exp471 score-cache manifest is missing")
         manifest = _manifest_from_bytes_antigravity(raw)
-        _verify_manifest_coverage_antigravity(anchor, manifest)
+        shard_directory, expected = _open_verified_manifest_coverage_antigravity(
+            anchor, manifest
+        )
+        _revalidate_manifest_coverage_antigravity(
+            anchor, shard_directory, expected, manifest
+        )
         anchor.validate()
         return manifest
     finally:
+        if shard_directory is not None:
+            os.close(shard_directory)
         anchor.close()
 
 
