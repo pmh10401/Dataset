@@ -115,6 +115,7 @@ def _context_record_antigravity(record: FoldMethodScoresAntigravity) -> dict[str
             for change in FROZEN_CONFIG_ANTIGRAVITY.change_types
         },
         "confirmed": _scope_mapping_payload_antigravity(record.confirmed),
+        "e12_ranks": _array_payload_antigravity(record.original["E12"]),
         "fit_early_peak_lags": _array_payload_antigravity(record.fit_early_peak_lags),
         "fit_indices": _array_payload_antigravity(record.input_fit_indices),
         "fit_late_peak_lags": _array_payload_antigravity(record.fit_late_peak_lags),

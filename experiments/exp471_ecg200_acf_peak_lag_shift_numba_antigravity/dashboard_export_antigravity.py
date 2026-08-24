@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 
+from .contracts_antigravity import Exp471QualificationAntigravity
 from .replay_antigravity import InspectedResultAntigravity
 
 
@@ -14,7 +15,10 @@ def _text_antigravity(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
-def _mean_auc_antigravity(key: str) -> dict[str, float]:
+def _mean_auc_antigravity(
+    key: str,
+    qualification: Exp471QualificationAntigravity,
+) -> dict[str, float]:
     return {
         change: sum(getattr(row, key)[change] for row in qualification.fold_results) / len(qualification.fold_results)
         for change in _CHANGE_TYPES_ANTIGRAVITY
@@ -24,15 +28,17 @@ def _mean_auc_antigravity(key: str) -> dict[str, float]:
 def export_dashboard_antigravity(inspected: object) -> str:
     if type(inspected) is not InspectedResultAntigravity:
         raise ValueError("dashboard export requires an inspected result")
-    global qualification
-    qualification = inspected.qualification
     decision = inspected.decision
+    qualification = inspected.qualification
+    first_record = next(iter(inspected.records.values()))
+    fit_shift_text = "[" + ", ".join(str(int(value)) for value in first_record.fit_shifts) + "]"
+    peak_absent_total = int(sum(int((~record.fit_peak_presence).sum()) for record in inspected.records.values()))
     fixed = ", ".join(f"{seed}: {count}" for seed, count in qualification.period_fixed.items())
     broken = ", ".join(f"{seed}: {count}" for seed, count in qualification.period_broken.items())
     normal = ", ".join(f"{seed}: {count}" for seed, count in qualification.normal_confirmations.items())
     protected = ", ".join(f"{name}: {count}" for name, count in qualification.protected_broken.items())
-    c0_auc = _mean_auc_antigravity("c0_per_type_auc")
-    c12_auc = _mean_auc_antigravity("c12_per_type_auc")
+    c0_auc = _mean_auc_antigravity("c0_per_type_auc", qualification)
+    c12_auc = _mean_auc_antigravity("c12_per_type_auc", qualification)
     fold_pairs = "".join(
         "<li>seed " + _text_antigravity(row.seed) + ", fold " + _text_antigravity(row.fold_index)
         + ": period fixed " + _text_antigravity(row.pair_repairs["period_change"].fixed)
@@ -57,6 +63,8 @@ def export_dashboard_antigravity(inspected: object) -> str:
         "<p>Numba: 사용함, MLX: 평가했지만 선택하지 않음</p></section>"
         "<section><h2>C0/E12/C12와 pair repair</h2>"
         "<p>period fixed: " + _text_antigravity(fixed) + "</p>"
+        "<p>fit shifts: " + _text_antigravity(fit_shift_text) + "</p>"
+        "<p>peak 부재 감지 수: " + _text_antigravity(peak_absent_total) + "</p>"
         "<p>period broken: " + _text_antigravity(broken) + "</p>"
         "<p>보호 대상 broken: " + _text_antigravity(protected) + "</p>"
         "<p>정상 confirmation: " + _text_antigravity(normal) + "</p>"

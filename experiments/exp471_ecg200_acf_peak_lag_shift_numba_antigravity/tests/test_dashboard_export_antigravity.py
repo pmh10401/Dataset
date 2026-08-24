@@ -27,6 +27,43 @@ class DashboardExportTestAntigravity(unittest.TestCase):
         for token in ("C0", "E12", "C12", "peak", "shift"):
             self.assertIn(token, html)
 
+    def test_html_shows_concrete_fit_shift_values_antigravity(self) -> None:
+        """Break caught: result HTML names peak/shift without retained numeric evidence."""
+        from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.dashboard_export_antigravity import export_dashboard_antigravity
+        from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.replay_antigravity import inspect_result_antigravity
+
+        with tempfile.TemporaryDirectory() as directory:
+            inspected = inspect_result_antigravity(published_result_root_antigravity(directory))
+        html = export_dashboard_antigravity(inspected)
+        first_record = next(iter(inspected.records.values()))
+        expected_shifts = "[" + ", ".join(str(int(value)) for value in first_record.fit_shifts) + "]"
+        self.assertIn(f"fit shifts: {expected_shifts}", html)
+
+    def test_html_shows_concrete_peak_absence_count_antigravity(self) -> None:
+        """Break caught: result HTML omits how many ACF peaks were actually absent."""
+        from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.dashboard_export_antigravity import export_dashboard_antigravity
+        from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.replay_antigravity import inspect_result_antigravity
+
+        with tempfile.TemporaryDirectory() as directory:
+            inspected = inspect_result_antigravity(published_result_root_antigravity(directory))
+        html = export_dashboard_antigravity(inspected)
+        expected_absent = sum(
+            int((~record.fit_peak_presence).sum())
+            for record in inspected.records.values()
+        )
+        self.assertIn(f"peak 부재 감지 수: {expected_absent}", html)
+
+    def test_export_leaves_no_module_level_qualification_state_antigravity(self) -> None:
+        """Break caught: export hides mutable qualification in module globals."""
+        from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.replay_antigravity import inspect_result_antigravity
+
+        with tempfile.TemporaryDirectory() as directory:
+            inspected = inspect_result_antigravity(published_result_root_antigravity(directory))
+        import importlib
+        module = importlib.import_module("experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.dashboard_export_antigravity")
+        module.export_dashboard_antigravity(inspected)
+        self.assertFalse(hasattr(module, "qualification"))
+
 
 if __name__ == "__main__":
     unittest.main()
