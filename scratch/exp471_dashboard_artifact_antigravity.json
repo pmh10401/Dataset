@@ -3,8 +3,8 @@
   "manifest": {
     "version": 1,
     "surface": "dashboard",
-    "title": "Exp471 Task 5 결과 대시보드",
-    "description": "합성 canonical publication을 semantic replay로 검증한 Task 5 상태. private/official/TEST/FN/routing은 없다.",
+    "title": "Exp471 Task 6 사전검증 대시보드",
+    "description": "합성 canonical replay에 closed CLI와 private checkpoint 경계를 추가한 Task 6 상태. private/official/TEST/FN/routing은 아직 없다.",
     "generatedAt": "2026-08-24T15:30:00+09:00",
     "cards": [
       {
@@ -45,7 +45,7 @@
       },
       {
         "id": "boundary_counts",
-        "description": "Task 5 구현 단계의 private·official 실행과 라벨 접근 횟수다.",
+        "description": "Task 6 구현 단계의 private·official 실행과 라벨 접근 횟수다. private root 생성도 없다.",
         "dataset": "summary",
         "sourceId": "exp471_truth",
         "metrics": [
@@ -178,8 +178,8 @@
       },
       {
         "id": "evidence_table",
-        "title": "Task 5 합성 replay 집계",
-        "subtitle": "backend, 전체 gate, peak 없음 수와 모든 fold의 shift 분포다.",
+        "title": "Task 6 합성 replay와 사전검증 집계",
+        "subtitle": "backend, 전체 gate, closed CLI 검증, private root 미생성과 모든 fold의 shift 분포다.",
         "dataset": "evidence_summary",
         "sourceId": "exp471_truth",
         "defaultSort": {
@@ -299,7 +299,7 @@
     "datasets": {
       "summary": [
         {
-          "status": "task_5_replay_verified_synthetic_qualification_failed",
+          "status": "task_6_preflight_verified_private_checkpoint_pending",
           "replay_verified": 1,
           "integrity_passed_folds": 10,
           "planned_folds": 10,
@@ -314,7 +314,7 @@
       ],
       "evidence_summary": [
         {"order": 1, "item": "backend", "value": "numba", "meaning": "Task 3에서 선택한 계산 경로"},
-        {"order": 2, "item": "전체 자격", "value": "실패", "meaning": "합성 smoke는 구현 검증이며 private 진입 자격이 아님"},
+        {"order": 2, "item": "전체 자격", "value": "실패", "meaning": "합성 smoke는 구현 검증이며 private 진행 보장이 아님"},
         {"order": 3, "item": "period fixed", "value": "20260721:0, 20261721:0", "meaning": "각 seed에서 1개 이상 필요"},
         {"order": 4, "item": "period broken", "value": "20260721:10, 20261721:10", "meaning": "각 seed에서 0이어야 함"},
         {"order": 5, "item": "보호 변화 broken", "value": "level_shift:20, gradual_drift:20, amplitude_scaling:20", "meaning": "세 변화 모두 0이어야 함"},
@@ -973,12 +973,30 @@
         },
         {
           "order": 5,
+          "checked": "☑",
+          "task": "closed evaluate·inspect CLI",
+          "status": "완료"
+        },
+        {
+          "order": 6,
+          "checked": "☑",
+          "task": "private 승인 checkpoint",
+          "status": "완료"
+        },
+        {
+          "order": 7,
+          "checked": "☑",
+          "task": "Task 6 preflight에서 private root 생성",
+          "status": "없음"
+        },
+        {
+          "order": 8,
           "checked": "☐",
           "task": "private 실행 1·2",
           "status": "승인 전 금지"
         },
         {
-          "order": 6,
+          "order": 9,
           "checked": "☐",
           "task": "official 실행·TEST/FN/routing",
           "status": "별도 판단 필요"
@@ -989,12 +1007,12 @@
   "sources": [
     {
       "id": "exp471_truth",
-      "label": "Exp471 Task 5 canonical synthetic smoke",
+      "label": "Exp471 Task 6 canonical synthetic replay preflight",
       "path": "scratch/exp471_dashboard_artifact_antigravity.json",
       "query": {
         "engine": "duckdb",
         "language": "sql",
-        "description": "Exp471 Task 5 canonical synthetic smoke",
+        "description": "Exp471 Task 6 canonical synthetic replay preflight",
         "sql": "SELECT 1 AS replay_verified, 10 AS integrity_passed_folds, 10 AS planned_folds, 0 AS qualification_passed, 0 AS private_runs, 0 AS official_runs, 0 AS label_query_count, 'numba' AS backend",
         "tables_used": [
           "scratch/exp471_dashboard_artifact_antigravity.json"

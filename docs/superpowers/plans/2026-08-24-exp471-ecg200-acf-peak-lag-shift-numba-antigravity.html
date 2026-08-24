@@ -532,7 +532,7 @@ git commit -m "feat: publish replayable Exp471 evidence"</code></pre>
   <p><strong>Files:</strong> Create <code>cli_antigravity.py</code>, <code>scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py</code>, <code>docs/EXP471_RUNBOOK_antigravity.html</code>; Test <code>tests/test_cli_antigravity.py</code>, <code>test_pipeline_antigravity.py</code>; Modify implementation report, dashboard, this plan and Exp471 code map triplet.</p>
   <p><strong>Produces:</strong> <code>evaluate</code>와 <code>inspect</code>만 있는 CLI. 승인 뒤에만 <code>/private/tmp/exp471_task6_private_run1_antigravity</code> evaluate→inspect, 그 다음 run2 evaluate→inspect를 허용한다. Task 6 자체는 두 root를 만들거나 실행하지 않는다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>6.1</strong> unknown command, 승인 없음, dirty commit과 private root 미생성 RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.1</strong> unknown command, 승인 없음, dirty commit과 private root 미생성 RED 테스트를 작성한다.</label>
     <pre><code>def test_cli_rejects_official_surface_antigravity(self):
     with self.assertRaises(SystemExit):
         parser_antigravity().parse_args(["official"])
@@ -544,11 +544,11 @@ def test_private_helper_requires_checkpoint_antigravity(self):
 def test_task6_preflight_does_not_create_private_roots_antigravity(self):
     self.assertFalse(PRIVATE_RUN1_ANTIGRAVITY.exists())
     self.assertFalse(PRIVATE_RUN2_ANTIGRAVITY.exists())</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_cli_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_pipeline_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.3</strong> CLI와 승인 helper를 구현하되 실행하지 않는다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.3</strong> CLI와 승인 helper를 구현하되 실행하지 않는다.</label>
     <pre><code>PRIVATE_RUN1_ANTIGRAVITY = Path("/private/tmp/exp471_task6_private_run1_antigravity")
 PRIVATE_RUN2_ANTIGRAVITY = Path("/private/tmp/exp471_task6_private_run2_antigravity")
 
@@ -561,7 +561,7 @@ def run_private_sequence_antigravity(reviewed_commit, approval_token):
     second = evaluate_then_inspect_antigravity(PRIVATE_RUN2_ANTIGRAVITY, reviewed_commit)
     require_byte_identical_antigravity(first, second)
     return first, second</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.4</strong> Exp471 전체 suite와 Exp470 authority 회귀 suite를 실행한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.4</strong> Exp471 전체 suite와 Exp470 authority 회귀 suite를 실행한다.</label>
     <pre><code>python3 -m unittest discover -s experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests -p 'test_*_antigravity.py'
 python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
@@ -569,7 +569,7 @@ python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.5</strong> Ox Alpha Ultra가 설계 위반과 범위 확장을 읽기 전용으로 검토하고 Codex가 직접 재검증한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.5</strong> Ox Alpha Ultra가 설계 위반과 범위 확장을 읽기 전용으로 검토하고 Codex가 직접 재검증한다.</label>
     <pre><code>rg -n "np\.fft|backend=.numpy.|ECG200_TEST|TEST_LABEL|false_negative|routing|champion|promotion|0\.85" \
   experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity \
   scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py
@@ -577,7 +577,7 @@ rg -n "early_start|late_start|acf_lag_max|peak_lag_max|E12|C12" \
   experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity
 python3 scratch/build_codemap_exp471_antigravity.py --validate-only
 git diff --check</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.6</strong> 실제 완료 항목만 HTML에 체크하고 dashboard를 다시 패키징한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.6</strong> 실제 완료 항목만 HTML에 체크하고 dashboard를 다시 패키징한다.</label>
     <pre><code>python3 -m json.tool scratch/exp471_dashboard_artifact_antigravity.json &gt;/dev/null
 node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs \
   --input scratch/exp471_dashboard_artifact_antigravity.json \
@@ -586,7 +586,7 @@ python3 scratch/build_codemap_exp471_antigravity.py
 python3 scratch/build_codemap_exp471_antigravity.py --validate-only
 git status --short
 git diff --check</code></pre>
-    <label><input type="checkbox" disabled> <strong>6.7</strong> 구현 완료를 commit하고 private 실행 checkpoint에서 멈춘다.</label>
+    <label><input type="checkbox" checked disabled> <strong>6.7</strong> 구현 완료를 commit하고 private 실행 checkpoint에서 멈춘다.</label>
     <pre><code>git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity \
   scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py \
   scratch/exp471_acceleration_assessment_antigravity.json \
@@ -610,10 +610,10 @@ git status --short</code></pre>
     <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX smoke</label>
     <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair-repair qualification</label>
     <label><input type="checkbox" checked disabled> Task 5 canonical artifacts·semantic replay·HTML 결과 화면</label>
-    <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" checked disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
     <label><input type="checkbox" disabled> official 실행·TEST/FN·routing</label>
   </section>
-  <p class="muted">작성일: 2026-08-24 · Task 1~5 구현까지 완료했고 Task 6가 다음 단계다. private/official 실행, TEST/FN 접근과 routing은 아직 시작하지 않았다.</p>
+  <p class="muted">작성일: 2026-08-24 · Task 1~6 구현과 사전검증까지 완료했다. private/official 실행, TEST/FN 접근과 routing은 아직 시작하지 않았고, private run 1·2는 별도 승인이 필요하다.</p>
 </main></body>
 </html>

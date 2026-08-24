@@ -78,15 +78,20 @@ DASHBOARD_EXPORT_TEST_ANTIGRAVITY = _package_test_antigravity("test_dashboard_ex
 TASK5_REPORT_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-5-report-antigravity.html"
 EXP471_DASHBOARD_ANTIGRAVITY = "docs/EXP471_DASHBOARD_antigravity.html"
 EXP471_DASHBOARD_ARTIFACT_ANTIGRAVITY = "scratch/exp471_dashboard_artifact_antigravity.json"
+CLI_ANTIGRAVITY = _package_file_antigravity("cli_antigravity.py")
+RUNNER_ANTIGRAVITY = "scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py"
+CLI_TEST_ANTIGRAVITY = _package_test_antigravity("test_cli_antigravity.py")
+PIPELINE_TEST_ANTIGRAVITY = _package_test_antigravity("test_pipeline_antigravity.py")
+RUNBOOK_ANTIGRAVITY = "docs/EXP471_RUNBOOK_antigravity.html"
 
 FUTURE_DECLARED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html",
     "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
-    _package_file_antigravity("cli_antigravity.py"),
-    "scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py",
-    _package_test_antigravity("test_cli_antigravity.py"),
-    _package_test_antigravity("test_pipeline_antigravity.py"),
-    "docs/EXP471_RUNBOOK_antigravity.html",
+    CLI_ANTIGRAVITY,
+    RUNNER_ANTIGRAVITY,
+    CLI_TEST_ANTIGRAVITY,
+    PIPELINE_TEST_ANTIGRAVITY,
+    RUNBOOK_ANTIGRAVITY,
 )
 TASK5_EXISTING_PATHS_ANTIGRAVITY = (
     TASK5_REPORT_ANTIGRAVITY,
@@ -178,6 +183,11 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
     EXP471_DASHBOARD_ARTIFACT_ANTIGRAVITY,
     EXP471_DASHBOARD_ANTIGRAVITY,
+    CLI_ANTIGRAVITY,
+    RUNNER_ANTIGRAVITY,
+    CLI_TEST_ANTIGRAVITY,
+    PIPELINE_TEST_ANTIGRAVITY,
+    RUNBOOK_ANTIGRAVITY,
     ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     _predecessor_file_antigravity("sources_antigravity.py"),
@@ -186,8 +196,8 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     _predecessor_file_antigravity("predecessor_antigravity.py"),
     _predecessor_file_antigravity("contracts_antigravity.py"),
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp471_task5_replay_codemap_v5"
-LOCK_SCHEMA_ANTIGRAVITY = "exp471_task5_replay_lock_v5"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp471_task6_closed_cli_codemap_v6"
+LOCK_SCHEMA_ANTIGRAVITY = "exp471_task6_closed_cli_lock_v6"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -339,6 +349,31 @@ def build_graph_antigravity() -> dict[str, Any]:
             (EVALUATION_TEST_ANTIGRAVITY,), "QualificationDecisionAntigravity",
         ),
         _node_antigravity(
+            "publication", ARTIFACTS_ANTIGRAVITY, "closed evaluate pipeline",
+            "Writes exactly seven canonical leaves after independently recomputing gates.",
+            (), "publish_result_antigravity",
+        ),
+        _node_antigravity(
+            "semantic_replay", REPLAY_ANTIGRAVITY, "closed inspect pipeline",
+            "Verifies exact leaves and hashes before regenerating all peak-derived evidence.",
+            (), "inspect_result_antigravity",
+        ),
+        _node_antigravity(
+            "runbook", RUNBOOK_ANTIGRAVITY, "Task 6 private-run operator",
+            "Documents the two fixed roots, clean commit checks, approval token, run order, byte comparison, and current stop boundary.",
+            (), "run_private_sequence_antigravity",
+        ),
+        _node_antigravity(
+            "cli", CLI_ANTIGRAVITY, "Task 6 launcher and later private checkpoint",
+            "Exposes only evaluate and inspect, restricts roots to two fixed private paths, builds ten seed-major records, publishes seven leaves, and immediately semantic-inspects.",
+            (CLI_TEST_ANTIGRAVITY,), "evaluate_pipeline_antigravity",
+        ),
+        _node_antigravity(
+            "runner", RUNNER_ANTIGRAVITY, "explicit user approval checkpoint",
+            "Imports without execution, rejects invalid checkpoint tokens before git or root observation, and orders clean run1, clean run2, and exact seven-leaf byte equality.",
+            (PIPELINE_TEST_ANTIGRAVITY,), "run_private_sequence_antigravity",
+        ),
+        _node_antigravity(
             "scoring_test", SCORING_TEST_ANTIGRAVITY, "Task 4 focused unittest command",
             "Covers compiled byte-exact C12 fallback, fixed signature, synthetic fold separation, retained ACF evidence, and semantic shift rejection.",
             (), "Exp471ScoringTestAntigravity",
@@ -387,6 +422,16 @@ def build_graph_antigravity() -> dict[str, Any]:
             "acceleration_test", ACCELERATION_TEST_ANTIGRAVITY, "focused unittest command",
             "Covers frozen fixture authority, full MLX CPU parity, exact lag boundaries, full-output determinism bytes, strict arguments, manifest fields, and GPU fallback.",
             (), "Exp471AccelerationTestAntigravity",
+        ),
+        _node_antigravity(
+            "cli_test", CLI_TEST_ANTIGRAVITY, "Task 6 focused unittest command",
+            "Covers closed parser surface, fixed-root rejection, strict JSON dispatch, inspect isolation, exact repository git checks, and dirty/mismatched commit rejection.",
+            (), "Exp471CliTestAntigravity",
+        ),
+        _node_antigravity(
+            "pipeline_test", PIPELINE_TEST_ANTIGRAVITY, "Task 6 focused unittest command",
+            "Covers absent private-root preflight, token-first rejection, ordered run sequence, stop-on-failure, exact leaf bytes, fixed-root evaluation, and semantic inspection.",
+            (), "Exp471PipelineTestAntigravity",
         ),
         _node_antigravity(
             "implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1–4 closeout",
@@ -495,6 +540,10 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("map_builder", "documents", "evaluation", BUILDER_ANTIGRAVITY, "EVALUATION_ANTIGRAVITY"),
         _edge_antigravity("map_builder", "reviews", "exp470_config_contract", BUILDER_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
         _edge_antigravity("map_builder", "reviews", "exp470_contracts_pattern", BUILDER_ANTIGRAVITY, "Exp470QualificationAntigravity"),
+        _edge_antigravity("cli", "calls", "publication", CLI_ANTIGRAVITY, "publish_result_antigravity"),
+        _edge_antigravity("cli", "calls", "semantic_replay", CLI_ANTIGRAVITY, "inspect_result_antigravity"),
+        _edge_antigravity("cli", "calls", "scoring", CLI_ANTIGRAVITY, "score_fold_methods_antigravity"),
+        _edge_antigravity("runner", "documents", "runbook", RUNNER_ANTIGRAVITY, "run_private_sequence_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -516,8 +565,8 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         "<title>Exp471 code map</title></head><body><main>"
-        "<h1>Exp471 Task 5 Code Map</h1>"
-        "<p>Versioned authority, ACF scorer, runtime assessment, fold qualification, canonical publication, semantic replay, and dashboard map; future Task 6 files are explicitly pending.</p>"
+        "<h1>Exp471 Task 6 Code Map</h1>"
+        "<p>Versioned authority, ACF scorer, runtime assessment, fold qualification, canonical publication, semantic replay, dashboard map, closed CLI, and approved-private checkpoint; private execution remains pending.</p>"
         "<table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>"
         + rows + "</tbody></table>"
         '<script id="exp471-codemap-json-antigravity" type="application/json">'
