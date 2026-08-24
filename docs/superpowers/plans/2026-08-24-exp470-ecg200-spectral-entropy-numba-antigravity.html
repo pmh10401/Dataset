@@ -293,7 +293,7 @@ git commit -m "feat: add Numba spectral entropy scorer"</code></pre>
   <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/acceleration_antigravity.py</code>, <code>scratch/exp470_acceleration_assessment_antigravity.json</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_acceleration_antigravity.py</code>.</p>
   <p><strong>Produces:</strong> <code>RuntimeAssessmentAntigravity</code>; <code>assess_runtime_antigravity(fit_rows, query_rows, repetitions=21)</code>; <code>fixed_reference_rows_antigravity()</code>는 4×140 고정 fixture를 반환하고, <code>score_bytes_antigravity(scores)</code>는 다섯 결과 field의 bytes를 반환하며, <code>scores_finite_antigravity(scores)</code>는 모든 float field의 유한성을 검사한다. <code>timing_summary_antigravity(values)</code>는 median/IQR을, <code>assess_mlx_smoke_antigravity(fit_rows, query_rows, numba_scores, numba_warm_median, required_speedup)</code>는 available·parity·determinism·speedup·fallback_reason을 반환한다. Numba는 항상 selected이며 MLX는 관측 상태만 기록한다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>3.1</strong> 필수 manifest와 중단 조건 RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>3.1</strong> 필수 manifest와 중단 조건 RED 테스트를 작성한다.</label>
     <pre><code>def test_assessment_records_numba_and_mlx_without_numpy_backend_antigravity(self):
     result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=3)
     self.assertEqual(result.selected_backend, "numba")
@@ -305,9 +305,9 @@ git commit -m "feat: add Numba spectral entropy scorer"</code></pre>
 def test_reference_failure_stops_antigravity(self):
     with self.assertRaisesRegex(RuntimeError, "Python reference"):
         assess_runtime_antigravity(self.fit_rows, self.query_rows, reference_tolerance=-1.0)</code></pre>
-    <label><input type="checkbox" disabled> <strong>3.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>3.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_acceleration_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>3.3</strong> cold compile, warm median/IQR, Python 기준, 결정성, MLX capability를 순차 측정한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>3.3</strong> cold compile, warm median/IQR, Python 기준, 결정성, MLX capability를 순차 측정한다.</label>
     <pre><code>@dataclass(frozen=True, slots=True)
 class BackendAssessmentAntigravity:
     backend: str
@@ -378,11 +378,11 @@ def assess_runtime_antigravity(fit_rows, query_rows, repetitions=21, reference_t
         python_version=platform.python_version(), numba_version=numba.__version__,
         llvmlite_version=llvmlite.__version__, cpu=platform.processor(),
     )</code></pre>
-    <label><input type="checkbox" disabled> <strong>3.4</strong> 실제 assessment JSON을 한 번 만들고 값이 finite인지 검증한다. 이것은 qualification 실행이 아니다.</label>
+    <label><input type="checkbox" checked disabled> <strong>3.4</strong> 실제 assessment JSON을 한 번 만들고 값이 finite인지 검증한다. 이것은 qualification 실행이 아니다.</label>
     <pre><code>python3 -m experiments.exp470_ecg200_spectral_entropy_numba_antigravity.acceleration_antigravity \
   --output scratch/exp470_acceleration_assessment_antigravity.json
 python3 -m json.tool scratch/exp470_acceleration_assessment_antigravity.json &gt;/dev/null</code></pre>
-    <label><input type="checkbox" disabled> <strong>3.5</strong> 테스트와 manifest 재생성을 두 번 확인하고 commit한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>3.5</strong> 테스트와 manifest 재생성을 두 번 확인하고 commit한다.</label>
     <pre><code>python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_acceleration_antigravity
 python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_acceleration_antigravity
 git diff --check
@@ -636,7 +636,7 @@ git status --short</code></pre>
   <section aria-label="계획 진행 체크박스">
     <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
     <label><input type="checkbox" checked disabled> Task 2 Numba spectral entropy 단일 scorer</label>
-    <label><input type="checkbox" disabled> Task 3 Numba 근거·MLX smoke</label>
+    <label><input type="checkbox" checked disabled> Task 3 Numba 근거·MLX smoke</label>
     <label><input type="checkbox" disabled> Task 4 C0/E11/C11·pair repair qualification</label>
     <label><input type="checkbox" disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
     <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
