@@ -83,6 +83,10 @@ class DashboardExportAntigravityTest(unittest.TestCase):
             self.assertIn("fold 0", html)
             self.assertIn("C10", html)
             self.assertIn(
+                "qualification FAIL — private 실행 전 차단",
+                html,
+            )
+            self.assertIn(
                 "실행 1: <strong>아직 실행하지 않음</strong>",
                 html,
             )
@@ -91,37 +95,37 @@ class DashboardExportAntigravityTest(unittest.TestCase):
                 html,
             )
 
-            failed_decision = dataclasses.replace(
+            passed_decision = dataclasses.replace(
                 inspected.decision,
-                status="qualification_failed_blocked_before_private_run",
-                eligible_for_private_reproducibility=False,
-                primary_passed_count=9,
-                failure_reasons=("c10_not_10_of_10",),
+                status="qualification_gate_passed_awaiting_private_reproducibility",
+                eligible_for_private_reproducibility=True,
+                primary_passed_count=10,
+                failure_reasons=(),
             )
-            failed_snapshot = dict(inspected.dashboard_snapshot)
-            failed_snapshot["qualification_passed"] = False
-            failed_snapshot["private_reproducibility"] = {
+            passed_snapshot = dict(inspected.dashboard_snapshot)
+            passed_snapshot["qualification_passed"] = True
+            passed_snapshot["private_reproducibility"] = {
                 "run_1": "not_run",
                 "run_2": "not_run",
-                "status": "qualification_failed_blocked_before_private_run",
+                "status": "awaiting_private_reproducibility",
             }
-            failed_inspected = dataclasses.replace(
+            passed_inspected = dataclasses.replace(
                 inspected,
-                decision=failed_decision,
-                dashboard_snapshot=MappingProxyType(failed_snapshot),
+                decision=passed_decision,
+                dashboard_snapshot=MappingProxyType(passed_snapshot),
             )
-            failed_html = export_dashboard_antigravity(failed_inspected)
+            passed_html = export_dashboard_antigravity(passed_inspected)
             self.assertIn(
-                "qualification FAIL — private 실행 전 차단",
-                failed_html,
+                "qualification PASS — private 재현성 확인 대기",
+                passed_html,
             )
             self.assertIn(
                 "실행 1: <strong>아직 실행하지 않음</strong>",
-                failed_html,
+                passed_html,
             )
             self.assertIn(
                 "실행 2: <strong>아직 실행하지 않음</strong>",
-                failed_html,
+                passed_html,
             )
 
 
