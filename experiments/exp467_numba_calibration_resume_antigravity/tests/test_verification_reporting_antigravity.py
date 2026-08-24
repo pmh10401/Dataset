@@ -220,6 +220,126 @@ def _persisted_verification_antigravity():
     return verification
 
 
+class EvaluationDigestJsonSafetyTests(unittest.TestCase):
+    """The Exp467 digest boundary matches frozen Exp450 JSON-safe report semantics."""
+
+    def test_synthetic_roc_inf_threshold_digest_stays_strict_canonical_json(self) -> None:
+        """Real +inf ROC thresholds digest as null metadata without altering evidence."""
+        import math
+
+        from experiments.exp450_resampling_image_ablation_antigravity.evaluation_antigravity import (
+            Exp450EvaluationAntigravity,
+        )
+        from experiments.exp467_numba_calibration_resume_antigravity.evaluation_antigravity import (
+            _evaluation_digest_antigravity,
+            curve_tables_exp467_antigravity,
+            metric_tables_exp467_antigravity,
+        )
+
+        dataset = "fixture_roc_digest_antigravity"
+        labels = {dataset: (0, 1)}
+        scores = {
+            method: {dataset: (0.25, 0.75)}
+            for method in ("A", "B", "C", "D", "knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest", "deep_svdd_1d", "drocc_1d")
+        }
+        evaluation = Exp450EvaluationAntigravity(
+            manifests=MappingProxyType({
+                "schema": "exp467-synthetic-digest-manifest-antigravity.v1",
+                "conditions": ("A", "B", "C", "D"),
+            }),
+            metric_tables=metric_tables_exp467_antigravity(labels, scores),
+            curve_tables=curve_tables_exp467_antigravity(labels, scores),
+        )
+        # Real curve generation must expose the sklearn initial +inf ROC threshold.
+        roc_rows = tuple(evaluation.curve_tables["roc"]["rows"])
+        first_rows = {}
+        for row in roc_rows:
+            first_rows.setdefault(row["method"], row)
+        self.assertEqual(tuple(first_rows), tuple(scores))
+        self.assertTrue(all(row["threshold"] == math.inf for row in first_rows.values()))
+
+        # Capture the scientific evidence before hashing so mutation is detectable.
+        metric_values = tuple(
+            (row["method"], row["average_precision"], row["auroc"])
+            for row in evaluation.metric_tables.per_dataset
+        )
+        roc_coordinates = tuple(
+            (row["false_positive_rate"], row["true_positive_rate"])
+            for row in roc_rows
+        )
+        pr_rows = tuple(evaluation.curve_tables["precision_recall"]["rows"])
+        pr_coordinates = tuple(
+            (row["recall"], row["precision"])
+            for row in pr_rows
+        )
+        for row in evaluation.metric_tables.per_dataset:
+            self.assertEqual(row["average_precision"], 1.0)
+            self.assertEqual(row["auroc"], 1.0)
+
+        digest = _evaluation_digest_antigravity(evaluation)
+        self.assertRegex(digest, r"^[0-9a-f]{64}$")
+        self.assertEqual(digest, _evaluation_digest_antigravity(evaluation))
+        self.assertTrue(all(row["threshold"] == math.inf for row in first_rows.values()))
+        self.assertEqual(
+            metric_values,
+            tuple(
+                (row["method"], row["average_precision"], row["auroc"])
+                for row in evaluation.metric_tables.per_dataset
+            ),
+        )
+        self.assertEqual(
+            roc_coordinates,
+            tuple(
+                (row["false_positive_rate"], row["true_positive_rate"])
+                for row in evaluation.curve_tables["roc"]["rows"]
+            ),
+        )
+        self.assertEqual(
+            pr_coordinates,
+            tuple(
+                (row["recall"], row["precision"])
+                for row in evaluation.curve_tables["precision_recall"]["rows"]
+            ),
+        )
+
+        # A manually null-normalized copy must hash identically; threshold remains
+        # present while all ROC/PR coordinates and metrics remain untouched.
+        modified_curve_tables = MappingProxyType({
+            "roc": MappingProxyType({
+                **evaluation.curve_tables["roc"],
+                "rows": tuple(
+                    MappingProxyType({
+                        **row,
+                        "threshold": None if not math.isfinite(row["threshold"]) else row["threshold"],
+                    })
+                    for row in roc_rows
+                ),
+            }),
+            "precision_recall": evaluation.curve_tables["precision_recall"],
+        })
+        modified = Exp450EvaluationAntigravity(
+            manifests=evaluation.manifests,
+            metric_tables=evaluation.metric_tables,
+            curve_tables=modified_curve_tables,
+        )
+        self.assertEqual(digest, _evaluation_digest_antigravity(modified))
+        self.assertEqual(modified.metric_tables, evaluation.metric_tables)
+        self.assertEqual(
+            tuple(
+                (row["false_positive_rate"], row["true_positive_rate"])
+                for row in modified.curve_tables["roc"]["rows"]
+            ),
+            roc_coordinates,
+        )
+        self.assertEqual(
+            tuple(
+                (row["recall"], row["precision"])
+                for row in modified.curve_tables["precision_recall"]["rows"]
+            ),
+            pr_coordinates,
+        )
+
+
 class VerificationGateTests(unittest.TestCase):
     def test_direct_verifier_cannot_skip_persisted_manifest_reopen_before_labels(self) -> None:
         """A fresh verifier capability is not the same object whose four leaves reopened."""
