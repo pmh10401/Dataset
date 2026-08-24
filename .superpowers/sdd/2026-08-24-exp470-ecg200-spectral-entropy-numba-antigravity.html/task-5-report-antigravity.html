@@ -1,0 +1,14 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Exp470 Task 5 report</title></head><body><main>
+<h1>Exp470 Task 5 구현 보고</h1>
+<p>합성 기록만으로 결과를 저장하고 다시 계산해 확인하는 기능을 만들었다. ECG200 파일, private 실행, official 실행은 호출하지 않았다.</p>
+<h2>RED</h2>
+<p>세 production module이 없음을 먼저 확인했다. 그 상태에서 새 3개 테스트를 실행했고, <code>artifacts_antigravity</code>, <code>replay_antigravity</code>, <code>dashboard_export_antigravity</code> 모듈 부재로 9개 테스트가 예상대로 실패했다.</p>
+<h2>GREEN</h2>
+<ul><li>정확히 7개 leaf와 6개 SHA-256 hash를 canonical JSON/JSONL bytes로 저장한다.</li><li>공유 TRAIN 숫자 배열, fold indices, C0를 저장하고 Numba E11→C11→pair→결정을 다시 계산한다.</li><li>hash를 다시 맞춘 뒤 decision, fold 지표, summary, dashboard, context를 고쳐도 semantic 비교에서 거부한다.</li><li>HTML은 쉬운 한국어이며 replay만 checked, private/official은 unchecked다.</li></ul>
+<h2>검증</h2>
+<pre><code>focused run 1: Ran 9 tests in 2.929s — OK
+focused run 2: Ran 9 tests in 3.479s — OK
+full Exp470 suite: Ran 49 tests in 6.526s — OK</code></pre>
+<h2>범위</h2>
+<p>실제 결과 root나 live dashboard는 만들거나 수정하지 않았다. controller의 검토 뒤에만 live dashboard 진행 상태를 바꿀 수 있다.</p>
+</main></body></html>
