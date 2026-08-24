@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 Task 3 BLOCKED_AT_ACCELERATION_GATE 보고서</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem}.box{padding:1rem;border-left:6px solid #b42318;background:#fff4f2}</style></head>
+<body><main>
+<h1>Exp468 Task 3 — BLOCKED_AT_ACCELERATION_GATE</h1>
+<p><strong>후속 상태:</strong> 이 문서는 승인 전 시점의 <code>BLOCKED</code> 상태를 보존하는 point-in-time 기록이며, 현재 authoritative closure는 <a href="task-3-fallback-report-antigravity.html"><code>task-3-fallback-report-antigravity.html</code></a>이다.</p>
+<div class="box"><p><strong>결론:</strong> 고정 S10 수식과 Numba parity는 통과했지만 clean-process backend 준비와 cold compile을 포함한 1.1x 가속 gate가 실패했다. MLX도 float64 RFFT를 유지하지 못한다. NumPy CPU fallback을 기록하고 Task 3·Step 5를 미체크로 남겼으며 공식 실험은 실행하지 않았다.</p></div>
+
+<h2>RED/GREEN</h2>
+<ul>
+<li>production 전에 창·직접 DFT 분포·JS·불변성·LOO·leakage·tie rank·strict confirmation·backend parity·고정 gate test를 작성했다.</li>
+<li>첫 focused 실행은 새 <code>local_stft_antigravity</code>와 <code>acceleration_antigravity</code> 부재 때문에 2개 import error로 RED였다.</li>
+<li>최소 NumPy/Numba 구현 후 focused suite 14개가 GREEN이다. 최종 검증에서 같은 suite를 두 번 실행한다.</li>
+</ul>
+
+<h2>고정 수식과 누출 경계</h2>
+<p>exact float64 width 140, suffix <code>[56:140]</code>, 시작점 <code>(0,14,28,42,56)</code>, 길이 28·padding 없음, 평균 제거, 대칭 Hann <code>0.5-0.5*cos(2*pi*n/27)</code>, 길이-28 RFFT, DC 제외·Nyquist 포함 14 bin, bin당 <code>1e-12</code>, frame L1 정규화를 구현했다. 직접 DFT oracle과 <code>atol=1e-15</code>로 비교했고 level shift·양의 amplitude scaling 불변성, constant frame finite를 확인했다.</p>
+<p>reference는 frame별 성분 중앙값 뒤 frame별 재정규화한다. fit raw는 자기 제외 LOO, query raw는 전체 fit만 사용한다. duplicate/tied median 수동 fixture와 query를 fit에 섞으면 raw가 달라지는 leakage fixture를 통과했다. 자연로그 JS의 다섯 frame 중앙값, <code>&lt;=</code> rank, raw 0/equal max/nextafter above max confirmation 경계를 확인했다.</p>
+
+<h2>Review fix round 1</h2>
+<ul>
+<li>NumPy 단일 JS·batched raw와 Numba JS에서 승인 수식에 없던 <code>1e-18</code>/nonnegative clamp를 제거했다. 기대값 <code>1.999998644061338e-20</code>의 작은 양의 JS/raw가 그대로 남아 <code>raw&gt;0</code> confirmation 의미를 보존한다.</li>
+<li>benchmark parent의 acceleration import를 제거했다. raw workload를 임시 NPZ로 전달한 clean child가 acceleration module·Numba import와 Hann/twiddle 생성 직전에 timer를 시작하며, backend 준비·cold compile·한 번의 warm 전체 실행·host 반환을 gate에 포함한다.</li>
+<li>실제 Numba direct-DFT primitive의 <code>(5,14)</code> power distribution을 NumPy RFFT oracle과 직접 <code>rtol=0, atol=1e-12</code> 비교해 bin order, DC 제거와 Nyquist 포함을 고정했다.</li>
+<li>세 회귀는 각각 RED를 확인한 뒤 GREEN으로 전환했고 focused suite는 <code>17/17</code>이다.</li>
+</ul>
+
+<h2>실제 10-fold workload와 backend</h2>
+<p>Task 2 TRAIN-only exact loader·보간·합성 함수를 사용했다. Exp466 검토 fold를 seed-major로 재사용했고 두 seed를 deduplicate하지 않았다. fold별 normal+네 합성 query를 combined batch로 한 번만 점수화해 fit calibration을 공유했다. fit raw 552개, query raw 690개, 변환 행 1,242개, frame 6,210개다. load·synthetic assembly는 timing 밖, backend 준비·sync·host 반환은 timing 안이다.</p>
+<table><thead><tr><th>backend</th><th>median/IQR</th><th>backend 준비</th><th>cold compile</th><th>gate</th><th>speedup</th><th>parity·선택</th></tr></thead><tbody>
+<tr><td>NumPy</td><td><code>0.0319152502 / 0.0004911665s</code></td><td><code>0s</code></td><td>해당 없음</td><td><code>0.0319152502s</code></td><td><code>1.0x</code></td><td>oracle, fallback</td></tr>
+<tr><td>Numba</td><td><code>0.0326081249 / 0.0014127083s</code></td><td><code>0.1001899168s</code></td><td><code>0.4413024997s</code></td><td><code>0.5741005414s</code></td><td><code>0.0555917438x</code></td><td>finite, max raw error <code>5.551115e-16</code>, rank/confirmation exact, deterministic; ineligible</td></tr>
+<tr><td>MLX/MPS</td><td colspan="5">측정 불가</td><td>GPU float64 RFFT 미지원; parity 실패·ineligible</td></tr>
+</tbody></table>
+<p>NumPy 21회와 Numba warm 21회를 순차 측정했다. review fix round의 clean-process gate는 backend 준비 <code>0.1001899168s</code> + cold compile <code>0.4413024997s</code> + warm 전체 실행 <code>0.0326081249s</code> = <code>0.5741005414s</code>다. acceleration module이 timer 전에 preload되지 않았음을 child가 검증한다. 수식·workload·threshold를 바꾸지 않았고 1.1x에는 미달했다.</p>
+
+<h2>체크박스·대시보드 truth</h2>
+<ul>
+<li>Task 3: 미체크. Step 5: 미체크. Steps 1~4와 최종 검증 Step 6: 체크.</li>
+<li>대시보드 상태: <code>implementation_task_3_acceleration_gate_blocked</code>.</li>
+<li>private/official qualification: <code>0/0</code>회. result와 result hash: <code>null</code>. TEST 파일·라벨·실제 FN: 접근하지 않음.</li>
+</ul>
+
+<h2>Self-review·commit·concerns</h2>
+<p>승인 design SHA-256과 Task 3 brief를 대조했고 수식, LOO/query reference, backend parity, workload counts, cold gate, fallback truth를 재검토했다. C0/S10/C10 조립·AUC·qualification·routing·champion은 범위 밖이라 추가하지 않았다.</p>
+<p>최초 산출물 커밋은 <code>feat: add Exp468 local STFT spectral evidence</code>, review fix round 1 커밋은 <code>fix: correct Exp468 JS and cold acceleration timing</code>이다. commit SHA는 이 HTML을 포함하는 enclosing commit이며 self-reference를 파일 내용에 선계산할 수 없으므로 <code>git rev-parse HEAD</code>로 확인한다.</p>
+<p><strong>Concern:</strong> backend 준비와 cold compile을 포함하는 고정 gate에서는 작은 10-fold STFT workload가 Numba 비용을 상쇄하지 못한다. gate를 약화하지 않는 한 Exp468 Task 3은 blocked 상태다.</p>
+</main></body></html>
