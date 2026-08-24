@@ -175,8 +175,12 @@ def _canonical_mapping_bytes_antigravity(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def governance_fingerprint_evidence_antigravity(root: Path) -> dict[str, object]:
+def governance_fingerprint_evidence_antigravity(
+    root: Path, production_node_count: int
+) -> dict[str, object]:
     """Verify the approved design and plan hashes as governance inputs."""
+    if type(production_node_count) is not int or production_node_count < 0:
+        raise ValueError("Exp471 production node count is invalid")
     resolved_root = root.resolve()
     design_path = resolved_root / DESIGN_PATH_ANTIGRAVITY
     plan_path = resolved_root / PLAN_PATH_ANTIGRAVITY
@@ -195,7 +199,7 @@ def governance_fingerprint_evidence_antigravity(root: Path) -> dict[str, object]
         "plan_sha256": plan_sha256,
         "frozen_exp467_source_commit": "1e616731a88da9bc0268823e1d2cef2a53c1054f",
         "frozen_exp467_source_context_sha256": "31341d8e14cf58a486cf7418276c432ac2dbda1af139699ff2afbd85969442af",
-        "exp471_production_modules_exist": False,
+        "exp471_production_modules_exist": production_node_count > 0,
     }
 
 
@@ -204,6 +208,11 @@ def build_codemap_payload_antigravity(
 ) -> dict[str, object]:
     nodes: list[dict[str, object]] = []
     edges: list[dict[str, str]] = []
+    production_node_count = sum(
+        path.is_relative_to(REPOSITORY_ROOT / _EXP471_NAMESPACE_ANTIGRAVITY)
+        and not _is_test_path_antigravity(_relative_antigravity(path))
+        for path in paths
+    )
     for path in paths:
         relative = _relative_antigravity(path)
         direct_callers = callers.get(relative, ())
@@ -227,19 +236,21 @@ def build_codemap_payload_antigravity(
             "experiment": "Exp471",
             "namespace": _EXP471_NAMESPACE_ANTIGRAVITY,
             "node_count": len(nodes),
-            "production_node_count": sum(
-                path.is_relative_to(REPOSITORY_ROOT / _EXP471_NAMESPACE_ANTIGRAVITY)
-                and not _is_test_path_antigravity(_relative_antigravity(path))
-                for path in paths
-            ),
+            "production_node_count": production_node_count,
             "test_node_count": sum(
                 path.is_relative_to(REPOSITORY_ROOT / _EXP471_NAMESPACE_ANTIGRAVITY)
                 and _is_test_path_antigravity(_relative_antigravity(path))
                 for path in paths
             ),
             "derived_from_index_tracked_paths_only": True,
-            "external_closure_policy": "no_production_modules_yet",
-            "governance_fingerprint_evidence": governance_fingerprint_evidence_antigravity(REPOSITORY_ROOT),
+            "external_closure_policy": (
+                "index_tracked_exp471_production_closure"
+                if production_node_count
+                else "no_production_modules_yet"
+            ),
+            "governance_fingerprint_evidence": governance_fingerprint_evidence_antigravity(
+                REPOSITORY_ROOT, production_node_count
+            ),
         },
         "nodes": nodes,
         "edges": sorted(edges, key=lambda edge: (edge["caller"], edge["callee"])),
@@ -295,6 +306,12 @@ def render_triplet_antigravity(
         '<script id="codemap-data" type="application/json">'
         f"{embedded}</script></body>\n</html>\n"
     ).encode("utf-8")
+    scope = payload.get("scope")
+    if not isinstance(scope, dict):
+        raise ValueError("Exp471 code-map scope is invalid")
+    production_node_count = scope.get("production_node_count")
+    if type(production_node_count) is not int:
+        raise ValueError("Exp471 code-map production node count is invalid")
     lock = {
         "schema": "exp471-codemap-lock.v1",
         "fingerprint_algorithm": "sha256",
@@ -304,7 +321,9 @@ def render_triplet_antigravity(
         },
         "module_fingerprints": fingerprints,
         "scanned_scope": list(fingerprints),
-        "governance_fingerprint_evidence": governance_fingerprint_evidence_antigravity(REPOSITORY_ROOT),
+        "governance_fingerprint_evidence": governance_fingerprint_evidence_antigravity(
+            REPOSITORY_ROOT, production_node_count
+        ),
     }
     lock_bytes = (
         json.dumps(lock, ensure_ascii=False, indent=2, sort_keys=True) + "\n"

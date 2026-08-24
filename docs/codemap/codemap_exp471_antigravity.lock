@@ -1,22 +1,28 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp471_antigravity.html": "425c63b84774225a73b999c9b0e4cba1fc005e143458dd74fe28d81c6ef04ae9",
-    "docs/codemap/codemap_exp471_antigravity.json": "e775b12be0972af362470a35dff799a3ac8b5c5d509be2e76f2853187d14200b"
+    "docs/codemap/codemap_exp471_antigravity.html": "760637a1837bf4f2c20940a0cdd2feed94a890d91af85435082753a7154e7316",
+    "docs/codemap/codemap_exp471_antigravity.json": "7675bf094b8e238de6e9446fbde4722c3c3679ccbd992721f5f56f8dc848ffbd"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
     "design_path": "docs/superpowers/specs/2026-08-24-exp471-exp467-evaluation-recovery-antigravity-design.md",
     "design_sha256": "3d7f22953fd8010fd512124e7c1448db6ba0ca390533cd2d2b7476d69cb513fd",
-    "exp471_production_modules_exist": false,
+    "exp471_production_modules_exist": true,
     "frozen_exp467_source_commit": "1e616731a88da9bc0268823e1d2cef2a53c1054f",
     "frozen_exp467_source_context_sha256": "31341d8e14cf58a486cf7418276c432ac2dbda1af139699ff2afbd85969442af",
     "plan_path": "docs/superpowers/plans/2026-08-24-exp471-exp467-evaluation-recovery-antigravity.md",
     "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
   },
   "module_fingerprints": {
-    "scratch/generate_exp471_codemap_antigravity.py": "de9a45692cec9f6f75ff94cec42e5af018924e7b573f8238a12e43c2a3fc3f2e"
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py": "b23654b9c7c66f1cd243cb338d7a18f3ee78d2b513d88d0a2b0bf78acc24f582",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py": "ac9441404920babcaf5aacbb781e1fef287e5d57caf1e54e8410c04f15abd2d8",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py": "5ec13c9007fb43a6b3c98efe36ef8f48e654682f43b4406f2433d89d3ba093e1",
+    "scratch/generate_exp471_codemap_antigravity.py": "f860c4459bbb0f8813c61dbe4ca87073b9040f0eb3fb4a605d3017dca458f5c6"
   },
   "scanned_scope": [
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
     "scratch/generate_exp471_codemap_antigravity.py"
   ],
   "schema": "exp471-codemap-lock.v1"
