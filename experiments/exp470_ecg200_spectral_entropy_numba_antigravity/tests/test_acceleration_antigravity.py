@@ -7,7 +7,7 @@ real scorer and only use the fixed, public four-row smoke fixture.
 from __future__ import annotations
 
 import hashlib
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError
 import json
 from pathlib import Path
 import sys
@@ -18,6 +18,7 @@ from unittest.mock import patch
 import numpy as np
 
 from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.acceleration_antigravity import (
+    _distribution_version_antigravity,
     assess_mlx_smoke_antigravity,
     assess_runtime_antigravity,
     fixed_reference_rows_antigravity,
@@ -61,9 +62,17 @@ class AccelerationAssessmentTestAntigravity(unittest.TestCase):
         self.assertIsNone(result.backends.get("numpy"))
 
     def test_assessment_records_installed_mlx_metal_distribution_version_antigravity(self) -> None:
-        """Break caught: MLX metadata reads a module attribute and drops the installed mlx-metal version."""
-        result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=3)
-        self.assertEqual(result.mlx_metal_version, version("mlx-metal"))
+        """Break caught: mlx-metal metadata either depends on the host or queries the wrong distribution."""
+        lookup = (
+            "experiments.exp470_ecg200_spectral_entropy_numba_antigravity."
+            "acceleration_antigravity.version"
+        )
+        with patch(lookup, return_value="mocked-metal-1.2.3") as installed:
+            self.assertEqual(_distribution_version_antigravity("mlx-metal"), "mocked-metal-1.2.3")
+        installed.assert_called_once_with("mlx-metal")
+        with patch(lookup, side_effect=PackageNotFoundError("mlx-metal")) as absent:
+            self.assertIsNone(_distribution_version_antigravity("mlx-metal"))
+        absent.assert_called_once_with("mlx-metal")
 
     def test_reference_failure_stops_before_backend_selection_antigravity(self) -> None:
         """Break caught: a failed oracle check is silently accepted by the assessment."""
