@@ -14,7 +14,7 @@
     "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
   },
   "module_fingerprints": {
-    "scratch/generate_exp471_codemap_antigravity.py": "cf45c551ecc146a19c51407603968e527c7d08616a31d80f3077afca3ec5dd70"
+    "scratch/generate_exp471_codemap_antigravity.py": "de9a45692cec9f6f75ff94cec42e5af018924e7b573f8238a12e43c2a3fc3f2e"
   },
   "scanned_scope": [
     "scratch/generate_exp471_codemap_antigravity.py"

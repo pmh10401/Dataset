@@ -371,8 +371,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             require_existing_triplet_equal_antigravity(generated)
         except ValueError as exc:
-            sys.stderr.write(f"Exp471 triplet missing: {exc}\n")
-            return 2
+            if str(exc).startswith("missing Exp471 code-map artifact:"):
+                sys.stderr.write(f"Exp471 triplet missing: {exc}\n")
+                return 2
+            raise
     else:
         write_triplet_together_antigravity(generated)
     return 0
