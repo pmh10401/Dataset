@@ -1523,6 +1523,114 @@ class CliTestsAntigravity(unittest.TestCase):
             self.assertFalse(os.path.lexists(evaluation_root))
             self.assertFalse(os.path.lexists(report_root))
 
+    def test_missing_directory_revalidates_opened_prefix_generation(self) -> None:
+        """ENOENT must not hide replacement of an already opened root prefix."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_status_missing_prefix_swap_antigravity_"
+        ) as directory:
+            base = Path(directory).resolve()
+            root = base / "root_antigravity"
+            saved = base / "saved_root_antigravity"
+            root.mkdir()
+            old_literal = root / "old_public_literal_antigravity.txt"
+            old_literal.write_bytes(b"old-public-literal-antigravity\n")
+            new_payload = b"new-public-literal-antigravity\n"
+            original_open = cli.os.open
+            swapped = False
+
+            def swap_before_missing_open(path, flags, mode=0o777, *, dir_fd=None):
+                nonlocal swapped
+                if path == "evaluation_antigravity" and not swapped:
+                    swapped = True
+                    root.rename(saved)
+                    root.mkdir()
+                    (root / "new_public_literal_antigravity.txt").write_bytes(
+                        new_payload
+                    )
+                return original_open(path, flags, mode, dir_fd=dir_fd)
+
+            with mock.patch.object(
+                cli.os, "open", side_effect=swap_before_missing_open
+            ):
+                with self.assertRaisesRegex(ValueError, "directory path changed"):
+                    cli._open_existing_directory_chain_antigravity(
+                        root / "evaluation_antigravity"
+                    )
+            self.assertTrue(swapped)
+            self.assertEqual(
+                (saved / old_literal.name).read_bytes(),
+                b"old-public-literal-antigravity\n",
+            )
+            self.assertEqual(
+                (root / "new_public_literal_antigravity.txt").read_bytes(),
+                new_payload,
+            )
+
+    def test_production_status_binds_observations_to_one_root_generation(self) -> None:
+        """Cache/evaluation/report/progress observations cannot span root generations."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_status_root_generation_antigravity_"
+        ) as directory:
+            base = Path(directory).resolve()
+            root = base / "root_antigravity"
+            saved = base / "saved_root_antigravity"
+            score = root / "score_cache_antigravity"
+            evaluation_root = root / "evaluation_antigravity"
+            report_root = root / "report_antigravity"
+            root.mkdir()
+            old_payload = b"old-status-root-public-literal-antigravity\n"
+            new_payload = b"new-status-root-public-literal-antigravity\n"
+            (root / "old_public_literal_antigravity.txt").write_bytes(old_payload)
+            original_read = cli._read_configured_leaf_antigravity
+            swapped = False
+
+            def swap_before_evaluation_observation(configured_root, name):
+                nonlocal swapped
+                if name == "evaluation_antigravity.json" and not swapped:
+                    swapped = True
+                    root.rename(saved)
+                    root.mkdir()
+                    (root / "new_public_literal_antigravity.txt").write_bytes(
+                        new_payload
+                    )
+                return original_read(configured_root, name)
+
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with ExitStack() as stack:
+                for attribute, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", report_root),
+                ):
+                    stack.enter_context(mock.patch.object(cli, attribute, value))
+                stack.enter_context(
+                    mock.patch.object(
+                        cli,
+                        "_read_configured_leaf_antigravity",
+                        side_effect=swap_before_evaluation_observation,
+                    )
+                )
+                result = main_antigravity(
+                    ["status"], stdout=stdout, stderr=stderr
+                )
+            self.assertTrue(swapped)
+            self.assertEqual(result, 2)
+            self.assertEqual(stdout.getvalue(), "")
+            self.assertEqual(
+                json.loads(stderr.getvalue())["exception_type"], "ValueError"
+            )
+            self.assertEqual(
+                (saved / "old_public_literal_antigravity.txt").read_bytes(),
+                old_payload,
+            )
+            self.assertEqual(
+                (root / "new_public_literal_antigravity.txt").read_bytes(),
+                new_payload,
+            )
+
     def test_production_status_rejects_unsafe_paths_observationally(self) -> None:
         """Status must reject linked or mistyped artifact namespaces without writes."""
 

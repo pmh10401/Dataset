@@ -144,8 +144,11 @@ def _open_existing_directory_chain_antigravity(
             try:
                 child = os.open(part, flags, dir_fd=current)
             except FileNotFoundError:
-                for descriptor in reversed(descriptors):
-                    os.close(descriptor)
+                absent = _DirectoryChainAntigravity(
+                    current, descriptors, validators
+                )
+                absent.validate_antigravity()
+                absent.close_antigravity()
                 return None
             except OSError as error:
                 raise ValueError(
@@ -241,6 +244,23 @@ def _read_configured_leaves_antigravity(
 
 def _read_configured_leaf_antigravity(root: Path, name: str) -> bytes | None:
     return _read_configured_leaves_antigravity(root, (name,))[0]
+
+
+def _validate_status_root_generation_antigravity(
+    anchor: _DirectoryChainAntigravity | None,
+) -> None:
+    """Require every status observation to retain the initial root generation."""
+
+    if anchor is not None:
+        anchor.validate_antigravity()
+        return
+    observed = _open_existing_directory_chain_antigravity(
+        EXP471_ROOT_ANTIGRAVITY
+    )
+    if observed is None:
+        return
+    observed.close_antigravity()
+    raise ValueError("Exp471 configured root appeared during status")
 
 
 def _open_progress_root_antigravity() -> tuple[
@@ -1118,77 +1138,93 @@ class _ProductionRuntimeAntigravity:
         root_anchor = _open_existing_directory_chain_antigravity(
             EXP471_ROOT_ANTIGRAVITY
         )
-        cache_anchor = _open_existing_directory_chain_antigravity(
-            EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY
-        )
+        cache_anchor: _DirectoryChainAntigravity | None = None
         try:
+            _validate_status_root_generation_antigravity(root_anchor)
+            cache_anchor = _open_existing_directory_chain_antigravity(
+                EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY
+            )
+            _validate_status_root_generation_antigravity(root_anchor)
             cache = status_score_cache_antigravity(
                 EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY
             )
             if cache_anchor is not None:
                 cache_anchor.validate_antigravity()
-            if root_anchor is not None:
-                root_anchor.validate_antigravity()
+            _validate_status_root_generation_antigravity(root_anchor)
+            if cache_anchor is not None:
+                cache_anchor.close_antigravity()
+                cache_anchor = None
+            evaluation_present = (
+                _read_configured_leaf_antigravity(
+                    EXP471_EVALUATION_ROOT_ANTIGRAVITY,
+                    "evaluation_antigravity.json",
+                )
+                is not None
+            )
+            _validate_status_root_generation_antigravity(root_anchor)
+            report_present = (
+                _read_configured_leaf_antigravity(
+                    EXP471_REPORT_ROOT_ANTIGRAVITY,
+                    ".exp471_report_complete_antigravity.json",
+                )
+                is not None
+            )
+            _validate_status_root_generation_antigravity(root_anchor)
+            latest = _latest_progress_antigravity()
+            _validate_status_root_generation_antigravity(root_anchor)
+            completed = int(cache["durable_completed"])
+            total = cache["total_shards"]
+            expected_total = (
+                _TOTAL_SHARDS_ANTIGRAVITY if total is None else int(total)
+            )
+            failure_count = (
+                0 if latest is None else int(latest.get("failures", 0))
+            )
+            result = {
+                "schema": "exp471-status-antigravity.v1",
+                "durable_completed": completed,
+                "total": expected_total,
+                "failures": failure_count,
+                "remaining": max(0, expected_total - completed),
+                "verified_stage": (
+                    "report-present-unverified"
+                    if report_present
+                    else "evaluation-present-unverified"
+                    if evaluation_present
+                    else "cache-complete"
+                    if cache["complete"]
+                    else "cache-incomplete"
+                ),
+                "paths": {
+                    "root": str(EXP471_ROOT_ANTIGRAVITY),
+                    "score_cache": str(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY),
+                    "evaluation": str(EXP471_EVALUATION_ROOT_ANTIGRAVITY),
+                    "report": str(EXP471_REPORT_ROOT_ANTIGRAVITY),
+                    "progress": str(
+                        EXP471_ROOT_ANTIGRAVITY / _PROGRESS_NAME_ANTIGRAVITY
+                    ),
+                },
+                "worker_decision": {
+                    "benchmark": cache["benchmark_decision"],
+                    "actual": cache["execution_decision"],
+                },
+                "latest_progress": latest,
+                "failure": (
+                    None
+                    if failure_count == 0
+                    else {
+                        "stage": latest.get("stage") if latest else "unknown",
+                        "failures": failure_count,
+                    }
+                ),
+            }
+            _validate_status_root_generation_antigravity(root_anchor)
+            return result
         finally:
             if cache_anchor is not None:
                 cache_anchor.close_antigravity()
             if root_anchor is not None:
                 root_anchor.close_antigravity()
-        evaluation_present = (
-            _read_configured_leaf_antigravity(
-                EXP471_EVALUATION_ROOT_ANTIGRAVITY,
-                "evaluation_antigravity.json",
-            )
-            is not None
-        )
-        report_present = (
-            _read_configured_leaf_antigravity(
-                EXP471_REPORT_ROOT_ANTIGRAVITY,
-                ".exp471_report_complete_antigravity.json",
-            )
-            is not None
-        )
-        completed = int(cache["durable_completed"])
-        total = cache["total_shards"]
-        expected_total = _TOTAL_SHARDS_ANTIGRAVITY if total is None else int(total)
-        latest = _latest_progress_antigravity()
-        failure_count = 0 if latest is None else int(latest.get("failures", 0))
-        return {
-            "schema": "exp471-status-antigravity.v1",
-            "durable_completed": completed,
-            "total": expected_total,
-            "failures": failure_count,
-            "remaining": max(0, expected_total - completed),
-            "verified_stage": (
-                "report-present-unverified"
-                if report_present
-                else "evaluation-present-unverified"
-                if evaluation_present
-                else "cache-complete"
-                if cache["complete"]
-                else "cache-incomplete"
-            ),
-            "paths": {
-                "root": str(EXP471_ROOT_ANTIGRAVITY),
-                "score_cache": str(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY),
-                "evaluation": str(EXP471_EVALUATION_ROOT_ANTIGRAVITY),
-                "report": str(EXP471_REPORT_ROOT_ANTIGRAVITY),
-                "progress": str(EXP471_ROOT_ANTIGRAVITY / _PROGRESS_NAME_ANTIGRAVITY),
-            },
-            "worker_decision": {
-                "benchmark": cache["benchmark_decision"],
-                "actual": cache["execution_decision"],
-            },
-            "latest_progress": latest,
-            "failure": (
-                None
-                if failure_count == 0
-                else {
-                    "stage": latest.get("stage") if latest else "unknown",
-                    "failures": failure_count,
-                }
-            ),
-        }
 
 
 def _report_command_antigravity(runtime: object) -> Mapping[str, object]:
