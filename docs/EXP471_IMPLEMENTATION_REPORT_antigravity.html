@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp471 구현 보고</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65;color:#17202a;max-width:1080px;margin:0 auto;padding:24px}
+    h1,h2{line-height:1.25}pre{background:#f4f6f8;border-left:4px solid #5d6d7e;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.94em}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #b8c0cc;padding:.55rem;text-align:left;vertical-align:top}
+    .pass{color:#196f3d;font-weight:700}.fail{color:#922b21;font-weight:700}.note{background:#fef9e7;border-left:4px solid #d4ac0d;padding:12px}
+    label{display:block;margin:.4rem 0}input{margin-right:.5rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp471 구현 보고 — Task 1</h1>
+  <p>이 보고서는 2026-08-24에 전용 worktree에서 실행한 Task 1 증거만 기록합니다.</p>
+
+  <h2>1. 범위</h2>
+  <p>Task 1은 고정 config, Exp470 authority의 direct re-export, immutable 계약 세 개, 버전 있는 코드 맵과 구현 보고를 만듭니다. ACF scorer, runtime assessment, fold scoring, qualification 계산, artifact publication, CLI와 어떤 실험 실행도 포함하지 않습니다.</p>
+
+  <h2>2. RED 증거</h2>
+  <p>명령:</p>
+  <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity tests.test_contracts_antigravity tests.test_predecessor_antigravity</code></pre>
+  <p>production 파일을 만들기 전에 예상한 import failure가 나왔습니다.</p>
+  <pre><code>Ran 8 tests in 0.093s
+
+FAILED (errors=11)</code></pre>
+  <pre><code>ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.config_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.contracts_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.interpolation_antigravity'</code></pre>
+
+  <h2>3. GREEN 증거</h2>
+  <p>같은 focused suite를 두 번 실행했고 모두 통과했습니다.</p>
+  <pre class="pass"><code>Ran 8 tests in 0.286s
+
+OK</code></pre>
+  <pre class="pass"><code>Ran 8 tests in 0.130s
+
+OK</code></pre>
+  <p>Exp470 authority 회귀도 한 번 통과했습니다.</p>
+  <pre class="pass"><code>Ran 9 tests in 0.111s
+
+OK</code></pre>
+
+  <h2>4. 변경 전 코드 맵 확인</h2>
+  <p>JSON과 lock 문법 검사는 통과했습니다. Exp470 builder의 full validation은 이 dedicated worktree에 추적되지 않은 Exp470 task brief 파일이 없어서 아래 경로에서 멈췄습니다.</p>
+  <pre class="pass"><code>python3 -m json.tool docs/codemap/codemap_exp470_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null</code></pre>
+  <pre class="fail"><code>ValueError: represented path missing: .superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/task-1-brief-antigravity.html</code></pre>
+  <div class="note"><p>그래서 caller/effect/tests는 존재하는 <code>codemap_exp470_antigravity.json</code> 노드 여섯 개에서 직접 읽었습니다. 이 부족분은 공식 Exp471 맵으로 보완합니다.</p></div>
+
+  <h2>5. Task 1 모듈 관계</h2>
+  <table>
+    <thead><tr><th>모듈</th><th>caller</th><th>effect</th><th>tests</th></tr></thead>
+    <tbody>
+      <tr><td><code>config_antigravity.py</code></td><td>contracts와 이후 Exp471 단계</td><td>seed, fold, ECG200 크기, 창, ACF lag 경계, 방법 순서, 변화 순서, 필요 speedup을 고정</td><td><code>test_config_antigravity.py</code></td></tr>
+      <tr><td><code>sources_antigravity.py</code></td><td>이후 input stage</td><td>Exp470 normal TRAIN loader 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>interpolation_antigravity.py</code></td><td>이후 input stage</td><td>Exp470 96→140 interpolator 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>synthetic_antigravity.py</code></td><td>이후 qualification stage</td><td>Exp470 primary synthetic-row 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>predecessor_antigravity.py</code></td><td>이후 C0 비교</td><td>Exp470 C0 capture와 fold-score 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>Task 2 scorer와 이후 qualification</td><td>immutable pair count, seed-major fold result, finite AUC, strict bool, label query 0, optional digest, failure tuple 형식 정의</td><td><code>test_contracts_antigravity.py</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 변경 파일</h2>
+  <ul>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/config_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/sources_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/interpolation_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/synthetic_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/predecessor_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/contracts_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_config_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_contracts_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_predecessor_antigravity.py</code></li>
+    <li><code>scratch/build_codemap_exp471_antigravity.py</code></li>
+    <li><code>docs/codemap/codemap_exp471_antigravity.html</code>, <code>.json</code>, <code>.lock</code></li>
+    <li><code>docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+  </ul>
+
+  <h2>7. 금지 실행 경계</h2>
+  <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing 실행은 0회였습니다. 수행한 작업은 소스 읽기, unit test, JSON 문법 검사, Git 상태 확인, Task 1 파일 작성뿐입니다.</p>
+
+  <h2>7.1 최종 검증</h2>
+  <ul>
+    <li>Exp471 집중 테스트: <span class="pass">8개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Exp470 회귀 테스트: <span class="pass">9개 통과</span>를 확인했습니다.</li>
+    <li>Exp471 코드 맵 생성·재검증과 JSON·lock 문법 검사가 모두 통과했습니다.</li>
+    <li>휴대형 HTML 대시보드는 1440px와 390px 화면 검증, 출처 대화상자, 키보드 접근 검사를 포함해 <span class="pass">verification passed</span>였습니다.</li>
+    <li><code>git diff --check</code>를 통과했습니다.</li>
+  </ul>
+
+  <h2>8. 진행 체크</h2>
+  <section aria-label="Exp471 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
+    <label><input type="checkbox" disabled> Task 2 Numba ACF peak-lag scorer</label>
+    <label><input type="checkbox" disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
+    <label><input type="checkbox" disabled> Task 4 C0/E12/C12·pair repair 판정</label>
+    <label><input type="checkbox" disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
+    <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
+    <label><input type="checkbox" disabled> official 실행·TEST/FN·routing 별도 판단</label>
+  </section>
+</main></body></html>
