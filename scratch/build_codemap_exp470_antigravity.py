@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import html
 import html.parser
@@ -42,6 +43,11 @@ TASK_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
     "task-1-report-antigravity.html"
 )
+EXP468_PACKAGE_ANTIGRAVITY = "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity"
+EXP468_SOURCES_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/sources_antigravity.py"
+EXP468_INTERPOLATION_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/interpolation_antigravity.py"
+EXP468_SYNTHETIC_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/synthetic_antigravity.py"
+EXP468_PREDECESSOR_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/predecessor_antigravity.py"
 REPRESENTED_PATHS_ANTIGRAVITY = (
     TASK_BRIEF_ANTIGRAVITY,
     CONFIG_ANTIGRAVITY,
@@ -56,6 +62,11 @@ REPRESENTED_PATHS_ANTIGRAVITY = (
     BUILDER_ANTIGRAVITY,
     IMPLEMENTATION_REPORT_ANTIGRAVITY,
     TASK_REPORT_ANTIGRAVITY,
+    EXP468_SOURCES_ANTIGRAVITY,
+    EXP468_INTERPOLATION_ANTIGRAVITY,
+    EXP468_SYNTHETIC_ANTIGRAVITY,
+    EXP468_PREDECESSOR_ANTIGRAVITY,
+    *TRIPLET_ANTIGRAVITY,
 )
 HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     CONFIG_ANTIGRAVITY,
@@ -68,6 +79,10 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     CONTRACTS_TEST_ANTIGRAVITY,
     PREDECESSOR_TEST_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
+    EXP468_SOURCES_ANTIGRAVITY,
+    EXP468_INTERPOLATION_ANTIGRAVITY,
+    EXP468_SYNTHETIC_ANTIGRAVITY,
+    EXP468_PREDECESSOR_ANTIGRAVITY,
 )
 GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task1_frozen_authority_codemap_v1"
 LOCK_SCHEMA_ANTIGRAVITY = "exp470_task1_frozen_authority_codemap_lock_v1"
@@ -135,6 +150,21 @@ def _source_contains_antigravity(path: str, symbol: str) -> bool:
     return (ROOT_ANTIGRAVITY / path).is_file() and symbol in (ROOT_ANTIGRAVITY / path).read_text(encoding="utf-8")
 
 
+def _imports_exact_authority_antigravity(
+    source_path: str,
+    authority_path: str,
+    authority_symbol: str,
+) -> bool:
+    source = (ROOT_ANTIGRAVITY / source_path).read_text(encoding="utf-8")
+    expected_module = authority_path.removesuffix(".py").replace("/", ".")
+    return any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == expected_module
+        and any(alias.name == authority_symbol and alias.asname is None for alias in node.names)
+        for node in ast.walk(ast.parse(source))
+    )
+
+
 def build_graph_antigravity() -> dict[str, Any]:
     nodes = [
         _node_antigravity("task1_brief", TASK_BRIEF_ANTIGRAVITY, "Task 1 implementer", "Bounds work to frozen contracts, exact Exp468 exports, and the versioned map; prohibits scoring, runs, and routing.", (), "Task 1"),
@@ -149,6 +179,11 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity("predecessor_test", PREDECESSOR_TEST_ANTIGRAVITY, "focused unittest command", "Covers identity equality for every direct Exp468 authority export.", (), "Exp470PredecessorTestAntigravity"),
         _node_antigravity("implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1 closeout", "Records only Task 1 implementation and verification state; does not report scoring or execution.", (), "Exp470 Task 1"),
         _node_antigravity("task_report", TASK_REPORT_ANTIGRAVITY, "Task 1 parent handoff", "Preserves RED/GREEN, map validation, self-review, and concern evidence.", (), "Exp470 Task 1"),
+        _node_antigravity("exp468_load_ecg200_normal_train", EXP468_SOURCES_ANTIGRAVITY, "Exp470 sources export", "Provides the exact reviewed Exp468 normal TRAIN loader object.", (), "load_ecg200_normal_train_antigravity"),
+        _node_antigravity("exp468_interpolate_to_140", EXP468_INTERPOLATION_ANTIGRAVITY, "Exp470 interpolation export", "Provides the exact reviewed Exp468 96-to-140 interpolation object.", (), "interpolate_to_140_antigravity"),
+        _node_antigravity("exp468_primary_rows", EXP468_SYNTHETIC_ANTIGRAVITY, "Exp470 synthetic export", "Provides the exact reviewed Exp468 primary synthetic-row object.", (), "primary_rows_antigravity"),
+        _node_antigravity("exp468_capture_exp465_authority", EXP468_PREDECESSOR_ANTIGRAVITY, "Exp470 predecessor export", "Provides the exact reviewed Exp468 C0 authority-capture object.", (), "capture_exp465_authority_antigravity"),
+        _node_antigravity("exp468_score_c0_fold", EXP468_PREDECESSOR_ANTIGRAVITY, "Exp470 predecessor export", "Provides the exact reviewed Exp468 C0 fold scorer object.", (), "score_c0_fold_antigravity"),
         _node_antigravity("map_builder", BUILDER_ANTIGRAVITY, "Task 1 generation and validation", "Deterministically writes or validates only the versioned Exp470 HTML/JSON/lock triplet, represented paths, source hashes, and graph evidence.", (), "build_graph_antigravity"),
     ]
     edges = [
@@ -159,10 +194,11 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("predecessor_test", "tests", "interpolation", PREDECESSOR_TEST_ANTIGRAVITY, "interpolate_to_140_antigravity"),
         _edge_antigravity("predecessor_test", "tests", "synthetic", PREDECESSOR_TEST_ANTIGRAVITY, "primary_rows_antigravity"),
         _edge_antigravity("predecessor_test", "tests", "predecessor", PREDECESSOR_TEST_ANTIGRAVITY, "score_c0_fold_antigravity"),
-        _edge_antigravity("sources", "authority", "exp468_sources", SOURCES_ANTIGRAVITY, "exp468_ecg200_local_stft_spectral_redistribution_antigravity"),
-        _edge_antigravity("interpolation", "authority", "exp468_interpolation", INTERPOLATION_ANTIGRAVITY, "exp468_ecg200_local_stft_spectral_redistribution_antigravity"),
-        _edge_antigravity("synthetic", "authority", "exp468_synthetic", SYNTHETIC_ANTIGRAVITY, "exp468_ecg200_local_stft_spectral_redistribution_antigravity"),
-        _edge_antigravity("predecessor", "authority", "exp468_predecessor", PREDECESSOR_ANTIGRAVITY, "exp468_ecg200_local_stft_spectral_redistribution_antigravity"),
+        _edge_antigravity("sources", "authority", "exp468_load_ecg200_normal_train", SOURCES_ANTIGRAVITY, "load_ecg200_normal_train_antigravity"),
+        _edge_antigravity("interpolation", "authority", "exp468_interpolate_to_140", INTERPOLATION_ANTIGRAVITY, "interpolate_to_140_antigravity"),
+        _edge_antigravity("synthetic", "authority", "exp468_primary_rows", SYNTHETIC_ANTIGRAVITY, "primary_rows_antigravity"),
+        _edge_antigravity("predecessor", "authority", "exp468_capture_exp465_authority", PREDECESSOR_ANTIGRAVITY, "capture_exp465_authority_antigravity"),
+        _edge_antigravity("predecessor", "authority", "exp468_score_c0_fold", PREDECESSOR_ANTIGRAVITY, "score_c0_fold_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -202,10 +238,26 @@ def _validate_antigravity() -> None:
         evidence = node["evidence"]
         if not _source_contains_antigravity(evidence["path"], evidence["symbol"]):
             raise ValueError(f"node evidence does not resolve: {node['id']}")
+    node_by_id = {node["id"]: node for node in graph["nodes"]}
+    if len(node_by_id) != len(graph["nodes"]):
+        raise ValueError("code map contains duplicate node IDs")
     for edge in graph["edges"]:
+        if edge["from"] not in node_by_id or edge["to"] not in node_by_id:
+            raise ValueError(f"edge endpoint does not resolve: {edge['from']}->{edge['to']}")
         evidence = edge["evidence"]
         if not _source_contains_antigravity(evidence["path"], evidence["symbol"]):
             raise ValueError(f"edge evidence does not resolve: {edge['from']}->{edge['to']}")
+        if edge["type"] == "authority":
+            source_path = node_by_id[edge["from"]]["path"]
+            target_evidence = node_by_id[edge["to"]]["evidence"]
+            if evidence != {"path": source_path, "symbol": target_evidence["symbol"]}:
+                raise ValueError(f"authority edge evidence is not an exact import: {edge['from']}->{edge['to']}")
+            if not _imports_exact_authority_antigravity(
+                source_path,
+                target_evidence["path"],
+                target_evidence["symbol"],
+            ):
+                raise ValueError(f"authority edge import does not resolve: {edge['from']}->{edge['to']}")
     expected_json = _canonical_bytes_antigravity(graph)
     if JSON_PATH_ANTIGRAVITY.read_bytes() != expected_json:
         raise ValueError("JSON code map is not deterministic or is stale")

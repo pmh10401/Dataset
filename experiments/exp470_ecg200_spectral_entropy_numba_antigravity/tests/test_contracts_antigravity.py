@@ -97,7 +97,7 @@ class Exp470ContractsTestAntigravity(unittest.TestCase):
                 dataclasses.replace(row, **{field_name: invalid})
 
     def test_pair_counts_and_fold_scalars_reject_aliases_antigravity(self) -> None:
-        """Break caught: boolean aliases, invalid counts, or invalid fold state enter results."""
+        """Break caught: boolean aliases, invalid counts, or non-string failure reasons enter results."""
         pair_repairs = self.pair_repairs_antigravity()
         with self.assertRaises(FrozenInstanceError):
             pair_repairs.fixed = 2  # type: ignore[misc]
@@ -117,11 +117,25 @@ class Exp470ContractsTestAntigravity(unittest.TestCase):
             {"passed": 1},
             {"failure_reasons": ["failure"]},
             {"failure_reasons": (1,)},
-            {"passed": False, "failure_reasons": ()},
-            {"passed": True, "failure_reasons": ("failure",)},
         ):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 dataclasses.replace(row, **changes)
+
+    def test_fold_result_preserves_any_tuple_of_failure_reasons_antigravity(self) -> None:
+        """Break caught: Task 1 adds an unstated failure-text or pass-state restriction."""
+        for passed, reasons in (
+            (True, ("",)),
+            (False, ()),
+            (False, ("", "period")),
+            (True, ("period",)),
+        ):
+            with self.subTest(passed=passed, reasons=reasons):
+                row = self.fold_result_antigravity(
+                    passed=passed,
+                    failure_reasons=reasons,
+                )
+                self.assertIs(row.failure_reasons, reasons)
+                self.assertEqual((row.passed, row.failure_reasons), (passed, reasons))
 
     def test_qualification_requires_seed_major_rows_and_frozen_maps_antigravity(self) -> None:
         """Break caught: qualification accepts reordered folds or mutable/reordered count evidence."""

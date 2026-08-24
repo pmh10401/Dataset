@@ -129,13 +129,11 @@ class Exp470FoldResultAntigravity:
         _count_antigravity(self.normal_confirmations, "normal_confirmations")
         _bool_antigravity(self.fallback_exact, "fallback_exact")
         _bool_antigravity(self.finite, "finite")
-        passed = _bool_antigravity(self.passed, "passed")
+        _bool_antigravity(self.passed, "passed")
         if type(self.failure_reasons) is not tuple or any(
-            type(reason) is not str or not reason for reason in self.failure_reasons
+            type(reason) is not str for reason in self.failure_reasons
         ):
-            raise ValueError("failure_reasons must be a tuple of non-empty strings")
-        if passed is not (len(self.failure_reasons) == 0):
-            raise ValueError("passed and failure_reasons disagree")
+            raise ValueError("failure_reasons must be a tuple of strings")
 
 
 @dataclass(frozen=True, slots=True)
