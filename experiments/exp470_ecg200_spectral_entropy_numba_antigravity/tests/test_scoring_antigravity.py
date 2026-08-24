@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import dataclasses
 from types import MappingProxyType
 import unittest
 
@@ -52,6 +53,16 @@ class Exp470ScoringTestAntigravity(unittest.TestCase):
             self.assertFalse(values.flags.writeable)
         with self.assertRaises(TypeError):
             record.original["C0"] = c0  # type: ignore[index]
+
+        negative_zero_c0 = np.array(record.original["C0"], copy=True)
+        negative_zero_c0[0] = -0.0
+        positive_zero_c11 = np.array(record.original["C11"], copy=True)
+        positive_zero_c11[0] = 0.0
+        drifted_original = dict(record.original)
+        drifted_original["C0"] = negative_zero_c0
+        drifted_original["C11"] = positive_zero_c11
+        with self.assertRaisesRegex(ValueError, "byte-exact"):
+            dataclasses.replace(record, original=drifted_original)
 
     def test_score_signature_has_no_backend_selector_antigravity(self) -> None:
         """Break caught: scoring exposes a fallback backend or a mutable method order."""

@@ -60,6 +60,23 @@ def count_pair_repairs_antigravity(c0_normal: object, c0_changed: object, c11_no
     return PairRepairCountsAntigravity(fixed=int(fixed), broken=int(broken))
 
 
+@numba.njit(cache=False, fastmath=False)
+def _count_confirmed_numba_antigravity(confirmed: np.ndarray) -> int:
+    count = 0
+    for index in range(confirmed.size):
+        if confirmed[index]:
+            count += 1
+    return count
+
+
+def _fallback_bytes_exact_antigravity(record: FoldMethodScoresAntigravity, scope: str) -> bool:
+    c0 = record.original["C0"] if scope == "normal" else record.primary["C0"][scope]
+    rank = record.original["E11"] if scope == "normal" else record.primary["E11"][scope]
+    c11 = record.original["C11"] if scope == "normal" else record.primary["C11"][scope]
+    fallback = np.logical_not(record.confirmed[scope]) | (rank <= c0)
+    return c11[fallback].tobytes(order="C") == c0[fallback].tobytes(order="C")
+
+
 def blocked_fold_indices_antigravity() -> tuple[tuple[np.ndarray, np.ndarray], ...]:
     all_indices = np.arange(FROZEN_CONFIG_ANTIGRAVITY.normal_rows, dtype=np.int64)
     result: list[tuple[np.ndarray, np.ndarray]] = []
@@ -111,9 +128,12 @@ def qualify_records_antigravity(records: object) -> Exp470QualificationAntigravi
         c0_auc = {name: float(mann_whitney_auc_antigravity(record.original["C0"], record.primary["C0"][name])) for name in _CHANGE_TYPES_ANTIGRAVITY}
         c11_auc = {name: float(mann_whitney_auc_antigravity(record.original["C11"], record.primary["C11"][name])) for name in _CHANGE_TYPES_ANTIGRAVITY}
         repairs = {name: count_pair_repairs_antigravity(record.original["C0"], record.primary["C0"][name], record.original["C11"], record.primary["C11"][name]) for name in _CHANGE_TYPES_ANTIGRAVITY}
-        normal_count = int(np.count_nonzero(record.confirmed["normal"]))
+        normal_count = int(_count_confirmed_numba_antigravity(record.confirmed["normal"]))
         record_finite = bool(all(np.isfinite(vector).all() for vector in (record.fit_raw_entropy, *record.query_raw_entropy.values(), *record.original.values(), *(vector for method in record.primary.values() for vector in method.values()))))
-        record_fallback = all(np.array_equal((record.original["C11"] if scope == "normal" else record.primary["C11"][scope])[~record.confirmed[scope]], (record.original["C0"] if scope == "normal" else record.primary["C0"][scope])[~record.confirmed[scope]]) for scope in ("normal",) + _CHANGE_TYPES_ANTIGRAVITY)
+        record_fallback = all(
+            _fallback_bytes_exact_antigravity(record, scope)
+            for scope in ("normal",) + _CHANGE_TYPES_ANTIGRAVITY
+        )
         reasons = () if record_finite and record_fallback else (("nonfinite_scores" if not record_finite else "fallback_not_exact"),)
         fold_results.append(Exp470FoldResultAntigravity(seed=record.seed, fold_index=record.fold_index, c0_per_type_auc=c0_auc, c11_per_type_auc=c11_auc, pair_repairs=repairs, normal_confirmations=normal_count, fallback_exact=record_fallback, finite=record_finite, passed=not reasons, failure_reasons=reasons))
         period_fixed[record.seed] += repairs["period_change"].fixed
@@ -126,4 +146,4 @@ def qualify_records_antigravity(records: object) -> Exp470QualificationAntigravi
     return Exp470QualificationAntigravity(fold_results=tuple(fold_results), period_fixed=MappingProxyType(period_fixed), period_broken=MappingProxyType(period_broken), protected_broken=MappingProxyType(protected), normal_confirmations=MappingProxyType(normal_confirmations), fallback_exact=fallback_exact, finite=finite, label_query_count=0, artifact_map_sha256=None)
 
 
-__all__ = ("_count_pair_repairs_numba_antigravity", "blocked_fold_indices_antigravity", "count_pair_repairs_antigravity", "qualify_records_antigravity", "validate_four_score_vectors_antigravity")
+__all__ = ("_count_confirmed_numba_antigravity", "_count_pair_repairs_numba_antigravity", "blocked_fold_indices_antigravity", "count_pair_repairs_antigravity", "qualify_records_antigravity", "validate_four_score_vectors_antigravity")

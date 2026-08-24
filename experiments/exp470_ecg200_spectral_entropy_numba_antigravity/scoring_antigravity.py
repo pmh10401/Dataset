@@ -145,8 +145,12 @@ class FoldMethodScoresAntigravity:
             expected_c11 = _combine_c11_numba_antigravity(stored_c0, ranks, expected_confirmed)
             if not np.array_equal(stored_rank, ranks) or not np.array_equal(confirmed[scope], expected_confirmed):
                 raise ValueError("stored E11 rank or confirmation differs from retained raw entropy")
-            if not np.array_equal(stored_c11, expected_c11):
-                raise ValueError("stored C11 differs from compiled C0/E11 rule")
+            fallback = np.logical_not(expected_confirmed) | (ranks <= stored_c0)
+            if (
+                stored_c11.tobytes(order="C") != expected_c11.tobytes(order="C")
+                or stored_c11[fallback].tobytes(order="C") != stored_c0[fallback].tobytes(order="C")
+            ):
+                raise ValueError("stored C11 differs from byte-exact compiled C0/E11 rule")
         object.__setattr__(self, "original", MappingProxyType(original))
         object.__setattr__(self, "primary", MappingProxyType(primary))
         object.__setattr__(self, "fit_raw_entropy", fit_raw)
