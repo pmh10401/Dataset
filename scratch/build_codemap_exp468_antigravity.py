@@ -262,15 +262,7 @@ def _validated_html_text_antigravity(path: Path) -> str:
 
 def _evidence_resolves_antigravity(path: str, symbol: str) -> bool:
     candidate = ROOT_ANTIGRAVITY / path
-    if not candidate.is_file():
-        return False
-    text = candidate.read_text(encoding="utf-8")
-    if symbol in text:
-        return True
-    # The checked Task 1-4 closeout reports are the portable evidence available
-    # in this commit; their older brief-specific symbol labels are retained in
-    # the graph for provenance, while the report path is the authoritative file.
-    return "/task-" in path and "-report-antigravity.html" in path
+    return candidate.is_file() and symbol in candidate.read_text(encoding="utf-8")
 
 
 def _node_antigravity(
@@ -739,8 +731,8 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("task3_fallback_brief", "governs", "task3_benchmark_artifact", TASK3_FALLBACK_BRIEF_ANTIGRAVITY, "fallback"),
         _edge_antigravity("implementation_plan", "governs", "task3_local_stft_test", PLAN_ANTIGRAVITY, "Task 3 — S10 국소 STFT·JS 점수와 Numba/MLX 가속"),
         _edge_antigravity("implementation_plan", "governs", "task3_acceleration_test", PLAN_ANTIGRAVITY, "Step 5 — NumPy/Numba/MLX 동일성·속도 gate"),
-        _edge_antigravity("task3_brief", "governs", "task3_local_stft", TASK3_BRIEF_ANTIGRAVITY, "고정 과학 수식"),
-        _edge_antigravity("task3_brief", "governs", "task3_acceleration", TASK3_BRIEF_ANTIGRAVITY, "Task 3 Step 5 — 실제 10-fold 가속 평가"),
+        _edge_antigravity("task3_brief", "governs", "task3_local_stft", TASK3_BRIEF_ANTIGRAVITY, "고정 S10 수식"),
+        _edge_antigravity("task3_brief", "governs", "task3_acceleration", TASK3_BRIEF_ANTIGRAVITY, "실제 10-fold workload와 backend"),
         _edge_antigravity("implementation_plan", "governs", "task3_local_stft", PLAN_ANTIGRAVITY, "Task 3 — S10 국소 STFT·JS 점수와 Numba/MLX 가속"),
         _edge_antigravity("implementation_plan", "governs", "task3_acceleration", PLAN_ANTIGRAVITY, "Step 5 — NumPy/Numba/MLX 동일성·속도 gate"),
         _edge_antigravity("task1_config", "governs", "task3_local_stft", CONFIG_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
@@ -929,7 +921,7 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         json.dumps(graph, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
     return f"""<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 4 자격 판정 코드맵</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp468 Task 5 publication 코드맵</title>
 <style>body{{max-width:1240px;margin:2rem auto;padding:0 1rem;font:15px/1.65 system-ui;color:#172033}}table{{width:100%;border-collapse:collapse;margin:1rem 0}}th,td{{border:1px solid #aab3bf;padding:.48rem;text-align:left;vertical-align:top}}code,pre{{background:#eef2f7;padding:.1rem .3rem;overflow:auto}}.box{{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}}</style></head>
 <body><main><h1>Exp468 Task 5 publication 코드맵</h1>
 <div class="box"><p><strong>상태:</strong> <code>implementation_task_5_complete_no_private_run</code>. 이 지도는 Task 1-5 경계, 정확한 일곱 leaf publication, raw-input 독립 replay, 결정적 HTML dashboard, Task 6 CLI/pipeline 소비 edge와 호출자·영향·검사를 기록한다.</p></div>
@@ -1145,7 +1137,7 @@ def validate_map_antigravity(
         "task5_report", "task6_cli", "task6_pipeline", "rank_auc",
     }
     if ids != required_nodes:
-        raise ValueError("Task 1-4 nodes differ")
+        raise ValueError("Task 1-5 nodes differ")
     allowed_types = {"governs", "tests", "imports_exact", "documents", "informs", "generates", "verifies", "calls", "binds", "authorizes", "consumes", "consumed_by"}
     edge_keys: set[tuple[str, str, str]] = set()
     for edge in graph.get("edges", []):
@@ -1266,7 +1258,7 @@ def validate_map_antigravity(
         ("map_builder", "verifies", "dashboard"),
     }
     if not required_edges.issubset(edge_keys):
-        raise ValueError("Task 1-4 required edges are incomplete")
+        raise ValueError("Task 1-5 required edges are incomplete")
     if lock.get("schema") != LOCK_SCHEMA_ANTIGRAVITY:
         raise ValueError("lock schema differs")
     if lock.get("source_parent_commit") != graph.get("source_parent_commit"):
