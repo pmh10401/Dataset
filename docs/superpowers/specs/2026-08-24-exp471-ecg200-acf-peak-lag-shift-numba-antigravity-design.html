@@ -13,7 +13,7 @@
 <body><main>
   <h1>Exp471 — ECG200 ACF peak-lag 이동 Numba 자격 검증</h1>
   <div class="box ok">
-    <p><strong>설계 상태:</strong> 실험 방향은 승인됐고, 이 고정안을 사용자가 검토하기 전이다.</p>
+    <p><strong>설계 상태:</strong> 사용자가 이 고정안을 검토·승인했고, HTML 구현 계획까지 작성했다.</p>
     <p><strong>한 줄 목표:</strong> 파형 앞부분과 뒷부분에서 반복 간격이 얼마나 달라졌는지 한 개의 자기상관 점수로 재고, C0가 놓친 period 순서만 안전하게 고칠 수 있는지 확인한다.</p>
   </div>
 
@@ -144,8 +144,9 @@ broken = count(C12_credit &lt; C0_credit)</code></pre>
     <label><input type="checkbox" checked disabled> ACF peak-lag 단일 후보 방향 사용자 승인</label>
     <label><input type="checkbox" checked disabled> Exp471 HTML 고정 설계서 작성</label>
     <label><input type="checkbox" checked disabled> Ox Alpha Ultra 읽기 전용 설계 검토와 모호성 수정</label>
-    <label><input type="checkbox" disabled> 작성된 HTML 설계서 사용자 검토</label>
-    <label><input type="checkbox" disabled> HTML 구현 계획 작성</label>
+    <label><input type="checkbox" checked disabled> 작성된 HTML 설계서 사용자 검토·승인</label>
+    <label><input type="checkbox" checked disabled> HTML 구현 계획 작성</label>
+    <label><input type="checkbox" checked disabled> Ox Alpha Ultra 구현 계획 읽기 전용 검토 GO</label>
     <label><input type="checkbox" disabled> Task 1 고정 계약·authority·code map</label>
     <label><input type="checkbox" disabled> Task 2 Numba ACF peak-lag scorer</label>
     <label><input type="checkbox" disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
@@ -162,8 +163,9 @@ broken = count(C12_credit &lt; C0_credit)</code></pre>
     <li><a href="../../EXP470_DASHBOARD_antigravity.html">Exp470 결과 대시보드</a></li>
     <li><a href="2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html">Exp461 주기 특징 설계</a></li>
     <li><a href="2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html">Exp466 period 변화 설계와 이전 ACF 근거</a></li>
+    <li><a href="../plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html">Exp471 구현 계획</a></li>
   </ul>
   <p>Ox Alpha Ultra의 읽기 전용 검토에서 label leakage, 후보 혼합, gate 모순은 발견되지 않았다. median 규칙, 정확한 warp 보간식, fit/query 분리, C0 순위 척도와 0 sentinel의 뜻을 더 명확히 쓰라는 지적을 반영했고, 수정안 재검토는 <strong>GO</strong>였다.</p>
-  <p class="muted">작성일: 2026-08-24 · 현재는 설계 단계이며 private/official 실행, TEST/FN 접근, routing은 모두 0이다.</p>
+  <p class="muted">작성일: 2026-08-24 · 현재는 설계 승인과 구현 계획 작성까지 끝났으며 private/official 실행, TEST/FN 접근, routing은 모두 0이다.</p>
 </main></body>
 </html>
