@@ -51,7 +51,7 @@ launcher.run_private_sequence_antigravity(
   <h2>4. 성공 판정</h2>
   <ul>
     <li>run1과 run2 모두 inspect가 semantic replay를 통과해야 합니다.</li>
-    <li><code>manifest_antigravity.json</code>과 나머지 여섯 canonical leaf의 raw bytes가 두 root에서 완전히 같아야 합니다.</li>
+    <li><code>artifact_sha256_antigravity.json</code>과 나머지 여섯 canonical leaf의 raw bytes가 두 root에서 완전히 같아야 합니다.</li>
     <li>한쪽이라도 실패하거나 byte가 다르면 run2 이후 즉시 중단하고 결과를 FAIL로 보존합니다.</li>
     <li>private PASS여도 official 실행, TEST/FN 확인, routing은 별도 승인 없이 금지입니다.</li>
   </ul>
