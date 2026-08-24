@@ -78,6 +78,16 @@ class SyntheticSourceAntigravity:
             / "exp467_numba_calibration_resume_antigravity"
         )
         package.mkdir(parents=True)
+        paper_package = (
+            self.repository / "paper" / "equipment_anomaly_detection"
+        )
+        paper_package.mkdir(parents=True)
+        exp450_package = (
+            self.repository
+            / "experiments"
+            / "exp450_resampling_image_ablation_antigravity"
+        )
+        exp450_package.mkdir(parents=True)
         launcher_path = self.repository / "scratch" / "run_exp467_numba_calibration_resume_antigravity.py"
         verifier_path = package / "verifier_antigravity.py"
         launcher_path.write_text(
@@ -96,10 +106,18 @@ def runtime_dependency_relative_paths_antigravity():
     return (
         "scratch/run_exp467_numba_calibration_resume_antigravity.py",
         "experiments/exp467_numba_calibration_resume_antigravity/verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "paper/equipment_anomaly_detection/config_paper.py",
+        "paper/equipment_anomaly_detection/contracts_paper.py",
+        "paper/equipment_anomaly_detection/data_paper.py",
     )
 
 def _full_inputs_antigravity():
-    return ContextAntigravity(), {{"catalog_sha256": {CATALOG_SHA256_ANTIGRAVITY!r}}}
+    return ContextAntigravity(), {{
+        "catalog_sha256": {CATALOG_SHA256_ANTIGRAVITY!r},
+        "database": {{"sha256": {DATABASE_SHA256_ANTIGRAVITY!r}}},
+        "datasets": [{{"dataset": "SyntheticDataset"}}],
+    }}
 
 def _verify_migration_antigravity():
     context, catalog = _full_inputs_antigravity()
@@ -107,8 +125,61 @@ def _verify_migration_antigravity():
 ''',
             encoding="utf-8",
         )
+        (paper_package / "contracts_paper.py").write_text(
+            '''from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class FrozenPaperConfig:
+    database_path: str
+    database_sha256: str
+
+@dataclass(frozen=True)
+class RawDataset:
+    dataset: str
+''',
+            encoding="utf-8",
+        )
+        (paper_package / "config_paper.py").write_text(
+            f'''from .contracts_paper import FrozenPaperConfig
+
+FROZEN_CONFIG = FrozenPaperConfig(
+    database_path={str(self.root / "synthetic_database_antigravity.sqlite")!r},
+    database_sha256={DATABASE_SHA256_ANTIGRAVITY!r},
+)
+''',
+            encoding="utf-8",
+        )
+        (paper_package / "data_paper.py").write_text(
+            '''from .config_paper import FROZEN_CONFIG
+from .contracts_paper import FrozenPaperConfig, RawDataset
+
+VALUES_CALLS = []
+
+def bind_preverified_database_read_only_paper(db_path, *, config=None, verified_catalog_database=None):
+    authority = FROZEN_CONFIG if config is None else config
+    VALUES_CALLS.append(("bind", str(db_path), authority, verified_catalog_database))
+    return (str(db_path), authority.database_sha256)
+
+def load_dataset_values(db_path, dataset, *, preverified_database=None):
+    VALUES_CALLS.append(("load", str(db_path), dataset, preverified_database))
+    return RawDataset(dataset)
+''',
+            encoding="utf-8",
+        )
+        (exp450_package / "runner_antigravity.py").write_text(
+            '''from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+
+def compose_all_conditions_antigravity(raw_datasets):
+    value = raw_datasets["SyntheticDataset"]
+    if type(value) is not RawDataset:
+        raise ValueError("raw dataset mapping is invalid")
+    return type(value)
+''',
+            encoding="utf-8",
+        )
         verifier_path.write_text(
             f'''from pathlib import Path
+from experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity import compose_all_conditions_antigravity
 Path({str(self.import_marker)!r}).write_text("imported", encoding="utf-8")
 
 class VerificationAntigravity:
@@ -148,6 +219,10 @@ def provenance_summary_antigravity(verification):
     imported = sum(verification.imported_by_condition.values())
     native = sum(verification.native_by_condition.values())
     return {{"total_successes": verification.total_successes, "imported_total": imported, "native_total": native}}
+
+def build_exp467_score_manifests_antigravity(root, *, verification, context, catalog, migration_manifest, raw_datasets):
+    compose_all_conditions_antigravity(raw_datasets)
+    raise RuntimeError("captured values reached score closure")
 ''',
             encoding="utf-8",
         )
@@ -172,6 +247,103 @@ def provenance_summary_antigravity(verification):
 
 
 class Exp471SourceAuthorityTestsAntigravity(unittest.TestCase):
+    def test_issued_session_preserves_captured_values_api_and_raw_identity(self) -> None:
+        """A score closure must receive the RawDataset class from its captured graph."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_captured_values_antigravity_"
+        ) as temporary:
+            fixture = SyntheticSourceAntigravity(temporary)
+            with _synthetic_constants_antigravity(fixture):
+                session = source_authority.open_exp467_source_session_antigravity(
+                    fixture.repository, fixture.source_root
+                )
+            values = getattr(session, "captured_values_api_antigravity", None)
+            self.assertIsNotNone(values)
+            self.assertTrue(
+                callable(values.bind_preverified_database_read_only_antigravity)
+            )
+            self.assertTrue(callable(values.load_dataset_values_antigravity))
+            binding = values.bind_preverified_database_read_only_antigravity(
+                Path(values.database_config_antigravity.database_path),
+                verified_catalog_database=session.catalog["database"],
+            )
+            loaded = values.load_dataset_values_antigravity(
+                Path(values.database_config_antigravity.database_path),
+                "SyntheticDataset",
+                preverified_database=binding,
+            )
+            self.assertIs(type(loaded), values.raw_dataset_type_antigravity)
+            self.assertIs(
+                session.verifier.compose_all_conditions_antigravity.__globals__[
+                    "RawDataset"
+                ],
+                values.raw_dataset_type_antigravity,
+            )
+            self.assertIs(
+                session.verifier.compose_all_conditions_antigravity(
+                    {"SyntheticDataset": loaded}
+                ),
+                values.raw_dataset_type_antigravity,
+            )
+
+    def test_issued_session_rejects_replaced_values_api_members(self) -> None:
+        """Missing, noncallable, or self-described foreign values APIs fail closed."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_replaced_values_antigravity_"
+        ) as temporary:
+            fixture = SyntheticSourceAntigravity(temporary)
+            with _synthetic_constants_antigravity(fixture):
+                session = source_authority.open_exp467_source_session_antigravity(
+                    fixture.repository, fixture.source_root
+                )
+            require_values = getattr(
+                source_authority,
+                "_require_captured_values_api_antigravity",
+                None,
+            )
+            self.assertTrue(callable(require_values))
+            values = require_values(session)
+            original = {
+                name: getattr(values, name)
+                for name in (
+                    "database_config_antigravity",
+                    "bind_preverified_database_read_only_antigravity",
+                    "load_dataset_values_antigravity",
+                    "raw_dataset_type_antigravity",
+                )
+            }
+            foreign_calls: list[str] = []
+
+            def foreign_loader(*_args, **_kwargs):
+                foreign_calls.append("called")
+                return original["raw_dataset_type_antigravity"](
+                    "SyntheticDataset"
+                )
+
+            foreign_loader.__module__ = (
+                original[
+                    "load_dataset_values_antigravity"
+                ].__module__
+            )
+            mutations = (
+                ("database_config_antigravity", object()),
+                ("bind_preverified_database_read_only_antigravity", None),
+                ("load_dataset_values_antigravity", foreign_loader),
+                ("raw_dataset_type_antigravity", type("RawDataset", (), {})),
+            )
+            for name, replacement in mutations:
+                with self.subTest(name=name):
+                    object.__setattr__(values, name, replacement)
+                    with self.assertRaisesRegex(ValueError, "captured values API"):
+                        require_values(session)
+                    object.__setattr__(values, name, original[name])
+            object.__setattr__(session, "captured_values_api_antigravity", None)
+            with self.assertRaisesRegex(ValueError, "captured values API"):
+                require_values(session)
+            self.assertEqual(foreign_calls, [])
+
     def test_synthetic_git_source_verifies_publishes_and_reopens(self) -> None:
         with tempfile.TemporaryDirectory(prefix="exp471_source_antigravity_") as temporary:
             fixture = SyntheticSourceAntigravity(temporary)

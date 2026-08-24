@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp471_antigravity.html": "321a749cc92a99fb14031705c4014b4b1c43c6726c484ebd3040117ffad7c613",
-    "docs/codemap/codemap_exp471_antigravity.json": "a65ba013777595d71734de8232bc27e264bd4d25197fa95111b22e6bfd18d168"
+    "docs/codemap/codemap_exp471_antigravity.html": "d8a3b3b81262f6eb62200363f1eb632d97bfe93875a4f347cc1df270c6671ef4",
+    "docs/codemap/codemap_exp471_antigravity.json": "b39fa5844d984914bd9295f5e0245066627d489adf1805dfe6789d88b6f64161"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -15,20 +15,20 @@
   },
   "module_fingerprints": {
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py": "4d42e78d3fb297d0cc49fa48ad0877fa1fe3c9ef76b736c0857c3199f670b3dd",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "d632e1ab186e5ca7be903ed5b49d1960ec3b009012ed83502f7fb9f5aa1af43e",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "b032bff7976e8933efb43a24129e45266662a197ce3403abcceca1a989423ebf",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py": "8805eccf8153cc6f43ac9de1d7b5e197bf4fa5dfbe17674431bfb188d92de01a",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py": "ac9441404920babcaf5aacbb781e1fef287e5d57caf1e54e8410c04f15abd2d8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py": "c5258b72ee381969d66cdb7b9941d303bf59702329a0deb987253998fbf05376",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py": "88d0da5b51b2742c0ffb672f0f1b435053eae3120d595ae340c94d252817ce6f",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py": "740fc9e60acd2442a5e2dda6c0b1dc8cc973fc0fe67e7359283bb869368d77cb",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "7c17ec8113f49ba900f9a9994e02dab3a9afa3f4917808f904ce55ca9fd3b8dc",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "23d845f9433e83cf36ec926500ba9ef4a536fb240d36ca623ebc4b76d837e408",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py": "6859e9d7e88db8e546cbbf97c2c92b3aae5477dfb2eb43d55e35f18529faf25a",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "1698376e861a2c11ee891ff09edae221e3aac7a1f99505351ce5c1f6ed1a88a4",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "1925ba9a55b644cbf469c994156f6ed304a6fa48704901def672e02d82a17ebf",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py": "4d00c917a1480ebe5cad1c0cba3e4b083d4c21128f6de84a7043fb9aa8612b09",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "462d1358223d64976913c5997bab6ec8ba329a6637feb476ff6611bd1ee0394b",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "49c15b736b4d42fdbf43943a28597c5d3a924d07688b497a2d7ea551e53b1123",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "f51de0386b08ec71b19fb5942a9cd4e4a01da0c3b616128a227e1a996ca8f5ff",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py": "2092a76f113bd4a43c70bb1878ae81cf96a82e76baf97e479834f60c013d0d46",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py": "08904d4f074d097d6e00dbc66b617f05df3f71050446c5e50a212cbc782307f2",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py": "815a459de78cfb7e98f0d3c254d97377dfacf67fc63f90921aa8f46dcd920764",
     "scratch/generate_exp471_codemap_antigravity.py": "bb2c0c9f76b9ebd8ffc886bb424cfc6a447206e23f1943b9d9de36c18c67ba06",
     "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py": "4c05e270a7d7468e8e9a6e168b919cdda8345d36eb6a78d8f185d9397fd6ed7a"
   },

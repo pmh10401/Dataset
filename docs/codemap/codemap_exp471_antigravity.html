@@ -224,7 +224,17 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
     },
@@ -434,6 +444,7 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
       ],
@@ -442,6 +453,7 @@
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
       "tests": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
       ]
@@ -493,11 +505,15 @@
       "tests": []
     },
     {
-      "callers": [],
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
       "effects": "Synthetic Git and source-tree tests for the Exp467 authority boundary.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_source_authority_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
-      "tests": []
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
     },
     {
       "callers": [

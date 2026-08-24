@@ -17,7 +17,7 @@ import stat
 import subprocess
 import sys
 from types import MappingProxyType, ModuleType
-from weakref import WeakSet
+from weakref import WeakKeyDictionary, WeakSet
 
 from .config_antigravity import (
     CONDITION_ORDER_ANTIGRAVITY,
@@ -34,6 +34,10 @@ from .contracts_antigravity import (
 
 _EXP467_LAUNCHER_PATH_ANTIGRAVITY = "scratch/run_exp467_numba_calibration_resume_antigravity.py"
 _EXP467_VERIFIER_MODULE_ANTIGRAVITY = "experiments.exp467_numba_calibration_resume_antigravity.verifier_antigravity"
+_EXP450_RUNNER_MODULE_ANTIGRAVITY = "experiments.exp450_resampling_image_ablation_antigravity.runner_antigravity"
+_PAPER_CONFIG_MODULE_ANTIGRAVITY = "paper.equipment_anomaly_detection.config_paper"
+_PAPER_CONTRACTS_MODULE_ANTIGRAVITY = "paper.equipment_anomaly_detection.contracts_paper"
+_PAPER_DATA_MODULE_ANTIGRAVITY = "paper.equipment_anomaly_detection.data_paper"
 _SOURCE_AUTHORITY_NAME_ANTIGRAVITY = "source_authority_antigravity.json"
 if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
     raise RuntimeError("Exp471 requires descriptor-relative no-follow support")
@@ -402,7 +406,59 @@ def _require_same_directory_identity_antigravity(left: Path, right: Path) -> Non
         right_anchor.close()
 
 
-def _verify_exp467_source_components_antigravity(repository: Path, source_root: Path) -> tuple[Exp471SourceAuthorityAntigravity, object, object, object, object, ModuleType]:
+@dataclass(frozen=True, slots=True, eq=False, weakref_slot=True)
+class Exp471CapturedValuesApiAntigravity:
+    """Values-only database capability retained from the captured source graph."""
+
+    database_config_antigravity: object
+    bind_preverified_database_read_only_antigravity: Callable[..., object]
+    load_dataset_values_antigravity: Callable[..., object]
+    raw_dataset_type_antigravity: type
+
+
+def _captured_values_api_antigravity(
+    verifier: ModuleType, context: object
+) -> Exp471CapturedValuesApiAntigravity:
+    config_module = importlib.import_module(_PAPER_CONFIG_MODULE_ANTIGRAVITY)
+    contracts_module = importlib.import_module(_PAPER_CONTRACTS_MODULE_ANTIGRAVITY)
+    data_module = importlib.import_module(_PAPER_DATA_MODULE_ANTIGRAVITY)
+    runner_module = importlib.import_module(_EXP450_RUNNER_MODULE_ANTIGRAVITY)
+    config_type = getattr(contracts_module, "FrozenPaperConfig", None)
+    raw_dataset_type = getattr(contracts_module, "RawDataset", None)
+    config = getattr(config_module, "FROZEN_CONFIG", None)
+    binder = getattr(data_module, "bind_preverified_database_read_only_paper", None)
+    loader = getattr(data_module, "load_dataset_values", None)
+    compose = getattr(runner_module, "compose_all_conditions_antigravity", None)
+    if (
+        type(config_type) is not type
+        or type(raw_dataset_type) is not type
+        or type(config) is not config_type
+        or not callable(binder)
+        or not callable(loader)
+        or not callable(compose)
+        or getattr(data_module, "FrozenPaperConfig", None) is not config_type
+        or getattr(data_module, "RawDataset", None) is not raw_dataset_type
+        or getattr(data_module, "FROZEN_CONFIG", None) is not config
+        or getattr(binder, "__globals__", {}).get("FROZEN_CONFIG") is not config
+        or getattr(loader, "__globals__", {}).get("RawDataset") is not raw_dataset_type
+        or getattr(loader, "__globals__", {}).get("FROZEN_CONFIG") is not config
+        or getattr(compose, "__globals__", {}).get("RawDataset") is not raw_dataset_type
+        or getattr(verifier, "compose_all_conditions_antigravity", None) is not compose
+        or type(getattr(config, "database_path", None)) is not str
+        or not Path(config.database_path).is_absolute()
+        or not _digest_antigravity(getattr(config, "database_sha256", None))
+        or config.database_sha256 != getattr(context, "database_sha256", None)
+    ):
+        raise ValueError("Exp467 captured values API is invalid")
+    return Exp471CapturedValuesApiAntigravity(
+        config,
+        binder,
+        loader,
+        raw_dataset_type,
+    )
+
+
+def _verify_exp467_source_components_antigravity(repository: Path, source_root: Path) -> tuple[Exp471SourceAuthorityAntigravity, object, object, object, object, ModuleType, Exp471CapturedValuesApiAntigravity]:
     repository = Path(repository)
     source_root = Path(source_root)
     launcher, captured, _digests = _closed_snapshot_antigravity(repository)
@@ -420,6 +476,7 @@ def _verify_exp467_source_components_antigravity(repository: Path, source_root: 
         summarize = getattr(verifier, "provenance_summary_antigravity", None)
         if not all(callable(value) for value in (verify_completion, reopen_manifests, summarize)):
             raise ValueError("Exp467 verifier API is incomplete")
+        values_api = _captured_values_api_antigravity(verifier, context)
         verification = verify_completion(source_root, context=context, catalog=catalog, migration_manifest=migration_manifest)
         opened = reopen_manifests(source_root, verification)
         summary = summarize(verification)
@@ -464,7 +521,7 @@ def _verify_exp467_source_components_antigravity(repository: Path, source_root: 
     )
     authority_sha256 = sha256(canonical_json_bytes_exp471_antigravity(_authority_record_antigravity(bare, include_digest=False))).hexdigest()
     authority = Exp471SourceAuthorityAntigravity(**_authority_record_antigravity(bare, include_digest=False), authority_sha256=authority_sha256)
-    return authority, verification, context, catalog, migration_manifest, verifier
+    return authority, verification, context, catalog, migration_manifest, verifier, values_api
 
 
 def verify_exp467_source_antigravity(repository: Path, source_root: Path) -> Exp471SourceAuthorityAntigravity:
@@ -483,16 +540,57 @@ class Exp471SourceSessionAntigravity:
     verifier: ModuleType
     score_reader_antigravity: Callable[[], object] | None = None
     label_callback_antigravity: Callable[[], object] | None = None
+    captured_values_api_antigravity: Exp471CapturedValuesApiAntigravity | None = None
 
 
 def _make_source_session_api_antigravity():
     issued: WeakSet[object] = WeakSet()
+    values_by_session: WeakKeyDictionary[object, object] = WeakKeyDictionary()
+    expected_values_members: WeakKeyDictionary[object, tuple[object, ...]] = (
+        WeakKeyDictionary()
+    )
 
     def is_issued(value: object) -> bool:
         try:
             return value in issued
         except TypeError:
             return False
+
+    def require_values(
+        value: object,
+    ) -> Exp471CapturedValuesApiAntigravity:
+        if not isinstance(value, Exp471SourceSessionAntigravity) or not is_issued(
+            value
+        ):
+            raise ValueError("Exp471 captured values API requires an issued session")
+        api = value.captured_values_api_antigravity
+        if (
+            not isinstance(api, Exp471CapturedValuesApiAntigravity)
+            or values_by_session.get(value) is not api
+        ):
+            raise ValueError("Exp471 captured values API is missing or replaced")
+        expected = expected_values_members.get(api)
+        observed = (
+            api.database_config_antigravity,
+            api.bind_preverified_database_read_only_antigravity,
+            api.load_dataset_values_antigravity,
+            api.raw_dataset_type_antigravity,
+        )
+        if (
+            expected is None
+            or len(expected) != len(observed)
+            or any(left is not right for left, right in zip(observed, expected))
+            or not callable(api.bind_preverified_database_read_only_antigravity)
+            or not callable(api.load_dataset_values_antigravity)
+            or type(api.raw_dataset_type_antigravity) is not type
+            or type(getattr(api.database_config_antigravity, "database_path", None))
+            is not str
+            or not Path(api.database_config_antigravity.database_path).is_absolute()
+            or api.database_config_antigravity.database_sha256
+            != value.authority.database_sha256
+        ):
+            raise ValueError("Exp471 captured values API members differ")
+        return api
 
     def open_session(
         repository: Path,
@@ -505,24 +603,36 @@ def _make_source_session_api_antigravity():
             raise ValueError("Exp471 score-reader sentinel must be callable")
         if label_callback_antigravity is not None and not callable(label_callback_antigravity):
             raise ValueError("Exp471 label callback sentinel must be callable")
-        authority, verification, context, catalog, migration, verifier = _verify_exp467_source_components_antigravity(repository, source_root)
+        authority, verification, context, catalog, migration, verifier, values_api = _verify_exp467_source_components_antigravity(repository, source_root)
         session = Exp471SourceSessionAntigravity(
-            authority,
-            verification,
-            context,
-            catalog,
-            migration,
-            verifier,
-            score_reader_antigravity,
-            label_callback_antigravity,
+            authority=authority,
+            verification=verification,
+            context=context,
+            catalog=catalog,
+            migration_manifest=migration,
+            verifier=verifier,
+            score_reader_antigravity=score_reader_antigravity,
+            label_callback_antigravity=label_callback_antigravity,
+            captured_values_api_antigravity=values_api,
         )
         issued.add(session)
+        values_by_session[session] = values_api
+        expected_values_members[values_api] = (
+            values_api.database_config_antigravity,
+            values_api.bind_preverified_database_read_only_antigravity,
+            values_api.load_dataset_values_antigravity,
+            values_api.raw_dataset_type_antigravity,
+        )
         return session
 
-    return open_session, is_issued
+    return open_session, is_issued, require_values
 
 
-open_exp467_source_session_antigravity, _source_session_is_issued_antigravity = _make_source_session_api_antigravity()
+(
+    open_exp467_source_session_antigravity,
+    _source_session_is_issued_antigravity,
+    _require_captured_values_api_antigravity,
+) = _make_source_session_api_antigravity()
 del _make_source_session_api_antigravity
 
 
@@ -659,7 +769,9 @@ def read_source_authority_antigravity(root: Path, repository: Path, source_root:
 
 
 __all__ = [
+    "Exp471CapturedValuesApiAntigravity",
     "Exp471SourceSessionAntigravity",
+    "_require_captured_values_api_antigravity",
     "_source_session_is_issued_antigravity",
     "open_exp467_source_session_antigravity",
     "publish_source_authority_antigravity",

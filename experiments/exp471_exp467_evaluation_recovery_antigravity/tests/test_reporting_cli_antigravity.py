@@ -2001,6 +2001,97 @@ class CliTestsAntigravity(unittest.TestCase):
         self.assertEqual(reopen.call_count, 1)
         self.assertEqual(prepare.call_count, 0)
 
+    def test_production_scores_use_only_issued_captured_values_api(self) -> None:
+        """A live-worktree loader must never enter captured score composition."""
+
+        from paper.equipment_anomaly_detection import contracts_paper, data_paper
+        from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+            source_authority_antigravity as source_authority,
+        )
+        from experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_source_authority_antigravity import (
+            SyntheticSourceAntigravity,
+            _synthetic_constants_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_cli_captured_values_antigravity_"
+        ) as temporary:
+            fixture = SyntheticSourceAntigravity(temporary)
+            with _synthetic_constants_antigravity(fixture):
+                session = source_authority.open_exp467_source_session_antigravity(
+                    fixture.repository, fixture.source_root
+                )
+
+            class ForeignLiveConfigAntigravity:
+                database_path = str(
+                    fixture.root / "foreign_live_database_antigravity.sqlite"
+                )
+                database_sha256 = session.authority.database_sha256
+
+            def foreign_live_values_antigravity(*_args, **_kwargs):
+                raise AssertionError("live values API was imported")
+
+            observed: Exception | None = None
+            with mock.patch.object(
+                contracts_paper, "FrozenPaperConfig", ForeignLiveConfigAntigravity
+            ), mock.patch.object(
+                data_paper,
+                "bind_preverified_database_read_only_paper",
+                foreign_live_values_antigravity,
+            ), mock.patch.object(
+                data_paper, "load_dataset_values", foreign_live_values_antigravity
+            ):
+                try:
+                    cli._production_score_bundle_antigravity(session)
+                except Exception as error:
+                    observed = error
+            self.assertIsInstance(observed, RuntimeError)
+            self.assertEqual(str(observed), "captured values reached score closure")
+            calls = session.captured_values_api_antigravity.load_dataset_values_antigravity.__globals__[
+                "VALUES_CALLS"
+            ]
+            self.assertEqual([row[0] for row in calls], ["bind", "load"])
+
+    def test_production_scores_reject_replaced_captured_loader_before_call(self) -> None:
+        """A foreign callable cannot self-describe its way into score composition."""
+
+        from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+            source_authority_antigravity as source_authority,
+        )
+        from experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_source_authority_antigravity import (
+            SyntheticSourceAntigravity,
+            _synthetic_constants_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_cli_foreign_loader_antigravity_"
+        ) as temporary:
+            fixture = SyntheticSourceAntigravity(temporary)
+            with _synthetic_constants_antigravity(fixture):
+                session = source_authority.open_exp467_source_session_antigravity(
+                    fixture.repository, fixture.source_root
+                )
+            values = session.captured_values_api_antigravity
+            captured_loader = values.load_dataset_values_antigravity
+            foreign_calls: list[str] = []
+
+            def foreign_loader(*args, **kwargs):
+                foreign_calls.append("called")
+                return captured_loader(*args, **kwargs)
+
+            foreign_loader.__module__ = captured_loader.__module__
+            object.__setattr__(
+                values, "load_dataset_values_antigravity", foreign_loader
+            )
+            observed: Exception | None = None
+            try:
+                cli._production_score_bundle_antigravity(session)
+            except Exception as error:
+                observed = error
+            self.assertIsInstance(observed, ValueError)
+            self.assertRegex(str(observed), "captured values API")
+            self.assertEqual(foreign_calls, [])
+
     def test_report_lifecycle_order_and_exact_second_call_skip_counts(self) -> None:
         """Resume must not repeat preparation, labels, metrics, or rendering."""
 

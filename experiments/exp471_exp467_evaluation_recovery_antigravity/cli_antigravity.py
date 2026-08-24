@@ -742,27 +742,28 @@ def _coordinate_record_antigravity(dataset: str, identity: Mapping[str, object])
 def _production_score_bundle_antigravity(session: object) -> Mapping[str, object]:
     """Build Task 5's verified, label-free input from issued Exp467 evidence."""
 
+    from .source_authority_antigravity import (
+        _require_captured_values_api_antigravity,
+    )
     from experiments.exp450_resampling_image_ablation_antigravity import (
         evaluation_antigravity as frozen_evaluation,
     )
     from experiments.paper_public_baselines.runner import verify_score_root
-    from paper.equipment_anomaly_detection.contracts_paper import FrozenPaperConfig
-    from paper.equipment_anomaly_detection.data_paper import (
-        bind_preverified_database_read_only_paper,
-        load_dataset_values,
-    )
 
     authority = session.authority
     catalog = session.catalog
-    paper = FrozenPaperConfig()
+    values_api = _require_captured_values_api_antigravity(session)
+    paper = values_api.database_config_antigravity
     if Path(paper.database_path).is_symlink() or paper.database_sha256 != authority.database_sha256:
         raise ValueError("Exp471 production database authority differs")
-    binding = bind_preverified_database_read_only_paper(
-        Path(paper.database_path), verified_catalog_database=catalog["database"]
+    binding = values_api.bind_preverified_database_read_only_antigravity(
+        Path(paper.database_path),
+        config=paper,
+        verified_catalog_database=catalog["database"],
     )
     datasets = tuple(entry["dataset"] for entry in catalog["datasets"])
     raw = {
-        dataset: load_dataset_values(
+        dataset: values_api.load_dataset_values_antigravity(
             Path(paper.database_path), dataset, preverified_database=binding
         )
         for dataset in datasets
