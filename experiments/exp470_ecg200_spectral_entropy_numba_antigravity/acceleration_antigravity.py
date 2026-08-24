@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict, dataclass
 import hashlib
+from importlib.metadata import PackageNotFoundError, version
 import json
 import math
 from pathlib import Path
@@ -180,6 +181,14 @@ def _require_runtime_arguments_antigravity(
         raise ValueError("reference_tolerance must be finite")
     if not math.isfinite(required_mlx_speedup) or required_mlx_speedup <= 0.0:
         raise ValueError("required_mlx_speedup must be finite and positive")
+
+
+def _distribution_version_antigravity(distribution: str) -> str | None:
+    """Return installed package metadata, reserving null for an absent package."""
+    try:
+        return version(distribution)
+    except PackageNotFoundError:
+        return None
 
 
 def _median_mlx_antigravity(mx: object, values: object, axis: int) -> object:
@@ -371,15 +380,13 @@ def assess_runtime_antigravity(
         fit_rows, query_rows, first, warm_median, required_mlx_speedup, repetitions,
         reference_tolerance,
     )
-    mlx_version = None
-    mlx_metal_version = None
+    mlx_version = _distribution_version_antigravity("mlx")
+    mlx_metal_version = _distribution_version_antigravity("mlx-metal")
     device = "MLX unavailable"
     if mlx_assessment.available:
         try:
             import mlx.core as mx
 
-            mlx_version = getattr(mx, "__version__", None)
-            mlx_metal_version = getattr(getattr(mx, "metal", None), "__version__", None)
             device = str(mx.default_device())
         except Exception:
             device = "MLX metadata unavailable"

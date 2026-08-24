@@ -19,7 +19,7 @@
     "numba": {
       "available": true,
       "backend": "numba",
-      "cold_seconds": 0.520997874904424,
+      "cold_seconds": 0.594954916741699,
       "deterministic": true,
       "eligible": true,
       "exact_candidate_indices": true,
@@ -29,15 +29,15 @@
       "parity_passed": true,
       "python_reference_passed": true,
       "speedup": 1.0,
-      "warm_iqr_seconds": 6.668269634246826e-07,
-      "warm_median_seconds": 9.249988943338394e-05
+      "warm_iqr_seconds": 2.919696271419525e-07,
+      "warm_median_seconds": 9.245797991752625e-05
     }
   },
   "cpu": "arm",
   "device": "Device(gpu, 0)",
   "fixture_sha256": "054bfadb84cd5e4fb8e123207a25c089c6e4cd45366895e74c5e39707068187c",
   "llvmlite_version": "0.46.0",
-  "mlx_metal_version": null,
+  "mlx_metal_version": "0.32.0",
   "mlx_version": "0.32.0",
   "numba_version": "0.63.1",
   "python_version": "3.14.6",

@@ -7,6 +7,7 @@ real scorer and only use the fixed, public four-row smoke fixture.
 from __future__ import annotations
 
 import hashlib
+from importlib.metadata import version
 import json
 from pathlib import Path
 import sys
@@ -58,6 +59,11 @@ class AccelerationAssessmentTestAntigravity(unittest.TestCase):
         self.assertTrue(result.backends["numba"].exact_candidate_indices)
         self.assertTrue(result.backends["numba"].deterministic)
         self.assertIsNone(result.backends.get("numpy"))
+
+    def test_assessment_records_installed_mlx_metal_distribution_version_antigravity(self) -> None:
+        """Break caught: MLX metadata reads a module attribute and drops the installed mlx-metal version."""
+        result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=3)
+        self.assertEqual(result.mlx_metal_version, version("mlx-metal"))
 
     def test_reference_failure_stops_before_backend_selection_antigravity(self) -> None:
         """Break caught: a failed oracle check is silently accepted by the assessment."""
