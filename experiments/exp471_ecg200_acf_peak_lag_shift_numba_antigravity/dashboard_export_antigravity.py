@@ -25,14 +25,34 @@ def _mean_auc_antigravity(
     }
 
 
+def _histogram_antigravity(values: list[int]) -> str:
+    return ", ".join(
+        f"{value}:{values.count(value)}" for value in sorted(set(values))
+    )
+
+
 def export_dashboard_antigravity(inspected: object) -> str:
     if type(inspected) is not InspectedResultAntigravity:
         raise ValueError("dashboard export requires an inspected result")
     decision = inspected.decision
     qualification = inspected.qualification
-    first_record = next(iter(inspected.records.values()))
-    fit_shift_text = "[" + ", ".join(str(int(value)) for value in first_record.fit_shifts) + "]"
-    peak_absent_total = int(sum(int((~record.fit_peak_presence).sum()) for record in inspected.records.values()))
+    scopes = ("normal",) + _CHANGE_TYPES_ANTIGRAVITY
+    fit_shifts = [int(value) for record in inspected.records.values() for value in record.fit_shifts]
+    query_shifts = [
+        int(value)
+        for record in inspected.records.values()
+        for scope in scopes
+        for value in record.query_shifts[scope]
+    ]
+    fit_missing_rows = sum(
+        int((~record.fit_peak_presence).any(axis=1).sum())
+        for record in inspected.records.values()
+    )
+    query_missing_rows = sum(
+        int((~record.query_peak_presence[scope]).any(axis=1).sum())
+        for record in inspected.records.values()
+        for scope in scopes
+    )
     fixed = ", ".join(f"{seed}: {count}" for seed, count in qualification.period_fixed.items())
     broken = ", ".join(f"{seed}: {count}" for seed, count in qualification.period_broken.items())
     normal = ", ".join(f"{seed}: {count}" for seed, count in qualification.normal_confirmations.items())
@@ -63,8 +83,10 @@ def export_dashboard_antigravity(inspected: object) -> str:
         "<p>Numba: 사용함, MLX: 평가했지만 선택하지 않음</p></section>"
         "<section><h2>C0/E12/C12와 pair repair</h2>"
         "<p>period fixed: " + _text_antigravity(fixed) + "</p>"
-        "<p>fit shifts: " + _text_antigravity(fit_shift_text) + "</p>"
-        "<p>peak 부재 감지 수: " + _text_antigravity(peak_absent_total) + "</p>"
+        "<p>fit shift 분포: " + _text_antigravity(_histogram_antigravity(fit_shifts)) + "</p>"
+        "<p>query shift 분포: " + _text_antigravity(_histogram_antigravity(query_shifts)) + "</p>"
+        "<p>fit peak 없음 행: " + _text_antigravity(fit_missing_rows) + "</p>"
+        "<p>query peak 없음 행: " + _text_antigravity(query_missing_rows) + "</p>"
         "<p>period broken: " + _text_antigravity(broken) + "</p>"
         "<p>보호 대상 broken: " + _text_antigravity(protected) + "</p>"
         "<p>정상 confirmation: " + _text_antigravity(normal) + "</p>"

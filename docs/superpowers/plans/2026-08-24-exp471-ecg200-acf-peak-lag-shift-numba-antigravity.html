@@ -468,7 +468,7 @@ git commit -m "feat: evaluate Exp471 pair repairs"</code></pre>
   <p><strong>Files:</strong> Create <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code>; Test <code>tests/test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code>; Modify <code>docs/EXP471_DASHBOARD_antigravity.html</code>, <code>scratch/exp471_dashboard_artifact_antigravity.json</code>.</p>
   <p><strong>Produces:</strong> 정확히 7개 leaf: <code>artifact_sha256</code>, <code>context</code>, <code>dashboard_snapshot</code>, <code>decision</code>, <code>failed_folds</code>, <code>method_fold_metrics</code>, <code>method_summary</code>. Context에는 입력 배열과 indices, early/late peak lag·presence, shift, raw, rank, confirmation을 보존한다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>5.1</strong> leaf set, strict JSON, rehashed semantic tamper와 HTML checkbox RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.1</strong> leaf set, strict JSON, rehashed semantic tamper와 HTML checkbox RED 테스트를 작성한다.</label>
     <pre><code>def test_publication_has_exact_seven_leaves_antigravity(self):
     publish_result_antigravity(self.root, self.records, self.qualification, self.decision)
     self.assertEqual({path.name for path in self.root.iterdir()}, set(LEAF_NAMES_ANTIGRAVITY))
@@ -483,12 +483,12 @@ def test_dashboard_checks_only_completed_steps_antigravity(self):
     self.assertIn('checked disabled&gt; semantic replay 검증', html)
     self.assertNotIn('checked disabled&gt; private 실행', html)
     self.assertNotIn('checked disabled&gt; official 실행', html)</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.2</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.2</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_artifacts_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_replay_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_dashboard_export_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.3</strong> canonical serializer와 정확한 7개 leaf writer를 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.3</strong> canonical serializer와 정확한 7개 leaf writer를 구현한다.</label>
     <pre><code>LEAF_NAMES_ANTIGRAVITY = (
     "artifact_sha256_antigravity.json", "context_antigravity.json",
     "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
@@ -498,7 +498,7 @@ def test_dashboard_checks_only_completed_steps_antigravity(self):
 
 def canonical_json_bytes_antigravity(payload):
     return (json.dumps(payload, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.4</strong> replay는 loader 없이 저장 input에서 peak→shift→raw→E12/C12→pair count→decision을 재계산한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.4</strong> replay는 loader 없이 저장 input에서 peak→shift→raw→E12/C12→pair count→decision을 재계산한다.</label>
     <pre><code>def inspect_result_antigravity(root):
     path = Path(root)
     hashes = read_and_verify_hashes_antigravity(path)
@@ -508,8 +508,8 @@ def canonical_json_bytes_antigravity(payload):
     decision = evaluate_qualification_antigravity(qualification)
     reject_semantic_drift_antigravity(path, replayed, qualification, decision)
     return InspectedResultAntigravity(path, replayed, qualification, decision, hashes)</code></pre>
-    <label><input type="checkbox" disabled> <strong>5.5</strong> 대시보드에는 seed별 fixed/broken, protected broken, 정상 확인, peak 없음 수, shift 분포, AUC, backend와 실행 경계를 표시한다.</label>
-    <label><input type="checkbox" disabled> <strong>5.6</strong> 테스트를 두 번 통과시키고 portable dashboard를 검증한 뒤 commit한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.5</strong> 대시보드에는 seed별 fixed/broken, protected broken, 정상 확인, peak 없음 수, shift 분포, AUC, backend와 실행 경계를 표시한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.6</strong> 테스트를 두 번 통과시키고 portable dashboard를 검증한 뒤 commit한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_artifacts_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_replay_antigravity \
@@ -609,11 +609,11 @@ git status --short</code></pre>
     <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag 단일 scorer</label>
     <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX smoke</label>
     <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair-repair qualification</label>
-    <label><input type="checkbox" disabled> Task 5 canonical artifacts·semantic replay·HTML 결과 화면</label>
+    <label><input type="checkbox" checked disabled> Task 5 canonical artifacts·semantic replay·HTML 결과 화면</label>
     <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
     <label><input type="checkbox" disabled> official 실행·TEST/FN·routing</label>
   </section>
-  <p class="muted">작성일: 2026-08-24 · Task 1~4 구현까지 완료했고 Task 5가 다음 단계다. private/official 실행, TEST/FN 접근과 routing은 아직 시작하지 않았다.</p>
+  <p class="muted">작성일: 2026-08-24 · Task 1~5 구현까지 완료했고 Task 6가 다음 단계다. private/official 실행, TEST/FN 접근과 routing은 아직 시작하지 않았다.</p>
 </main></body>
 </html>

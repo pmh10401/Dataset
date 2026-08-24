@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and validate the versioned Exp471 Task 4 code-map triplet."""
+"""Build and validate the versioned Exp471 Task 5 code-map triplet."""
 
 from __future__ import annotations
 
@@ -148,6 +148,7 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     TASK3_BRIEF_ANTIGRAVITY,
     TASK3_REPORT_ANTIGRAVITY,
     TASK4_REPORT_ANTIGRAVITY,
+    TASK5_REPORT_ANTIGRAVITY,
     CONFIG_ANTIGRAVITY,
     SOURCES_ANTIGRAVITY,
     INTERPOLATION_ANTIGRAVITY,
@@ -160,6 +161,9 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     SCORING_ANTIGRAVITY,
     QUALIFICATION_ANTIGRAVITY,
     EVALUATION_ANTIGRAVITY,
+    ARTIFACTS_ANTIGRAVITY,
+    REPLAY_ANTIGRAVITY,
+    DASHBOARD_EXPORT_ANTIGRAVITY,
     CONFIG_TEST_ANTIGRAVITY,
     CONTRACTS_TEST_ANTIGRAVITY,
     AUTHORITY_TEST_ANTIGRAVITY,
@@ -169,6 +173,11 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     SCORING_TEST_ANTIGRAVITY,
     QUALIFICATION_TEST_ANTIGRAVITY,
     EVALUATION_TEST_ANTIGRAVITY,
+    ARTIFACTS_TEST_ANTIGRAVITY,
+    REPLAY_TEST_ANTIGRAVITY,
+    DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+    EXP471_DASHBOARD_ARTIFACT_ANTIGRAVITY,
+    EXP471_DASHBOARD_ANTIGRAVITY,
     ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     _predecessor_file_antigravity("sources_antigravity.py"),
@@ -177,8 +186,8 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     _predecessor_file_antigravity("predecessor_antigravity.py"),
     _predecessor_file_antigravity("contracts_antigravity.py"),
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp471_task4_pair_repair_codemap_v4"
-LOCK_SCHEMA_ANTIGRAVITY = "exp471_task4_pair_repair_lock_v4"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp471_task5_replay_codemap_v5"
+LOCK_SCHEMA_ANTIGRAVITY = "exp471_task5_replay_lock_v5"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -507,8 +516,8 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
     return (
         '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         "<title>Exp471 code map</title></head><body><main>"
-        "<h1>Exp471 Task 4 Code Map</h1>"
-        "<p>Versioned authority, ACF scorer, runtime assessment, fold scoring, pair qualification, and evaluation map; future Task 5–6 files are explicitly pending.</p>"
+        "<h1>Exp471 Task 5 Code Map</h1>"
+        "<p>Versioned authority, ACF scorer, runtime assessment, fold qualification, canonical publication, semantic replay, and dashboard map; future Task 6 files are explicitly pending.</p>"
         "<table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>"
         + rows + "</tbody></table>"
         '<script id="exp471-codemap-json-antigravity" type="application/json">'

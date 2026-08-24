@@ -14,11 +14,11 @@
   </style>
 </head>
 <body><main>
-  <h1>Exp471 구현 보고 — Task 1–4</h1>
-  <p>이 보고서는 2026-08-24~25에 전용 worktree에서 확인한 Task 1–4 증거를 기록합니다.</p>
+  <h1>Exp471 구현 보고 — Task 1–5</h1>
+  <p>이 보고서는 2026-08-24~25에 전용 worktree에서 확인한 Task 1–5 증거를 기록합니다.</p>
 
   <h2>1. 범위</h2>
-  <p>Task 1은 고정 config와 Exp470 authority 경계를 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. Task 3는 공개 fixture에서 Python/Numba 일치와 MLX 적격성만 측정했습니다. Task 4는 합성 fold scoring과 pair-repair qualification을 구현했습니다. artifact publication과 실제 데이터 실험 실행은 아직 포함하지 않습니다.</p>
+  <p>Task 1은 고정 config와 Exp470 authority 경계를 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. Task 3는 공개 fixture에서 Python/Numba 일치와 MLX 적격성만 측정했습니다. Task 4는 합성 fold scoring과 pair-repair qualification을 구현했습니다. Task 5는 정확히 7개 canonical leaf, semantic replay와 HTML 결과 화면을 구현했습니다. 실제 데이터 실험 실행은 아직 포함하지 않습니다.</p>
 
   <h2>2. RED 증거</h2>
   <p>명령:</p>
@@ -134,6 +134,11 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity</code></pre>
   <p class="pass">Task 4가 의존하는 Exp470 다섯 모듈 회귀 테스트 19개를 통과했습니다.</p>
 
+  <h2>6.4 Task 5 결과</h2>
+  <p>합성 기록을 정확히 7개 canonical leaf로 저장하고, 저장된 train·indices·peak·shift·raw·다섯 scope rank·confirmation에서 C12와 pair gate를 다시 계산합니다. 모든 leaf를 다시 해시한 뒤 내용을 바꾸는 위조도 semantic replay가 거부합니다.</p>
+  <p>HTML 결과 화면은 seed별 fixed/broken, 보호 변화 broken, 정상 confirmation, fit/query peak 없음 행, 전체 shift 분포, C0/C12 AUC, Numba backend와 실행 경계를 표시합니다.</p>
+  <p class="pass">Task 5 집중 테스트 12개를 연속 두 번, Task 1–5 전체 테스트 55개를 연속 두 번 통과했습니다. Exp470 다섯 모듈 회귀 19개도 통과했습니다.</p>
+
   <h2>7. 금지 실행 경계</h2>
   <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing 실행은 0회였습니다. 수행한 작업은 소스 작성·검토, unit test, 코드 맵 생성·검증, 대시보드 갱신뿐입니다.</p>
 
@@ -143,7 +148,7 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     <li>Task 2 집중 테스트: <span class="pass">14개 통과</span>를 연속 두 번 확인했습니다.</li>
     <li>Task 3 집중 테스트: <span class="pass">12개 통과</span>를 연속 두 번 확인했습니다.</li>
     <li>Task 4 집중 테스트: <span class="pass">9개 통과</span>를 연속 두 번 확인했습니다.</li>
-    <li>Task 1–4 전체 테스트: <span class="pass">43개 통과</span>를 확인했습니다.</li>
+    <li>Task 1–5 전체 테스트: <span class="pass">55개 통과</span>를 연속 두 번 확인했습니다.</li>
     <li>Exp470 Task 4 의존 모듈 회귀 테스트: <span class="pass">19개 통과</span>를 확인했습니다.</li>
     <li>Exp471 코드 맵 생성·재검증과 JSON·lock 문법 검사가 모두 통과했습니다.</li>
     <li>휴대형 HTML 대시보드는 1440px와 390px 화면 검증, 출처 대화상자, 키보드 접근 검사를 포함해 <span class="pass">verification passed</span>였습니다.</li>
@@ -156,7 +161,7 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag scorer</label>
     <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
     <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair repair 판정</label>
-    <label><input type="checkbox" disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
+    <label><input type="checkbox" checked disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
     <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
     <label><input type="checkbox" disabled> official 실행·TEST/FN·routing 별도 판단</label>

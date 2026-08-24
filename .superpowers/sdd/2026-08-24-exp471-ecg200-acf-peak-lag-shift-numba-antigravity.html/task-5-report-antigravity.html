@@ -12,17 +12,18 @@
   <h2>무엇을 구현했나</h2>
   <ul>
     <li>정확히 7개 canonical leaf를 create-only로 저장하고 SHA-256 map으로 묶는다.</li>
-    <li>context에는 shared train140, blocked indices, early/late peak lag, presence, shift, raw, confirmation과 C0 입력을 모두 남긴다.</li>
+    <li>context에는 shared train140, blocked indices, early/late peak lag, presence, shift, raw, 다섯 scope의 E12 rank, confirmation과 C0 입력을 모두 남긴다.</li>
     <li>replay는 loader 없이 shared train과 합성 row로 peak→shift→raw→E12/C12→pair count→decision을 재계산한다.</li>
     <li>재해시한 decision, metrics, summary, dashboard snapshot, context 위조와 JSON int/bool 유형 위장을 거부한다.</li>
-    <li>HTML export는 replay만 완료로 표시하고 private/official/TEST/FN/routing은 미완료로 유지한다.</li>
+    <li>HTML export는 모든 fold의 fit/query shift 분포와 peak 없음 행 수를 표시하고 private/official/TEST/FN/routing은 미완료로 유지한다.</li>
   </ul>
   <h2>테스트 증거</h2>
   <table><thead><tr><th>검증</th><th>결과</th></tr></thead><tbody>
     <tr><td>RED</td><td>Task 5 production 모듈 추가 전 8개 테스트가 missing module 오류</td></tr>
-    <tr><td>Task 5 집중 GREEN</td><td><span class="pass">8개 통과</span></td></tr>
-    <tr><td>전체 Exp471 회귀 1회차</td><td><span class="pass">51개 통과</span></td></tr>
-    <tr><td>전체 Exp471 회귀 2회차</td><td><span class="pass">51개 통과</span></td></tr>
+    <tr><td>Task 5 집중 GREEN 1회차</td><td><span class="pass">12개 통과</span></td></tr>
+    <tr><td>Task 5 집중 GREEN 2회차</td><td><span class="pass">12개 통과</span></td></tr>
+    <tr><td>전체 Exp471 회귀 1회차</td><td><span class="pass">55개 통과</span></td></tr>
+    <tr><td>전체 Exp471 회귀 2회차</td><td><span class="pass">55개 통과</span></td></tr>
     <tr><td>Task 4 다섯 모듈 회귀</td><td><span class="pass">19개 통과</span></td></tr>
   </tbody></table>
   <pre><code>python3 -m unittest \

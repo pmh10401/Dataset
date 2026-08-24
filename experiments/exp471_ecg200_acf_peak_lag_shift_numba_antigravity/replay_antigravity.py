@@ -40,7 +40,6 @@ _CONTEXT_RECORD_KEYS_ANTIGRAVITY = frozenset((
     "c0_normal",
     "c0_primary",
     "confirmed",
-    "e12_ranks",
     "fit_early_peak_lags",
     "fit_indices",
     "fit_late_peak_lags",
@@ -53,6 +52,7 @@ _CONTEXT_RECORD_KEYS_ANTIGRAVITY = frozenset((
     "query_indices",
     "query_late_peak_lags",
     "query_peak_presence",
+    "query_ranks",
     "query_raw_shift",
     "query_shifts",
     "seed",
@@ -241,7 +241,7 @@ def _rebuild_records_antigravity(
             change: _float_array_antigravity(c0_primary_source[change], (width,), f"c0_primary[{change}]")
             for change in FROZEN_CONFIG_ANTIGRAVITY.change_types
         }
-        for name in ("confirmed", "query_early_peak_lags", "query_late_peak_lags", "query_peak_presence", "query_shifts", "query_raw_shift"):
+        for name in ("confirmed", "query_early_peak_lags", "query_late_peak_lags", "query_peak_presence", "query_ranks", "query_shifts", "query_raw_shift"):
             _require_canonical_scope_mapping_antigravity(item[name], name)
         confirmed = {
             scope: _bool_array_antigravity(item["confirmed"][scope], (width,), f"confirmed[{scope}]")
@@ -261,7 +261,12 @@ def _rebuild_records_antigravity(
         presence = {scope: _bool_array_antigravity(item["query_peak_presence"][scope], (width, 2), f"presence[{scope}]") for scope in _SCOPES_ANTIGRAVITY}
         shifts = {scope: _int_array_antigravity(item["query_shifts"][scope], (width,), f"shifts[{scope}]") for scope in _SCOPES_ANTIGRAVITY}
         raw = {scope: _float_array_antigravity(item["query_raw_shift"][scope], (width,), f"raw[{scope}]") for scope in _SCOPES_ANTIGRAVITY}
-        stored_e12_ranks = _float_array_antigravity(item["e12_ranks"], (width,), "e12_ranks")
+        stored_ranks = {
+            scope: _float_array_antigravity(
+                item["query_ranks"][scope], (width,), f"query_ranks[{scope}]"
+            )
+            for scope in _SCOPES_ANTIGRAVITY
+        }
         generated_rows = _scope_rows_antigravity(train, query)
         replayed_peaks = score_acf_peak_lag_numba_antigravity(
             train[fit],
@@ -310,8 +315,9 @@ def _rebuild_records_antigravity(
                 raise ValueError("semantic retained fit maximum differs")
             ranks[scope] = rank
             recomputed_confirmed[scope] = replay_confirmed
-        if stored_e12_ranks.tobytes(order="C") != ranks["normal"].tobytes(order="C"):
-            raise ValueError("semantic retained E12 rank evidence drifted")
+        for scope in _SCOPES_ANTIGRAVITY:
+            if stored_ranks[scope].tobytes(order="C") != ranks[scope].tobytes(order="C"):
+                raise ValueError(f"semantic retained E12 rank evidence drifted: {scope}")
         original = {
             "C0": c0_normal,
             "E12": ranks["normal"],

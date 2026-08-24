@@ -99,7 +99,8 @@ class ResultReplayTestAntigravity(unittest.TestCase):
             ("context_antigravity.json", lambda value: value["shared_train140"][0].__setitem__(0, 99.0)),
             ("context_antigravity.json", lambda value: value["records"][0]["query_shifts"]["normal"].__setitem__(0, -99)),
             ("context_antigravity.json", lambda value: value["records"][0]["query_raw_shift"]["period_change"].__setitem__(0, 99.0)),
-            ("context_antigravity.json", lambda value: value["records"][0]["e12_ranks"].__setitem__(0, 99.0)),
+            ("context_antigravity.json", lambda value: value["records"][0]["query_ranks"]["normal"].__setitem__(0, 99.0)),
+            ("context_antigravity.json", lambda value: value["records"][0]["query_ranks"]["period_change"].__setitem__(0, 99.0)),
         )
         for leaf, mutate in cases:
             with self.subTest(leaf=leaf):

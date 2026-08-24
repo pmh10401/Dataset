@@ -27,31 +27,41 @@ class DashboardExportTestAntigravity(unittest.TestCase):
         for token in ("C0", "E12", "C12", "peak", "shift"):
             self.assertIn(token, html)
 
-    def test_html_shows_concrete_fit_shift_values_antigravity(self) -> None:
-        """Break caught: result HTML names peak/shift without retained numeric evidence."""
+    def test_html_shows_aggregate_fit_and_query_shift_distributions_antigravity(self) -> None:
+        """Break caught: result HTML shows one fold instead of aggregate shift distributions."""
         from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.dashboard_export_antigravity import export_dashboard_antigravity
         from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.replay_antigravity import inspect_result_antigravity
 
         with tempfile.TemporaryDirectory() as directory:
             inspected = inspect_result_antigravity(published_result_root_antigravity(directory))
         html = export_dashboard_antigravity(inspected)
-        first_record = next(iter(inspected.records.values()))
-        expected_shifts = "[" + ", ".join(str(int(value)) for value in first_record.fit_shifts) + "]"
-        self.assertIn(f"fit shifts: {expected_shifts}", html)
+        scopes = ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+        fit_values = [int(value) for record in inspected.records.values() for value in record.fit_shifts]
+        query_values = [int(value) for record in inspected.records.values() for scope in scopes for value in record.query_shifts[scope]]
+        histogram = lambda values: ", ".join(f"{value}:{values.count(value)}" for value in sorted(set(values)))
+        self.assertIn(f"fit shift 분포: {histogram(fit_values)}", html)
+        self.assertIn(f"query shift 분포: {histogram(query_values)}", html)
 
-    def test_html_shows_concrete_peak_absence_count_antigravity(self) -> None:
-        """Break caught: result HTML omits how many ACF peaks were actually absent."""
+    def test_html_shows_fit_and_query_peak_absence_rows_antigravity(self) -> None:
+        """Break caught: result HTML omits fit or query rows with an absent ACF peak."""
         from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.dashboard_export_antigravity import export_dashboard_antigravity
         from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.replay_antigravity import inspect_result_antigravity
 
         with tempfile.TemporaryDirectory() as directory:
             inspected = inspect_result_antigravity(published_result_root_antigravity(directory))
         html = export_dashboard_antigravity(inspected)
-        expected_absent = sum(
-            int((~record.fit_peak_presence).sum())
+        scopes = ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+        fit_absent = sum(
+            int((~record.fit_peak_presence).any(axis=1).sum())
             for record in inspected.records.values()
         )
-        self.assertIn(f"peak 부재 감지 수: {expected_absent}", html)
+        query_absent = sum(
+            int((~record.query_peak_presence[scope]).any(axis=1).sum())
+            for record in inspected.records.values()
+            for scope in scopes
+        )
+        self.assertIn(f"fit peak 없음 행: {fit_absent}", html)
+        self.assertIn(f"query peak 없음 행: {query_absent}", html)
 
     def test_export_leaves_no_module_level_qualification_state_antigravity(self) -> None:
         """Break caught: export hides mutable qualification in module globals."""

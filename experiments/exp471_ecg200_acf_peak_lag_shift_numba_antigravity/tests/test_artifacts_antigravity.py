@@ -112,14 +112,14 @@ class ArtifactPublicationTestAntigravity(unittest.TestCase):
             record = payload["records"][0]
             keys = (
                 "fit_early_peak_lags", "fit_late_peak_lags", "fit_peak_presence", "fit_shifts",
-                "e12_ranks", "fit_raw_shift", "query_early_peak_lags", "query_late_peak_lags",
+                "query_ranks", "fit_raw_shift", "query_early_peak_lags", "query_late_peak_lags",
                 "query_peak_presence", "query_shifts", "query_raw_shift", "confirmed",
                 "c0_normal", "c0_primary", "fit_indices", "query_indices",
             )
             for key in keys:
                 self.assertIn(key, record)
 
-    def test_context_e12_ranks_match_replayed_acf_authority_antigravity(self) -> None:
+    def test_context_e12_ranks_match_all_replayed_scopes_antigravity(self) -> None:
         """Break caught: retained E12 rank evidence is omitted or semantically wrong."""
         import numpy as np
 
@@ -136,8 +136,12 @@ class ArtifactPublicationTestAntigravity(unittest.TestCase):
             publish_result_antigravity(root, records, qualification, decision)
             payload = json.loads((root / "context_antigravity.json").read_text(encoding="utf-8"))
             inspected = inspect_result_antigravity(root)
+        scopes = ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change")
         for item, replayed in zip(payload["records"], inspected.records.values(), strict=True):
-            self.assertEqual(item["e12_ranks"], np.asarray(replayed.original["E12"]).tolist())
+            self.assertEqual(tuple(item["query_ranks"]), tuple(sorted(scopes)))
+            for scope in scopes:
+                expected = replayed.original["E12"] if scope == "normal" else replayed.primary["E12"][scope]
+                self.assertEqual(item["query_ranks"][scope], np.asarray(expected).tolist())
 
     def test_publish_rejects_dirty_root_and_caller_gate_mismatch_antigravity(self) -> None:
         """Break caught: cleanup or blindly trusted caller gates enter publication evidence."""
