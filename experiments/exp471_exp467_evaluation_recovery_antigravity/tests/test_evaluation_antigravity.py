@@ -758,6 +758,190 @@ class EvaluationTestsAntigravity(unittest.TestCase):
         self.assertEqual(durable_bytes[0], durable_bytes[1])
         self.assertEqual(durable_digests[0], durable_digests[1])
 
+    def test_reuse_read_and_reconstruction_skip_scientific_bootstrap(self) -> None:
+        """Every durable path must treat persisted bootstrap rows as evidence."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_no_bootstrap_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = (
+                _evaluation_patches_antigravity(cache_root, evaluation_root)
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                )
+                operations = (
+                    (
+                        "exact durable reuse",
+                        lambda: evaluation.evaluate_exp471_antigravity(
+                            session,
+                            cache,
+                            label_loader=lambda _datasets: (_ for _ in ()).throw(
+                                AssertionError("labels must not reopen")
+                            ),
+                        ),
+                    ),
+                    (
+                        "direct read",
+                        lambda: evaluation.read_evaluation_exp471_antigravity(
+                            evaluation_root, session, cache
+                        ),
+                    ),
+                    (
+                        "frozen reconstruction",
+                        lambda: evaluation.reconstruct_frozen_evaluation_exp471_antigravity(
+                            artifact
+                        ),
+                    ),
+                )
+                for name, operation in operations:
+                    with self.subTest(name=name), mock.patch.object(
+                        evaluation,
+                        "_bootstrap_expectations_antigravity",
+                        create=True,
+                        side_effect=AssertionError(
+                            "durable evaluation must not regenerate bootstrap draws"
+                        ),
+                    ) as bootstrap, mock.patch.object(
+                        evaluation.np.random,
+                        "default_rng",
+                        side_effect=AssertionError(
+                            "durable evaluation must not generate bootstrap draws"
+                        ),
+                    ), mock.patch.object(
+                        evaluation.np,
+                        "empty",
+                        side_effect=AssertionError(
+                            "durable evaluation must not rebuild estimate vectors"
+                        ),
+                    ), mock.patch.object(
+                        evaluation.np,
+                        "quantile",
+                        side_effect=AssertionError(
+                            "durable evaluation must not recalculate quantiles"
+                        ),
+                    ):
+                        operation()
+                        bootstrap.assert_not_called()
+
+    def test_reuse_and_direct_read_skip_score_preparation(self) -> None:
+        """Durable authority checks must not rebuild score mappings."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_no_score_prepare_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = (
+                _evaluation_patches_antigravity(cache_root, evaluation_root)
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                )
+                operations = (
+                    lambda: evaluation.evaluate_exp471_antigravity(
+                        session,
+                        cache,
+                        label_loader=lambda _datasets: (_ for _ in ()).throw(
+                            AssertionError("labels must not reopen")
+                        ),
+                    ),
+                    lambda: evaluation.read_evaluation_exp471_antigravity(
+                        evaluation_root, session, cache
+                    ),
+                )
+                for operation in operations:
+                    with mock.patch.object(
+                        evaluation,
+                        "_verified_cache_scores_antigravity",
+                        side_effect=AssertionError(
+                            "durable evaluation must not prepare score mappings"
+                        ),
+                    ) as score_preparation:
+                        operation()
+                        score_preparation.assert_not_called()
+
+    def test_initial_evaluation_calls_frozen_metric_and_paired_builders_once(
+        self,
+    ) -> None:
+        """Initial labels and scores must enter the unchanged builder once."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_initial_builder_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = (
+                _evaluation_patches_antigravity(cache_root, evaluation_root)
+            )
+            with issued, score_root, artifact_root, cache_gate, mock.patch.object(
+                evaluation,
+                "metric_tables_exp450_antigravity",
+                wraps=evaluation.metric_tables_exp450_antigravity,
+            ) as metric_builder, mock.patch.object(
+                evaluation.frozen_evaluation_antigravity,
+                "_paired_statistics",
+                wraps=evaluation.frozen_evaluation_antigravity._paired_statistics,
+            ) as paired_builder:
+                evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                )
+
+        metric_builder.assert_called_once()
+        paired_builder.assert_called_once()
+
+    def test_reconstruction_validates_the_complete_payload_once(self) -> None:
+        """Reconstruction must reuse the one validated immutable payload."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_single_validation_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = (
+                _evaluation_patches_antigravity(cache_root, evaluation_root)
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                )
+
+        with mock.patch.object(
+            evaluation,
+            "_validated_payload_antigravity",
+            wraps=evaluation._validated_payload_antigravity,
+        ) as validator:
+            evaluation.reconstruct_frozen_evaluation_exp471_antigravity(artifact)
+        validator.assert_called_once_with(artifact)
+
     def test_reopen_rejects_null_outside_each_methods_first_roc_threshold(
         self,
     ) -> None:

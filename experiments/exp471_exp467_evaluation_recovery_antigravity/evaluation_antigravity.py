@@ -208,13 +208,15 @@ def _require_source_session_antigravity(
     return session
 
 
-def _verified_cache_scores_antigravity(
+def _verified_cache_shards_antigravity(
     session: Exp471SourceSessionAntigravity,
     cache: object,
+    *,
+    prepare_scores: bool,
 ) -> tuple[
     Exp471ScoreCacheManifestAntigravity,
-    dict[str, dict[str, tuple[float, ...]]],
-    dict[str, dict[str, tuple[float, ...]]],
+    dict[str, dict[str, tuple[float, ...]]] | None,
+    dict[str, dict[str, tuple[float, ...]]] | None,
     dict[str, int],
 ]:
     session = _require_source_session_antigravity(session)
@@ -236,12 +238,18 @@ def _verified_cache_scores_antigravity(
     if reopened.method_order != METHOD_ORDER_ANTIGRAVITY:
         raise ValueError("Exp471 evaluation cache method order differs")
 
-    raw_scores: dict[str, dict[str, tuple[float, ...]]] = {}
-    micro_scores: dict[str, dict[str, tuple[float, ...]]] = {}
+    raw_scores: dict[str, dict[str, tuple[float, ...]]] | None = (
+        {} if prepare_scores else None
+    )
+    micro_scores: dict[str, dict[str, tuple[float, ...]]] | None = (
+        {} if prepare_scores else None
+    )
     test_counts: dict[str, int] = {}
     for method in METHOD_ORDER_ANTIGRAVITY:
-        raw_scores[method] = {}
-        micro_scores[method] = {}
+        if prepare_scores:
+            assert raw_scores is not None and micro_scores is not None
+            raw_scores[method] = {}
+            micro_scores[method] = {}
         for dataset in reopened.dataset_order:
             shard = cache_artifacts_antigravity.read_score_shard_antigravity(
                 root, method, dataset
@@ -259,9 +267,42 @@ def _verified_cache_scores_antigravity(
             prior_count = test_counts.setdefault(dataset, shard.test_count)
             if prior_count != shard.test_count:
                 raise ValueError("Exp471 evaluation dataset row counts differ")
-            raw_scores[method][dataset] = shard.raw_scores
-            micro_scores[method][dataset] = shard.micro_scores
+            if prepare_scores:
+                assert raw_scores is not None and micro_scores is not None
+                raw_scores[method][dataset] = shard.raw_scores
+                micro_scores[method][dataset] = shard.micro_scores
     return reopened, raw_scores, micro_scores, test_counts
+
+
+def _verified_cache_scores_antigravity(
+    session: Exp471SourceSessionAntigravity,
+    cache: object,
+) -> tuple[
+    Exp471ScoreCacheManifestAntigravity,
+    dict[str, dict[str, tuple[float, ...]]],
+    dict[str, dict[str, tuple[float, ...]]],
+    dict[str, int],
+]:
+    reopened, raw_scores, micro_scores, test_counts = (
+        _verified_cache_shards_antigravity(
+            session, cache, prepare_scores=True
+        )
+    )
+    assert raw_scores is not None and micro_scores is not None
+    return reopened, raw_scores, micro_scores, test_counts
+
+
+def _verified_cache_counts_antigravity(
+    session: Exp471SourceSessionAntigravity,
+    cache: object,
+) -> tuple[Exp471ScoreCacheManifestAntigravity, dict[str, int]]:
+    reopened, raw_scores, micro_scores, test_counts = (
+        _verified_cache_shards_antigravity(
+            session, cache, prepare_scores=False
+        )
+    )
+    assert raw_scores is None and micro_scores is None
+    return reopened, test_counts
 
 
 def _normalize_labels_antigravity(
@@ -865,42 +906,6 @@ def _micro_metrics_antigravity(
     return rows
 
 
-def _bootstrap_expectations_antigravity(
-    differences: Mapping[str, np.ndarray],
-    common_count: int,
-) -> tuple[str, Mapping[str, tuple[float, float]]]:
-    sample_count = frozen_evaluation_antigravity._BOOTSTRAP_SAMPLES
-    rng = np.random.default_rng(frozen_evaluation_antigravity._BOOTSTRAP_SEED)
-    digest = sha256()
-    estimates = {
-        variant: np.empty(sample_count, dtype=np.float64)
-        for variant in ("B", "C", "D")
-    }
-    offset = 0
-    while offset < sample_count:
-        batch = min(256, sample_count - offset)
-        draws = rng.integers(
-            0,
-            common_count,
-            size=(batch, common_count),
-            dtype=np.int64,
-        )
-        digest.update(draws.tobytes(order="C"))
-        for variant in ("B", "C", "D"):
-            estimates[variant][offset : offset + batch] = differences[variant][
-                draws
-            ].mean(axis=1)
-        offset += batch
-    bounds = {
-        variant: tuple(
-            float(item)
-            for item in np.quantile(estimates[variant], (0.025, 0.975))
-        )
-        for variant in ("B", "C", "D")
-    }
-    return digest.hexdigest(), bounds
-
-
 def _paired_statistics_antigravity(
     value: object,
     datasets: tuple[str, ...],
@@ -937,6 +942,7 @@ def _paired_statistics_antigravity(
             raise ValueError("Exp471 evaluation paired-statistic order differs")
         by_identity[identity] = row
 
+    draw_digest_by_common_count: dict[int, str] = {}
     for metric in ("average_precision", "auroc"):
         common = tuple(
             dataset
@@ -958,12 +964,7 @@ def _paired_statistics_antigravity(
             - reference
             for variant in ("B", "C", "D")
         }
-        draw_digest: str | None = None
-        bounds: Mapping[str, tuple[float, float]] = {}
-        if common:
-            draw_digest, bounds = _bootstrap_expectations_antigravity(
-                differences, len(common)
-            )
+        metric_draw_digest: str | None = None
         for variant in ("B", "C", "D"):
             row = by_identity[(f"{variant}-A", metric)]
             if tuple(row["dataset_order"]) != common:
@@ -1018,16 +1019,26 @@ def _paired_statistics_antigravity(
             upper = _bounded_number_antigravity(
                 row["upper"], -1.0, 1.0, "paired upper bound"
             )
+            draw_sha256 = row["draw_sha256"]
             if (
                 point != float(difference.mean())
-                or (lower, upper) != bounds[variant]
                 or lower > upper
                 or draw_count != frozen_evaluation_antigravity._BOOTSTRAP_SAMPLES
-                or type(row["draw_sha256"]) is not str
-                or _SHA256_ANTIGRAVITY.fullmatch(row["draw_sha256"]) is None
-                or row["draw_sha256"] != draw_digest
+                or type(draw_sha256) is not str
+                or _SHA256_ANTIGRAVITY.fullmatch(draw_sha256) is None
             ):
-                raise ValueError("Exp471 evaluation paired bootstrap relation differs")
+                raise ValueError("Exp471 evaluation paired relation differs")
+            if metric_draw_digest is None:
+                metric_draw_digest = draw_sha256
+            elif draw_sha256 != metric_draw_digest:
+                raise ValueError("Exp471 evaluation paired draw evidence differs")
+        if common:
+            assert metric_draw_digest is not None
+            prior_digest = draw_digest_by_common_count.setdefault(
+                len(common), metric_draw_digest
+            )
+            if metric_draw_digest != prior_digest:
+                raise ValueError("Exp471 evaluation paired draw evidence differs")
     return rows
 
 
@@ -1145,14 +1156,14 @@ def _validated_payload_antigravity(
 
 def _validate_artifact_integrity_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
-) -> None:
+) -> tuple[MetricTablesExp450Antigravity, Mapping[str, Mapping[str, object]]]:
     _canonical_artifact_bytes_antigravity(artifact)
     if (
         artifact.code_closure_sha256 != _code_closure_sha256_antigravity()
         or artifact.method_order != METHOD_ORDER_ANTIGRAVITY
     ):
         raise ValueError("Exp471 evaluation frozen implementation binding differs")
-    _validated_payload_antigravity(artifact)
+    return _validated_payload_antigravity(artifact)
 
 
 def _validate_artifact_authority_antigravity(
@@ -1234,12 +1245,13 @@ def evaluate_exp471_antigravity(
 ) -> Exp471EvaluationArtifactAntigravity:
     """Verify complete score authority, open labels once, and publish metrics."""
 
+    root = Path(EXP471_EVALUATION_ROOT_ANTIGRAVITY)
+    if os.path.lexists(root / _EVALUATION_NAME_ANTIGRAVITY):
+        return read_evaluation_exp471_antigravity(root, session, cache)
+
     reopened, raw_scores, micro_scores, test_counts = (
         _verified_cache_scores_antigravity(session, cache)
     )
-    root = Path(EXP471_EVALUATION_ROOT_ANTIGRAVITY)
-    if os.path.lexists(root / _EVALUATION_NAME_ANTIGRAVITY):
-        return read_evaluation_exp471_antigravity(root, session, reopened)
 
     labels = _load_labels_once_antigravity(
         session,
@@ -1268,9 +1280,7 @@ def read_evaluation_exp471_antigravity(
 ) -> Exp471EvaluationArtifactAntigravity:
     """Reopen and fully validate one durable evaluation without recomputation."""
 
-    reopened, _raw, _micro, counts = _verified_cache_scores_antigravity(
-        session, cache
-    )
+    reopened, counts = _verified_cache_counts_antigravity(session, cache)
     anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
         Path(root), create=False
     )
@@ -1297,8 +1307,7 @@ def reconstruct_frozen_evaluation_exp471_antigravity(
 
     if not isinstance(artifact, Exp471EvaluationArtifactAntigravity):
         raise ValueError("Exp471 evaluation artifact has the wrong type")
-    _validate_artifact_integrity_antigravity(artifact)
-    metrics, curves = _validated_payload_antigravity(artifact)
+    metrics, curves = _validate_artifact_integrity_antigravity(artifact)
     manifests = MappingProxyType(
         {
             "exp471_source_authority": artifact.payload["source_authority"],
