@@ -382,17 +382,32 @@ def _postcheck_namespace_hook_antigravity(
     del scope, parent_descriptor, name
 
 
+def _final_claim_namespace_hook_antigravity(
+    scope: str, parent_descriptor: int, name: str
+) -> None:
+    """Deterministic seam after the final claimed-name identity check."""
+
+    del scope, parent_descriptor, name
+
+
 def _claim_entry_antigravity(
     parent_descriptor: int,
     source_name: str,
     expected_device: int,
     expected_inode: int,
     scope: str,
+    *,
+    retained_quarantine: bool = False,
 ) -> tuple[str, int, os.stat_result]:
     """Move a mutable candidate to a unique non-authoritative name and reopen it."""
 
     for _ in range(128):
-        claim_name = f".claim_{secrets.token_hex(12)}_antigravity"
+        prefix = (
+            ".retained_quarantine_"
+            if retained_quarantine
+            else ".claim_"
+        )
+        claim_name = f"{prefix}{secrets.token_hex(12)}_antigravity"
         try:
             _atomic_rename_noreplace_at_antigravity(
                 parent_descriptor, source_name, claim_name
@@ -443,7 +458,7 @@ def _delete_claimed_entry_antigravity(
     expected_inode: int,
     scope: str,
 ) -> None:
-    """Delete only an entry already moved, reopened, and bound to its descriptor."""
+    """Evacuate a verified claim; pathname deletion cannot be made inode-targeted."""
 
     opened = os.fstat(descriptor)
     linked = _require_entry_identity_antigravity(
@@ -455,10 +470,86 @@ def _delete_claimed_entry_antigravity(
     )
     if opened.st_dev != expected_device or opened.st_ino != expected_inode:
         raise ValueError(f"Exp471 report {scope} owned claim identity changed")
-    if stat.S_ISDIR(linked.st_mode):
-        os.rmdir(claim_name, dir_fd=parent_descriptor)
+    _final_claim_namespace_hook_antigravity(
+        f"{scope} delete claim", parent_descriptor, claim_name
+    )
+    retained_name, retained_descriptor, retained = _claim_entry_antigravity(
+        parent_descriptor,
+        claim_name,
+        expected_device,
+        expected_inode,
+        f"{scope} retained quarantine",
+        retained_quarantine=True,
+    )
+    del retained_name
+    try:
+        if (
+            retained.st_dev != opened.st_dev
+            or retained.st_ino != opened.st_ino
+            or os.fstat(retained_descriptor).st_dev != opened.st_dev
+            or os.fstat(retained_descriptor).st_ino != opened.st_ino
+        ):
+            raise ValueError(
+                f"Exp471 report {scope} retained quarantine identity changed"
+            )
+        os.fsync(parent_descriptor)
+    finally:
+        os.close(retained_descriptor)
+
+
+def _evacuate_canonical_entry_antigravity(
+    parent_descriptor: int, canonical_name: str
+) -> str:
+    """Move an uncertain canonical object to observable retained quarantine."""
+
+    try:
+        before = _entry_stat_antigravity(parent_descriptor, canonical_name)
+    except FileNotFoundError as error:
+        raise ValueError("Exp471 report canonical entry disappeared") from error
+    for _ in range(128):
+        retained_name = (
+            f".retained_quarantine_{secrets.token_hex(12)}_antigravity"
+        )
+        try:
+            _atomic_rename_noreplace_at_antigravity(
+                parent_descriptor, canonical_name, retained_name
+            )
+        except FileExistsError:
+            continue
+        break
     else:
-        os.unlink(claim_name, dir_fd=parent_descriptor)
+        raise FileExistsError(
+            "Exp471 report retained quarantine name space is exhausted"
+        )
+    try:
+        moved = _entry_stat_antigravity(parent_descriptor, retained_name)
+        if moved.st_dev != before.st_dev or moved.st_ino != before.st_ino:
+            raise ValueError("Exp471 report canonical evacuation identity changed")
+        if stat.S_ISREG(moved.st_mode) or stat.S_ISDIR(moved.st_mode):
+            flags = os.O_RDONLY
+            if stat.S_ISDIR(moved.st_mode) and hasattr(os, "O_DIRECTORY"):
+                flags |= os.O_DIRECTORY
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            descriptor = os.open(
+                retained_name, flags, dir_fd=parent_descriptor
+            )
+            try:
+                reopened = os.fstat(descriptor)
+                if (
+                    reopened.st_dev != before.st_dev
+                    or reopened.st_ino != before.st_ino
+                ):
+                    raise ValueError(
+                        "Exp471 report canonical evacuation identity changed"
+                    )
+            finally:
+                os.close(descriptor)
+        os.fsync(parent_descriptor)
+        return retained_name
+    except Exception:
+        os.fsync(parent_descriptor)
+        raise
 
 
 def _recover_dead_lock_antigravity(
@@ -1599,6 +1690,7 @@ def write_exp471_report_antigravity(
         _postcheck_namespace_hook_antigravity(
             "staging before rename", token.parent_descriptor, stage.path.name
         )
+        renamed_to_canonical = False
         try:
             claim_name, claim_descriptor, claim_opened = _claim_entry_antigravity(
                 token.parent_descriptor,
@@ -1622,9 +1714,22 @@ def write_exp471_report_antigravity(
                 stage.device,
                 stage.inode,
             )
+            _require_entry_identity_antigravity(
+                token.parent_descriptor,
+                claim_name,
+                stage.device,
+                stage.inode,
+                "staging publication claim",
+            )
+            _final_claim_namespace_hook_antigravity(
+                "staging publication claim",
+                token.parent_descriptor,
+                claim_name,
+            )
             _atomic_rename_noreplace_at_antigravity(
                 token.parent_descriptor, claim_name, root.name
             )
+            renamed_to_canonical = True
             _require_entry_identity_antigravity(
                 token.parent_descriptor,
                 root.name,
@@ -1634,6 +1739,25 @@ def write_exp471_report_antigravity(
             )
             published = True
         except BaseException:
+            if renamed_to_canonical:
+                try:
+                    _entry_stat_antigravity(token.parent_descriptor, root.name)
+                except FileNotFoundError:
+                    pass
+                else:
+                    _evacuate_canonical_entry_antigravity(
+                        token.parent_descriptor, root.name
+                    )
+                try:
+                    _entry_stat_antigravity(token.parent_descriptor, root.name)
+                except FileNotFoundError:
+                    pass
+                else:
+                    raise ValueError(
+                        "Exp471 report canonical entry remained after evacuation"
+                    )
+                os.fsync(token.parent_descriptor)
+                raise
             if os.path.lexists(root):
                 return _read_report_for_worker_antigravity(
                     artifact, root, worker

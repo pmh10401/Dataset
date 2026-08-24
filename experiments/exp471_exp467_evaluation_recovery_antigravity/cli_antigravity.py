@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import fcntl
 from hashlib import sha256
@@ -27,7 +28,10 @@ from .config_antigravity import (
     EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY,
     METHOD_ORDER_ANTIGRAVITY,
 )
-from .contracts_antigravity import canonical_json_bytes_exp471_antigravity
+from .contracts_antigravity import (
+    Exp471ReportAuthorityAntigravity,
+    canonical_json_bytes_exp471_antigravity,
+)
 
 
 _COMMANDS_ANTIGRAVITY = (
@@ -93,49 +97,172 @@ def _emit_antigravity(stream: TextIO, value: object) -> None:
     stream.flush()
 
 
-def _open_progress_root_antigravity() -> tuple[int, os.stat_result]:
-    root = EXP471_ROOT_ANTIGRAVITY
-    flags = os.O_RDONLY
-    if hasattr(os, "O_DIRECTORY"):
-        flags |= os.O_DIRECTORY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
-    try:
-        descriptor = os.open(root, flags)
-    except FileNotFoundError:
-        raise
-    except OSError as error:
-        raise ValueError("Exp471 progress root is unsafe") from error
-    opened = os.fstat(descriptor)
-    try:
-        linked = root.lstat()
-    except OSError:
-        os.close(descriptor)
-        raise
-    if (
-        not stat.S_ISDIR(opened.st_mode)
-        or not stat.S_ISDIR(linked.st_mode)
-        or opened.st_dev != linked.st_dev
-        or opened.st_ino != linked.st_ino
+@dataclass(slots=True)
+class _DirectoryChainAntigravity:
+    descriptor: int
+    descriptors: list[int]
+    validators: list[tuple[int, str, os.stat_result]]
+
+    def validate_antigravity(self) -> None:
+        for parent, name, expected in self.validators:
+            try:
+                observed = os.stat(name, dir_fd=parent, follow_symlinks=False)
+            except OSError as error:
+                raise ValueError("Exp471 configured directory path changed") from error
+            if (
+                not stat.S_ISDIR(observed.st_mode)
+                or observed.st_dev != expected.st_dev
+                or observed.st_ino != expected.st_ino
+            ):
+                raise ValueError("Exp471 configured directory path changed")
+
+    def close_antigravity(self) -> None:
+        for descriptor in reversed(self.descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+
+
+def _open_existing_directory_chain_antigravity(
+    path: Path,
+) -> _DirectoryChainAntigravity | None:
+    """Open every configured component without following links; absence is safe."""
+
+    path = Path(path)
+    if not path.is_absolute() or any(
+        part in {"", ".", ".."} for part in path.parts[1:]
     ):
-        os.close(descriptor)
-        raise ValueError("Exp471 progress root is unsafe")
-    return descriptor, opened
+        raise ValueError("Exp471 configured path is unsafe")
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    descriptors: list[int] = []
+    validators: list[tuple[int, str, os.stat_result]] = []
+    try:
+        current = os.open("/", flags)
+        descriptors.append(current)
+        for part in path.parts[1:]:
+            try:
+                child = os.open(part, flags, dir_fd=current)
+            except FileNotFoundError:
+                for descriptor in reversed(descriptors):
+                    os.close(descriptor)
+                return None
+            except OSError as error:
+                raise ValueError(
+                    "Exp471 configured directory path is unsafe"
+                ) from error
+            descriptors.append(child)
+            opened = os.fstat(child)
+            try:
+                observed = os.stat(part, dir_fd=current, follow_symlinks=False)
+            except OSError as error:
+                raise ValueError(
+                    "Exp471 configured directory path changed"
+                ) from error
+            if (
+                not stat.S_ISDIR(opened.st_mode)
+                or not stat.S_ISDIR(observed.st_mode)
+                or opened.st_dev != observed.st_dev
+                or opened.st_ino != observed.st_ino
+            ):
+                raise ValueError("Exp471 configured directory path is unsafe")
+            validators.append((current, part, opened))
+            current = child
+        anchor = _DirectoryChainAntigravity(current, descriptors, validators)
+        anchor.validate_antigravity()
+        return anchor
+    except Exception:
+        for descriptor in reversed(descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        raise
+
+
+def _read_configured_leaf_at_antigravity(
+    anchor: _DirectoryChainAntigravity, name: str
+) -> bytes | None:
+    if not name or "/" in name or "\\" in name or name in {".", ".."}:
+        raise ValueError("Exp471 configured leaf name is unsafe")
+    descriptor: int | None = None
+    try:
+        try:
+            descriptor = os.open(
+                name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=anchor.descriptor
+            )
+        except FileNotFoundError:
+            anchor.validate_antigravity()
+            return None
+        except OSError as error:
+            raise ValueError("Exp471 configured leaf is unsafe") from error
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise ValueError("Exp471 configured leaf is not a safe regular file")
+        raw = _read_all_descriptor_antigravity(descriptor)
+        after = os.fstat(descriptor)
+        try:
+            observed = os.stat(name, dir_fd=anchor.descriptor, follow_symlinks=False)
+        except OSError as error:
+            raise ValueError("Exp471 configured leaf changed") from error
+        if (
+            not stat.S_ISREG(observed.st_mode)
+            or observed.st_nlink != 1
+            or (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)
+            or (before.st_dev, before.st_ino) != (observed.st_dev, observed.st_ino)
+            or (before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+            != (after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+        ):
+            raise ValueError("Exp471 configured leaf changed")
+        anchor.validate_antigravity()
+        return raw
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _read_configured_leaves_antigravity(
+    root: Path, names: Sequence[str]
+) -> tuple[bytes | None, ...]:
+    """Read regular leaves through one retained no-follow directory chain."""
+
+    anchor = _open_existing_directory_chain_antigravity(root)
+    if anchor is None:
+        return tuple(None for _name in names)
+    try:
+        values = tuple(
+            _read_configured_leaf_at_antigravity(anchor, name) for name in names
+        )
+        anchor.validate_antigravity()
+        return values
+    finally:
+        anchor.close_antigravity()
+
+
+def _read_configured_leaf_antigravity(root: Path, name: str) -> bytes | None:
+    return _read_configured_leaves_antigravity(root, (name,))[0]
+
+
+def _open_progress_root_antigravity() -> tuple[
+    _DirectoryChainAntigravity, os.stat_result
+]:
+    anchor = _open_existing_directory_chain_antigravity(EXP471_ROOT_ANTIGRAVITY)
+    if anchor is None:
+        raise FileNotFoundError("Exp471 progress root is missing")
+    return anchor, os.fstat(anchor.descriptor)
 
 
 def _validate_progress_root_antigravity(
-    descriptor: int, opened: os.stat_result
+    anchor: _DirectoryChainAntigravity, opened: os.stat_result
 ) -> None:
     try:
-        linked = EXP471_ROOT_ANTIGRAVITY.lstat()
-        current = os.fstat(descriptor)
-    except OSError as error:
+        anchor.validate_antigravity()
+        current = os.fstat(anchor.descriptor)
+    except (OSError, ValueError) as error:
         raise ValueError("Exp471 progress root changed") from error
     if (
         current.st_dev != opened.st_dev
         or current.st_ino != opened.st_ino
-        or linked.st_dev != opened.st_dev
-        or linked.st_ino != opened.st_ino
     ):
         raise ValueError("Exp471 progress root changed")
 
@@ -184,6 +311,96 @@ def _progress_timestamp_antigravity(value: object) -> datetime:
     if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
         raise ValueError("Exp471 progress timestamp is not UTC")
     return parsed
+
+
+def _validate_report_terminal_artifact_antigravity() -> None:
+    marker_name = ".exp471_report_complete_antigravity.json"
+    artifact_map_name = "artifact_sha256_antigravity.json"
+    marker_raw, artifact_map_raw = _read_configured_leaves_antigravity(
+        EXP471_REPORT_ROOT_ANTIGRAVITY,
+        (marker_name, artifact_map_name),
+    )
+    if marker_raw is None or artifact_map_raw is None:
+        raise ValueError("Exp471 progress report marker artifact is missing")
+    try:
+        marker = json.loads(marker_raw.decode("utf-8"))
+        artifact_map = json.loads(artifact_map_raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(
+            "Exp471 progress report marker artifact is malformed"
+        ) from error
+    marker_keys = {
+        "schema",
+        "source_authority_sha256",
+        "cache_manifest_sha256",
+        "evaluation_sha256",
+        "report_file_sha256",
+        "report_manifest_sha256",
+        "artifact_map",
+    }
+    if (
+        not isinstance(marker, dict)
+        or set(marker) != marker_keys
+        or marker.get("schema") != "exp471-report-publication-antigravity.v1"
+        or marker.get("artifact_map") != artifact_map_name
+        or canonical_json_bytes_exp471_antigravity(marker) != marker_raw
+    ):
+        raise ValueError("Exp471 progress report marker artifact differs")
+    try:
+        authority = Exp471ReportAuthorityAntigravity(
+            source_authority_sha256=marker["source_authority_sha256"],
+            cache_manifest_sha256=marker["cache_manifest_sha256"],
+            evaluation_sha256=marker["evaluation_sha256"],
+            report_file_sha256=marker["report_file_sha256"],
+            report_manifest_sha256=marker["report_manifest_sha256"],
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Exp471 progress report marker fields differ") from error
+    if (
+        len(authority.report_file_sha256) != 11
+        or not isinstance(artifact_map, dict)
+        or set(artifact_map) != {"schema", "self_excluded", "files"}
+        or artifact_map.get("schema")
+        != "exp471-report-artifact-map-antigravity.v1"
+        or artifact_map.get("self_excluded") != artifact_map_name
+        or artifact_map.get("files") != dict(authority.report_file_sha256)
+        or canonical_json_bytes_exp471_antigravity(artifact_map)
+        != artifact_map_raw
+        or sha256(artifact_map_raw).hexdigest()
+        != authority.report_manifest_sha256
+    ):
+        raise ValueError("Exp471 progress report marker binding differs")
+
+
+def _validate_terminal_progress_artifact_antigravity(stage: str) -> None:
+    if stage == "verify-source":
+        raw = _read_configured_leaf_antigravity(
+            EXP471_ROOT_ANTIGRAVITY, "source_authority_antigravity.json"
+        )
+        if raw is None:
+            raise ValueError("Exp471 progress source artifact is missing")
+        from .source_authority_antigravity import _authority_from_bytes_antigravity
+
+        authority = _authority_from_bytes_antigravity(raw)
+        if authority.total_successes != EXP467_TOTAL_SUCCESSES_ANTIGRAVITY:
+            raise ValueError("Exp471 progress source artifact total differs")
+        return
+    if stage == "evaluation":
+        raw = _read_configured_leaf_antigravity(
+            EXP471_EVALUATION_ROOT_ANTIGRAVITY, "evaluation_antigravity.json"
+        )
+        if raw is None:
+            raise ValueError("Exp471 progress evaluation artifact is missing")
+        from .evaluation_antigravity import _artifact_from_bytes_antigravity
+
+        artifact = _artifact_from_bytes_antigravity(raw)
+        if tuple(artifact.method_order) != tuple(METHOD_ORDER_ANTIGRAVITY):
+            raise ValueError("Exp471 progress evaluation artifact methods differ")
+        return
+    if stage == "report":
+        _validate_report_terminal_artifact_antigravity()
+        return
+    raise ValueError("Exp471 progress terminal stage differs")
 
 
 def _validate_progress_history_antigravity(raw: bytes) -> tuple[dict[str, object], ...]:
@@ -298,6 +515,12 @@ def _validate_progress_history_antigravity(raw: bytes) -> tuple[dict[str, object
                 raise ValueError("Exp471 progress timestamp regressed")
         elif value["attempts"] != 1 or value["failures"] not in (0, 1):
             raise ValueError("Exp471 progress attempts must start canonically")
+        if stage in _PROGRESS_TERMINAL_STAGES_ANTIGRAVITY:
+            if stage != "verify-source" and not any(
+                record["stage"] == "verify-source" for record in records
+            ):
+                raise ValueError("Exp471 progress terminal lifecycle differs")
+            _validate_terminal_progress_artifact_antigravity(stage)
         records.append(value)
         prior = value
         prior_timestamp = timestamp
@@ -306,7 +529,7 @@ def _validate_progress_history_antigravity(raw: bytes) -> tuple[dict[str, object
 
 def _latest_progress_antigravity() -> Mapping[str, object] | None:
     try:
-        root_descriptor, root_opened = _open_progress_root_antigravity()
+        root_anchor, root_opened = _open_progress_root_antigravity()
     except FileNotFoundError:
         try:
             EXP471_ROOT_ANTIGRAVITY.lstat()
@@ -321,38 +544,38 @@ def _latest_progress_antigravity() -> Mapping[str, object] | None:
             flags |= os.O_NOFOLLOW
         try:
             descriptor = os.open(
-                _PROGRESS_NAME_ANTIGRAVITY, flags, dir_fd=root_descriptor
+                _PROGRESS_NAME_ANTIGRAVITY, flags, dir_fd=root_anchor.descriptor
             )
         except FileNotFoundError:
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
             return None
         except OSError as error:
             raise ValueError("Exp471 progress log is unsafe") from error
         try:
             fcntl.flock(descriptor, fcntl.LOCK_SH)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
-            _progress_log_identity_antigravity(root_descriptor, descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
+            _progress_log_identity_antigravity(root_anchor.descriptor, descriptor)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
             raw = _read_all_descriptor_antigravity(descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
-            _progress_log_identity_antigravity(root_descriptor, descriptor)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
+            _progress_log_identity_antigravity(root_anchor.descriptor, descriptor)
             records = _validate_progress_history_antigravity(raw)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
         finally:
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_UN)
             finally:
                 os.close(descriptor)
-        _validate_progress_root_antigravity(root_descriptor, root_opened)
+        _validate_progress_root_antigravity(root_anchor, root_opened)
         return None if not records else dict(records[-1])
     finally:
-        os.close(root_descriptor)
+        root_anchor.close_antigravity()
 
 
 def _append_progress_antigravity(
     value: Mapping[str, object], *, failed: bool = False
 ) -> None:
-    root_descriptor, root_opened = _open_progress_root_antigravity()
+    root_anchor, root_opened = _open_progress_root_antigravity()
     try:
         flags = os.O_RDWR | os.O_APPEND | os.O_CREAT
         if hasattr(os, "O_NOFOLLOW"):
@@ -367,7 +590,7 @@ def _append_progress_antigravity(
                     _PROGRESS_NAME_ANTIGRAVITY,
                     flags,
                     0o600,
-                    dir_fd=root_descriptor,
+                    dir_fd=root_anchor.descriptor,
                 )
                 break
             except FileNotFoundError as error:
@@ -379,11 +602,11 @@ def _append_progress_antigravity(
             raise ValueError("Exp471 progress log is unsafe") from last_open_error
         try:
             fcntl.flock(descriptor, fcntl.LOCK_EX)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
-            _progress_log_identity_antigravity(root_descriptor, descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
+            _progress_log_identity_antigravity(root_anchor.descriptor, descriptor)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
             existing_raw = _read_all_descriptor_antigravity(descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
             existing = _validate_progress_history_antigravity(existing_raw)
             prior = existing[-1] if existing else None
             attempts = 1 if prior is None else int(prior["attempts"]) + 1
@@ -400,30 +623,30 @@ def _append_progress_antigravity(
             }
             payload = canonical_json_bytes_exp471_antigravity(record)
             _validate_progress_history_antigravity(existing_raw + payload)
-            _progress_log_identity_antigravity(root_descriptor, descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _progress_log_identity_antigravity(root_anchor.descriptor, descriptor)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
             _write_all = memoryview(payload)
             while _write_all:
-                _validate_progress_root_antigravity(root_descriptor, root_opened)
+                _validate_progress_root_antigravity(root_anchor, root_opened)
                 written = os.write(descriptor, _write_all)
                 if written <= 0:
                     raise OSError("Exp471 progress append made no progress")
                 _write_all = _write_all[written:]
-                _validate_progress_root_antigravity(root_descriptor, root_opened)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+                _validate_progress_root_antigravity(root_anchor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
             os.fsync(descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
-            _progress_log_identity_antigravity(root_descriptor, descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
-            os.fsync(root_descriptor)
-            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
+            _progress_log_identity_antigravity(root_anchor.descriptor, descriptor)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
+            os.fsync(root_anchor.descriptor)
+            _validate_progress_root_antigravity(root_anchor, root_opened)
         finally:
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_UN)
             finally:
                 os.close(descriptor)
     finally:
-        os.close(root_descriptor)
+        root_anchor.close_antigravity()
 
 
 def _append_durable_stage_antigravity(
@@ -892,13 +1115,38 @@ class _ProductionRuntimeAntigravity:
     def status_antigravity(self):
         from .score_cache_antigravity import status_score_cache_antigravity
 
-        cache = status_score_cache_antigravity(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
-        evaluation_path = (
-            EXP471_EVALUATION_ROOT_ANTIGRAVITY / "evaluation_antigravity.json"
+        root_anchor = _open_existing_directory_chain_antigravity(
+            EXP471_ROOT_ANTIGRAVITY
         )
-        report_marker = (
-            EXP471_REPORT_ROOT_ANTIGRAVITY
-            / ".exp471_report_complete_antigravity.json"
+        cache_anchor = _open_existing_directory_chain_antigravity(
+            EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY
+        )
+        try:
+            cache = status_score_cache_antigravity(
+                EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY
+            )
+            if cache_anchor is not None:
+                cache_anchor.validate_antigravity()
+            if root_anchor is not None:
+                root_anchor.validate_antigravity()
+        finally:
+            if cache_anchor is not None:
+                cache_anchor.close_antigravity()
+            if root_anchor is not None:
+                root_anchor.close_antigravity()
+        evaluation_present = (
+            _read_configured_leaf_antigravity(
+                EXP471_EVALUATION_ROOT_ANTIGRAVITY,
+                "evaluation_antigravity.json",
+            )
+            is not None
+        )
+        report_present = (
+            _read_configured_leaf_antigravity(
+                EXP471_REPORT_ROOT_ANTIGRAVITY,
+                ".exp471_report_complete_antigravity.json",
+            )
+            is not None
         )
         completed = int(cache["durable_completed"])
         total = cache["total_shards"]
@@ -913,9 +1161,9 @@ class _ProductionRuntimeAntigravity:
             "remaining": max(0, expected_total - completed),
             "verified_stage": (
                 "report-present-unverified"
-                if report_marker.is_file() and not report_marker.is_symlink()
+                if report_present
                 else "evaluation-present-unverified"
-                if evaluation_path.is_file() and not evaluation_path.is_symlink()
+                if evaluation_present
                 else "cache-complete"
                 if cache["complete"]
                 else "cache-incomplete"

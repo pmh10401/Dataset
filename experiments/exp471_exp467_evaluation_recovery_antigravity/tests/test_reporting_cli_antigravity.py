@@ -779,6 +779,76 @@ class ReportingTestsAntigravity(unittest.TestCase):
             )
         )
 
+    def test_final_delete_claim_substitution_preserves_owned_and_foreign(self) -> None:
+        """A claim replaced after its final check must never delete the replacement."""
+
+        token = reporting._acquire_report_lock_antigravity(self.report_root)
+        owned = self.base / "owned_final_delete_claim_saved_antigravity.json"
+        foreign = b"foreign-final-delete-claim-public-literal-antigravity\n"
+        swapped = False
+
+        def swap_after_final_claim_check(scope, parent, name):
+            nonlocal swapped
+            if scope == "lock release delete claim" and not swapped:
+                swapped = True
+                claim = self.base / name
+                claim.rename(owned)
+                claim.write_bytes(foreign)
+
+        with mock.patch.object(
+            reporting,
+            "_final_claim_namespace_hook_antigravity",
+            side_effect=swap_after_final_claim_check,
+        ):
+            with self.assertRaisesRegex(ValueError, "claim.*identity|retained"):
+                reporting._release_report_lock_antigravity(token)
+        self.assertEqual(owned.read_bytes(), token.payload)
+        self.assertFalse(os.path.lexists(token.path))
+        self.assertTrue(
+            any(
+                path.is_file() and path.read_bytes() == foreign
+                for path in self.base.rglob("*")
+            )
+        )
+
+    def test_final_publication_claim_substitution_evacuates_canonical_foreign(self) -> None:
+        """A final claim replacement may be quarantined but never remain canonical."""
+
+        owned = self.base / "owned_final_publish_claim_saved_antigravity"
+        foreign = b"foreign-final-publish-claim-public-literal-antigravity\n"
+        swapped = False
+
+        def swap_immediately_before_final_rename(scope, parent, source):
+            nonlocal swapped
+            if scope == "staging publication claim" and not swapped:
+                swapped = True
+                claim = self.base / source
+                claim.rename(owned)
+                claim.mkdir()
+                (claim / "foreign_antigravity.txt").write_bytes(foreign)
+
+        with mock.patch.object(
+            reporting,
+            "_final_claim_namespace_hook_antigravity",
+            side_effect=swap_immediately_before_final_rename,
+        ):
+            with self.assertRaisesRegex(ValueError, "published|canonical|identity|leaf"):
+                reporting.write_exp471_report_antigravity(
+                    self.artifact,
+                    self.report_root,
+                    worker_provenance=_worker_provenance_antigravity(),
+                )
+        self.assertFalse(os.path.lexists(self.report_root))
+        self.assertTrue(
+            (owned / reporting._COMPLETE_MARKER_NAME_ANTIGRAVITY).is_file()
+        )
+        self.assertTrue(
+            any(
+                path.is_file() and path.read_bytes() == foreign
+                for path in self.base.rglob("*")
+            )
+        )
+
     def test_parent_replacement_fails_before_publication_or_cleanup(self) -> None:
         """A replaced parent must strand owned objects instead of mutating the new parent."""
 
@@ -1380,6 +1450,46 @@ class CliTestsAntigravity(unittest.TestCase):
                         ):
                             cli._latest_progress_antigravity()
 
+    def test_progress_rejects_exact_terminal_report_without_durable_marker(self) -> None:
+        """An exact path and 11/11 count cannot invent terminal authority."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_progress_terminal_marker_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve()
+            score = root / "score_cache_antigravity"
+            evaluation_root = root / "evaluation_antigravity"
+            report_root = root / "report_antigravity"
+            record = {
+                "schema": "exp471-progress-antigravity.v1",
+                "stage": "report",
+                "durable_completed": 11,
+                "total": 11,
+                "failures": 0,
+                "attempts": 1,
+                "remaining": 0,
+                "elapsed_seconds": 0.0,
+                "eta_seconds": 0.0,
+                "timestamp_utc": "2026-08-25T00:00:00+00:00",
+                "artifact_path": str(report_root),
+                "root_path": str(root),
+            }
+            (root / cli._PROGRESS_NAME_ANTIGRAVITY).write_bytes(
+                canonical_json_bytes_exp471_antigravity(record)
+            )
+            with ExitStack() as stack:
+                for name, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", report_root),
+                ):
+                    stack.enter_context(mock.patch.object(cli, name, value))
+                with self.assertRaisesRegex(
+                    ValueError, "progress.*(lifecycle|artifact|marker)"
+                ):
+                    cli._latest_progress_antigravity()
+
     def test_production_status_on_fresh_root_is_empty_and_observational(self) -> None:
         """Production status before the first run must create no durable object."""
 
@@ -1412,6 +1522,106 @@ class CliTestsAntigravity(unittest.TestCase):
             self.assertFalse(os.path.lexists(score))
             self.assertFalse(os.path.lexists(evaluation_root))
             self.assertFalse(os.path.lexists(report_root))
+
+    def test_production_status_rejects_unsafe_paths_observationally(self) -> None:
+        """Status must reject linked or mistyped artifact namespaces without writes."""
+
+        cases = (
+            ("root-directory-symlink", "root-directory-symlink"),
+            ("cache-directory-symlink", "cache-directory-symlink"),
+            ("evaluation-directory-symlink", "evaluation-directory-symlink"),
+            ("report-directory-symlink", "report-directory-symlink"),
+            ("evaluation-leaf-symlink", "evaluation-leaf-symlink"),
+            ("report-marker-symlink", "report-marker-symlink"),
+            ("progress-leaf-symlink", "progress-leaf-symlink"),
+            ("root-file", "root-file"),
+            ("cache-root-file", "cache-root-file"),
+            ("evaluation-root-file", "evaluation-root-file"),
+            ("report-root-file", "report-root-file"),
+            ("progress-leaf-directory", "progress-leaf-directory"),
+        )
+        for index, (name, kind) in enumerate(cases):
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix=f"exp471_status_unsafe_{index}_antigravity_"
+            ) as directory:
+                base = Path(directory).resolve()
+                root = base / "root_antigravity"
+                root.mkdir()
+                score = root / "score_cache_antigravity"
+                evaluation_root = root / "evaluation_antigravity"
+                report_root = root / "report_antigravity"
+                foreign = base / "foreign_antigravity"
+                foreign.mkdir()
+                foreign_leaf = foreign / "foreign_literal_antigravity.json"
+                foreign_leaf.write_bytes(b"{}\n")
+                if kind == "root-directory-symlink":
+                    root.rmdir()
+                    root.symlink_to(foreign, target_is_directory=True)
+                elif kind == "cache-directory-symlink":
+                    score.symlink_to(foreign, target_is_directory=True)
+                elif kind == "evaluation-directory-symlink":
+                    (foreign / "evaluation_antigravity.json").write_bytes(b"{}\n")
+                    evaluation_root.symlink_to(foreign, target_is_directory=True)
+                elif kind == "report-directory-symlink":
+                    (
+                        foreign / ".exp471_report_complete_antigravity.json"
+                    ).write_bytes(b"{}\n")
+                    report_root.symlink_to(foreign, target_is_directory=True)
+                elif kind == "evaluation-leaf-symlink":
+                    evaluation_root.mkdir()
+                    (evaluation_root / "evaluation_antigravity.json").symlink_to(
+                        foreign_leaf
+                    )
+                elif kind == "report-marker-symlink":
+                    report_root.mkdir()
+                    (
+                        report_root / ".exp471_report_complete_antigravity.json"
+                    ).symlink_to(foreign_leaf)
+                elif kind == "progress-leaf-symlink":
+                    (root / cli._PROGRESS_NAME_ANTIGRAVITY).symlink_to(foreign_leaf)
+                elif kind == "root-file":
+                    root.rmdir()
+                    root.write_bytes(b"foreign-public-literal\n")
+                elif kind == "cache-root-file":
+                    score.write_bytes(b"foreign-public-literal\n")
+                elif kind == "evaluation-root-file":
+                    evaluation_root.write_bytes(b"foreign-public-literal\n")
+                elif kind == "report-root-file":
+                    report_root.write_bytes(b"foreign-public-literal\n")
+                else:
+                    (root / cli._PROGRESS_NAME_ANTIGRAVITY).mkdir()
+                before = {
+                    path.relative_to(base).as_posix(): (
+                        path.lstat().st_mode,
+                        path.read_bytes() if path.is_file() and not path.is_symlink() else None,
+                    )
+                    for path in base.rglob("*")
+                }
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with ExitStack() as stack:
+                    for attribute, value in (
+                        ("EXP471_ROOT_ANTIGRAVITY", root),
+                        ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                        ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                        ("EXP471_REPORT_ROOT_ANTIGRAVITY", report_root),
+                    ):
+                        stack.enter_context(mock.patch.object(cli, attribute, value))
+                    result = main_antigravity(
+                        ["status"], stdout=stdout, stderr=stderr
+                    )
+                after = {
+                    path.relative_to(base).as_posix(): (
+                        path.lstat().st_mode,
+                        path.read_bytes() if path.is_file() and not path.is_symlink() else None,
+                    )
+                    for path in base.rglob("*")
+                }
+                self.assertEqual(result, 2)
+                self.assertEqual(stdout.getvalue(), "")
+                self.assertEqual(
+                    json.loads(stderr.getvalue())["exception_type"], "ValueError"
+                )
+                self.assertEqual(after, before)
 
     def test_codemap_contains_every_tracked_exp471_operator_entrypoint(self) -> None:
         """A tracked Exp471 launcher must be fingerprinted, mapped, and linked to CLI."""
