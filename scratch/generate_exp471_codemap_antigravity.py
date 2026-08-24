@@ -42,7 +42,6 @@ _EXP471_NAMESPACE_ANTIGRAVITY = (
 )
 _SCRATCH_PATHS_ANTIGRAVITY = (
     "scratch/generate_exp471_codemap_antigravity.py",
-    "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
 )
 
 

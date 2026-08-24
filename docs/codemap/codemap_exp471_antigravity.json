@@ -33,13 +33,6 @@
       "module": "scratch.generate_exp471_codemap_antigravity",
       "path": "scratch/generate_exp471_codemap_antigravity.py",
       "tests": []
-    },
-    {
-      "callers": [],
-      "effects": "Closed operator entry point for Exp471 evaluation recovery.",
-      "module": "scratch.run_exp471_exp467_evaluation_recovery_antigravity",
-      "path": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
-      "tests": []
     }
   ],
   "schema": "exp471-codemap.v1",
@@ -57,7 +50,7 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 2,
+    "node_count": 1,
     "production_node_count": 0,
     "test_node_count": 0
   },
