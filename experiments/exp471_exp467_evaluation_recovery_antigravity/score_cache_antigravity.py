@@ -6,6 +6,8 @@ from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from hashlib import sha256
+import json
+import math
 import os
 from pathlib import Path
 import time
@@ -49,9 +51,14 @@ from .source_authority_antigravity import (
 )
 
 
-_INPUT_SCHEMA_ANTIGRAVITY = "exp471-verified-score-input-antigravity.v1"
+_INPUT_SCHEMA_ANTIGRAVITY = "exp471-verified-score-input-antigravity.v2"
 _STATUS_SCHEMA_ANTIGRAVITY = "exp471-score-cache-status-antigravity.v1"
 _BENCHMARK_SCHEMA_ANTIGRAVITY = "exp471-score-preparation-benchmark-antigravity.v1"
+_BASELINE_AUTHORITY_SCHEMA_ANTIGRAVITY = (
+    "exp471-verified-baseline-authority-antigravity.v1"
+)
+_BENCHMARK_NAME_ANTIGRAVITY = "score_preparation_benchmark_antigravity.json"
+_SPEEDUP_THRESHOLD_ANTIGRAVITY = 1.1
 _monotonic_antigravity = time.perf_counter
 
 
@@ -73,6 +80,30 @@ class _TaskOutcomeAntigravity:
     shard: Exp471ScoreShardAntigravity | None
     error_type: str | None
     error_message: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _TestCoordinatesAntigravity:
+    count: int
+    indices: tuple[int, ...]
+    coordinates_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedScoreMetadataAntigravity:
+    source_authority_sha256: str
+    database_sha256: str
+    cache_context_sha256: str
+    dataset_order: tuple[str, ...]
+    coordinates: Mapping[str, _TestCoordinatesAntigravity]
+    coordinates_sha256: str
+    source_manifest_sha256: Mapping[str, str]
+    baseline_authority_sha256: Mapping[str, str]
+    condition_scores: Mapping[str, Mapping[str, tuple[float, ...]]]
+    baseline_scores: Mapping[
+        str,
+        Mapping[str, tuple[tuple[float, ...], tuple[float, ...]]],
+    ]
 
 
 def _digest_antigravity(value: object, field_name: str) -> str:
@@ -108,14 +139,19 @@ def _float64_vector_antigravity(
 def _cache_context_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
     datasets: tuple[str, ...],
+    coordinates_sha256: str,
     source_digests: Mapping[str, str],
+    baseline_authority_digests: Mapping[str, str],
 ) -> str:
     record = {
         "schema": "exp471-score-cache-context-antigravity.v1",
         "source_authority_sha256": authority.authority_sha256,
+        "database_sha256": authority.database_sha256,
         "method_order": list(METHOD_ORDER_ANTIGRAVITY),
         "dataset_order": list(datasets),
+        "test_coordinates_sha256": coordinates_sha256,
         "source_manifest_sha256": dict(source_digests),
+        "baseline_authority_sha256": dict(baseline_authority_digests),
         "calibration": {
             "function": "upper_tail_pvalues_numba_antigravity",
             "dtype": "float64",
@@ -127,19 +163,81 @@ def _cache_context_antigravity(
     return sha256(canonical_json_bytes_exp471_antigravity(record)).hexdigest()
 
 
-def _build_tasks_from_verified_input_antigravity(
+def _test_coordinates_antigravity(
+    value: object, dataset: str
+) -> _TestCoordinatesAntigravity:
+    record = _mapping_antigravity(value, f"Exp471 {dataset} TEST coordinates")
+    if set(record) != {"count", "indices", "coordinates_sha256"}:
+        raise ValueError(f"Exp471 {dataset} TEST coordinates schema differs")
+    count = record["count"]
+    indices_value = record["indices"]
+    if (
+        type(count) is not int
+        or count < 1
+        or not isinstance(indices_value, (tuple, list))
+        or len(indices_value) != count
+        or any(type(index) is not int or index < 0 for index in indices_value)
+        or len(set(indices_value)) != count
+    ):
+        raise ValueError(f"Exp471 {dataset} TEST coordinates are invalid")
+    indices = tuple(indices_value)
+    digest = _digest_antigravity(
+        record["coordinates_sha256"],
+        f"Exp471 {dataset} TEST coordinates_sha256",
+    )
+    expected = sha256(
+        canonical_json_bytes_exp471_antigravity(
+            {"dataset": dataset, "count": count, "indices": list(indices)}
+        )
+    ).hexdigest()
+    if digest != expected:
+        raise ValueError(f"Exp471 {dataset} TEST coordinates digest differs")
+    return _TestCoordinatesAntigravity(count, indices, digest)
+
+
+def _validate_row_coordinates_antigravity(
+    row: Mapping[str, object],
+    expected: _TestCoordinatesAntigravity,
+    *,
+    scope: str,
+) -> tuple[float, ...]:
+    indices = row.get("test_indices")
+    if not isinstance(indices, (tuple, list)) or tuple(indices) != expected.indices:
+        raise ValueError(f"{scope} TEST coordinates differ")
+    scores = _float64_vector_antigravity(
+        row.get("test_scores"), f"{scope} TEST scores"
+    )
+    if len(scores) != expected.count:
+        raise ValueError(f"{scope} TEST count differs from common coordinates")
+    return scores
+
+
+def _validate_verified_input_metadata_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
     value: object,
-) -> tuple[_ScoreTaskAntigravity, ...]:
-    """Validate all inputs in the parent and return capability-free tasks."""
+) -> _VerifiedScoreMetadataAntigravity:
+    """Validate authoritative identities and common TEST rows without calibration."""
 
     if not isinstance(authority, Exp471SourceAuthorityAntigravity):
         raise ValueError("Exp471 score input authority has the wrong type")
     bundle = _mapping_antigravity(value, "Exp471 verified score input")
-    if set(bundle) != {"schema", "dataset_order", "conditions", "baselines"}:
+    if set(bundle) != {
+        "schema",
+        "database_sha256",
+        "dataset_order",
+        "test_coordinates",
+        "baseline_authority_sha256",
+        "conditions",
+        "baselines",
+    }:
         raise ValueError("Exp471 verified score input schema differs")
     if bundle["schema"] != _INPUT_SCHEMA_ANTIGRAVITY:
         raise ValueError("Exp471 verified score input schema differs")
+    database_sha256 = _digest_antigravity(
+        bundle["database_sha256"], "Exp471 score input database_sha256"
+    )
+    if database_sha256 != authority.database_sha256:
+        raise ValueError("Exp471 score input database identity differs")
     dataset_value = bundle["dataset_order"]
     if not isinstance(dataset_value, (tuple, list)) or not dataset_value:
         raise ValueError("Exp471 dataset order must be a non-empty sequence")
@@ -150,19 +248,45 @@ def _build_tasks_from_verified_input_antigravity(
     ):
         raise ValueError("Exp471 dataset order is invalid")
 
+    coordinate_rows = _mapping_antigravity(
+        bundle["test_coordinates"], "Exp471 TEST coordinates"
+    )
+    if tuple(coordinate_rows) != datasets:
+        raise ValueError("Exp471 TEST coordinate dataset order differs")
+    coordinates = {
+        dataset: _test_coordinates_antigravity(coordinate_rows[dataset], dataset)
+        for dataset in datasets
+    }
+    normalized_coordinates = {
+        dataset: {
+            "count": coordinates[dataset].count,
+            "indices": list(coordinates[dataset].indices),
+            "coordinates_sha256": coordinates[dataset].coordinates_sha256,
+        }
+        for dataset in datasets
+    }
+    coordinates_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(normalized_coordinates)
+    ).hexdigest()
+
     conditions = _mapping_antigravity(bundle["conditions"], "Exp471 conditions")
     baselines = _mapping_antigravity(bundle["baselines"], "Exp471 baselines")
+    baseline_authority_inventory = _mapping_antigravity(
+        bundle["baseline_authority_sha256"],
+        "Exp471 baseline authority inventory",
+    )
     if tuple(conditions) != METHOD_ORDER_ANTIGRAVITY[:4]:
         raise ValueError("Exp471 condition method order differs")
     if tuple(baselines) != METHOD_ORDER_ANTIGRAVITY[4:]:
         raise ValueError("Exp471 baseline method order differs")
+    if tuple(baseline_authority_inventory) != METHOD_ORDER_ANTIGRAVITY[4:]:
+        raise ValueError("Exp471 baseline authority method order differs")
 
     source_digests: dict[str, str] = {}
-    checked: dict[str, tuple[str, Mapping[str, object]]] = {}
-    for method in METHOD_ORDER_ANTIGRAVITY:
+    condition_scores: dict[str, dict[str, tuple[float, ...]]] = {}
+    for method in METHOD_ORDER_ANTIGRAVITY[:4]:
         row = _mapping_antigravity(
-            conditions[method] if method in conditions else baselines[method],
-            f"Exp471 {method} source",
+            conditions[method], f"Exp471 {method} condition source"
         )
         if set(row) != {"source_manifest_sha256", "scores"}:
             raise ValueError(f"Exp471 {method} source schema differs")
@@ -170,65 +294,190 @@ def _build_tasks_from_verified_input_antigravity(
             row["source_manifest_sha256"],
             f"Exp471 {method} source_manifest_sha256",
         )
+        if source_digest != authority.condition_manifest_sha256[method]:
+            raise ValueError(
+                f"Exp471 {method} condition manifest authority differs"
+            )
         scores = _mapping_antigravity(row["scores"], f"Exp471 {method} scores")
         if tuple(scores) != datasets:
             raise ValueError(f"Exp471 {method} dataset order differs")
         source_digests[method] = source_digest
-        checked[method] = (source_digest, scores)
-
-    cache_context = _cache_context_antigravity(
-        authority, datasets, source_digests
-    )
-    tasks: list[_ScoreTaskAntigravity] = []
-    for method in METHOD_ORDER_ANTIGRAVITY:
-        source_digest, scores = checked[method]
+        condition_scores[method] = {}
         for dataset in datasets:
-            if method in METHOD_ORDER_ANTIGRAVITY[:4]:
-                raw_scores = _float64_vector_antigravity(
-                    scores[dataset], f"Exp471 {method}/{dataset} TEST scores"
+            vectors = _mapping_antigravity(
+                scores[dataset], f"Exp471 {method}/{dataset} score vectors"
+            )
+            if set(vectors) != {"test_indices", "test_scores"}:
+                raise ValueError(
+                    f"Exp471 {method}/{dataset} score-vector schema differs"
                 )
-                micro_scores = raw_scores
-            else:
-                vectors = _mapping_antigravity(
-                    scores[dataset], f"Exp471 {method}/{dataset} score vectors"
-                )
-                if set(vectors) != {"train_oof_scores", "test_scores"}:
-                    raise ValueError(
-                        f"Exp471 {method}/{dataset} score-vector schema differs"
-                    )
-                train_scores = _float64_vector_antigravity(
-                    vectors["train_oof_scores"],
-                    f"Exp471 {method}/{dataset} TRAIN OOF scores",
-                )
-                raw_scores = _float64_vector_antigravity(
-                    vectors["test_scores"],
-                    f"Exp471 {method}/{dataset} TEST scores",
-                )
-                train = np.ascontiguousarray(train_scores, dtype=np.float64)
-                test = np.ascontiguousarray(raw_scores, dtype=np.float64)
-                calibrated = 1.0 - upper_tail_pvalues_numba_antigravity(
-                    train, test
-                )
-                if calibrated.dtype != np.dtype(np.float64) or not np.isfinite(
-                    calibrated
-                ).all():
-                    raise ValueError(
-                        f"Exp471 {method}/{dataset} micro scores must be finite float64"
-                    )
-                micro_scores = tuple(float(item) for item in calibrated)
-            tasks.append(
-                _ScoreTaskAntigravity(
-                    source_authority_sha256=authority.authority_sha256,
-                    cache_context_sha256=cache_context,
-                    method=method,
-                    dataset=dataset,
-                    test_count=len(raw_scores),
-                    raw_scores=raw_scores,
-                    micro_scores=micro_scores,
-                    source_manifest_sha256=source_digest,
+            condition_scores[method][dataset] = (
+                _validate_row_coordinates_antigravity(
+                    vectors,
+                    coordinates[dataset],
+                    scope=f"Exp471 {method}/{dataset}",
                 )
             )
-    return tuple(tasks)
+
+    baseline_authority_digests: dict[str, str] = {}
+    baseline_scores: dict[
+        str, dict[str, tuple[tuple[float, ...], tuple[float, ...]]]
+    ] = {}
+    for method in METHOD_ORDER_ANTIGRAVITY[4:]:
+        row = _mapping_antigravity(
+            baselines[method], f"Exp471 {method} baseline source"
+        )
+        if set(row) != {"authority", "scores"}:
+            raise ValueError(f"Exp471 {method} baseline source schema differs")
+        baseline_authority = _mapping_antigravity(
+            row["authority"], f"Exp471 {method} baseline authority"
+        )
+        required_authority = {
+            "schema",
+            "method",
+            "database_sha256",
+            "dataset_order",
+            "test_coordinates_sha256",
+            "source_manifest_sha256",
+            "authority_sha256",
+        }
+        if set(baseline_authority) != required_authority:
+            raise ValueError(f"Exp471 {method} baseline authority schema differs")
+        if (
+            baseline_authority["schema"] != _BASELINE_AUTHORITY_SCHEMA_ANTIGRAVITY
+            or baseline_authority["method"] != method
+        ):
+            raise ValueError(f"Exp471 {method} baseline authority differs")
+        baseline_database = _digest_antigravity(
+            baseline_authority["database_sha256"],
+            f"Exp471 {method} baseline database_sha256",
+        )
+        if baseline_database != database_sha256:
+            raise ValueError(f"Exp471 {method} baseline database identity differs")
+        if tuple(baseline_authority["dataset_order"]) != datasets:
+            raise ValueError(f"Exp471 {method} baseline dataset order differs")
+        if baseline_authority["test_coordinates_sha256"] != coordinates_sha256:
+            raise ValueError(f"Exp471 {method} baseline TEST coordinates differ")
+        source_digest = _digest_antigravity(
+            baseline_authority["source_manifest_sha256"],
+            f"Exp471 {method} baseline source_manifest_sha256",
+        )
+        authority_digest = _digest_antigravity(
+            baseline_authority["authority_sha256"],
+            f"Exp471 {method} baseline authority_sha256",
+        )
+        inventory_digest = _digest_antigravity(
+            baseline_authority_inventory[method],
+            f"Exp471 {method} baseline authority inventory digest",
+        )
+        bare = {
+            key: baseline_authority[key]
+            for key in baseline_authority
+            if key != "authority_sha256"
+        }
+        expected_authority_digest = sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest()
+        if authority_digest != expected_authority_digest or inventory_digest != authority_digest:
+            raise ValueError(f"Exp471 {method} baseline authority differs")
+        source_digests[method] = source_digest
+        baseline_authority_digests[method] = authority_digest
+        scores = _mapping_antigravity(
+            row["scores"], f"Exp471 {method} baseline scores"
+        )
+        if tuple(scores) != datasets:
+            raise ValueError(f"Exp471 {method} baseline dataset order differs")
+        baseline_scores[method] = {}
+        for dataset in datasets:
+            vectors = _mapping_antigravity(
+                scores[dataset], f"Exp471 {method}/{dataset} score vectors"
+            )
+            if set(vectors) != {
+                "train_oof_scores",
+                "test_indices",
+                "test_scores",
+            }:
+                raise ValueError(
+                    f"Exp471 {method}/{dataset} score-vector schema differs"
+                )
+            test_scores = _validate_row_coordinates_antigravity(
+                vectors,
+                coordinates[dataset],
+                scope=f"Exp471 {method}/{dataset}",
+            )
+            train_scores = _float64_vector_antigravity(
+                vectors["train_oof_scores"],
+                f"Exp471 {method}/{dataset} TRAIN OOF scores",
+            )
+            baseline_scores[method][dataset] = (train_scores, test_scores)
+
+    cache_context = _cache_context_antigravity(
+        authority,
+        datasets,
+        coordinates_sha256,
+        source_digests,
+        baseline_authority_digests,
+    )
+    return _VerifiedScoreMetadataAntigravity(
+        authority.authority_sha256,
+        database_sha256,
+        cache_context,
+        datasets,
+        coordinates,
+        coordinates_sha256,
+        source_digests,
+        baseline_authority_digests,
+        condition_scores,
+        baseline_scores,
+    )
+
+
+def _prepare_score_identity_antigravity(
+    metadata: _VerifiedScoreMetadataAntigravity,
+    method: str,
+    dataset: str,
+) -> _ScoreTaskAntigravity:
+    """Construct one missing task; this is the only calibration seam."""
+
+    if method in METHOD_ORDER_ANTIGRAVITY[:4]:
+        raw_scores = metadata.condition_scores[method][dataset]
+        micro_scores = raw_scores
+    else:
+        train_scores, raw_scores = metadata.baseline_scores[method][dataset]
+        train = np.ascontiguousarray(train_scores, dtype=np.float64)
+        test = np.ascontiguousarray(raw_scores, dtype=np.float64)
+        calibrated = 1.0 - upper_tail_pvalues_numba_antigravity(train, test)
+        if calibrated.dtype != np.dtype(np.float64) or not np.isfinite(
+            calibrated
+        ).all():
+            raise ValueError(
+                f"Exp471 {method}/{dataset} micro scores must be finite float64"
+            )
+        micro_scores = tuple(float(item) for item in calibrated)
+    return _ScoreTaskAntigravity(
+        source_authority_sha256=metadata.source_authority_sha256,
+        cache_context_sha256=metadata.cache_context_sha256,
+        method=method,
+        dataset=dataset,
+        test_count=metadata.coordinates[dataset].count,
+        raw_scores=raw_scores,
+        micro_scores=micro_scores,
+        source_manifest_sha256=metadata.source_manifest_sha256[method],
+    )
+
+
+def _build_tasks_from_verified_input_antigravity(
+    authority: Exp471SourceAuthorityAntigravity,
+    value: object,
+) -> tuple[_ScoreTaskAntigravity, ...]:
+    """Build all public synthetic tasks after authoritative metadata validation."""
+
+    metadata = _validate_verified_input_metadata_antigravity(authority, value)
+    return tuple(
+        _prepare_score_identity_antigravity(metadata, method, dataset)
+        for method in METHOD_ORDER_ANTIGRAVITY
+        for dataset in metadata.dataset_order
+    )
 
 
 def _shard_from_task_antigravity(
@@ -301,6 +550,46 @@ def _shard_bytes_antigravity(
     )
 
 
+def _finalize_benchmark_decision_antigravity(
+    record: Mapping[str, object],
+) -> dict[str, object]:
+    bare = dict(record)
+    bare.pop("decision_sha256", None)
+    decision_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(bare)
+    ).hexdigest()
+    return {**bare, "decision_sha256": decision_sha256}
+
+
+def _single_worker_decision_antigravity(
+    cache_context_sha256: str,
+    *,
+    requested_workers: int,
+    fallback_reason: str,
+) -> dict[str, object]:
+    return _finalize_benchmark_decision_antigravity(
+        {
+            "schema": _BENCHMARK_SCHEMA_ANTIGRAVITY,
+            "cache_context_sha256": cache_context_sha256,
+            "detected_logical_cpus": LOGICAL_CPU_COUNT_ANTIGRAVITY,
+            "default_cpu_workers": CPU_WORKERS_ANTIGRAVITY,
+            "requested_parallel_workers": requested_workers,
+            "selected_workers": 1,
+            "inner_numerical_threads": INNER_NUMERICAL_THREADS_ANTIGRAVITY,
+            "single_worker_seconds": 0.0,
+            "parallel_seconds": 0.0,
+            "speedup_threshold": _SPEEDUP_THRESHOLD_ANTIGRAVITY,
+            "speedup": 1.0,
+            "byte_parity": True,
+            "parallel_accepted": False,
+            "parallel_error_type": None,
+            "parallel_error_message": None,
+            "fallback_reason": fallback_reason,
+            "acceleration": dict(ACCELERATION_ASSESSMENT_ANTIGRAVITY),
+        }
+    )
+
+
 def benchmark_score_preparation_antigravity(
     tasks: Sequence[object], *, parallel_workers: int
 ) -> Mapping[str, object]:
@@ -315,6 +604,12 @@ def benchmark_score_preparation_antigravity(
         not isinstance(task, _ScoreTaskAntigravity) for task in typed_tasks
     ):
         raise ValueError("Exp471 benchmark tasks must be non-empty score tasks")
+    cache_context_sha256 = typed_tasks[0].cache_context_sha256
+    if any(
+        task.cache_context_sha256 != cache_context_sha256
+        for task in typed_tasks
+    ):
+        raise ValueError("Exp471 benchmark task cache contexts differ")
 
     start = _monotonic_antigravity()
     single_bytes = _shard_bytes_antigravity(typed_tasks, 1)
@@ -340,7 +635,9 @@ def benchmark_score_preparation_antigravity(
         else single_seconds / parallel_seconds
     )
     parallel_accepted = bool(
-        parallel_workers > 1 and byte_parity and speedup >= 1.1
+        parallel_workers > 1
+        and byte_parity
+        and speedup >= _SPEEDUP_THRESHOLD_ANTIGRAVITY
     )
     if parallel_error_type is not None:
         fallback_reason = (
@@ -353,27 +650,207 @@ def benchmark_score_preparation_antigravity(
         fallback_reason = "parallel shard bytes differ from canonical CPU single-worker bytes"
     elif parallel_seconds <= 0.0:
         fallback_reason = "parallel elapsed time is below measurable clock resolution"
-    elif speedup < 1.1:
+    elif speedup < _SPEEDUP_THRESHOLD_ANTIGRAVITY:
         fallback_reason = "parallel speedup is below the required 1.1x gate"
     else:
         fallback_reason = ""
-    return {
-        "schema": _BENCHMARK_SCHEMA_ANTIGRAVITY,
-        "detected_logical_cpus": LOGICAL_CPU_COUNT_ANTIGRAVITY,
-        "default_cpu_workers": CPU_WORKERS_ANTIGRAVITY,
-        "requested_parallel_workers": parallel_workers,
-        "selected_workers": parallel_workers if parallel_accepted else 1,
-        "inner_numerical_threads": INNER_NUMERICAL_THREADS_ANTIGRAVITY,
-        "single_worker_seconds": single_seconds,
-        "parallel_seconds": parallel_seconds,
-        "speedup": speedup,
-        "byte_parity": byte_parity,
-        "parallel_accepted": parallel_accepted,
-        "parallel_error_type": parallel_error_type,
-        "parallel_error_message": parallel_error_message,
-        "fallback_reason": fallback_reason,
-        "acceleration": dict(ACCELERATION_ASSESSMENT_ANTIGRAVITY),
+    return _finalize_benchmark_decision_antigravity(
+        {
+            "schema": _BENCHMARK_SCHEMA_ANTIGRAVITY,
+            "cache_context_sha256": cache_context_sha256,
+            "detected_logical_cpus": LOGICAL_CPU_COUNT_ANTIGRAVITY,
+            "default_cpu_workers": CPU_WORKERS_ANTIGRAVITY,
+            "requested_parallel_workers": parallel_workers,
+            "selected_workers": parallel_workers if parallel_accepted else 1,
+            "inner_numerical_threads": INNER_NUMERICAL_THREADS_ANTIGRAVITY,
+            "single_worker_seconds": single_seconds,
+            "parallel_seconds": parallel_seconds,
+            "speedup_threshold": _SPEEDUP_THRESHOLD_ANTIGRAVITY,
+            "speedup": speedup,
+            "byte_parity": byte_parity,
+            "parallel_accepted": parallel_accepted,
+            "parallel_error_type": parallel_error_type,
+            "parallel_error_message": parallel_error_message,
+            "fallback_reason": fallback_reason,
+            "acceleration": dict(ACCELERATION_ASSESSMENT_ANTIGRAVITY),
+        }
+    )
+
+
+def _validated_benchmark_decision_antigravity(
+    value: object,
+    *,
+    expected_context_sha256: str | None = None,
+) -> dict[str, object]:
+    decision = _mapping_antigravity(value, "Exp471 benchmark decision")
+    required = {
+        "schema",
+        "cache_context_sha256",
+        "detected_logical_cpus",
+        "default_cpu_workers",
+        "requested_parallel_workers",
+        "selected_workers",
+        "inner_numerical_threads",
+        "single_worker_seconds",
+        "parallel_seconds",
+        "speedup_threshold",
+        "speedup",
+        "byte_parity",
+        "parallel_accepted",
+        "parallel_error_type",
+        "parallel_error_message",
+        "fallback_reason",
+        "acceleration",
+        "decision_sha256",
     }
+    if set(decision) != required or decision["schema"] != _BENCHMARK_SCHEMA_ANTIGRAVITY:
+        raise ValueError("Exp471 benchmark decision schema differs")
+    context = _digest_antigravity(
+        decision["cache_context_sha256"],
+        "Exp471 benchmark cache_context_sha256",
+    )
+    if expected_context_sha256 is not None and context != expected_context_sha256:
+        raise ValueError("Exp471 benchmark decision cache context differs")
+    integer_fields = (
+        "detected_logical_cpus",
+        "default_cpu_workers",
+        "requested_parallel_workers",
+        "selected_workers",
+        "inner_numerical_threads",
+    )
+    if any(type(decision[field]) is not int or decision[field] < 1 for field in integer_fields):
+        raise ValueError("Exp471 benchmark worker provenance is invalid")
+    if (
+        decision["detected_logical_cpus"] != LOGICAL_CPU_COUNT_ANTIGRAVITY
+        or decision["default_cpu_workers"] != CPU_WORKERS_ANTIGRAVITY
+        or decision["inner_numerical_threads"]
+        != INNER_NUMERICAL_THREADS_ANTIGRAVITY
+        or decision["requested_parallel_workers"] > CPU_WORKERS_ANTIGRAVITY
+        or decision["selected_workers"]
+        not in (1, decision["requested_parallel_workers"])
+    ):
+        raise ValueError("Exp471 benchmark worker provenance differs")
+    for field in (
+        "single_worker_seconds",
+        "parallel_seconds",
+        "speedup_threshold",
+        "speedup",
+    ):
+        number = decision[field]
+        if type(number) not in (int, float) or not math.isfinite(float(number)) or float(number) < 0.0:
+            raise ValueError("Exp471 benchmark numeric provenance is invalid")
+    if float(decision["speedup_threshold"]) != _SPEEDUP_THRESHOLD_ANTIGRAVITY:
+        raise ValueError("Exp471 benchmark speedup threshold differs")
+    if type(decision["byte_parity"]) is not bool or type(decision["parallel_accepted"]) is not bool:
+        raise ValueError("Exp471 benchmark decision flags are invalid")
+    error_type = decision["parallel_error_type"]
+    error_message = decision["parallel_error_message"]
+    if (error_type is None) != (error_message is None) or (
+        error_type is not None
+        and (type(error_type) is not str or type(error_message) is not str)
+    ):
+        raise ValueError("Exp471 benchmark error provenance is invalid")
+    if type(decision["fallback_reason"]) is not str:
+        raise ValueError("Exp471 benchmark fallback reason is invalid")
+    if decision["acceleration"] != dict(ACCELERATION_ASSESSMENT_ANTIGRAVITY):
+        raise ValueError("Exp471 benchmark acceleration assessment differs")
+    accepted = decision["parallel_accepted"]
+    if accepted != bool(
+        decision["requested_parallel_workers"] > 1
+        and decision["selected_workers"] == decision["requested_parallel_workers"]
+        and decision["byte_parity"]
+        and float(decision["speedup"])
+        >= _SPEEDUP_THRESHOLD_ANTIGRAVITY
+        and error_type is None
+    ):
+        raise ValueError("Exp471 benchmark acceptance decision differs")
+    digest = _digest_antigravity(
+        decision["decision_sha256"], "Exp471 benchmark decision_sha256"
+    )
+    bare = {key: decision[key] for key in decision if key != "decision_sha256"}
+    if digest != sha256(canonical_json_bytes_exp471_antigravity(bare)).hexdigest():
+        raise ValueError("Exp471 benchmark decision digest differs")
+    return dict(decision)
+
+
+def _canonical_benchmark_bytes_antigravity(
+    decision: Mapping[str, object],
+) -> bytes:
+    checked = _validated_benchmark_decision_antigravity(decision)
+    return canonical_json_bytes_exp471_antigravity(checked)
+
+
+def _publish_benchmark_decision_antigravity(
+    root: Path, decision: Mapping[str, object]
+) -> Path:
+    payload = _canonical_benchmark_bytes_antigravity(decision)
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=True
+    )
+    try:
+        _artifacts_antigravity._publish_bytes_at_antigravity(
+            anchor.descriptor,
+            _BENCHMARK_NAME_ANTIGRAVITY,
+            payload,
+            temporary_scope="score_preparation_benchmark",
+        )
+        anchor.validate()
+        return Path(root) / _BENCHMARK_NAME_ANTIGRAVITY
+    finally:
+        anchor.close()
+
+
+def _read_benchmark_decision_antigravity(
+    root: Path,
+    *,
+    expected_context_sha256: str | None = None,
+) -> dict[str, object]:
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    try:
+        raw = _artifacts_antigravity._read_leaf_at_antigravity(
+            anchor.descriptor, _BENCHMARK_NAME_ANTIGRAVITY
+        )
+        if raw is None:
+            raise ValueError("Exp471 benchmark decision is missing")
+        try:
+            value = json.loads(
+                raw.decode("utf-8"),
+                parse_constant=lambda constant: (_ for _ in ()).throw(
+                    ValueError(f"non-finite JSON constant: {constant}")
+                ),
+            )
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+            raise ValueError("Exp471 benchmark decision JSON is malformed") from error
+        decision = _validated_benchmark_decision_antigravity(
+            value, expected_context_sha256=expected_context_sha256
+        )
+        if raw != _canonical_benchmark_bytes_antigravity(decision):
+            raise ValueError("Exp471 benchmark decision bytes are noncanonical")
+        anchor.validate()
+        return decision
+    finally:
+        anchor.close()
+
+
+def _actual_wave_fallback_decision_antigravity(
+    decision: Mapping[str, object],
+    error: Exception,
+    *,
+    wave: str,
+) -> dict[str, object]:
+    record = dict(decision)
+    record.pop("decision_sha256", None)
+    record["selected_workers"] = 1
+    record["parallel_accepted"] = False
+    record["parallel_error_type"] = type(error).__name__
+    record["parallel_error_message"] = str(error)
+    record["fallback_reason"] = (
+        f"actual {wave} wave failed with {type(error).__name__}: {error}; "
+        "canonical CPU single-worker selected"
+    )
+    return _finalize_benchmark_decision_antigravity(record)
 
 
 def _require_issued_session_antigravity(
@@ -389,42 +866,45 @@ def _require_issued_session_antigravity(
     return session
 
 
-def _task_matches_shard_antigravity(
-    task: _ScoreTaskAntigravity, shard: Exp471ScoreShardAntigravity
+def _metadata_matches_shard_antigravity(
+    metadata: _VerifiedScoreMetadataAntigravity,
+    method: str,
+    dataset: str,
+    shard: Exp471ScoreShardAntigravity,
 ) -> bool:
     return (
-        shard.source_authority_sha256 == task.source_authority_sha256
-        and shard.cache_context_sha256 == task.cache_context_sha256
-        and shard.method == task.method
-        and shard.dataset == task.dataset
-        and shard.test_count == task.test_count
-        and shard.raw_scores == task.raw_scores
-        and shard.micro_scores == task.micro_scores
-        and shard.source_manifest_sha256 == task.source_manifest_sha256
+        shard.source_authority_sha256 == metadata.source_authority_sha256
+        and shard.cache_context_sha256 == metadata.cache_context_sha256
+        and shard.method == method
+        and shard.dataset == dataset
+        and shard.test_count == metadata.coordinates[dataset].count
+        and shard.source_manifest_sha256
+        == metadata.source_manifest_sha256[method]
     )
 
 
 def _existing_shard_antigravity(
-    root: Path, task: _ScoreTaskAntigravity
+    root: Path,
+    metadata: _VerifiedScoreMetadataAntigravity,
+    method: str,
+    dataset: str,
 ) -> Exp471ScoreShardAntigravity | None:
-    path = root / score_shard_relative_path_antigravity(task.method, task.dataset)
+    path = root / score_shard_relative_path_antigravity(method, dataset)
     if not os.path.lexists(path):
         return None
-    shard = read_score_shard_antigravity(root, task.method, task.dataset)
-    if not _task_matches_shard_antigravity(task, shard):
+    shard = read_score_shard_antigravity(root, method, dataset)
+    if not _metadata_matches_shard_antigravity(
+        metadata, method, dataset, shard
+    ):
         raise ValueError("Exp471 existing score shard differs from verified input")
     return shard
 
 
 def _manifest_from_shards_antigravity(
-    tasks: Sequence[_ScoreTaskAntigravity],
+    metadata: _VerifiedScoreMetadataAntigravity,
     shards: Mapping[tuple[str, str], Exp471ScoreShardAntigravity],
 ) -> Exp471ScoreCacheManifestAntigravity:
-    datasets = tuple(
-        task.dataset
-        for task in tasks
-        if task.method == METHOD_ORDER_ANTIGRAVITY[0]
-    )
+    datasets = metadata.dataset_order
     required = {
         (method, dataset)
         for method in METHOD_ORDER_ANTIGRAVITY
@@ -432,10 +912,9 @@ def _manifest_from_shards_antigravity(
     }
     if set(shards) != required:
         raise ValueError("Exp471 cannot publish an incomplete score-cache manifest")
-    first = tasks[0]
     record: dict[str, object] = {
-        "source_authority_sha256": first.source_authority_sha256,
-        "cache_context_sha256": first.cache_context_sha256,
+        "source_authority_sha256": metadata.source_authority_sha256,
+        "cache_context_sha256": metadata.cache_context_sha256,
         "method_order": list(METHOD_ORDER_ANTIGRAVITY),
         "dataset_order": list(datasets),
         "shard_sha256": {
@@ -451,6 +930,39 @@ def _manifest_from_shards_antigravity(
     return Exp471ScoreCacheManifestAntigravity(
         **record, manifest_sha256=manifest_sha256
     )
+
+
+def _validate_manifest_metadata_antigravity(
+    manifest: Exp471ScoreCacheManifestAntigravity,
+    metadata: _VerifiedScoreMetadataAntigravity,
+) -> None:
+    if manifest.source_authority_sha256 != metadata.source_authority_sha256:
+        raise ValueError("Exp471 complete score cache authority differs")
+    if manifest.cache_context_sha256 != metadata.cache_context_sha256:
+        raise ValueError("Exp471 complete score cache context differs")
+    if (
+        manifest.method_order != METHOD_ORDER_ANTIGRAVITY
+        or manifest.dataset_order != metadata.dataset_order
+    ):
+        raise ValueError("Exp471 complete score cache order differs")
+
+
+def _run_actual_wave_antigravity(
+    tasks: Sequence[_ScoreTaskAntigravity],
+    workers: int,
+    decision: Mapping[str, object],
+    *,
+    wave: str,
+) -> tuple[tuple[_TaskOutcomeAntigravity, ...], dict[str, object]]:
+    try:
+        return _run_tasks_antigravity(tasks, workers), dict(decision)
+    except Exception as error:
+        if workers == 1:
+            raise
+        fallback = _actual_wave_fallback_decision_antigravity(
+            decision, error, wave=wave
+        )
+        return _run_tasks_antigravity(tasks, 1), fallback
 
 
 def _progress_antigravity(
@@ -499,39 +1011,96 @@ def prepare_score_cache_antigravity(
         raise ValueError("Exp471 issued session has no score-reader capability")
 
     verified_input = session.score_reader_antigravity()
-    tasks = _build_tasks_from_verified_input_antigravity(
+    metadata = _validate_verified_input_metadata_antigravity(
         session.authority, verified_input
     )
     root = Path(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
-    shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
-    pending: list[_ScoreTaskAntigravity] = []
-    for task in tasks:
-        existing = _existing_shard_antigravity(root, task)
-        if existing is None:
-            pending.append(task)
-        else:
-            shards[(task.method, task.dataset)] = existing
-
     manifest_path = root / "score_cache_manifest_antigravity.json"
+    benchmark_path = root / _BENCHMARK_NAME_ANTIGRAVITY
     if os.path.lexists(manifest_path):
         manifest = read_cache_manifest_antigravity(root)
-        expected = _manifest_from_shards_antigravity(tasks, shards)
-        if manifest != expected or pending:
-            raise ValueError("Exp471 existing terminal cache manifest differs")
+        _validate_manifest_metadata_antigravity(manifest, metadata)
+        _read_benchmark_decision_antigravity(
+            root, expected_context_sha256=metadata.cache_context_sha256
+        )
         return manifest
 
-    actual_workers = 1
-    if selected_request > 1 and len(pending) > 1:
-        benchmark = benchmark_score_preparation_antigravity(
-            pending, parallel_workers=selected_request
-        )
-        actual_workers = int(benchmark["selected_workers"])
+    shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
+    missing: list[tuple[str, str]] = []
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        for dataset in metadata.dataset_order:
+            existing = _existing_shard_antigravity(
+                root, metadata, method, dataset
+            )
+            if existing is None:
+                missing.append((method, dataset))
+            else:
+                shards[(method, dataset)] = existing
 
-    failures: list[_TaskOutcomeAntigravity] = []
-    for outcome in _run_tasks_antigravity(pending, actual_workers):
+    if os.path.lexists(benchmark_path) and missing:
+        raise ValueError(
+            "Exp471 benchmark decision exists before complete shard coverage"
+        )
+    if not missing:
+        if os.path.lexists(benchmark_path):
+            decision = _read_benchmark_decision_antigravity(
+                root, expected_context_sha256=metadata.cache_context_sha256
+            )
+        else:
+            decision = _single_worker_decision_antigravity(
+                metadata.cache_context_sha256,
+                requested_workers=selected_request,
+                fallback_reason=(
+                    "resumed complete shards have no pending benchmark tasks; "
+                    "canonical CPU single-worker selected"
+                ),
+            )
+            _publish_benchmark_decision_antigravity(root, decision)
+        manifest = _manifest_from_shards_antigravity(metadata, shards)
+        publish_cache_manifest_antigravity(root, manifest)
+        return read_cache_manifest_antigravity(root)
+
+    tasks = tuple(
+        _prepare_score_identity_antigravity(metadata, method, dataset)
+        for method, dataset in missing
+    )
+    if selected_request > 1 and len(tasks) > 1:
+        decision = dict(
+            benchmark_score_preparation_antigravity(
+                tasks, parallel_workers=selected_request
+            )
+        )
+    else:
+        decision = _single_worker_decision_antigravity(
+            metadata.cache_context_sha256,
+            requested_workers=selected_request,
+            fallback_reason=(
+                "parallel worker request is one; canonical CPU single-worker retained"
+                if selected_request == 1
+                else "fewer than two pending tasks; canonical CPU single-worker retained"
+            ),
+        )
+    decision = _validated_benchmark_decision_antigravity(
+        decision, expected_context_sha256=metadata.cache_context_sha256
+    )
+    actual_workers = int(decision["selected_workers"])
+    first_outcomes, decision = _run_actual_wave_antigravity(
+        tasks, actual_workers, decision, wave="first"
+    )
+    actual_workers = int(decision["selected_workers"])
+    failures = tuple(
+        outcome for outcome in first_outcomes if outcome.shard is None
+    )
+    retry_outcomes: tuple[_TaskOutcomeAntigravity, ...] = ()
+    if failures:
+        retry_tasks = tuple(outcome.task for outcome in failures)
+        retry_outcomes, decision = _run_actual_wave_antigravity(
+            retry_tasks, actual_workers, decision, wave="retry"
+        )
+
+    for outcome in first_outcomes:
         identity = (outcome.task.method, outcome.task.dataset)
         if outcome.shard is None:
-            failures.append(outcome)
             _progress_antigravity(
                 progress,
                 outcome=outcome,
@@ -556,9 +1125,8 @@ def prepare_score_cache_antigravity(
         )
 
     terminal_failure: _TaskOutcomeAntigravity | None = None
-    if failures:
-        retry_tasks = tuple(outcome.task for outcome in failures)
-        for outcome in _run_tasks_antigravity(retry_tasks, actual_workers):
+    if retry_outcomes:
+        for outcome in retry_outcomes:
             identity = (outcome.task.method, outcome.task.dataset)
             if outcome.shard is None:
                 if terminal_failure is None:
@@ -592,7 +1160,16 @@ def prepare_score_cache_antigravity(
             or "Exp471 score task failed twice"
         )
 
-    manifest = _manifest_from_shards_antigravity(tasks, shards)
+    decision = _validated_benchmark_decision_antigravity(
+        decision, expected_context_sha256=metadata.cache_context_sha256
+    )
+    _publish_benchmark_decision_antigravity(root, decision)
+    reopened_decision = _read_benchmark_decision_antigravity(
+        root, expected_context_sha256=metadata.cache_context_sha256
+    )
+    if reopened_decision != decision:
+        raise ValueError("Exp471 benchmark decision differs after publication")
+    manifest = _manifest_from_shards_antigravity(metadata, shards)
     publish_cache_manifest_antigravity(root, manifest)
     reopened_manifest = read_cache_manifest_antigravity(root)
     if reopened_manifest != manifest:
@@ -650,7 +1227,7 @@ def _scan_shards_antigravity(root: Path) -> tuple[Exp471ScoreShardAntigravity, .
 
 
 def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
-    """Return verified durable coverage and frozen CPU fallback provenance."""
+    """Return verified durable coverage and the actual cache worker decision."""
 
     root = Path(root)
     manifest_path = root / "score_cache_manifest_antigravity.json"
@@ -662,6 +1239,7 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         method_order: tuple[str, ...] = manifest.method_order
         dataset_order: tuple[str, ...] = manifest.dataset_order
         manifest_sha256: str | None = manifest.manifest_sha256
+        expected_benchmark_context: str | None = manifest.cache_context_sha256
     else:
         shards = _scan_shards_antigravity(root)
         complete = False
@@ -670,6 +1248,20 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         method_order = METHOD_ORDER_ANTIGRAVITY
         dataset_order = tuple(dict.fromkeys(shard.dataset for shard in shards))
         manifest_sha256 = None
+        shard_contexts = {shard.cache_context_sha256 for shard in shards}
+        if len(shard_contexts) > 1:
+            raise ValueError("Exp471 incomplete shard cache contexts differ")
+        expected_benchmark_context = (
+            next(iter(shard_contexts)) if shard_contexts else None
+        )
+    benchmark_path = root / _BENCHMARK_NAME_ANTIGRAVITY
+    if complete and not os.path.lexists(benchmark_path):
+        raise ValueError("Exp471 benchmark decision is missing")
+    benchmark_decision = None
+    if os.path.lexists(benchmark_path):
+        benchmark_decision = _read_benchmark_decision_antigravity(
+            root, expected_context_sha256=expected_benchmark_context
+        )
     return {
         "schema": _STATUS_SCHEMA_ANTIGRAVITY,
         "root": str(root),
@@ -679,6 +1271,7 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         "method_order": method_order,
         "dataset_order": dataset_order,
         "manifest_sha256": manifest_sha256,
+        "benchmark_decision": benchmark_decision,
         "detected_logical_cpus": LOGICAL_CPU_COUNT_ANTIGRAVITY,
         "default_cpu_workers": CPU_WORKERS_ANTIGRAVITY,
         "inner_numerical_threads": INNER_NUMERICAL_THREADS_ANTIGRAVITY,
@@ -692,11 +1285,17 @@ def open_complete_score_cache_antigravity(
     """Open a complete cache only for the issued source authority that built it."""
 
     session = _require_issued_session_antigravity(session)
-    manifest = read_cache_manifest_antigravity(
-        Path(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
+    if not callable(session.score_reader_antigravity):
+        raise ValueError("Exp471 issued session has no score-reader capability")
+    metadata = _validate_verified_input_metadata_antigravity(
+        session.authority, session.score_reader_antigravity()
     )
-    if manifest.source_authority_sha256 != session.authority.authority_sha256:
-        raise ValueError("Exp471 complete score cache authority differs")
+    root = Path(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
+    manifest = read_cache_manifest_antigravity(root)
+    _validate_manifest_metadata_antigravity(manifest, metadata)
+    _read_benchmark_decision_antigravity(
+        root, expected_context_sha256=metadata.cache_context_sha256
+    )
     return manifest
 
 
