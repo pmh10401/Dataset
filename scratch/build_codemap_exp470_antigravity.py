@@ -82,6 +82,19 @@ TASK5_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
     "task-5-report-antigravity.html"
 )
+TASK6_BRIEF_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
+    "task-6-brief-antigravity.html"
+)
+TASK6_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
+    "task-6-report-antigravity.html"
+)
+RUNBOOK_ANTIGRAVITY = "docs/EXP470_RUNBOOK_antigravity.html"
+CLI_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/cli_antigravity.py"
+LAUNCHER_ANTIGRAVITY = "scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py"
+CLI_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_cli_antigravity.py"
+PIPELINE_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_pipeline_antigravity.py"
 SCORING_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/scoring_antigravity.py"
 QUALIFICATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/qualification_antigravity.py"
 EVALUATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/evaluation_antigravity.py"
@@ -128,6 +141,13 @@ REPRESENTED_PATHS_ANTIGRAVITY = (
     TASK4_REPORT_ANTIGRAVITY,
     TASK5_BRIEF_ANTIGRAVITY,
     TASK5_REPORT_ANTIGRAVITY,
+    TASK6_BRIEF_ANTIGRAVITY,
+    TASK6_REPORT_ANTIGRAVITY,
+    RUNBOOK_ANTIGRAVITY,
+    CLI_ANTIGRAVITY,
+    LAUNCHER_ANTIGRAVITY,
+    CLI_TEST_ANTIGRAVITY,
+    PIPELINE_TEST_ANTIGRAVITY,
     SCORING_ANTIGRAVITY,
     QUALIFICATION_ANTIGRAVITY,
     EVALUATION_ANTIGRAVITY,
@@ -140,6 +160,10 @@ REPRESENTED_PATHS_ANTIGRAVITY = (
     ARTIFACTS_TEST_ANTIGRAVITY,
     REPLAY_TEST_ANTIGRAVITY,
     DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+    CLI_ANTIGRAVITY,
+    LAUNCHER_ANTIGRAVITY,
+    CLI_TEST_ANTIGRAVITY,
+    PIPELINE_TEST_ANTIGRAVITY,
     EXP468_SOURCES_ANTIGRAVITY,
     EXP468_INTERPOLATION_ANTIGRAVITY,
     EXP468_SYNTHETIC_ANTIGRAVITY,
@@ -180,8 +204,8 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     EXP468_SYNTHETIC_ANTIGRAVITY,
     EXP468_PREDECESSOR_ANTIGRAVITY,
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task5_replayable_evidence_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp470_task5_replayable_evidence_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task6_private_preflight_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp470_task6_private_preflight_codemap_lock_v1"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -280,7 +304,7 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity("acceleration", ACCELERATION_ANTIGRAVITY, "Task 3 runtime evidence and CLI manifest", "Measures Numba reference parity, byte determinism, cold/warm timings, and MLX capability only; selected backend remains Numba.", (ACCELERATION_TEST_ANTIGRAVITY,), "assess_runtime_antigravity"),
         _node_antigravity("acceleration_test", ACCELERATION_TEST_ANTIGRAVITY, "focused unittest command", "Covers fixed fixture digest, strict JSON, validation stops, Numba evidence, and MLX record presence.", (), "AccelerationAssessmentTestAntigravity"),
         _node_antigravity("assessment", ASSESSMENT_ANTIGRAVITY, "Task 3 runtime evidence CLI", "Records one finite JSON-only Numba/MLX assessment without qualification or dataset access.", (), "selected_backend"),
-        _node_antigravity("implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 1 closeout", "Records only Task 1 implementation and verification state; does not report scoring or execution.", (), "Exp470 Task 1"),
+        _node_antigravity("implementation_report", IMPLEMENTATION_REPORT_ANTIGRAVITY, "Task 6 closeout", "Summarizes Tasks 1–6 evidence while keeping all private, official, TEST/FN, and routing actions uncompleted.", (), "Exp470 구현 보고"),
         _node_antigravity("task_report", TASK_REPORT_ANTIGRAVITY, "Task 1 parent handoff", "Preserves RED/GREEN, map validation, self-review, and concern evidence.", (), "Exp470 Task 1"),
         _node_antigravity("task2_brief", TASK2_BRIEF_ANTIGRAVITY, "Task 2 implementer", "Bounds work to the single Numba E11 scorer and Python oracle; prohibits qualification, runs, MLX work, and routing.", (), "Task 2"),
         _node_antigravity("task2_report", TASK2_REPORT_ANTIGRAVITY, "Task 2 parent handoff", "Preserves RED/GREEN, code-map checks, self-review, and scorer-only concerns.", (), "Task 2"),
@@ -302,6 +326,13 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity("replay_test", REPLAY_TEST_ANTIGRAVITY, "focused unittest command", "Covers semantic source-free replay plus byte, leaf, hash, exact context types, signed-zero, and rehashed-evidence tampering.", (), "ResultReplayTestAntigravity"),
         _node_antigravity("dashboard_export_test", DASHBOARD_EXPORT_TEST_ANTIGRAVITY, "focused unittest command", "Covers portable Korean HTML and disabled replay-only completion checkbox state.", (), "DashboardExportTestAntigravity"),
         _node_antigravity("task5_report", TASK5_REPORT_ANTIGRAVITY, "Task 5 parent handoff", "Preserves RED/GREEN, replay/tamper evidence, full verification, and the no-run boundary.", (), "Exp470 Task 5"),
+        _node_antigravity("task6_brief", TASK6_BRIEF_ANTIGRAVITY, "Task 6 implementer", "Bounds the closed CLI and approval-gated private preflight; forbids actual evaluation during implementation.", (), "Task 6"),
+        _node_antigravity("cli", CLI_ANTIGRAVITY, "future approved private sequence", "Offers only evaluate and inspect, verifies a clean reviewed commit, and publishes or inspects the frozen seven-leaf evidence.", (CLI_TEST_ANTIGRAVITY, PIPELINE_TEST_ANTIGRAVITY), "main_antigravity"),
+        _node_antigravity("launcher", LAUNCHER_ANTIGRAVITY, "future explicit checkpoint", "Rejects without the exact token, then orders two private evaluate/inspect passes and raw-byte comparison of every leaf.", (PIPELINE_TEST_ANTIGRAVITY,), "run_private_sequence_antigravity"),
+        _node_antigravity("cli_test", CLI_TEST_ANTIGRAVITY, "focused unittest command", "Covers the two-command parser, strict JSON, and source-free inspect dispatch using a temporary root.", (), "Exp470CliTestAntigravity"),
+        _node_antigravity("pipeline_test", PIPELINE_TEST_ANTIGRAVITY, "focused unittest command", "Covers create-only roots, ten ordered records, token-before-side-effect, private ordering, stop cases, and seven-leaf raw bytes.", (), "Exp470PipelineTestAntigravity"),
+        _node_antigravity("runbook", RUNBOOK_ANTIGRAVITY, "future private checkpoint owner", "Explains the approved order, seven leaves, stop conditions, and the remaining forbidden actions in easy Korean.", (), "Exp470 실행 안내"),
+        _node_antigravity("task6_report", TASK6_REPORT_ANTIGRAVITY, "Task 6 parent handoff", "Preserves RED/GREEN evidence, test counts, and the no-run preflight boundary.", (), "Exp470 Task 6"),
         _node_antigravity("exp468_load_ecg200_normal_train", EXP468_SOURCES_ANTIGRAVITY, "Exp470 sources export", "Provides the exact reviewed Exp468 normal TRAIN loader object.", (), "load_ecg200_normal_train_antigravity"),
         _node_antigravity("exp468_interpolate_to_140", EXP468_INTERPOLATION_ANTIGRAVITY, "Exp470 interpolation export", "Provides the exact reviewed Exp468 96-to-140 interpolation object.", (), "interpolate_to_140_antigravity"),
         _node_antigravity("exp468_primary_rows", EXP468_SYNTHETIC_ANTIGRAVITY, "Exp470 synthetic export", "Provides the exact reviewed Exp468 primary synthetic-row object.", (), "primary_rows_antigravity"),
@@ -349,6 +380,19 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("artifacts_test", "tests", "artifacts", ARTIFACTS_TEST_ANTIGRAVITY, "publish_result_antigravity"),
         _edge_antigravity("replay_test", "tests", "replay", REPLAY_TEST_ANTIGRAVITY, "inspect_result_antigravity"),
         _edge_antigravity("dashboard_export_test", "tests", "dashboard_export", DASHBOARD_EXPORT_TEST_ANTIGRAVITY, "export_dashboard_antigravity"),
+        _edge_antigravity("cli", "calls", "sources", CLI_ANTIGRAVITY, "load_ecg200_normal_train_antigravity"),
+        _edge_antigravity("cli", "calls", "interpolation", CLI_ANTIGRAVITY, "interpolate_to_140_antigravity"),
+        _edge_antigravity("cli", "calls", "predecessor", CLI_ANTIGRAVITY, "capture_exp465_authority_antigravity"),
+        _edge_antigravity("cli", "calls", "scoring", CLI_ANTIGRAVITY, "score_fold_methods_antigravity"),
+        _edge_antigravity("cli", "calls", "qualification", CLI_ANTIGRAVITY, "qualify_records_antigravity"),
+        _edge_antigravity("cli", "calls", "evaluation", CLI_ANTIGRAVITY, "evaluate_repair_gates_antigravity"),
+        _edge_antigravity("cli", "calls", "artifacts", CLI_ANTIGRAVITY, "publish_result_antigravity"),
+        _edge_antigravity("cli", "calls", "replay", CLI_ANTIGRAVITY, "inspect_result_antigravity"),
+        _edge_antigravity("launcher", "calls", "cli", LAUNCHER_ANTIGRAVITY, "main_antigravity"),
+        _edge_antigravity("launcher", "calls", "artifacts", LAUNCHER_ANTIGRAVITY, "LEAF_NAMES_ANTIGRAVITY"),
+        _edge_antigravity("cli_test", "tests", "cli", CLI_TEST_ANTIGRAVITY, "main_antigravity"),
+        _edge_antigravity("pipeline_test", "tests", "cli", PIPELINE_TEST_ANTIGRAVITY, "evaluate_pipeline_antigravity"),
+        _edge_antigravity("pipeline_test", "tests", "launcher", PIPELINE_TEST_ANTIGRAVITY, "run_private_sequence_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
@@ -365,7 +409,7 @@ def _render_html_antigravity(graph: dict[str, Any]) -> str:
         for node in graph["nodes"]
     )
     embedded = _canonical_bytes_antigravity(graph).decode("utf-8").rstrip()
-    return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><title>Exp470 code map</title></head><body><main><h1>Exp470 Task 3 Code Map</h1><p>Versioned authority map; no generic alias is generated.</p><table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>" + rows + "</tbody></table><script id=\"exp470-codemap-json-antigravity\" type=\"application/json\">" + embedded + "</script></main></body></html>\n"
+    return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><title>Exp470 code map</title></head><body><main><h1>Exp470 Task 6 Code Map</h1><p>Versioned authority map; no generic alias is generated.</p><table><thead><tr><th>ID</th><th>Path</th><th>Caller</th><th>Effect</th></tr></thead><tbody>" + rows + "</tbody></table><script id=\"exp470-codemap-json-antigravity\" type=\"application/json\">" + embedded + "</script></main></body></html>\n"
 
 
 def _lock_antigravity(graph: dict[str, Any]) -> dict[str, Any]:

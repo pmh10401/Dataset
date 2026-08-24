@@ -1,1 +1,22 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Exp470 Task 1 구현 보고</title></head><body><main><h1>Exp470 Task 1 구현 상태</h1><p>고정 설정, Exp468 exact authority 재수출, 불변 결과 계약, 버전형 코드맵을 추가했다. 점수 계산, acceleration benchmark, private/official 실행, TEST/FN/FP/F1 조회, routing은 수행하지 않았다.</p><h2>실제 검증</h2><ul><li>focused unittest: 두 번 모두 7개 통과</li><li>Exp468 predecessor map validate-only: 종료 코드 0</li><li>Exp470 code map 생성 및 validate-only: 종료 코드 0</li><li>두 JSON 구문 검증과 <code>git diff --check</code>: 종료 코드 0</li></ul></main></body></html>
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Exp470 구현 보고</title></head><body><main>
+<h1>Exp470 구현 보고</h1>
+<p>Task 1부터 6까지의 코드와 사전검증을 마쳤다. 아직 private 실행, official 실행, TEST/FN 접근은 하지 않았다.</p>
+<h2>완료 상태</h2>
+<label><input type="checkbox" checked disabled> Task 1: 고정 설정과 원본 권한 연결</label>
+<label><input type="checkbox" checked disabled> Task 2: Numba spectral entropy</label>
+<label><input type="checkbox" checked disabled> Task 3: 속도 확인</label>
+<label><input type="checkbox" checked disabled> Task 4: C0/E11/C11과 pair 판단</label>
+<label><input type="checkbox" checked disabled> Task 5: 7개 파일 저장과 재검사</label>
+<label><input type="checkbox" checked disabled> Task 6: 닫힌 명령과 private 실행 전 검사</label>
+<label><input type="checkbox" disabled> private run 1·2</label>
+<label><input type="checkbox" disabled> official</label>
+<label><input type="checkbox" disabled> TEST/FN</label>
+<label><input type="checkbox" disabled> routing</label>
+<h2>핵심 결과</h2>
+<ul><li>새 E11 계산은 Numba만 사용한다. 작은 기준 계산과의 raw 오차는 최대 <code>1.1102230246251565e-16</code>으로, 기준 <code>1e-12</code>보다 작다. 반복 결과 byte도 같다.</li><li>MLX는 설치되어 있었지만 float64를 지원하지 않아 같은 계산을 안전하게 재현할 수 없었다. 따라서 Numba를 유지한다.</li><li>C11은 E11이 확인되고 C0보다 클 때만 E11을 쓴다. 그 외에는 C0 byte를 그대로 보존한다.</li><li>10개 seed·fold 기록, pair fixed/broken 수, 재계산 결과와 7개 파일의 hash·내용을 다시 비교한다.</li><li>독립 검토에서 확인된 overflow 출력, signed-zero fallback, JSON 자료형, MLX 배포 버전 문제가 테스트와 함께 보완됐다.</li></ul>
+<h2>사전검증</h2>
+<p>최신 전체 Exp470 test는 <code>62/62</code>, Exp468 핵심 회귀 test는 <code>12/12</code>를 통과했다. code-map, JSON, HTML, diff 검사도 실행 전 단계에서 확인한다.</p>
+<h2>실행 전 상태</h2>
+<p>private runs = <code>0</code>, official runs = <code>0</code>, TEST/FN access = <code>0</code>이다. 다음 단계는 별도 승인 뒤 두 private 경로에서 순서대로 실행하고 7개 파일의 raw byte가 모두 같은지 보는 일뿐이다.</p>
+</main></body></html>

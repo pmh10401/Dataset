@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+import contextlib
+import io
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from unittest import mock
+
+
+class Exp470CliTestAntigravity(unittest.TestCase):
+    def test_parser_has_only_required_closed_subcommands_antigravity(self) -> None:
+        """Break caught: an unreviewed command, alias, optional argument, or unknown flag reaches the CLI."""
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.cli_antigravity import parser_antigravity
+
+        parser = parser_antigravity()
+        actions = [action for action in parser._actions if action.dest == "command"]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(tuple(actions[0].choices), ("evaluate", "inspect"))
+        evaluate = parser.parse_args(("evaluate", "--root", "private", "--commit", "a" * 40))
+        inspect = parser.parse_args(("inspect", "--root", "private"))
+        self.assertEqual((evaluate.command, evaluate.root, evaluate.commit), ("evaluate", Path("private"), "a" * 40))
+        self.assertEqual((inspect.command, inspect.root), ("inspect", Path("private")))
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                parser.parse_args(("official",))
+            with self.assertRaises(SystemExit):
+                parser.parse_args(("evaluate", "--root", "private", "--commit", "A" * 40))
+            with self.assertRaises(SystemExit):
+                parser.parse_args(("inspect", "--root", "private", "--unknown"))
+
+    def test_main_emits_one_strict_json_object_without_nan_antigravity(self) -> None:
+        """Break caught: CLI adds prose, permits NaN, or dispatches a different closed command."""
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity import cli_antigravity
+
+        with mock.patch.object(cli_antigravity, "_require_clean_reviewed_commit_antigravity"), \
+             mock.patch.object(cli_antigravity, "evaluate_pipeline_antigravity", return_value={"decision": {"passed": True}, "hashes": {}, "root": "x"}):
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = cli_antigravity.main_antigravity(("evaluate", "--root", "x", "--commit", "a" * 40))
+        self.assertEqual(code, 0)
+        raw = stdout.getvalue()
+        self.assertTrue(raw.endswith("\n"))
+        self.assertNotIn("NaN", raw)
+        self.assertEqual(json.loads(raw), {"decision": {"passed": True}, "hashes": {}, "root": "x"})
+
+    def test_inspect_command_uses_temporary_publication_only_antigravity(self) -> None:
+        """Break caught: inspect invokes the evaluator or fails to return a strict stored-evidence payload."""
+        from experiments.exp470_ecg200_spectral_entropy_numba_antigravity import cli_antigravity
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "publication_antigravity"
+            root.mkdir()
+            inspected = mock.Mock()
+            inspected.decision = mock.Mock(passed=False, eligible_for_private_reproducibility=False, failure_reasons=("gate",))
+            inspected.hashes = {"context_antigravity.json": "b" * 64}
+            with mock.patch.object(cli_antigravity, "inspect_result_antigravity", return_value=inspected) as inspect_result:
+                with mock.patch.object(cli_antigravity, "evaluate_pipeline_antigravity") as evaluate:
+                    stdout = io.StringIO()
+                    with contextlib.redirect_stdout(stdout):
+                        code = cli_antigravity.main_antigravity(("inspect", "--root", str(root)))
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(stdout.getvalue())["root"], str(root))
+            inspect_result.assert_called_once_with(root)
+            evaluate.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()

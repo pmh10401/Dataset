@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Exp470 실행 안내</title></head><body><main>
+<h1>Exp470 실행 안내</h1>
+<p><strong>현재 상태:</strong> 구현과 사전검증만 끝났다. private 실행 0회, official 실행 0회, TEST/FN 접근 0회다.</p>
+<h2>완료 상태</h2>
+<label><input type="checkbox" checked disabled> Task 1: 고정 규칙</label>
+<label><input type="checkbox" checked disabled> Task 2: Numba 점수</label>
+<label><input type="checkbox" checked disabled> Task 3: 속도와 MLX 확인</label>
+<label><input type="checkbox" checked disabled> Task 4: C11과 자격 판단</label>
+<label><input type="checkbox" checked disabled> Task 5: 7개 결과 파일과 재검사</label>
+<label><input type="checkbox" checked disabled> Task 6: 실행 전 경계</label>
+<label><input type="checkbox" disabled> private run 1</label>
+<label><input type="checkbox" disabled> private run 2</label>
+<label><input type="checkbox" disabled> official 실행</label>
+<label><input type="checkbox" disabled> TEST/FN 확인</label>
+<label><input type="checkbox" disabled> routing 변경</label>
+<h2>다음 승인</h2>
+<p>다음 단계는 사용자가 정확히 <code>Task 6 private run 1·2 순차 실행 승인</code>이라고 승인하고, token <code>TASK_6_PRIVATE_RUN_1_2_APPROVED</code>를 사용할 때만 시작한다.</p>
+<h2>실행 순서</h2>
+<ol><li>현재 commit이 검토한 40자리 소문자 hash와 같고 작업 폴더가 깨끗한지 확인한다.</li><li>첫 private 경로에서 <code>evaluate</code>, 이어서 <code>inspect</code>를 한 번씩 실행한다.</li><li>commit과 작업 폴더를 다시 확인한다.</li><li>둘째 private 경로에서 같은 순서를 한 번 실행한다.</li><li>두 경로의 아래 7개 파일을 원시 byte 단위로 비교한다.</li></ol>
+<h2>기대하는 7개 파일</h2>
+<ul><li><code>artifact_sha256_antigravity.json</code></li><li><code>context_antigravity.json</code></li><li><code>dashboard_snapshot_antigravity.json</code></li><li><code>decision_antigravity.json</code></li><li><code>failed_folds_antigravity.jsonl</code></li><li><code>method_fold_metrics_antigravity.jsonl</code></li><li><code>method_summary_antigravity.jsonl</code></li></ul>
+<h2>중단 조건</h2>
+<p>승인 token이 틀림, commit이 다름, 작업 폴더 변경, 이미 있는 private 경로, command 실패, JSON 출력 이상, 파일 누락, byte 차이 중 하나라도 생기면 즉시 멈춘다. 기존 파일을 지우거나 다시 사용하지 않는다.</p>
+<h2>계속 금지된 일</h2>
+<p>official 실행, TEST/FN/FP/F1 열기, 기준 변경, 결과에 맞춘 조정, routing·champion·pending·promotion 변경은 이 안내만으로 허용되지 않는다.</p>
+</main></body></html>
