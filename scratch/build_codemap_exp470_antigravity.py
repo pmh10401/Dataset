@@ -66,6 +66,20 @@ TASK3_REPORT_ANTIGRAVITY = (
     ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
     "task-3-report-antigravity.html"
 )
+TASK4_BRIEF_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
+    "task-4-brief-antigravity.html"
+)
+TASK4_REPORT_ANTIGRAVITY = (
+    ".superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/"
+    "task-4-report-antigravity.html"
+)
+SCORING_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/scoring_antigravity.py"
+QUALIFICATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/qualification_antigravity.py"
+EVALUATION_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/evaluation_antigravity.py"
+SCORING_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_scoring_antigravity.py"
+QUALIFICATION_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_qualification_antigravity.py"
+EVALUATION_TEST_ANTIGRAVITY = f"{PACKAGE_ANTIGRAVITY}/tests/test_evaluation_antigravity.py"
 EXP468_PACKAGE_ANTIGRAVITY = "experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity"
 EXP468_SOURCES_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/sources_antigravity.py"
 EXP468_INTERPOLATION_ANTIGRAVITY = f"{EXP468_PACKAGE_ANTIGRAVITY}/interpolation_antigravity.py"
@@ -96,6 +110,14 @@ REPRESENTED_PATHS_ANTIGRAVITY = (
     TASK2_REPORT_ANTIGRAVITY,
     TASK3_BRIEF_ANTIGRAVITY,
     TASK3_REPORT_ANTIGRAVITY,
+    TASK4_BRIEF_ANTIGRAVITY,
+    TASK4_REPORT_ANTIGRAVITY,
+    SCORING_ANTIGRAVITY,
+    QUALIFICATION_ANTIGRAVITY,
+    EVALUATION_ANTIGRAVITY,
+    SCORING_TEST_ANTIGRAVITY,
+    QUALIFICATION_TEST_ANTIGRAVITY,
+    EVALUATION_TEST_ANTIGRAVITY,
     EXP468_SOURCES_ANTIGRAVITY,
     EXP468_INTERPOLATION_ANTIGRAVITY,
     EXP468_SYNTHETIC_ANTIGRAVITY,
@@ -118,14 +140,20 @@ HASHED_SOURCE_PATHS_ANTIGRAVITY = (
     PYTHON_REFERENCE_TEST_ANTIGRAVITY,
     ACCELERATION_ANTIGRAVITY,
     ACCELERATION_TEST_ANTIGRAVITY,
+    SCORING_ANTIGRAVITY,
+    QUALIFICATION_ANTIGRAVITY,
+    EVALUATION_ANTIGRAVITY,
+    SCORING_TEST_ANTIGRAVITY,
+    QUALIFICATION_TEST_ANTIGRAVITY,
+    EVALUATION_TEST_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     EXP468_SOURCES_ANTIGRAVITY,
     EXP468_INTERPOLATION_ANTIGRAVITY,
     EXP468_SYNTHETIC_ANTIGRAVITY,
     EXP468_PREDECESSOR_ANTIGRAVITY,
 )
-GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task3_numba_runtime_codemap_v1"
-LOCK_SCHEMA_ANTIGRAVITY = "exp470_task3_numba_runtime_codemap_lock_v1"
+GRAPH_SCHEMA_ANTIGRAVITY = "exp470_task4_pair_repair_codemap_v1"
+LOCK_SCHEMA_ANTIGRAVITY = "exp470_task4_pair_repair_codemap_lock_v1"
 _VOID_TAGS_ANTIGRAVITY = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
@@ -230,6 +258,14 @@ def build_graph_antigravity() -> dict[str, Any]:
         _node_antigravity("task2_report", TASK2_REPORT_ANTIGRAVITY, "Task 2 parent handoff", "Preserves RED/GREEN, code-map checks, self-review, and scorer-only concerns.", (), "Task 2"),
         _node_antigravity("task3_brief", TASK3_BRIEF_ANTIGRAVITY, "Task 3 implementer", "Bounds runtime evidence to the fixed smoke fixture; prohibits qualification, data access, and routing.", (), "Task 3"),
         _node_antigravity("task3_report", TASK3_REPORT_ANTIGRAVITY, "Task 3 parent handoff", "Preserves RED/GREEN runtime evidence, manifest, map validation, and scope boundary.", (), "Task 3"),
+        _node_antigravity("task4_brief", TASK4_BRIEF_ANTIGRAVITY, "Task 4 implementer", "Bounds C0/E11/C11 scoring, pair-repair accounting, and synthetic-only qualification; prohibits data access and runs.", (), "Task 4"),
+        _node_antigravity("scoring", SCORING_ANTIGRAVITY, "Task 4 qualification", "Calls exact C0 once, exact Numba E11 once, and combines C11 only in a compiled kernel.", (SCORING_TEST_ANTIGRAVITY,), "score_fold_methods_antigravity"),
+        _node_antigravity("qualification", QUALIFICATION_ANTIGRAVITY, "Task 4 decision", "Uses compiled pair credit/counting and aggregates only ten synthetic source records.", (QUALIFICATION_TEST_ANTIGRAVITY,), "qualify_records_antigravity"),
+        _node_antigravity("evaluation", EVALUATION_ANTIGRAVITY, "Task 4 decision result", "Applies only period repair, protected-break, normal-confirmation, fallback, and finite gates; AUC is observational.", (EVALUATION_TEST_ANTIGRAVITY,), "evaluate_repair_gates_antigravity"),
+        _node_antigravity("scoring_test", SCORING_TEST_ANTIGRAVITY, "focused unittest command", "Covers compiled C11, exact fallback, frozen evidence, and Numba provenance.", (), "Exp470ScoringTestAntigravity"),
+        _node_antigravity("qualification_test", QUALIFICATION_TEST_ANTIGRAVITY, "focused unittest command", "Covers compiled pair credit/counting, malformed vectors, blocked folds, and ten-record synthetic aggregation.", (), "Exp470QualificationTestAntigravity"),
+        _node_antigravity("evaluation_test", EVALUATION_TEST_ANTIGRAVITY, "focused unittest command", "Covers pair-only decision gates and explicit AUC non-gating.", (), "Exp470EvaluationTestAntigravity"),
+        _node_antigravity("task4_report", TASK4_REPORT_ANTIGRAVITY, "Task 4 parent handoff", "Preserves RED/GREEN, full verification, map validation, and scope evidence.", (), "Exp470 Task 4"),
         _node_antigravity("exp468_load_ecg200_normal_train", EXP468_SOURCES_ANTIGRAVITY, "Exp470 sources export", "Provides the exact reviewed Exp468 normal TRAIN loader object.", (), "load_ecg200_normal_train_antigravity"),
         _node_antigravity("exp468_interpolate_to_140", EXP468_INTERPOLATION_ANTIGRAVITY, "Exp470 interpolation export", "Provides the exact reviewed Exp468 96-to-140 interpolation object.", (), "interpolate_to_140_antigravity"),
         _node_antigravity("exp468_primary_rows", EXP468_SYNTHETIC_ANTIGRAVITY, "Exp470 synthetic export", "Provides the exact reviewed Exp468 primary synthetic-row object.", (), "primary_rows_antigravity"),
@@ -257,6 +293,15 @@ def build_graph_antigravity() -> dict[str, Any]:
         _edge_antigravity("synthetic", "authority", "exp468_primary_rows", SYNTHETIC_ANTIGRAVITY, "primary_rows_antigravity"),
         _edge_antigravity("predecessor", "authority", "exp468_capture_exp465_authority", PREDECESSOR_ANTIGRAVITY, "capture_exp465_authority_antigravity"),
         _edge_antigravity("predecessor", "authority", "exp468_score_c0_fold", PREDECESSOR_ANTIGRAVITY, "score_c0_fold_antigravity"),
+        _edge_antigravity("scoring", "calls", "config", SCORING_ANTIGRAVITY, "FROZEN_CONFIG_ANTIGRAVITY"),
+        _edge_antigravity("scoring", "calls", "spectral_entropy", SCORING_ANTIGRAVITY, "score_spectral_entropy_numba_antigravity"),
+        _edge_antigravity("scoring", "calls", "predecessor", SCORING_ANTIGRAVITY, "score_c0_fold_antigravity"),
+        _edge_antigravity("qualification", "calls", "scoring", QUALIFICATION_ANTIGRAVITY, "FoldMethodScoresAntigravity"),
+        _edge_antigravity("qualification", "calls", "contracts", QUALIFICATION_ANTIGRAVITY, "Exp470QualificationAntigravity"),
+        _edge_antigravity("evaluation", "calls", "contracts", EVALUATION_ANTIGRAVITY, "Exp470QualificationAntigravity"),
+        _edge_antigravity("scoring_test", "tests", "scoring", SCORING_TEST_ANTIGRAVITY, "score_fold_methods_antigravity"),
+        _edge_antigravity("qualification_test", "tests", "qualification", QUALIFICATION_TEST_ANTIGRAVITY, "qualify_records_antigravity"),
+        _edge_antigravity("evaluation_test", "tests", "evaluation", EVALUATION_TEST_ANTIGRAVITY, "evaluate_repair_gates_antigravity"),
     ]
     return {
         "schema": GRAPH_SCHEMA_ANTIGRAVITY,
