@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
@@ -81,6 +82,47 @@ class DashboardExportAntigravityTest(unittest.TestCase):
                 self.assertIn(text, html)
             self.assertIn("fold 0", html)
             self.assertIn("C10", html)
+            self.assertIn(
+                "실행 1: <strong>아직 실행하지 않음</strong>",
+                html,
+            )
+            self.assertIn(
+                "실행 2: <strong>아직 실행하지 않음</strong>",
+                html,
+            )
+
+            failed_decision = dataclasses.replace(
+                inspected.decision,
+                status="qualification_failed_blocked_before_private_run",
+                eligible_for_private_reproducibility=False,
+                primary_passed_count=9,
+                failure_reasons=("c10_not_10_of_10",),
+            )
+            failed_snapshot = dict(inspected.dashboard_snapshot)
+            failed_snapshot["qualification_passed"] = False
+            failed_snapshot["private_reproducibility"] = {
+                "run_1": "not_run",
+                "run_2": "not_run",
+                "status": "qualification_failed_blocked_before_private_run",
+            }
+            failed_inspected = dataclasses.replace(
+                inspected,
+                decision=failed_decision,
+                dashboard_snapshot=MappingProxyType(failed_snapshot),
+            )
+            failed_html = export_dashboard_antigravity(failed_inspected)
+            self.assertIn(
+                "qualification FAIL — private 실행 전 차단",
+                failed_html,
+            )
+            self.assertIn(
+                "실행 1: <strong>아직 실행하지 않음</strong>",
+                failed_html,
+            )
+            self.assertIn(
+                "실행 2: <strong>아직 실행하지 않음</strong>",
+                failed_html,
+            )
 
 
 if __name__ == "__main__":
