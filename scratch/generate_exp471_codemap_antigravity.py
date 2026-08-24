@@ -42,6 +42,7 @@ _EXP471_NAMESPACE_ANTIGRAVITY = (
 )
 _SCRATCH_PATHS_ANTIGRAVITY = (
     "scratch/generate_exp471_codemap_antigravity.py",
+    CLI_ANTIGRAVITY,
 )
 
 
@@ -277,6 +278,15 @@ def build_codemap_payload_antigravity(
                 "name": "exp471_report_flow",
                 "from": "durable evaluation artifact",
                 "through": "atomic canonical JSON/CSV/figure publication",
+                "to": "paper report manifest",
+            },
+            {
+                "name": "exp471_operator_report_flow",
+                "from": CLI_ANTIGRAVITY,
+                "through": (
+                    "closed CLI source verification, resumable cache, "
+                    "evaluation, and identity-bound report publication"
+                ),
                 "to": "paper report manifest",
             },
         ],

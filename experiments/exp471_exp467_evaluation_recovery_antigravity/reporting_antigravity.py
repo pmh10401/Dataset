@@ -14,13 +14,16 @@ from pathlib import Path, PurePosixPath
 import platform
 import re
 import secrets
-import shutil
 import stat
 import subprocess
 import sys
-import tempfile
+import threading
+from time import monotonic
 from typing import Any
 
+from experiments.exp450_resampling_image_ablation_antigravity import (
+    reporting_antigravity as _frozen_reporting_antigravity,
+)
 from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
     Exp450ReportArtifactAntigravity,
     write_exp450_report_antigravity,
@@ -52,7 +55,19 @@ _RENAME_EXCL_ANTIGRAVITY = 0x00000004
 
 _REPORT_CLOSURE_PATHS_ANTIGRAVITY = (
     "experiments/exp450_resampling_image_ablation_antigravity/"
+    "contracts_antigravity.py",
+    "experiments/exp450_resampling_image_ablation_antigravity/"
+    "evaluation_antigravity.py",
+    "experiments/exp450_resampling_image_ablation_antigravity/"
     "reporting_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "config_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "contracts_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "evaluation_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "score_cache_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "reporting_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
@@ -67,6 +82,23 @@ class _LockTokenAntigravity:
     payload: bytes
     device: int
     inode: int
+    descriptor: int
+    parent_path: Path
+    parent_descriptor: int
+    parent_device: int
+    parent_inode: int
+
+
+@dataclass(frozen=True, slots=True)
+class _StageTokenAntigravity:
+    path: Path
+    descriptor: int
+    device: int
+    inode: int
+
+
+_LOCAL_PUBLICATION_CONDITION_ANTIGRAVITY = threading.Condition()
+_LOCAL_PUBLICATION_ROOTS_ANTIGRAVITY: set[Path] = set()
 
 
 def _repository_root_antigravity() -> Path:
@@ -88,6 +120,61 @@ def _fsync_directory_antigravity(path: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _open_directory_anchor_antigravity(path: Path) -> tuple[int, os.stat_result]:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(path, flags)
+    opened = os.fstat(descriptor)
+    linked = path.lstat()
+    if (
+        not stat.S_ISDIR(opened.st_mode)
+        or not stat.S_ISDIR(linked.st_mode)
+        or opened.st_dev != linked.st_dev
+        or opened.st_ino != linked.st_ino
+    ):
+        os.close(descriptor)
+        raise ValueError("Exp471 report directory identity differs")
+    return descriptor, opened
+
+
+def _validate_directory_anchor_antigravity(
+    path: Path, descriptor: int, device: int, inode: int
+) -> None:
+    opened = os.fstat(descriptor)
+    try:
+        linked = path.lstat()
+    except FileNotFoundError as error:
+        raise ValueError("Exp471 report parent identity changed") from error
+    if (
+        not stat.S_ISDIR(opened.st_mode)
+        or not stat.S_ISDIR(linked.st_mode)
+        or opened.st_dev != device
+        or opened.st_ino != inode
+        or linked.st_dev != device
+        or linked.st_ino != inode
+    ):
+        raise ValueError("Exp471 report parent identity changed")
+
+
+def _entry_stat_antigravity(parent_descriptor: int, name: str) -> os.stat_result:
+    return os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+
+
+def _require_entry_identity_antigravity(
+    parent_descriptor: int, name: str, device: int, inode: int, scope: str
+) -> os.stat_result:
+    try:
+        linked = _entry_stat_antigravity(parent_descriptor, name)
+    except FileNotFoundError as error:
+        raise ValueError(f"Exp471 report {scope} identity changed") from error
+    if linked.st_dev != device or linked.st_ino != inode:
+        raise ValueError(f"Exp471 report {scope} identity changed")
+    return linked
 
 
 def _require_safe_parent_antigravity(root: Path) -> Path:
@@ -207,23 +294,33 @@ def _read_lock_antigravity(path: Path) -> tuple[dict[str, object], bytes, os.sta
     return value, raw, opened
 
 
-def _atomic_rename_noreplace_antigravity(source: Path, destination: Path) -> None:
-    if source.parent != destination.parent:
-        raise ValueError("Exp471 report rename source is not a sibling")
+def _atomic_rename_noreplace_at_antigravity(
+    parent_descriptor: int, source_name: str, destination_name: str
+) -> None:
+    if "/" in source_name or "/" in destination_name:
+        raise ValueError("Exp471 report rename names must be direct children")
     libc = ctypes.CDLL(None, use_errno=True)
-    source_bytes = os.fsencode(source)
-    destination_bytes = os.fsencode(destination)
+    source_bytes = os.fsencode(source_name)
+    destination_bytes = os.fsencode(destination_name)
     if sys.platform == "darwin":
         try:
-            rename = libc.renamex_np
+            rename = libc.renameatx_np
         except AttributeError as error:
             raise OSError(
                 errno.ENOTSUP, "Exp471 atomic no-replace rename is unavailable"
             ) from error
-        rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+        rename.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
         rename.restype = ctypes.c_int
         result = rename(
+            parent_descriptor,
             source_bytes,
+            parent_descriptor,
             destination_bytes,
             ctypes.c_uint(_RENAME_EXCL_ANTIGRAVITY),
         )
@@ -243,9 +340,9 @@ def _atomic_rename_noreplace_antigravity(source: Path, destination: Path) -> Non
         ]
         rename.restype = ctypes.c_int
         result = rename(
-            -100,
+            parent_descriptor,
             source_bytes,
-            -100,
+            parent_descriptor,
             destination_bytes,
             ctypes.c_uint(_RENAME_NOREPLACE_ANTIGRAVITY),
         )
@@ -261,24 +358,48 @@ def _atomic_rename_noreplace_antigravity(source: Path, destination: Path) -> Non
     raise OSError(code, "Exp471 atomic no-replace rename failed")
 
 
+def _atomic_rename_noreplace_antigravity(source: Path, destination: Path) -> None:
+    if source.parent != destination.parent:
+        raise ValueError("Exp471 report rename source is not a sibling")
+    descriptor, _ = _open_directory_anchor_antigravity(source.parent)
+    try:
+        _atomic_rename_noreplace_at_antigravity(
+            descriptor, source.name, destination.name
+        )
+    finally:
+        os.close(descriptor)
+
+
 def _recover_dead_lock_antigravity(
     path: Path,
     value: Mapping[str, object],
     raw: bytes,
     opened: os.stat_result,
+    parent_descriptor: int,
+    parent_device: int,
+    parent_inode: int,
 ) -> None:
     current_identity = _process_start_identity_antigravity(int(value["pid"]))
     if current_identity == value["process_start_identity"]:
         raise ValueError("Exp471 report lock has an active owner")
     if current_identity == "unknown-live-process-antigravity":
         raise ValueError("Exp471 report lock owner cannot be proven dead")
-    linked = path.lstat()
-    if linked.st_dev != opened.st_dev or linked.st_ino != opened.st_ino:
-        raise ValueError("Exp471 report lock changed during recovery")
+    _validate_directory_anchor_antigravity(
+        path.parent, parent_descriptor, parent_device, parent_inode
+    )
+    _require_entry_identity_antigravity(
+        parent_descriptor,
+        path.name,
+        opened.st_dev,
+        opened.st_ino,
+        "lock during recovery",
+    )
     quarantine = path.with_name(
         f".{path.name}.{secrets.token_hex(12)}.dead_antigravity"
     )
-    _atomic_rename_noreplace_antigravity(path, quarantine)
+    _atomic_rename_noreplace_at_antigravity(
+        parent_descriptor, path.name, quarantine.name
+    )
     try:
         moved_value, moved_raw, moved = _read_lock_antigravity(quarantine)
         if (
@@ -288,8 +409,18 @@ def _recover_dead_lock_antigravity(
             or moved_value != value
         ):
             raise ValueError("Exp471 report dead lock identity changed")
-        quarantine.unlink()
-        _fsync_directory_antigravity(path.parent)
+        _validate_directory_anchor_antigravity(
+            path.parent, parent_descriptor, parent_device, parent_inode
+        )
+        _require_entry_identity_antigravity(
+            parent_descriptor,
+            quarantine.name,
+            opened.st_dev,
+            opened.st_ino,
+            "dead lock quarantine",
+        )
+        os.unlink(quarantine.name, dir_fd=parent_descriptor)
+        os.fsync(parent_descriptor)
     except Exception:
         # A record whose identity changed is preserved under quarantine.
         raise
@@ -297,60 +428,265 @@ def _recover_dead_lock_antigravity(
 
 def _acquire_report_lock_antigravity(root: Path) -> _LockTokenAntigravity:
     parent = _require_safe_parent_antigravity(root)
+    parent_descriptor, parent_opened = _open_directory_anchor_antigravity(parent)
     path = _report_lock_path_antigravity(root)
-    if os.path.lexists(path):
-        if path.is_symlink():
-            raise ValueError("Exp471 report lock is a symlink")
-        value, raw, opened = _read_lock_antigravity(path)
-        _recover_dead_lock_antigravity(path, value, raw, opened)
-    identity = _process_start_identity_antigravity(os.getpid())
-    if identity is None or identity == "unknown-live-process-antigravity":
-        raise ValueError("Exp471 current process start identity is unavailable")
-    payload = canonical_json_bytes_exp471_antigravity(
-        _lock_record_antigravity(os.getpid(), identity)
-    )
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
     try:
-        descriptor = os.open(path, flags, 0o600)
-    except FileExistsError as error:
-        raise ValueError("Exp471 report lock has an active owner") from error
-    try:
-        _write_all_antigravity(descriptor, payload)
-        os.fsync(descriptor)
-        opened = os.fstat(descriptor)
-    except Exception:
-        os.close(descriptor)
+        if os.path.lexists(path):
+            if path.is_symlink():
+                raise ValueError("Exp471 report lock is a symlink")
+            value, raw, opened = _read_lock_antigravity(path)
+            _recover_dead_lock_antigravity(
+                path,
+                value,
+                raw,
+                opened,
+                parent_descriptor,
+                parent_opened.st_dev,
+                parent_opened.st_ino,
+            )
+        identity = _process_start_identity_antigravity(os.getpid())
+        if identity is None or identity == "unknown-live-process-antigravity":
+            raise ValueError("Exp471 current process start identity is unavailable")
+        payload = canonical_json_bytes_exp471_antigravity(
+            _lock_record_antigravity(os.getpid(), identity)
+        )
+        flags = os.O_RDWR | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
         try:
-            linked = path.lstat()
-            if linked.st_dev == opened.st_dev and linked.st_ino == opened.st_ino:
-                path.unlink()
-        except (NameError, OSError):
-            pass
+            descriptor = os.open(path.name, flags, 0o600, dir_fd=parent_descriptor)
+        except FileExistsError as error:
+            raise ValueError("Exp471 report lock has an active owner") from error
+        try:
+            _write_all_antigravity(descriptor, payload)
+            os.fsync(descriptor)
+            opened = os.fstat(descriptor)
+            _validate_directory_anchor_antigravity(
+                parent,
+                parent_descriptor,
+                parent_opened.st_dev,
+                parent_opened.st_ino,
+            )
+            _require_entry_identity_antigravity(
+                parent_descriptor,
+                path.name,
+                opened.st_dev,
+                opened.st_ino,
+                "owned lock",
+            )
+            os.fsync(parent_descriptor)
+        except Exception:
+            os.close(descriptor)
+            try:
+                _require_entry_identity_antigravity(
+                    parent_descriptor,
+                    path.name,
+                    opened.st_dev,
+                    opened.st_ino,
+                    "failed lock",
+                )
+                os.unlink(path.name, dir_fd=parent_descriptor)
+            except (NameError, OSError, ValueError):
+                pass
+            raise
+        return _LockTokenAntigravity(
+            path,
+            payload,
+            opened.st_dev,
+            opened.st_ino,
+            descriptor,
+            parent,
+            parent_descriptor,
+            parent_opened.st_dev,
+            parent_opened.st_ino,
+        )
+    except Exception:
+        os.close(parent_descriptor)
         raise
-    else:
-        os.close(descriptor)
-    _fsync_directory_antigravity(parent)
-    return _LockTokenAntigravity(path, payload, opened.st_dev, opened.st_ino)
 
 
 def _release_report_lock_antigravity(token: _LockTokenAntigravity) -> None:
     try:
-        linked = token.path.lstat()
-        if linked.st_dev != token.device or linked.st_ino != token.inode:
-            return
+        _validate_directory_anchor_antigravity(
+            token.parent_path,
+            token.parent_descriptor,
+            token.parent_device,
+            token.parent_inode,
+        )
         value, raw, opened = _read_lock_antigravity(token.path)
         del value
-        if (
-            opened.st_dev == token.device
-            and opened.st_ino == token.inode
+        retained = os.fstat(token.descriptor)
+        if not (
+            opened.st_dev == token.device == retained.st_dev
+            and opened.st_ino == token.inode == retained.st_ino
             and raw == token.payload
         ):
-            token.path.unlink()
-            _fsync_directory_antigravity(token.path.parent)
+            raise ValueError("Exp471 report lock identity changed")
+        _require_entry_identity_antigravity(
+            token.parent_descriptor,
+            token.path.name,
+            token.device,
+            token.inode,
+            "lock release",
+        )
+        os.unlink(token.path.name, dir_fd=token.parent_descriptor)
+        os.fsync(token.parent_descriptor)
     except FileNotFoundError:
         return
+    finally:
+        os.close(token.descriptor)
+        os.close(token.parent_descriptor)
+
+
+def _reserve_local_publication_antigravity(root: Path) -> bool:
+    deadline = monotonic() + 30.0
+    with _LOCAL_PUBLICATION_CONDITION_ANTIGRAVITY:
+        while root in _LOCAL_PUBLICATION_ROOTS_ANTIGRAVITY:
+            remaining = deadline - monotonic()
+            if remaining <= 0.0:
+                raise ValueError("Exp471 report lock has an active owner")
+            _LOCAL_PUBLICATION_CONDITION_ANTIGRAVITY.wait(
+                timeout=min(0.1, remaining)
+            )
+            if os.path.lexists(root):
+                return False
+        _LOCAL_PUBLICATION_ROOTS_ANTIGRAVITY.add(root)
+        return True
+
+
+def _release_local_publication_antigravity(root: Path) -> None:
+    with _LOCAL_PUBLICATION_CONDITION_ANTIGRAVITY:
+        _LOCAL_PUBLICATION_ROOTS_ANTIGRAVITY.discard(root)
+        _LOCAL_PUBLICATION_CONDITION_ANTIGRAVITY.notify_all()
+
+
+def _create_stage_token_antigravity(
+    root: Path, token: _LockTokenAntigravity
+) -> _StageTokenAntigravity:
+    _validate_directory_anchor_antigravity(
+        token.parent_path,
+        token.parent_descriptor,
+        token.parent_device,
+        token.parent_inode,
+    )
+    for _ in range(128):
+        name = f".{root.name}.stage_antigravity_{secrets.token_hex(12)}"
+        try:
+            os.mkdir(name, mode=0o700, dir_fd=token.parent_descriptor)
+        except FileExistsError:
+            continue
+        flags = os.O_RDONLY
+        if hasattr(os, "O_DIRECTORY"):
+            flags |= os.O_DIRECTORY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor = os.open(name, flags, dir_fd=token.parent_descriptor)
+        opened = os.fstat(descriptor)
+        _require_entry_identity_antigravity(
+            token.parent_descriptor,
+            name,
+            opened.st_dev,
+            opened.st_ino,
+            "staging",
+        )
+        return _StageTokenAntigravity(
+            token.parent_path / name,
+            descriptor,
+            opened.st_dev,
+            opened.st_ino,
+        )
+    raise FileExistsError("Exp471 report staging name space is exhausted")
+
+
+def _cleanup_stage_antigravity(
+    stage: _StageTokenAntigravity, token: _LockTokenAntigravity
+) -> None:
+    _validate_directory_anchor_antigravity(
+        token.parent_path,
+        token.parent_descriptor,
+        token.parent_device,
+        token.parent_inode,
+    )
+    _require_entry_identity_antigravity(
+        token.parent_descriptor,
+        stage.path.name,
+        stage.device,
+        stage.inode,
+        "staging cleanup",
+    )
+    retained = os.fstat(stage.descriptor)
+    if retained.st_dev != stage.device or retained.st_ino != stage.inode:
+        raise ValueError("Exp471 report staging cleanup identity changed")
+
+    def clear_directory(descriptor: int) -> None:
+        entries = tuple(os.scandir(descriptor))
+        for entry in entries:
+            details = os.stat(
+                entry.name, dir_fd=descriptor, follow_symlinks=False
+            )
+            if stat.S_ISREG(details.st_mode):
+                os.unlink(entry.name, dir_fd=descriptor)
+                continue
+            if not stat.S_ISDIR(details.st_mode):
+                raise ValueError("Exp471 report staging cleanup found an unsafe entry")
+            flags = os.O_RDONLY
+            if hasattr(os, "O_DIRECTORY"):
+                flags |= os.O_DIRECTORY
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            child = os.open(entry.name, flags, dir_fd=descriptor)
+            try:
+                opened = os.fstat(child)
+                if opened.st_dev != details.st_dev or opened.st_ino != details.st_ino:
+                    raise ValueError(
+                        "Exp471 report staging child identity changed"
+                    )
+                clear_directory(child)
+                os.fsync(child)
+            finally:
+                os.close(child)
+            current = os.stat(
+                entry.name, dir_fd=descriptor, follow_symlinks=False
+            )
+            if current.st_dev != details.st_dev or current.st_ino != details.st_ino:
+                raise ValueError("Exp471 report staging child identity changed")
+            os.rmdir(entry.name, dir_fd=descriptor)
+
+    clear_directory(stage.descriptor)
+    os.fsync(stage.descriptor)
+    _require_entry_identity_antigravity(
+        token.parent_descriptor,
+        stage.path.name,
+        stage.device,
+        stage.inode,
+        "staging cleanup",
+    )
+    os.rmdir(stage.path.name, dir_fd=token.parent_descriptor)
+    os.fsync(token.parent_descriptor)
+
+
+def _read_report_for_worker_antigravity(
+    artifact: Exp471EvaluationArtifactAntigravity,
+    root: Path,
+    worker: Mapping[str, object],
+) -> Exp471ReportAuthorityAntigravity:
+    authority = read_exp471_report_antigravity(artifact, root)
+    provenance, _ = _read_json_leaf_antigravity(
+        root, _PROVENANCE_NAME_ANTIGRAVITY
+    )
+    frozen = reconstruct_frozen_evaluation_exp471_antigravity(artifact)
+    frozen_leaves = _expected_frozen_report_leaves_antigravity(frozen)
+    expected = _provenance_antigravity(
+        artifact,
+        worker,
+        {
+            relative: sha256(payload).hexdigest()
+            for relative, payload in frozen_leaves.items()
+        },
+    )
+    if provenance != expected:
+        raise ValueError("Exp471 report existing worker provenance differs")
+    return authority
 
 
 def _dependency_version_antigravity(distribution: str) -> str:
@@ -530,15 +866,175 @@ def _artifact_map_bytes_antigravity(files: Mapping[str, str]) -> bytes:
     )
 
 
-def _validate_worker_provenance_antigravity(value: object) -> Mapping[str, object]:
-    if not isinstance(value, Mapping) or not value:
+def _validate_worker_provenance_antigravity(
+    value: object, artifact: Exp471EvaluationArtifactAntigravity
+) -> Mapping[str, object]:
+    from . import score_cache_antigravity as score_cache
+    from .config_antigravity import (
+        ACCELERATION_ASSESSMENT_ANTIGRAVITY,
+        CPU_WORKERS_ANTIGRAVITY,
+        INNER_NUMERICAL_THREADS_ANTIGRAVITY,
+        LOGICAL_CPU_COUNT_ANTIGRAVITY,
+    )
+
+    if not isinstance(value, Mapping):
         raise ValueError("Exp471 worker provenance is missing")
-    # Round-trip through the strict canonical encoder to reject non-finite or exotic data.
     raw = canonical_json_bytes_exp471_antigravity(value)
     plain = json.loads(raw.decode("utf-8"))
-    if not isinstance(plain, dict) or not plain:
+    required = {
+        "schema",
+        "benchmark_decision",
+        "execution_decision",
+        "detected_logical_cpus",
+        "default_cpu_workers",
+        "inner_numerical_threads",
+        "acceleration",
+    }
+    if (
+        not isinstance(plain, dict)
+        or set(plain) != required
+        or plain.get("schema") != "exp471-worker-provenance-antigravity.v1"
+    ):
         raise ValueError("Exp471 worker provenance is invalid")
+    cache = artifact.payload.get("score_cache")
+    if not isinstance(cache, Mapping):
+        raise ValueError("Exp471 worker provenance cache binding is missing")
+    benchmark = score_cache._validated_benchmark_decision_antigravity(
+        plain["benchmark_decision"],
+        expected_context_sha256=cache.get("cache_context_sha256"),
+    )
+    execution = plain["execution_decision"]
+    execution_required = {
+        "schema",
+        "cache_context_sha256",
+        "benchmark_decision_sha256",
+        "selected_workers",
+        "fallback_occurred",
+        "events",
+    }
+    if (
+        not isinstance(execution, dict)
+        or set(execution) != execution_required
+        or execution.get("schema")
+        != "exp471-score-preparation-execution-antigravity.v1"
+        or execution.get("cache_context_sha256")
+        != benchmark["cache_context_sha256"]
+        or execution.get("benchmark_decision_sha256")
+        != benchmark["decision_sha256"]
+        or not isinstance(execution.get("events"), list)
+        or not execution["events"]
+    ):
+        raise ValueError("Exp471 worker provenance execution decision differs")
+    checked_events: list[dict[str, object]] = []
+    prior: str | None = None
+    for sequence, event in enumerate(execution["events"]):
+        checked = score_cache._validated_execution_event_antigravity(
+            event,
+            benchmark,
+            expected_sequence=sequence,
+            expected_prior_sha256=prior,
+        )
+        checked_events.append(checked)
+        prior = checked["execution_sha256"]
+    expected_execution = json.loads(
+        canonical_json_bytes_exp471_antigravity(
+            score_cache._execution_summary_antigravity(
+                benchmark, checked_events
+            )
+        ).decode("utf-8")
+    )
+    if execution != expected_execution:
+        raise ValueError("Exp471 worker provenance execution summary differs")
+    if (
+        plain["detected_logical_cpus"] != LOGICAL_CPU_COUNT_ANTIGRAVITY
+        or plain["default_cpu_workers"] != CPU_WORKERS_ANTIGRAVITY
+        or plain["inner_numerical_threads"]
+        != INNER_NUMERICAL_THREADS_ANTIGRAVITY
+        or plain["acceleration"] != dict(ACCELERATION_ASSESSMENT_ANTIGRAVITY)
+        or plain["detected_logical_cpus"]
+        != benchmark["detected_logical_cpus"]
+        or plain["default_cpu_workers"] != benchmark["default_cpu_workers"]
+        or plain["inner_numerical_threads"]
+        != benchmark["inner_numerical_threads"]
+        or plain["acceleration"] != benchmark["acceleration"]
+    ):
+        raise ValueError("Exp471 worker provenance policy differs")
     return plain
+
+
+def _expected_frozen_report_leaves_antigravity(frozen: object) -> dict[str, bytes]:
+    """Derive exact deterministic Exp450 bytes without rendering or publication."""
+
+    metrics = frozen.metric_tables
+    curves = _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
+        frozen.curve_tables
+    )
+    metric_payload = {
+        "method_order": list(metrics.method_order),
+        "per_dataset": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
+            metrics.per_dataset
+        ),
+        "macro": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
+            metrics.macro
+        ),
+        "micro": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
+            metrics.micro
+        ),
+    }
+    paired_payload = {
+        "paired_statistics": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
+            metrics.paired_statistics
+        )
+    }
+    leaves = {
+        "exp450_metric_tables_antigravity.csv": _frozen_reporting_antigravity._csv_bytes(
+            metrics.per_dataset,
+            (
+                "method",
+                "dataset",
+                "average_precision",
+                "auroc",
+                "average_precision_exclusion",
+                "auroc_exclusion",
+            ),
+        ),
+        "exp450_metric_tables_antigravity.json": _frozen_reporting_antigravity.canonical_json_bytes(
+            metric_payload
+        ),
+        "exp450_curve_tables_antigravity.csv": _frozen_reporting_antigravity._curve_csv_bytes(
+            curves
+        ),
+        "exp450_curve_tables_antigravity.json": _frozen_reporting_antigravity.canonical_json_bytes(
+            curves
+        ),
+        "exp450_paired_differences_antigravity.csv": _frozen_reporting_antigravity._paired_csv_bytes(
+            metrics.paired_statistics
+        ),
+        "exp450_paired_differences_antigravity.json": _frozen_reporting_antigravity.canonical_json_bytes(
+            paired_payload
+        ),
+    }
+    svg = _frozen_reporting_antigravity._curve_svg(curves)
+    leaves.update(
+        {
+            "exp450_curves_antigravity.svg": svg.encode("utf-8"),
+            "exp450_curves_antigravity.png": _frozen_reporting_antigravity._curve_png(
+                curves
+            ),
+            "exp450_paper_report_antigravity.html": _frozen_reporting_antigravity._html_document(
+                metric_payload, paired_payload, curves, svg
+            ).encode("utf-8"),
+        }
+    )
+    manifest = {
+        name: sha256(payload).hexdigest()
+        for name, payload in sorted(leaves.items())
+    }
+    leaves["exp450_report_manifest_antigravity.json"] = (
+        _frozen_reporting_antigravity.canonical_json_bytes(manifest)
+    )
+    prefix = "exp450_report_artifacts_antigravity"
+    return {f"{prefix}/{name}": payload for name, payload in leaves.items()}
 
 
 def _read_json_leaf_antigravity(root: Path, relative: str) -> tuple[dict[str, Any], bytes]:
@@ -558,7 +1054,8 @@ def read_exp471_report_antigravity(
 ) -> Exp471ReportAuthorityAntigravity:
     """Reopen every final leaf and verify its complete authority map."""
 
-    reconstruct_frozen_evaluation_exp471_antigravity(artifact)
+    frozen = reconstruct_frozen_evaluation_exp471_antigravity(artifact)
+    expected_frozen_leaves = _expected_frozen_report_leaves_antigravity(frozen)
     root = Path(root)
     _require_safe_parent_antigravity(root)
     if root.is_symlink():
@@ -621,24 +1118,35 @@ def read_exp471_report_antigravity(
     }
     if actual_names != expected_names:
         raise ValueError("Exp471 report leaf inventory differs")
+    if set(authority.report_file_sha256) != {
+        *expected_frozen_leaves,
+        _PROVENANCE_NAME_ANTIGRAVITY,
+    }:
+        raise ValueError("Exp471 report fixed leaf inventory differs")
     for relative, expected in authority.report_file_sha256.items():
         if not _safe_relative_antigravity(relative):
             raise ValueError("Exp471 report artifact path escapes its root")
         observed = sha256(_regular_leaf_bytes_antigravity(root, relative)).hexdigest()
         if observed != expected:
             raise ValueError(f"Exp471 report leaf digest differs: {relative}")
+    for relative, expected_bytes in expected_frozen_leaves.items():
+        if _regular_leaf_bytes_antigravity(root, relative) != expected_bytes:
+            raise ValueError(
+                f"Exp471 frozen report leaf semantic bytes differ: {relative}"
+            )
     provenance, _ = _read_json_leaf_antigravity(root, _PROVENANCE_NAME_ANTIGRAVITY)
-    if (
-        provenance.get("schema") != _PROVENANCE_SCHEMA_ANTIGRAVITY
-        or provenance.get("method_order") != list(METHOD_ORDER_ANTIGRAVITY)
-        or provenance.get("source_authority", {}).get("authority_sha256")
-        != artifact.source_authority_sha256
-        or provenance.get("score_cache", {}).get("manifest_sha256")
-        != artifact.cache_manifest_sha256
-        or provenance.get("evaluation", {}).get("evaluation_sha256")
-        != artifact.evaluation_sha256
-        or provenance.get("report_code_closure") != _report_closure_antigravity()
-    ):
+    worker = _validate_worker_provenance_antigravity(
+        provenance.get("worker_provenance"), artifact
+    )
+    expected_provenance = _provenance_antigravity(
+        artifact,
+        worker,
+        {
+            relative: sha256(payload).hexdigest()
+            for relative, payload in expected_frozen_leaves.items()
+        },
+    )
+    if provenance != expected_provenance:
         raise ValueError("Exp471 report provenance differs")
     after = root.lstat()
     if before.st_dev != after.st_dev or before.st_ino != after.st_ino:
@@ -685,6 +1193,7 @@ def write_exp471_report_antigravity(
 
         status = status_score_cache_antigravity(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
         worker_provenance = {
+            "schema": "exp471-worker-provenance-antigravity.v1",
             "benchmark_decision": status["benchmark_decision"],
             "execution_decision": status["execution_decision"],
             "detected_logical_cpus": status["detected_logical_cpus"],
@@ -692,14 +1201,18 @@ def write_exp471_report_antigravity(
             "inner_numerical_threads": status["inner_numerical_threads"],
             "acceleration": status["acceleration"],
         }
-    worker = _validate_worker_provenance_antigravity(worker_provenance)
+    worker = _validate_worker_provenance_antigravity(
+        worker_provenance, artifact
+    )
     root = Path(root)
-    parent = _require_safe_parent_antigravity(root)
+    _require_safe_parent_antigravity(root)
     if os.path.lexists(root):
         if root.is_symlink():
             raise ValueError("Exp471 report root is a symlink")
         try:
-            authority = read_exp471_report_antigravity(artifact, root)
+            return _read_report_for_worker_antigravity(
+                artifact, root, worker
+            )
         except FileNotFoundError:
             raise
         except ValueError as error:
@@ -708,40 +1221,34 @@ def write_exp471_report_antigravity(
                     "Exp471 report destination is markerless or foreign"
                 ) from error
             raise
-        provenance, _ = _read_json_leaf_antigravity(
-            root, _PROVENANCE_NAME_ANTIGRAVITY
-        )
-        if provenance.get("worker_provenance") != worker:
-            raise ValueError("Exp471 report existing worker provenance differs")
-        return authority
 
-    token = _acquire_report_lock_antigravity(root)
-    stage: Path | None = None
+    local_owner = _reserve_local_publication_antigravity(root)
+    if not local_owner:
+        return _read_report_for_worker_antigravity(artifact, root, worker)
+    token: _LockTokenAntigravity | None = None
+    stage: _StageTokenAntigravity | None = None
     published = False
     try:
+        token = _acquire_report_lock_antigravity(root)
         if os.path.lexists(root):
-            return read_exp471_report_antigravity(artifact, root)
-        stage = Path(
-            tempfile.mkdtemp(
-                prefix=f".{root.name}.stage_antigravity_", dir=parent
-            )
-        )
+            return _read_report_for_worker_antigravity(artifact, root, worker)
+        stage = _create_stage_token_antigravity(root, token)
         active_renderer = (
             write_exp450_report_antigravity if renderer is None else renderer
         )
-        rendered = active_renderer(frozen, stage)
+        rendered = active_renderer(frozen, stage.path)
         if (
             not isinstance(rendered, Exp450ReportArtifactAntigravity)
-            or rendered.root.parent != stage
+            or rendered.root.parent != stage.path
             or rendered.root.name != "exp450_report_artifacts_antigravity"
         ):
             raise ValueError("Exp471 frozen reporter returned an unsafe root")
-        rendered_names = _leaf_names_antigravity(stage)
+        rendered_names = _leaf_names_antigravity(stage.path)
         if not rendered_names:
             raise ValueError("Exp471 frozen reporter produced no leaves")
         rendered_digests = {
             relative: sha256(
-                _regular_leaf_bytes_antigravity(stage, relative)
+                _regular_leaf_bytes_antigravity(stage.path, relative)
             ).hexdigest()
             for relative in rendered_names
         }
@@ -749,16 +1256,18 @@ def write_exp471_report_antigravity(
             artifact, worker, rendered_digests
         )
         _create_leaf_antigravity(
-            stage / _PROVENANCE_NAME_ANTIGRAVITY,
+            stage.path / _PROVENANCE_NAME_ANTIGRAVITY,
             canonical_json_bytes_exp471_antigravity(provenance),
         )
         report_files = dict(rendered_digests)
         report_files[_PROVENANCE_NAME_ANTIGRAVITY] = sha256(
-            _regular_leaf_bytes_antigravity(stage, _PROVENANCE_NAME_ANTIGRAVITY)
+            _regular_leaf_bytes_antigravity(
+                stage.path, _PROVENANCE_NAME_ANTIGRAVITY
+            )
         ).hexdigest()
         artifact_map_raw = _artifact_map_bytes_antigravity(report_files)
         _create_leaf_antigravity(
-            stage / _ARTIFACT_MAP_NAME_ANTIGRAVITY, artifact_map_raw
+            stage.path / _ARTIFACT_MAP_NAME_ANTIGRAVITY, artifact_map_raw
         )
         authority = Exp471ReportAuthorityAntigravity(
             source_authority_sha256=artifact.source_authority_sha256,
@@ -768,38 +1277,82 @@ def write_exp471_report_antigravity(
             report_manifest_sha256=sha256(artifact_map_raw).hexdigest(),
         )
         _create_leaf_antigravity(
-            stage / _COMPLETE_MARKER_NAME_ANTIGRAVITY,
+            stage.path / _COMPLETE_MARKER_NAME_ANTIGRAVITY,
             canonical_json_bytes_exp471_antigravity(
                 _authority_record_antigravity(authority)
             ),
         )
-        _fsync_tree_antigravity(stage)
-        staged = read_exp471_report_antigravity(artifact, stage)
+        _fsync_tree_antigravity(stage.path)
+        staged = _read_report_for_worker_antigravity(
+            artifact, stage.path, worker
+        )
         if staged != authority:
             raise ValueError("Exp471 staged report authority differs")
         if fault is not None:
             fault("before_rename")
+        _validate_directory_anchor_antigravity(
+            token.parent_path,
+            token.parent_descriptor,
+            token.parent_device,
+            token.parent_inode,
+        )
+        retained = os.fstat(stage.descriptor)
+        if retained.st_dev != stage.device or retained.st_ino != stage.inode:
+            raise ValueError("Exp471 report staging identity changed")
+        _require_entry_identity_antigravity(
+            token.parent_descriptor,
+            stage.path.name,
+            stage.device,
+            stage.inode,
+            "staging before rename",
+        )
         try:
-            _atomic_rename_noreplace_antigravity(stage, root)
+            _atomic_rename_noreplace_at_antigravity(
+                token.parent_descriptor, stage.path.name, root.name
+            )
+            _require_entry_identity_antigravity(
+                token.parent_descriptor,
+                root.name,
+                stage.device,
+                stage.inode,
+                "published root",
+            )
             published = True
         except BaseException:
             if os.path.lexists(root):
-                reopened = read_exp471_report_antigravity(artifact, root)
-                published = True
-                return reopened
+                return _read_report_for_worker_antigravity(
+                    artifact, root, worker
+                )
             raise
-        _fsync_directory_antigravity(parent)
+        os.fsync(token.parent_descriptor)
         try:
             if fault is not None:
                 fault("after_rename")
         except Exception:
-            return read_exp471_report_antigravity(artifact, root)
-        return read_exp471_report_antigravity(artifact, root)
+            return _read_report_for_worker_antigravity(
+                artifact, root, worker
+            )
+        return _read_report_for_worker_antigravity(artifact, root, worker)
     finally:
-        if stage is not None and not published and stage.exists():
-            shutil.rmtree(stage)
-            _fsync_directory_antigravity(parent)
-        _release_report_lock_antigravity(token)
+        active_error = sys.exc_info()[0] is not None
+        cleanup_error: Exception | None = None
+        if stage is not None:
+            try:
+                if not published:
+                    _cleanup_stage_antigravity(stage, token)
+            except Exception as error:
+                cleanup_error = error
+            finally:
+                os.close(stage.descriptor)
+        if token is not None:
+            try:
+                _release_report_lock_antigravity(token)
+            except Exception as error:
+                if cleanup_error is None:
+                    cleanup_error = error
+        _release_local_publication_antigravity(root)
+        if cleanup_error is not None and not active_error:
+            raise cleanup_error
 
 
 __all__ = [

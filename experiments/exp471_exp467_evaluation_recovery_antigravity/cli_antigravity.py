@@ -7,8 +7,10 @@ from datetime import datetime, timezone
 import fcntl
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
+import stat
 import sys
 from time import monotonic
 from typing import TextIO
@@ -36,6 +38,27 @@ _COMMANDS_ANTIGRAVITY = (
 )
 _PROGRESS_NAME_ANTIGRAVITY = "progress_antigravity.jsonl"
 _TOTAL_SHARDS_ANTIGRAVITY = 11_170
+_PROGRESS_SCHEMA_ANTIGRAVITY = "exp471-progress-antigravity.v1"
+_PROGRESS_KEYS_ANTIGRAVITY = {
+    "schema",
+    "stage",
+    "durable_completed",
+    "total",
+    "failures",
+    "attempts",
+    "remaining",
+    "elapsed_seconds",
+    "eta_seconds",
+    "timestamp_utc",
+    "artifact_path",
+    "root_path",
+}
+_PROGRESS_STAGE_RANK_ANTIGRAVITY = {
+    "verify-source": 0,
+    "score-cache": 1,
+    "evaluation": 2,
+    "report": 3,
+}
 
 
 def _repository_root_antigravity() -> Path:
@@ -52,67 +75,295 @@ def _emit_antigravity(stream: TextIO, value: object) -> None:
     stream.flush()
 
 
-def _latest_progress_antigravity() -> Mapping[str, object] | None:
-    path = EXP471_ROOT_ANTIGRAVITY / _PROGRESS_NAME_ANTIGRAVITY
-    if not os.path.lexists(path):
-        return None
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("Exp471 progress log is unsafe")
-    flags = os.O_RDONLY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
-    descriptor = os.open(path, flags)
-    try:
-        opened = os.fstat(descriptor)
-        linked = path.lstat()
-        if opened.st_dev != linked.st_dev or opened.st_ino != linked.st_ino:
-            raise ValueError("Exp471 progress log changed during status")
-        chunks: list[bytes] = []
-        while True:
-            chunk = os.read(descriptor, 1024 * 1024)
-            if not chunk:
-                break
-            chunks.append(chunk)
-    finally:
-        os.close(descriptor)
-    lines = b"".join(chunks).splitlines()
-    if not lines:
-        return None
-    try:
-        value = json.loads(lines[-1].decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ValueError("Exp471 latest progress event is malformed") from error
-    if not isinstance(value, dict):
-        raise ValueError("Exp471 latest progress event differs")
-    return value
-
-
-def _append_progress_antigravity(value: Mapping[str, object]) -> None:
+def _open_progress_root_antigravity() -> tuple[int, os.stat_result]:
     root = EXP471_ROOT_ANTIGRAVITY
-    if root.is_symlink() or not root.is_dir():
-        raise ValueError("Exp471 progress root is unavailable")
-    path = root / _PROGRESS_NAME_ANTIGRAVITY
-    if os.path.lexists(path) and path.is_symlink():
-        raise ValueError("Exp471 progress log is unsafe")
-    payload = canonical_json_bytes_exp471_antigravity(value)
-    flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
-    descriptor = os.open(path, flags, 0o600)
     try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
-        view = memoryview(payload)
-        while view:
-            written = os.write(descriptor, view)
-            if written <= 0:
-                raise OSError("Exp471 progress append made no progress")
-            view = view[written:]
-        os.fsync(descriptor)
-    finally:
+        descriptor = os.open(root, flags)
+    except OSError as error:
+        raise ValueError("Exp471 progress root is unsafe") from error
+    opened = os.fstat(descriptor)
+    try:
+        linked = root.lstat()
+    except OSError:
+        os.close(descriptor)
+        raise
+    if (
+        not stat.S_ISDIR(opened.st_mode)
+        or not stat.S_ISDIR(linked.st_mode)
+        or opened.st_dev != linked.st_dev
+        or opened.st_ino != linked.st_ino
+    ):
+        os.close(descriptor)
+        raise ValueError("Exp471 progress root is unsafe")
+    return descriptor, opened
+
+
+def _validate_progress_root_antigravity(
+    descriptor: int, opened: os.stat_result
+) -> None:
+    try:
+        linked = EXP471_ROOT_ANTIGRAVITY.lstat()
+        current = os.fstat(descriptor)
+    except OSError as error:
+        raise ValueError("Exp471 progress root changed") from error
+    if (
+        current.st_dev != opened.st_dev
+        or current.st_ino != opened.st_ino
+        or linked.st_dev != opened.st_dev
+        or linked.st_ino != opened.st_ino
+    ):
+        raise ValueError("Exp471 progress root changed")
+
+
+def _progress_log_identity_antigravity(
+    root_descriptor: int, descriptor: int
+) -> os.stat_result:
+    opened = os.fstat(descriptor)
+    try:
+        linked = os.stat(
+            _PROGRESS_NAME_ANTIGRAVITY,
+            dir_fd=root_descriptor,
+            follow_symlinks=False,
+        )
+    except OSError as error:
+        raise ValueError("Exp471 progress log changed") from error
+    if (
+        not stat.S_ISREG(opened.st_mode)
+        or not stat.S_ISREG(linked.st_mode)
+        or opened.st_nlink != 1
+        or linked.st_nlink != 1
+        or opened.st_dev != linked.st_dev
+        or opened.st_ino != linked.st_ino
+    ):
+        raise ValueError("Exp471 progress log is unsafe or changed")
+    return opened
+
+
+def _read_all_descriptor_antigravity(descriptor: int) -> bytes:
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    chunks: list[bytes] = []
+    while True:
+        chunk = os.read(descriptor, 1024 * 1024)
+        if not chunk:
+            return b"".join(chunks)
+        chunks.append(chunk)
+
+
+def _progress_timestamp_antigravity(value: object) -> datetime:
+    if type(value) is not str:
+        raise ValueError("Exp471 progress timestamp schema differs")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError("Exp471 progress timestamp is malformed") from error
+    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise ValueError("Exp471 progress timestamp is not UTC")
+    return parsed
+
+
+def _validate_progress_history_antigravity(raw: bytes) -> tuple[dict[str, object], ...]:
+    if not raw:
+        return ()
+    if not raw.endswith(b"\n"):
+        raise ValueError("Exp471 progress history is truncated")
+    records: list[dict[str, object]] = []
+    prior: dict[str, object] | None = None
+    prior_timestamp: datetime | None = None
+    for encoded in raw.splitlines(keepends=True):
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            value = json.loads(encoded.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("Exp471 progress history is malformed") from error
+        if not isinstance(value, dict) or set(value) != _PROGRESS_KEYS_ANTIGRAVITY:
+            raise ValueError("Exp471 progress history schema differs")
+        try:
+            canonical = canonical_json_bytes_exp471_antigravity(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError("Exp471 progress history is noncanonical") from error
+        if canonical != encoded:
+            raise ValueError("Exp471 progress history is noncanonical")
+        if (
+            value["schema"] != _PROGRESS_SCHEMA_ANTIGRAVITY
+            or value["stage"] not in _PROGRESS_STAGE_RANK_ANTIGRAVITY
+        ):
+            raise ValueError("Exp471 progress history schema differs")
+        integers = (
+            "durable_completed",
+            "total",
+            "failures",
+            "attempts",
+            "remaining",
+        )
+        if any(type(value[field]) is not int or value[field] < 0 for field in integers):
+            raise ValueError("Exp471 progress count schema differs")
+        if (
+            value["total"] < 1
+            or value["durable_completed"] > value["total"]
+            or value["remaining"]
+            != value["total"] - value["durable_completed"]
+            or value["failures"] > value["attempts"]
+        ):
+            raise ValueError("Exp471 progress count relation differs")
+        elapsed = value["elapsed_seconds"]
+        eta = value["eta_seconds"]
+        if (
+            type(elapsed) not in (int, float)
+            or not math.isfinite(float(elapsed))
+            or float(elapsed) < 0.0
+            or (
+                eta is not None
+                and (
+                    type(eta) not in (int, float)
+                    or not math.isfinite(float(eta))
+                    or float(eta) < 0.0
+                )
+            )
+            or (
+                value["durable_completed"] == 0
+                and value["remaining"] > 0
+                and eta is not None
+            )
+            or (value["remaining"] == 0 and float(eta or 0.0) != 0.0)
+        ):
+            raise ValueError("Exp471 progress timing relation differs")
+        timestamp = _progress_timestamp_antigravity(value["timestamp_utc"])
+        root_path = Path(value["root_path"])
+        artifact_path = Path(value["artifact_path"])
+        if (
+            root_path != EXP471_ROOT_ANTIGRAVITY
+            or not artifact_path.is_absolute()
+            or not artifact_path.is_relative_to(EXP471_ROOT_ANTIGRAVITY)
+            or "antigravity" not in artifact_path.name
+        ):
+            raise ValueError("Exp471 progress path schema differs")
+        if prior is not None:
+            if value["attempts"] != prior["attempts"] + 1:
+                raise ValueError("Exp471 progress attempts are not cumulative")
+            if value["failures"] < prior["failures"]:
+                raise ValueError("Exp471 progress failures are not cumulative")
+            if value["stage"] == prior["stage"] and (
+                value["total"] != prior["total"]
+                or value["durable_completed"] < prior["durable_completed"]
+            ):
+                raise ValueError("Exp471 progress durable count regressed")
+            if (
+                value["stage"] != "verify-source"
+                and _PROGRESS_STAGE_RANK_ANTIGRAVITY[value["stage"]]
+                < _PROGRESS_STAGE_RANK_ANTIGRAVITY[prior["stage"]]
+            ):
+                raise ValueError("Exp471 progress stage transition regressed")
+            if prior_timestamp is not None and timestamp < prior_timestamp:
+                raise ValueError("Exp471 progress timestamp regressed")
+        elif value["attempts"] != 1:
+            raise ValueError("Exp471 progress attempts must start at one")
+        records.append(value)
+        prior = value
+        prior_timestamp = timestamp
+    return tuple(records)
+
+
+def _latest_progress_antigravity() -> Mapping[str, object] | None:
+    root_descriptor, root_opened = _open_progress_root_antigravity()
+    try:
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        try:
+            descriptor = os.open(
+                _PROGRESS_NAME_ANTIGRAVITY, flags, dir_fd=root_descriptor
+            )
+        except FileNotFoundError:
+            return None
+        except OSError as error:
+            raise ValueError("Exp471 progress log is unsafe") from error
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_SH)
+            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _progress_log_identity_antigravity(root_descriptor, descriptor)
+            raw = _read_all_descriptor_antigravity(descriptor)
+            _progress_log_identity_antigravity(root_descriptor, descriptor)
+            records = _validate_progress_history_antigravity(raw)
         finally:
-            os.close(descriptor)
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            finally:
+                os.close(descriptor)
+        return None if not records else dict(records[-1])
+    finally:
+        os.close(root_descriptor)
+
+
+def _append_progress_antigravity(
+    value: Mapping[str, object], *, failed: bool = False
+) -> None:
+    root_descriptor, root_opened = _open_progress_root_antigravity()
+    try:
+        flags = os.O_RDWR | os.O_APPEND | os.O_CREAT
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor: int | None = None
+        last_open_error: OSError | None = None
+        # Darwin may transiently return ENOENT when several openat callers race
+        # to create the same O_NOFOLLOW leaf. The pinned parent makes retry safe.
+        for _ in range(128):
+            try:
+                descriptor = os.open(
+                    _PROGRESS_NAME_ANTIGRAVITY,
+                    flags,
+                    0o600,
+                    dir_fd=root_descriptor,
+                )
+                break
+            except FileNotFoundError as error:
+                last_open_error = error
+                continue
+            except OSError as error:
+                raise ValueError("Exp471 progress log is unsafe") from error
+        if descriptor is None:
+            raise ValueError("Exp471 progress log is unsafe") from last_open_error
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            _validate_progress_root_antigravity(root_descriptor, root_opened)
+            _progress_log_identity_antigravity(root_descriptor, descriptor)
+            existing_raw = _read_all_descriptor_antigravity(descriptor)
+            existing = _validate_progress_history_antigravity(existing_raw)
+            prior = existing[-1] if existing else None
+            attempts = 1 if prior is None else int(prior["attempts"]) + 1
+            failures = (0 if prior is None else int(prior["failures"])) + int(
+                failed
+            )
+            record = {
+                **value,
+                "failures": failures,
+                "attempts": attempts,
+                "timestamp_utc": datetime.now(timezone.utc).isoformat(
+                    timespec="milliseconds"
+                ),
+            }
+            payload = canonical_json_bytes_exp471_antigravity(record)
+            _validate_progress_history_antigravity(existing_raw + payload)
+            _progress_log_identity_antigravity(root_descriptor, descriptor)
+            _write_all = memoryview(payload)
+            while _write_all:
+                written = os.write(descriptor, _write_all)
+                if written <= 0:
+                    raise OSError("Exp471 progress append made no progress")
+                _write_all = _write_all[written:]
+            os.fsync(descriptor)
+            _progress_log_identity_antigravity(root_descriptor, descriptor)
+            os.fsync(root_descriptor)
+        finally:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            finally:
+                os.close(descriptor)
+    finally:
+        os.close(root_descriptor)
 
 
 def _append_durable_stage_antigravity(
@@ -121,17 +372,13 @@ def _append_durable_stage_antigravity(
     elapsed = max(0.0, monotonic() - started)
     _append_progress_antigravity(
         {
-            "schema": "exp471-progress-antigravity.v1",
+            "schema": _PROGRESS_SCHEMA_ANTIGRAVITY,
             "stage": stage,
             "durable_completed": completed,
             "total": total,
-            "failures": 0,
             "remaining": max(0, total - completed),
             "elapsed_seconds": round(elapsed, 6),
-            "eta_seconds": 0.0 if completed == total else 0.0,
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(
-                timespec="milliseconds"
-            ),
+            "eta_seconds": 0.0 if completed == total else None,
             "artifact_path": str(artifact_path),
             "root_path": str(EXP471_ROOT_ANTIGRAVITY),
         }
@@ -140,39 +387,31 @@ def _append_durable_stage_antigravity(
 
 def _progress_callback_antigravity(stage: str, artifact_path: Path):
     started = monotonic()
-    failures = 0
-
     def progress(event: Mapping[str, object]) -> None:
-        nonlocal failures
         completed = event.get("durable_completed", 0)
         if type(completed) is not int or completed < 0:
             raise ValueError("Exp471 durable progress count differs")
-        if event.get("status") in {"failed", "terminal_failed"}:
-            failures += 1
+        failed = event.get("status") in {"failed", "terminal_failed"}
         total = event.get("total", _TOTAL_SHARDS_ANTIGRAVITY)
         if type(total) is not int or total < completed:
             raise ValueError("Exp471 durable progress total differs")
         remaining = max(0, total - completed)
         elapsed = max(0.0, monotonic() - started)
         eta = 0.0 if remaining == 0 else (
-            elapsed * remaining / completed if completed else 0.0
+            elapsed * remaining / completed if completed else None
         )
         record = {
-            "schema": "exp471-progress-antigravity.v1",
+            "schema": _PROGRESS_SCHEMA_ANTIGRAVITY,
             "stage": stage,
             "durable_completed": completed,
             "total": total,
-            "failures": failures,
             "remaining": remaining,
             "elapsed_seconds": round(elapsed, 6),
-            "eta_seconds": round(eta, 6),
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(
-                timespec="milliseconds"
-            ),
+            "eta_seconds": None if eta is None else round(eta, 6),
             "artifact_path": str(artifact_path),
             "root_path": str(EXP471_ROOT_ANTIGRAVITY),
         }
-        _append_progress_antigravity(record)
+        _append_progress_antigravity(record, failed=failed)
 
     return progress
 
@@ -572,6 +811,7 @@ class _ProductionRuntimeAntigravity:
             artifact,
             EXP471_REPORT_ROOT_ANTIGRAVITY,
             worker_provenance={
+                "schema": "exp471-worker-provenance-antigravity.v1",
                 "benchmark_decision": worker["benchmark_decision"],
                 "execution_decision": worker["execution_decision"],
                 "detected_logical_cpus": worker["detected_logical_cpus"],

@@ -216,6 +216,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
       "kind": "ast_import"
@@ -274,6 +279,12 @@
       "from": "durable evaluation artifact",
       "name": "exp471_report_flow",
       "through": "atomic canonical JSON/CSV/figure publication",
+      "to": "paper report manifest"
+    },
+    {
+      "from": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "name": "exp471_operator_report_flow",
+      "through": "closed CLI source verification, resumable cache, evaluation, and identity-bound report publication",
       "to": "paper report manifest"
     }
   ],
@@ -476,6 +487,17 @@
       "tests": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py"
       ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Closed launcher for the verified Exp471 recovery pipeline.",
+      "module": "scratch.run_exp471_exp467_evaluation_recovery_antigravity",
+      "path": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
     }
   ],
   "schema": "exp471-codemap.v1",
@@ -493,7 +515,7 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 15,
+    "node_count": 16,
     "production_node_count": 8,
     "test_node_count": 6
   },
