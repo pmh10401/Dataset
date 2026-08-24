@@ -136,7 +136,7 @@ git commit -m "feat: freeze Exp471 authority and contracts"</code></pre>
   <p><strong>Files:</strong> Create <code>acf_peak_lag_antigravity.py</code>, <code>python_reference_antigravity.py</code>; Test <code>tests/test_acf_peak_lag_antigravity.py</code>, <code>tests/test_python_reference_antigravity.py</code>.</p>
   <p><strong>Produces:</strong> <code>ACFPeakLagScoresAntigravity</code>; <code>score_acf_peak_lag_numba_antigravity(fit_rows, query_rows)</code>; 검사용 <code>score_acf_peak_lag_python_reference_antigravity(fit_rows, query_rows)</code>. Dataclass는 fit/query early·late peak lag와 presence, integer shift, raw, rank, confirmation, fit maximum, backend를 보존한다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>2.1</strong> peak, tie, sentinel, 불변성, MAD STOP과 Python parity RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.1</strong> peak, tie, sentinel, 불변성, MAD STOP과 Python parity RED 테스트를 작성한다.</label>
     <pre><code>def periodic_row_antigravity(early_period=8.0, late_period=10.0):
     row = np.sin(2.0 * np.pi * np.arange(140, dtype=np.float64) / 9.0)
     row[0:56] = np.sin(2.0 * np.pi * np.arange(56) / early_period)
@@ -168,11 +168,11 @@ def test_numba_matches_python_reference_antigravity(self):
     self.assertEqual(tuple(actual.query_shifts), expected.query_shifts)
     self.assertEqual(tuple(actual.query_ranks), expected.query_ranks)
     self.assertEqual(tuple(actual.confirmation_mask), expected.confirmation_mask)</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.2</strong> import 실패로 RED인지 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.2</strong> import 실패로 RED인지 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_python_reference_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acf_peak_lag_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.3</strong> Python 기준을 list, <code>math.fsum</code>, <code>sorted</code>만으로 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.3</strong> Python 기준을 list, <code>math.fsum</code>, <code>sorted</code>만으로 구현한다.</label>
     <pre><code>def median_python_antigravity(values):
     ordered = sorted(float(value) for value in values)
     middle = len(ordered) // 2
@@ -196,7 +196,7 @@ def peak_shift_row_python_antigravity(row):
         peaks.append(peak)
         presence.append(bool(candidates))
     return peaks[0], peaks[1], presence[0], presence[1], peaks[1] - peaks[0]</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.4</strong> Numba median/MAD, biased ACF, local peak와 shift를 수식 그대로 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.4</strong> Numba median/MAD, biased ACF, local peak와 shift를 수식 그대로 구현한다.</label>
     <pre><code>@numba.njit(cache=False, fastmath=False)
 def dominant_peak_from_acf_numba_antigravity(acf):
     best_lag = 0
@@ -236,7 +236,7 @@ def peak_shift_row_numba_antigravity(row):
     early, early_present = _window_peak_numba_antigravity(row, 0)
     late, late_present = _window_peak_numba_antigravity(row, 84)
     return early, late, early_present, late_present, late - early</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.5</strong> LOO raw, E12 rank, strict confirmation과 immutable wrapper를 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.5</strong> LOO raw, E12 rank, strict confirmation과 immutable wrapper를 구현한다.</label>
     <pre><code>@dataclass(frozen=True, slots=True)
 class ACFPeakLagScoresAntigravity:
     fit_early_peak_lags: np.ndarray
@@ -280,7 +280,7 @@ def assemble_raw_rank_numba_antigravity(fit_shifts, query_shifts):
         ranks[query_index] = (1.0 + count) / (fit_raw.size + 1.0)
         confirmed[query_index] = raw &gt; 0.0 and raw &gt; maximum
     return fit_raw, query_raw, ranks, confirmed, maximum</code></pre>
-    <label><input type="checkbox" disabled> <strong>2.6</strong> 두 테스트 모듈을 두 번 통과시키고 code map 갱신 후 commit한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>2.6</strong> 두 테스트 모듈을 두 번 통과시키고 code map 갱신 후 commit한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_python_reference_antigravity \
   experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acf_peak_lag_antigravity
@@ -606,7 +606,7 @@ git status --short</code></pre>
   </div>
   <section aria-label="계획 진행 체크박스">
     <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
-    <label><input type="checkbox" disabled> Task 2 Numba ACF peak-lag 단일 scorer</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag 단일 scorer</label>
     <label><input type="checkbox" disabled> Task 3 Python 기준·결정성·MLX smoke</label>
     <label><input type="checkbox" disabled> Task 4 C0/E12/C12·pair-repair qualification</label>
     <label><input type="checkbox" disabled> Task 5 canonical artifacts·semantic replay·HTML 결과 화면</label>
@@ -614,6 +614,6 @@ git status --short</code></pre>
     <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
     <label><input type="checkbox" disabled> official 실행·TEST/FN·routing</label>
   </section>
-  <p class="muted">작성일: 2026-08-24 · 설계 승인과 구현 계획 작성만 완료했다. 코드, private/official 실행, TEST/FN 접근과 routing은 아직 시작하지 않았다.</p>
+  <p class="muted">작성일: 2026-08-24 · Task 1과 Task 2 구현까지 완료했고 Task 3가 다음 단계다. private/official 실행, TEST/FN 접근과 routing은 아직 시작하지 않았다.</p>
 </main></body>
 </html>
