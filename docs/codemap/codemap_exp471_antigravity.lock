@@ -1,6 +1,6 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp471_antigravity.html": "179784fc365df654ccf8b3abadfc16fa1c949cac13964eda1c62d4b4f08d2983",
+    "docs/codemap/codemap_exp471_antigravity.html": "425c63b84774225a73b999c9b0e4cba1fc005e143458dd74fe28d81c6ef04ae9",
     "docs/codemap/codemap_exp471_antigravity.json": "e775b12be0972af362470a35dff799a3ac8b5c5d509be2e76f2853187d14200b"
   },
   "fingerprint_algorithm": "sha256",
@@ -14,7 +14,7 @@
     "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
   },
   "module_fingerprints": {
-    "scratch/generate_exp471_codemap_antigravity.py": "1a7ff1f424f40b5cee4d0d0274cedf90c9b808bdb033b1e23f319d965d9d7ab4"
+    "scratch/generate_exp471_codemap_antigravity.py": "cf45c551ecc146a19c51407603968e527c7d08616a31d80f3077afca3ec5dd70"
   },
   "scanned_scope": [
     "scratch/generate_exp471_codemap_antigravity.py"

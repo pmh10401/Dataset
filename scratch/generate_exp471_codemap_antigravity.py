@@ -286,7 +286,7 @@ def render_triplet_antigravity(
     json_bytes = (
         json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     ).encode("utf-8")
-    embedded = json_bytes.decode("utf-8").rstrip("\n")
+    embedded = json_bytes.decode("utf-8")
     if "</script" in embedded.lower():
         raise ValueError("Exp471 code-map JSON cannot be embedded safely in HTML")
     html_bytes = (
@@ -368,7 +368,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     payload = build_codemap_payload_antigravity(paths, ast_callers_antigravity(paths))
     generated = render_triplet_antigravity(payload, module_fingerprints_antigravity(paths))
     if arguments == ("--check",):
-        require_existing_triplet_equal_antigravity(generated)
+        try:
+            require_existing_triplet_equal_antigravity(generated)
+        except ValueError as exc:
+            sys.stderr.write(f"Exp471 triplet missing: {exc}\n")
+            return 2
     else:
         write_triplet_together_antigravity(generated)
     return 0
