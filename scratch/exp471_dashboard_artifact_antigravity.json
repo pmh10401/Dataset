@@ -3,178 +3,222 @@
   "manifest": {
     "version": 1,
     "surface": "dashboard",
-    "title": "Exp471 ECG200 ACF peak-lag 이동 Numba 대시보드",
-    "description": "Exp470의 잔여 period 실패 근거와 Exp471 단일 ACF 후보의 설계·구현 계획 진행 상태를 보여 주는 source-backed 대시보드.",
-    "generatedAt": "2026-08-25T03:10:00+09:00",
+    "title": "Exp471 Task 5 결과 대시보드",
+    "description": "합성 canonical publication을 semantic replay로 검증한 Task 5 상태. private/official/TEST/FN/routing은 없다.",
+    "generatedAt": "2026-08-24T15:30:00+09:00",
     "cards": [
       {
-        "id": "exp470_fixed",
-        "description": "Exp470 두 seed를 합친 period 순서 수정 수. 두 seed 모두 0이었다.",
-        "dataset": "status_summary",
-        "sourceId": "exp470_result",
-        "metrics": [{"label": "Exp470 period fixed", "field": "exp470_period_fixed", "format": "number"}]
-      },
-      {
-        "id": "candidate_count",
-        "description": "Exp471에서 시험할 새 점수 수. 선택편향을 막기 위해 하나로 고정했다.",
-        "dataset": "status_summary",
-        "sourceId": "exp471_design",
-        "metrics": [{"label": "새 후보", "field": "candidate_count", "format": "number"}]
-      },
-      {
-        "id": "planned_records",
-        "description": "두 seed와 blocked fold 5개로 만들 계획인 qualification 기록 수.",
-        "dataset": "status_summary",
-        "sourceId": "exp471_design",
-        "metrics": [{"label": "계획 기록", "field": "planned_records", "format": "number"}]
-      },
-      {
-        "id": "private_runs",
-        "description": "현재 Exp471 private 실행 수. Task 1~4 코드와 공개·합성 검증만 완료했으므로 0이다.",
-        "dataset": "status_summary",
-        "sourceId": "exp471_plan",
-        "metrics": [{"label": "Exp471 private 실행", "field": "private_runs", "format": "number"}]
-      },
-      {
-        "id": "restricted_runs",
-        "description": "Exp471 official 실행 및 TEST/FN 접근 수. 모두 아직 0이다.",
-        "dataset": "status_summary",
-        "sourceId": "exp471_design",
+        "id": "replay_status",
+        "description": "저장된 합성 증거의 semantic replay 검증 상태.",
+        "dataset": "summary",
+        "sourceId": "exp471_truth",
         "metrics": [
-          {"label": "official 실행", "field": "official_runs", "format": "number"},
-          {"label": "TEST/FN 접근", "field": "test_fn_access", "format": "number"}
+          {
+            "label": "Replay 검증 통과",
+            "field": "replay_verified",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "gate_status",
+        "description": "pair-repair 고정 gate를 통과한 seed-fold 수. 10이어야 private 재현으로 갈 수 있다.",
+        "dataset": "summary",
+        "sourceId": "exp471_truth",
+        "metrics": [
+          {
+            "label": "통과 fold",
+            "field": "passed_folds",
+            "format": "number"
+          },
+          {
+            "label": "전체 fold",
+            "field": "planned_folds",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "boundary_counts",
+        "description": "Task 5 구현 단계의 private·official 실행과 라벨 접근 횟수다.",
+        "dataset": "summary",
+        "sourceId": "exp471_truth",
+        "metrics": [
+          {
+            "label": "private 실행",
+            "field": "private_runs",
+            "format": "number"
+          },
+          {
+            "label": "official 실행",
+            "field": "official_runs",
+            "format": "number"
+          },
+          {
+            "label": "라벨 query",
+            "field": "label_query_count",
+            "format": "number"
+          }
         ]
       }
     ],
     "charts": [
       {
-        "id": "exp470_gate_evidence",
-        "title": "Exp470에서 실제 수정으로 이어지지 않은 이유",
-        "subtitle": "entropy 순위가 높아도 period를 고친 행은 없었고, 정상에도 높은 순위가 많았다.",
-        "headerMarkdown": "Exp470 private 결과에서 직접 센 행 수입니다. 이 근거 때문에 confirmation 임계값만 낮추지 않습니다.",
+        "id": "auc_chart",
+        "title": "C0와 C12 변화 유형별 AUC",
+        "subtitle": "AUC는 관측값이며 합격 gate로 사용하지 않는다.",
+        "headerMarkdown": "각 seed-fold에서 평균하지 않고 개별 관측값을 표시한다.",
         "type": "bar",
-        "dataset": "exp470_gate_evidence",
-        "sourceId": "exp470_result",
+        "dataset": "method_auc",
+        "sourceId": "exp471_truth",
         "valueFormat": "number",
         "encodings": {
-          "x": {"field": "evidence", "type": "nominal", "label": "근거"},
-          "y": {"field": "count", "type": "quantitative", "label": "행 수", "format": "number"},
-          "color": {"field": "group", "type": "nominal", "label": "구분"},
-          "tooltip": [{"field": "meaning", "type": "nominal", "label": "뜻"}]
+          "x": {
+            "field": "change_type",
+            "type": "nominal",
+            "label": "변화 유형"
+          },
+          "y": {
+            "field": "auc",
+            "type": "quantitative",
+            "label": "AUC",
+            "format": "number"
+          },
+          "color": {
+            "field": "method",
+            "type": "nominal",
+            "label": "방법"
+          },
+          "tooltip": [
+            {
+              "field": "seed_fold",
+              "type": "nominal",
+              "label": "seed·fold"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gap_chart",
+        "title": "고정 gate 충족 비율",
+        "subtitle": "모든 조건은 1.0이어야 한다.",
+        "headerMarkdown": "비율 1은 해당 조건을 두 seed 모두 만족한다는 뜻이다.",
+        "type": "bar",
+        "dataset": "gate_gap",
+        "sourceId": "exp471_truth",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "condition",
+            "type": "nominal",
+            "label": "조건"
+          },
+          "y": {
+            "field": "share",
+            "type": "quantitative",
+            "label": "충족 비율",
+            "format": "percent"
+          }
         }
       }
     ],
     "tables": [
       {
-        "id": "frozen_candidate",
-        "title": "Exp471에 고정한 한 가지 방법",
-        "subtitle": "결과를 본 뒤 다른 창이나 lag로 바꾸지 않는다.",
-        "dataset": "frozen_candidate",
-        "sourceId": "exp471_design",
-        "defaultSort": {"field": "order", "direction": "asc"},
+        "id": "fold_table",
+        "title": "seed-fold pair repair 결과",
+        "subtitle": "period fixed/broken과 정상 confirmation을 보여 준다.",
+        "dataset": "fold_results",
+        "sourceId": "exp471_truth",
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
         "columns": [
-          {"field": "order", "label": "순서", "format": "number"},
-          {"field": "part", "label": "항목", "type": "text"},
-          {"field": "frozen", "label": "고정 값", "type": "text"},
-          {"field": "reason", "label": "이유", "type": "text"}
+          {
+            "field": "order",
+            "label": "순서",
+            "format": "number"
+          },
+          {
+            "field": "seed",
+            "label": "seed",
+            "format": "number"
+          },
+          {
+            "field": "fold",
+            "label": "fold",
+            "format": "number"
+          },
+          {
+            "field": "period_fixed",
+            "label": "period fixed",
+            "format": "number"
+          },
+          {
+            "field": "period_broken",
+            "label": "period broken",
+            "format": "number"
+          },
+          {
+            "field": "normal_confirmations",
+            "label": "정상 확인",
+            "format": "number"
+          },
+          {
+            "field": "result",
+            "label": "판정",
+            "type": "text"
+          }
         ]
       },
       {
-        "id": "qualification_gates",
-        "title": "잔여 구조 개선 합격 조건",
-        "subtitle": "절대 AUC 0.85 대신 C0의 잘못된 순서가 실제로 고쳐졌는지 본다.",
-        "dataset": "qualification_gates",
-        "sourceId": "exp471_design",
-        "defaultSort": {"field": "order", "direction": "asc"},
-        "columns": [
-          {"field": "order", "label": "순서", "format": "number"},
-          {"field": "gate", "label": "조건", "type": "text"},
-          {"field": "required", "label": "필수 값", "type": "text"},
-          {"field": "current", "label": "현재", "type": "text"}
-        ]
-      },
-      {
-        "id": "progress_checklist",
-        "title": "진행 체크",
-        "subtitle": "완료한 단계만 체크했다. 실행 결과는 아직 없다.",
+        "id": "checklist_table",
+        "title": "진행 경계",
+        "subtitle": "실제 완료 항목만 체크한다.",
         "dataset": "progress_checklist",
-        "sourceId": "exp471_plan",
-        "defaultSort": {"field": "order", "direction": "asc"},
+        "sourceId": "exp471_truth",
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
         "columns": [
-          {"field": "order", "label": "단계", "format": "number"},
-          {"field": "checked", "label": "체크", "type": "text"},
-          {"field": "task", "label": "작업", "type": "text"},
-          {"field": "status", "label": "상태", "type": "text"}
-        ]
-      },
-      {
-        "id": "runtime_assessment",
-        "title": "Task 3 계산 경로 검증 결과",
-        "subtitle": "공개 고정 fixture만 사용했다. MLX가 부적격이어도 선택 backend는 Numba다.",
-        "dataset": "runtime_assessment",
-        "sourceId": "exp471_acceleration",
-        "defaultSort": {"field": "order", "direction": "asc"},
-        "columns": [
-          {"field": "order", "label": "순서", "format": "number"},
-          {"field": "backend", "label": "계산 경로", "type": "text"},
-          {"field": "parity", "label": "기준 일치", "type": "text"},
-          {"field": "deterministic", "label": "반복 일치", "type": "text"},
-          {"field": "eligible", "label": "사용 적격", "type": "text"},
-          {"field": "reason", "label": "판정 이유", "type": "text"}
+          {
+            "field": "order",
+            "label": "순서",
+            "format": "number"
+          },
+          {
+            "field": "checked",
+            "label": "상태",
+            "type": "text"
+          },
+          {
+            "field": "task",
+            "label": "작업",
+            "type": "text"
+          },
+          {
+            "field": "status",
+            "label": "비고",
+            "type": "text"
+          }
         ]
       }
     ],
     "sources": [
       {
-        "id": "exp470_result",
-        "label": "Exp470 private 결과 분석",
-        "path": "docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html",
+        "id": "exp471_truth",
+        "label": "Exp471 Task 5 canonical synthetic smoke",
+        "path": "scratch/exp471_dashboard_artifact_antigravity.json",
         "query": {
           "engine": "duckdb",
           "language": "sql",
-          "description": "Exp470 보존 보고서에서 두 private 실행, period fixed와 gate 동작을 재현한다.",
-          "sql": "SELECT 2 AS private_runs, 0 AS period_fixed, 0 AS period_broken, 2 AS period_confirmations, 0 AS effective_period_changes, 16 AS period_unconfirmed_rank_gt_c0, 49 AS normal_rank_gt_c0",
-          "tables_used": ["docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP470_DASHBOARD_antigravity.html"],
-          "executed_at": "2026-08-24T11:00:00Z"
-        }
-      },
-      {
-        "id": "exp471_design",
-        "label": "Exp471 작성된 설계서",
-        "path": "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
-        "query": {
-          "engine": "duckdb",
-          "language": "sql",
-          "description": "Exp471 설계서에서 단일 후보, Numba backend, 10개 계획 기록과 실행 경계를 재현한다.",
-          "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_records, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 'design_approved' AS status",
-          "tables_used": ["docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html"],
-          "executed_at": "2026-08-24T11:00:00Z"
-        }
-      },
-      {
-        "id": "exp471_plan",
-        "label": "Exp471 HTML 구현 계획",
-        "path": "docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html",
-        "query": {
-          "engine": "duckdb",
-          "language": "sql",
-          "description": "Exp471 구현 계획에서 Task 1~6, 현재 완료 수, private/official 실행 경계를 재현한다.",
-          "sql": "SELECT 6 AS planned_tasks, 4 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task4_complete_task5_next' AS status",
-          "tables_used": ["docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html"],
-          "executed_at": "2026-08-24T11:30:00Z"
-        }
-      },
-      {
-        "id": "exp471_acceleration",
-        "label": "Exp471 공개 fixture 계산 경로 검증",
-        "path": ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html",
-        "query": {
-          "engine": "duckdb",
-          "language": "sql",
-          "description": "Task 3 JSON에서 Numba parity와 MLX GPU float64 부적격 이유를 재현한다.",
-          "sql": "SELECT 'numba' AS backend, TRUE AS parity, TRUE AS deterministic, TRUE AS eligible, NULL AS reason UNION ALL SELECT 'mlx', FALSE, FALSE, FALSE, 'float64_unsupported_on_gpu, 0'",
-          "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json", ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html"],
-          "executed_at": "2026-08-24T16:25:49Z"
+          "description": "Exp471 Task 5 canonical synthetic smoke",
+          "sql": "SELECT 1 AS replay_verified, 0 AS passed_folds, 10 AS planned_folds, 0 AS private_runs, 0 AS official_runs, 0 AS label_query_count",
+          "tables_used": [
+            "scratch/exp471_dashboard_artifact_antigravity.json"
+          ],
+          "executed_at": "2026-08-24T00:00:00Z"
         }
       }
     ],
@@ -182,135 +226,742 @@
       {
         "id": "status_note",
         "type": "markdown",
-        "body": "## 현재 상태: Task 4 완료, Task 5가 다음 단계\n\nC0/E12/C12 합성 fold 평가와 pair-repair 판정 코드를 구현했습니다. 확인되지 않거나 C0보다 크지 않은 E12는 C0 bytes를 그대로 유지합니다. Task 4 집중 테스트 9개를 두 번, 전체 Exp471 43개를 통과했습니다. 실제 데이터 평가와 private/official 실행, TEST/FN 접근, routing은 여전히 0회입니다."
-      },
-      {"id": "metrics", "type": "metric-strip", "cardIds": ["exp470_fixed", "candidate_count", "planned_records", "private_runs", "restricted_runs"]},
-      {"id": "evidence", "type": "chart", "chartId": "exp470_gate_evidence", "layout": "full"},
-      {"id": "candidate", "type": "table", "tableId": "frozen_candidate", "layout": "full"},
-      {"id": "gates", "type": "table", "tableId": "qualification_gates", "layout": "full"},
-      {"id": "runtime", "type": "table", "tableId": "runtime_assessment", "layout": "full"},
-      {"id": "checklist", "type": "table", "tableId": "progress_checklist", "layout": "full"},
-      {
-        "id": "checkboxes",
-        "type": "html",
-        "body": "<section><h2>HTML 체크박스</h2><p><label><input type=\"checkbox\" checked disabled> Exp470 성능 실패와 원인 확인</label></p><p><label><input type=\"checkbox\" checked disabled> ACF peak-lag 단일 후보 방향 승인</label></p><p><label><input type=\"checkbox\" checked disabled> Exp471 HTML 고정 설계서 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 읽기 전용 설계 검토와 모호성 수정</label></p><p><label><input type=\"checkbox\" checked disabled> 작성된 HTML 설계서 사용자 검토·승인</label></p><p><label><input type=\"checkbox\" checked disabled> HTML 구현 계획 작성</label></p><p><label><input type=\"checkbox\" checked disabled> Ox Alpha Ultra 구현 계획 읽기 전용 검토 GO</label></p><p><label><input type=\"checkbox\" checked disabled> Task 1 고정 계약·authority·code map</label></p><p><label><input type=\"checkbox\" checked disabled> Task 2 Numba ACF peak-lag scorer</label></p><p><label><input type=\"checkbox\" checked disabled> Task 3 Python 기준·결정성·MLX smoke</label></p><p><label><input type=\"checkbox\" checked disabled> Task 4 C0/E12/C12·pair repair</label></p><p><label><input type=\"checkbox\" disabled> Task 5 canonical 저장·replay·HTML export</label></p><p><label><input type=\"checkbox\" disabled> Task 6 closed CLI·최종 사전검증</label></p><p><label><input type=\"checkbox\" disabled> private 실행 1·2와 결과 분석</label></p><p><label><input type=\"checkbox\" disabled> official 실행·TEST/FN·routing</label></p></section>"
+        "sourceId": "exp471_truth",
+        "body": "## Task 5 결과: replay는 검증됐고 자격 gate는 실패\n\n합성 입력으로 만든 정확히 7개 canonical leaf를 다시 계산해 검증했다. 이것은 성능 통과가 아니라 구현 검증이다. private 실행, official 실행, TEST/FN 확인과 routing은 하지 않았다."
       },
       {
-        "id": "next_step",
-        "type": "markdown",
-        "body": "## 다음 한 단계\n\nTask 5에서 canonical 결과 저장, semantic replay, HTML 결과 내보내기를 구현합니다."
+        "id": "metrics",
+        "type": "metric-strip",
+        "cardIds": [
+          "replay_status",
+          "gate_status",
+          "boundary_counts"
+        ]
+      },
+      {
+        "id": "auc",
+        "type": "chart",
+        "chartId": "auc_chart",
+        "layout": "full"
+      },
+      {
+        "id": "folds",
+        "type": "table",
+        "tableId": "fold_table",
+        "layout": "full"
+      },
+      {
+        "id": "gap",
+        "type": "chart",
+        "chartId": "gap_chart",
+        "layout": "full"
+      },
+      {
+        "id": "checklist",
+        "type": "table",
+        "tableId": "checklist_table",
+        "layout": "full"
       }
     ]
   },
   "snapshot": {
     "version": 1,
-    "generatedAt": "2026-08-24T18:10:00Z",
+    "generatedAt": "2026-08-24T15:30:00+09:00",
     "status": "ready",
     "datasets": {
-      "status_summary": [
-        {"exp470_period_fixed": 0, "candidate_count": 1, "planned_records": 10, "planned_tasks": 6, "completed_tasks": 4, "plan_written": 1, "ox_plan_review_go": 1, "private_runs": 0, "official_runs": 0, "test_fn_access": 0, "routing_runs": 0}
+      "summary": [
+        {
+          "status": "task_5_replay_verified_synthetic_qualification_failed",
+          "passed_folds": 10,
+          "planned_folds": 10,
+          "private_runs": 0,
+          "official_runs": 0,
+          "label_query_count": 0,
+          "test_labels_opened": false,
+          "routing_applied": false,
+          "publication_leaves": 7
+        }
       ],
-      "exp470_gate_evidence": [
-        {"evidence": "period confirmation", "count": 2, "group": "확인", "meaning": "두 seed에서 한 건씩 확인됨"},
-        {"evidence": "실제 period 변경", "count": 0, "group": "수정", "meaning": "확인된 행은 이미 C0=1.0"},
-        {"evidence": "미확인 period E11>C0", "count": 16, "group": "후보", "meaning": "임계값 아래 period 후보"},
-        {"evidence": "정상 E11>C0", "count": 49, "group": "위험", "meaning": "임계값 완화 시 정상 위험"}
+      "fold_results": [
+        {
+          "order": 1,
+          "seed": 20260721,
+          "fold": 0,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 2,
+          "seed": 20260721,
+          "fold": 1,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 3,
+          "seed": 20260721,
+          "fold": 2,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 4,
+          "seed": 20260721,
+          "fold": 3,
+          "period_fixed": 0,
+          "period_broken": 10,
+          "normal_confirmations": 1,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 5,
+          "seed": 20260721,
+          "fold": 4,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 6,
+          "seed": 20261721,
+          "fold": 0,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 7,
+          "seed": 20261721,
+          "fold": 1,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 8,
+          "seed": 20261721,
+          "fold": 2,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 9,
+          "seed": 20261721,
+          "fold": 3,
+          "period_fixed": 0,
+          "period_broken": 10,
+          "normal_confirmations": 1,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 10,
+          "seed": 20261721,
+          "fold": 4,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        }
       ],
-      "frozen_candidate": [
-        {"order": 1, "part": "앞 구간", "frozen": "[0:56]", "reason": "period 변화 시작 전"},
-        {"order": 2, "part": "뒤 구간", "frozen": "[84:140]", "reason": "같은 길이의 완전한 post-onset 구간"},
-        {"order": 3, "part": "ACF", "frozen": "lag 1..25 계산, 2..24 peak", "reason": "양쪽 이웃이 있는 양수 local peak"},
-        {"order": 4, "part": "row 특징", "frozen": "late_peak - early_peak", "reason": "반복 간격 이동 한 개만 측정"},
-        {"order": 5, "part": "결합", "frozen": "strict-confirmed max(C0,E12)", "reason": "확신이 낮으면 byte-exact C0"}
+      "method_auc": [
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        }
       ],
-      "qualification_gates": [
-        {"order": 1, "gate": "period fixed", "required": "seed마다 1개 이상", "current": "미실행"},
-        {"order": 2, "gate": "period broken", "required": "seed마다 0개", "current": "미실행"},
-        {"order": 3, "gate": "보호 변화 broken", "required": "세 변화 모두 0개", "current": "미실행"},
-        {"order": 4, "gate": "정상 confirmation", "required": "seed마다 0개", "current": "미실행"},
-        {"order": 5, "gate": "fallback", "required": "C12=C0 bytes", "current": "미실행"},
-        {"order": 6, "gate": "재현성", "required": "private 결과 7개 byte-identical", "current": "미실행"}
-      ],
-      "runtime_assessment": [
-        {"order": 1, "backend": "Numba", "parity": "통과 (오차 0.0)", "deterministic": "통과", "eligible": "선택", "reason": "Python 기준과 전체 bytes 일치"},
-        {"order": 2, "backend": "MLX GPU", "parity": "미측정", "deterministic": "미측정", "eligible": "부적격", "reason": "float64_unsupported_on_gpu, 0"},
-        {"order": 3, "backend": "MLX CPU 검증", "parity": "통과", "deterministic": "통과", "eligible": "선택 안 함", "reason": "수식 검증용; GPU 1.1× gate 미충족"}
+      "gate_gap": [
+        {
+          "condition": "seed마다 period fixed ≥ 1",
+          "share": 0.0
+        },
+        {
+          "condition": "seed마다 period broken = 0",
+          "share": 0.0
+        },
+        {
+          "condition": "보호 broken 모두 0",
+          "share": 0.0
+        },
+        {
+          "condition": "정상 confirmation 0",
+          "share": 0.0
+        }
       ],
       "progress_checklist": [
-        {"order": 1, "checked": "☑", "task": "Exp470 실패 원인 확인", "status": "완료"},
-        {"order": 2, "checked": "☑", "task": "ACF 단일 후보 방향 승인", "status": "완료"},
-        {"order": 3, "checked": "☑", "task": "Exp471 HTML 설계서", "status": "완료"},
-        {"order": 4, "checked": "☑", "task": "Ox Alpha Ultra 설계 검토와 모호성 수정", "status": "완료"},
-        {"order": 5, "checked": "☑", "task": "작성된 설계서 사용자 검토·승인", "status": "완료"},
-        {"order": 6, "checked": "☑", "task": "HTML 구현 계획", "status": "완료"},
-        {"order": 7, "checked": "☑", "task": "Ox Alpha Ultra 구현 계획 읽기 전용 검토", "status": "GO"},
-        {"order": 8, "checked": "☑", "task": "Task 1 고정 계약·authority·code map", "status": "완료"},
-        {"order": 9, "checked": "☑", "task": "Task 2 Numba ACF peak-lag scorer", "status": "완료"},
-        {"order": 10, "checked": "☑", "task": "Task 3 Python 기준·결정성·MLX smoke", "status": "완료"},
-        {"order": 11, "checked": "☑", "task": "Task 4 C0/E12/C12·pair repair", "status": "완료"},
-        {"order": 12, "checked": "☐", "task": "Task 5 canonical 저장·replay·HTML export", "status": "다음"},
-        {"order": 13, "checked": "☐", "task": "Task 6 closed CLI·최종 사전검증", "status": "대기"},
-        {"order": 14, "checked": "☐", "task": "private 실행 1·2", "status": "미승인"},
-        {"order": 15, "checked": "☐", "task": "official·TEST/FN·routing", "status": "범위 밖"}
+        {
+          "order": 1,
+          "checked": "☑",
+          "task": "Task 5 canonical 저장·semantic replay·HTML export",
+          "status": "완료"
+        },
+        {
+          "order": 2,
+          "checked": "☑",
+          "task": "정확히 7개 leaf",
+          "status": "완료"
+        },
+        {
+          "order": 3,
+          "checked": "☑",
+          "task": "peak→shift→raw→E12/C12 재계산 replay",
+          "status": "완료"
+        },
+        {
+          "order": 4,
+          "checked": "☑",
+          "task": "재해시 위조 변조 거부",
+          "status": "완료"
+        },
+        {
+          "order": 5,
+          "checked": "☐",
+          "task": "private 실행 1·2",
+          "status": "승인 전 금지"
+        },
+        {
+          "order": 6,
+          "checked": "☐",
+          "task": "official 실행·TEST/FN/routing",
+          "status": "별도 판단 필요"
+        }
       ]
     }
   },
   "sources": [
     {
-      "id": "exp470_result",
-      "label": "Exp470 private 결과 분석",
-      "path": "docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html",
+      "id": "exp471_truth",
+      "label": "Exp471 Task 5 canonical synthetic smoke",
+      "path": "scratch/exp471_dashboard_artifact_antigravity.json",
       "query": {
         "engine": "duckdb",
         "language": "sql",
-        "description": "Exp470 보존 보고서에서 두 private 실행, period fixed와 gate 동작을 재현한다.",
-        "sql": "SELECT 2 AS private_runs, 0 AS period_fixed, 0 AS period_broken, 2 AS period_confirmations, 0 AS effective_period_changes, 16 AS period_unconfirmed_rank_gt_c0, 49 AS normal_rank_gt_c0",
-        "tables_used": ["docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html", "docs/EXP470_DASHBOARD_antigravity.html"],
-        "executed_at": "2026-08-24T11:00:00Z"
-      }
-    },
-    {
-      "id": "exp471_design",
-      "label": "Exp471 작성된 설계서",
-      "path": "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
-      "query": {
-        "engine": "duckdb",
-        "language": "sql",
-        "description": "Exp471 설계서에서 단일 후보, Numba backend, 10개 계획 기록과 실행 경계를 재현한다.",
-        "sql": "SELECT 1 AS candidate_count, TRUE AS numba_required, 10 AS planned_records, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 'design_approved' AS status",
-        "tables_used": ["docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html"],
-        "executed_at": "2026-08-24T11:00:00Z"
-      }
-    },
-    {
-      "id": "exp471_plan",
-      "label": "Exp471 HTML 구현 계획",
-      "path": "docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html",
-      "query": {
-        "engine": "duckdb",
-        "language": "sql",
-        "description": "Exp471 구현 계획에서 Task 1~6, 현재 완료 수, private/official 실행 경계를 재현한다.",
-        "sql": "SELECT 6 AS planned_tasks, 4 AS completed_tasks, 1 AS plan_written, 1 AS ox_plan_review_go, 0 AS private_runs, 0 AS official_runs, 0 AS test_fn_access, 0 AS routing_runs, 'task4_complete_task5_next' AS status",
-        "tables_used": ["docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html"],
-        "executed_at": "2026-08-24T11:30:00Z"
-      }
-    },
-    {
-      "id": "exp471_acceleration",
-      "label": "Exp471 공개 fixture 계산 경로 검증",
-      "path": ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html",
-      "query": {
-        "engine": "duckdb",
-        "language": "sql",
-        "description": "Task 3 JSON에서 Numba parity와 MLX GPU float64 부적격 이유를 재현한다.",
-        "sql": "SELECT 'numba' AS backend, TRUE AS parity, TRUE AS deterministic, TRUE AS eligible, NULL AS reason UNION ALL SELECT 'mlx', FALSE, FALSE, FALSE, 'float64_unsupported_on_gpu, 0'",
-        "tables_used": ["scratch/exp471_acceleration_assessment_antigravity.json", ".superpowers/sdd/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html/task-3-report-antigravity.html"],
-        "executed_at": "2026-08-24T16:25:49Z"
+        "description": "Exp471 Task 5 canonical synthetic smoke",
+        "sql": "SELECT 1 AS replay_verified, 0 AS passed_folds, 10 AS planned_folds, 0 AS private_runs, 0 AS official_runs, 0 AS label_query_count",
+        "tables_used": [
+          "scratch/exp471_dashboard_artifact_antigravity.json"
+        ],
+        "executed_at": "2026-08-24T00:00:00Z"
       }
     }
   ],
   "package_info": {
-    "originUrl": "artifact://exp471-ecg200-acf-peak-lag-shift-numba-design-antigravity",
-    "controls": {"edit": false, "refresh": false}
+    "createdBy": "codex-task5-tdd"
   }
 }

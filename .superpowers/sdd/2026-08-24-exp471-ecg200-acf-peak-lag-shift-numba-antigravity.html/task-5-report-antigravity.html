@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp471 Task 5 구현 보고</title>
+  <style>body{font-family:system-ui,sans-serif;max-width:920px;margin:40px auto;padding:0 20px;line-height:1.65;color:#172033}h1,h2{line-height:1.25}.pass{color:#126b3a}.note{background:#f5f7fa;border-left:4px solid #567;padding:12px 16px}</style>
+</head>
+<body><main>
+  <h1>Exp471 Task 5 구현 보고</h1>
+  <p class="pass"><strong>결론:</strong> 합성 입력 전용 canonical 저장, semantic replay, HTML export를 구현했고 모든 Task 5 검증을 통과했다. private 실행과 official 실행은 하지 않았다.</p>
+  <h2>무엇을 구현했나</h2>
+  <ul>
+    <li>정확히 7개 canonical leaf를 create-only로 저장하고 SHA-256 map으로 묶는다.</li>
+    <li>context에는 shared train140, blocked indices, early/late peak lag, presence, shift, raw, confirmation과 C0 입력을 모두 남긴다.</li>
+    <li>replay는 loader 없이 shared train과 합성 row로 peak→shift→raw→E12/C12→pair count→decision을 재계산한다.</li>
+    <li>재해시한 decision, metrics, summary, dashboard snapshot, context 위조와 JSON int/bool 유형 위장을 거부한다.</li>
+    <li>HTML export는 replay만 완료로 표시하고 private/official/TEST/FN/routing은 미완료로 유지한다.</li>
+  </ul>
+  <h2>테스트 증거</h2>
+  <table><thead><tr><th>검증</th><th>결과</th></tr></thead><tbody>
+    <tr><td>RED</td><td>Task 5 production 모듈 추가 전 8개 테스트가 missing module 오류</td></tr>
+    <tr><td>Task 5 집중 GREEN</td><td><span class="pass">8개 통과</span></td></tr>
+    <tr><td>전체 Exp471 회귀 1회차</td><td><span class="pass">51개 통과</span></td></tr>
+    <tr><td>전체 Exp471 회귀 2회차</td><td><span class="pass">51개 통과</span></td></tr>
+    <tr><td>Task 4 다섯 모듈 회귀</td><td><span class="pass">14개 통과</span></td></tr>
+  </tbody></table>
+  <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_dashboard_export_antigravity</code></pre>
+  <p>대시보드 artifact는 canonical validator를 통과했고 portable HTML 검증은 1440px·390px passed였다.</p>
+  <p class="note">이 단계의 qualification 실패는 합성 fixture 관측 결과다. 실제 ECG 데이터 접근, private root 생성, official 실행, TEST/FN 라벨, routing은 없다.</p>
+</main></body></html>

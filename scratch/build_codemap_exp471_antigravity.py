@@ -69,23 +69,35 @@ EVALUATION_ANTIGRAVITY = _package_file_antigravity("evaluation_antigravity.py")
 SCORING_TEST_ANTIGRAVITY = _package_test_antigravity("test_scoring_antigravity.py")
 QUALIFICATION_TEST_ANTIGRAVITY = _package_test_antigravity("test_qualification_antigravity.py")
 EVALUATION_TEST_ANTIGRAVITY = _package_test_antigravity("test_evaluation_antigravity.py")
+ARTIFACTS_ANTIGRAVITY = _package_file_antigravity("artifacts_antigravity.py")
+REPLAY_ANTIGRAVITY = _package_file_antigravity("replay_antigravity.py")
+DASHBOARD_EXPORT_ANTIGRAVITY = _package_file_antigravity("dashboard_export_antigravity.py")
+ARTIFACTS_TEST_ANTIGRAVITY = _package_test_antigravity("test_artifacts_antigravity.py")
+REPLAY_TEST_ANTIGRAVITY = _package_test_antigravity("test_replay_antigravity.py")
+DASHBOARD_EXPORT_TEST_ANTIGRAVITY = _package_test_antigravity("test_dashboard_export_antigravity.py")
+TASK5_REPORT_ANTIGRAVITY = SDD_ANTIGRAVITY + "/task-5-report-antigravity.html"
+EXP471_DASHBOARD_ANTIGRAVITY = "docs/EXP471_DASHBOARD_antigravity.html"
+EXP471_DASHBOARD_ARTIFACT_ANTIGRAVITY = "scratch/exp471_dashboard_artifact_antigravity.json"
 
 FUTURE_DECLARED_PATHS_ANTIGRAVITY = (
     "docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html",
     "docs/superpowers/specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html",
-    "scratch/exp471_dashboard_artifact_antigravity.json",
-    "docs/EXP471_DASHBOARD_antigravity.html",
-    _package_file_antigravity("artifacts_antigravity.py"),
-    _package_file_antigravity("replay_antigravity.py"),
-    _package_file_antigravity("dashboard_export_antigravity.py"),
-    _package_test_antigravity("test_artifacts_antigravity.py"),
-    _package_test_antigravity("test_replay_antigravity.py"),
-    _package_test_antigravity("test_dashboard_export_antigravity.py"),
     _package_file_antigravity("cli_antigravity.py"),
     "scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py",
     _package_test_antigravity("test_cli_antigravity.py"),
     _package_test_antigravity("test_pipeline_antigravity.py"),
     "docs/EXP471_RUNBOOK_antigravity.html",
+)
+TASK5_EXISTING_PATHS_ANTIGRAVITY = (
+    TASK5_REPORT_ANTIGRAVITY,
+    ARTIFACTS_ANTIGRAVITY,
+    REPLAY_ANTIGRAVITY,
+    DASHBOARD_EXPORT_ANTIGRAVITY,
+    ARTIFACTS_TEST_ANTIGRAVITY,
+    REPLAY_TEST_ANTIGRAVITY,
+    DASHBOARD_EXPORT_TEST_ANTIGRAVITY,
+    EXP471_DASHBOARD_ARTIFACT_ANTIGRAVITY,
+    EXP471_DASHBOARD_ANTIGRAVITY,
 )
 
 TRIPLET_ANTIGRAVITY = (
@@ -125,7 +137,7 @@ EXISTING_REPRESENTED_PATHS_ANTIGRAVITY = (
     ACCELERATION_ASSESSMENT_ANTIGRAVITY,
     BUILDER_ANTIGRAVITY,
     IMPLEMENTATION_REPORT_ANTIGRAVITY,
-) + TRIPLET_ANTIGRAVITY
+) + TASK5_EXISTING_PATHS_ANTIGRAVITY + TRIPLET_ANTIGRAVITY
 EXISTING_PRE_TRIPLET_PATHS_ANTIGRAVITY = tuple(
     relative for relative in EXISTING_REPRESENTED_PATHS_ANTIGRAVITY
     if relative not in TRIPLET_ANTIGRAVITY
