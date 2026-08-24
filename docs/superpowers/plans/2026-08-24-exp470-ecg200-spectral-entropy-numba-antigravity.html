@@ -397,7 +397,7 @@ git commit -m "test: qualify Exp470 Numba runtime"</code></pre>
   <p><strong>Consumes:</strong> Task 1 authority와 Task 2 <code>score_spectral_entropy_numba_antigravity</code>. <strong>Produces:</strong> <code>FoldMethodScoresAntigravity</code>, <code>PairRepairCountsAntigravity</code>, <code>Exp470QualificationAntigravity</code>, <code>QualificationDecisionAntigravity</code>; <code>validate_four_score_vectors_antigravity(c0_normal, c0_changed, c11_normal, c11_changed)</code>는 네 입력을 finite, one-dimensional, float64 C-contiguous 배열로 복사해 반환한다; <code>evaluate_repair_gates_antigravity(*, period_fixed, period_broken, protected_broken, normal_confirmations, fallback_exact, finite)</code>는 고정 gate만으로 private 적격성을 판정한다.</p>
   <p><strong>Type contract:</strong> <code>FoldMethodScoresAntigravity</code>는 seed, fold_index, methods, original, primary, fit/query raw entropy, fit max, confirmed, input_train140, fit/query indices, backend를 보존한다. <code>Exp470QualificationAntigravity</code>는 10개 fold_results, seed별 period_fixed·period_broken·normal_confirmations, 세 protected_broken 합계, fallback_exact, finite, label_query_count를 보존한다. <code>QualificationDecisionAntigravity</code>는 passed, eligible_for_private_reproducibility, failure_reasons를 보존한다.</p>
   <section>
-    <label><input type="checkbox" disabled> <strong>4.1</strong> pair credit와 exact fallback RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.1</strong> pair credit와 exact fallback RED 테스트를 작성한다.</label>
     <pre><code>def test_pair_repairs_count_fixed_and_broken_antigravity(self):
     c0_n = np.array([0.8, 0.2])
     c0_p = np.array([0.7, 0.3])
@@ -413,7 +413,7 @@ def test_unconfirmed_c11_is_byte_exact_c0_antigravity(self):
     )
     mask = ~record.confirmed["normal"]
     self.assertEqual(record.original["C11"][mask].tobytes(), record.original["C0"][mask].tobytes())</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.2</strong> seed별 fixed/broken·정상 confirmation gate RED 테스트를 작성한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.2</strong> seed별 fixed/broken·정상 confirmation gate RED 테스트를 작성한다.</label>
     <pre><code>def test_decision_requires_repairs_without_breakage_antigravity(self):
     decision = evaluate_repair_gates_antigravity(
         period_fixed={20260721: 1, 20261721: 2},
@@ -423,12 +423,12 @@ def test_unconfirmed_c11_is_byte_exact_c0_antigravity(self):
         fallback_exact=True, finite=True,
     )
     self.assertTrue(decision.eligible_for_private_reproducibility)</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.3</strong> RED를 확인한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.3</strong> RED를 확인한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_evaluation_antigravity</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.4</strong> C11 결합과 pair credit/count를 Numba로 수식 그대로 구현한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.4</strong> C11 결합과 pair credit/count를 Numba로 수식 그대로 구현한다.</label>
     <pre><code>@dataclass(frozen=True, slots=True)
 class PairRepairCountsAntigravity:
     fixed: int
@@ -476,7 +476,7 @@ def pair_repair_counts_antigravity(c0_normal, c0_changed, c11_normal, c11_change
     arrays = validate_four_score_vectors_antigravity(c0_normal, c0_changed, c11_normal, c11_changed)
     fixed, broken = _pair_repair_counts_numba_antigravity(*arrays)
     return PairRepairCountsAntigravity(fixed=fixed, broken=broken)</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.5</strong> fold scorer는 C0 exact authority를 입력으로 받고, E11 계산과 C11 결합은 Numba 함수만 사용한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.5</strong> fold scorer는 C0 exact authority를 입력으로 받고, E11 계산과 C11 결합은 Numba 함수만 사용한다.</label>
     <pre><code>entropy = score_spectral_entropy_numba_antigravity(train[fit], combined_query)
 c11 = {}
 for scope in SCOPES_ANTIGRAVITY:
@@ -484,7 +484,7 @@ for scope in SCOPES_ANTIGRAVITY:
     c11[scope] = _combine_c11_numba_antigravity(
         c0_scores[scope], entropy.query_ranks[section], entropy.confirmation_mask[section],
     )</code></pre>
-    <label><input type="checkbox" disabled> <strong>4.6</strong> 10개 seed-fold replay는 AUC를 기록하되 0.85를 gate로 사용하지 않는지 검증한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>4.6</strong> 10개 seed-fold replay는 AUC를 기록하되 0.85를 gate로 사용하지 않는지 검증한다.</label>
     <pre><code>python3 -m unittest \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
   experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity \
@@ -637,7 +637,7 @@ git status --short</code></pre>
     <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
     <label><input type="checkbox" checked disabled> Task 2 Numba spectral entropy 단일 scorer</label>
     <label><input type="checkbox" checked disabled> Task 3 Numba 근거·MLX smoke</label>
-    <label><input type="checkbox" disabled> Task 4 C0/E11/C11·pair repair qualification</label>
+    <label><input type="checkbox" checked disabled> Task 4 C0/E11/C11·pair repair qualification</label>
     <label><input type="checkbox" disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
     <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
     <label><input type="checkbox" disabled> private 실행 1·2 — 별도 승인 대기</label>
