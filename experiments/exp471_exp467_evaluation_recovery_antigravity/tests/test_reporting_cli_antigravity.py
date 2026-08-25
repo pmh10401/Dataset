@@ -227,7 +227,7 @@ def _preflight_record_antigravity(
 
 
 def _production_preflight_coordinates_antigravity() -> dict[str, object]:
-    """Return a production-shaped ten-method inventory with 395 abstentions."""
+    """Return the six-method baseline inventory with 6,307 scored entries."""
 
     abstention_plan = {
         "knn_distance": 5,
@@ -235,7 +235,7 @@ def _production_preflight_coordinates_antigravity() -> dict[str, object]:
         "drocc_1d": 195,
     }
     coordinates: dict[str, object] = {}
-    for method in METHOD_ORDER_ANTIGRAVITY:
+    for method in METHOD_ORDER_ANTIGRAVITY[4:]:
         rows: dict[str, object] = {}
         for index in range(1_117):
             dataset = f"production_dataset_{index:04d}_antigravity"
@@ -249,6 +249,30 @@ def _production_preflight_coordinates_antigravity() -> dict[str, object]:
 class BaselinePreflightTestsAntigravity(unittest.TestCase):
     """Strict typed-abstain classifier contracts before proposal preprocessing."""
 
+    BASELINE_METHODS_ANTIGRAVITY = METHOD_ORDER_ANTIGRAVITY[4:]
+
+    def _complete_coordinates(self) -> dict[str, object]:
+        return {
+            "knn_distance": {
+                "public_literal_dataset": _preflight_record_antigravity()
+            },
+            "lof_novelty": {
+                "public_literal_dataset": _preflight_record_antigravity()
+            },
+            "ocsvm_rbf": {
+                "public_literal_dataset": _preflight_record_antigravity()
+            },
+            "isolation_forest": {
+                "public_literal_dataset": _preflight_record_antigravity()
+            },
+            "deep_svdd_1d": {
+                "public_literal_dataset": _preflight_record_antigravity()
+            },
+            "drocc_1d": {
+                "public_literal_dataset": _preflight_record_antigravity()
+            },
+        }
+
     def _run_preflight(self, datasets, coordinates):
         return baseline_preflight.preflight_frozen_baselines_antigravity(
             datasets=datasets, coordinates=coordinates
@@ -256,11 +280,7 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
 
     def test_complete_entry_is_scored_with_exact_vectors(self) -> None:
         datasets = ("public_literal_dataset",)
-        coordinates = {
-            "knn_distance": {
-                datasets[0]: _preflight_record_antigravity()
-            }
-        }
+        coordinates = self._complete_coordinates()
         result = self._run_preflight(datasets, coordinates)
         entry = result.entries[("knn_distance", datasets[0])]
         self.assertEqual(entry.method, "knn_distance")
@@ -270,30 +290,41 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         self.assertEqual(entry.test_indices, (0, 1))
         self.assertEqual(entry.train_oof_scores, (0.25, 1.25))
         self.assertEqual(entry.test_scores, (0.75, 1.75))
-        self.assertEqual(result.scored_count, 1)
+        self.assertEqual(result.scored_count, 6)
         self.assertEqual(result.abstained_count, 0)
         self.assertEqual(result.failed_count, 0)
 
     def test_legal_abstain_is_typed_and_has_no_score_vectors(self) -> None:
         datasets = ("public_literal_dataset",)
-        coordinates = {
-            "deep_svdd_1d": {
-                datasets[0]: _preflight_record_antigravity(status="abstain")
-            }
-        }
+        complete = self._complete_coordinates()
+        abstain_record = _preflight_record_antigravity(status="abstain")
+        coordinates = {**complete, "deep_svdd_1d": {"public_literal_dataset": abstain_record}}
         result = self._run_preflight(datasets, coordinates)
         entry = result.entries[("deep_svdd_1d", datasets[0])]
         self.assertEqual(entry.status, "abstained")
         self.assertEqual(entry.abstention_reason, "insufficient_train_rows")
         self.assertEqual(entry.train_oof_scores, ())
         self.assertEqual(entry.test_scores, ())
-        self.assertEqual(result.scored_count, 0)
+        self.assertEqual(result.scored_count, 5)
         self.assertEqual(result.abstained_count, 1)
         self.assertEqual(result.failed_count, 0)
 
     def _assert_invalid(self, coordinates) -> None:
         with self.assertRaisesRegex(ValueError, "Exp471 baseline preflight"):
             self._run_preflight(("public_literal_dataset",), coordinates)
+
+    def test_explicit_empty_abstain_vectors_are_rejected(self) -> None:
+        record = _preflight_record_antigravity(status="abstain")
+        record["test_scores"] = []
+        record["train_oof_scores"] = []
+        self._assert_invalid(
+            {"deep_svdd_1d": {"public_literal_dataset": record}}
+        )
+
+    def test_vector_length_mismatch_fails_closed(self) -> None:
+        record = _preflight_record_antigravity()
+        record["test_scores"] = [0.5]
+        self._assert_invalid({"knn_distance": {"public_literal_dataset": record}})
 
     def test_failure_status_fails_closed(self) -> None:
         record = _preflight_record_antigravity()
@@ -337,10 +368,27 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         result = self._run_preflight(
             datasets, _production_preflight_coordinates_antigravity()
         )
-        self.assertEqual(len(result.entries), 11_170)
-        self.assertEqual(result.scored_count, 10_775)
+        self.assertEqual(len(result.entries), 6_702)
+        self.assertEqual(result.scored_count, 6_307)
         self.assertEqual(result.abstained_count, 395)
         self.assertEqual(result.failed_count, 0)
+
+    def test_missing_baseline_method_fails_closed(self) -> None:
+        coordinates = self._complete_coordinates()
+        del coordinates["lof_novelty"]
+        self._assert_invalid(coordinates)
+
+    def test_extra_method_fails_closed(self) -> None:
+        coordinates = self._complete_coordinates()
+        coordinates["A"] = {
+            "public_literal_dataset": _preflight_record_antigravity()
+        }
+        self._assert_invalid(coordinates)
+
+    def test_wrong_method_order_fails_closed(self) -> None:
+        complete = self._complete_coordinates()
+        ordered = {method: complete[method] for method in reversed(tuple(complete))}
+        self._assert_invalid(ordered)
 
 
 class ReportingTestsAntigravity(unittest.TestCase):

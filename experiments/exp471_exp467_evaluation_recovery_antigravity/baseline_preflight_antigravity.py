@@ -9,11 +9,7 @@ from types import MappingProxyType
 from typing import Literal
 
 
-METHOD_ORDER_ANTIGRAVITY = (
-    "A",
-    "B",
-    "C",
-    "D",
+BASELINE_METHODS_ANTIGRAVITY = (
     "knn_distance",
     "lof_novelty",
     "ocsvm_rbf",
@@ -21,7 +17,6 @@ METHOD_ORDER_ANTIGRAVITY = (
     "deep_svdd_1d",
     "drocc_1d",
 )
-_BASELINE_METHODS_ANTIGRAVITY = METHOD_ORDER_ANTIGRAVITY[4:]
 _ABSTENTION_REASON_ANTIGRAVITY = "insufficient_train_rows"
 
 
@@ -48,15 +43,6 @@ def _invalid_antigravity(detail: str) -> ValueError:
     return ValueError(f"Exp471 baseline preflight {detail} differs")
 
 
-def _integer_tuple_antigravity(value: object) -> tuple[int, ...]:
-    if not isinstance(value, (Sequence, list, tuple)) or isinstance(value, (str, bytes)):
-        raise _invalid_antigravity("TEST indices")
-    result = tuple(value)
-    if any(type(index) is not int for index in result):
-        raise _invalid_antigravity("TEST indices")
-    return result
-
-
 def _float_vector_antigravity(value: object) -> tuple[float, ...]:
     if not isinstance(value, (Sequence, list, tuple)) or isinstance(value, (str, bytes)):
         raise _invalid_antigravity("baseline score vector")
@@ -79,9 +65,11 @@ def _entry_from_shard_antigravity(
     if (
         type(count) is not int
         or count < 1
+        or not isinstance(indices, (Sequence, list, tuple))
+        or isinstance(indices, (str, bytes))
         or len(indices) != count
         or len(set(indices)) != count
-        or any(index < 0 for index in indices)
+        or any(type(index) is not int or index < 0 for index in indices)
         or tuple(indices) != tuple(range(count))
     ):
         raise _invalid_antigravity(f"TEST coordinates for {method}/{dataset}")
@@ -141,16 +129,7 @@ def preflight_frozen_baselines_antigravity(
     abstained_count = 0
     methods = tuple(coordinates)
     if (
-        not methods
-        or len(methods) != len(set(methods))
-        or any(
-            type(method) is not str
-            or (
-                method not in METHOD_ORDER_ANTIGRAVITY
-                and method not in _BASELINE_METHODS_ANTIGRAVITY
-            )
-            for method in methods
-        )
+        methods != BASELINE_METHODS_ANTIGRAVITY
     ):
         raise _invalid_antigravity("method order")
     for method in methods:
@@ -166,6 +145,16 @@ def preflight_frozen_baselines_antigravity(
             if key in entries:
                 raise _invalid_antigravity("duplicate identity")
             entries[key] = entry
+            if (
+                entry.status == "scored"
+                and (
+                    len(entry.train_oof_scores) != shard["count"]
+                    or len(entry.test_scores) != shard["count"]
+                )
+            ):
+                raise _invalid_antigravity(
+                    f"score vector lengths for {method}/{dataset}"
+                )
             if entry.status == "scored":
                 scored_count += 1
             else:
@@ -179,6 +168,7 @@ def preflight_frozen_baselines_antigravity(
 
 
 __all__ = [
+    "BASELINE_METHODS_ANTIGRAVITY",
     "Exp471BaselinePreflightAntigravity",
     "Exp471BaselinePreflightEntryAntigravity",
     "preflight_frozen_baselines_antigravity",
