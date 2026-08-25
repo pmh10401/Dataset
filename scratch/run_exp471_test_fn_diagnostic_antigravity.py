@@ -162,17 +162,15 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         raise SystemExit("output root must be absent before the approved diagnostic")
     sys.path.insert(0, str(_REPOSITORY_ROOT_ANTIGRAVITY))
 
-    from experiments.exp449_residual_fn_method_qualification_antigravity.local_gap_antigravity import (
-        LocalGapModelAntigravity,
-    )
-    from experiments.exp449_residual_fn_method_qualification_antigravity.representations_antigravity import (
-        make_representation_antigravity,
-    )
     from experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.rank_auc_antigravity import (
         mann_whitney_auc_antigravity,
     )
     from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acf_peak_lag_antigravity import (
         score_acf_peak_lag_numba_antigravity,
+    )
+    from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.predecessor_antigravity import (
+        capture_exp465_authority_antigravity,
+        score_c0_fold_antigravity,
     )
 
     train140, train_sha = _load_shared_train_antigravity()
@@ -185,17 +183,17 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         "schema": "exp471_test_fn_diagnostic_v1",
         "seeds": {},
     }
+    authority = capture_exp465_authority_antigravity()
+    all_indices = np.arange(69, dtype=np.int64)
     for seed in _SEEDS_ANTIGRAVITY:
-        representation = make_representation_antigravity("hydra_local_gap", seed)
-        reference_features = representation.fit_transform(train140)
-        model = LocalGapModelAntigravity(reference_features, neighbors=3)
         oof = oof_by_seed[seed]
         per_seed: dict[str, object] = {"oof_auc_c0_vs_perturbations": {}}
         for name in names:
             values = test_data[name]["values"]
             mask = test_data[name]["anomaly_mask"]
-            features = representation.transform(values)
-            c0 = np.asarray(model.score(features), dtype=np.float64)
+            c0 = score_c0_fold_antigravity(
+                train140, all_indices, values, seed=seed, fold_index=0, authority=authority
+            ).normal_scores
             peaks = score_acf_peak_lag_numba_antigravity(train140, values)
             ranks = np.asarray(peaks.query_ranks, dtype=np.float64)
             confirmed = np.asarray(peaks.confirmation_mask, dtype=np.bool_)
