@@ -160,6 +160,7 @@ def main_antigravity(argv: list[str] | None = None) -> int:
     _require_clean_head_antigravity(reviewed)
     if _OUTPUT_ROOT_ANTIGRAVITY.exists() or _OUTPUT_ROOT_ANTIGRAVITY.is_symlink():
         raise SystemExit("output root must be absent before the approved diagnostic")
+    sys.path.insert(0, str(_REPOSITORY_ROOT_ANTIGRAVITY))
 
     from experiments.exp449_residual_fn_method_qualification_antigravity.local_gap_antigravity import (
         LocalGapModelAntigravity,
