@@ -219,6 +219,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
@@ -337,6 +342,17 @@
     }
   ],
   "nodes": [
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Strict typed-abstain classification for frozen public-baseline inputs.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.baseline_preflight_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
     {
       "callers": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
@@ -619,8 +635,8 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 21,
-    "production_node_count": 10,
+    "node_count": 22,
+    "production_node_count": 11,
     "test_node_count": 9
   },
   "unknowns": []

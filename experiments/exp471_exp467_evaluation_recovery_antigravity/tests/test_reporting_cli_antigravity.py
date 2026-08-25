@@ -30,6 +30,9 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity import (
     evaluation_antigravity as evaluation,
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+    baseline_preflight_antigravity as baseline_preflight,
+)
+from experiments.exp471_exp467_evaluation_recovery_antigravity import (
     reporting_antigravity as reporting,
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity.cli_antigravity import (
@@ -203,6 +206,141 @@ def _independent_report_contender_antigravity(
         result_queue.put(("error", type(error).__name__, str(error)))
     else:
         result_queue.put(("success", authority.report_manifest_sha256))
+
+
+def _preflight_record_antigravity(
+    count: int = 2,
+    *,
+    status: str = "complete",
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "count": count,
+        "indices": list(range(count)),
+        "status": status,
+    }
+    if status == "complete":
+        record["train_oof_scores"] = [float(index) + 0.25 for index in range(count)]
+        record["test_scores"] = [float(index) + 0.75 for index in range(count)]
+    elif status == "abstain":
+        record["reason"] = "insufficient_train_rows"
+    return record
+
+
+def _production_preflight_coordinates_antigravity() -> dict[str, object]:
+    """Return a production-shaped ten-method inventory with 395 abstentions."""
+
+    abstention_plan = {
+        "knn_distance": 5,
+        "deep_svdd_1d": 195,
+        "drocc_1d": 195,
+    }
+    coordinates: dict[str, object] = {}
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        rows: dict[str, object] = {}
+        for index in range(1_117):
+            dataset = f"production_dataset_{index:04d}_antigravity"
+            limit = abstention_plan.get(method, 0)
+            status = "abstain" if index < limit else "complete"
+            rows[dataset] = _preflight_record_antigravity(status=status)
+        coordinates[method] = rows
+    return coordinates
+
+
+class BaselinePreflightTestsAntigravity(unittest.TestCase):
+    """Strict typed-abstain classifier contracts before proposal preprocessing."""
+
+    def _run_preflight(self, datasets, coordinates):
+        return baseline_preflight.preflight_frozen_baselines_antigravity(
+            datasets=datasets, coordinates=coordinates
+        )
+
+    def test_complete_entry_is_scored_with_exact_vectors(self) -> None:
+        datasets = ("public_literal_dataset",)
+        coordinates = {
+            "knn_distance": {
+                datasets[0]: _preflight_record_antigravity()
+            }
+        }
+        result = self._run_preflight(datasets, coordinates)
+        entry = result.entries[("knn_distance", datasets[0])]
+        self.assertEqual(entry.method, "knn_distance")
+        self.assertEqual(entry.dataset, datasets[0])
+        self.assertEqual(entry.status, "scored")
+        self.assertIsNone(entry.abstention_reason)
+        self.assertEqual(entry.test_indices, (0, 1))
+        self.assertEqual(entry.train_oof_scores, (0.25, 1.25))
+        self.assertEqual(entry.test_scores, (0.75, 1.75))
+        self.assertEqual(result.scored_count, 1)
+        self.assertEqual(result.abstained_count, 0)
+        self.assertEqual(result.failed_count, 0)
+
+    def test_legal_abstain_is_typed_and_has_no_score_vectors(self) -> None:
+        datasets = ("public_literal_dataset",)
+        coordinates = {
+            "deep_svdd_1d": {
+                datasets[0]: _preflight_record_antigravity(status="abstain")
+            }
+        }
+        result = self._run_preflight(datasets, coordinates)
+        entry = result.entries[("deep_svdd_1d", datasets[0])]
+        self.assertEqual(entry.status, "abstained")
+        self.assertEqual(entry.abstention_reason, "insufficient_train_rows")
+        self.assertEqual(entry.train_oof_scores, ())
+        self.assertEqual(entry.test_scores, ())
+        self.assertEqual(result.scored_count, 0)
+        self.assertEqual(result.abstained_count, 1)
+        self.assertEqual(result.failed_count, 0)
+
+    def _assert_invalid(self, coordinates) -> None:
+        with self.assertRaisesRegex(ValueError, "Exp471 baseline preflight"):
+            self._run_preflight(("public_literal_dataset",), coordinates)
+
+    def test_failure_status_fails_closed(self) -> None:
+        record = _preflight_record_antigravity()
+        record["status"] = "failure"
+        self._assert_invalid({"lof_novelty": {"public_literal_dataset": record}})
+
+    def test_missing_identity_fails_closed(self) -> None:
+        self._assert_invalid({"ocsvm_rbf": {}})
+
+    def test_unknown_abstention_reason_fails_closed(self) -> None:
+        record = _preflight_record_antigravity(status="abstain")
+        record["reason"] = "worker_crashed"
+        self._assert_invalid(
+            {"isolation_forest": {"public_literal_dataset": record}}
+        )
+
+    def test_score_bearing_abstention_fails_closed(self) -> None:
+        record = _preflight_record_antigravity(status="abstain")
+        record["test_scores"] = [0.0]
+        self._assert_invalid(
+            {"deep_svdd_1d": {"public_literal_dataset": record}}
+        )
+
+    def test_coordinate_mismatch_fails_closed(self) -> None:
+        record = _preflight_record_antigravity()
+        record["indices"] = [1, 0]
+        self._assert_invalid({"drocc_1d": {"public_literal_dataset": record}})
+
+    def test_nonfinite_scored_vector_fails_closed(self) -> None:
+        record = _preflight_record_antigravity()
+        record["train_oof_scores"] = [0.0, float("inf")]
+        self._assert_invalid(
+            {"knn_distance": {"public_literal_dataset": record}}
+        )
+
+    def test_production_shape_reports_exact_counts(self) -> None:
+        datasets = tuple(
+            f"production_dataset_{index:04d}_antigravity"
+            for index in range(1_117)
+        )
+        result = self._run_preflight(
+            datasets, _production_preflight_coordinates_antigravity()
+        )
+        self.assertEqual(len(result.entries), 11_170)
+        self.assertEqual(result.scored_count, 10_775)
+        self.assertEqual(result.abstained_count, 395)
+        self.assertEqual(result.failed_count, 0)
 
 
 class ReportingTestsAntigravity(unittest.TestCase):

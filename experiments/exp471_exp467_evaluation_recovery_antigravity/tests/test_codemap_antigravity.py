@@ -31,6 +31,7 @@ FROZEN_EXP467_CONTEXT_SHA256_ANTIGRAVITY = (
 PRODUCTION_PATHS_ANTIGRAVITY = frozenset(
     {
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
@@ -67,6 +68,9 @@ EXPECTED_PATHS_ANTIGRAVITY = (
 EXPECTED_EFFECTS_ANTIGRAVITY = {
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/cache_artifacts_antigravity.py": (
         "Descriptor-bound create-only persistence for Exp471 score-cache artifacts."
+    ),
+    f"{EXP471_NAMESPACE_ANTIGRAVITY}/baseline_preflight_antigravity.py": (
+        "Strict typed-abstain classification for frozen public-baseline inputs."
     ),
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/cli_antigravity.py": (
         "Closed Exp471 source-to-report command orchestration."
@@ -176,6 +180,7 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py"),
@@ -280,10 +285,12 @@ def _assert_payload_answers_antigravity(
     if not isinstance(scope, Mapping):
         raise AssertionError("code-map scope is not a mapping")
     expected_scope = {
-        "node_count": 21,
-        "production_node_count": 10,
+        "node_count": 22,
+        "production_node_count": 11,
         "test_node_count": 9,
-        "external_closure_policy": "index_tracked_exp471_production_closure",
+            "external_closure_policy": (
+                "index_tracked_exp471_production_closure"
+            ),
     }
     for key, expected in expected_scope.items():
         if scope.get(key) != expected:

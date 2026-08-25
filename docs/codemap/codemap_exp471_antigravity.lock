@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp471_antigravity.html": "e50d1d4c04a007173d26f121be9d2a6e19b72fd6077f1e6d7007e7f0777724c7",
-    "docs/codemap/codemap_exp471_antigravity.json": "3969aed2773bcd643fe43989b80d9700869cb8dc30469e3fe3bea65c5a975e7f"
+    "docs/codemap/codemap_exp471_antigravity.html": "75556a6f705732e6d3f1ebe41fc2d27da971b4244d45ff0852abd66feada66d6",
+    "docs/codemap/codemap_exp471_antigravity.json": "bb605c67f148a70815c522fd65b569157058715484a753469f13c14f90e3256c"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -14,6 +14,7 @@
     "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
   },
   "module_fingerprints": {
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py": "62331d9dda63cb12211ad56718a77ef0c11f39090ae62ff121c74047946eec81",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py": "4d42e78d3fb297d0cc49fa48ad0877fa1fe3c9ef76b736c0857c3199f670b3dd",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "f7fe580a30ddf2da18df0115365bd68f18408712525112df03aa0b81d61156e8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py": "8805eccf8153cc6f43ac9de1d7b5e197bf4fa5dfbe17674431bfb188d92de01a",
@@ -25,18 +26,19 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py": "740fc9e60acd2442a5e2dda6c0b1dc8cc973fc0fe67e7359283bb869368d77cb",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py": "6859e9d7e88db8e546cbbf97c2c92b3aae5477dfb2eb43d55e35f18529faf25a",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "875e64a13b0d87fb08c60d70704d51b31072bf0b9fba6b9efa8331642e4c16e5",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "426d9340465fb984a49ea1e712b2ec0fe30e07a4e1ee6e8752ed89cca8632f6f",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py": "4d00c917a1480ebe5cad1c0cba3e4b083d4c21128f6de84a7043fb9aa8612b09",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "462d1358223d64976913c5997bab6ec8ba329a6637feb476ff6611bd1ee0394b",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py": "1812ad52e1fdaa7679faca90ce6a63b078191baa49c30bee8b40afb26d2353c5",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py": "1a33e37176492865c1e866b7f4e5a78be7eb68b2cfcdbd702dcfaea4446ababb",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "eabae324f4a80c80810b4f0b4255a45dadcd8ac9658f3a3ddf572100e5e4a835",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "4c9a326d5ef39c140f0736a9f2e9264e50ecda107d5b5742874ef928d359bbe9",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py": "2092a76f113bd4a43c70bb1878ae81cf96a82e76baf97e479834f60c013d0d46",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py": "d60a2716588fc01752c883c743b5ca54a4cbd7d3e3698ed5fd0332b40cf51799",
     "scratch/generate_exp471_codemap_antigravity.py": "bb2c0c9f76b9ebd8ffc886bb424cfc6a447206e23f1943b9d9de36c18c67ba06",
     "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py": "4c05e270a7d7468e8e9a6e168b919cdda8345d36eb6a78d8f185d9397fd6ed7a"
   },
   "scanned_scope": [
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
