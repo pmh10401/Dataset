@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>라우팅 대시보드 - antigravity</title>
+<style>
+body{font-family:-apple-system,sans-serif;max-width:1000px;margin:40px auto;padding:0 24px;color:#222;line-height:1.6}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:10px;color:#1a365d}
+h2{color:#2b6cb0;margin-top:36px;border-left:4px solid #2b6cb0;padding-left:12px}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+th,td{border:1px solid #cbd5e0;padding:7px 11px;text-align:center}
+th{background:#edf2f7;font-weight:600}
+td:first-child{text-align:left;font-weight:500}
+.note{background:#ebf8ff;border-left:4px solid #2b6cb0;padding:14px 18px;margin:18px 0;border-radius:4px}
+.warn{background:#fffaf0;border-left:4px solid #dd6b20;padding:14px 18px;margin:18px 0}
+.ok{background:#c6f6d5}.bad{background:#fed7d7}.mid{background:#fefcbf}
+.phase-badge{display:inline-block;background:#2b6cb0;color:white;padding:2px 10px;border-radius:12px;font-size:13px;margin-right:6px}
+.done{background:#38a169}
+ul,ol{padding-left:22px}li{margin-bottom:5px}
+code{background:#f7fafc;padding:1px 5px;border-radius:3px;font-size:13px}
+.commit{color:#718096;font-size:13px}
+input[type=checkbox]{transform:scale(1.4);margin-right:8px;vertical-align:middle}
+.checked{color:#22543d;font-weight:600}
+</style>
+</head>
+<body>
+<h1>라우팅 프로젝트 대시보드 (antigravity)</h1>
+<p class="commit">브랜치 codex/exp470-ecg200-spectral-entropy-numba-antigravity · HEAD f6ab7e64 · 2026-08-25</p>
+
+<h2><span class="phase-badge done">완료</span>지금까지 진행 상황</h2>
+<table>
+<tr><th style="text-align:left">항목</th><th>상태</th><th>커밋 / 산출물</th></tr>
+<tr><td>Exp473 Phase 2 샘플링 코드</td><td class="ok">✅ 완료</td><td><code>97548370</code></td></tr>
+<tr><td>Phase 2 실행 버그 수정 (출력 폴더)</td><td class="ok">✅ 완료</td><td><code>0ab5a371</code></td></tr>
+<tr><td>Phase 2 결과 기록 (HTML)</td><td class="ok">✅ 완료</td><td><code>da5732bd</code></td></tr>
+<tr><td>라우팅 로드맵 설계서 (HTML)</td><td class="ok">✅ 완료</td><td><code>63922d4e</code></td></tr>
+<tr><td>Step 1: label-free 특징 추출기 구현 + 테스트 통과</td><td class="ok">✅ 완료</td><td><code>f6ab7e64</code></td></tr>
+<tr><td>Step 2: 실제 데이터셋 특징 추출 및 테이블 생성</td><td class="mid">🔄 진행 중</td><td>/tmp/routing_features_antigravity.json</td></tr>
+</table>
+
+<h2><span class="phase-badge">핵심 결과</span>Phase 2 요약 (TRAIN 500개 샘플링)</h2>
+<table>
+<tr><th>데이터셋</th><th>AUC (s1/s2)</th><th>zero-FP TP</th><th>평가</th></tr>
+<tr><td>Yoga_normal_1</td><td>0.87 / 0.86</td><td class="bad">0 / 0</td><td>꼬리 회복 실패</td></tr>
+<tr><td>Yoga_normal_2</td><td>0.89 / 0.91</td><td class="bad">0 / 0</td><td>꼬리 회복 실패</td></tr>
+<tr><td>FordA_normal_-1</td><td>0.83 / 0.87</td><td class="mid">1 / 5</td><td>seed 민감</td></tr>
+<tr><td>FordB_normal_-1</td><td>0.81 / 0.82</td><td class="bad">0 / 0</td><td>seed 민감</td></tr>
+</table>
+
+<h2><span class="phase-badge">데이터셋 특징 테이블</span>label-free 라우팅 신호 (대표 데이터셋)</h2>
+<table>
+<tr><th>가족</th><th>width</th><th>spectral_entropy</th><th>skewness</th><th>kurtosis</th><th>현재 best 후보</th></tr>
+<tr><td>Crop</td><td>46</td><td class="ok">0.138 (주기적)</td><td>+0.12</td><td>-1.60</td><td>multirocket_local_gap</td></tr>
+<tr><td>ElectricDevices</td><td>96</td><td class="bad">0.865 (무작위)</td><td class="bad">+5.40</td><td class="bad">+34.7</td><td>multirocket_local_gap</td></tr>
+<tr><td>FordA</td><td>500</td><td class="mid">0.481</td><td>+0.01</td><td>-0.08</td><td>hydra_local_gap</td></tr>
+<tr><td>FordB</td><td>500</td><td class="mid">0.538</td><td>+0.00</td><td>-0.02</td><td>hydra_local_gap</td></tr>
+<tr><td>Yoga</td><td>426</td><td class="ok">0.199 (매우 주기적)</td><td>-0.07</td><td>-0.86</td><td>multirocket_local_gap</td></tr>
+<tr><td>ECG5000</td><td>140</td><td class="mid">0.473</td><td class="warn">-1.91</td><td class="warn">+4.38</td><td>hydra_local_gap</td></tr>
+<tr><td>ChlorineConcentration</td><td>166</td><td class="bad">0.738</td><td>+1.76</td><td>+3.95</td><td>minirocket_local_gap</td></tr>
+<tr><td>StarLightCurves</td><td>1024</td><td class="ok">0.065 (강한 주기성)</td><td>-0.06</td><td>-1.33</td><td>hydra_local_gap</td></tr>
+</table>
+
+<div class="note">
+<strong>초기 패턴 발견:</strong><br>
+• <strong>width ≥ 400 &amp;&amp; entropy ≈ 0.5</strong> → hydra_local_gap (FordA/B)<br>
+• <strong>entropy &lt; 0.25</strong> → multirocket 또는 hydra (Yoga·StarLightCurves·Crop) — 보조 신호 필요<br>
+• <strong>skewness &gt; 2</strong> → multirocket 계열 선호 (ElectricDevices)<br>
+• ECG5000은 유일하게 음의 skewness → 별도 규칙 필요
+</div>
+
+<h2><span class="phase-badge">다음 작업</span>진행 예정 항목</h2>
+<ul style="list-style:none;padding-left:0">
+<li><input type="checkbox" checked disabled><span class="checked">Step 2: 특징 테이블 JSON 저장</span></li>
+<li><input type="checkbox" disabled> Step 2b: 결정 트리 초안 규칙 도출 (위 패턴을 if-else로 정식화)</li>
+<li><input type="checkbox" disabled> Step 3: LOFO 검증 스크립트 작성</li>
+<li><input type="checkbox" disabled> Step 4: holdout 데이터셋으로 일반화 확인</li>
+<li><input type="checkbox" disabled> Step 5: 사용자 승인 후 official pipeline 반영</li>
+</ul>
+
+<h2><span class="phase-badge">참고 문서</span></h2>
+<ul>
+<li><a href="EXP_ROUTING_DESIGN_antigravity.html">라우팅 설계서</a></li>
+<li><a href="EXP473_PHASE2_RESULTS_antigravity.html">Exp473 Phase 2 결과</a></li>
+</ul>
+</body>
+</html>
