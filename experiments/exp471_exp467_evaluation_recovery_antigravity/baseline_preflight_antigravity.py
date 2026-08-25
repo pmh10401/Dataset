@@ -59,21 +59,22 @@ def _entry_from_shard_antigravity(
     method: str,
     dataset: str,
     shard: Mapping[str, object],
+    expected_indices: tuple[int, ...],
 ) -> Exp471BaselinePreflightEntryAntigravity:
     count = shard.get("count")
+    n_train = shard.get("n_train")
+    n_test = shard.get("n_test")
     indices = shard.get("indices")
     if (
         type(count) is not int
         or count < 1
-        or not isinstance(indices, (Sequence, list, tuple))
-        or isinstance(indices, (str, bytes))
-        or len(indices) != count
-        or len(set(indices)) != count
-        or any(type(index) is not int or index < 0 for index in indices)
-        or tuple(indices) != tuple(range(count))
+        or type(n_train) is not int
+        or n_train < 0
+        or type(n_test) is not int
+        or n_test < 1
+        or n_test != count
     ):
-        raise _invalid_antigravity(f"TEST coordinates for {method}/{dataset}")
-    expected_indices = tuple(indices)
+        raise _invalid_antigravity(f"source row counts for {method}/{dataset}")
     status = shard.get("status")
     if type(status) is not str:
         raise _invalid_antigravity(f"source status for {method}/{dataset}")
@@ -81,20 +82,34 @@ def _entry_from_shard_antigravity(
     if status == "complete":
         if reason is not None:
             raise _invalid_antigravity(f"scored reason for {method}/{dataset}")
+
+        train = _float_vector_antigravity(shard.get("train_oof_scores"))
+        test = _float_vector_antigravity(shard.get("test_scores"))
+        if len(train) != n_train or len(test) != n_test:
+            raise _invalid_antigravity(
+                f"score vector lengths for {method}/{dataset}"
+            )
         return Exp471BaselinePreflightEntryAntigravity(
             method=method,
             dataset=dataset,
             status="scored",
             test_indices=expected_indices,
-            train_oof_scores=_float_vector_antigravity(shard.get("train_oof_scores")),
-            test_scores=_float_vector_antigravity(shard.get("test_scores")),
+            train_oof_scores=train,
+            test_scores=test,
             abstention_reason=None,
         )
     if status == "abstain":
         if reason != _ABSTENTION_REASON_ANTIGRAVITY:
             raise _invalid_antigravity(f"abstention reason for {method}/{dataset}")
         forbidden = ("train_oof_scores", "test_scores")
-        if any(key in shard and shard[key] not in (None,) for key in forbidden):
+        if any(key not in shard for key in forbidden):
+            raise _invalid_antigravity(
+                f"missing explicit abstention arrays for {method}/{dataset}"
+            )
+        if any(
+            shard[key] is None or len(tuple(shard[key])) > 0
+            for key in forbidden
+        ):
             raise _invalid_antigravity(
                 f"nonempty abstention scores for {method}/{dataset}"
             )
@@ -114,6 +129,7 @@ def preflight_frozen_baselines_antigravity(
     *,
     datasets: tuple[str, ...],
     coordinates: Mapping[str, object],
+    expected_coordinates: Mapping[str, Sequence[int]],
 ) -> Exp471BaselinePreflightAntigravity:
     """Classify every baseline identity without exposing source failure states."""
 
@@ -132,6 +148,20 @@ def preflight_frozen_baselines_antigravity(
         methods != BASELINE_METHODS_ANTIGRAVITY
     ):
         raise _invalid_antigravity("method order")
+    authority: dict[str, tuple[int, ...]] = {}
+    for dataset, value in expected_coordinates.items():
+        if (
+            type(dataset) is not str
+            or dataset in authority
+            or not isinstance(value, (Sequence, list, tuple))
+            or isinstance(value, (str, bytes))
+            or any(type(index) is not int or index < 0 for index in value)
+            or tuple(value) != tuple(range(len(value)))
+        ):
+            raise _invalid_antigravity("independent TEST coordinate authority")
+        authority[dataset] = tuple(value)
+    if tuple(authority) != datasets:
+        raise _invalid_antigravity("independent TEST coordinate order")
     for method in methods:
         rows = coordinates.get(method)
         if not isinstance(rows, Mapping) or tuple(rows) != datasets:
@@ -140,7 +170,22 @@ def preflight_frozen_baselines_antigravity(
             shard = rows[dataset]
             if not isinstance(shard, Mapping):
                 raise _invalid_antigravity(f"shard for {method}/{dataset}")
-            entry = _entry_from_shard_antigravity(method, dataset, shard)
+            source_indices = shard.get("indices")
+            if (
+                not isinstance(source_indices, (Sequence, list, tuple))
+                or isinstance(source_indices, (str, bytes))
+                or any(
+                    type(index) is not int or index < 0
+                    for index in source_indices
+                )
+                or tuple(source_indices) != authority[dataset]
+            ):
+                raise _invalid_antigravity(
+                    f"source TEST coordinates for {method}/{dataset}"
+                )
+            entry = _entry_from_shard_antigravity(
+                method, dataset, shard, authority[dataset]
+            )
             key = (method, dataset)
             if key in entries:
                 raise _invalid_antigravity("duplicate identity")

@@ -212,6 +212,7 @@ def _preflight_record_antigravity(
     count: int = 2,
     *,
     status: str = "complete",
+    train_length: int | None = None,
 ) -> dict[str, object]:
     record: dict[str, object] = {
         "count": count,
@@ -219,10 +220,17 @@ def _preflight_record_antigravity(
         "status": status,
     }
     if status == "complete":
-        record["train_oof_scores"] = [float(index) + 0.25 for index in range(count)]
+        train_count = count if train_length is None else train_length
+        record["n_train"] = train_count
+        record["n_test"] = count
+        record["train_oof_scores"] = [float(index) + 0.25 for index in range(train_count)]
         record["test_scores"] = [float(index) + 0.75 for index in range(count)]
     elif status == "abstain":
         record["reason"] = "insufficient_train_rows"
+        record["n_train"] = 0 if train_length is None else train_length
+        record["n_test"] = count
+        record["train_oof_scores"] = []
+        record["test_scores"] = []
     return record
 
 
@@ -244,6 +252,10 @@ def _production_preflight_coordinates_antigravity() -> dict[str, object]:
             rows[dataset] = _preflight_record_antigravity(status=status)
         coordinates[method] = rows
     return coordinates
+
+
+def _preflight_expected_coordinates_antigravity(datasets) -> dict[str, tuple[int, ...]]:
+    return {dataset: tuple(range(2)) for dataset in datasets}
 
 
 class BaselinePreflightTestsAntigravity(unittest.TestCase):
@@ -275,7 +287,11 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
 
     def _run_preflight(self, datasets, coordinates):
         return baseline_preflight.preflight_frozen_baselines_antigravity(
-            datasets=datasets, coordinates=coordinates
+            datasets=datasets,
+            coordinates=coordinates,
+            expected_coordinates=_preflight_expected_coordinates_antigravity(
+                datasets
+            ),
         )
 
     def test_complete_entry_is_scored_with_exact_vectors(self) -> None:
@@ -290,6 +306,8 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         self.assertEqual(entry.test_indices, (0, 1))
         self.assertEqual(entry.train_oof_scores, (0.25, 1.25))
         self.assertEqual(entry.test_scores, (0.75, 1.75))
+        entry_drocc = result.entries[("drocc_1d", datasets[0])]
+        self.assertEqual(entry_drocc.train_oof_scores, (0.25, 1.25))
         self.assertEqual(result.scored_count, 6)
         self.assertEqual(result.abstained_count, 0)
         self.assertEqual(result.failed_count, 0)
@@ -308,6 +326,55 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         self.assertEqual(result.scored_count, 5)
         self.assertEqual(result.abstained_count, 1)
         self.assertEqual(result.failed_count, 0)
+
+    def test_explicit_empty_abstain_vectors_are_required(self) -> None:
+        record = _preflight_record_antigravity(status="abstain", train_length=3)
+        del record["train_oof_scores"]
+        del record["test_scores"]
+        self._assert_invalid({"deep_svdd_1d": {"public_literal_dataset": record}})
+
+    def test_nonempty_explicit_abstain_vectors_fail_closed(self) -> None:
+        record = _preflight_record_antigravity(
+            status="abstain", train_length=2
+        )
+        record["train_oof_scores"] = [0.5, 0.6]
+        self._assert_invalid({"deep_svdd_1d": {"public_literal_dataset": record}})
+
+    def test_train_vector_length_must_use_n_train_not_n_test(self) -> None:
+        record = _preflight_record_antigravity(train_length=3)
+        record["train_oof_scores"] = record["train_oof_scores"][:2]
+        self._assert_invalid({"knn_distance": {"public_literal_dataset": record}})
+
+    def test_missing_n_fields_fail_closed(self) -> None:
+        record = _preflight_record_antigravity()
+        del record["n_test"]
+        self._assert_invalid({"knn_distance": {"public_literal_dataset": record}})
+
+    def test_source_indices_must_match_independent_authority(self) -> None:
+        record = _preflight_record_antigravity()
+        record["indices"] = [0, 1]
+        expected = {"public_literal_dataset": (0, 1)}
+        with self.assertRaisesRegex(ValueError, "Exp471 baseline preflight"):
+            baseline_preflight.preflight_frozen_baselines_antigravity(
+                datasets=("public_literal_dataset",),
+                coordinates={"knn_distance": {"public_literal_dataset": record}},
+                expected_coordinates={
+                    **expected,
+                    "other_public_literal_dataset": (0, 1),
+                },
+            )
+
+    def test_expected_coordinate_order_is_exact(self) -> None:
+        record = _preflight_record_antigravity()
+        with self.assertRaisesRegex(ValueError, "Exp471 baseline preflight"):
+            baseline_preflight.preflight_frozen_baselines_antigravity(
+                datasets=("public_literal_dataset",),
+                coordinates={"knn_distance": {"public_literal_dataset": record}},
+                expected_coordinates={
+                    "other_public_literal_dataset": (0, 1),
+                    "public_literal_dataset": (0, 1),
+                },
+            )
 
     def _assert_invalid(self, coordinates) -> None:
         with self.assertRaisesRegex(ValueError, "Exp471 baseline preflight"):
