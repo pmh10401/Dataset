@@ -189,14 +189,19 @@ class Exp471ScoreShardArtifactTestsAntigravity(unittest.TestCase):
     ) -> None:
         """A missing Darwin primitive must not select an overwrite-capable fallback."""
         with mock.patch.object(
+            cache_artifacts.sys, "platform", "darwin"
+        ), mock.patch.object(
             cache_artifacts.ctypes, "CDLL", return_value=object()
-        ), self.assertRaisesRegex(RuntimeError, "no-replace move is unavailable"):
+        ) as loader, self.assertRaisesRegex(
+            RuntimeError, "no-replace move is unavailable"
+        ):
             cache_artifacts._rename_no_replace_at_antigravity(
                 -1,
                 "source_antigravity.json",
                 -1,
                 "destination_antigravity.json",
             )
+        loader.assert_called_once_with(None, use_errno=True)
 
     def test_digest_path_is_literal_deterministic_contained_and_antigravity_named(self) -> None:
         """Raw identities or escaping components must never become shard pathnames."""

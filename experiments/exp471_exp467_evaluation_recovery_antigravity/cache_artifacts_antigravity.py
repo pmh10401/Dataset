@@ -737,6 +737,19 @@ def _quarantine_cache_manifest_in_anchor_antigravity(
                 )
                 os.fsync(recovery_directory)
                 os.fsync(anchor.descriptor)
+        else:
+            try:
+                os.stat(
+                    _CACHE_MANIFEST_NAME_ANTIGRAVITY,
+                    dir_fd=anchor.descriptor,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                pass
+            else:
+                raise ValueError(
+                    "Exp471 manifest recovery destination exists without metadata"
+                )
         record = _manifest_recovery_record_antigravity(
             original_path=original_path,
             reason=reason,
