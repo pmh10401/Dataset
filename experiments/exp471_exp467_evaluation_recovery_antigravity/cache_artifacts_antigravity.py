@@ -707,6 +707,23 @@ def _verify_manifest_coverage_in_directory_antigravity(
     }
     if set(manifest.shard_sha256) != expected_keys:
         raise ValueError("Exp471 score-cache manifest coverage identities differ")
+    expected_names = {
+        score_shard_relative_path_antigravity(method, dataset).name
+        for method in manifest.method_order
+        for dataset in manifest.dataset_order
+    }
+
+    def require_exact_inventory_antigravity() -> None:
+        observed_names = tuple(os.listdir(shard_directory))
+        if (
+            len(observed_names) != len(expected_names)
+            or set(observed_names) != expected_names
+        ):
+            raise ValueError(
+                "Exp471 score-cache shard inventory differs from manifest coverage"
+            )
+
+    require_exact_inventory_antigravity()
     status_counts = {"scored": 0, "abstained": 0}
     for method in manifest.method_order:
         for dataset in manifest.dataset_order:
@@ -724,6 +741,7 @@ def _verify_manifest_coverage_in_directory_antigravity(
                     "Exp471 score-cache shard differs from manifest coverage"
                 )
             status_counts[shard.status] += 1
+    require_exact_inventory_antigravity()
     if (
         status_counts["scored"] != manifest.scored_shards
         or status_counts["abstained"] != manifest.abstained_shards

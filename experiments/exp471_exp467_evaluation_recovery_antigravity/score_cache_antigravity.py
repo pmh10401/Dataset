@@ -1574,22 +1574,53 @@ def _reopen_all_required_shards_antigravity(
     root: Path,
     metadata: _VerifiedScoreMetadataAntigravity,
 ) -> dict[tuple[str, str], Exp471ScoreShardAntigravity]:
-    """Reopen every durable identity before terminal manifest publication."""
+    """Reopen every required shard between same-descriptor inventory gates."""
 
-    _validate_exact_shard_inventory_antigravity(root, metadata)
-    reopened: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
-    for method in METHOD_ORDER_ANTIGRAVITY:
-        for dataset in metadata.dataset_order:
-            shard = _existing_shard_antigravity(root, metadata, method, dataset)
-            if shard is None:
-                raise ValueError(
-                    "Exp471 cannot publish an incomplete score-cache manifest"
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    directory: int | None = None
+    try:
+        directory, expected = _artifacts_antigravity._open_child_directory_antigravity(
+            anchor.descriptor, "score_shards_antigravity", create=False
+        )
+        _validate_exact_shard_inventory_in_directory_antigravity(
+            directory, METHOD_ORDER_ANTIGRAVITY, metadata.dataset_order
+        )
+        reopened: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
+        for method in METHOD_ORDER_ANTIGRAVITY:
+            for dataset in metadata.dataset_order:
+                shard = (
+                    _artifacts_antigravity._read_score_shard_from_directory_antigravity(
+                        directory, method, dataset
+                    )
                 )
-            identity = (method, dataset)
-            if identity in reopened:
-                raise ValueError("Exp471 durable score cache contains duplicate identity")
-            reopened[identity] = shard
-    return reopened
+                if not _metadata_matches_shard_antigravity(
+                    metadata, method, dataset, shard
+                ):
+                    raise ValueError(
+                        "Exp471 existing score shard differs from verified input"
+                    )
+                if method in METHOD_ORDER_ANTIGRAVITY[4:] and shard.status == "scored":
+                    _read_score_expectation_antigravity(root, shard)
+                identity = (method, dataset)
+                if identity in reopened:
+                    raise ValueError(
+                        "Exp471 durable score cache contains duplicate identity"
+                    )
+                reopened[identity] = shard
+        _validate_exact_shard_inventory_in_directory_antigravity(
+            directory, METHOD_ORDER_ANTIGRAVITY, metadata.dataset_order
+        )
+        _artifacts_antigravity._validate_child_directory_antigravity(
+            anchor.descriptor, "score_shards_antigravity", expected
+        )
+        anchor.validate()
+        return reopened
+    finally:
+        if directory is not None:
+            os.close(directory)
+        anchor.close()
 
 
 def _validate_exact_shard_inventory_antigravity(
@@ -1608,11 +1639,6 @@ def _validate_exact_shard_inventory_for_order_antigravity(
     methods: Sequence[str],
     datasets: Sequence[str],
 ) -> None:
-    required_names = {
-        score_shard_relative_path_antigravity(method, dataset).name
-        for method in methods
-        for dataset in datasets
-    }
     anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
         Path(root), create=False
     )
@@ -1621,9 +1647,9 @@ def _validate_exact_shard_inventory_for_order_antigravity(
         directory, expected = _artifacts_antigravity._open_child_directory_antigravity(
             anchor.descriptor, "score_shards_antigravity", create=False
         )
-        observed_names = set(os.listdir(directory))
-        if observed_names != required_names or len(observed_names) != len(required_names):
-            raise ValueError("Exp471 score-shard inventory differs from required coverage")
+        _validate_exact_shard_inventory_in_directory_antigravity(
+            directory, methods, datasets
+        )
         _artifacts_antigravity._validate_child_directory_antigravity(
             anchor.descriptor, "score_shards_antigravity", expected
         )
@@ -1632,6 +1658,24 @@ def _validate_exact_shard_inventory_for_order_antigravity(
         if directory is not None:
             os.close(directory)
         anchor.close()
+
+
+def _validate_exact_shard_inventory_in_directory_antigravity(
+    directory: int,
+    methods: Sequence[str],
+    datasets: Sequence[str],
+) -> None:
+    required_names = {
+        score_shard_relative_path_antigravity(method, dataset).name
+        for method in methods
+        for dataset in datasets
+    }
+    observed_names = tuple(os.listdir(directory))
+    if (
+        len(observed_names) != len(required_names)
+        or set(observed_names) != required_names
+    ):
+        raise ValueError("Exp471 score-shard inventory differs from required coverage")
 
 
 def _validate_manifest_metadata_antigravity(
@@ -1647,6 +1691,78 @@ def _validate_manifest_metadata_antigravity(
         or manifest.dataset_order != metadata.dataset_order
     ):
         raise ValueError("Exp471 complete score cache order differs")
+
+
+def _remove_exact_cache_manifest_antigravity(
+    root: Path,
+    manifest: Exp471ScoreCacheManifestAntigravity,
+) -> bool:
+    """Remove only the exact terminal marker invalidated by a later gate."""
+
+    name = "score_cache_manifest_antigravity.json"
+    payload = _artifacts_antigravity._canonical_manifest_bytes_antigravity(manifest)
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    try:
+        try:
+            expected = os.stat(name, dir_fd=anchor.descriptor, follow_symlinks=False)
+        except FileNotFoundError:
+            return False
+        raw = _artifacts_antigravity._read_leaf_at_antigravity(
+            anchor.descriptor, name, missing_ok=True
+        )
+        if raw is None:
+            return False
+        observed = os.stat(name, dir_fd=anchor.descriptor, follow_symlinks=False)
+        if (
+            raw != payload
+            or not _artifacts_antigravity._same_identity_antigravity(
+                expected, observed
+            )
+        ):
+            return False
+        removed = _artifacts_antigravity._unlink_owned_path_antigravity(
+            anchor.descriptor, name, expected
+        )
+        if not removed:
+            raise ValueError("Exp471 invalid complete marker changed before removal")
+        os.fsync(anchor.descriptor)
+        anchor.validate()
+        return True
+    finally:
+        anchor.close()
+
+
+def _publish_terminal_manifest_antigravity(
+    root: Path,
+    manifest: Exp471ScoreCacheManifestAntigravity,
+) -> Exp471ScoreCacheManifestAntigravity:
+    try:
+        publish_cache_manifest_antigravity(root, manifest)
+        reopened = read_cache_manifest_antigravity(root)
+        if reopened != manifest:
+            raise ValueError("Exp471 terminal cache manifest differs after publication")
+        return reopened
+    except Exception:
+        _remove_exact_cache_manifest_antigravity(root, manifest)
+        raise
+
+
+def _rebind_complete_manifest_antigravity(
+    root: Path,
+    metadata: _VerifiedScoreMetadataAntigravity,
+    manifest: Exp471ScoreCacheManifestAntigravity,
+) -> None:
+    try:
+        shards = _reopen_all_required_shards_antigravity(root, metadata)
+        rebound = _manifest_from_shards_antigravity(metadata, shards)
+        if rebound != manifest:
+            raise ValueError("Exp471 complete score cache differs from verified input")
+        _validate_exact_shard_inventory_antigravity(root, metadata)
+    except Exception:
+        _remove_exact_cache_manifest_antigravity(root, manifest)
+        raise
 
 
 def _run_actual_wave_antigravity(
@@ -1760,10 +1876,7 @@ def prepare_score_cache_antigravity(
         )
         events = _read_execution_events_antigravity(root, benchmark)
         _execution_summary_antigravity(benchmark, events)
-        shards = _reopen_all_required_shards_antigravity(root, metadata)
-        rebound = _manifest_from_shards_antigravity(metadata, shards)
-        if rebound != manifest:
-            raise ValueError("Exp471 complete score cache differs from verified input")
+        _rebind_complete_manifest_antigravity(root, metadata, manifest)
         return manifest
 
     shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
@@ -1824,8 +1937,7 @@ def prepare_score_cache_antigravity(
         shards = _reopen_all_required_shards_antigravity(root, metadata)
         manifest = _manifest_from_shards_antigravity(metadata, shards)
         _validate_exact_shard_inventory_antigravity(root, metadata)
-        publish_cache_manifest_antigravity(root, manifest)
-        return read_cache_manifest_antigravity(root)
+        return _publish_terminal_manifest_antigravity(root, manifest)
 
     tasks = tuple(
         _prepare_score_identity_antigravity(metadata, method, dataset)
@@ -1982,11 +2094,7 @@ def prepare_score_cache_antigravity(
     shards = _reopen_all_required_shards_antigravity(root, metadata)
     manifest = _manifest_from_shards_antigravity(metadata, shards)
     _validate_exact_shard_inventory_antigravity(root, metadata)
-    publish_cache_manifest_antigravity(root, manifest)
-    reopened_manifest = read_cache_manifest_antigravity(root)
-    if reopened_manifest != manifest:
-        raise ValueError("Exp471 terminal cache manifest differs after publication")
-    return reopened_manifest
+    return _publish_terminal_manifest_antigravity(root, manifest)
 
 
 def _scan_shards_antigravity(root: Path) -> tuple[Exp471ScoreShardAntigravity, ...]:
@@ -2139,10 +2247,7 @@ def open_complete_score_cache_antigravity(
     )
     events = _read_execution_events_antigravity(root, benchmark)
     _execution_summary_antigravity(benchmark, events)
-    shards = _reopen_all_required_shards_antigravity(root, metadata)
-    rebound = _manifest_from_shards_antigravity(metadata, shards)
-    if rebound != manifest:
-        raise ValueError("Exp471 complete score cache differs from verified input")
+    _rebind_complete_manifest_antigravity(root, metadata, manifest)
     return manifest
 
 
