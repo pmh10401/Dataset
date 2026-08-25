@@ -151,6 +151,7 @@ def _source_bundle_antigravity() -> dict[str, object]:
                 },
                 "scores": {
                     dataset: {
+                        "status": "scored",
                         "train_oof_scores": [0.0, 1.0, 2.0, 3.0],
                         "test_indices": [0, 1],
                         "test_scores": [
@@ -162,14 +163,42 @@ def _source_bundle_antigravity() -> dict[str, object]:
                 },
             }
     return {
-        "schema": "exp471-verified-score-input-antigravity.v2",
+        "schema": "exp471-verified-score-input-antigravity.v3",
         "database_sha256": authority.database_sha256,
         "dataset_order": list(_DATASETS_ANTIGRAVITY),
         "test_coordinates": coordinates,
         "baseline_authority_sha256": baseline_authority_sha256,
+        "coverage": {
+            "total_identities": 30,
+            "scored_identities": 30,
+            "abstained_identities": 0,
+            "failed_identities": 0,
+            "condition_scored_identities": 12,
+            "baseline_scored_identities": 18,
+            "baseline_abstained_identities": 0,
+        },
         "conditions": conditions,
         "baselines": baselines,
     }
+
+
+def _mixed_source_bundle_antigravity() -> dict[str, object]:
+    bundle = _source_bundle_antigravity()
+    bundle["baselines"]["deep_svdd_1d"]["scores"]["dataset_alpha"] = {
+        "status": "abstained",
+        "test_indices": [0, 1],
+        "reason": "insufficient_train_rows",
+    }
+    bundle["coverage"] = {
+        "total_identities": 30,
+        "scored_identities": 29,
+        "abstained_identities": 1,
+        "failed_identities": 0,
+        "condition_scored_identities": 12,
+        "baseline_scored_identities": 17,
+        "baseline_abstained_identities": 1,
+    }
+    return bundle
 
 
 def _session_antigravity(
@@ -351,6 +380,186 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                 raw_baseline.micro_scores, (0.19999999999999996, 0.6)
             )
             self.assertEqual(label_calls, [])
+
+    def test_typed_abstention_is_parent_published_and_never_scheduled(self) -> None:
+        """An abstention entering calibration or a worker is a routing bug."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_typed_abstention_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            scheduled: list[tuple[str, str]] = []
+            calibration_calls: list[object] = []
+            progress: list[dict[str, object]] = []
+            original_run = score_cache._run_tasks_antigravity
+            original_calibration = score_cache.upper_tail_pvalues_numba_antigravity
+
+            def record_run(tasks, workers):
+                scheduled.extend((task.method, task.dataset) for task in tasks)
+                return original_run(tasks, workers)
+
+            def record_calibration(reference, query):
+                calibration_calls.append((reference.size, query.size))
+                return original_calibration(reference, query)
+
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache, "_run_tasks_antigravity", record_run
+            ), mock.patch.object(
+                score_cache,
+                "upper_tail_pvalues_numba_antigravity",
+                record_calibration,
+            ):
+                manifest = score_cache.prepare_score_cache_antigravity(
+                    session, workers=1, progress=progress.append
+                )
+
+            abstained_identity = ("deep_svdd_1d", "dataset_alpha")
+            self.assertNotIn(abstained_identity, scheduled)
+            self.assertEqual(len(calibration_calls), 17)
+            shard = score_cache.read_score_shard_antigravity(
+                root, *abstained_identity
+            )
+            self.assertEqual(shard.status, "abstained")
+            self.assertEqual(shard.test_indices, (0, 1))
+            self.assertEqual(shard.raw_scores, ())
+            self.assertEqual(shard.micro_scores, ())
+            self.assertEqual(shard.abstention_reason, "insufficient_train_rows")
+            self.assertEqual(
+                (manifest.scored_shards, manifest.abstained_shards, manifest.failed_shards),
+                (29, 1, 0),
+            )
+            abstention_events = [
+                event for event in progress if event["status"] == "abstained"
+            ]
+            self.assertEqual(
+                [(event["method"], event["dataset"]) for event in abstention_events],
+                [abstained_identity],
+            )
+            for event in progress:
+                self.assertEqual(
+                    set(event) - {"error_type", "error_message", "method", "dataset", "wave", "attempt", "status"},
+                    {"schema", "durable_completed", "scored", "abstained", "failed", "remaining", "elapsed_seconds", "eta_seconds"},
+                )
+
+    def test_parent_abstention_interruption_is_observable_without_benchmark(self) -> None:
+        """A parent-only durable shard must not invent measured worker evidence."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_parent_abstention_interrupt_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, self.assertRaisesRegex(
+                RuntimeError, "parent interruption"
+            ):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=1,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(RuntimeError("parent interruption"))
+                        if event["status"] == "abstained" else None
+                    ),
+                )
+            status = score_cache.status_score_cache_antigravity(root)
+            self.assertFalse(status["complete"])
+            self.assertEqual(
+                (status["scored"], status["abstained"], status["failed"]),
+                (0, 1, 0),
+            )
+            self.assertIsNone(status["benchmark_decision"])
+            self.assertIsNone(status["execution_decision"])
+
+    def test_mixed_interruption_resumes_both_arms_without_republish(self) -> None:
+        """A mixed restart must preserve existing scored and abstained bytes."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_mixed_resume_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            interrupted_root = base / "interrupted_antigravity" / "score_cache_antigravity"
+            fresh_root = base / "fresh_antigravity" / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(interrupted_root)
+            with issued, cache_root, self.assertRaisesRegex(
+                RuntimeError, "mixed interruption"
+            ):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=1,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(RuntimeError("mixed interruption"))
+                        if event["status"] == "durable"
+                        and (event["method"], event["dataset"])
+                        == ("knn_distance", "dataset_alpha")
+                        else None
+                    ),
+                )
+            existing = {
+                ("deep_svdd_1d", "dataset_alpha"): score_cache.read_score_shard_antigravity(
+                    interrupted_root, "deep_svdd_1d", "dataset_alpha"
+                ),
+                ("A", "dataset_alpha"): score_cache.read_score_shard_antigravity(
+                    interrupted_root, "A", "dataset_alpha"
+                ),
+                ("knn_distance", "dataset_alpha"): score_cache.read_score_shard_antigravity(
+                    interrupted_root, "knn_distance", "dataset_alpha"
+                ),
+            }
+            existing_bytes = {
+                identity: (interrupted_root / score_cache.score_shard_relative_path_antigravity(*identity)).read_bytes()
+                for identity in existing
+            }
+            published: list[tuple[str, str]] = []
+            calibration_calls: list[object] = []
+            original_publish = score_cache.publish_score_shard_antigravity
+            original_calibration = score_cache.upper_tail_pvalues_numba_antigravity
+
+            def record_publish(root, shard):
+                published.append((shard.method, shard.dataset))
+                return original_publish(root, shard)
+
+            def record_calibration(reference, query):
+                calibration_calls.append((reference.size, query.size))
+                return original_calibration(reference, query)
+
+            issued, cache_root = self._issued_patches_antigravity(interrupted_root)
+            with issued, cache_root, mock.patch.object(
+                score_cache, "publish_score_shard_antigravity", record_publish
+            ), mock.patch.object(
+                score_cache,
+                "upper_tail_pvalues_numba_antigravity",
+                record_calibration,
+            ):
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            self.assertTrue(set(existing).isdisjoint(published))
+            self.assertEqual(len(calibration_calls), 16)
+            for identity, payload in existing_bytes.items():
+                self.assertEqual(
+                    (interrupted_root / score_cache.score_shard_relative_path_antigravity(*identity)).read_bytes(),
+                    payload,
+                )
+
+            issued, cache_root = self._issued_patches_antigravity(fresh_root)
+            with issued, cache_root:
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            self.assertEqual(
+                _cache_bytes_antigravity(interrupted_root),
+                _cache_bytes_antigravity(fresh_root),
+            )
+
+    def test_malformed_abstention_is_terminal_before_calibration_or_workers(self) -> None:
+        """A score-bearing abstention must fail parent validation permanently."""
+
+        bundle = _mixed_source_bundle_antigravity()
+        bundle["baselines"]["deep_svdd_1d"]["scores"]["dataset_alpha"][
+            "test_scores"
+        ] = [0.25, 0.75]
+        self._assert_input_rejected_before_compute_antigravity(
+            bundle, "abstained score-vector schema"
+        )
 
     def test_resume_omits_verified_durable_identity_from_worker_schedule(self) -> None:
         """Durable identities must skip source preparation and calibration."""
@@ -836,15 +1045,15 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                         score_cache.prepare_score_cache_antigravity(session, workers=1)
                 self.assertEqual(worker_calls, [])
 
-    def test_one_and_two_worker_requests_produce_identical_complete_bytes(self) -> None:
-        """An accepted two-worker wave must match canonical one-worker bytes."""
+    def test_one_and_policy_worker_mixed_requests_produce_identical_complete_bytes(self) -> None:
+        """Policy-worker mixed shards must match canonical one-worker bytes."""
         with tempfile.TemporaryDirectory(prefix="exp471_parity_antigravity_") as temporary:
             base = Path(temporary).resolve()
             roots = (
                 base / "one_antigravity" / "score_cache_antigravity",
-                base / "two_antigravity" / "score_cache_antigravity",
+                base / "policy_antigravity" / "score_cache_antigravity",
             )
-            session = _session_antigravity(_source_bundle_antigravity)
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
             issued, cache_root = self._issued_patches_antigravity(roots[0])
             with issued, cache_root:
                 score_cache.prepare_score_cache_antigravity(session, workers=1)
@@ -864,15 +1073,21 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
             ), mock.patch.object(
                 score_cache, "_run_tasks_antigravity", record_wave
             ):
-                score_cache.prepare_score_cache_antigravity(session, workers=2)
-            self.assertGreaterEqual(worker_counts.count(2), 2)
+                score_cache.prepare_score_cache_antigravity(
+                    session, workers=score_cache.CPU_WORKERS_ANTIGRAVITY
+                )
+            self.assertGreaterEqual(
+                worker_counts.count(score_cache.CPU_WORKERS_ANTIGRAVITY), 2
+            )
             self.assertEqual(
                 _cache_bytes_antigravity(roots[0]),
                 _cache_bytes_antigravity(roots[1]),
             )
             status = score_cache.status_score_cache_antigravity(roots[1])
             decision = status["benchmark_decision"]
-            self.assertEqual(decision["selected_workers"], 2)
+            self.assertEqual(
+                decision["selected_workers"], score_cache.CPU_WORKERS_ANTIGRAVITY
+            )
             self.assertTrue(decision["parallel_accepted"])
             self.assertEqual(decision["speedup_threshold"], 1.1)
             self.assertTrue(

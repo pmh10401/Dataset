@@ -46,15 +46,83 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravit
     METHOD_ORDER_ANTIGRAVITY,
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity import (
+    Exp471ScoreCacheManifestAntigravity,
+    Exp471ScoreShardAntigravity,
     canonical_json_bytes_exp471_antigravity,
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_evaluation_antigravity import (
     _LABELS_ANTIGRAVITY,
     _authority_antigravity,
     _evaluation_patches_antigravity,
-    _publish_cache_antigravity,
     _session_antigravity,
 )
+
+
+def _typed_publish_cache_antigravity(root: Path, authority):
+    """Publish the strict Task 2 scored fixture used by reporting tests."""
+
+    cache_context = sha256(b"public literal cache context").hexdigest()
+    shard_digests: dict[str, str] = {}
+    for index, method in enumerate(METHOD_ORDER_ANTIGRAVITY):
+        payload = {
+            "schema": "exp471-score-cache-shard-antigravity.v2",
+            "source_authority_sha256": authority.authority_sha256,
+            "cache_context_sha256": cache_context,
+            "method": method,
+            "dataset": "public_literal_dataset",
+            "status": "scored",
+            "test_count": 2,
+            "test_indices": [0, 1],
+            "raw_scores": [0.05 + index / 100.0, 0.75 + index / 100.0],
+            "micro_scores": [0.10 + index / 100.0, 0.90 + index / 100.0],
+            "abstention_reason": None,
+            "source_manifest_sha256": sha256(
+                f"public literal source {method}".encode("ascii")
+            ).hexdigest(),
+        }
+        payload_sha256 = sha256(
+            canonical_json_bytes_exp471_antigravity(payload)
+        ).hexdigest()
+        envelope_sha256 = sha256(
+            canonical_json_bytes_exp471_antigravity(
+                {**payload, "payload_sha256": payload_sha256}
+            )
+        ).hexdigest()
+        shard = Exp471ScoreShardAntigravity(
+            **{key: value for key, value in payload.items() if key != "schema"},
+            payload_sha256=payload_sha256,
+            envelope_sha256=envelope_sha256,
+        )
+        evaluation.cache_artifacts_antigravity.publish_score_shard_antigravity(
+            root, shard
+        )
+        shard_digests[f"{method}:public_literal_dataset"] = envelope_sha256
+    manifest_record = {
+        "schema": "exp471-score-cache-manifest-antigravity.v2",
+        "source_authority_sha256": authority.authority_sha256,
+        "cache_context_sha256": cache_context,
+        "method_order": list(METHOD_ORDER_ANTIGRAVITY),
+        "dataset_order": ["public_literal_dataset"],
+        "shard_sha256": shard_digests,
+        "total_shards": len(METHOD_ORDER_ANTIGRAVITY),
+        "scored_shards": len(METHOD_ORDER_ANTIGRAVITY),
+        "abstained_shards": 0,
+        "failed_shards": 0,
+    }
+    manifest = Exp471ScoreCacheManifestAntigravity(
+        **{
+            key: value
+            for key, value in manifest_record.items()
+            if key != "schema"
+        },
+        manifest_sha256=sha256(
+            canonical_json_bytes_exp471_antigravity(manifest_record)
+        ).hexdigest(),
+    )
+    evaluation.cache_artifacts_antigravity.publish_cache_manifest_antigravity(
+        root, manifest
+    )
+    return manifest
 
 
 def _worker_provenance_antigravity(
@@ -133,7 +201,7 @@ def _artifact_antigravity(base: Path):
     evaluation_root = base / "evaluation_antigravity"
     authority = _authority_antigravity()
     session = _session_antigravity(authority)
-    cache = _publish_cache_antigravity(cache_root, authority)
+    cache = _typed_publish_cache_antigravity(cache_root, authority)
     worker = _worker_provenance_antigravity()
     (cache_root / "score_preparation_benchmark_antigravity.json").write_bytes(
         canonical_json_bytes_exp471_antigravity(worker["benchmark_decision"])

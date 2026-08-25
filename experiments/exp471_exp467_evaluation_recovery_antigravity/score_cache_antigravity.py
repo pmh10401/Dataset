@@ -56,7 +56,7 @@ from .source_authority_antigravity import (
 )
 
 
-_INPUT_SCHEMA_ANTIGRAVITY = "exp471-verified-score-input-antigravity.v2"
+_INPUT_SCHEMA_ANTIGRAVITY = "exp471-verified-score-input-antigravity.v3"
 _STATUS_SCHEMA_ANTIGRAVITY = "exp471-score-cache-status-antigravity.v1"
 _BENCHMARK_SCHEMA_ANTIGRAVITY = "exp471-score-preparation-benchmark-antigravity.v1"
 _BASELINE_AUTHORITY_SCHEMA_ANTIGRAVITY = (
@@ -80,6 +80,7 @@ class _ScoreTaskAntigravity:
     method: str
     dataset: str
     test_count: int
+    test_indices: tuple[int, ...]
     raw_scores: tuple[float, ...]
     micro_scores: tuple[float, ...]
     source_manifest_sha256: str
@@ -101,6 +102,14 @@ class _TestCoordinatesAntigravity:
 
 
 @dataclass(frozen=True, slots=True)
+class _BaselineScoreMetadataAntigravity:
+    status: str
+    train_oof_scores: tuple[float, ...]
+    test_scores: tuple[float, ...]
+    abstention_reason: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class _VerifiedScoreMetadataAntigravity:
     source_authority_sha256: str
     database_sha256: str
@@ -113,8 +122,9 @@ class _VerifiedScoreMetadataAntigravity:
     condition_scores: Mapping[str, Mapping[str, tuple[float, ...]]]
     baseline_scores: Mapping[
         str,
-        Mapping[str, tuple[tuple[float, ...], tuple[float, ...]]],
+        Mapping[str, _BaselineScoreMetadataAntigravity],
     ]
+    coverage: Mapping[str, int]
 
 
 def _digest_antigravity(value: object, field_name: str) -> str:
@@ -153,6 +163,7 @@ def _cache_context_antigravity(
     coordinates_sha256: str,
     source_digests: Mapping[str, str],
     baseline_authority_digests: Mapping[str, str],
+    coverage: Mapping[str, int],
 ) -> str:
     record = {
         "schema": "exp471-score-cache-context-antigravity.v1",
@@ -163,6 +174,7 @@ def _cache_context_antigravity(
         "test_coordinates_sha256": coordinates_sha256,
         "source_manifest_sha256": dict(source_digests),
         "baseline_authority_sha256": dict(baseline_authority_digests),
+        "coverage": dict(coverage),
         "calibration": {
             "function": "upper_tail_pvalues_numba_antigravity",
             "dtype": "float64",
@@ -259,6 +271,7 @@ def _validate_verified_input_metadata_antigravity(
         "dataset_order",
         "test_coordinates",
         "baseline_authority_sha256",
+        "coverage",
         "conditions",
         "baselines",
     }:
@@ -281,6 +294,49 @@ def _validate_verified_input_metadata_antigravity(
         or len(datasets) != len(set(datasets))
     ):
         raise ValueError("Exp471 dataset order is invalid")
+
+    coverage_value = _mapping_antigravity(
+        bundle["coverage"], "Exp471 score-input coverage"
+    )
+    coverage_fields = (
+        "total_identities",
+        "scored_identities",
+        "abstained_identities",
+        "failed_identities",
+        "condition_scored_identities",
+        "baseline_scored_identities",
+        "baseline_abstained_identities",
+    )
+    if set(coverage_value) != set(coverage_fields) or any(
+        type(coverage_value[field]) is not int or coverage_value[field] < 0
+        for field in coverage_fields
+    ):
+        raise ValueError("Exp471 score-input coverage schema differs")
+    coverage = {field: int(coverage_value[field]) for field in coverage_fields}
+    condition_total = len(METHOD_ORDER_ANTIGRAVITY[:4]) * len(datasets)
+    baseline_total = len(METHOD_ORDER_ANTIGRAVITY[4:]) * len(datasets)
+    total = len(METHOD_ORDER_ANTIGRAVITY) * len(datasets)
+    if (
+        coverage["total_identities"] != total
+        or coverage["condition_scored_identities"] != condition_total
+        or coverage["failed_identities"] != 0
+        or coverage["baseline_scored_identities"]
+        + coverage["baseline_abstained_identities"] != baseline_total
+        or coverage["scored_identities"]
+        != condition_total + coverage["baseline_scored_identities"]
+        or coverage["abstained_identities"]
+        != coverage["baseline_abstained_identities"]
+        or coverage["scored_identities"]
+        + coverage["abstained_identities"] != total
+    ):
+        raise ValueError("Exp471 score-input coverage arithmetic differs")
+    if len(datasets) == 1_117 and (
+        coverage["total_identities"],
+        coverage["scored_identities"],
+        coverage["abstained_identities"],
+        coverage["failed_identities"],
+    ) != (11_170, 10_775, 395, 0):
+        raise ValueError("Exp471 production score-input coverage differs")
 
     coordinate_rows = _mapping_antigravity(
         bundle["test_coordinates"], "Exp471 TEST coordinates"
@@ -352,9 +408,7 @@ def _validate_verified_input_metadata_antigravity(
             )
 
     baseline_authority_digests: dict[str, str] = {}
-    baseline_scores: dict[
-        str, dict[str, tuple[tuple[float, ...], tuple[float, ...]]]
-    ] = {}
+    baseline_scores: dict[str, dict[str, _BaselineScoreMetadataAntigravity]] = {}
     for method in METHOD_ORDER_ANTIGRAVITY[4:]:
         row = _mapping_antigravity(
             baselines[method], f"Exp471 {method} baseline source"
@@ -436,24 +490,59 @@ def _validate_verified_input_metadata_antigravity(
             vectors = _mapping_antigravity(
                 scores[dataset], f"Exp471 {method}/{dataset} score vectors"
             )
-            if set(vectors) != {
-                "train_oof_scores",
-                "test_indices",
-                "test_scores",
-            }:
-                raise ValueError(
-                    f"Exp471 {method}/{dataset} score-vector schema differs"
+            status = vectors.get("status")
+            if status == "scored":
+                if set(vectors) != {
+                    "status",
+                    "train_oof_scores",
+                    "test_indices",
+                    "test_scores",
+                }:
+                    raise ValueError(
+                        f"Exp471 {method}/{dataset} scored score-vector schema differs"
+                    )
+                test_scores = _validate_row_coordinates_antigravity(
+                    vectors,
+                    coordinates[dataset],
+                    scope=f"Exp471 {method}/{dataset}",
                 )
-            test_scores = _validate_row_coordinates_antigravity(
-                vectors,
-                coordinates[dataset],
-                scope=f"Exp471 {method}/{dataset}",
-            )
-            train_scores = _float64_vector_antigravity(
-                vectors["train_oof_scores"],
-                f"Exp471 {method}/{dataset} TRAIN OOF scores",
-            )
-            baseline_scores[method][dataset] = (train_scores, test_scores)
+                train_scores = _float64_vector_antigravity(
+                    vectors["train_oof_scores"],
+                    f"Exp471 {method}/{dataset} TRAIN OOF scores",
+                )
+                baseline_scores[method][dataset] = _BaselineScoreMetadataAntigravity(
+                    "scored", train_scores, test_scores, None
+                )
+            elif status == "abstained":
+                if set(vectors) != {"status", "test_indices", "reason"}:
+                    raise ValueError(
+                        f"Exp471 {method}/{dataset} abstained score-vector schema differs"
+                    )
+                indices_value = vectors["test_indices"]
+                if (
+                    not isinstance(indices_value, (tuple, list))
+                    or tuple(indices_value) != coordinates[dataset].indices
+                ):
+                    raise ValueError(f"Exp471 {method}/{dataset} TEST coordinates differ")
+                if vectors["reason"] != "insufficient_train_rows":
+                    raise ValueError(
+                        f"Exp471 {method}/{dataset} abstention reason differs"
+                    )
+                baseline_scores[method][dataset] = _BaselineScoreMetadataAntigravity(
+                    "abstained", (), (), "insufficient_train_rows"
+                )
+            else:
+                raise ValueError(
+                    f"Exp471 {method}/{dataset} source status differs"
+                )
+
+    observed_abstained = sum(
+        entry.status == "abstained"
+        for method_rows in baseline_scores.values()
+        for entry in method_rows.values()
+    )
+    if observed_abstained != coverage["abstained_identities"]:
+        raise ValueError("Exp471 score-input durable status coverage differs")
 
     cache_context = _cache_context_antigravity(
         authority,
@@ -461,6 +550,7 @@ def _validate_verified_input_metadata_antigravity(
         coordinates_sha256,
         source_digests,
         baseline_authority_digests,
+        coverage,
     )
     return _VerifiedScoreMetadataAntigravity(
         authority.authority_sha256,
@@ -473,6 +563,7 @@ def _validate_verified_input_metadata_antigravity(
         baseline_authority_digests,
         condition_scores,
         baseline_scores,
+        coverage,
     )
 
 
@@ -487,7 +578,10 @@ def _prepare_score_identity_antigravity(
         raw_scores = metadata.condition_scores[method][dataset]
         micro_scores = raw_scores
     else:
-        train_scores, raw_scores = metadata.baseline_scores[method][dataset]
+        baseline = metadata.baseline_scores[method][dataset]
+        if baseline.status != "scored":
+            raise ValueError("Exp471 abstention cannot enter score preparation")
+        train_scores, raw_scores = baseline.train_oof_scores, baseline.test_scores
         train = np.ascontiguousarray(train_scores, dtype=np.float64)
         test = np.ascontiguousarray(raw_scores, dtype=np.float64)
         calibrated = 1.0 - upper_tail_pvalues_numba_antigravity(train, test)
@@ -504,6 +598,7 @@ def _prepare_score_identity_antigravity(
         method=method,
         dataset=dataset,
         test_count=metadata.coordinates[dataset].count,
+        test_indices=metadata.coordinates[dataset].indices,
         raw_scores=raw_scores,
         micro_scores=micro_scores,
         source_manifest_sha256=metadata.source_manifest_sha256[method],
@@ -521,6 +616,8 @@ def _build_tasks_from_verified_input_antigravity(
         _prepare_score_identity_antigravity(metadata, method, dataset)
         for method in METHOD_ORDER_ANTIGRAVITY
         for dataset in metadata.dataset_order
+        if method in METHOD_ORDER_ANTIGRAVITY[:4]
+        or metadata.baseline_scores[method][dataset].status == "scored"
     )
 
 
@@ -528,13 +625,17 @@ def _shard_from_task_antigravity(
     task: _ScoreTaskAntigravity,
 ) -> Exp471ScoreShardAntigravity:
     payload: dict[str, object] = {
+        "schema": "exp471-score-cache-shard-antigravity.v2",
         "source_authority_sha256": task.source_authority_sha256,
         "cache_context_sha256": task.cache_context_sha256,
         "method": task.method,
         "dataset": task.dataset,
+        "status": "scored",
         "test_count": task.test_count,
+        "test_indices": list(task.test_indices),
         "raw_scores": list(task.raw_scores),
         "micro_scores": list(task.micro_scores),
+        "abstention_reason": None,
         "source_manifest_sha256": task.source_manifest_sha256,
     }
     payload_sha256 = sha256(
@@ -545,7 +646,48 @@ def _shard_from_task_antigravity(
         canonical_json_bytes_exp471_antigravity(envelope)
     ).hexdigest()
     return Exp471ScoreShardAntigravity(
-        **payload,
+        **{key: value for key, value in payload.items() if key != "schema"},
+        payload_sha256=payload_sha256,
+        envelope_sha256=envelope_sha256,
+    )
+
+
+def _abstained_shard_antigravity(
+    metadata: _VerifiedScoreMetadataAntigravity,
+    method: str,
+    dataset: str,
+) -> Exp471ScoreShardAntigravity:
+    """Build one typed no-score shard entirely in the verified parent process."""
+
+    if method in METHOD_ORDER_ANTIGRAVITY[:4]:
+        raise ValueError("Exp471 condition identity cannot abstain")
+    baseline = metadata.baseline_scores[method][dataset]
+    if baseline.status != "abstained":
+        raise ValueError("Exp471 scored identity cannot build an abstention shard")
+    payload: dict[str, object] = {
+        "schema": "exp471-score-cache-shard-antigravity.v2",
+        "source_authority_sha256": metadata.source_authority_sha256,
+        "cache_context_sha256": metadata.cache_context_sha256,
+        "method": method,
+        "dataset": dataset,
+        "status": "abstained",
+        "test_count": metadata.coordinates[dataset].count,
+        "test_indices": list(metadata.coordinates[dataset].indices),
+        "raw_scores": [],
+        "micro_scores": [],
+        "abstention_reason": baseline.abstention_reason,
+        "source_manifest_sha256": metadata.source_manifest_sha256[method],
+    }
+    payload_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(payload)
+    ).hexdigest()
+    envelope_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(
+            {**payload, "payload_sha256": payload_sha256}
+        )
+    ).hexdigest()
+    return Exp471ScoreShardAntigravity(
+        **{key: value for key, value in payload.items() if key != "schema"},
         payload_sha256=payload_sha256,
         envelope_sha256=envelope_sha256,
     )
@@ -1161,12 +1303,35 @@ def _metadata_matches_shard_antigravity(
     dataset: str,
     shard: Exp471ScoreShardAntigravity,
 ) -> bool:
+    expected_status = (
+        "scored"
+        if method in METHOD_ORDER_ANTIGRAVITY[:4]
+        else metadata.baseline_scores[method][dataset].status
+    )
+    expected_raw = (
+        metadata.condition_scores[method][dataset]
+        if method in METHOD_ORDER_ANTIGRAVITY[:4]
+        else metadata.baseline_scores[method][dataset].test_scores
+    )
     return (
         shard.source_authority_sha256 == metadata.source_authority_sha256
         and shard.cache_context_sha256 == metadata.cache_context_sha256
         and shard.method == method
         and shard.dataset == dataset
         and shard.test_count == metadata.coordinates[dataset].count
+        and shard.test_indices == metadata.coordinates[dataset].indices
+        and shard.status == expected_status
+        and shard.raw_scores == expected_raw
+        and (
+            shard.micro_scores == expected_raw
+            if method in METHOD_ORDER_ANTIGRAVITY[:4]
+            else True
+        )
+        and (
+            shard.abstention_reason == "insufficient_train_rows"
+            if expected_status == "abstained"
+            else shard.abstention_reason is None
+        )
         and shard.source_manifest_sha256
         == metadata.source_manifest_sha256[method]
     )
@@ -1202,6 +1367,7 @@ def _manifest_from_shards_antigravity(
     if set(shards) != required:
         raise ValueError("Exp471 cannot publish an incomplete score-cache manifest")
     record: dict[str, object] = {
+        "schema": "exp471-score-cache-manifest-antigravity.v2",
         "source_authority_sha256": metadata.source_authority_sha256,
         "cache_context_sha256": metadata.cache_context_sha256,
         "method_order": list(METHOD_ORDER_ANTIGRAVITY),
@@ -1212,13 +1378,51 @@ def _manifest_from_shards_antigravity(
             for dataset in datasets
         },
         "total_shards": len(required),
+        "scored_shards": sum(shard.status == "scored" for shard in shards.values()),
+        "abstained_shards": sum(
+            shard.status == "abstained" for shard in shards.values()
+        ),
+        "failed_shards": 0,
     }
+    expected_partition = (
+        metadata.coverage["scored_identities"],
+        metadata.coverage["abstained_identities"],
+        metadata.coverage["failed_identities"],
+    )
+    if (
+        record["scored_shards"],
+        record["abstained_shards"],
+        record["failed_shards"],
+    ) != expected_partition:
+        raise ValueError("Exp471 durable score-cache status coverage differs")
     manifest_sha256 = sha256(
         canonical_json_bytes_exp471_antigravity(record)
     ).hexdigest()
     return Exp471ScoreCacheManifestAntigravity(
-        **record, manifest_sha256=manifest_sha256
+        **{key: value for key, value in record.items() if key != "schema"},
+        manifest_sha256=manifest_sha256,
     )
+
+
+def _reopen_all_required_shards_antigravity(
+    root: Path,
+    metadata: _VerifiedScoreMetadataAntigravity,
+) -> dict[tuple[str, str], Exp471ScoreShardAntigravity]:
+    """Reopen every durable identity before terminal manifest publication."""
+
+    reopened: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        for dataset in metadata.dataset_order:
+            shard = _existing_shard_antigravity(root, metadata, method, dataset)
+            if shard is None:
+                raise ValueError(
+                    "Exp471 cannot publish an incomplete score-cache manifest"
+                )
+            identity = (method, dataset)
+            if identity in reopened:
+                raise ValueError("Exp471 durable score cache contains duplicate identity")
+            reopened[identity] = shard
+    return reopened
 
 
 def _validate_manifest_metadata_antigravity(
@@ -1267,25 +1471,47 @@ def _run_actual_wave_antigravity(
 def _progress_antigravity(
     callback: Callable[[Mapping[str, object]], None] | None,
     *,
-    outcome: _TaskOutcomeAntigravity,
+    method: str,
+    dataset: str,
     wave: str,
     attempt: int,
     status: str,
     durable_completed: int,
+    shards: Mapping[tuple[str, str], Exp471ScoreShardAntigravity],
+    total_shards: int,
+    started_at: float,
+    error_type: str | None = None,
+    error_message: str | None = None,
+    failed: int = 0,
 ) -> None:
     if callback is None:
         return
+    elapsed = max(0.0, time.perf_counter() - started_at)
+    remaining = total_shards - durable_completed
+    eta = (
+        0.0
+        if remaining == 0
+        else (elapsed / durable_completed * remaining if durable_completed else None)
+    )
     callback(
         {
             "schema": "exp471-score-cache-progress-antigravity.v1",
-            "method": outcome.task.method,
-            "dataset": outcome.task.dataset,
+            "method": method,
+            "dataset": dataset,
             "wave": wave,
             "attempt": attempt,
             "status": status,
             "durable_completed": durable_completed,
-            "error_type": outcome.error_type,
-            "error_message": outcome.error_message,
+            "scored": sum(shard.status == "scored" for shard in shards.values()),
+            "abstained": sum(
+                shard.status == "abstained" for shard in shards.values()
+            ),
+            "failed": failed,
+            "remaining": remaining,
+            "elapsed_seconds": round(elapsed, 12),
+            "eta_seconds": None if eta is None else round(eta, 12),
+            "error_type": error_type,
+            "error_message": error_message,
         }
     )
 
@@ -1298,6 +1524,7 @@ def prepare_score_cache_antigravity(
 ) -> Exp471ScoreCacheManifestAntigravity:
     """Build, resume, retry once, and atomically publish complete score coverage."""
 
+    started_at = time.perf_counter()
     session = _require_issued_session_antigravity(session)
     if progress is not None and not callable(progress):
         raise ValueError("Exp471 progress callback must be callable")
@@ -1327,16 +1554,43 @@ def prepare_score_cache_antigravity(
         return manifest
 
     shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
-    missing: list[tuple[str, str]] = []
+    missing_scored: list[tuple[str, str]] = []
+    missing_abstained: list[tuple[str, str]] = []
     for method in METHOD_ORDER_ANTIGRAVITY:
         for dataset in metadata.dataset_order:
             existing = _existing_shard_antigravity(
                 root, metadata, method, dataset
             )
             if existing is None:
-                missing.append((method, dataset))
+                expected_status = (
+                    "scored"
+                    if method in METHOD_ORDER_ANTIGRAVITY[:4]
+                    else metadata.baseline_scores[method][dataset].status
+                )
+                target = missing_scored if expected_status == "scored" else missing_abstained
+                target.append((method, dataset))
             else:
                 shards[(method, dataset)] = existing
+
+    for method, dataset in missing_abstained:
+        shard = _abstained_shard_antigravity(metadata, method, dataset)
+        publish_score_shard_antigravity(root, shard)
+        reopened = read_score_shard_antigravity(root, method, dataset)
+        if reopened != shard:
+            raise ValueError("Exp471 durable abstention shard differs after publication")
+        shards[(method, dataset)] = reopened
+        _progress_antigravity(
+            progress,
+            method=method,
+            dataset=dataset,
+            wave="parent",
+            attempt=0,
+            status="abstained",
+            durable_completed=len(shards),
+            shards=shards,
+            total_shards=metadata.coverage["total_identities"],
+            started_at=started_at,
+        )
 
     benchmark: dict[str, object] | None = None
     events: tuple[dict[str, object], ...] = ()
@@ -1345,22 +1599,23 @@ def prepare_score_cache_antigravity(
             root, expected_context_sha256=metadata.cache_context_sha256
         )
         events = _read_execution_events_antigravity(root, benchmark)
-    elif shards:
+    elif any(shard.status == "scored" for shard in shards.values()):
         raise ValueError("Exp471 measured benchmark decision is missing")
-    if shards and not events:
+    if any(shard.status == "scored" for shard in shards.values()) and not events:
         raise ValueError("Exp471 execution decision is missing")
 
-    if not missing:
+    if not missing_scored:
         if benchmark is None:
             raise ValueError("Exp471 measured benchmark decision is missing")
         _execution_summary_antigravity(benchmark, events)
+        shards = _reopen_all_required_shards_antigravity(root, metadata)
         manifest = _manifest_from_shards_antigravity(metadata, shards)
         publish_cache_manifest_antigravity(root, manifest)
         return read_cache_manifest_antigravity(root)
 
     tasks = tuple(
         _prepare_score_identity_antigravity(metadata, method, dataset)
-        for method, dataset in missing
+        for method, dataset in missing_scored
     )
     if benchmark is None:
         if selected_request > 1 and len(tasks) > 1:
@@ -1424,11 +1679,18 @@ def prepare_score_cache_antigravity(
         if outcome.shard is None:
             _progress_antigravity(
                 progress,
-                outcome=outcome,
+                method=outcome.task.method,
+                dataset=outcome.task.dataset,
                 wave="first",
                 attempt=1,
                 status="failed",
                 durable_completed=len(shards),
+                shards=shards,
+                total_shards=metadata.coverage["total_identities"],
+                started_at=started_at,
+                error_type=outcome.error_type,
+                error_message=outcome.error_message,
+                failed=1,
             )
             continue
         publish_score_shard_antigravity(root, outcome.shard)
@@ -1438,11 +1700,15 @@ def prepare_score_cache_antigravity(
         shards[identity] = reopened
         _progress_antigravity(
             progress,
-            outcome=outcome,
+            method=outcome.task.method,
+            dataset=outcome.task.dataset,
             wave="first",
             attempt=1,
             status="durable",
             durable_completed=len(shards),
+            shards=shards,
+            total_shards=metadata.coverage["total_identities"],
+            started_at=started_at,
         )
 
     terminal_failure: _TaskOutcomeAntigravity | None = None
@@ -1454,11 +1720,18 @@ def prepare_score_cache_antigravity(
                     terminal_failure = outcome
                 _progress_antigravity(
                     progress,
-                    outcome=outcome,
+                    method=outcome.task.method,
+                    dataset=outcome.task.dataset,
                     wave="retry",
                     attempt=2,
                     status="terminal_failed",
                     durable_completed=len(shards),
+                    shards=shards,
+                    total_shards=metadata.coverage["total_identities"],
+                    started_at=started_at,
+                    error_type=outcome.error_type,
+                    error_message=outcome.error_message,
+                    failed=1,
                 )
                 continue
             publish_score_shard_antigravity(root, outcome.shard)
@@ -1468,11 +1741,15 @@ def prepare_score_cache_antigravity(
             shards[identity] = reopened
             _progress_antigravity(
                 progress,
-                outcome=outcome,
+                method=outcome.task.method,
+                dataset=outcome.task.dataset,
                 wave="retry",
                 attempt=2,
                 status="durable",
                 durable_completed=len(shards),
+                shards=shards,
+                total_shards=metadata.coverage["total_identities"],
+                started_at=started_at,
             )
     if terminal_failure is not None:
         raise RuntimeError(
@@ -1482,6 +1759,7 @@ def prepare_score_cache_antigravity(
         )
 
     _execution_summary_antigravity(benchmark, events)
+    shards = _reopen_all_required_shards_antigravity(root, metadata)
     manifest = _manifest_from_shards_antigravity(metadata, shards)
     publish_cache_manifest_antigravity(root, manifest)
     reopened_manifest = read_cache_manifest_antigravity(root)
@@ -1553,6 +1831,10 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         dataset_order: tuple[str, ...] = manifest.dataset_order
         manifest_sha256: str | None = manifest.manifest_sha256
         expected_benchmark_context: str | None = manifest.cache_context_sha256
+        scored = manifest.scored_shards
+        abstained = manifest.abstained_shards
+        failed = manifest.failed_shards
+        remaining: int | None = 0
     else:
         shards = _scan_shards_antigravity(root)
         complete = False
@@ -1567,8 +1849,13 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         expected_benchmark_context = (
             next(iter(shard_contexts)) if shard_contexts else None
         )
+        scored = sum(shard.status == "scored" for shard in shards)
+        abstained = sum(shard.status == "abstained" for shard in shards)
+        failed = 0
+        remaining = None
     benchmark_path = root / _BENCHMARK_NAME_ANTIGRAVITY
-    if durable_completed and not os.path.lexists(benchmark_path):
+    requires_benchmark = complete or scored > 0
+    if requires_benchmark and not os.path.lexists(benchmark_path):
         raise ValueError("Exp471 measured benchmark decision is missing")
     benchmark_decision = None
     execution_decision = None
@@ -1579,7 +1866,7 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         execution_events = _read_execution_events_antigravity(
             root, benchmark_decision
         )
-        if durable_completed and not execution_events:
+        if requires_benchmark and not execution_events:
             raise ValueError("Exp471 execution decision is missing")
         if execution_events:
             execution_decision = _execution_summary_antigravity(
@@ -1590,6 +1877,12 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
         "root": str(root),
         "complete": complete,
         "durable_completed": durable_completed,
+        "scored": scored,
+        "abstained": abstained,
+        "failed": failed,
+        "remaining": remaining,
+        "elapsed_seconds": None,
+        "eta_seconds": None,
         "total_shards": total_shards,
         "method_order": method_order,
         "dataset_order": dataset_order,
