@@ -177,7 +177,7 @@ def main_antigravity(argv: list[str] | None = None) -> int:
                 })
         summary["seeds"][str(seed)] = per_seed
 
-    _OUTPUT_ROOT_ANTIGRAVITY.mkdir(parents=True)
+    output_root.mkdir(parents=True)
     rows_bytes = b"".join(_canonical_json_bytes_antigravity(row) for row in row_payloads)
     (output_root / "scores_antigravity.jsonl").write_bytes(rows_bytes)
     manifest = {
