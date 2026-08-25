@@ -38,6 +38,7 @@ _TARGET_DATASETS_PHASE2_ANTIGRAVITY = (
 )
 _TARGET_DATASETS_ANTIGRAVITY = _TARGET_DATASETS_PHASE1_ANTIGRAVITY
 _SEEDS_ANTIGRAVITY = (20260721, 20261721)
+_TRAIN_SAMPLE_CAP_ANTIGRAVITY = 500
 _REQUIRED_TOKEN_ANTIGRAVITY = "EXP473_FN_FOCUS_EXTENSION_APPROVED"
 
 
@@ -131,7 +132,15 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         per_seed: dict[str, object] = {}
         for name, (train_raw, test_raw, mask) in datasets.items():
             rep = make_representation_antigravity("hydra_local_gap", seed)
-            ref_features = np.asarray(rep.fit_transform(train_raw.astype(np.float32)), dtype=np.float64)
+            if args.phase == 2 and len(train_raw) > _TRAIN_SAMPLE_CAP_ANTIGRAVITY:
+                rng = np.random.default_rng(seed * 100_003 + sum(ord(c) for c in name))
+                sample_index = np.sort(rng.choice(len(train_raw), size=_TRAIN_SAMPLE_CAP_ANTIGRAVITY, replace=False))
+                train_used = train_raw[sample_index]
+                train_sampled = int(_TRAIN_SAMPLE_CAP_ANTIGRAVITY)
+            else:
+                train_used = train_raw
+                train_sampled = len(train_raw)
+            ref_features = np.asarray(rep.fit_transform(train_used.astype(np.float32)), dtype=np.float64)
             gap_model = LocalGapModelAntigravity(ref_features, neighbors=3)
 
             train_scores = np.asarray(gap_model.score(ref_features), dtype=np.float64)
@@ -152,7 +161,9 @@ def main_antigravity(argv: list[str] | None = None) -> int:
                 "tp_at_budget": tp_budget,
                 "anomaly_count": int(mask.sum()),
                 "normal_count": int((~mask).sum()),
-                "train_count": len(train_raw),
+                "train_count": len(train_used),
+                "train_sampled_count": train_sampled,
+                "train_full_count": len(train_raw),
                 "width": int(train_raw.shape[1]),
             }
 
