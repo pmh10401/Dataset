@@ -182,7 +182,22 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair repair 판정</label>
     <label><input type="checkbox" checked disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
     <label><input type="checkbox" checked disabled> Task 6 closed CLI·최종 사전검증</label>
-    <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
-    <label><input type="checkbox" disabled> official 실행·TEST/FN·routing 별도 판단</label>
+    <label><input type="checkbox" checked disabled> private 실행 1·2와 결과 분석</label>
+    <label><input type="checkbox" checked disabled> 공식 evaluate·inspect 실행(승인 1회)</label>
+    <label><input type="checkbox" disabled> TEST/FN·routing 별도 판단</label>
   </section>
+
+  <h2>9. 승인된 실행 결과(2026-08-25)</h2>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>결정 함수 수정</td><td>CLI 기본 decider를 키워드 전용 gate 대신 qualification 래퍼로 교체(commit <code>7ebffae7af0b07fad8a18c38f19abb33ee90f394</code>); 집중 테스트 16개 재통과</td></tr>
+      <tr><td>private run1·run2</td><td>승인 token으로 순차 실행, decision passed=true, 7개 leaf raw bytes 완전 동일</td></tr>
+      <tr><td>공식 lifecycle</td><td>reviewed commit <code>cdf5347d1bf0f456b472b347dbbb45e8a43b34a2</code>, clean worktree, evaluate 1회 exit 0 → inspect 1회 exit 0</td></tr>
+      <tr><td>공식 root</td><td><code>/Users/mac/Documents/Dataset/exp471_ecg200_acf_peak_lag_shift_numba_antigravity_20260825</code>(leaf 7개)</td></tr>
+      <tr><td>공식=개인 비교</td><td>공식 root와 private run1의 7개 leaf가 모두 동일</td></tr>
+      <tr><td>핵심 지표</td><td>period fixed seed별 4/4, period broken 0, protected broken 3유형 0, 정상 confirmation 0, fallback exact, finite, 라벨 query 0</td></tr>
+      <tr><td>미수행</td><td>TEST 파일 접근 0회, FN 산출 0회, routing 변경 없음</td></tr>
+    </tbody>
+  </table>
 </main></body></html>
