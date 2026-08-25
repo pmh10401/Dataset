@@ -96,18 +96,24 @@ def score_shard_antigravity(
     *,
     method: str = "A",
     dataset: str = "dataset_1",
+    status: str = "scored",
     test_count: int = 2,
+    test_indices: object = (0, 1),
     raw_scores: object = (0.25, 0.75),
     micro_scores: object = (0.5, 1.0),
+    abstention_reason: object = None,
 ) -> Exp471ScoreShardAntigravity:
     return Exp471ScoreShardAntigravity(
         source_authority_sha256="a" * 64,
         cache_context_sha256="b" * 64,
         method=method,
         dataset=dataset,
+        status=status,  # type: ignore[arg-type]
         test_count=test_count,
+        test_indices=test_indices,  # type: ignore[arg-type]
         raw_scores=raw_scores,  # type: ignore[arg-type]
         micro_scores=micro_scores,  # type: ignore[arg-type]
+        abstention_reason=abstention_reason,  # type: ignore[arg-type]
         source_manifest_sha256="c" * 64,
         payload_sha256="d" * 64,
         envelope_sha256="e" * 64,
@@ -118,6 +124,10 @@ def cache_manifest_antigravity(
     *,
     method_order: object = EXPECTED_METHOD_ORDER_ANTIGRAVITY,
     dataset_order: object = ("dataset_1", "dataset_2"),
+    total_shards: int = 20,
+    scored_shards: int = 20,
+    abstained_shards: int = 0,
+    failed_shards: int = 0,
 ) -> Exp471ScoreCacheManifestAntigravity:
     shard_sha256 = {
         f"{method}:{dataset}": "f" * 64
@@ -130,7 +140,10 @@ def cache_manifest_antigravity(
         method_order=method_order,  # type: ignore[arg-type]
         dataset_order=dataset_order,  # type: ignore[arg-type]
         shard_sha256=shard_sha256,
-        total_shards=20,
+        total_shards=total_shards,
+        scored_shards=scored_shards,
+        abstained_shards=abstained_shards,
+        failed_shards=failed_shards,
         manifest_sha256="c" * 64,
     )
 
@@ -375,9 +388,12 @@ class Exp471ContractSchemaTestsAntigravity(unittest.TestCase):
                 "cache_context_sha256",
                 "method",
                 "dataset",
+                "status",
                 "test_count",
+                "test_indices",
                 "raw_scores",
                 "micro_scores",
+                "abstention_reason",
                 "source_manifest_sha256",
                 "payload_sha256",
                 "envelope_sha256",
@@ -389,6 +405,9 @@ class Exp471ContractSchemaTestsAntigravity(unittest.TestCase):
                 "dataset_order",
                 "shard_sha256",
                 "total_shards",
+                "scored_shards",
+                "abstained_shards",
+                "failed_shards",
                 "manifest_sha256",
             ),
             Exp471EvaluationArtifactAntigravity: (
@@ -505,21 +524,26 @@ class Exp471ContractSchemaTestsAntigravity(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "lowercase SHA-256"):
                     mutate()
 
-    def test_score_shard_freezes_finite_vectors_and_exact_row_identity(self) -> None:
-        """A mutated, non-finite, or mis-sized score vector must not become a shard."""
+    def test_score_shard_is_an_exclusive_scored_or_abstained_union(self) -> None:
+        """Each shard must preserve one exact TEST identity without score fabrication."""
         raw_scores = [0.25, 0.75]
         micro_scores = [0.5, 1.0]
+        test_indices = [3, 7]
         shard = score_shard_antigravity(
+            test_indices=test_indices,
             raw_scores=raw_scores,
             micro_scores=micro_scores,
         )
         raw_scores[0] = 999.0
         micro_scores.append(2.0)
+        test_indices[0] = 99
         self.assertEqual(shard.raw_scores, (0.25, 0.75))
         self.assertEqual(shard.micro_scores, (0.5, 1.0))
+        self.assertEqual(shard.test_indices, (3, 7))
         self.assertEqual(
             json.loads(canonical_json_bytes_exp471_antigravity(shard)),
             {
+                "abstention_reason": None,
                 "cache_context_sha256": "b" * 64,
                 "dataset": "dataset_1",
                 "envelope_sha256": "e" * 64,
@@ -529,15 +553,51 @@ class Exp471ContractSchemaTestsAntigravity(unittest.TestCase):
                 "raw_scores": [0.25, 0.75],
                 "source_authority_sha256": "a" * 64,
                 "source_manifest_sha256": "c" * 64,
+                "status": "scored",
                 "test_count": 2,
+                "test_indices": [3, 7],
             },
         )
+        abstained = score_shard_antigravity(
+            status="abstained",
+            test_indices=[3, 7],
+            raw_scores=[],
+            micro_scores=[],
+            abstention_reason="insufficient_train_rows",
+        )
+        self.assertEqual(abstained.test_indices, (3, 7))
+        self.assertEqual(abstained.raw_scores, ())
+        self.assertEqual(abstained.micro_scores, ())
+        self.assertEqual(abstained.abstention_reason, "insufficient_train_rows")
         for kwargs, message in (
             ({"method": "unknown"}, "method"),
             ({"dataset": ""}, "dataset"),
+            ({"status": "failed"}, "status"),
             ({"test_count": 1}, "test_count"),
+            ({"test_indices": (0,)}, "test_indices"),
+            ({"test_indices": (0, 0)}, "test_indices"),
+            ({"test_indices": (0, -1)}, "test_indices"),
             ({"raw_scores": (0.0, float("inf"))}, "finite"),
             ({"micro_scores": (0.0, float("nan"))}, "finite"),
+            ({"abstention_reason": "insufficient_train_rows"}, "reason"),
+            (
+                {
+                    "status": "abstained",
+                    "raw_scores": (0.0,),
+                    "micro_scores": (),
+                    "abstention_reason": "insufficient_train_rows",
+                },
+                "empty",
+            ),
+            (
+                {
+                    "status": "abstained",
+                    "raw_scores": (),
+                    "micro_scores": (),
+                    "abstention_reason": "unknown",
+                },
+                "insufficient_train_rows",
+            ),
         ):
             with self.subTest(kwargs=kwargs):
                 with self.assertRaisesRegex(ValueError, message):
@@ -549,6 +609,14 @@ class Exp471ContractSchemaTestsAntigravity(unittest.TestCase):
         self.assertEqual(manifest.method_order, EXPECTED_METHOD_ORDER_ANTIGRAVITY)
         self.assertEqual(manifest.dataset_order, ("dataset_1", "dataset_2"))
         self.assertEqual(manifest.total_shards, 20)
+        self.assertEqual(
+            (
+                manifest.scored_shards,
+                manifest.abstained_shards,
+                manifest.failed_shards,
+            ),
+            (20, 0, 0),
+        )
         self.assertIsInstance(manifest.shard_sha256, type(MappingProxyType({})))
         with self.assertRaises(TypeError):
             manifest.shard_sha256["A:dataset_1"] = "0" * 64  # type: ignore[index]
@@ -571,6 +639,21 @@ class Exp471ContractSchemaTestsAntigravity(unittest.TestCase):
             cache_manifest_antigravity(dataset_order=("dataset_1", "dataset_1"))
         with self.assertRaisesRegex(ValueError, "total_shards"):
             replace(manifest, total_shards=19)
+        with self.assertRaisesRegex(ValueError, "partition"):
+            cache_manifest_antigravity(
+                scored_shards=18,
+                abstained_shards=1,
+                failed_shards=0,
+            )
+        mixed = cache_manifest_antigravity(
+            scored_shards=17,
+            abstained_shards=2,
+            failed_shards=1,
+        )
+        self.assertEqual(
+            mixed.scored_shards + mixed.abstained_shards + mixed.failed_shards,
+            mixed.total_shards,
+        )
 
     def test_evaluation_payload_and_report_files_are_recursively_immutable(self) -> None:
         """Nested evaluation data and contained report hashes must resist caller mutation."""

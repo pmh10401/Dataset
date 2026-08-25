@@ -21,6 +21,10 @@ from .contracts_antigravity import (
 
 _SCORE_SHARD_DIRECTORY_ANTIGRAVITY = "score_shards_antigravity"
 _CACHE_MANIFEST_NAME_ANTIGRAVITY = "score_cache_manifest_antigravity.json"
+_SCORE_SHARD_SCHEMA_ANTIGRAVITY = "exp471-score-cache-shard-antigravity.v2"
+_CACHE_MANIFEST_SCHEMA_ANTIGRAVITY = (
+    "exp471-score-cache-manifest-antigravity.v2"
+)
 if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
     raise RuntimeError("Exp471 score cache requires descriptor-relative no-follow support")
 _READ_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_NOFOLLOW
@@ -478,13 +482,17 @@ def _shard_payload_record_antigravity(
     shard: Exp471ScoreShardAntigravity,
 ) -> dict[str, object]:
     return {
+        "schema": _SCORE_SHARD_SCHEMA_ANTIGRAVITY,
         "source_authority_sha256": shard.source_authority_sha256,
         "cache_context_sha256": shard.cache_context_sha256,
         "method": shard.method,
         "dataset": shard.dataset,
+        "status": shard.status,
         "test_count": shard.test_count,
+        "test_indices": list(shard.test_indices),
         "raw_scores": list(shard.raw_scores),
         "micro_scores": list(shard.micro_scores),
+        "abstention_reason": shard.abstention_reason,
         "source_manifest_sha256": shard.source_manifest_sha256,
     }
 
@@ -516,18 +524,24 @@ def _score_shard_from_bytes_antigravity(
 ) -> Exp471ScoreShardAntigravity:
     value = _json_object_antigravity(raw, scope="score shard")
     required = {
+        "schema",
         "source_authority_sha256",
         "cache_context_sha256",
         "method",
         "dataset",
+        "status",
         "test_count",
+        "test_indices",
         "raw_scores",
         "micro_scores",
+        "abstention_reason",
         "source_manifest_sha256",
         "payload_sha256",
         "envelope_sha256",
     }
     if set(value) != required:
+        raise ValueError("Exp471 score shard schema differs")
+    if value.pop("schema") != _SCORE_SHARD_SCHEMA_ANTIGRAVITY:
         raise ValueError("Exp471 score shard schema differs")
     try:
         shard = Exp471ScoreShardAntigravity(**value)
@@ -542,12 +556,16 @@ def _manifest_record_antigravity(
     manifest: Exp471ScoreCacheManifestAntigravity,
 ) -> dict[str, object]:
     return {
+        "schema": _CACHE_MANIFEST_SCHEMA_ANTIGRAVITY,
         "source_authority_sha256": manifest.source_authority_sha256,
         "cache_context_sha256": manifest.cache_context_sha256,
         "method_order": list(manifest.method_order),
         "dataset_order": list(manifest.dataset_order),
         "shard_sha256": dict(manifest.shard_sha256),
         "total_shards": manifest.total_shards,
+        "scored_shards": manifest.scored_shards,
+        "abstained_shards": manifest.abstained_shards,
+        "failed_shards": manifest.failed_shards,
     }
 
 
@@ -571,15 +589,21 @@ def _manifest_from_bytes_antigravity(
 ) -> Exp471ScoreCacheManifestAntigravity:
     value = _json_object_antigravity(raw, scope="score-cache manifest")
     required = {
+        "schema",
         "source_authority_sha256",
         "cache_context_sha256",
         "method_order",
         "dataset_order",
         "shard_sha256",
         "total_shards",
+        "scored_shards",
+        "abstained_shards",
+        "failed_shards",
         "manifest_sha256",
     }
     if set(value) != required:
+        raise ValueError("Exp471 score-cache manifest schema differs")
+    if value.pop("schema") != _CACHE_MANIFEST_SCHEMA_ANTIGRAVITY:
         raise ValueError("Exp471 score-cache manifest schema differs")
     try:
         manifest = Exp471ScoreCacheManifestAntigravity(**value)
@@ -683,6 +707,7 @@ def _verify_manifest_coverage_in_directory_antigravity(
     }
     if set(manifest.shard_sha256) != expected_keys:
         raise ValueError("Exp471 score-cache manifest coverage identities differ")
+    status_counts = {"scored": 0, "abstained": 0}
     for method in manifest.method_order:
         for dataset in manifest.dataset_order:
             shard = _read_score_shard_from_directory_antigravity(
@@ -698,6 +723,13 @@ def _verify_manifest_coverage_in_directory_antigravity(
                 raise ValueError(
                     "Exp471 score-cache shard differs from manifest coverage"
                 )
+            status_counts[shard.status] += 1
+    if (
+        status_counts["scored"] != manifest.scored_shards
+        or status_counts["abstained"] != manifest.abstained_shards
+        or manifest.failed_shards != 0
+    ):
+        raise ValueError("Exp471 score-cache manifest status counts differ")
 
 
 def _open_verified_manifest_coverage_antigravity(

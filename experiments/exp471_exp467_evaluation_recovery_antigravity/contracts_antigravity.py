@@ -10,6 +10,7 @@ import math
 from pathlib import PurePosixPath
 import re
 from types import MappingProxyType
+from typing import Literal
 
 from .config_antigravity import (
     CONDITION_ORDER_ANTIGRAVITY,
@@ -40,6 +41,12 @@ def _nonempty_name_antigravity(value: object, field_name: str) -> str:
 def _positive_count_antigravity(value: object, field_name: str) -> int:
     if type(value) is not int or value < 1:
         raise ValueError(f"{field_name} must be a positive integer")
+    return value
+
+
+def _nonnegative_count_antigravity(value: object, field_name: str) -> int:
+    if type(value) is not int or value < 0:
+        raise ValueError(f"{field_name} must be a nonnegative integer")
     return value
 
 
@@ -205,6 +212,21 @@ def _finite_scores_antigravity(value: object, field_name: str) -> tuple[float, .
     return tuple(scores)
 
 
+def _test_indices_antigravity(value: object, test_count: int) -> tuple[int, ...]:
+    if not isinstance(value, (tuple, list)):
+        raise ValueError("test_indices must be an integer sequence")
+    indices = tuple(value)
+    if (
+        len(indices) != test_count
+        or any(type(index) is not int or index < 0 for index in indices)
+        or len(set(indices)) != test_count
+    ):
+        raise ValueError(
+            "test_count and test_indices must preserve exact unique TEST identity"
+        )
+    return indices
+
+
 @dataclass(frozen=True, slots=True)
 class Exp471SourceAuthorityAntigravity:
     source_commit: str
@@ -278,9 +300,12 @@ class Exp471ScoreShardAntigravity:
     cache_context_sha256: str
     method: str
     dataset: str
+    status: Literal["scored", "abstained"]
     test_count: int
+    test_indices: tuple[int, ...]
     raw_scores: tuple[float, ...]
     micro_scores: tuple[float, ...]
+    abstention_reason: str | None
     source_manifest_sha256: str
     payload_sha256: str
     envelope_sha256: str
@@ -297,13 +322,27 @@ class Exp471ScoreShardAntigravity:
         if self.method not in METHOD_ORDER_ANTIGRAVITY:
             raise ValueError("method is outside the fixed Exp471 method order")
         _nonempty_name_antigravity(self.dataset, "dataset")
+        if self.status not in {"scored", "abstained"}:
+            raise ValueError("status must be scored or abstained")
         count = _positive_count_antigravity(self.test_count, "test_count")
+        test_indices = _test_indices_antigravity(self.test_indices, count)
         raw_scores = _finite_scores_antigravity(self.raw_scores, "raw_scores")
         micro_scores = _finite_scores_antigravity(
             self.micro_scores, "micro_scores"
         )
-        if len(raw_scores) != count or len(micro_scores) != count:
-            raise ValueError("test_count differs from the score vector lengths")
+        if self.status == "scored":
+            if self.abstention_reason is not None:
+                raise ValueError("scored shard must not contain an abstention reason")
+            if len(raw_scores) != count or len(micro_scores) != count:
+                raise ValueError("test_count differs from the score vector lengths")
+        else:
+            if self.abstention_reason != "insufficient_train_rows":
+                raise ValueError(
+                    "abstained shard reason must be insufficient_train_rows"
+                )
+            if raw_scores or micro_scores:
+                raise ValueError("abstained shard score vectors must be empty")
+        object.__setattr__(self, "test_indices", test_indices)
         object.__setattr__(self, "raw_scores", raw_scores)
         object.__setattr__(self, "micro_scores", micro_scores)
 
@@ -316,6 +355,9 @@ class Exp471ScoreCacheManifestAntigravity:
     dataset_order: tuple[str, ...]
     shard_sha256: Mapping[str, str]
     total_shards: int
+    scored_shards: int
+    abstained_shards: int
+    failed_shards: int
     manifest_sha256: str
 
     def __post_init__(self) -> None:
@@ -337,6 +379,19 @@ class Exp471ScoreCacheManifestAntigravity:
         if total_shards != expected_total or len(shards) != expected_total:
             raise ValueError(
                 "total_shards must equal complete unique method/dataset coverage"
+            )
+        scored_shards = _nonnegative_count_antigravity(
+            self.scored_shards, "scored_shards"
+        )
+        abstained_shards = _nonnegative_count_antigravity(
+            self.abstained_shards, "abstained_shards"
+        )
+        failed_shards = _nonnegative_count_antigravity(
+            self.failed_shards, "failed_shards"
+        )
+        if scored_shards + abstained_shards + failed_shards != total_shards:
+            raise ValueError(
+                "score-cache status partition must equal total_shards"
             )
         object.__setattr__(self, "method_order", methods)
         object.__setattr__(self, "dataset_order", datasets)
