@@ -23,15 +23,9 @@ _OUTPUT_ROOT_ANTIGRAVITY = Path(
 _DATABASE_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
 _TARGET_DATASETS_ANTIGRAVITY = (
     "ElectricDevices_normal_5",
-    "FordA_normal_-1",
-    "FordB_normal_-1",
     "ElectricDevices_normal_4",
-    "FordA_normal_1",
-    "StarLightCurves_normal_3",
     "ChlorineConcentration_normal_3",
-    "Yoga_normal_2",
-    "Yoga_normal_1",
-    "FordB_normal_1",
+    "ECG5000_normal_2",
 )
 _SEEDS_ANTIGRAVITY = (20260721, 20261721)
 _REQUIRED_TOKEN_ANTIGRAVITY = "EXP473_FN_FOCUS_EXTENSION_APPROVED"
