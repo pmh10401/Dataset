@@ -341,6 +341,24 @@ def _rewrite_receipt_antigravity(
     path.write_bytes(canonical_json_bytes_exp471_antigravity(record))
 
 
+def _manifest_recoveries_antigravity(
+    root: Path,
+) -> tuple[tuple[Path, dict[str, object]], ...]:
+    recoveries: list[tuple[Path, dict[str, object]]] = []
+    for directory in sorted(
+        root.glob("score_cache_manifest_recovery_*_antigravity")
+    ):
+        metadata = (
+            directory / "score_cache_manifest_recovery_metadata_antigravity.json"
+        )
+        raw = metadata.read_bytes()
+        record = json.loads(raw.decode("utf-8"))
+        if raw != canonical_json_bytes_exp471_antigravity(record):
+            raise AssertionError("manifest recovery metadata is noncanonical")
+        recoveries.append((directory, record))
+    return tuple(recoveries)
+
+
 class ScoreCacheTestsAntigravity(unittest.TestCase):
     def setUp(self) -> None:
         coordinates_sha256 = _coordinate_inventory_sha256_antigravity(
@@ -910,6 +928,7 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
             session = _session_antigravity(_source_bundle_antigravity)
             original_link = score_cache._artifacts_antigravity.os.link
             injected = False
+            linked_manifest_bytes: list[bytes] = []
 
             def insert_extra_then_link(source, destination, **kwargs):
                 nonlocal injected
@@ -919,7 +938,12 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                 ):
                     injected = True
                     _insert_extra_shard_leaf_antigravity(root)
-                return original_link(source, destination, **kwargs)
+                result = original_link(source, destination, **kwargs)
+                if destination == "score_cache_manifest_antigravity.json":
+                    linked_manifest_bytes.append(
+                        (root / destination).read_bytes()
+                    )
+                return result
 
             issued, cache_root = self._issued_patches_antigravity(root)
             with issued, cache_root, mock.patch.object(
@@ -932,6 +956,12 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
             self.assertFalse(
                 (root / "score_cache_manifest_antigravity.json").exists()
             )
+            recoveries = _manifest_recoveries_antigravity(root)
+            self.assertEqual(len(recoveries), 1)
+            directory, record = recoveries[0]
+            recovered = directory / "score_cache_manifest_quarantined_antigravity.json"
+            self.assertEqual(recovered.read_bytes(), linked_manifest_bytes[0])
+            self.assertEqual(record["recovery_path"], str(recovered))
 
     def test_complete_prepare_and_open_reject_reopen_inventory_mutation(self) -> None:
         """First/last shard reopen mutations must invalidate complete authority."""
@@ -984,6 +1014,208 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                     self.assertFalse(
                         (root / "score_cache_manifest_antigravity.json").exists()
                     )
+
+    def test_complete_prepare_and_open_quarantine_early_verifier_mutation(self) -> None:
+        """Both shared-verifier passes must quarantine false complete markers."""
+
+        targets = (
+            ("first", "A", "dataset_alpha"),
+            ("last", "deep_svdd_1d", "dataset_gamma"),
+        )
+        for api in ("prepare", "open"):
+            for verifier_pass in (1, 2):
+                for position, method, dataset in targets:
+                    with self.subTest(
+                        api=api,
+                        verifier_pass=verifier_pass,
+                        position=position,
+                    ), tempfile.TemporaryDirectory(
+                        prefix="exp471_early_verifier_recovery_antigravity_"
+                    ) as temporary:
+                        root = Path(temporary).resolve() / "score_cache_antigravity"
+                        session = _session_antigravity(_source_bundle_antigravity)
+                        issued, cache_root = self._issued_patches_antigravity(root)
+                        with issued, cache_root:
+                            score_cache.prepare_score_cache_antigravity(
+                                session, workers=1
+                            )
+                        manifest_path = (
+                            root / "score_cache_manifest_antigravity.json"
+                        )
+                        manifest_bytes = manifest_path.read_bytes()
+                        target_name = (
+                            score_cache.score_shard_relative_path_antigravity(
+                                method, dataset
+                            ).name
+                        )
+                        observed = 0
+
+                        def mutate_shared_verifier(event, relative):
+                            nonlocal observed
+                            if (
+                                event == "cache:after_leaf_open"
+                                and relative == target_name
+                            ):
+                                observed += 1
+                                if observed == verifier_pass:
+                                    _insert_extra_shard_leaf_antigravity(root)
+
+                        issued, cache_root = self._issued_patches_antigravity(root)
+                        with issued, cache_root, mock.patch.object(
+                            score_cache._artifacts_antigravity,
+                            "_race_hook_antigravity",
+                            mutate_shared_verifier,
+                        ), self.assertRaisesRegex(ValueError, "inventory"):
+                            if api == "prepare":
+                                score_cache.prepare_score_cache_antigravity(
+                                    session, workers=1
+                                )
+                            else:
+                                score_cache.open_complete_score_cache_antigravity(
+                                    session
+                                )
+                        self.assertGreaterEqual(observed, verifier_pass)
+                        self.assertFalse(manifest_path.exists())
+                        recoveries = _manifest_recoveries_antigravity(root)
+                        self.assertEqual(len(recoveries), 1)
+                        directory, record = recoveries[0]
+                        recovered = (
+                            directory
+                            / "score_cache_manifest_quarantined_antigravity.json"
+                        )
+                        self.assertEqual(recovered.read_bytes(), manifest_bytes)
+                        self.assertEqual(directory.parent, root)
+                        self.assertEqual(record["recovery_path"], str(recovered))
+                        self.assertNotIn(directory, tuple((root / "score_shards_antigravity").iterdir()))
+
+    def test_manifest_replacement_during_cleanup_survives_in_recovery(self) -> None:
+        """A post-stat replacement must be moved intact, never unlinked."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_manifest_replacement_recovery_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root:
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            manifest = root / "score_cache_manifest_antigravity.json"
+            expected = manifest.stat()
+            replacement = root / "unrelated_manifest_replacement_antigravity.json"
+            unrelated = b'{"unrelated_antigravity":true}\n'
+            replacement.write_bytes(unrelated)
+            replacement_identity = replacement.stat()
+            target_name = score_cache.score_shard_relative_path_antigravity(
+                "A", "dataset_alpha"
+            ).name
+            target_reads = 0
+            replacement_injected = False
+
+            def replace_during_recovery(event, relative):
+                nonlocal target_reads, replacement_injected
+                if event == "cache:after_leaf_open" and relative == target_name:
+                    target_reads += 1
+                    if target_reads == 3:
+                        _insert_extra_shard_leaf_antigravity(root)
+                if event == "cache:before_manifest_quarantine_rename":
+                    replacement.replace(manifest)
+                    replacement_injected = True
+
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache._artifacts_antigravity,
+                "_race_hook_antigravity",
+                replace_during_recovery,
+            ), self.assertRaisesRegex(ValueError, "inventory"):
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            self.assertTrue(replacement_injected)
+            self.assertFalse(manifest.exists())
+            recoveries = _manifest_recoveries_antigravity(root)
+            self.assertEqual(len(recoveries), 1)
+            directory, record = recoveries[0]
+            recovered = directory / "score_cache_manifest_quarantined_antigravity.json"
+            recovered_identity = recovered.stat()
+            self.assertEqual(recovered.read_bytes(), unrelated)
+            self.assertEqual(
+                (recovered_identity.st_dev, recovered_identity.st_ino),
+                (replacement_identity.st_dev, replacement_identity.st_ino),
+            )
+            self.assertEqual(
+                record["expected_identity"],
+                {"device": expected.st_dev, "inode": expected.st_ino},
+            )
+            self.assertEqual(
+                record["observed_identity"],
+                {
+                    "device": replacement_identity.st_dev,
+                    "inode": replacement_identity.st_ino,
+                },
+            )
+
+    def test_repeated_manifest_recovery_preserves_newer_valid_marker(self) -> None:
+        """Repeating one recovery operation must not move a newer manifest."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_manifest_recovery_idempotent_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root:
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            manifest = root / "score_cache_manifest_antigravity.json"
+            manifest_bytes = manifest.read_bytes()
+            expected = manifest.stat()
+            reason = "repeat recovery test antigravity"
+            first = score_cache._artifacts_antigravity._quarantine_cache_manifest_antigravity(
+                root,
+                reason=reason,
+                expected_identity=(expected.st_dev, expected.st_ino),
+            )
+            self.assertFalse(manifest.exists())
+            recoveries = _manifest_recoveries_antigravity(root)
+            self.assertEqual(len(recoveries), 1)
+            directory, _record = recoveries[0]
+            before = {
+                path.name: path.read_bytes()
+                for path in directory.iterdir()
+                if path.is_file()
+            }
+            manifest.write_bytes(manifest_bytes)
+            newer = manifest.stat()
+            second = score_cache._artifacts_antigravity._quarantine_cache_manifest_antigravity(
+                root,
+                reason=reason,
+                expected_identity=(expected.st_dev, expected.st_ino),
+            )
+            after = {
+                path.name: path.read_bytes()
+                for path in directory.iterdir()
+                if path.is_file()
+            }
+            self.assertEqual(first, second)
+            self.assertEqual(before, after)
+            self.assertEqual(manifest.read_bytes(), manifest_bytes)
+            self.assertEqual(
+                (manifest.stat().st_dev, manifest.stat().st_ino),
+                (newer.st_dev, newer.st_ino),
+            )
+            self.assertEqual(len(_manifest_recoveries_antigravity(root)), 1)
+
+    def test_successful_complete_paths_create_no_manifest_recovery(self) -> None:
+        """Normal publish, prepare reuse, and open create no recovery artifacts."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_no_manifest_recovery_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root:
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+                score_cache.open_complete_score_cache_antigravity(session)
+            self.assertEqual(_manifest_recoveries_antigravity(root), ())
 
     def test_receipt_only_interruption_recomputes_and_reuses_receipt(self) -> None:
         """A receipt durable before its shard safely anchors the resumed recompute."""

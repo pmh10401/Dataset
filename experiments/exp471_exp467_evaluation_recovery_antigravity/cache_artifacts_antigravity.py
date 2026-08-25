@@ -25,6 +25,19 @@ _SCORE_SHARD_SCHEMA_ANTIGRAVITY = "exp471-score-cache-shard-antigravity.v2"
 _CACHE_MANIFEST_SCHEMA_ANTIGRAVITY = (
     "exp471-score-cache-manifest-antigravity.v2"
 )
+_CACHE_MANIFEST_RECOVERY_SCHEMA_ANTIGRAVITY = (
+    "exp471-score-cache-manifest-recovery-antigravity.v1"
+)
+_CACHE_MANIFEST_RECOVERY_PREFIX_ANTIGRAVITY = (
+    "score_cache_manifest_recovery_"
+)
+_CACHE_MANIFEST_RECOVERY_SUFFIX_ANTIGRAVITY = "_antigravity"
+_CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY = (
+    "score_cache_manifest_quarantined_antigravity.json"
+)
+_CACHE_MANIFEST_RECOVERY_METADATA_NAME_ANTIGRAVITY = (
+    "score_cache_manifest_recovery_metadata_antigravity.json"
+)
 if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
     raise RuntimeError("Exp471 score cache requires descriptor-relative no-follow support")
 _READ_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_NOFOLLOW
@@ -338,6 +351,9 @@ def _publish_bytes_at_antigravity(
     *,
     temporary_scope: str,
     post_link_validate_antigravity: Callable[[], None] | None = None,
+    linked_failure_recover_antigravity: (
+        Callable[[os.stat_result, Exception], None] | None
+    ) = None,
 ) -> None:
     existing = _read_existing_after_link_race_antigravity(
         directory, destination, missing_ok=True
@@ -438,12 +454,15 @@ def _publish_bytes_at_antigravity(
                 temporary_scope=temporary_scope,
             )
         os.fsync(directory)
-    except Exception:
+    except Exception as error:
         changed = False
         if linked and temporary_identity is not None:
-            changed = _unlink_owned_path_antigravity(
-                directory, destination, temporary_identity
-            )
+            if linked_failure_recover_antigravity is None:
+                changed = _unlink_owned_path_antigravity(
+                    directory, destination, temporary_identity
+                )
+            else:
+                linked_failure_recover_antigravity(temporary_identity, error)
         if changed:
             try:
                 os.fsync(directory)
@@ -460,6 +479,282 @@ def _publish_bytes_at_antigravity(
                 os.fsync(directory)
             except OSError:
                 pass
+
+
+def _recovery_identity_antigravity(
+    value: tuple[int, int] | os.stat_result | None,
+) -> dict[str, int] | None:
+    if value is None:
+        return None
+    if isinstance(value, os.stat_result):
+        device, inode = value.st_dev, value.st_ino
+    elif (
+        isinstance(value, tuple)
+        and len(value) == 2
+        and all(type(item) is int and item >= 0 for item in value)
+    ):
+        device, inode = value
+    else:
+        raise ValueError("Exp471 manifest recovery identity differs")
+    return {"device": int(device), "inode": int(inode)}
+
+
+def _manifest_recovery_record_antigravity(
+    *,
+    original_path: str,
+    reason: str,
+    expected_identity: dict[str, int] | None,
+    observed_identity: dict[str, int] | None,
+    recovery_path: str | None,
+) -> dict[str, object]:
+    bare: dict[str, object] = {
+        "schema": _CACHE_MANIFEST_RECOVERY_SCHEMA_ANTIGRAVITY,
+        "original_path": original_path,
+        "reason": reason,
+        "expected_identity": expected_identity,
+        "observed_identity": observed_identity,
+        "recovery_path": recovery_path,
+    }
+    return {
+        **bare,
+        "recovery_sha256": sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest(),
+    }
+
+
+def _validated_manifest_recovery_antigravity(
+    raw: bytes,
+    *,
+    original_path: str,
+    reason: str,
+    expected_identity: dict[str, int] | None,
+    recovery_path: str | None,
+    recovery_directory: int,
+) -> dict[str, object]:
+    record = _json_object_antigravity(raw, scope="manifest recovery metadata")
+    required = {
+        "schema",
+        "original_path",
+        "reason",
+        "expected_identity",
+        "observed_identity",
+        "recovery_path",
+        "recovery_sha256",
+    }
+    if (
+        set(record) != required
+        or record["schema"] != _CACHE_MANIFEST_RECOVERY_SCHEMA_ANTIGRAVITY
+        or record["original_path"] != original_path
+        or record["reason"] != reason
+        or record["expected_identity"] != expected_identity
+        or record["recovery_path"] != recovery_path
+    ):
+        raise ValueError("Exp471 manifest recovery metadata differs")
+    observed = record["observed_identity"]
+    if recovery_path is None:
+        if observed is not None:
+            raise ValueError("Exp471 manifest recovery identity differs")
+    else:
+        if (
+            not isinstance(observed, dict)
+            or set(observed) != {"device", "inode"}
+            or any(type(observed[field]) is not int for field in observed)
+        ):
+            raise ValueError("Exp471 manifest recovery identity differs")
+        recovered = os.stat(
+            _CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY,
+            dir_fd=recovery_directory,
+            follow_symlinks=False,
+        )
+        if observed != _recovery_identity_antigravity(recovered):
+            raise ValueError("Exp471 recovered manifest identity differs")
+    bare = {key: value for key, value in record.items() if key != "recovery_sha256"}
+    if (
+        type(record["recovery_sha256"]) is not str
+        or record["recovery_sha256"]
+        != sha256(canonical_json_bytes_exp471_antigravity(bare)).hexdigest()
+        or raw != canonical_json_bytes_exp471_antigravity(record)
+    ):
+        raise ValueError("Exp471 manifest recovery metadata is noncanonical")
+    return dict(record)
+
+
+def _quarantine_cache_manifest_in_anchor_antigravity(
+    root: Path,
+    anchor: _DirectoryAnchorAntigravity,
+    *,
+    reason: str,
+    expected_identity: tuple[int, int] | os.stat_result | None,
+) -> dict[str, object] | None:
+    if type(reason) is not str or not reason:
+        raise ValueError("Exp471 manifest recovery reason differs")
+    expected_record = _recovery_identity_antigravity(expected_identity)
+    original_path = str(Path(root) / _CACHE_MANIFEST_NAME_ANTIGRAVITY)
+    operation = {
+        "schema": _CACHE_MANIFEST_RECOVERY_SCHEMA_ANTIGRAVITY,
+        "original_path": original_path,
+        "reason": reason,
+        "expected_identity": expected_record,
+    }
+    operation_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(operation)
+    ).hexdigest()
+    directory_name = (
+        f"{_CACHE_MANIFEST_RECOVERY_PREFIX_ANTIGRAVITY}"
+        f"{operation_sha256}{_CACHE_MANIFEST_RECOVERY_SUFFIX_ANTIGRAVITY}"
+    )
+    try:
+        os.stat(directory_name, dir_fd=anchor.descriptor, follow_symlinks=False)
+    except FileNotFoundError:
+        try:
+            os.stat(
+                _CACHE_MANIFEST_NAME_ANTIGRAVITY,
+                dir_fd=anchor.descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            return None
+        try:
+            os.mkdir(directory_name, 0o700, dir_fd=anchor.descriptor)
+            created = True
+        except FileExistsError:
+            created = False
+    else:
+        created = False
+
+    recovery_directory: int | None = None
+    try:
+        recovery_directory, directory_identity = _open_child_directory_antigravity(
+            anchor.descriptor, directory_name, create=False
+        )
+        metadata_raw = _read_leaf_at_antigravity(
+            recovery_directory,
+            _CACHE_MANIFEST_RECOVERY_METADATA_NAME_ANTIGRAVITY,
+            missing_ok=True,
+        )
+        recovery_path = str(
+            Path(root)
+            / directory_name
+            / _CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY
+        )
+        if metadata_raw is not None:
+            metadata_value = _json_object_antigravity(
+                metadata_raw, scope="manifest recovery metadata"
+            )
+            recorded_path = metadata_value.get("recovery_path")
+            if recorded_path not in {None, recovery_path}:
+                raise ValueError("Exp471 manifest recovery path differs")
+            return _validated_manifest_recovery_antigravity(
+                metadata_raw,
+                original_path=original_path,
+                reason=reason,
+                expected_identity=expected_record,
+                recovery_path=recorded_path,
+                recovery_directory=recovery_directory,
+            )
+        recovered_identity: os.stat_result | None = None
+        try:
+            recovered_identity = os.stat(
+                _CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY,
+                dir_fd=recovery_directory,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            if not created:
+                raise ValueError("Exp471 manifest recovery is incomplete")
+            _race_hook_antigravity(
+                "cache:before_manifest_quarantine_rename",
+                _CACHE_MANIFEST_NAME_ANTIGRAVITY,
+            )
+            try:
+                os.rename(
+                    _CACHE_MANIFEST_NAME_ANTIGRAVITY,
+                    _CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY,
+                    src_dir_fd=anchor.descriptor,
+                    dst_dir_fd=recovery_directory,
+                )
+            except FileNotFoundError:
+                recovered_identity = None
+                recovery_path = None
+            else:
+                recovered_identity = os.stat(
+                    _CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY,
+                    dir_fd=recovery_directory,
+                    follow_symlinks=False,
+                )
+                os.fsync(recovery_directory)
+                os.fsync(anchor.descriptor)
+        record = _manifest_recovery_record_antigravity(
+            original_path=original_path,
+            reason=reason,
+            expected_identity=expected_record,
+            observed_identity=_recovery_identity_antigravity(recovered_identity),
+            recovery_path=recovery_path,
+        )
+        _publish_bytes_at_antigravity(
+            recovery_directory,
+            _CACHE_MANIFEST_RECOVERY_METADATA_NAME_ANTIGRAVITY,
+            canonical_json_bytes_exp471_antigravity(record),
+            temporary_scope="score_cache_manifest_recovery_metadata",
+        )
+        reopened = _read_leaf_at_antigravity(
+            recovery_directory,
+            _CACHE_MANIFEST_RECOVERY_METADATA_NAME_ANTIGRAVITY,
+        )
+        if reopened is None:
+            raise ValueError("Exp471 manifest recovery metadata is missing")
+        validated = _validated_manifest_recovery_antigravity(
+            reopened,
+            original_path=original_path,
+            reason=reason,
+            expected_identity=expected_record,
+            recovery_path=recovery_path,
+            recovery_directory=recovery_directory,
+        )
+        _validate_child_directory_antigravity(
+            anchor.descriptor, directory_name, directory_identity
+        )
+        anchor.validate()
+        return validated
+    finally:
+        if recovery_directory is not None:
+            os.close(recovery_directory)
+
+
+def _quarantine_cache_manifest_antigravity(
+    root: Path,
+    *,
+    reason: str,
+    expected_identity: tuple[int, int] | os.stat_result | None,
+) -> dict[str, object] | None:
+    anchor = _open_absolute_directory_antigravity(Path(root), create=False)
+    try:
+        return _quarantine_cache_manifest_in_anchor_antigravity(
+            Path(root),
+            anchor,
+            reason=reason,
+            expected_identity=expected_identity,
+        )
+    finally:
+        anchor.close()
+
+
+def _cache_manifest_identity_antigravity(root: Path) -> tuple[int, int] | None:
+    anchor = _open_absolute_directory_antigravity(Path(root), create=False)
+    try:
+        try:
+            observed = os.stat(
+                _CACHE_MANIFEST_NAME_ANTIGRAVITY,
+                dir_fd=anchor.descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            return None
+        anchor.validate()
+        return observed.st_dev, observed.st_ino
+    finally:
+        anchor.close()
 
 
 def _reject_json_constant_antigravity(value: str) -> None:
@@ -807,12 +1102,27 @@ def publish_cache_manifest_antigravity(
                 manifest,
             )
 
+        def recover_linked_manifest_antigravity(
+            expected_identity: os.stat_result,
+            error: Exception,
+        ) -> None:
+            _quarantine_cache_manifest_in_anchor_antigravity(
+                Path(root),
+                anchor,
+                reason=(
+                    "terminal manifest linked validation failed: "
+                    f"{type(error).__name__}: {error}"
+                ),
+                expected_identity=expected_identity,
+            )
+
         _publish_bytes_at_antigravity(
             anchor.descriptor,
             _CACHE_MANIFEST_NAME_ANTIGRAVITY,
             payload,
             temporary_scope="score_cache_manifest",
             post_link_validate_antigravity=revalidate_coverage_antigravity,
+            linked_failure_recover_antigravity=recover_linked_manifest_antigravity,
         )
         anchor.validate()
         return Path(root) / _CACHE_MANIFEST_NAME_ANTIGRAVITY

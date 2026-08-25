@@ -1693,59 +1693,29 @@ def _validate_manifest_metadata_antigravity(
         raise ValueError("Exp471 complete score cache order differs")
 
 
-def _remove_exact_cache_manifest_antigravity(
-    root: Path,
-    manifest: Exp471ScoreCacheManifestAntigravity,
-) -> bool:
-    """Remove only the exact terminal marker invalidated by a later gate."""
-
-    name = "score_cache_manifest_antigravity.json"
-    payload = _artifacts_antigravity._canonical_manifest_bytes_antigravity(manifest)
-    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
-        Path(root), create=False
-    )
-    try:
-        try:
-            expected = os.stat(name, dir_fd=anchor.descriptor, follow_symlinks=False)
-        except FileNotFoundError:
-            return False
-        raw = _artifacts_antigravity._read_leaf_at_antigravity(
-            anchor.descriptor, name, missing_ok=True
-        )
-        if raw is None:
-            return False
-        observed = os.stat(name, dir_fd=anchor.descriptor, follow_symlinks=False)
-        if (
-            raw != payload
-            or not _artifacts_antigravity._same_identity_antigravity(
-                expected, observed
-            )
-        ):
-            return False
-        removed = _artifacts_antigravity._unlink_owned_path_antigravity(
-            anchor.descriptor, name, expected
-        )
-        if not removed:
-            raise ValueError("Exp471 invalid complete marker changed before removal")
-        os.fsync(anchor.descriptor)
-        anchor.validate()
-        return True
-    finally:
-        anchor.close()
-
-
 def _publish_terminal_manifest_antigravity(
     root: Path,
     manifest: Exp471ScoreCacheManifestAntigravity,
 ) -> Exp471ScoreCacheManifestAntigravity:
+    expected_identity: tuple[int, int] | None = None
     try:
         publish_cache_manifest_antigravity(root, manifest)
+        expected_identity = (
+            _artifacts_antigravity._cache_manifest_identity_antigravity(root)
+        )
         reopened = read_cache_manifest_antigravity(root)
         if reopened != manifest:
             raise ValueError("Exp471 terminal cache manifest differs after publication")
         return reopened
-    except Exception:
-        _remove_exact_cache_manifest_antigravity(root, manifest)
+    except Exception as error:
+        _artifacts_antigravity._quarantine_cache_manifest_antigravity(
+            root,
+            reason=(
+                "terminal manifest publication failed: "
+                f"{type(error).__name__}: {error}"
+            ),
+            expected_identity=expected_identity,
+        )
         raise
 
 
@@ -1754,14 +1724,42 @@ def _rebind_complete_manifest_antigravity(
     metadata: _VerifiedScoreMetadataAntigravity,
     manifest: Exp471ScoreCacheManifestAntigravity,
 ) -> None:
+    shards = _reopen_all_required_shards_antigravity(root, metadata)
+    rebound = _manifest_from_shards_antigravity(metadata, shards)
+    if rebound != manifest:
+        raise ValueError("Exp471 complete score cache differs from verified input")
+    _validate_exact_shard_inventory_antigravity(root, metadata)
+
+
+def _open_rebound_complete_manifest_antigravity(
+    root: Path,
+    metadata: _VerifiedScoreMetadataAntigravity,
+    *,
+    operation: str,
+) -> Exp471ScoreCacheManifestAntigravity:
+    expected_identity: tuple[int, int] | None = None
     try:
-        shards = _reopen_all_required_shards_antigravity(root, metadata)
-        rebound = _manifest_from_shards_antigravity(metadata, shards)
-        if rebound != manifest:
-            raise ValueError("Exp471 complete score cache differs from verified input")
-        _validate_exact_shard_inventory_antigravity(root, metadata)
-    except Exception:
-        _remove_exact_cache_manifest_antigravity(root, manifest)
+        expected_identity = (
+            _artifacts_antigravity._cache_manifest_identity_antigravity(root)
+        )
+        manifest = read_cache_manifest_antigravity(root)
+        _validate_manifest_metadata_antigravity(manifest, metadata)
+        benchmark = _read_benchmark_decision_antigravity(
+            root, expected_context_sha256=metadata.cache_context_sha256
+        )
+        events = _read_execution_events_antigravity(root, benchmark)
+        _execution_summary_antigravity(benchmark, events)
+        _rebind_complete_manifest_antigravity(root, metadata, manifest)
+        return manifest
+    except Exception as error:
+        _artifacts_antigravity._quarantine_cache_manifest_antigravity(
+            root,
+            reason=(
+                f"complete {operation} validation failed: "
+                f"{type(error).__name__}: {error}"
+            ),
+            expected_identity=expected_identity,
+        )
         raise
 
 
@@ -1869,15 +1867,11 @@ def prepare_score_cache_antigravity(
     manifest_path = root / "score_cache_manifest_antigravity.json"
     benchmark_path = root / _BENCHMARK_NAME_ANTIGRAVITY
     if os.path.lexists(manifest_path):
-        manifest = read_cache_manifest_antigravity(root)
-        _validate_manifest_metadata_antigravity(manifest, metadata)
-        benchmark = _read_benchmark_decision_antigravity(
-            root, expected_context_sha256=metadata.cache_context_sha256
+        return _open_rebound_complete_manifest_antigravity(
+            root,
+            metadata,
+            operation="prepare",
         )
-        events = _read_execution_events_antigravity(root, benchmark)
-        _execution_summary_antigravity(benchmark, events)
-        _rebind_complete_manifest_antigravity(root, metadata, manifest)
-        return manifest
 
     shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
     missing_scored: list[tuple[str, str]] = []
@@ -2240,15 +2234,11 @@ def open_complete_score_cache_antigravity(
         session.authority, session.score_reader_antigravity()
     )
     root = Path(EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY)
-    manifest = read_cache_manifest_antigravity(root)
-    _validate_manifest_metadata_antigravity(manifest, metadata)
-    benchmark = _read_benchmark_decision_antigravity(
-        root, expected_context_sha256=metadata.cache_context_sha256
+    return _open_rebound_complete_manifest_antigravity(
+        root,
+        metadata,
+        operation="open",
     )
-    events = _read_execution_events_antigravity(root, benchmark)
-    _execution_summary_antigravity(benchmark, events)
-    _rebind_complete_manifest_antigravity(root, metadata, manifest)
-    return manifest
 
 
 __all__ = [
