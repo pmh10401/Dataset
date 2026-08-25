@@ -771,6 +771,102 @@ def _normalized_baseline_shard_antigravity(
     return MappingProxyType(normalized)
 
 
+def _validate_frozen_baseline_descriptors_antigravity(
+    manifest: object,
+    *,
+    datasets: tuple[str, ...],
+    root_name: str,
+) -> tuple[tuple[str, str], ...] | None:
+    """Require the verified descriptor table's exact identity and order."""
+
+    from experiments.paper_public_baselines.runner import FrozenScoreManifest
+
+    # Mapping manifests are the existing injected-test contract. Production root
+    # verification always returns FrozenScoreManifest and takes this binding path.
+    if not isinstance(manifest, FrozenScoreManifest):
+        return None
+    methods = tuple(
+        method
+        for method in baseline_preflight.BASELINE_METHODS_ANTIGRAVITY
+        if EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method] == root_name
+    )
+    expected_pairs = tuple(
+        (method, dataset) for method in methods for dataset in datasets
+    )
+    descriptors = manifest.shards
+    if (
+        manifest.pair_count != len(expected_pairs)
+        or len(descriptors) != len(expected_pairs)
+    ):
+        raise ValueError("Exp471 production baseline descriptor binding differs")
+    descriptor_fields = {"dataset", "method", "path", "sha256", "status"}
+    for (method, dataset), descriptor in zip(
+        expected_pairs, descriptors, strict=True
+    ):
+        expected_path = (
+            f"shards/{method}/"
+            f"{sha256(dataset.encode('utf-8')).hexdigest()}.json"
+        )
+        if (
+            not isinstance(descriptor, Mapping)
+            or set(descriptor) != descriptor_fields
+            or descriptor.get("method") != method
+            or descriptor.get("dataset") != dataset
+            or descriptor.get("path") != expected_path
+            or descriptor.get("status") not in {"complete", "abstain"}
+        ):
+            raise ValueError(
+                "Exp471 production baseline descriptor binding differs"
+            )
+    return expected_pairs
+
+
+def _bind_frozen_baseline_descriptors_antigravity(
+    manifest: object,
+    shards: Mapping[tuple[str, str], Mapping[str, object]],
+    *,
+    datasets: tuple[str, ...],
+    root_name: str,
+) -> None:
+    """Bind reread shard mappings to the frozen descriptors already verified."""
+
+    from experiments.paper_public_baselines.artifacts import canonical_json_bytes
+
+    expected_pairs = _validate_frozen_baseline_descriptors_antigravity(
+        manifest,
+        datasets=datasets,
+        root_name=root_name,
+    )
+    if expected_pairs is None:
+        return
+    descriptors = manifest.shards
+    if tuple(shards) != expected_pairs:
+        raise ValueError("Exp471 production baseline descriptor binding differs")
+    for (method, dataset), descriptor in zip(
+        expected_pairs, descriptors, strict=True
+    ):
+        shard = shards.get((method, dataset))
+        if not isinstance(shard, Mapping):
+            raise ValueError(
+                "Exp471 production baseline descriptor binding differs"
+            )
+        try:
+            loaded_sha256 = sha256(canonical_json_bytes(dict(shard))).hexdigest()
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                "Exp471 production baseline descriptor binding differs"
+            ) from error
+        if (
+            shard.get("method") != method
+            or shard.get("dataset") != dataset
+            or shard.get("status") != descriptor.get("status")
+            or descriptor.get("sha256") != loaded_sha256
+        ):
+            raise ValueError(
+                "Exp471 production baseline descriptor binding differs"
+            )
+
+
 def _preflight_production_baselines_antigravity(
     authority: object, catalog: Mapping[str, object]
 ) -> _ProductionBaselinePreflightContextAntigravity:
@@ -805,8 +901,29 @@ def _preflight_production_baselines_antigravity(
     source_authority_by_method: dict[str, Mapping[str, str]] = {}
     for root_name in ("classical", "deep_svdd", "drocc"):
         manifest = verified_baselines[root_name]
+        _validate_frozen_baseline_descriptors_antigravity(
+            manifest,
+            datasets=datasets,
+            root_name=root_name,
+        )
+        root_authority = EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root_name]
+        manifest_path = Path(manifest.run_root) / "frozen_score_manifest.json"
+        if (
+            manifest.run_config_sha256 != root_authority["run_config_sha256"]
+            or manifest_path.is_symlink()
+            or not manifest_path.is_file()
+            or sha256(manifest_path.read_bytes()).hexdigest()
+            != root_authority["manifest_sha256"]
+        ):
+            raise ValueError("Exp471 pinned baseline root authority differs")
         baseline_identities, database_sha256, shards = (
             frozen_evaluation._baseline_identity_and_shards(manifest)
+        )
+        _bind_frozen_baseline_descriptors_antigravity(
+            manifest,
+            shards,
+            datasets=datasets,
+            root_name=root_name,
         )
         if (
             database_sha256 != EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY
@@ -818,16 +935,6 @@ def _preflight_production_baselines_antigravity(
         elif baseline_identities != manifest_identity_authority:
             raise ValueError("Exp471 production baseline TEST identity differs")
 
-        root_authority = EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root_name]
-        manifest_path = Path(manifest.run_root) / "frozen_score_manifest.json"
-        if (
-            manifest.run_config_sha256 != root_authority["run_config_sha256"]
-            or manifest_path.is_symlink()
-            or not manifest_path.is_file()
-            or sha256(manifest_path.read_bytes()).hexdigest()
-            != root_authority["manifest_sha256"]
-        ):
-            raise ValueError("Exp471 pinned baseline root authority differs")
         expected_shards = tuple(
             (method, dataset)
             for method in baseline_preflight.BASELINE_METHODS_ANTIGRAVITY

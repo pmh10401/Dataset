@@ -16,7 +16,7 @@
   "module_fingerprints": {
     "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py": "73206a233696eb54f0b893499751f3a68e57bdc0ea39b7df8ef170c7de01eca8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py": "4d42e78d3fb297d0cc49fa48ad0877fa1fe3c9ef76b736c0857c3199f670b3dd",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "db6cf735a43bf8587330edbf393147ce0ca2201c3f9f83fd830289c32d9a2ece",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "0289349785af84300bf824eb3cac07e2d0595d8fb89e7f4e097907d1b23cc16a",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py": "8805eccf8153cc6f43ac9de1d7b5e197bf4fa5dfbe17674431bfb188d92de01a",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py": "ac9441404920babcaf5aacbb781e1fef287e5d57caf1e54e8410c04f15abd2d8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py": "c5258b72ee381969d66cdb7b9941d303bf59702329a0deb987253998fbf05376",
@@ -31,7 +31,7 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "462d1358223d64976913c5997bab6ec8ba329a6637feb476ff6611bd1ee0394b",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py": "1812ad52e1fdaa7679faca90ce6a63b078191baa49c30bee8b40afb26d2353c5",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py": "1a33e37176492865c1e866b7f4e5a78be7eb68b2cfcdbd702dcfaea4446ababb",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "447518c74eec586b0f2a5db17c919b772980d9982004946e8ac3743f272cecd1",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "9925274ce7319083002c4d01ac302248ba50743cb451804ac830e68a9c884f86",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py": "2092a76f113bd4a43c70bb1878ae81cf96a82e76baf97e479834f60c013d0d46",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py": "d60a2716588fc01752c883c743b5ca54a4cbd7d3e3698ed5fd0332b40cf51799",
     "scratch/generate_exp471_codemap_antigravity.py": "bb2c0c9f76b9ebd8ffc886bb424cfc6a447206e23f1943b9d9de36c18c67ba06",

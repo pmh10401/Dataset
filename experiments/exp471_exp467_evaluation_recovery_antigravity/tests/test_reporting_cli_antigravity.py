@@ -1141,6 +1141,355 @@ class ProductionScoreBundleTestsAntigravity(unittest.TestCase):
         self.assertIn("build", calls)
 
 
+class FrozenBaselineDescriptorTestsAntigravity(unittest.TestCase):
+    """Real frozen descriptors bind every post-verification loaded shard."""
+
+    DATASETS_ANTIGRAVITY = (
+        ProductionScoreBundleTestsAntigravity.DATASETS_ANTIGRAVITY
+    )
+    _temporary_antigravity = None
+    _roots_antigravity = None
+    _root_authority_antigravity = None
+    _coordinate_sha256_antigravity = None
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if cls._temporary_antigravity is not None:
+            cls._temporary_antigravity.cleanup()
+
+    @classmethod
+    def _ensure_frozen_fixture_antigravity(cls) -> None:
+        if cls._roots_antigravity is not None:
+            return
+        from experiments.paper_public_baselines.artifacts import (
+            canonical_json_bytes as canonical_public_baseline_bytes,
+        )
+        from experiments.paper_public_baselines.runner import verify_score_root
+
+        cls._temporary_antigravity = tempfile.TemporaryDirectory(
+            prefix="exp471_frozen_descriptor_fixture_antigravity_"
+        )
+        fixture_root = Path(cls._temporary_antigravity.name)
+        root_methods = {
+            "classical": baseline_preflight.BASELINE_METHODS_ANTIGRAVITY[:4],
+            "deep_svdd": ("deep_svdd_1d",),
+            "drocc": ("drocc_1d",),
+        }
+        abstention_plan = {
+            "knn_distance": 5,
+            "deep_svdd_1d": 195,
+            "drocc_1d": 195,
+        }
+        roots: dict[str, Path] = {}
+        root_authority: dict[str, dict[str, str]] = {}
+        for root_name, methods in root_methods.items():
+            root = fixture_root / f"{root_name}_frozen_root_antigravity"
+            roots[root_name] = root
+            run_config = {
+                "schema": "paper-public-baselines.score-run.v1",
+                "database_sha256": "5" * 64,
+                "datasets": list(cls.DATASETS_ANTIGRAVITY),
+                "methods": list(methods),
+            }
+            run_config_bytes = canonical_public_baseline_bytes(run_config)
+            run_config_sha256 = sha256(run_config_bytes).hexdigest()
+            root.mkdir(parents=True)
+            (root / "run_config.json").write_bytes(run_config_bytes)
+            (root / "run_config.sha256").write_text(
+                run_config_sha256 + "\n", encoding="ascii"
+            )
+            descriptors: list[dict[str, object]] = []
+            for method in methods:
+                shard_directory = root / "shards" / method
+                shard_directory.mkdir(parents=True)
+                abstention_count = abstention_plan.get(method, 0)
+                for dataset_index, dataset in enumerate(cls.DATASETS_ANTIGRAVITY):
+                    abstained = dataset_index < abstention_count
+                    payload = {
+                        "dataset": dataset,
+                        "method": method,
+                        "n_train": 2,
+                        "n_test": 2,
+                        "status": "abstain" if abstained else "complete",
+                        "reason": (
+                            "insufficient_train_rows" if abstained else None
+                        ),
+                        "test_indices": [0, 1],
+                        "train_oof_scores": (
+                            [] if abstained else [0.25, 1.25]
+                        ),
+                        "test_scores": [] if abstained else [0.75, 1.75],
+                        "alerts_by_alpha": {
+                            "0.005": [],
+                            "0.01": [],
+                            "0.02": [],
+                        },
+                        "runtime_seconds": 0.0,
+                        "contains_test_labels": False,
+                        "contains_evaluation_metrics": False,
+                    }
+                    shard_bytes = canonical_public_baseline_bytes(payload)
+                    shard_sha256 = sha256(shard_bytes).hexdigest()
+                    token = sha256(dataset.encode("utf-8")).hexdigest()
+                    shard_path = shard_directory / f"{token}.json"
+                    shard_path.write_bytes(shard_bytes)
+                    metadata = {
+                        "schema": "paper-public-baselines.score-shard-meta.v1",
+                        "run_config_sha256": run_config_sha256,
+                        "database_sha256": "5" * 64,
+                        "shard_sha256": shard_sha256,
+                    }
+                    shard_path.with_suffix(".meta").write_bytes(
+                        canonical_public_baseline_bytes(metadata)
+                    )
+                    descriptors.append(
+                        {
+                            "dataset": dataset,
+                            "method": method,
+                            "path": shard_path.relative_to(root).as_posix(),
+                            "sha256": shard_sha256,
+                            "status": payload["status"],
+                        }
+                    )
+            manifest_payload = {
+                "schema": "paper-public-baselines.frozen-scores.v1",
+                "run_config_sha256": run_config_sha256,
+                "database_sha256": "5" * 64,
+                "pair_count": len(descriptors),
+                "shards": descriptors,
+                "contains_test_labels": False,
+                "contains_evaluation_metrics": False,
+            }
+            manifest_bytes = canonical_public_baseline_bytes(manifest_payload)
+            manifest_sha256 = sha256(manifest_bytes).hexdigest()
+            (root / "frozen_score_manifest.json").write_bytes(manifest_bytes)
+            (root / "frozen_score_manifest.sha256").write_text(
+                manifest_sha256 + "\n", encoding="ascii"
+            )
+            verified = verify_score_root(root)
+            if not isinstance(verified.shards, tuple):
+                raise AssertionError("FrozenScoreManifest descriptors differ")
+            root_authority[root_name] = {
+                "manifest_sha256": manifest_sha256,
+                "run_config_sha256": verified.run_config_sha256,
+            }
+        coordinate_inventory = {
+            "schema": "exp471-test-coordinate-inventory-antigravity.v1",
+            "dataset_count": len(cls.DATASETS_ANTIGRAVITY),
+            "datasets": [
+                {
+                    "dataset": dataset,
+                    "test_count": 2,
+                    "test_indices": [0, 1],
+                }
+                for dataset in cls.DATASETS_ANTIGRAVITY
+            ],
+        }
+        cls._roots_antigravity = roots
+        cls._root_authority_antigravity = root_authority
+        cls._coordinate_sha256_antigravity = sha256(
+            canonical_json_bytes_exp471_antigravity(coordinate_inventory)
+        ).hexdigest()
+
+    def _session_antigravity(self) -> object:
+        authority = type(
+            "FrozenAuthorityAntigravity",
+            (),
+            {"database_sha256": "5" * 64},
+        )()
+        return type(
+            "FrozenSessionAntigravity",
+            (),
+            {
+                "authority": authority,
+                "catalog": {
+                    "database": {},
+                    "datasets": [
+                        {"dataset": dataset}
+                        for dataset in self.DATASETS_ANTIGRAVITY
+                    ],
+                },
+            },
+        )()
+
+    def _frozen_patches_antigravity(
+        self,
+        *,
+        descriptor_mutation=None,
+        loaded_mutation=None,
+        pinned_mutation: str | None = None,
+    ):
+        from experiments.exp450_resampling_image_ablation_antigravity import (
+            evaluation_antigravity as frozen_evaluation,
+        )
+        from experiments.paper_public_baselines import runner
+
+        self._ensure_frozen_fixture_antigravity()
+        roots = dict(self._roots_antigravity)
+        root_authority = {
+            root: dict(value)
+            for root, value in self._root_authority_antigravity.items()
+        }
+        if pinned_mutation == "manifest":
+            root_authority["classical"]["manifest_sha256"] = "f" * 64
+        elif pinned_mutation == "run_config":
+            root_authority["classical"]["run_config_sha256"] = "e" * 64
+
+        original_verify = runner.verify_score_root
+
+        def verify(root):
+            manifest = original_verify(root)
+            if descriptor_mutation is None or root != roots["classical"]:
+                return manifest
+            descriptors = [dict(entry) for entry in manifest.shards]
+            descriptor_mutation(descriptors)
+            return runner.FrozenScoreManifest(
+                run_root=manifest.run_root,
+                run_config_sha256=manifest.run_config_sha256,
+                database_sha256=manifest.database_sha256,
+                pair_count=manifest.pair_count,
+                shards=tuple(descriptors),
+            )
+
+        original_identity = frozen_evaluation._baseline_identity_and_shards
+
+        def identity(manifest):
+            identities, database_sha256, shards = original_identity(manifest)
+            if loaded_mutation is None or manifest.run_root != roots["classical"]:
+                return identities, database_sha256, shards
+            changed = dict(shards)
+            loaded_mutation(changed)
+            return identities, database_sha256, changed
+
+        return (
+            mock.patch.object(frozen_evaluation, "BASELINE_ROOTS", roots),
+            mock.patch.object(runner, "verify_score_root", side_effect=verify),
+            mock.patch.object(
+                frozen_evaluation,
+                "_baseline_identity_and_shards",
+                side_effect=identity,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY",
+                root_authority,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY",
+                "5" * 64,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY",
+                1_117,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY",
+                self._coordinate_sha256_antigravity,
+            ),
+        )
+
+    def _preflight_antigravity(self, **options):
+        session = self._session_antigravity()
+        with ExitStack() as stack:
+            for patcher in self._frozen_patches_antigravity(**options):
+                stack.enter_context(patcher)
+            return cli._preflight_production_baselines_antigravity(
+                session.authority, session.catalog
+            )
+
+    def _assert_fails_before_proposal_antigravity(self, **options) -> None:
+        from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+            source_authority_antigravity as source_authority,
+        )
+
+        session = self._session_antigravity()
+        calls: list[str] = []
+
+        def forbidden_require(_session):
+            calls.append("require")
+            raise AssertionError("proposal capability resolved")
+
+        with ExitStack() as stack:
+            for patcher in self._frozen_patches_antigravity(**options):
+                stack.enter_context(patcher)
+            stack.enter_context(
+                mock.patch.object(
+                    source_authority,
+                    "_require_captured_values_api_antigravity",
+                    side_effect=forbidden_require,
+                )
+            )
+            with self.assertRaisesRegex(
+                ValueError, "baseline descriptor binding|pinned baseline root authority"
+            ):
+                cli._production_score_bundle_antigravity(session)
+        self.assertEqual(calls, [])
+
+    def test_real_frozen_descriptors_preflight_scored_and_abstained(self) -> None:
+        """Canonical FrozenScoreManifest shards retain both legal v3 arms."""
+
+        context = self._preflight_antigravity()
+        scored = context.preflight.entries[
+            ("knn_distance", self.DATASETS_ANTIGRAVITY[5])
+        ]
+        abstained = context.preflight.entries[
+            ("deep_svdd_1d", self.DATASETS_ANTIGRAVITY[0])
+        ]
+        self.assertEqual(scored.status, "scored")
+        self.assertEqual(scored.test_scores, (0.75, 1.75))
+        self.assertEqual(abstained.status, "abstained")
+        self.assertEqual(
+            abstained.abstention_reason, "insufficient_train_rows"
+        )
+
+    def test_changed_loaded_payload_fails_descriptor_sha_before_proposal(self) -> None:
+        """A between-verify-and-classify payload mutation cannot retain authority."""
+
+        def change_loaded(shards):
+            key = ("knn_distance", self.DATASETS_ANTIGRAVITY[5])
+            changed = dict(shards[key])
+            changed["test_scores"] = [9.75, 10.75]
+            shards[key] = changed
+
+        self._assert_fails_before_proposal_antigravity(
+            loaded_mutation=change_loaded
+        )
+
+    def test_descriptor_fields_and_order_are_bound_before_proposal(self) -> None:
+        """Digest, status, path, identity, and order stay descriptor-exact."""
+
+        mutations = {
+            "digest": lambda entries: entries[5].__setitem__("sha256", "f" * 64),
+            "status": lambda entries: entries[0].__setitem__("status", "complete"),
+            "path": lambda entries: entries[0].__setitem__(
+                "path", entries[1]["path"]
+            ),
+            "identity": lambda entries: entries[0].__setitem__(
+                "method", "lof_novelty"
+            ),
+            "order": lambda entries: entries.__setitem__(
+                slice(0, 2), [entries[1], entries[0]]
+            ),
+        }
+        for mutation, change in mutations.items():
+            with self.subTest(mutation=mutation):
+                self._assert_fails_before_proposal_antigravity(
+                    descriptor_mutation=change
+                )
+
+    def test_pinned_manifest_and_run_config_mismatch_fail_before_proposal(self) -> None:
+        """Actual frozen descriptors cannot bypass either pinned root hash."""
+
+        for mutation in ("manifest", "run_config"):
+            with self.subTest(mutation=mutation):
+                self._assert_fails_before_proposal_antigravity(
+                    pinned_mutation=mutation
+                )
+
+
 class ReportingTestsAntigravity(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(
