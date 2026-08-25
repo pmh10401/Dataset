@@ -149,6 +149,33 @@ def _load_test_rows_antigravity() -> dict[str, dict[str, object]]:
         connection.close()
 
 
+def _load_train_majority_antigravity(
+    connection: object, dataset: str,
+) -> tuple[np.ndarray, int]:
+    """Load all TRAIN label-0 rows for one dataset; majority class becomes the reference."""
+    rows = connection.execute(
+        "SELECT i.instance_index, i.label, i.values_blob "
+        "FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id "
+        "WHERE d.name = ? AND i.split = 'TRAIN' AND i.label = '0' "
+        "ORDER BY i.instance_index",
+        (dataset,),
+    ).fetchall()
+    if not rows:
+        raise SystemExit(f"{dataset}: no TRAIN label-0 rows found")
+    decoded = [np.frombuffer(row[2], dtype="<f4") for row in rows]
+    raw = np.stack(decoded).astype(np.float64, order="C")
+    if not np.isfinite(raw).all():
+        raise SystemExit(f"{dataset}: TRAIN rows must be finite")
+
+    sys.path.insert(0, str(_REPOSITORY_ROOT_ANTIGRAVITY))
+    from experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.interpolation_antigravity import (
+        interpolate_to_140_antigravity,
+    )
+    interpolated = interpolate_to_140_antigravity(raw)
+    interpolated.setflags(write=False)
+    return interpolated, len(rows)
+
+
 def main_antigravity(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("--approval-token", required=True)
@@ -173,7 +200,6 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         score_c0_fold_antigravity,
     )
 
-    train140, train_sha = _load_shared_train_antigravity()
     test_data = _load_test_rows_antigravity()
     oof_by_seed = _load_oof_antigravity()
 
@@ -184,16 +210,29 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         "seeds": {},
     }
     authority = capture_exp465_authority_antigravity()
+    train_by_dataset: dict[str, np.ndarray] = {}
+    train_row_counts: dict[str, int] = {}
+    connection = sqlite3.connect(f"file:{_DATABASE_ANTIGRAVITY}?mode=ro", uri=True)
+    try:
+        for name in names:
+            train_ds, n_rows = _load_train_majority_antigravity(connection, name)
+            train_by_dataset[name] = train_ds
+            train_row_counts[name] = n_rows
+    finally:
+        connection.close()
+
+    shared_train, shared_sha = _load_shared_train_antigravity()
     for seed in _SEEDS_ANTIGRAVITY:
         oof = oof_by_seed[seed]
         per_seed: dict[str, object] = {"oof_auc_c0_vs_perturbations": {}}
         for name in names:
             values = test_data[name]["values"]
             mask = test_data[name]["anomaly_mask"]
-            combined = np.vstack((train140, values))
-            fit_indices = np.arange(len(train140), dtype=np.int64)
+            train_ds = train_by_dataset[name]
+            combined = np.vstack((train_ds, values))
+            fit_indices = np.arange(len(train_ds), dtype=np.int64)
             query_indices = np.arange(
-                len(train140), len(train140) + len(values), dtype=np.int64
+                len(train_ds), len(train_ds) + len(values), dtype=np.int64
             )
             c0 = np.asarray(
                 score_c0_fold_antigravity(
@@ -206,7 +245,7 @@ def main_antigravity(argv: list[str] | None = None) -> int:
                 ).normal_scores,
                 dtype=np.float64,
             )
-            peaks = score_acf_peak_lag_numba_antigravity(train140, values)
+            peaks = score_acf_peak_lag_numba_antigravity(train_ds, values)
             ranks = np.asarray(peaks.query_ranks, dtype=np.float64)
             confirmed = np.asarray(peaks.confirmation_mask, dtype=np.bool_)
             c12 = np.where(confirmed & (ranks > c0), ranks, c0)
@@ -251,19 +290,18 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         "label_query_for_routing_or_promotion": 0,
         "official_train_root": str(_OFFICIAL_TRAIN_ROOT_ANTIGRAVITY),
         "protocol": (
-            "Observational TEST/FN diagnostic. Frozen train140 reused from the "
-            "approved official Exp471 root. Per frozen seed, hydra_local_gap is "
-            "refitted on all 69 TRAIN normals (full-reference deployment "
-            "convention) and scores the 150 interpolated ECG200 TEST rows. E12/C12 "
-            "reuse the frozen peak-lag machinery with all 69 TRAIN rows as fit "
-            "evidence. AUC and zero-FP true-positive counts are reported per file "
-            "and seed. Routing, champion, promotion, and pending-candidate state "
-            "remain unchanged."
+            "Observational TEST/FN diagnostic. Per dataset, all TRAIN label-0 "
+            "rows are interpolated and used as the normal reference (majority "
+            "class mapping). Shared frozen train140 from the official Exp471 "
+            "root is retained for provenance only. AUC and zero-FP TP counts "
+            "are reported per file and seed. Routing, champion, promotion, and "
+            "pending-candidate state remain unchanged."
         ),
         "reviewed_commit": reviewed,
         "runtime_python": platform.python_version(),
         "schema": "exp471_test_fn_diagnostic_manifest_v1",
-        "train140_sha256": train_sha,
+        "shared_train140_sha256": shared_sha,
+        "per_dataset_train_row_count": train_row_counts,
     }
     (_OUTPUT_ROOT_ANTIGRAVITY / "manifest_antigravity.json").write_bytes(
         _canonical_json_bytes_antigravity(manifest)
