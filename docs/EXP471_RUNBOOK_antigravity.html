@@ -13,7 +13,7 @@
 </head>
 <body><main>
   <h1>Exp471 실행 runbook</h1>
-  <p>이 문서는 Task 6에서 만든 closed CLI와 승인된 private checkpoint 절차만 다룹니다. 현재 상태는 <strong>private 실행 전 대기</strong>입니다.</p>
+  <p>이 문서는 Task 6에서 만든 closed CLI와 승인된 private checkpoint 절차만 다룹니다. 현재 상태는 <strong>private run1·run2 PASS, byte 재현성 확인 완료</strong>입니다.</p>
 
   <h2>1. CLI 표면</h2>
   <p><code>evaluate</code>와 <code>inspect</code>만 허용합니다. root 인수는 아래 두 고정 경로만 받고, commit은 현재 HEAD와 같은 40자 소문자 hex여야 합니다. launcher는 저장소 밖 작업 디렉터리에서도 동작합니다.</p>
@@ -44,8 +44,8 @@ launcher.run_private_sequence_antigravity(
     "TASK_6_PRIVATE_RUN_1_2_APPROVED",
 )</code></pre>
 
-  <div class="stop">
-    <p><strong>현재 중단 지점:</strong> 위 helper를 실행하지 마십시오. 별도 사용자 승인이 있기 전까지 private root를 만들거나 evaluate를 실행하면 안 됩니다.</p>
+  <div class="note">
+    <p><strong>실행 기록(2026-08-25):</strong> 사용자 승인 token으로 run1→run2를 실행했다. reviewed commit은 <code>7ebffae7af0b07fad8a18c38f19abb33ee90f394</code>다. 두 실행의 semantic replay와 7개 leaf raw byte 비교를 모두 통과했다.</p>
   </div>
 
   <h2>4. 성공 판정</h2>
