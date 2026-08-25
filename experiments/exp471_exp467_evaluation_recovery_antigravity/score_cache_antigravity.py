@@ -69,6 +69,10 @@ _EXECUTION_STATUS_SCHEMA_ANTIGRAVITY = (
 )
 _EXECUTION_PREFIX_ANTIGRAVITY = "score_preparation_execution_event_"
 _EXECUTION_SUFFIX_ANTIGRAVITY = "_antigravity.json"
+_SCORE_EXPECTATION_DIRECTORY_ANTIGRAVITY = "score_expectations_antigravity"
+_SCORE_EXPECTATION_SCHEMA_ANTIGRAVITY = (
+    "exp471-score-expectation-receipt-antigravity.v1"
+)
 _SPEEDUP_THRESHOLD_ANTIGRAVITY = 1.1
 _monotonic_antigravity = time.perf_counter
 
@@ -245,15 +249,36 @@ def _validate_row_coordinates_antigravity(
     *,
     scope: str,
 ) -> tuple[float, ...]:
-    indices = row.get("test_indices")
-    if not isinstance(indices, (tuple, list)) or tuple(indices) != expected.indices:
-        raise ValueError(f"{scope} TEST coordinates differ")
+    _validated_test_indices_antigravity(
+        row.get("test_indices"), expected, scope=scope
+    )
     scores = _float64_vector_antigravity(
         row.get("test_scores"), f"{scope} TEST scores"
     )
     if len(scores) != expected.count:
         raise ValueError(f"{scope} TEST count differs from common coordinates")
     return scores
+
+
+def _validated_test_indices_antigravity(
+    value: object,
+    expected: _TestCoordinatesAntigravity,
+    *,
+    scope: str,
+) -> tuple[int, ...]:
+    """Normalize one v3 TEST identity without Python numeric coercion."""
+
+    if (
+        not isinstance(value, (tuple, list))
+        or len(value) != expected.count
+        or any(type(index) is not int or index < 0 for index in value)
+        or len(set(value)) != expected.count
+    ):
+        raise ValueError(f"{scope} TEST coordinates differ")
+    indices = tuple(value)
+    if indices != expected.indices:
+        raise ValueError(f"{scope} TEST coordinates differ")
+    return indices
 
 
 def _validate_verified_input_metadata_antigravity(
@@ -518,12 +543,11 @@ def _validate_verified_input_metadata_antigravity(
                     raise ValueError(
                         f"Exp471 {method}/{dataset} abstained score-vector schema differs"
                     )
-                indices_value = vectors["test_indices"]
-                if (
-                    not isinstance(indices_value, (tuple, list))
-                    or tuple(indices_value) != coordinates[dataset].indices
-                ):
-                    raise ValueError(f"Exp471 {method}/{dataset} TEST coordinates differ")
+                _validated_test_indices_antigravity(
+                    vectors["test_indices"],
+                    coordinates[dataset],
+                    scope=f"Exp471 {method}/{dataset}",
+                )
                 if vectors["reason"] != "insufficient_train_rows":
                     raise ValueError(
                         f"Exp471 {method}/{dataset} abstention reason differs"
@@ -691,6 +715,146 @@ def _abstained_shard_antigravity(
         payload_sha256=payload_sha256,
         envelope_sha256=envelope_sha256,
     )
+
+
+def _score_expectation_record_antigravity(
+    shard: Exp471ScoreShardAntigravity,
+) -> dict[str, object]:
+    if shard.status != "scored" or shard.method in METHOD_ORDER_ANTIGRAVITY[:4]:
+        raise ValueError("Exp471 score expectation requires a scored baseline shard")
+    bare = {
+        "schema": _SCORE_EXPECTATION_SCHEMA_ANTIGRAVITY,
+        "source_authority_sha256": shard.source_authority_sha256,
+        "cache_context_sha256": shard.cache_context_sha256,
+        "method": shard.method,
+        "dataset": shard.dataset,
+        "test_count": shard.test_count,
+        "test_indices": list(shard.test_indices),
+        "source_manifest_sha256": shard.source_manifest_sha256,
+        "expected_envelope_sha256": shard.envelope_sha256,
+    }
+    return {
+        **bare,
+        "receipt_sha256": sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest(),
+    }
+
+
+def _validated_score_expectation_antigravity(
+    value: object,
+    shard: Exp471ScoreShardAntigravity,
+) -> dict[str, object]:
+    record = _mapping_antigravity(value, "Exp471 score expectation receipt")
+    required = {
+        "schema",
+        "source_authority_sha256",
+        "cache_context_sha256",
+        "method",
+        "dataset",
+        "test_count",
+        "test_indices",
+        "source_manifest_sha256",
+        "expected_envelope_sha256",
+        "receipt_sha256",
+    }
+    if set(record) != required or record["schema"] != _SCORE_EXPECTATION_SCHEMA_ANTIGRAVITY:
+        raise ValueError("Exp471 score expectation receipt schema differs")
+    for field in (
+        "source_authority_sha256",
+        "cache_context_sha256",
+        "source_manifest_sha256",
+        "expected_envelope_sha256",
+        "receipt_sha256",
+    ):
+        _digest_antigravity(record[field], f"Exp471 score expectation {field}")
+    expected = _score_expectation_record_antigravity(shard)
+    if dict(record) != expected:
+        raise ValueError("Exp471 expected scored envelope differs")
+    return dict(record)
+
+
+def _publish_score_expectation_antigravity(
+    root: Path,
+    shard: Exp471ScoreShardAntigravity,
+) -> Path:
+    record = _score_expectation_record_antigravity(shard)
+    payload = canonical_json_bytes_exp471_antigravity(record)
+    name = score_shard_relative_path_antigravity(
+        shard.method, shard.dataset
+    ).name
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=True
+    )
+    directory: int | None = None
+    try:
+        directory, expected = _artifacts_antigravity._open_child_directory_antigravity(
+            anchor.descriptor,
+            _SCORE_EXPECTATION_DIRECTORY_ANTIGRAVITY,
+            create=True,
+        )
+        _artifacts_antigravity._publish_bytes_at_antigravity(
+            directory,
+            name,
+            payload,
+            temporary_scope="score_expectation_receipt",
+        )
+        _artifacts_antigravity._validate_child_directory_antigravity(
+            anchor.descriptor,
+            _SCORE_EXPECTATION_DIRECTORY_ANTIGRAVITY,
+            expected,
+        )
+        anchor.validate()
+        return Path(root) / _SCORE_EXPECTATION_DIRECTORY_ANTIGRAVITY / name
+    finally:
+        if directory is not None:
+            os.close(directory)
+        anchor.close()
+
+
+def _read_score_expectation_antigravity(
+    root: Path,
+    shard: Exp471ScoreShardAntigravity,
+) -> dict[str, object]:
+    name = score_shard_relative_path_antigravity(
+        shard.method, shard.dataset
+    ).name
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    directory: int | None = None
+    try:
+        directory, expected = _artifacts_antigravity._open_child_directory_antigravity(
+            anchor.descriptor,
+            _SCORE_EXPECTATION_DIRECTORY_ANTIGRAVITY,
+            create=False,
+        )
+        raw = _artifacts_antigravity._read_leaf_at_antigravity(directory, name)
+        if raw is None:
+            raise ValueError("Exp471 score expectation receipt is missing")
+        try:
+            value = json.loads(
+                raw.decode("utf-8"),
+                parse_constant=lambda constant: (_ for _ in ()).throw(
+                    ValueError(f"non-finite JSON constant: {constant}")
+                ),
+            )
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+            raise ValueError("Exp471 score expectation receipt JSON is malformed") from error
+        record = _validated_score_expectation_antigravity(value, shard)
+        if raw != canonical_json_bytes_exp471_antigravity(record):
+            raise ValueError("Exp471 score expectation receipt bytes are noncanonical")
+        _artifacts_antigravity._validate_child_directory_antigravity(
+            anchor.descriptor,
+            _SCORE_EXPECTATION_DIRECTORY_ANTIGRAVITY,
+            expected,
+        )
+        anchor.validate()
+        return record
+    finally:
+        if directory is not None:
+            os.close(directory)
+        anchor.close()
 
 
 def _prepare_task_antigravity(
@@ -1351,6 +1515,8 @@ def _existing_shard_antigravity(
         metadata, method, dataset, shard
     ):
         raise ValueError("Exp471 existing score shard differs from verified input")
+    if method in METHOD_ORDER_ANTIGRAVITY[4:] and shard.status == "scored":
+        _read_score_expectation_antigravity(root, shard)
     return shard
 
 
@@ -1410,6 +1576,7 @@ def _reopen_all_required_shards_antigravity(
 ) -> dict[tuple[str, str], Exp471ScoreShardAntigravity]:
     """Reopen every durable identity before terminal manifest publication."""
 
+    _validate_exact_shard_inventory_antigravity(root, metadata)
     reopened: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
     for method in METHOD_ORDER_ANTIGRAVITY:
         for dataset in metadata.dataset_order:
@@ -1423,6 +1590,48 @@ def _reopen_all_required_shards_antigravity(
                 raise ValueError("Exp471 durable score cache contains duplicate identity")
             reopened[identity] = shard
     return reopened
+
+
+def _validate_exact_shard_inventory_antigravity(
+    root: Path,
+    metadata: _VerifiedScoreMetadataAntigravity,
+) -> None:
+    """Require the descriptor-bound leaf namespace to equal typed coverage."""
+
+    _validate_exact_shard_inventory_for_order_antigravity(
+        root, METHOD_ORDER_ANTIGRAVITY, metadata.dataset_order
+    )
+
+
+def _validate_exact_shard_inventory_for_order_antigravity(
+    root: Path,
+    methods: Sequence[str],
+    datasets: Sequence[str],
+) -> None:
+    required_names = {
+        score_shard_relative_path_antigravity(method, dataset).name
+        for method in methods
+        for dataset in datasets
+    }
+    anchor = _artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=False
+    )
+    directory: int | None = None
+    try:
+        directory, expected = _artifacts_antigravity._open_child_directory_antigravity(
+            anchor.descriptor, "score_shards_antigravity", create=False
+        )
+        observed_names = set(os.listdir(directory))
+        if observed_names != required_names or len(observed_names) != len(required_names):
+            raise ValueError("Exp471 score-shard inventory differs from required coverage")
+        _artifacts_antigravity._validate_child_directory_antigravity(
+            anchor.descriptor, "score_shards_antigravity", expected
+        )
+        anchor.validate()
+    finally:
+        if directory is not None:
+            os.close(directory)
+        anchor.close()
 
 
 def _validate_manifest_metadata_antigravity(
@@ -1551,6 +1760,10 @@ def prepare_score_cache_antigravity(
         )
         events = _read_execution_events_antigravity(root, benchmark)
         _execution_summary_antigravity(benchmark, events)
+        shards = _reopen_all_required_shards_antigravity(root, metadata)
+        rebound = _manifest_from_shards_antigravity(metadata, shards)
+        if rebound != manifest:
+            raise ValueError("Exp471 complete score cache differs from verified input")
         return manifest
 
     shards: dict[tuple[str, str], Exp471ScoreShardAntigravity] = {}
@@ -1610,6 +1823,7 @@ def prepare_score_cache_antigravity(
         _execution_summary_antigravity(benchmark, events)
         shards = _reopen_all_required_shards_antigravity(root, metadata)
         manifest = _manifest_from_shards_antigravity(metadata, shards)
+        _validate_exact_shard_inventory_antigravity(root, metadata)
         publish_cache_manifest_antigravity(root, manifest)
         return read_cache_manifest_antigravity(root)
 
@@ -1693,6 +1907,9 @@ def prepare_score_cache_antigravity(
                 failed=1,
             )
             continue
+        if outcome.task.method in METHOD_ORDER_ANTIGRAVITY[4:]:
+            _publish_score_expectation_antigravity(root, outcome.shard)
+            _read_score_expectation_antigravity(root, outcome.shard)
         publish_score_shard_antigravity(root, outcome.shard)
         reopened = read_score_shard_antigravity(root, *identity)
         if reopened != outcome.shard:
@@ -1734,6 +1951,9 @@ def prepare_score_cache_antigravity(
                     failed=1,
                 )
                 continue
+            if outcome.task.method in METHOD_ORDER_ANTIGRAVITY[4:]:
+                _publish_score_expectation_antigravity(root, outcome.shard)
+                _read_score_expectation_antigravity(root, outcome.shard)
             publish_score_shard_antigravity(root, outcome.shard)
             reopened = read_score_shard_antigravity(root, *identity)
             if reopened != outcome.shard:
@@ -1761,6 +1981,7 @@ def prepare_score_cache_antigravity(
     _execution_summary_antigravity(benchmark, events)
     shards = _reopen_all_required_shards_antigravity(root, metadata)
     manifest = _manifest_from_shards_antigravity(metadata, shards)
+    _validate_exact_shard_inventory_antigravity(root, metadata)
     publish_cache_manifest_antigravity(root, manifest)
     reopened_manifest = read_cache_manifest_antigravity(root)
     if reopened_manifest != manifest:
@@ -1824,6 +2045,9 @@ def status_score_cache_antigravity(root: Path) -> Mapping[str, object]:
     manifest_path = root / "score_cache_manifest_antigravity.json"
     if os.path.lexists(manifest_path):
         manifest = read_cache_manifest_antigravity(root)
+        _validate_exact_shard_inventory_for_order_antigravity(
+            root, manifest.method_order, manifest.dataset_order
+        )
         complete = True
         durable_completed = manifest.total_shards
         total_shards: int | None = manifest.total_shards
@@ -1915,6 +2139,10 @@ def open_complete_score_cache_antigravity(
     )
     events = _read_execution_events_antigravity(root, benchmark)
     _execution_summary_antigravity(benchmark, events)
+    shards = _reopen_all_required_shards_antigravity(root, metadata)
+    rebound = _manifest_from_shards_antigravity(metadata, shards)
+    if rebound != manifest:
+        raise ValueError("Exp471 complete score cache differs from verified input")
     return manifest
 
 

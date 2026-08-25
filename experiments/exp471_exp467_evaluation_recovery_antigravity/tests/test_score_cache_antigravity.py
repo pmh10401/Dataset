@@ -17,6 +17,8 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravit
     METHOD_ORDER_ANTIGRAVITY,
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity import (
+    Exp471ScoreCacheManifestAntigravity,
+    Exp471ScoreShardAntigravity,
     Exp471SourceAuthorityAntigravity,
     canonical_json_bytes_exp471_antigravity,
 )
@@ -235,6 +237,79 @@ def _cache_bytes_antigravity(root: Path) -> dict[str, bytes]:
         if relative == "score_cache_manifest_antigravity.json"
         or relative.startswith("score_shards_antigravity/")
     }
+
+
+def _rehashed_shard_antigravity(
+    shard: Exp471ScoreShardAntigravity, **changes: object
+) -> Exp471ScoreShardAntigravity:
+    payload = {
+        "schema": "exp471-score-cache-shard-antigravity.v2",
+        "source_authority_sha256": shard.source_authority_sha256,
+        "cache_context_sha256": shard.cache_context_sha256,
+        "method": shard.method,
+        "dataset": shard.dataset,
+        "status": shard.status,
+        "test_count": shard.test_count,
+        "test_indices": list(shard.test_indices),
+        "raw_scores": list(shard.raw_scores),
+        "micro_scores": list(shard.micro_scores),
+        "abstention_reason": shard.abstention_reason,
+        "source_manifest_sha256": shard.source_manifest_sha256,
+    }
+    payload.update(changes)
+    payload_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(payload)
+    ).hexdigest()
+    envelope_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(
+            {**payload, "payload_sha256": payload_sha256}
+        )
+    ).hexdigest()
+    return Exp471ScoreShardAntigravity(
+        **{key: value for key, value in payload.items() if key != "schema"},
+        payload_sha256=payload_sha256,
+        envelope_sha256=envelope_sha256,
+    )
+
+
+def _rewrite_complete_manifest_antigravity(
+    root: Path,
+    manifest: Exp471ScoreCacheManifestAntigravity,
+    changed_shard: Exp471ScoreShardAntigravity,
+) -> None:
+    shard_digests = dict(manifest.shard_sha256)
+    shard_digests[f"{changed_shard.method}:{changed_shard.dataset}"] = (
+        changed_shard.envelope_sha256
+    )
+    status_counts = {"scored": 0, "abstained": 0}
+    for method in manifest.method_order:
+        for dataset in manifest.dataset_order:
+            shard = score_cache.read_score_shard_antigravity(root, method, dataset)
+            status_counts[shard.status] += 1
+    record = {
+        "schema": "exp471-score-cache-manifest-antigravity.v2",
+        "source_authority_sha256": manifest.source_authority_sha256,
+        "cache_context_sha256": manifest.cache_context_sha256,
+        "method_order": list(manifest.method_order),
+        "dataset_order": list(manifest.dataset_order),
+        "shard_sha256": shard_digests,
+        "total_shards": manifest.total_shards,
+        "scored_shards": status_counts["scored"],
+        "abstained_shards": status_counts["abstained"],
+        "failed_shards": 0,
+    }
+    rewritten = Exp471ScoreCacheManifestAntigravity(
+        **{key: value for key, value in record.items() if key != "schema"},
+        manifest_sha256=sha256(
+            canonical_json_bytes_exp471_antigravity(record)
+        ).hexdigest(),
+    )
+    path = root / "score_cache_manifest_antigravity.json"
+    path.write_bytes(
+        score_cache._artifacts_antigravity._canonical_manifest_bytes_antigravity(
+            rewritten
+        )
+    )
 
 
 class ScoreCacheTestsAntigravity(unittest.TestCase):
@@ -549,6 +624,253 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                 _cache_bytes_antigravity(interrupted_root),
                 _cache_bytes_antigravity(fresh_root),
             )
+
+    def test_scored_receipt_is_durable_before_publish_interruption(self) -> None:
+        """A durable baseline shard must already have external micro authority."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_scored_receipt_interrupt_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            receipt_preceded_shard: list[bool] = []
+            original_publish = score_cache.publish_score_shard_antigravity
+
+            def publish_after_receipt(cache_root, shard):
+                if (shard.method, shard.dataset) == (
+                    "knn_distance",
+                    "dataset_alpha",
+                ):
+                    receipt = (
+                        root
+                        / "score_expectations_antigravity"
+                        / score_cache.score_shard_relative_path_antigravity(
+                            shard.method, shard.dataset
+                        ).name
+                    )
+                    receipt_preceded_shard.append(receipt.is_file())
+                return original_publish(cache_root, shard)
+
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache,
+                "publish_score_shard_antigravity",
+                publish_after_receipt,
+            ), self.assertRaisesRegex(RuntimeError, "receipt interruption"):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=1,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(RuntimeError("receipt interruption"))
+                        if event["status"] == "durable"
+                        and (event["method"], event["dataset"])
+                        == ("knn_distance", "dataset_alpha")
+                        else None
+                    ),
+                )
+            self.assertEqual(receipt_preceded_shard, [True])
+            receipts = tuple(
+                (root / "score_expectations_antigravity").glob("*_antigravity.json")
+            )
+            self.assertTrue(receipts)
+            self.assertTrue(
+                score_cache.read_score_shard_antigravity(
+                    root, "knn_distance", "dataset_alpha"
+                )
+            )
+
+    def test_partial_self_rehashed_wrong_baseline_micro_is_rejected(self) -> None:
+        """Shard-local hashes cannot authorize changed baseline calibration."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_wrong_micro_resume_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, self.assertRaisesRegex(
+                RuntimeError, "wrong micro interruption"
+            ):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=1,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(
+                            RuntimeError("wrong micro interruption")
+                        )
+                        if event["status"] == "durable"
+                        and (event["method"], event["dataset"])
+                        == ("knn_distance", "dataset_alpha")
+                        else None
+                    ),
+                )
+            original = score_cache.read_score_shard_antigravity(
+                root, "knn_distance", "dataset_alpha"
+            )
+            changed = _rehashed_shard_antigravity(
+                original, micro_scores=[0.123, 0.987]
+            )
+            path = root / score_cache.score_shard_relative_path_antigravity(
+                changed.method, changed.dataset
+            )
+            path.chmod(0o600)
+            path.write_bytes(
+                score_cache._artifacts_antigravity._canonical_shard_bytes_antigravity(
+                    changed
+                )
+            )
+            calibration_calls: list[object] = []
+            original_calibration = score_cache.upper_tail_pvalues_numba_antigravity
+
+            def record_calibration(reference, query):
+                calibration_calls.append((reference.size, query.size))
+                return original_calibration(reference, query)
+
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache,
+                "upper_tail_pvalues_numba_antigravity",
+                record_calibration,
+            ), self.assertRaisesRegex(ValueError, "expected scored envelope"):
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            self.assertEqual(calibration_calls, [])
+
+    def test_complete_fast_path_rebinds_typed_partition_to_v3_metadata(self) -> None:
+        """A self-consistent 30/0 cache cannot replace expected 29/1 coverage."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_complete_partition_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root:
+                manifest = score_cache.prepare_score_cache_antigravity(
+                    session, workers=1
+                )
+            abstained = score_cache.read_score_shard_antigravity(
+                root, "deep_svdd_1d", "dataset_alpha"
+            )
+            changed = _rehashed_shard_antigravity(
+                abstained,
+                status="scored",
+                raw_scores=[0.2, 0.8],
+                micro_scores=[0.3, 0.9],
+                abstention_reason=None,
+            )
+            path = root / score_cache.score_shard_relative_path_antigravity(
+                changed.method, changed.dataset
+            )
+            path.chmod(0o600)
+            path.write_bytes(
+                score_cache._artifacts_antigravity._canonical_shard_bytes_antigravity(
+                    changed
+                )
+            )
+            manifest_path = root / "score_cache_manifest_antigravity.json"
+            manifest_path.chmod(0o600)
+            _rewrite_complete_manifest_antigravity(root, manifest, changed)
+            for api in ("prepare", "open"):
+                with self.subTest(api=api):
+                    issued, cache_root = self._issued_patches_antigravity(root)
+                    with issued, cache_root, self.assertRaisesRegex(
+                        ValueError,
+                        "verified input|status coverage|existing score shard",
+                    ):
+                        if api == "prepare":
+                            score_cache.prepare_score_cache_antigravity(
+                                session, workers=1
+                            )
+                        else:
+                            score_cache.open_complete_score_cache_antigravity(
+                                session
+                            )
+
+    def test_partial_baseline_scored_without_receipt_fails_before_recalibration(self) -> None:
+        """A scored shard without its prior create-only receipt is untrusted."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_missing_receipt_antigravity_"
+        ) as temporary:
+            root = Path(temporary).resolve() / "score_cache_antigravity"
+            session = _session_antigravity(_mixed_source_bundle_antigravity)
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, self.assertRaisesRegex(
+                RuntimeError, "missing receipt interruption"
+            ):
+                score_cache.prepare_score_cache_antigravity(
+                    session,
+                    workers=1,
+                    progress=lambda event: (
+                        (_ for _ in ()).throw(
+                            RuntimeError("missing receipt interruption")
+                        )
+                        if event["status"] == "durable"
+                        and (event["method"], event["dataset"])
+                        == ("knn_distance", "dataset_alpha")
+                        else None
+                    ),
+                )
+            receipt_name = score_cache.score_shard_relative_path_antigravity(
+                "knn_distance", "dataset_alpha"
+            ).name
+            receipt = root / "score_expectations_antigravity" / receipt_name
+            receipt.chmod(0o600)
+            receipt.unlink()
+            calibration_calls: list[object] = []
+            issued, cache_root = self._issued_patches_antigravity(root)
+            with issued, cache_root, mock.patch.object(
+                score_cache,
+                "upper_tail_pvalues_numba_antigravity",
+                side_effect=lambda *args: calibration_calls.append(args),
+            ), self.assertRaisesRegex(ValueError, "missing"):
+                score_cache.prepare_score_cache_antigravity(session, workers=1)
+            self.assertEqual(calibration_calls, [])
+
+    def test_terminal_and_complete_fast_path_reject_extra_shard_leaf(self) -> None:
+        """Declared 30-shard coverage must reject an actual 31st namespace leaf."""
+
+        for complete in (False, True):
+            with self.subTest(complete=complete), tempfile.TemporaryDirectory(
+                prefix="exp471_extra_leaf_antigravity_"
+            ) as temporary:
+                root = Path(temporary).resolve() / "score_cache_antigravity"
+                session = _session_antigravity(_source_bundle_antigravity)
+                issued, cache_root = self._issued_patches_antigravity(root)
+                if complete:
+                    with issued, cache_root:
+                        score_cache.prepare_score_cache_antigravity(
+                            session, workers=1
+                        )
+                else:
+                    with issued, cache_root, self.assertRaisesRegex(
+                        RuntimeError, "inventory interruption"
+                    ):
+                        score_cache.prepare_score_cache_antigravity(
+                            session,
+                            workers=1,
+                            progress=lambda event: (
+                                (_ for _ in ()).throw(
+                                    RuntimeError("inventory interruption")
+                                )
+                                if event["status"] == "durable"
+                                and event["durable_completed"] == 1
+                                else None
+                            ),
+                        )
+                source = root / score_cache.score_shard_relative_path_antigravity(
+                    "A", "dataset_alpha"
+                )
+                extra = source.parent / "foreign_identity_antigravity.json"
+                extra.write_bytes(source.read_bytes())
+                self.assertEqual(len(tuple(source.parent.iterdir())), 31 if complete else 2)
+                issued, cache_root = self._issued_patches_antigravity(root)
+                with issued, cache_root, self.assertRaisesRegex(
+                    ValueError, "inventory"
+                ):
+                    score_cache.prepare_score_cache_antigravity(
+                        session, workers=1
+                    )
 
     def test_malformed_abstention_is_terminal_before_calibration_or_workers(self) -> None:
         """A score-bearing abstention must fail parent validation permanently."""
@@ -865,6 +1187,26 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
         self._assert_input_rejected_before_compute_antigravity(
             wrong_condition_order, "TEST coordinates"
         )
+
+    def test_all_v3_arms_reject_bool_and_float_test_indices_before_compute(self) -> None:
+        """JSON-number equality must not bypass exact integer TEST identity."""
+
+        arms = (
+            ("condition", "A", _source_bundle_antigravity),
+            ("baseline_scored", "knn_distance", _source_bundle_antigravity),
+            ("baseline_abstained", "deep_svdd_1d", _mixed_source_bundle_antigravity),
+        )
+        for arm, method, factory in arms:
+            for invalid in ([False, 1], [0, 1.0]):
+                with self.subTest(arm=arm, invalid=invalid):
+                    bundle = factory()
+                    namespace = "conditions" if arm == "condition" else "baselines"
+                    bundle[namespace][method]["scores"]["dataset_alpha"][
+                        "test_indices"
+                    ] = invalid
+                    self._assert_input_rejected_before_compute_antigravity(
+                        bundle, "TEST coordinates"
+                    )
 
     def test_self_consistent_wrong_baseline_and_global_coordinates_fail_pins(self) -> None:
         """Rehashed payload-local authority must not displace independent pins."""
