@@ -1517,6 +1517,8 @@ class CliTestsAntigravity(unittest.TestCase):
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["durable_completed"], 0)
             self.assertEqual(payload["latest_progress"], None)
+            self.assertIn("preprocessing_progress", payload)
+            self.assertEqual(payload.get("preprocessing_progress"), None)
             self.assertEqual(payload["failures"], 0)
             self.assertFalse(os.path.lexists(root))
             self.assertFalse(os.path.lexists(score))

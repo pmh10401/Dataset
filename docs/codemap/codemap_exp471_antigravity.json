@@ -31,6 +31,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
       "kind": "ast_import"
@@ -76,6 +81,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
       "kind": "ast_import"
@@ -188,6 +198,11 @@
     {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -370,6 +385,7 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
@@ -405,6 +421,18 @@
       "tests": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py"
+      ],
+      "effects": "Result-preserving Exp471 preprocessing parallelism and live ETA evidence.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py"
       ]
     },
     {
@@ -489,6 +517,13 @@
     },
     {
       "callers": [],
+      "effects": "Deterministic preprocessing parallelism and live ETA evidence for Exp471.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
       "effects": "Public-literal lifecycle tests for Exp471 reporting and its closed CLI.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_reporting_cli_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
@@ -552,9 +587,9 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 17,
-    "production_node_count": 8,
-    "test_node_count": 7
+    "node_count": 19,
+    "production_node_count": 9,
+    "test_node_count": 8
   },
   "unknowns": []
 }

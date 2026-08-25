@@ -26,6 +26,7 @@ from .config_antigravity import (
     EXP471_REPORT_ROOT_ANTIGRAVITY,
     EXP471_ROOT_ANTIGRAVITY,
     EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY,
+    LOGICAL_CPU_COUNT_ANTIGRAVITY,
     METHOD_ORDER_ANTIGRAVITY,
 )
 from .contracts_antigravity import (
@@ -742,6 +743,11 @@ def _coordinate_record_antigravity(dataset: str, identity: Mapping[str, object])
 def _production_score_bundle_antigravity(session: object) -> Mapping[str, object]:
     """Build Task 5's verified, label-free input from issued Exp467 evidence."""
 
+    from .preprocessing_antigravity import (
+        Exp471PreprocessingObserverAntigravity,
+        append_preprocessing_progress_antigravity,
+        instrument_captured_preprocessing_antigravity,
+    )
     from .source_authority_antigravity import (
         _bind_captured_values_database_antigravity,
         _load_captured_dataset_values_antigravity,
@@ -777,14 +783,35 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
     )
     if not callable(build):
         raise ValueError("Exp471 fixed score-manifest builder is unavailable")
-    score_authority = build(
-        session.context.run_root,
-        verification=session.verification,
-        context=session.context,
-        catalog=catalog,
-        migration_manifest=session.migration_manifest,
-        raw_datasets=raw,
+    build_arguments = {
+        "verification": session.verification,
+        "context": session.context,
+        "catalog": catalog,
+        "migration_manifest": session.migration_manifest,
+        "raw_datasets": raw,
+    }
+    compose = getattr(
+        session.verifier, "compose_all_conditions_antigravity", None
     )
+    compose_globals = getattr(compose, "__globals__", {})
+    compose_condition = compose_globals.get("compose_condition_score_antigravity")
+    scoring_globals = getattr(compose_condition, "__globals__", {})
+    original_score = scoring_globals.get("score_low_frequency")
+    if callable(compose_condition) and callable(original_score):
+        observer = Exp471PreprocessingObserverAntigravity(
+            original_score,
+            condition_order=METHOD_ORDER_ANTIGRAVITY[:4],
+            workers=CPU_WORKERS_ANTIGRAVITY,
+            logical_cpu_count=LOGICAL_CPU_COUNT_ANTIGRAVITY,
+            progress=lambda event: append_preprocessing_progress_antigravity(
+                EXP471_ROOT_ANTIGRAVITY, event
+            ),
+        )
+        with instrument_captured_preprocessing_antigravity(session, observer):
+            score_authority = build(session.context.run_root, **build_arguments)
+    else:
+        # Synthetic authority fixtures intentionally expose only the values API.
+        score_authority = build(session.context.run_root, **build_arguments)
     manifests = score_authority.manifests
     if tuple(manifests) != METHOD_ORDER_ANTIGRAVITY[:4]:
         raise ValueError("Exp471 production condition score order differs")
@@ -1138,6 +1165,9 @@ class _ProductionRuntimeAntigravity:
         return authority
 
     def status_antigravity(self):
+        from .preprocessing_antigravity import (
+            latest_preprocessing_progress_antigravity,
+        )
         from .score_cache_antigravity import status_score_cache_antigravity
 
         root_anchor = _open_existing_directory_chain_antigravity(
@@ -1177,6 +1207,10 @@ class _ProductionRuntimeAntigravity:
             _validate_status_root_generation_antigravity(root_anchor)
             latest = _latest_progress_antigravity()
             _validate_status_root_generation_antigravity(root_anchor)
+            preprocessing = latest_preprocessing_progress_antigravity(
+                EXP471_ROOT_ANTIGRAVITY
+            )
+            _validate_status_root_generation_antigravity(root_anchor)
             completed = int(cache["durable_completed"])
             total = cache["total_shards"]
             expected_total = (
@@ -1208,12 +1242,17 @@ class _ProductionRuntimeAntigravity:
                     "progress": str(
                         EXP471_ROOT_ANTIGRAVITY / _PROGRESS_NAME_ANTIGRAVITY
                     ),
+                    "preprocessing_progress": str(
+                        EXP471_ROOT_ANTIGRAVITY
+                        / "preprocessing_progress_antigravity.jsonl"
+                    ),
                 },
                 "worker_decision": {
                     "benchmark": cache["benchmark_decision"],
                     "actual": cache["execution_decision"],
                 },
                 "latest_progress": latest,
+                "preprocessing_progress": preprocessing,
                 "failure": (
                     None
                     if failure_count == 0

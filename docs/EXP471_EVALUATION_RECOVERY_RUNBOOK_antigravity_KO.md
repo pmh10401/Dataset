@@ -14,6 +14,7 @@
 - 평가 산출물: `<Exp471 루트>/evaluation_antigravity`
 - 보고서: `<Exp471 루트>/report_antigravity`
 - 진행 로그: `<Exp471 루트>/progress_antigravity.jsonl`
+- 전처리 진행 로그: `<Exp471 루트>/preprocessing_progress_antigravity.jsonl`
 
 Exp467 루트는 읽기 전용 권위다. Exp471 명령으로 Exp467 파일, manifest,
 checkpoint, progress log를 수정해서는 안 된다. Exp471의 모든 출판은
@@ -103,6 +104,12 @@ exclusive lock으로 append하고 `status`는 shared lock으로 완전한 최신
 확인한다. 실행 중인 `progress_antigravity.jsonl`을 `cat`, `tail` 또는 다른
 도구로 직접 읽어 잠깐 보이는 미완성 tail을 권위로 해석해서는 안 된다.
 
+전처리가 진행 중이면 `status.preprocessing_progress`에서 `completed`, `total`,
+`percent`, `elapsed_seconds`, `eta_seconds`, `workers`를 확인한다. 첫 측정 전에는
+ETA가 `null`일 수 있다. 실제 데이터의 동일성 검사에 통과하고 11개 작업자가
+1개 작업자보다 1.1배 이상 빠를 때만 병렬 전처리를 사용하며, 그렇지 않으면
+결과를 바꾸지 않기 위해 자동으로 1개 작업자를 사용한다.
+
 ## 3. 표준 출력과 오류 출력
 
 각 명령은 성공 시 stdout에 canonical finite JSON 한 줄만 출력한다. 명령
@@ -117,7 +124,7 @@ exclusive lock으로 append하고 `status`는 shared lock으로 완전한 최신
 | `verify-source` | `schema`, `experiment`, `command`, `authority_sha256`, `inventory_sha256`, `total_successes`, `root` |
 | `benchmark-prepare` | `schema`, `experiment`, `command`, `decision` |
 | `prepare` | `schema`, `experiment`, `command`, `manifest_sha256`, `total_shards`, `root` |
-| `status` | `schema`, `experiment`, `command`, `durable_completed`, `total`, `failures`, `remaining`, `verified_stage`, `paths`, `worker_decision`, `latest_progress`, `failure` |
+| `status` | `schema`, `experiment`, `command`, `durable_completed`, `total`, `failures`, `remaining`, `verified_stage`, `paths`, `worker_decision`, `latest_progress`, `preprocessing_progress`, `failure` |
 | `report` | `schema`, `experiment`, `command`, `source_authority_sha256`, `cache_manifest_sha256`, `evaluation_sha256`, `report_manifest_sha256`, `report_root` |
 
 `benchmark-prepare.decision`에는 다음 필드가 모두 있어야 한다.
