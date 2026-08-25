@@ -54,10 +54,31 @@
 </ul>
 
 <h2>7. 진행 체크</h2>
-<label><input type="checkbox" disabled> Task 1: raw-distance 노출 경로 확인</label><br>
-<label><input type="checkbox" disabled> Task 2: A안 구현·테스트</label><br>
-<label><input type="checkbox" disabled> Task 3: B안 구현·p 스캔</label><br>
-<label><input type="checkbox" disabled> Task 4: C안 피처 결합</label><br>
+<label><input type="checkbox" checked disabled> Task 1: raw-distance 노출 경로 확인</label><br>
+<label><input type="checkbox" checked disabled> Task 2: A안 구현·테스트</label><br>
+<label><input type="checkbox" checked disabled> Task 3: B안 구현·p 스캔</label><br>
+<label><input type="checkbox" checked disabled> Task 4: C안 피처 결합</label><br>
 <label><input type="checkbox" disabled> Task 5: 공식 실행 및 비교 보고서</label>
+
+<h2>8. 진단 결과 (2026-08-25)</h2>
+<p class="muted">커밋 f62c3f79, 산출 root exp472_zero_fp_tail_recovery_antigravity_20260825</p>
+<table>
+<thead><tr><th></th><th colspan="5">ECG200_normal_1</th><th colspan="5">ECG200_normal_-1</th></tr>
+<tr><th>Method</th><th>AUC</th><th>zFP</th><th>TP@3</th><th>TP@5</th><th>TP@10</th><th>AUC</th><th>zFP</th><th>TP@3</th><th>TP@5</th><th>TP@10</th></tr></thead>
+<tbody>
+<tr><td>A_raw_gap</td><td><strong>1.0000</strong></td><td><strong>2/2</strong></td><td>2</td><td>2</td><td>2</td><td><strong>0.8980</strong></td><td>0/1</td><td>0</td><td><strong>1</strong></td><td><strong>1</strong></td></tr>
+<tr><td>B_c12_p90</td><td>0.9821</td><td>0/2</td><td>2</td><td>2</td><td>2</td><td>0.6327</td><td>0/1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>B_c12_p95</td><td>0.9821</td><td>0/2</td><td>2</td><td>2</td><td>2</td><td>0.7347</td><td>0/1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>C_gap+entropy</td><td><strong>1.0000</strong></td><td><strong>2/2</strong></td><td>2</td><td>2</td><td>2</td><td>0.3265</td><td>0/1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>baseline_c0</td><td>0.9898</td><td>0/2</td><td>2</td><td>2</td><td>2</td><td>0.8367</td><td>0/1</td><td>0</td><td>0</td><td>1</td></tr>
+</tbody>
+</table>
+<h3>결론</h3>
+<ul>
+<li><strong>normal_1</strong>: A_raw_gap이 zero-FP TP=2를 달성. AUC도 1.0000으로 완벽 분리.</li>
+<li><strong>normal_-1</strong>: A_raw_gap이 AUC 0.84→0.90 개선, TP@5에서 TP 1개 확보(baseline은 TP@10에서만). 여전히 zero-FP TP는 0.</li>
+<li>B(confirmation 완화)와 C(entropy 결합)는 normal_-1을 악화시킴 → 채택하지 않음.</li>
+<li>두 seed 결과 일치.</li>
+</ul>
 
 </body></html>
