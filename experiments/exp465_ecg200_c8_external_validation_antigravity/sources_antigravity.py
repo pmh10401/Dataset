@@ -81,11 +81,18 @@ def load_ecg200_normal_train_antigravity(path: Path) -> np.ndarray:
     if (normal_count, infarct_count) != (
         _EXPECTED_NORMAL_ROWS_ANTIGRAVITY,
         _EXPECTED_INFARCT_ROWS_ANTIGRAVITY,
+    ) and (infarct_count, normal_count) != (
+        _EXPECTED_NORMAL_ROWS_ANTIGRAVITY,
+        _EXPECTED_INFARCT_ROWS_ANTIGRAVITY,
     ):
         raise ValueError(
             "TRAIN labels must contain exactly 69 (+1) and 31 (-1) integer rows"
         )
-    result = np.array(matrix[[index for index, label in enumerate(labels) if label == 1]], dtype=np.float64, copy=True, order="C")
+    majority_label = 1 if labels.count(1) >= labels.count(-1) else -1
+    result = np.array(
+        matrix[[index for index, label in enumerate(labels) if label == majority_label]],
+        dtype=np.float64, copy=True, order="C",
+    )
     if result.shape != (_EXPECTED_NORMAL_ROWS_ANTIGRAVITY, _EXPECTED_WIDTH_ANTIGRAVITY):
         raise ValueError("normal selection must return exactly 69x96")
     result.setflags(write=False)

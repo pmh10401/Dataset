@@ -162,6 +162,31 @@ class SourcesAntigravityTest(unittest.TestCase):
                 sources.load_ecg200_normal_train_antigravity(symlink_train_to_test)
         self.assertEqual(opened["count"], 0)
 
+    def test_loader_selects_majority_class_dynamically_antigravity(self) -> None:
+        """Break caught: majority-class mapping is hardcoded to label +1."""
+        from experiments.exp465_ecg200_c8_external_validation_antigravity.sources_antigravity import (
+            load_ecg200_normal_train_antigravity,
+        )
+
+        lines = list(HEADER_LINES_ANTIGRAVITY)
+        for row_index in range(31):
+            lines.append(_row_text_antigravity(4650000 + row_index, +1))
+        for row_index in range(69):
+            lines.append(_row_text_antigravity(4650200 + row_index, -1))
+        path = _write_fixture_antigravity("\n".join(lines) + "\n", "ECG200_TRAIN_antigravity.ts")
+        with _PatchedMd5Antigravity():
+            result = load_ecg200_normal_train_antigravity(path)
+
+        expected = np.array(
+            [
+                np.random.default_rng(4650200 + row_index).standard_normal(96)
+                for row_index in range(69)
+            ],
+            dtype=np.float64,
+        )
+        np.testing.assert_array_equal(result, expected)
+        self.assertEqual(result.shape, (69, 96))
+
     def test_loader_rejects_wrong_md5_shape_label_count_and_nonfinite_antigravity(self) -> None:
         """Break caught: frozen MD5, shape, labels, counts, or finiteness gates weaken."""
         from experiments.exp465_ecg200_c8_external_validation_antigravity.sources_antigravity import (
