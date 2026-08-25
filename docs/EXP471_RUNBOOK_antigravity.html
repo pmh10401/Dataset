@@ -66,4 +66,7 @@ launcher.run_private_sequence_antigravity(
     <p><strong>2026-08-25:</strong> 사용자 승인으로 관측용 진단을 실행했다. launcher <code>scratch/run_exp471_test_fn_diagnostic_antigravity.py</code>, 승인 token <code>TASK6_TEST_FN_DIAGNOSTIC_APPROVED</code>. 커밋 <code>651dd0cc</code>(combined-matrix 수정)에서 두 seed 순차 실행, exit 0. 산출 root는 <code>/Users/mac/Documents/Dataset/exp471_ecg200_test_fn_diagnostic_antigravity_20260825</code>이며 routing·champion·promotion은 변경하지 않았다.</p>
     <p>요약: normal_1 FN 2개는 C0 AUC 0.9923으로 분리되지만 zero-FP TP 0. normal_-1 FN 1개는 C0 AUC 0.0204(역방향). E12/C12는 이 데이터셋에서 FN 해소 기여 0.</p>
   </div>
+  <div class="note">
+    <p><strong>2026-08-25(2차):</strong> 사용자 지시로 데이터셋 매핑을 수정했다. 각 데이터셋의 TRAIN label-0 행 전부를 자체 정상 참조로 사용하도록 커밋 <code>aa942cfb</code>에서 변경. 이전 결과는 <code>_superseded_shared_train</code>으로 보존. normal_-1 C0 AUC가 0.0204 → 0.8367로 개선했고, zero-FP TP는 여전히 0이다.</p>
+  </div>
 </main></body></html>

@@ -224,4 +224,27 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     산출물: <code>/Users/mac/Documents/Dataset/exp471_ecg200_test_fn_diagnostic_antigravity_20260825</code>,
     진단 커밋 <code>651dd0cc</code>(combined-matrix 방식).
   </p>
+  <h2>9.2 데이터셋 매핑 수정 후 재진단(2026-08-25)</h2>
+  <p>
+    원인: 두 데이터셋의 TRAIN 정상 구성이 서로 다르다. normal_1의 106개 TRAIN은 +1
+    클래스 위주, normal_-1의 53개 TRAIN은 −1 클래스 위주다. 공유 train140(+1 클래스,
+    69행)을 모든 데이터셋에 적용하면 normal_-1의 이상치(+1 신호)는 오히려 학습 분포
+    안쪽으로 들어가 역방향 AUC 0.0204가 발생한다.
+  </p>
+  <p>
+    수정: 커밋 <code>aa942cfb</code>에서 각 데이터셋의 TRAIN label-0 행 전부를 자체
+    정상 참조로 로드하도록 변경했다. 이전 결과는
+    <code>_superseded_shared_train</code> suffix로 보존했다.
+  </p>
+  <table>
+    <thead><tr><th>파일</th><th>C0 AUC(공유)</th><th>C0 AUC(자체)</th><th>zero-FP TP</th><th>E12/C12</th></tr></thead>
+    <tbody>
+      <tr><td>ECG200_normal_1</td><td>0.9923</td><td>0.9898</td><td>0/2</td><td>confirm 0회</td></tr>
+      <tr><td>ECG200_normal_-1</td><td><strong>0.0204</strong></td><td><strong>0.8367</strong></td><td>0/1</td><td>confirm 0회</td></tr>
+    </tbody>
+  </table>
+  <p>
+    결론: normal_-1이 역방향(0.02)에서 정상 방향(0.84)으로 개선했다. zero-FP TP는
+    여전히 0이다. E12/C12는 이 데이터셋에서 계속 FN 해소에 기여하지 않는다.
+  </p>
 </main></body></html>
