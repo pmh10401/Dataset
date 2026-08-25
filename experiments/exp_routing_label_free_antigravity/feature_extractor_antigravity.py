@@ -37,6 +37,21 @@ def extract_routing_features_antigravity(
         float(np.var(reference_scores)) if reference_scores is not None else float("nan")
     )
 
+    # First-difference std ratio: how much does the signal change per step
+    # relative to its overall scale? High values indicate noisy / rapidly
+    # varying signals; low values indicate smooth, slowly changing ones.
+    diffs = np.diff(train_rows, axis=1)
+    diff_std_ratio = float(
+        np.median(diffs.std(axis=1) / (train_rows.std(axis=1) + 1e-12))
+    )
+
+    # Zero-crossing rate around the per-series mean: high values indicate
+    # oscillatory behaviour; low values indicate sustained offsets.
+    centered = train_rows - train_rows.mean(axis=1, keepdims=True)
+    zero_crossing_rate = float(
+        np.median((np.diff(np.sign(centered), axis=1) != 0).mean(axis=1))
+    )
+
     return {
         "width": width,
         "n_train": n_train,
@@ -44,4 +59,6 @@ def extract_routing_features_antigravity(
         "skewness": skewness,
         "kurtosis": kurtosis,
         "ref_score_var": ref_score_var,
+        "diff_std_ratio": diff_std_ratio,
+        "zero_crossing_rate": zero_crossing_rate,
     }

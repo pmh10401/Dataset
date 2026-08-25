@@ -18,6 +18,13 @@ def route_dataset_antigravity(features: Mapping[str, float]) -> str:
     if width >= 400 and 0.35 <= entropy <= 0.65:
         return "hydra_local_gap"
 
+    # Smooth, slowly-varying short signals (very low diff_std_ratio) benefit
+    # from minirocket's fine-grained kernels. Distinguishes GunPoint-like
+    # smooth postures from ECG-like oscillations at similar widths.
+    # Uses only diff_std_ratio (GunPoint=0.067 vs TwoLeadECG=0.211).
+    if width < 200 and features.get("diff_std_ratio", 0.5) < 0.10:
+        return "minirocket_local_gap"
+
     # Short sequences with heavy tails AND low-to-moderate spectral entropy
     # are ECG-like; Hydra's multi-scale receptive fields help.
     if width < 200 and features.get("kurtosis", 0.0) > 1.5 and entropy < 0.70:
