@@ -12,7 +12,7 @@ from typing import Callable
 
 from .artifacts_antigravity import publish_result_antigravity
 from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
-from .evaluation_antigravity import evaluate_repair_gates_antigravity
+from .artifacts_antigravity import evaluate_qualification_antigravity
 from .interpolation_antigravity import interpolate_to_140_antigravity
 from .predecessor_antigravity import capture_exp465_authority_antigravity
 from .qualification_antigravity import blocked_fold_indices_antigravity, qualify_records_antigravity
@@ -110,7 +110,7 @@ def evaluate_pipeline_antigravity(
     authority_factory: Callable[[], object] = capture_exp465_authority_antigravity,
     scorer: Callable[..., object] = score_fold_methods_antigravity,
     qualifier: Callable[[object], object] = qualify_records_antigravity,
-    decider: Callable[[object], object] = evaluate_repair_gates_antigravity,
+    decider: Callable[[object], object] = evaluate_qualification_antigravity,
     publisher: Callable[[Path, object, object, object], object] = publish_result_antigravity,
     inspector: Callable[[Path], object] = inspect_result_antigravity,
 ) -> dict[str, object]:
