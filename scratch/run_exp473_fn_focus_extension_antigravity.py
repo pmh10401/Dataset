@@ -20,13 +20,23 @@ _REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[1]
 _OUTPUT_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/exp473_fn_focus_extension_antigravity_20260825"
 )
+_OUTPUT_ROOT_PHASE2_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/exp473_fn_focus_extension_phase2_antigravity_20260825"
+)
 _DATABASE_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
-_TARGET_DATASETS_ANTIGRAVITY = (
+_TARGET_DATASETS_PHASE1_ANTIGRAVITY = (
     "ElectricDevices_normal_5",
     "ElectricDevices_normal_4",
     "ChlorineConcentration_normal_3",
     "ECG5000_normal_2",
 )
+_TARGET_DATASETS_PHASE2_ANTIGRAVITY = (
+    "Yoga_normal_1",
+    "Yoga_normal_2",
+    "FordA_normal_-1",
+    "FordB_normal_-1",
+)
+_TARGET_DATASETS_ANTIGRAVITY = _TARGET_DATASETS_PHASE1_ANTIGRAVITY
 _SEEDS_ANTIGRAVITY = (20260721, 20261721)
 _REQUIRED_TOKEN_ANTIGRAVITY = "EXP473_FN_FOCUS_EXTENSION_APPROVED"
 
@@ -78,13 +88,21 @@ def _load_dataset_antigravity(connection, dataset: str):
 def main_antigravity(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("--approval-token", required=True)
+    parser.add_argument("--phase", type=int, choices=(1, 2), default=1, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if args.approval_token != _REQUIRED_TOKEN_ANTIGRAVITY:
         raise SystemExit("approval token rejected")
 
     reviewed = _head_commit_antigravity()
     _require_clean_head_antigravity(reviewed)
-    if _OUTPUT_ROOT_ANTIGRAVITY.exists() or _OUTPUT_ROOT_ANTIGRAVITY.is_symlink():
+    global _TARGET_DATASETS_ANTIGRAVITY
+    if args.phase == 2:
+        _TARGET_DATASETS_ANTIGRAVITY = _TARGET_DATASETS_PHASE2_ANTIGRAVITY
+        output_root = _OUTPUT_ROOT_PHASE2_ANTIGRAVITY
+    else:
+        output_root = _OUTPUT_ROOT_ANTIGRAVITY
+
+    if output_root.exists() or output_root.is_symlink():
         raise SystemExit("output root must be absent before the approved run")
     sys.path.insert(0, str(_REPOSITORY_ROOT_ANTIGRAVITY))
 
@@ -150,7 +168,7 @@ def main_antigravity(argv: list[str] | None = None) -> int:
 
     _OUTPUT_ROOT_ANTIGRAVITY.mkdir(parents=True)
     rows_bytes = b"".join(_canonical_json_bytes_antigravity(row) for row in row_payloads)
-    (_OUTPUT_ROOT_ANTIGRAVITY / "scores_antigravity.jsonl").write_bytes(rows_bytes)
+    (output_root / "scores_antigravity.jsonl").write_bytes(rows_bytes)
     manifest = {
         "approval_token_name": _REQUIRED_TOKEN_ANTIGRAVITY,
         "label_query_for_routing_or_promotion": 0,
@@ -164,14 +182,14 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         "runtime_python": platform.python_version(),
         "schema": "exp473_fn_focus_extension_manifest_v1",
     }
-    (_OUTPUT_ROOT_ANTIGRAVITY / "manifest_antigravity.json").write_bytes(
+    (output_root / "manifest_antigravity.json").write_bytes(
         _canonical_json_bytes_antigravity(manifest)
     )
     summary_bytes = _canonical_json_bytes_antigravity(summary)
-    (_OUTPUT_ROOT_ANTIGRAVITY / "summary_antigravity.json").write_bytes(summary_bytes)
-    hashes = {name: hashlib.sha256((_OUTPUT_ROOT_ANTIGRAVITY / name).read_bytes()).hexdigest() for name in (
+    (output_root / "summary_antigravity.json").write_bytes(summary_bytes)
+    hashes = {name: hashlib.sha256((output_root / name).read_bytes()).hexdigest() for name in (
         "manifest_antigravity.json", "summary_antigravity.json", "scores_antigravity.jsonl")}
-    (_OUTPUT_ROOT_ANTIGRAVITY / "artifact_sha256_antigravity.json").write_bytes(
+    (output_root / "artifact_sha256_antigravity.json").write_bytes(
         _canonical_json_bytes_antigravity({"hashes": hashes, "schema": "exp473_hashes_v1"})
     )
     sys.stdout.write(summary_bytes.decode("utf-8"))
