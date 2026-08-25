@@ -5,11 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from hashlib import sha256
+import ctypes
+import errno
 import json
 import os
 from pathlib import Path, PurePosixPath
 import secrets
 import stat
+import sys
 
 from .config_antigravity import METHOD_ORDER_ANTIGRAVITY
 from .contracts_antigravity import (
@@ -42,10 +45,59 @@ if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
     raise RuntimeError("Exp471 score cache requires descriptor-relative no-follow support")
 _READ_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_NOFOLLOW
 _DIRECTORY_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+_RENAME_EXCL_ANTIGRAVITY = 0x00000004
 
 
 def _race_hook_antigravity(event: str, relative: str) -> None:
     """No-op seam for deterministic descriptor-swap lifecycle tests."""
+
+
+def _rename_no_replace_at_antigravity(
+    source_directory: int,
+    source: str,
+    destination_directory: int,
+    destination: str,
+) -> None:
+    """Move one safe leaf on Darwin without replacing any destination entry."""
+
+    if sys.platform != "darwin":
+        raise RuntimeError("Exp471 manifest quarantine no-replace move is unavailable")
+    libc = ctypes.CDLL(None, use_errno=True)
+    try:
+        renameatx_np = libc.renameatx_np
+    except AttributeError as error:
+        raise RuntimeError(
+            "Exp471 manifest quarantine no-replace move is unavailable"
+        ) from error
+    renameatx_np.argtypes = (
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    )
+    renameatx_np.restype = ctypes.c_int
+    ctypes.set_errno(0)
+    if renameatx_np(
+        source_directory,
+        os.fsencode(source),
+        destination_directory,
+        os.fsencode(destination),
+        _RENAME_EXCL_ANTIGRAVITY,
+    ) == 0:
+        return
+    error_number = ctypes.get_errno()
+    if error_number == errno.ENOENT:
+        raise FileNotFoundError(error_number, "Exp471 manifest quarantine source is missing")
+    if error_number in {errno.EEXIST, errno.ENOTEMPTY}:
+        raise FileExistsError(
+            error_number,
+            "Exp471 manifest quarantine destination already exists",
+        )
+    raise RuntimeError(
+        "Exp471 manifest quarantine no-replace move failed "
+        f"(errno {error_number})"
+    )
 
 
 def _same_identity_antigravity(
@@ -668,11 +720,11 @@ def _quarantine_cache_manifest_in_anchor_antigravity(
                 _CACHE_MANIFEST_NAME_ANTIGRAVITY,
             )
             try:
-                os.rename(
+                _rename_no_replace_at_antigravity(
+                    anchor.descriptor,
                     _CACHE_MANIFEST_NAME_ANTIGRAVITY,
+                    recovery_directory,
                     _CACHE_MANIFEST_RECOVERED_NAME_ANTIGRAVITY,
-                    src_dir_fd=anchor.descriptor,
-                    dst_dir_fd=recovery_directory,
                 )
             except FileNotFoundError:
                 recovered_identity = None

@@ -172,6 +172,32 @@ def _publish_complete_shards_antigravity(
 
 
 class Exp471ScoreShardArtifactTestsAntigravity(unittest.TestCase):
+    def test_manifest_quarantine_no_replace_is_unavailable_off_darwin(self) -> None:
+        """Quarantine must fail closed when Darwin's no-replace syscall is absent."""
+        with mock.patch.object(cache_artifacts.sys, "platform", "linux"), self.assertRaisesRegex(
+            RuntimeError, "no-replace move is unavailable"
+        ):
+            cache_artifacts._rename_no_replace_at_antigravity(
+                -1,
+                "source_antigravity.json",
+                -1,
+                "destination_antigravity.json",
+            )
+
+    def test_manifest_quarantine_no_replace_fails_when_darwin_symbol_is_missing(
+        self,
+    ) -> None:
+        """A missing Darwin primitive must not select an overwrite-capable fallback."""
+        with mock.patch.object(
+            cache_artifacts.ctypes, "CDLL", return_value=object()
+        ), self.assertRaisesRegex(RuntimeError, "no-replace move is unavailable"):
+            cache_artifacts._rename_no_replace_at_antigravity(
+                -1,
+                "source_antigravity.json",
+                -1,
+                "destination_antigravity.json",
+            )
+
     def test_digest_path_is_literal_deterministic_contained_and_antigravity_named(self) -> None:
         """Raw identities or escaping components must never become shard pathnames."""
         expected = Path(

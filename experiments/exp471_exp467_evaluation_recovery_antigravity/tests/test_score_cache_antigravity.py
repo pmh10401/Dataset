@@ -6,6 +6,7 @@ from dataclasses import replace
 from hashlib import sha256
 import json
 import math
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -1151,6 +1152,89 @@ class ScoreCacheTestsAntigravity(unittest.TestCase):
                     "inode": replacement_identity.st_ino,
                 },
             )
+
+    def test_manifest_recovery_collision_never_overwrites_unrelated_destination(self) -> None:
+        """A late recovery leaf must block quarantine without losing either leaf."""
+
+        for kind in ("regular", "symlink"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory(
+                prefix=f"exp471_manifest_recovery_{kind}_collision_antigravity_"
+            ) as temporary:
+                root = Path(temporary).resolve() / "score_cache_antigravity"
+                session = _session_antigravity(_source_bundle_antigravity)
+                issued, cache_root = self._issued_patches_antigravity(root)
+                with issued, cache_root:
+                    score_cache.prepare_score_cache_antigravity(session, workers=1)
+                manifest = root / "score_cache_manifest_antigravity.json"
+                manifest_bytes = manifest.read_bytes()
+                manifest_identity = manifest.stat()
+                target_name = score_cache.score_shard_relative_path_antigravity(
+                    "A", "dataset_alpha"
+                ).name
+                target_reads = 0
+                injected = False
+                destination: Path | None = None
+                destination_identity: os.stat_result | None = None
+                foreign_target: Path | None = None
+                foreign_bytes = b'{"unrelated_antigravity":true}\n'
+
+                def collide_during_recovery(event, relative):
+                    nonlocal target_reads, injected, destination
+                    nonlocal destination_identity, foreign_target
+                    if event == "cache:after_leaf_open" and relative == target_name:
+                        target_reads += 1
+                        if target_reads == 1:
+                            _insert_extra_shard_leaf_antigravity(root)
+                    if event == "cache:before_manifest_quarantine_rename":
+                        recovery_directories = tuple(
+                            root.glob(
+                                "score_cache_manifest_recovery_*_antigravity"
+                            )
+                        )
+                        self.assertEqual(len(recovery_directories), 1)
+                        destination = (
+                            recovery_directories[0]
+                            / "score_cache_manifest_quarantined_antigravity.json"
+                        )
+                        if kind == "regular":
+                            destination.write_bytes(foreign_bytes)
+                        else:
+                            foreign_target = root / "foreign_recovery_target_antigravity.json"
+                            foreign_target.write_bytes(foreign_bytes)
+                            destination.symlink_to(foreign_target)
+                        destination_identity = destination.lstat()
+                        injected = True
+
+                issued, cache_root = self._issued_patches_antigravity(root)
+                with issued, cache_root, mock.patch.object(
+                    score_cache._artifacts_antigravity,
+                    "_race_hook_antigravity",
+                    collide_during_recovery,
+                ), self.assertRaises(FileExistsError):
+                    score_cache.prepare_score_cache_antigravity(session, workers=1)
+                self.assertTrue(injected)
+                self.assertIsNotNone(destination)
+                self.assertIsNotNone(destination_identity)
+                self.assertEqual(manifest.read_bytes(), manifest_bytes)
+                self.assertEqual(
+                    (manifest.stat().st_dev, manifest.stat().st_ino),
+                    (manifest_identity.st_dev, manifest_identity.st_ino),
+                )
+                self.assertEqual(
+                    (destination.lstat().st_dev, destination.lstat().st_ino),
+                    (destination_identity.st_dev, destination_identity.st_ino),
+                )
+                if kind == "regular":
+                    self.assertEqual(destination.read_bytes(), foreign_bytes)
+                else:
+                    self.assertTrue(destination.is_symlink())
+                    self.assertEqual(os.readlink(destination), str(foreign_target))
+                    self.assertEqual(foreign_target.read_bytes(), foreign_bytes)
+                recovery_metadata = (
+                    destination.parent
+                    / "score_cache_manifest_recovery_metadata_antigravity.json"
+                )
+                self.assertFalse(recovery_metadata.exists())
 
     def test_repeated_manifest_recovery_preserves_newer_valid_marker(self) -> None:
         """Repeating one recovery operation must not move a newer manifest."""
